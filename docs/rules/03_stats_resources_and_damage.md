@@ -53,6 +53,7 @@
 
 1. `turn_start` 的 MP 回复只读取“本回合开始前已经生效”的常驻状态：当前在场单位面板、已存在的被动持有物常驻效果、已存在的 field、以及上一结算窗口已经落地的规则修正。
 2. 同一个 `turn_start` 节点里新触发的 `apply_field`、`apply_effect`、`rule_mod`，不回头改写本次 MP 回复结果，只影响后续节点或下一次对应节点。
+3. 对技能、奥义和两类默认动作，执行起点固定顺序为：`has_acted = true -> 扣 MP -> 触发 on_cast / effects_on_cast -> 命中判定 -> 后续 payload / on_hit / on_miss`。
 
 ## 4. 技能系统
 
@@ -130,6 +131,7 @@
 
 1. 当前没有命中阶段、闪避阶段、`ignore_evasion`、`allow_full_evasion` 这类机制。
 2. 命中失败时只记 `miss`，不要混成“目标免疫”或“被闪避”。
+3. 命中成立后，行动本体的伤害或效果 payload 按模块 06 的声明顺序执行；全部完成后再进入 `effects_on_hit`。未命中则不执行命中侧 payload，直接进入 `effects_on_miss`。
 
 ## 7. RNG 契约
 

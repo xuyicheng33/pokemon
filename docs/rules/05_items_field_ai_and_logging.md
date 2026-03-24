@@ -51,6 +51,7 @@
 |场上没有 field|新 field 直接生效|
 |场上已有 field，新的后结算|旧 field 被替换|
 |同一窗口里多个 field 同时待生效|先进入统一效果队列，后结算完成的那个最终留下|
+|剩余回合扣减|固定在 `turn_end` 效果全部结算完成后；`remaining <= 0` 时立即移除|
 |field 到期|在约定节点移除，并写日志|
 
 ## 3. 统一效果排序
@@ -75,6 +76,8 @@
 2. 主动技能或奥义衍生效果的 `source_instance_id` 固定等于当前 `action_id`。
 3. 被动技能、被动持有物、field 都必须各自有独立实例 ID；刷新持续时间不会换 ID，替换为新实例时才换新 ID。
 4. 纯系统来源使用稳定系统实例 ID，例如 `system:turn_start`、`system:replace`，不得留空。
+5. `apply_effect` 产生的持续效果实例不额外新开 `source_kind_order` 桶，而是继承创建它的根来源类型。
+6. 统一效果排序只在“同一触发点、同一结算批次”内使用；不同触发点必须按模块 01 / 02 / 04 写死的时序先后执行，不跨触发点混排。
 
 ### 3.2 `source_kind_order` 固定枚举
 
@@ -101,8 +104,8 @@
 |---|---|
 |AI 可读取|所有公开信息、当前战场状态、己方运行态|
 |AI 禁止读取|内部随机值、未来未发生的抽样结果、仅供调试的缓存|
-|合法性职责|引擎负责先产出合法指令列表，AI 只负责从合法列表中选一个|
-|空列表处理|若合法主动列表为空，引擎直接走 `resource_forced_default`|
+|合法性职责|引擎先完成合法性判断：要么给出可选的技能 / 手动换人 / 奥义列表，要么直接替代为默认动作；AI 只从可执行结果中选一个|
+|空列表处理|当前不把“空合法列表”交给 AI；若技能、手动换人、奥义都不合法，引擎在选择阶段直接生成 `resource_forced_default`|
 |超时处理|AI 若在截止时间前未返回，引擎直接走 `timeout_default`|
 
 ## 5. 战斗日志
@@ -116,12 +119,12 @@
 |`turn_index`|当前回合序号|
 |`event_chain_id`|触发链路 ID|
 |`event_step_id`|链路步骤 ID|
-|`action_id`|本次行动唯一 ID；非行动系统链必须为 `null`|
-|`action_queue_index`|本回合队列中的执行序位|
-|`actor_id`|行动者|
+|`action_id`|当前根行动唯一 ID；同一行动链内的衍生效果事件继承该值；非行动系统链为 `null`|
+|`action_queue_index`|当前根行动在本回合队列中的执行序位；非行动系统链为 `null`|
+|`actor_id`|当前根行动的行动者；非行动系统链为 `null`|
 |`source_instance_id`|当前触发源的稳定实例 ID；纯行动日志可与 `action_id` 相同|
-|`command_type`|技能 / 换人 / 奥义 / `resource_forced_default` / `timeout_default` / `system:*`|
-|`command_source`|`manual / ai / resource_auto / timeout_auto / system`|
+|`command_type`|当前根链的动作类型：技能 / 换人 / 奥义 / `resource_forced_default` / `timeout_default` / `system:*`|
+|`command_source`|当前根链的指令来源：`manual / ai / resource_auto / timeout_auto / system`|
 |`priority`|本次行动或效果使用的优先级|
 |`target_slot`|目标位置|
 |`action_window_passed`|行动机会是否已过去|
@@ -141,13 +144,14 @@
 |项|规则|
 |---|---|
 |非适用字段|一律写 `null`；不得混用 `0`、空串或省略|
-|`action_id / action_queue_index / actor_id`|非行动系统链写 `null`|
+|`action_id / action_queue_index / actor_id`|非行动系统链写 `null`；行动链内的衍生效果事件继承根行动字段|
 |`target_slot`|无直接目标时写 `null`|
 |`speed_tie_roll / hit_roll / effect_roll`|本事件未消费对应 RNG 时写 `null`|
 |资源型默认动作|固定写 `command_type = resource_forced_default`、`command_source = resource_auto`|
 |超时型默认动作|固定写 `command_type = timeout_default`、`command_source = timeout_auto`|
-|`select_timeout`|`timeout_default` 为 `true`；其他行动为 `false`；非行动系统链写 `null`|
-|`select_deadline_ms`|行动日志写本回合截止时间；非行动系统链写 `null`|
+|`command_type / command_source`|非行动系统链固定写 `system:*` 与 `system`，例如 `system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
+|`select_timeout`|`timeout_default` 所属整条行动链都写 `true`；其他行动链写 `false`；非行动系统链写 `null`|
+|`select_deadline_ms`|整条行动链都写本回合截止时间；非行动系统链写 `null`|
 
 ### 5.3 日志分层
 

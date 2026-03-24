@@ -130,3 +130,28 @@
 ### 133. `rule_mod` 继续保留，但禁止改写核心流程
 - 当前只允许它修改已明文开放的倍率链、MP 回复规则或技能合法性。
 - 不允许通过 `rule_mod` 绕开 `priority`、行动排序、击倒窗口、胜负判定等核心流程。
+
+### 134. 首发 `on_enter` 与 `battle_init` 按固定阶段顺序执行，不跨触发点混排
+- 初始化先结算首发 `on_enter` 及其引发的补位链，场面稳定后再统一结算 `battle_init`。
+- 统一效果排序只在“同一触发点、同一批次”内生效，不把 `on_enter` 和 `battle_init` 混成一个排序池。
+
+### 135. `fainted_pending_leave` 是当前唯一的倒下待离场运行态名
+- 单位 `HP = 0` 后立即进入 `fainted_pending_leave`，直到当前击倒窗口完成离场清理。
+- 当前文档不再使用独立 `fainted` 作为运行判定态，避免目标合法性与日志口径分叉。
+
+### 136. 持续效果实例继承根来源排序元数据，不新开独立来源桶
+- `apply_effect` 创建实例时必须复制根来源的 `source_instance_id / source_kind_order / source_order_speed_snapshot`。
+- 后续持续效果触发继续沿用这套元数据，不额外发明 `status_effect` 之类的新排序桶。
+
+### 137. 行动链日志字段按根行动继承，只有非行动系统链才写 `null`
+- 行动根事件及其衍生效果事件统一继承 `action_id / action_queue_index / actor_id / command_type / command_source`。
+- `battle_init / turn_start / turn_end / system_replace` 这类非行动系统链才把行动字段写 `null`，并统一使用 `system:*` 命名。
+
+### 138. AI 不接收“空合法列表”，引擎直接生成默认动作
+- 引擎先完成合法性判断；若技能、手动换人、奥义都不合法，直接替代为 `resource_forced_default`。
+- AI 只在存在可执行结果时从中选择，不负责处理“没有任何合法主动方案”的兜底判定。
+
+### 139. 行动执行起点、payload 顺序与自动动作链归属写死
+- 技能、奥义、两类默认动作的执行起点固定为：`has_acted = true -> 扣 MP -> on_cast -> 命中判定 -> 后续 payload / on_hit / on_miss`。
+- `payloads` 严格按声明顺序执行，后序 payload 读取前序写回的最新运行态。
+- `resource_forced_default` 与 `timeout_default` 进入行动队列后仍属于 `action` 链，不额外发明 `timeout` 链。

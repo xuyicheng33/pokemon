@@ -44,8 +44,14 @@
 |`remaining`|剩余回合数|
 |`created_turn`|创建回合|
 |`source_instance_id`|当前触发源的稳定实例 ID|
+|`source_kind_order`|创建它的根来源类型枚举；持续效果后续触发时继续沿用|
 |`source_order_speed_snapshot`|排序速度快照，入队时固化|
 |`meta`|扩展字段|
+
+补充规则：
+
+1. `apply_effect` 创建实例时，必须把当下根来源的 `source_instance_id / source_kind_order / source_order_speed_snapshot` 一并复制进实例。
+2. 持续效果后续触发时继续沿用创建时复制下来的根来源排序元数据，不因 owner 改变而重算来源类型。
 
 ## 4. 当前基线触发点
 
@@ -64,6 +70,7 @@
 3. 若以后要加新触发点，必须先改本文件。
 4. `battle_init` 只用于“战斗开始时统一检查一次”的来源，不因为某个单位刚入场而重复触发。
 5. 首发入场仍然走 `on_enter`；同一份效果不能因为“首发入场”同时挂在 `on_enter` 和 `battle_init` 两边重复结算。
+6. `battle_init` 固定发生在初始 `on_enter` 与其引发的补位链完全稳定之后；不同触发点不跨批次混排。
 
 ## 5. 当前基线 payload 类型
 
@@ -82,6 +89,9 @@
 
 1. 当前内容层不开放“任意 rule_mod”；只允许改写模块 03 / 05 已明确留口的 `final_mod` 链、MP 回复规则或技能合法性。
 2. `rule_mod` 不得修改 `priority`、行动排序、目标锁定、击倒窗口、胜负判定等核心流程。
+3. `payloads` 列表严格按声明顺序执行；后一个 payload 必须读取前一个 payload 已经写回的最新运行态。
+4. 每个 payload 单独适用模块 02 的目标有效性与模块 04 的生命周期规则；若前序 payload 已让目标进入 `fainted_pending_leave`，后续直接作用该目标的普通 payload 按目标无效处理。
+5. 当前基线的 `remove_effect` 只允许按目标 owner 上的精确 `def_id` 移除单个效果实例；若出现文档未允许的歧义匹配，按 `invalid_battle` 处理。
 
 ## 6. 叠加与替换
 
@@ -106,6 +116,7 @@
 |`target`|这次 payload 直接作用到谁|
 |`creator`|是谁创建了当前 field|
 |`source_instance_id`|当前触发源的稳定实例 ID|
+|`source_kind_order`|当前触发源继承的根来源类型枚举|
 
 `on_kill` 补充规则：
 
@@ -131,11 +142,15 @@
 |项|规则|
 |---|---|
 |`event_chain_id`|每次独立结算链都要建立|
-|`chain_origin`|固定为 `battle_init / action / turn_start / turn_end / timeout / system_replace` 之一|
+|`chain_origin`|固定为 `battle_init / action / turn_start / turn_end / system_replace` 之一|
 |去重键|同一链路内使用 `instance_id + trigger + event_step_id`|
 |链深限制|使用可配置项 `max_chain_depth`|
 |fail-fast|链深超限、非法实例、去重保护命中时立即报错|
 |终止语义|进入 `invalid_battle` 后，本场立即结束并记为 `no_winner`|
+
+补充规则：
+
+1. `resource_forced_default` 与 `timeout_default` 虽然是自动替代动作，但进入行动队列后仍属于 `chain_origin = action`。
 
 ## 10. 技能、被动、持有物对接字段
 
@@ -143,11 +158,10 @@
 
 |字段|说明|
 |---|---|
-|`effects_on_cast`|在 `on_cast` 触发|
-|`effects_on_hit`|命中后触发|
-|`effects_on_miss`|未命中触发|
-|`effects_on_kill`|击倒触发|
-|`effects_on_enter`|入场触发|
+|`effects_on_cast`|在 `on_cast` 触发；固定发生在扣 MP 之后、命中判定之前|
+|`effects_on_hit`|命中侧 payload 全部完成后触发|
+|`effects_on_miss`|未命中确认后触发|
+|`effects_on_kill`|当前行动在本窗口被判定为 `killer` 后触发|
 
 ### 10.2 被动
 
