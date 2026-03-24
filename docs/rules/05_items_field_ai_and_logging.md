@@ -41,6 +41,8 @@
 
 1. 当前 field 可以改伤害倍率、资源回复或技能可用性等，但必须由具体技能描述写死。
 2. 现在不做“多个 field 共存”“同组 field”“team field”这类更复杂分层。
+3. 已经存在于场上的 field，会参与本回合开始时的 MP 回复计算。
+4. 在本次 `turn_start` 里才新建、替换或移除的 field，不回头改写本次 MP 回复，只从后续节点或下一次对应节点开始生效。
 
 ### 2.2 field 结算与替换
 
@@ -66,6 +68,13 @@
 |`source_kind_order`|固定枚举，用于最后稳定打平；枚举值越小越先|
 |`source_instance_id`|稳定实例 ID，用于完全相同来源的最终打平|
 |`random`|前面全相同时才消耗 RNG|
+
+补充规则：
+
+1. `source_instance_id` 必须是当前触发源在本场战斗内稳定不变的实例标识，不能临时按显示文案或数组下标现拼。
+2. 主动技能或奥义衍生效果的 `source_instance_id` 固定等于当前 `action_id`。
+3. 被动技能、被动持有物、field 都必须各自有独立实例 ID；刷新持续时间不会换 ID，替换为新实例时才换新 ID。
+4. 纯系统来源使用稳定系统实例 ID，例如 `system:turn_start`、`system:replace`，不得留空。
 
 ### 3.2 `source_kind_order` 固定枚举
 
@@ -110,6 +119,7 @@
 |`action_id`|本次行动唯一 ID；非行动系统链必须为 `null`|
 |`action_queue_index`|本回合队列中的执行序位|
 |`actor_id`|行动者|
+|`source_instance_id`|当前触发源的稳定实例 ID；纯行动日志可与 `action_id` 相同|
 |`command_type`|技能 / 换人 / 奥义 / `resource_forced_default` / `timeout_default` / `system:*`|
 |`command_source`|`manual / ai / timeout_auto / system`|
 |`priority`|本次行动或效果使用的优先级|
@@ -141,4 +151,5 @@
 3. field 始终只有 1 个生效实例，新 field 会替换旧 field。
 4. 效果排序统一走 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`。
 5. AI 不会自己死循环试指令，而是从引擎给出的合法列表里选。
-6. 完整日志能还原命中、同速打平、field 替换与每次随机消费。
+6. `timeout_default` / `timeout_auto` 命名在规则和日志里只有这一套口径。
+7. 完整日志能还原命中、同速打平、field 替换、触发源实例与每次随机消费。

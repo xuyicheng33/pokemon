@@ -2,6 +2,12 @@
 
 本文件定义“技能、被动、持有物、field 的效果怎么统一建模，后续扩展时怎么不把基线搞乱”。
 
+补充说明：
+
+1. 本文件是“当前极简基线需要的最小效果框架 + 扩展纪律”，不是要求首版一次把所有未来机制全部实现。
+2. 当前首版必须优先支持：`damage / heal / stat_mod / apply_field / resource_mod`，以及极少量、规则已写清的持续效果。
+3. 未来若要引入更复杂的持续方式、更多 payload 或更深触发链，必须先改文档，再扩实现。
+
 ## 1. 设计目标
 
 |目标|说明|
@@ -18,7 +24,7 @@
 |`id`|唯一标识|
 |`name`|效果名|
 |`scope`|`self / target / side / field`|
-|`duration_mode`|`turns / permanent`|
+|`duration_mode`|当前只允许 `turns / permanent`|
 |`duration`|持续值；`turns` 模式必填|
 |`stacking`|`none / refresh / replace`|
 |`priority`|统一优先级字段；默认 `0`；数值越大越先|
@@ -37,6 +43,7 @@
 |`owner`|当前挂载对象|
 |`remaining`|剩余回合数|
 |`created_turn`|创建回合|
+|`source_instance_id`|当前触发源的稳定实例 ID|
 |`source_order_speed_snapshot`|排序速度快照，入队时固化|
 |`meta`|扩展字段|
 
@@ -46,15 +53,15 @@
 |---|---|
 |战斗开始|`battle_init`|
 |回合|`turn_start`, `turn_end`|
-|行动|`on_action_attempt`, `before_action`, `on_hit`, `on_miss`, `after_action`|
+|行动|`on_cast`, `on_hit`, `on_miss`|
 |换人|`on_enter`, `on_exit`, `on_switch`|
 |倒下|`on_faint`, `on_kill`|
-|资源|`on_resource_change`|
 
 补充规则：
 
 1. 当前没有 `on_crit`，因为当前不做暴击。
-2. 若以后要加新触发点，必须先改本文件。
+2. 当前不保留 `on_action_attempt / before_action / after_action / on_resource_change` 这类未落地触发点。
+3. 若以后要加新触发点，必须先改本文件。
 
 ## 5. 当前基线 payload 类型
 
@@ -81,6 +88,7 @@
 
 1. 单位级持续效果默认不允许无限叠加。
 2. field 当前只有 1 个生效实例，因此 `apply_field` 的默认行为就是替换旧 field。
+3. 当前不支持“按触发次数耗尽”这类持续方式；若以后需要，先补数据模型，再补生命周期规则。
 
 ## 7. 事件归属
 
@@ -109,6 +117,7 @@
 
 1. 当前若某个技能要引入持续效果，必须在技能定义里写清“在哪个节点扣减”。
 2. 若未显式声明 `persists_on_switch = true`，则离场时移除。
+3. 当前不允许只写“按触发次数移除”这种口头规则；因为现行基线还没有这套持续模型。
 
 ## 9. 防循环与安全保护
 
@@ -127,7 +136,7 @@
 
 |字段|说明|
 |---|---|
-|`effects_on_cast`|施放时触发|
+|`effects_on_cast`|在 `on_cast` 触发|
 |`effects_on_hit`|命中后触发|
 |`effects_on_miss`|未命中触发|
 |`effects_on_kill`|击倒触发|

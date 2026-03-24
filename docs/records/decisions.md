@@ -65,3 +65,21 @@
 ### 118. 随机契约先压到最小集
 - 当前最小随机只保留同速打平、命中判定、额外效果概率。
 - 所有随机都必须可回放，并记录消费序号。
+
+### 119. 持续效果继续维持极简持续模型
+- 当前持续效果只允许“按回合”或“永久”两种持续方式。
+- “按触发次数消耗”不属于当前基线，后续若真要加，先改效果模型和生命周期文档。
+
+### 120. `turn_start` 的 MP 回复读取回合开始前已生效状态
+- 本回合开始前已经存在的 field、常驻持有物和已落地规则修正，会参与本次 MP 回复。
+- 同一个 `turn_start` 里新触发的 field / effect / rule_mod，不回头改写本次回复结果。
+
+### 121. 超时默认动作命名统一
+- 行动类型固定写 `timeout_default`。
+- 触发来源固定写 `timeout_auto`。
+- 不再保留 `timeout_auto_action` 这类并行命名。
+
+### 122. 效果系统触发点删到当前最小集
+- 当前基线只保留 `battle_init / turn_start / turn_end / on_cast / on_hit / on_miss / on_enter / on_exit / on_switch / on_faint / on_kill`。
+- `on_action_attempt / before_action / after_action / on_resource_change` 不属于当前极简基线，先移出文档。
+- 技能侧 `effects_on_cast` 明确对应 `on_cast`，不再靠近似命名猜含义。
