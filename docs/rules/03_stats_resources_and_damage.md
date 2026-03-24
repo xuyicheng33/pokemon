@@ -76,7 +76,7 @@
 |`name`|技能名|
 |`damage_kind`|`physical / special / true / none`|
 |`power`|威力；伤害技能必填|
-|`accuracy`|命中率，默认 100%|
+|`accuracy`|命中率（百分比口径 `0~100`），默认 `100`|
 |`mp_cost`|MP 消耗|
 |`skill_priority`|技能优先级，默认 `0`|
 |`targeting`|`enemy_active_slot / self / team / field / custom`|
@@ -115,7 +115,8 @@
 |项|规则|
 |---|---|
 |默认命中|技能命中率默认 100%|
-|命中公式|`clamp(技能命中率 × (1 - min(目标闪避率, 1.0)), 0, 1)`|
+|内部换算|命中率参与公式前先换算为小数：`acc_rate = clamp(accuracy / 100, 0, 1)`|
+|命中公式|`clamp(acc_rate × (1 - min(目标闪避率, 1.0)), 0, 1)`|
 |闪避有效范围|`[0, 1]`|
 |常规闪避上限|未显式声明特殊权限时，常规来源累计后的有效闪避率上限为 `0.5`|
 |完全闪避特例|只有技能/效果显式声明 `allow_full_evasion` 或等效特殊标记时，才允许把有效闪避率提升到 `1.0`|
@@ -192,6 +193,14 @@
 |最小伤害|非免疫且命中时，最终伤害至少为 1|
 |负值保护|任何后处理若伤害 `< 0`，按 0 结算|
 |真实伤害|无视防御与特防，且跳过护盾|
+
+边界处理顺序（写死）：
+
+1. 若免疫或未命中，直接 `damage = 0`。
+2. 护盾层后得到候选伤害 `damage_candidate`。
+3. 先做负值保护：`damage_non_negative = max(0, damage_candidate)`。
+4. 再做最小伤害：若本次属于“命中且非免疫的普通/真实伤害事件”，则 `damage = max(1, damage_non_negative)`；否则 `damage = damage_non_negative`。
+5. `damage` 最终作为扣 HP 输入值，且必须为整数。
 
 ## 11. 护盾、治疗、反伤与复活
 

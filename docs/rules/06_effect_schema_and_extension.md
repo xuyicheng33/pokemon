@@ -115,6 +115,12 @@
 |`creator`|“是谁创建了这个 field / 持续效果实例”|
 |`source_instance_id`|同触发点排序时使用的稳定源实例 ID|
 
+`on_kill` 仲裁补充：
+
+1. 默认取“最后一次让目标 HP 降到 0 的伤害事件”对应来源作为 `killer`。
+2. 若同窗存在并列候选，则按统一排序键 `effect.priority -> source_speed -> source_kind_order -> source_instance_id -> random` 选最终 `killer`。
+3. 若最终来源为系统伤害，则 `killer = null`，且不触发 `on_kill`。
+
 ### 7.2 常见归属表
 
 |场景|`source`|`owner`|`target`|`killer` 口径|
@@ -143,9 +149,16 @@
 |`event_chain_id`|每次独立结算链建立一个链路 ID，贯穿其引发的所有连锁触发|
 |`chain_origin`|链路来源固定为 `battle_init / action / turn_start / turn_end / timeout / system_replace` 之一|
 |去重键|同一链路内使用 `instance_id + trigger + event_step_id`|
-|链深限制|默认 16；超过立即报错并中断当前链|
+|链深限制|使用可配置项 `max_chain_depth`；原型默认 16，超过立即报错并中断当前链|
 |资源递归保护|`on_resource_change` 仍受去重与链深限制约束|
 |fail-fast|触发链保护命中时，立即报错，不做静默吞掉|
+
+补充终止语义：
+
+- 任何链深超限、去重保护命中、或关键效果实例不合法的情况，都会把本场战斗立即标记为 `invalid_battle`。
+- 一旦进入 `invalid_battle`，本场战斗立刻终止，不继续后续结算、不补位、不再推进回合。
+- `invalid_battle` 的对局结果统一记为 `no_winner`（无胜者），并写入 `end_reason = invalid_battle`。
+- 完整日志必须保留到报错点，方便回放与定位。
 
 ## 10. 技能、被动、持有物对接字段
 
