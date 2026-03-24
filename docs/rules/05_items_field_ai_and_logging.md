@@ -1,6 +1,6 @@
 # 模块 05：持有物、field、AI、统一触发排序与日志
 
-本文件定义“持有物怎么工作、同触发点怎么统一排序、场地效果怎么互斥、AI 能看什么、日志要记到什么程度”。
+本文件定义“被动持有物怎么工作、field 怎么落地、效果怎么排序、AI 能看什么、日志要记什么”。
 
 ## 1. 标准模式道具口径
 
@@ -11,7 +11,7 @@
 |主动道具|标准模式不启用|
 |战斗指令中的道具项|不存在|
 |当前保留的道具形态|仅保留被动持有物|
-|未来扩展|若未来新增剧情/PVE 主动道具模式，必须单独立规则，不得默认并回当前标准模式|
+|未来扩展|若未来新增主动道具模式，必须单独立规则，不得默认并回当前标准模式|
 
 ### 1.2 被动持有物
 
@@ -20,91 +20,81 @@
 |装备方式|战前装备|
 |每单位上限|最多 1 个|
 |同队同名限制|不可重复|
-|是否占行动|否|
-|公开时机|标准模式战前随完整队伍信息一并公开|
-|常见触发路径|`effects_always_on`、`effects_on_receive`、`effects_on_turn` 等|
+|是否进入行动队列|否|
+|公开时机|战前随完整队伍信息一并公开|
+|常见触发路径|常驻、受击、回合节点、命中后等|
 
-### 1.3 官方参考说明
+## 2. field（全局效果）
 
-- 官方赛事体系里存在 Team Preview / Team List / Open Team List 这类公开队伍信息的思路。
-- 当前项目不逐字段照搬官方文书模板，但采用更彻底的“完整公开队伍战斗信息”标准模式。
-
-## 2. 统一触发排序
-
-被动持有物、被动技能、状态效果、field 效果、主动技能衍生效果、系统效果若在同一触发点同时待结算，统一进入同一效果队列，按以下顺序排序：
-
-`effect.priority -> source_speed -> source_kind_order -> source_instance_id -> random`
-
-其中 `source_speed` 固定为：
-
-- 速度高者先结算。
-- 若来源已离场或当前不在场，取“该来源离场瞬间记录的最后有效速度快照”。
-- 纯系统来源没有速度时，按 `0` 处理。
-
-其中 `source_kind_order` 固定为：
-
-1. `system`
-2. `field`
-3. `active_skill`
-4. `passive_skill`
-5. `passive_item`
-6. `status_effect`
-
-这条是项目内统一口径，目的是保证确定性与可复现，不要求逐条复刻官方底层实现顺序。
-
-### 2.1 排序判例
-
-1. 若双方回合末同时存在 `field` 伤害、被动持有物回血、中毒 DOT，则先看 `effect.priority`；同优先级时再按 `source_speed -> source_kind_order -> source_instance_id -> random`。
-2. 若双方在同一双倒窗口里都补位，双方替补先同时进入 active，再把两边的 `on_enter`、入场被动、入场 `field` 变化一起放进同触发点队列排序。
-3. 若同一窗口里两个同组 `field` 都成功落地，则最终留下“在统一效果队列里结算得更晚”的那个。
-
-其中 `source_instance_id` 指当前触发源的稳定实例 ID：
-
-- `system` 用稳定系统源 ID，例如 `system:turn_start_regen:unit_id`。
-- `field` 用 field 实例 ID。
-- 主动技能效果用技能施放或技能效果实例 ID。
-- 被动技能用被动实例 ID。
-- 被动持有物用持有物实例 ID。
-- 状态效果用状态实例 ID。
-
-## 3. field（全局效果）
-
-### 3.1 基础规则
+### 2.1 当前基线
 
 |项|规则|
 |---|---|
-|作用域|`field`|
-|来源|技能 / 被动 / 持有物 / 其他效果|
-|共存|不同 `exclusive_group` 的 field 可以并存|
-|互斥|同一 `exclusive_group` 同时只能存在 1 个生效实例|
+|作用域|全场唯一 `field`|
+|同一时刻生效数量|最多 1 个|
+|典型来源|技能、奥义、被动持有物、被动技能|
+|覆盖规则|新 field 成功生效后，直接替换旧 field|
+|持续方式|按回合计时|
+|具体效果|必须写在技能或效果描述里，不靠口头解释|
 
-### 3.2 同组 field 冲突
+补充规则：
+
+1. 当前 field 可以改伤害倍率、资源回复或技能可用性等，但必须由具体技能描述写死。
+2. 现在不做“多个 field 共存”“同组 field”“team field”这类更复杂分层。
+
+### 2.2 field 结算与替换
 
 |场景|规则|
 |---|---|
-|同 `effect_id` 再次施加|按该效果自己的 `stacking` 规则处理，通常为刷新或叠加|
-|同 `exclusive_group` 不同 `effect_id`|后结算完成的那个替换前一个|
-|同一窗口中几乎同时落地|参考官方天气/场地思路：按 `source_speed -> source_kind_order -> source_instance_id -> random` 决定先后，后结算者最终留下|
+|场上没有 field|新 field 直接生效|
+|场上已有 field，新的后结算|旧 field 被替换|
+|同一窗口里多个 field 同时待生效|先进入统一效果队列，后结算完成的那个最终留下|
+|field 到期|在约定节点移除，并写日志|
 
-补充规则（避免实现分叉）：
+## 3. 统一效果排序
 
-1. 同组 field 冲突裁决时，不再额外比较 `effect.priority`。
-2. 同组 field 若需要可比性，建议定义为同一 `effect.priority`，避免内容配置绕开冲突裁决口径。
+被动持有物、被动技能、field 效果、主动技能衍生效果、系统效果若在同一触发点同时待结算，统一进入同一效果队列，排序链固定为：
 
-补充说明：
+`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`
 
-- 这条参考官方天气/场地“新效果覆盖旧效果”的思路。
-- 被覆盖的旧 field 若需要触发移除效果，必须通过 `on_remove` 或显式移除 payload 走完整流程。
+### 3.1 排序字段说明
 
-## 4. AI 规则
+|字段|规则|
+|---|---|
+|`priority`|统一使用 `-5 ~ +5` 数轴；数值越大越先；效果默认 `0`；内容层建议只使用 `-2 ~ +2`|
+|`source_order_speed_snapshot`|效果入队时固化；排序只读快照，不再读运行态速度|
+|`source_kind_order`|固定枚举，用于最后稳定打平；枚举值越小越先|
+|`source_instance_id`|稳定实例 ID，用于完全相同来源的最终打平|
+|`random`|前面全相同时才消耗 RNG|
+
+### 3.2 `source_kind_order` 固定枚举
+
+|枚举值|来源类型|
+|---|---|
+|`0`|`system`|
+|`1`|`field`|
+|`2`|`active_skill`|
+|`3`|`passive_skill`|
+|`4`|`passive_item`|
+
+### 3.3 速度快照取值规则
+
+|来源|`source_order_speed_snapshot` 取值|
+|---|---|
+|当前在场单位来源|取入队时的当前有效速度|
+|已离场单位来源|取该来源离场瞬间最后记录的有效速度|
+|field 来源|取创建该 field 的来源速度；若无来源则取 `0`|
+|纯系统来源|固定 `0`|
+
+## 4. AI 读取边界
 
 |项|规则|
 |---|---|
-|策略基础|权重策略|
-|可读取信息|标准模式下双方完整公开队伍信息、当前战场状态、己方运行态|
-|禁止读取|内部随机、未来未发生的抽样值、仅用于调试的内部缓存|
-|换人判断|可直接根据双方完整公开队伍信息、当前状态与战场信息做决策|
-|日志一致性|AI 走的也是正式指令流，不允许跳过合法性校验或偷偷读内部结果|
+|AI 可读取|所有公开信息、当前战场状态、己方运行态|
+|AI 禁止读取|内部随机值、未来未发生的抽样结果、仅供调试的缓存|
+|合法性职责|引擎负责先产出合法指令列表，AI 只负责从合法列表中选一个|
+|空列表处理|若合法主动列表为空，引擎直接走 `resource_forced_default`|
+|超时处理|AI 若在截止时间前未返回，引擎直接走 `timeout_default`|
 
 ## 5. 战斗日志
 
@@ -113,46 +103,42 @@
 |字段|说明|
 |---|---|
 |`battle_seed`|整场战斗随机种子|
-|`chain_origin`|链路来源：`battle_init / action / turn_start / turn_end / timeout / system_replace`|
+|`battle_rng_profile`|RNG 配置（算法、参数、版本）|
 |`turn_index`|当前回合序号|
-|`action_id`|本次行动唯一 ID|
-|`action_queue_index`|本回合队列中的执行序位|
-|`actor_id`|行动者|
-|`command_type`|技能 / 换人 / 奥义 / 默认动作 / 系统补位 / 非行动系统链|
-|`command_source`|`manual / ai / timeout_auto / system`|
-|`target_slot`|目标位置|
-|`action_window_passed`|行动机会是否已过去|
-|`has_acted`|是否行动成功开始执行|
-|`leave_reason`|离场原因|
 |`event_chain_id`|触发链路 ID|
 |`event_step_id`|链路步骤 ID|
-|`hit_index`|多段命中段号|
+|`action_id`|本次行动唯一 ID；非行动系统链必须为 `null`|
+|`action_queue_index`|本回合队列中的执行序位|
+|`actor_id`|行动者|
+|`command_type`|技能 / 换人 / 奥义 / `resource_forced_default` / `timeout_default` / `system:*`|
+|`command_source`|`manual / ai / timeout_auto / system`|
+|`priority`|本次行动或效果使用的优先级|
+|`target_slot`|目标位置|
+|`action_window_passed`|行动机会是否已过去|
+|`has_acted`|是否正式开始执行|
+|`leave_reason`|离场原因|
 |`speed_tie_roll`|同速决胜随机值|
 |`hit_roll`|命中随机值|
-|`crit_roll`|暴击随机值|
-|`damage_roll`|16 档伤害随机值|
-|`effect_roll`|附带效果随机值|
-|`select_deadline_ms`|本回合选指令截止时间（毫秒）|
-|`select_timeout`|是否触发选指令超时自动替代|
-|HP/MP 变化|谁变了多少、变更前后数值|
-|状态变化|施加、刷新、移除、失败原因|
-|field 变化|施加、刷新、覆盖、移除|
+|`effect_roll`|额外效果随机值|
+|`rng_stream_index`|本次随机在 RNG 流中的消费序号|
+|`select_deadline_ms`|本回合选指令截止时间|
+|`select_timeout`|是否触发超时自动替代|
+|HP/MP 变化|谁变了多少、变化前后数值|
+|field 变化|创建、覆盖、剩余回合变化、移除|
 
 ### 5.2 日志分层
 
 |层级|用途|
 |---|---|
-|公开摘要日志|给 UI 玩家看，强调发生了什么|
+|公开摘要日志|给玩家看，强调发生了什么|
 |完整战斗日志|给调试、回放、回归测试用，必须可复现|
-|调试扩展日志|可加更多内部字段，但不能替代完整战斗日志|
+|调试扩展日志|可以更详细，但不能替代完整战斗日志|
 
-## 6. 验收与回归建议
-
-每次涉及本模块的修改，至少回归以下点：
+## 6. 当前模块回归点
 
 1. 标准模式下不存在主动道具指令入口。
 2. 被动持有物会在战前随完整队伍信息正确公开。
-3. `source_speed` 与 `source_kind_order` 会稳定决定同触发点排序。
-4. 同一 `exclusive_group` 的 field 会按“后结算覆盖前结算”工作。
-5. AI 决策路径不会读取内部随机或未来未发生结果。
-6. 完整日志能还原每次随机、每条非行动系统链与每次离场。
+3. field 始终只有 1 个生效实例，新 field 会替换旧 field。
+4. 效果排序统一走 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`。
+5. AI 不会自己死循环试指令，而是从引擎给出的合法列表里选。
+6. 完整日志能还原命中、同速打平、field 替换与每次随机消费。

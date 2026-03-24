@@ -4,23 +4,23 @@
 
 ## 权威性说明
 
-- `00_rule_baseline.md` 是规则总则，负责定义全局原则、术语、文档边界和与官方规则的对齐/分叉口径。
-- `01` 到 `06` 为模块权威文档，分别负责各自模块的完整细则。
-- `docs/records/` 只记录“为什么这样定”和“任务怎么做过”，不再承载当前生效细则。
-- 若总则中的摘要性表述与模块细则冲突，以对应模块细则为准。
-- 若两个模块对同一件事写出了不同结论，视为文档缺陷；在修正文档前，不应继续开发对应功能。
+- `00_rule_baseline.md` 负责定义当前基线、统一术语、主动分叉与全局不变量。
+- `01` 到 `06` 是模块权威文档，负责各自模块的可编码细则。
+- `docs/records/` 只记录决策背景与任务过程，不再承载现行规则正文。
+- 若总则摘要与模块细则冲突，以模块细则为准。
+- 若两个模块写出互相打架的结论，视为文档缺陷，先修文档再开发。
 
 ## 文件导航
 
 |文件|用途|
 |---|---|
-|`00_rule_baseline.md`|规则总则、统一术语、官方参考与主动分叉说明|
-|`01_battle_format_and_visibility.md`|战斗模式、队伍构筑、首发、队伍名单公开、信息可见性|
+|`00_rule_baseline.md`|规则总则、统一术语、主动分叉、里程碑边界|
+|`01_battle_format_and_visibility.md`|战斗模式、队伍构筑、首发、信息公开与玩家展示原则|
 |`02_turn_flow_and_action_resolution.md`|回合流程、行动排序、失败语义、击倒窗口、胜负判定|
-|`03_stats_resources_and_damage.md`|数值、MP、技能、命中、暴击、伤害层、治疗与护盾|
-|`04_status_switch_and_lifecycle.md`|状态、换人、离场重置、状态持续与同窗双倒口径|
-|`05_items_field_ai_and_logging.md`|持有物、field、AI 信息边界、统一触发排序、日志规范|
-|`06_effect_schema_and_extension.md`|效果系统数据模型、触发点、payload、归属、扩展规范|
+|`03_stats_resources_and_damage.md`|数值、MP、技能、命中与简化伤害公式|
+|`04_status_switch_and_lifecycle.md`|当前无内置状态时的生命周期口径、换人、离场与补位|
+|`05_items_field_ai_and_logging.md`|被动持有物、field、AI 边界、统一效果排序、日志规范|
+|`06_effect_schema_and_extension.md`|效果系统数据模型、触发点、payload、扩展纪律|
 
 ## 使用规则
 
