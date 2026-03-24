@@ -83,3 +83,25 @@
 #### 回归检查要点
 - 模块 06 的触发点表里是否已不存在 `on_action_attempt / before_action / after_action / on_resource_change`。
 - `effects_on_cast` 是否已明确对应 `on_cast`。
+
+### 极简基线审查与历史文档防误读（已完成：v0.7.0 审查补丁）
+- 目标：确认当前极简基线已经自洽，同时把仍然保留旧口径的历史文档明确标成“只能追溯，不能实现”。
+- 范围：`docs/rules/README.md`、退役总表、`docs/records/archive/` 抬头警告、决策记录补充。
+- 验收标准：开发者全局搜规则时，不会把 archive 里的旧机制误当成当前生效规则。
+
+#### 已完成内容
+- 复查现行 `docs/rules/`，确认极简基线仍以 `prototype_full_open + 被动持有物 + 单全局 field + 统一 priority + 简化命中与伤害` 为唯一口径。
+- 为 `docs/records/archive/` 两个历史文件补上“含已废弃口径，不得直接实现”的显式提醒。
+- 为退役总表补上“命中这里不能直接实现”的警告。
+- 在规则导航中新增“全局搜索默认排除 archive”的使用约束。
+- 在决策记录中补充“历史文档保留但必须显式防误读”的约束。
+
+#### 最小可玩性检查清单（文档基线）
+- 可启动：新开发者只看 `docs/rules/` 就能开始实现，不会被 archive 带偏。
+- 可操作：全局搜索 `priority / field / 状态 / 暴击` 这类词时，能一眼分清现行规则和历史归档。
+- 无致命错误：不会再出现“旧文档里写过，所以现在也算数”的误读。
+
+#### 回归检查要点
+- `docs/rules/README.md` 是否明确要求全局搜索时排除 `docs/records/archive/`。
+- `docs/records/archive/` 的文件头是否明确标注“历史归档，不能直接实现”。
+- 退役总表是否已明确声明“只读 `docs/rules/`，不要据此实现”。

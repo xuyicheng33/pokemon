@@ -83,3 +83,8 @@
 - 当前基线只保留 `battle_init / turn_start / turn_end / on_cast / on_hit / on_miss / on_enter / on_exit / on_switch / on_faint / on_kill`。
 - `on_action_attempt / before_action / after_action / on_resource_change` 不属于当前极简基线，先移出文档。
 - 技能侧 `effects_on_cast` 明确对应 `on_cast`，不再靠近似命名猜含义。
+
+### 123. 历史文档继续保留，但必须显式防误读
+- `docs/records/archive/` 和已退役总表会继续保留，方便回溯讨论过程。
+- 这些文件允许存在旧术语和已废弃机制，但必须在文件头明确标注“历史归档，不得直接实现”。
+- 当前开发、评审、代码实现一律以 `docs/rules/` 为准；全局搜索规则关键字时默认排除 archive。
