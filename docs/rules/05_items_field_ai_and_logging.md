@@ -121,7 +121,7 @@
 |`actor_id`|行动者|
 |`source_instance_id`|当前触发源的稳定实例 ID；纯行动日志可与 `action_id` 相同|
 |`command_type`|技能 / 换人 / 奥义 / `resource_forced_default` / `timeout_default` / `system:*`|
-|`command_source`|`manual / ai / timeout_auto / system`|
+|`command_source`|`manual / ai / resource_auto / timeout_auto / system`|
 |`priority`|本次行动或效果使用的优先级|
 |`target_slot`|目标位置|
 |`action_window_passed`|行动机会是否已过去|
@@ -136,7 +136,20 @@
 |HP/MP 变化|谁变了多少、变化前后数值|
 |field 变化|创建、覆盖、剩余回合变化、移除|
 
-### 5.2 日志分层
+### 5.2 空值与自动来源口径
+
+|项|规则|
+|---|---|
+|非适用字段|一律写 `null`；不得混用 `0`、空串或省略|
+|`action_id / action_queue_index / actor_id`|非行动系统链写 `null`|
+|`target_slot`|无直接目标时写 `null`|
+|`speed_tie_roll / hit_roll / effect_roll`|本事件未消费对应 RNG 时写 `null`|
+|资源型默认动作|固定写 `command_type = resource_forced_default`、`command_source = resource_auto`|
+|超时型默认动作|固定写 `command_type = timeout_default`、`command_source = timeout_auto`|
+|`select_timeout`|`timeout_default` 为 `true`；其他行动为 `false`；非行动系统链写 `null`|
+|`select_deadline_ms`|行动日志写本回合截止时间；非行动系统链写 `null`|
+
+### 5.3 日志分层
 
 |层级|用途|
 |---|---|
@@ -151,5 +164,6 @@
 3. field 始终只有 1 个生效实例，新 field 会替换旧 field。
 4. 效果排序统一走 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`。
 5. AI 不会自己死循环试指令，而是从引擎给出的合法列表里选。
-6. `timeout_default` / `timeout_auto` 命名在规则和日志里只有这一套口径。
-7. 完整日志能还原命中、同速打平、field 替换、触发源实例与每次随机消费。
+6. `resource_forced_default / resource_auto / timeout_default / timeout_auto` 命名在规则和日志里只有这一套口径。
+7. 非适用日志字段一律写 `null`，不会混用 `0` 或省略。
+8. 完整日志能还原命中、同速打平、field 替换、触发源实例与每次随机消费。

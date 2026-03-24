@@ -96,3 +96,37 @@
 ### 125. 极简基线终检结论
 - 本轮终检确认：现行规则冲突已收口到可实现状态。
 - 仍保留旧口径的文件仅限 `docs/records/archive/*` 和 `docs/records/battle_system_rules.md`，且都属于历史追溯用途。
+
+## 2026-03-25
+
+### 126. 当前基线移除“行动开始前被拦下”失败类型
+- 当前极简基线没有 `before_action` 触发点，也没有通用状态包。
+- 因此现行文档不再保留 `action_failed_pre_start`；若以后确实需要“行动到窗口前被拦下”，必须先补明确触发点，再补扣 MP 与日志语义。
+
+### 127. 换人、强制换下、强制补位的替补选择契约写死
+- 手动换人在选择阶段锁定 bench 目标 `unit_id`，队列锁定后不允许改选。
+- 强制换下与强制补位都不进入行动队列，但仍保留从合法 bench 列表选替补的权利；若只剩 1 名则自动锁定。
+
+### 128. `HP = 0` 的中间态显式命名为 `fainted_pending_leave`
+- 单位一旦 `HP = 0`，立即失去在场资格，并等待当前击倒窗口统一处理离场。
+- 当前基线没有“可作用于倒下单位”的特例，因此后续普通 payload 不再对它生效。
+
+### 129. 奥义继续复用普通技能字段
+- 奥义不设独立资源槽，也不额外发明第二套命中或 payload 体系。
+- 奥义只是主动技能中的一个受限分支：沿用 `mp_cost / accuracy / targeting / effects_on_cast` 等通用字段，只额外限制 `priority`。
+
+### 130. 日志空值与自动来源口径统一写死
+- `resource_forced_default` 固定搭配 `command_source = resource_auto`，`timeout_default` 固定搭配 `command_source = timeout_auto`。
+- 非适用日志字段统一写 `null`，避免 `0 / 空串 / 省略` 三套口径并存。
+
+### 131. 首发 `on_enter` 与 `battle_init` 明确分层
+- 首发上场先走 `on_enter`，战斗开始统一效果再走 `battle_init`。
+- 同一份效果不能因为“首发入场”同时挂在 `on_enter` 和 `battle_init` 两边重复结算。
+
+### 132. 模块 06 再瘦一刀，只保留当前真正要用的作用域
+- 当前 `EffectDefinition.scope` 只保留 `self / target / field`。
+- `side`、多目标、自定义目标都不再作为现行保留位，后续若需要必须先补目标与生命周期规则。
+
+### 133. `rule_mod` 继续保留，但禁止改写核心流程
+- 当前只允许它修改已明文开放的倍率链、MP 回复规则或技能合法性。
+- 不允许通过 `rule_mod` 绕开 `priority`、行动排序、击倒窗口、胜负判定等核心流程。

@@ -23,7 +23,7 @@
 |---|---|
 |`id`|唯一标识|
 |`name`|效果名|
-|`scope`|`self / target / side / field`|
+|`scope`|`self / target / field`|
 |`duration_mode`|当前只允许 `turns / permanent`|
 |`duration`|持续值；`turns` 模式必填|
 |`stacking`|`none / refresh / replace`|
@@ -62,6 +62,8 @@
 1. 当前没有 `on_crit`，因为当前不做暴击。
 2. 当前不保留 `on_action_attempt / before_action / after_action / on_resource_change` 这类未落地触发点。
 3. 若以后要加新触发点，必须先改本文件。
+4. `battle_init` 只用于“战斗开始时统一检查一次”的来源，不因为某个单位刚入场而重复触发。
+5. 首发入场仍然走 `on_enter`；同一份效果不能因为“首发入场”同时挂在 `on_enter` 和 `battle_init` 两边重复结算。
 
 ## 5. 当前基线 payload 类型
 
@@ -75,6 +77,11 @@
 |`remove_effect`|移除持续效果实例|
 |`apply_field`|创建或替换当前 field|
 |`rule_mod`|按技能描述临时修改规则，如伤害倍率、资源回复规则|
+
+补充规则：
+
+1. 当前内容层不开放“任意 rule_mod”；只允许改写模块 03 / 05 已明确留口的 `final_mod` 链、MP 回复规则或技能合法性。
+2. `rule_mod` 不得修改 `priority`、行动排序、目标锁定、击倒窗口、胜负判定等核心流程。
 
 ## 6. 叠加与替换
 
@@ -166,3 +173,5 @@
 |新增 payload|必须写清作用时机、归属、排序与日志字段|
 |新增持续效果|必须同步更新模块 04 的生命周期口径|
 |新增属性相关机制|必须同步更新模块 03 的伤害和命中规则|
+|放开更宽的作用域或目标模型|如 `side`、多目标、自定义目标；必须先同步更新模块 02 / 04 的目标与生命周期口径|
+|修改核心流程语义|不得通过 `rule_mod` 绕过；必须直接改模块 01 / 02 / 04|
