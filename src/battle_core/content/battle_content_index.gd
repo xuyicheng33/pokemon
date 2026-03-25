@@ -152,7 +152,8 @@ func validate_snapshot() -> Array:
                 errors.append("passive_item[%s].trigger_names invalid: %s" % [passive_id, trigger_name])
         _validate_effect_refs(errors, "passive_item[%s].effect_ids" % passive_id, passive_definition.effect_ids)
         _validate_effect_refs(errors, "passive_item[%s].always_on_effect_ids" % passive_id, passive_definition.always_on_effect_ids)
-        _validate_effect_refs(errors, "passive_item[%s].on_receive_effect_ids" % passive_id, passive_definition.on_receive_effect_ids)
+        if not passive_definition.on_receive_effect_ids.is_empty():
+            errors.append("passive_item[%s].on_receive_effect_ids is disabled in current baseline and must be empty" % passive_id)
         _validate_effect_refs(errors, "passive_item[%s].on_turn_effect_ids" % passive_id, passive_definition.on_turn_effect_ids)
 
     for field_id in fields.keys():

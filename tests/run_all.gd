@@ -60,6 +60,7 @@ func _init() -> void:
     _run_test("apply_effect_lifecycle_chain", failures, _test_apply_effect_lifecycle_chain)
     _run_test("content_validation_failures", failures, _test_content_validation_failures)
     _run_test("content_validation_new_constraints", failures, _test_content_validation_new_constraints)
+    _run_test("on_receive_forbidden_in_content", failures, _test_on_receive_forbidden_in_content)
     _run_test("apply_field_creator_non_action_chain", failures, _test_apply_field_creator_non_action_chain)
     _run_test("double_faint_reason_preserved", failures, _test_double_faint_reason_preserved)
     _run_test("battle_end_system_chain", failures, _test_battle_end_system_chain)
@@ -1748,6 +1749,29 @@ func _test_content_validation_new_constraints() -> Dictionary:
     if not has_duplicate_item_error:
         return _fail("battle setup should reject duplicate passive items on same side")
     return _pass()
+
+func _test_on_receive_forbidden_in_content() -> Dictionary:
+    var content_index = BattleContentIndexScript.new()
+    var effect = EffectDefinitionScript.new()
+    effect.id = "test_on_receive_forbidden_effect"
+    effect.display_name = "On Receive Forbidden Effect"
+    effect.scope = "self"
+    effect.trigger_names = PackedStringArray(["on_hit"])
+    content_index.register_resource(effect)
+
+    var passive_item = PassiveItemDefinitionScript.new()
+    passive_item.id = "test_on_receive_forbidden_item"
+    passive_item.display_name = "On Receive Forbidden Item"
+    passive_item.on_receive_effect_ids = PackedStringArray([effect.id])
+    content_index.register_resource(passive_item)
+
+    var errors: Array = content_index.validate_snapshot()
+    if errors.is_empty():
+        return _fail("on_receive_effect_ids should fail-fast at content validation")
+    for error_msg in errors:
+        if str(error_msg).find("on_receive_effect_ids is disabled") != -1:
+            return _pass()
+    return _fail("missing disabled on_receive_effect_ids validation error")
 
 func _test_apply_field_creator_non_action_chain() -> Dictionary:
     var core_payload = _build_core()

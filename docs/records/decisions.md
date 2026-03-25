@@ -292,3 +292,7 @@
 ### 170. 去除日志与依赖兜底，改为显式硬失败
 - `LogEventBuilder` 不再自动构造 `system:orphan` 链；缺失 `chain_context` 时直接失败。
 - 关键依赖（如 `effect_instance_dispatcher`）不允许“为空就跳过”，装配阶段必须断言完整性。
+
+### 171. 内容快照对 `on_receive_effect_ids` 执行加载期硬拦截
+- `PassiveItemDefinition.on_receive_effect_ids` 当前只作为迁移占位字段，运行时禁用。
+- 校验策略固定为“字段可存在，但值非空立即失败”，错误应在加载期暴露，而非战斗中兜底。
