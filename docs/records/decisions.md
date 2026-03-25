@@ -195,3 +195,32 @@
 ### 144. 战斗日志新增 `event_type` 枚举与 `invalid_battle_code`
 - 完整日志新增 `event_type` 字段，使用固定最小枚举。
 - `invalid_battle` 终止必须写入 `invalid_battle_code`，避免回放与回归测试漂移。
+
+### 150. 批次执行顺序固定为“先可执行骨架，再可信测试，再规则链，再文档收口”
+- 先修编译和类型稳定，保证工程可加载。
+- 再修测试失败语义与引擎错误闸门，避免“假绿灯”掩盖实现问题。
+- 规则链补齐后再做文档收口，避免先写文档后反复返工。
+
+### 151. deterministic 契约必须显式重置 ID 与 RNG
+- `ReplayRunner.run_replay()` 每次执行前重置 `id_factory`，并按输入种子重置 `rng_service`。
+- 命令解析优先使用 `actor_public_id/target_public_id` 重映射运行时实例，避免历史运行残留污染回放。
+
+### 152. 测试通过语义升级为“双闸门”
+- 通过标准不再仅是业务断言全绿。
+- 还必须同时满足引擎日志无 `SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`。
+
+### 153. 初始化链路按批次冻结
+- 固定为首发 `on_enter` 批次 -> 击倒窗口稳定 -> `battle_init` 批次。
+- 不允许跨触发点混排，不允许把两者塞进同一排序池。
+
+### 154. `rule_mod` 读取点冻结为三入口
+- 允许读取点只有：`final_mod`、`mp_regen`、`skill_legality`。
+- 扣减节点只允许 `turn_start / turn_end`，到期即移除并写移除日志。
+
+### 155. 非行动系统链日志字段采用 `null + system:*` 口径
+- 非行动系统链的 `action_id / action_queue_index / actor_id / select_*` 一律写 `null`。
+- `command_type` 必须写 `system:*`，`command_source` 必须写 `system`。
+
+### 156. 文档、记录、实现三方收敛到 `docs/rules/00~06`
+- `docs/rules/` 作为唯一规则权威，`docs/design/` 只描述实现落点。
+- 任何口径变更必须同步更新记录文档，避免聊天口径漂移。

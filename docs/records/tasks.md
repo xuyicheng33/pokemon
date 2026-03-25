@@ -10,6 +10,44 @@
 
 ## 2026-03-25
 
+### Battle Core 全量修复计划（严格验收版，4 批次）
+- 目标：一次性修复“编译断裂、测试假绿灯、规则链未落地、文档口径漂移”，并把代码、规则文档、记录文档收敛到同一口径。
+- 范围：批次 1（编译与类型稳定）+ 批次 2（测试闸门与 deterministic）+ 批次 3（规则链与生命周期）+ 批次 4（文档收口与回归封板）。
+- 验收标准：`godot --headless` 无脚本错误；测试通过同时满足“断言全绿 + 引擎错误日志为 0”；规则关键路径与 `docs/rules/00~06` 最小全集一致；记录落盘可追溯。
+
+#### 批次执行与提交
+
+|批次|结果|提交|
+|---|---|---|
+|批次 1：编译与类型系统修复|已完成|`8989750` (`fix: batch1 compile-type stabilization`)|
+|批次 2：测试可信化与 deterministic 基线|已完成|`924a542` (`fix: batch2 deterministic test gate`)|
+|批次 3：规则最小全集补齐|已完成|`845e7d1` (`fix: batch3 rule chain and lifecycle parity`)|
+|批次 4：文档收口 + 回归矩阵 + 封板|已完成|本次提交（见下方回归记录）|
+
+#### 本轮已落地内容（批次 1~3）
+- 批次 1：修复 headless 脚本加载断裂、类型推断不稳定、跨脚本类型依赖问题，恢复可执行骨架。
+- 批次 2：重构 `tests/run_all.gd` 失败语义，新增 `tests/run_with_gate.sh` 引擎错误闸门，固化 `ReplayRunner` 与 `IdFactory` 的 deterministic 重置。
+- 批次 3：补齐 `battle_init/on_enter` 批次边界、`turn_start/turn_end` active+field 触发链、`on_faint/on_kill/on_exit/on_enter` 生命周期调度、`rule_mod` 三读取点与扣减移除日志、invalid code fail-fast 终止链路。
+
+#### 严格验收回归矩阵（2026-03-25）
+
+|项|结果|
+|---|---|
+|编译健康（headless 脚本加载）|通过：`godot --headless --path . --script tests/run_all.gd`，0 个 `SCRIPT ERROR`|
+|回放确定性（同输入哈希一致）|通过：`PASS deterministic_replay`|
+|默认动作链（`timeout_default` / `resource_forced_default`）|通过：`PASS timeout_default_path` + `PASS resource_forced_default_path`|
+|初始化时序（`on_enter` -> 击倒窗口 -> `battle_init`）|通过：`PASS init_chain_order`|
+|回合节点范围（仅 active + field）|通过：`PASS turn_scope_active_and_field`|
+|生命周期（倒下窗口、补位、`on_faint/on_kill/on_exit/on_enter`）|通过：`PASS lifecycle_faint_replace_chain`|
+|field（替换、扣减、到期移除）|通过：`PASS field_expire_path`|
+|rule_mod（三读取点、扣减、过期移除）|通过：`PASS rule_mod_paths`|
+|非法终止（`invalid_battle_code` 即停）|通过：`PASS invalid_battle_rule_mod_definition`|
+|日志契约（`null` 语义、`event_type`、`command_type/source`）|通过：`PASS log_contract_semantics`|
+
+#### 本轮最终命令结果
+- `tests/run_with_gate.sh`：通过，输出 `GATE PASSED: assertions and engine logs are clean`。
+- `godot --headless --path . --script tests/run_all.gd`：通过，输出 `ALL TESTS PASSED`。
+
 ### 工程骨架补全 + 强类型契约落盘（已完成：v0.8.0 骨架补丁）
 - 目标：把战斗核心从“提纲式文档 + 半截目录”升级为“决策完整骨架”，让后续实现者不再需要自行决定目录、contract、场景入口和内容资源格式。
 - 范围：`content/` 根目录、`docs/design/` 修订、`src/battle_core/contracts/`、runtime 强类型化、各模块 service skeleton、`src/composition/`、`Boot/BattleSandbox` 场景、测试脚手架占位。

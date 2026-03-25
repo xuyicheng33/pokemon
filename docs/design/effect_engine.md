@@ -1,39 +1,44 @@
 # Effect Engine（效果系统）
 
-本文件定义效果触发、排序、payload 执行与实例管理。
+本文件定义触发收集、统一排序、payload 执行与规则修正读取点。
 
 ## 1. 文件清单
 
 |文件|职责|
 |---|---|
-|`trigger_dispatcher.gd`|根据触发点收集 `EffectEvent`|
-|`effect_queue_service.gd`|对效果事件排序并出队|
-|`payload_executor.gd`|执行 payload|
+|`trigger_dispatcher.gd`|把定义资源转换为 `EffectEvent`|
+|`effect_queue_service.gd`|对同批次 `EffectEvent` 排序|
+|`payload_executor.gd`|执行 payload 并写日志|
 |`effect_instance_service.gd`|管理持续效果实例|
-|`rule_mod_service.gd`|管理规则修正实例与查询|
+|`rule_mod_service.gd`|管理 `RuleModInstance` 与读取接口|
+|`passive_skill_service.gd`|按触发点收集被动技能事件|
+|`passive_item_service.gd`|按触发点收集被动持有物事件|
+|`field_service.gd`|按触发点收集 field 事件 + `turn_end` 扣减|
 
-## 2. Contract
+## 2. EffectEvent 契约
 
-### 2.1 EffectEvent
+|字段|说明|
+|---|---|
+|`event_id`|效果事件 ID|
+|`trigger_name`|触发点名（如 `on_hit`）|
+|`source_instance_id`|稳定来源实例 ID|
+|`source_kind_order`|来源桶（system/field/active_skill/passive_skill/passive_item）|
+|`source_order_speed_snapshot`|排序速度快照|
+|`effect_definition_id`|效果定义 ID|
+|`owner_id`|效果归属单位|
+|`chain_context`|当前链上下文，用于日志继承|
 
-|字段|类型|说明|
-|---|---|---|
-|`event_id`|`String`|效果事件 ID|
-|`trigger_name`|`String`|触发点|
-|`source_instance_id`|`String`|根来源实例|
-|`source_kind_order`|`int`|来源类型枚举|
-|`source_order_speed_snapshot`|`int`|排序速度快照|
-|`effect_definition_id`|`String`|效果定义 ID|
-|`owner_id`|`String`|挂载者/施放者|
-|`chain_context`|`ChainContext`|链上下文|
+## 3. 统一排序链
 
-## 3. 排序链
+同一触发点同一批次固定排序：
 
 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`
 
+不同触发点不混排。
+
 ## 4. PayloadExecutor
 
-当前只支持最小 payload 类型：
+当前支持最小 payload：
 
 - `damage`
 - `heal`
@@ -44,23 +49,34 @@
 - `apply_field`
 - `rule_mod`
 
-## 5. EffectInstanceService
+fail-fast 约束：
 
-|动作|说明|
-|---|---|
-|`create`|创建实例|
-|`refresh`|刷新持续时间|
-|`replace`|替换旧实例|
-|`remove`|移除实例|
+- 缺失效果定义或 payload 类型非法：`last_invalid_battle_code = invalid_effect_definition`。
+- `rule_mod` 定义非法：`last_invalid_battle_code = invalid_rule_mod_definition`。
+- 上游（`battle_initializer / turn_loop_controller / action_executor / faint_resolver`）命中该错误码后必须立即终止战斗。
 
-## 6. RuleModService
+## 5. RuleModService
 
-职责：
+### 5.1 读取点
 
-- 创建/刷新 `RuleModInstance`
-- 在 `final_mod`、MP 回复与技能合法性查询时返回有效修正
+- `final_mod`：伤害最终倍率。
+- `mp_regen`：`turn_start` MP 回复值。
+- `skill_legality`：选择阶段技能合法性。
 
-约束：
+### 5.2 生命周期
 
-- `rule_mod` 不进入独立第二队列。
-- 只允许作用于规则文档明确开放的读取点。
+- `create_instance()` 支持 `none / refresh / replace`。
+- `decrement_for_trigger()` 只在 `turn_start` 或 `turn_end` 扣减。
+- 过期实例必须移除并写 `effect:rule_mod_remove` 日志。
+
+### 5.3 排序
+
+读取顺序固定：
+
+`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`
+
+## 6. 约束
+
+- `rule_mod` 只允许改写已开放读取点，不可绕开核心流程。
+- 回合节点触发范围固定为 active + field；bench 不触发。
+- `rule_mod` 不进入第二效果队列，不参与二次排序。
