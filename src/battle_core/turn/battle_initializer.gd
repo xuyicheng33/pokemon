@@ -27,6 +27,8 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     var format_config = content_index.battle_formats.get(battle_setup.format_id)
     assert(format_config != null, "Missing battle format: %s" % battle_setup.format_id)
     assert(battle_setup.sides.size() == 2, "Current baseline requires exactly 2 sides")
+    var setup_errors: Array = content_index.validate_setup(battle_setup)
+    assert(setup_errors.is_empty(), "Battle setup validation failed:\n%s" % "\n".join(setup_errors))
     for side_setup in battle_setup.sides:
         _validate_side_setup_constraints(side_setup, format_config, content_index)
     battle_logger.reset()
@@ -134,15 +136,9 @@ func _build_side_state(side_setup, format_config, content_index):
 func _validate_side_setup_constraints(side_setup, format_config, content_index) -> void:
     assert(side_setup.unit_definition_ids.size() == format_config.team_size, "Side %s must provide exactly %d units" % [side_setup.side_id, format_config.team_size])
     assert(side_setup.starting_index >= 0 and side_setup.starting_index < side_setup.unit_definition_ids.size(), "Invalid starting index for %s" % side_setup.side_id)
-    var seen_passive_items: Dictionary = {}
     for unit_definition_id in side_setup.unit_definition_ids:
         var unit_definition = content_index.units.get(unit_definition_id)
         assert(unit_definition != null, "Missing unit definition: %s" % unit_definition_id)
-        var passive_item_id := str(unit_definition.passive_item_id)
-        if passive_item_id.is_empty():
-            continue
-        assert(not seen_passive_items.has(passive_item_id), "Side %s duplicated passive_item_id: %s" % [side_setup.side_id, passive_item_id])
-        seen_passive_items[passive_item_id] = true
 
 func _execute_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
     var effect_events: Array = []

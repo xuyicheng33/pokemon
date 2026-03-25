@@ -45,7 +45,8 @@
 |`base_sp_attack`|`int`|基础特攻|
 |`base_sp_defense`|`int`|基础特防|
 |`base_speed`|`int`|基础速度|
-|`skill_ids`|`PackedStringArray`|技能列表|
+|`skill_ids`|`PackedStringArray`|常规技能列表（固定 3 槽）|
+|`ultimate_skill_id`|`String`|奥义技能 ID（不得出现在 `skill_ids`）|
 |`passive_skill_id`|`String`|被动技能 ID|
 |`passive_item_id`|`String`|被动持有物 ID|
 
@@ -65,6 +66,10 @@
 |`effects_on_hit_ids`|`PackedStringArray`|命中触发效果 ID|
 |`effects_on_miss_ids`|`PackedStringArray`|未命中触发效果 ID|
 |`effects_on_kill_ids`|`PackedStringArray`|击杀触发效果 ID|
+
+优先级硬约束：
+- 普通技能（出现在任意单位 `skill_ids`）只能是 `-2..+2`。
+- 奥义（被任意单位 `ultimate_skill_id` 引用）只能是 `+5/-5`。
 
 ### 3.4 PassiveSkillDefinition / PassiveItemDefinition
 
@@ -127,3 +132,8 @@
 - 本轮不建立内容编辑器工具。
 - 本轮不支持 JSON 与 `.tres` 双轨并存。
 - 本轮不做角色/技能平衡设计。
+
+## 6. 运行前校验（BattleSetup）
+
+- 同一 side 的队伍中，被动持有物 `passive_item_id` 不可重复。
+- 该校验在战斗初始化前执行；失败直接 fail-fast，不进入运行态。

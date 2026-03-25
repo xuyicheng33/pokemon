@@ -271,3 +271,8 @@
 - 引擎新增 `ReplacementSelector` 注入点：输入战斗态、side、合法候选、原因；输出目标 `unit_id`。
 - 候选数 > 1 时必须调用接口；候选数 = 1 自动锁定。
 - 接口返回空值、非法目标或超时，一律 `invalid_replacement_selection` fail-fast。
+
+### 166. 内容层与组队阶段新增硬校验约束
+- `unit.skill_ids` 固定为 3 槽；普通技能优先级只能是 `-2..+2`。
+- `ultimate_skill_id` 对应技能优先级只能是 `+5/-5`，且不得出现在任意单位的 `skill_ids`。
+- `BattleSetup` 维度新增“同队被动持有物不可重复”运行前校验，校验失败直接 fail-fast。

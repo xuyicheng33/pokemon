@@ -184,6 +184,27 @@ func validate_snapshot() -> Array:
 
     return errors
 
+func validate_setup(battle_setup) -> Array:
+    var errors: Array = []
+    if battle_setup == null:
+        errors.append("battle_setup missing")
+        return errors
+    for side_setup in battle_setup.sides:
+        var side_id: String = str(side_setup.side_id)
+        var seen_passive_items: Dictionary = {}
+        for unit_definition_id in side_setup.unit_definition_ids:
+            if not units.has(unit_definition_id):
+                continue
+            var unit_definition = units[unit_definition_id]
+            var passive_item_id := str(unit_definition.passive_item_id)
+            if passive_item_id.is_empty():
+                continue
+            if seen_passive_items.has(passive_item_id):
+                errors.append("battle_setup.side[%s] duplicated passive_item_id: %s" % [side_id, passive_item_id])
+                continue
+            seen_passive_items[passive_item_id] = true
+    return errors
+
 func _validate_effect_refs(errors: Array, label: String, effect_ids: PackedStringArray) -> void:
     for effect_id in effect_ids:
         if not effects.has(effect_id):

@@ -15,12 +15,21 @@ const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd"
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
+const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+
+class TestReplacementSelector:
+    extends "res://src/battle_core/lifecycle/replacement_selector.gd"
+
+    var next_selection: Variant = null
+
+    func select_replacement(_battle_state, _side_id: String, _legal_bench_ids: PackedStringArray, _reason: String, _chain_context):
+        return next_selection
 
 var _core_pool: Array = []
 
@@ -38,6 +47,8 @@ func _init() -> void:
     _run_test("manual_switch_lifecycle_chain", failures, _test_manual_switch_lifecycle_chain)
     _run_test("action_effects_on_kill_dispatch", failures, _test_action_effects_on_kill_dispatch)
     _run_test("invalid_command_payload_hard_failures", failures, _test_invalid_command_payload_hard_failures)
+    _run_test("invalid_command_payload_out_of_legal_set", failures, _test_invalid_command_payload_out_of_legal_set)
+    _run_test("replacement_selector_paths", failures, _test_replacement_selector_paths)
     _run_test("action_failed_post_start_target_missing", failures, _test_action_failed_post_start_target_missing)
     _run_test("invalid_chain_depth_max_guard", failures, _test_invalid_chain_depth_max_guard)
     _run_test("invalid_chain_depth_dedupe_guard", failures, _test_invalid_chain_depth_dedupe_guard)
@@ -48,6 +59,9 @@ func _init() -> void:
     _run_test("invalid_battle_rule_mod_definition", failures, _test_invalid_battle_rule_mod_definition)
     _run_test("apply_effect_lifecycle_chain", failures, _test_apply_effect_lifecycle_chain)
     _run_test("content_validation_failures", failures, _test_content_validation_failures)
+    _run_test("content_validation_new_constraints", failures, _test_content_validation_new_constraints)
+    _run_test("apply_field_creator_non_action_chain", failures, _test_apply_field_creator_non_action_chain)
+    _run_test("double_faint_reason_preserved", failures, _test_double_faint_reason_preserved)
     _run_test("battle_end_system_chain", failures, _test_battle_end_system_chain)
     _run_test("log_contract_semantics", failures, _test_log_contract_semantics)
     _dispose_core_pool()
@@ -869,6 +883,86 @@ func _test_invalid_command_payload_hard_failures() -> Dictionary:
         return _fail("non-participant actor should fail-fast with invalid_command_payload")
     return _pass()
 
+func _test_invalid_command_payload_out_of_legal_set() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 214)
+
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": "sample_ultimate_burst",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+    ])
+    if not battle_state.battle_result.finished:
+        return _fail("illegal skill submit should end battle in selection phase")
+    if battle_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
+        return _fail("expected invalid_command_payload, got %s" % str(battle_state.battle_result.reason))
+    return _pass()
+
+func _test_replacement_selector_paths() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var legal_state = _build_initialized_battle(core, content_index, sample_factory, 215)
+    var legal_side = legal_state.get_side("P1")
+    if legal_side == null or legal_side.bench_order.size() < 2:
+        return _fail("expected at least 2 legal bench candidates for replacement selector test")
+    var legal_selector := TestReplacementSelector.new()
+    var chosen_unit_id: String = legal_side.bench_order[1]
+    legal_selector.next_selection = chosen_unit_id
+    core.replacement_service.replacement_selector = legal_selector
+    var legal_result: Dictionary = core.replacement_service.resolve_replacement(legal_state, legal_side, "forced_replace")
+    if legal_result.get("invalid_code", null) != null:
+        return _fail("legal replacement selection should pass")
+    var entered_unit = legal_result.get("entered_unit", null)
+    if entered_unit == null or entered_unit.unit_instance_id != chosen_unit_id:
+        return _fail("replacement selector did not pick requested legal target")
+
+    var invalid_state = _build_initialized_battle(core, content_index, sample_factory, 216)
+    var invalid_side = invalid_state.get_side("P1")
+    var invalid_selector := TestReplacementSelector.new()
+    invalid_selector.next_selection = "unit_not_in_bench"
+    core.replacement_service.replacement_selector = invalid_selector
+    var invalid_result: Dictionary = core.replacement_service.resolve_replacement(invalid_state, invalid_side, "forced_replace")
+    if invalid_result.get("invalid_code", null) != ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
+        return _fail("invalid replacement target should fail-fast with invalid_replacement_selection")
+
+    var empty_state = _build_initialized_battle(core, content_index, sample_factory, 217)
+    var empty_side = empty_state.get_side("P1")
+    var empty_selector := TestReplacementSelector.new()
+    empty_selector.next_selection = null
+    core.replacement_service.replacement_selector = empty_selector
+    var empty_result: Dictionary = core.replacement_service.resolve_replacement(empty_state, empty_side, "faint")
+    if empty_result.get("invalid_code", null) != ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
+        return _fail("empty replacement selection should fail-fast with invalid_replacement_selection")
+
+    return _pass()
+
 func _test_action_failed_post_start_target_missing() -> Dictionary:
     var core_payload = _build_core()
     if core_payload.has("error"):
@@ -1566,6 +1660,165 @@ func _test_content_validation_failures() -> Dictionary:
             has_missing_ref = true
     if not (has_priority_error and has_rule_mod_error and has_missing_ref):
         return _fail("content validation errors missing expected categories")
+    return _pass()
+
+func _test_content_validation_new_constraints() -> Dictionary:
+    var content_index = BattleContentIndexScript.new()
+
+    var regular_ok = SkillDefinitionScript.new()
+    regular_ok.id = "regular_ok"
+    regular_ok.display_name = "Regular OK"
+    regular_ok.targeting = "enemy_active"
+    regular_ok.priority = 0
+    content_index.register_resource(regular_ok)
+
+    var regular_bad = SkillDefinitionScript.new()
+    regular_bad.id = "regular_bad_priority"
+    regular_bad.display_name = "Regular Bad Priority"
+    regular_bad.targeting = "enemy_active"
+    regular_bad.priority = 5
+    content_index.register_resource(regular_bad)
+
+    var ultimate_bad = SkillDefinitionScript.new()
+    ultimate_bad.id = "ultimate_bad_priority"
+    ultimate_bad.display_name = "Ultimate Bad Priority"
+    ultimate_bad.targeting = "enemy_active"
+    ultimate_bad.priority = 0
+    content_index.register_resource(ultimate_bad)
+
+    var slot_bad_unit = UnitDefinitionScript.new()
+    slot_bad_unit.id = "slot_bad_unit"
+    slot_bad_unit.display_name = "Slot Bad Unit"
+    slot_bad_unit.skill_ids = PackedStringArray(["regular_ok", "regular_bad_priority"])
+    slot_bad_unit.ultimate_skill_id = "ultimate_bad_priority"
+    content_index.register_resource(slot_bad_unit)
+
+    var regular_priority_bad_unit = UnitDefinitionScript.new()
+    regular_priority_bad_unit.id = "regular_priority_bad_unit"
+    regular_priority_bad_unit.display_name = "Regular Priority Bad Unit"
+    regular_priority_bad_unit.skill_ids = PackedStringArray(["regular_bad_priority", "regular_ok", "regular_ok"])
+    regular_priority_bad_unit.ultimate_skill_id = ""
+    content_index.register_resource(regular_priority_bad_unit)
+
+    var ultimate_duplicate_unit = UnitDefinitionScript.new()
+    ultimate_duplicate_unit.id = "ultimate_duplicate_unit"
+    ultimate_duplicate_unit.display_name = "Ultimate Duplicate Unit"
+    ultimate_duplicate_unit.skill_ids = PackedStringArray(["ultimate_bad_priority", "regular_ok", "regular_ok"])
+    ultimate_duplicate_unit.ultimate_skill_id = "ultimate_bad_priority"
+    content_index.register_resource(ultimate_duplicate_unit)
+
+    var snapshot_errors: Array = content_index.validate_snapshot()
+    if snapshot_errors.is_empty():
+        return _fail("new content constraints should report validation failures")
+
+    var has_regular_priority_error: bool = false
+    var has_ultimate_priority_error: bool = false
+    var has_slot_error: bool = false
+    var has_ultimate_in_regular_error: bool = false
+    for error_msg in snapshot_errors:
+        var msg = str(error_msg)
+        if msg.find("used in unit.skill_ids must have priority in -2..2") != -1:
+            has_regular_priority_error = true
+        if msg.find("used as ultimate must have priority +5 or -5") != -1:
+            has_ultimate_priority_error = true
+        if msg.find("skill_ids must contain exactly 3 entries") != -1:
+            has_slot_error = true
+        if msg.find("used as ultimate must not appear in any unit.skill_ids") != -1:
+            has_ultimate_in_regular_error = true
+    if not (has_regular_priority_error and has_ultimate_priority_error and has_slot_error and has_ultimate_in_regular_error):
+        return _fail("new content validation constraints missing expected failures")
+
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var runtime_content = _build_loaded_content_index(sample_factory)
+    var duplicate_item = PassiveItemDefinitionScript.new()
+    duplicate_item.id = "duplicate_item_for_setup_validation"
+    duplicate_item.display_name = "Duplicate Item"
+    runtime_content.register_resource(duplicate_item)
+    runtime_content.units["sample_pyron"].passive_item_id = duplicate_item.id
+    runtime_content.units["sample_mossaur"].passive_item_id = duplicate_item.id
+    var battle_setup = sample_factory.build_sample_setup()
+    var setup_errors: Array = runtime_content.validate_setup(battle_setup)
+    var has_duplicate_item_error: bool = false
+    for error_msg in setup_errors:
+        if str(error_msg).find("duplicated passive_item_id") != -1:
+            has_duplicate_item_error = true
+            break
+    if not has_duplicate_item_error:
+        return _fail("battle setup should reject duplicate passive items on same side")
+    return _pass()
+
+func _test_apply_field_creator_non_action_chain() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var field_def = FieldDefinitionScript.new()
+    field_def.id = "test_non_action_field"
+    field_def.display_name = "Non Action Field"
+    field_def.effect_ids = PackedStringArray()
+    content_index.register_resource(field_def)
+
+    var apply_field_payload = ApplyFieldPayloadScript.new()
+    apply_field_payload.payload_type = "apply_field"
+    apply_field_payload.field_definition_id = field_def.id
+    var apply_field_effect = EffectDefinitionScript.new()
+    apply_field_effect.id = "test_non_action_apply_field_effect"
+    apply_field_effect.display_name = "Non Action Apply Field"
+    apply_field_effect.scope = "self"
+    apply_field_effect.trigger_names = PackedStringArray(["on_enter"])
+    apply_field_effect.duration_mode = "turns"
+    apply_field_effect.duration = 2
+    apply_field_effect.payloads.clear()
+    apply_field_effect.payloads.append(apply_field_payload)
+    content_index.register_resource(apply_field_effect)
+
+    var apply_field_passive = PassiveSkillDefinitionScript.new()
+    apply_field_passive.id = "test_non_action_apply_field_passive"
+    apply_field_passive.display_name = "Non Action Apply Field Passive"
+    apply_field_passive.trigger_names = PackedStringArray(["on_enter"])
+    apply_field_passive.effect_ids = PackedStringArray([apply_field_effect.id])
+    content_index.register_resource(apply_field_passive)
+    content_index.units["sample_pyron"].passive_skill_id = apply_field_passive.id
+
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 218)
+    if battle_state.field_state == null:
+        return _fail("on_enter apply_field should create field_state")
+    var p1_active = battle_state.get_side("P1").get_active_unit()
+    if p1_active == null:
+        return _fail("missing P1 active unit")
+    if battle_state.field_state.creator != p1_active.unit_instance_id:
+        return _fail("field creator should use effect owner in non-action chain")
+    if battle_state.field_state.source_instance_id.is_empty():
+        return _fail("field source_instance_id should not be empty")
+    return _pass()
+
+func _test_double_faint_reason_preserved() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 219)
+    for side_state in battle_state.sides:
+        for unit_state in side_state.team_units:
+            unit_state.current_hp = 0
+    core.turn_loop_controller.run_turn(battle_state, content_index, [])
+    if not battle_state.battle_result.finished:
+        return _fail("battle should finish when both sides have no available units")
+    if battle_state.battle_result.result_type != "draw":
+        return _fail("double faint should end in draw")
+    if battle_state.battle_result.reason != "double_faint":
+        return _fail("double faint reason should remain double_faint, got %s" % str(battle_state.battle_result.reason))
     return _pass()
 
 func _test_battle_end_system_chain() -> Dictionary:
