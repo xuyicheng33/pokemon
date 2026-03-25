@@ -8,6 +8,7 @@ const SelectionStateScript := preload("res://src/battle_core/contracts/selection
 const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
 const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var id_factory
 var legal_action_service
@@ -18,6 +19,12 @@ var action_executor
 var faint_resolver
 var mp_service
 var field_service
+var passive_skill_service
+var passive_item_service
+var effect_queue_service
+var payload_executor
+var rule_mod_service
+var rng_service
 var battle_logger
 var log_event_builder
 
@@ -27,12 +34,30 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     _reset_turn_state(battle_state)
     battle_state.phase = BattlePhasesScript.TURN_START
     battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_TURN_START, battle_state)
-    battle_logger.append_event(log_event_builder.build_event(EventTypesScript.SYSTEM_TURN_START, battle_state, {"source_instance_id": "system:turn_start", "payload_summary": "turn start"}))
+    battle_logger.append_event(log_event_builder.build_event(
+        EventTypesScript.SYSTEM_TURN_START,
+        battle_state,
+        {
+            "source_instance_id": "system:turn_start",
+            "payload_summary": "turn start",
+        }
+    ))
     _apply_turn_start_regen(battle_state)
+    if _execute_system_trigger_batch("turn_start", battle_state, content_index):
+        return
+    _decrement_rule_mods_and_log(battle_state, "turn_start")
+    if _resolve_standard_victory(battle_state):
+        return
+
     battle_state.phase = BattlePhasesScript.SELECTION
-    var locked_commands = _resolve_commands_for_turn(battle_state, content_index, commands)
+    var resolve_result = _resolve_commands_for_turn(battle_state, content_index, commands)
+    if resolve_result["invalid_code"] != null:
+        _terminate_invalid_battle(battle_state, str(resolve_result["invalid_code"]))
+        return
+    var locked_commands: Array = resolve_result["locked_commands"]
     if _resolve_surrender(battle_state, locked_commands):
         return
+
     battle_state.phase = BattlePhasesScript.QUEUE_LOCK
     var action_queue = action_queue_builder.build_queue(locked_commands, battle_state, content_index)
     battle_state.phase = BattlePhasesScript.EXECUTION
@@ -41,12 +66,19 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
         if action_result.invalid_battle_code != null:
             _terminate_invalid_battle(battle_state, str(action_result.invalid_battle_code))
             return
-        faint_resolver.resolve_faint_window(battle_state)
+        var faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
+        if faint_invalid_code != null:
+            _terminate_invalid_battle(battle_state, str(faint_invalid_code))
+            return
         if _resolve_standard_victory(battle_state):
             return
+
     battle_state.phase = BattlePhasesScript.TURN_END
     battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_TURN_END, battle_state)
+    if _execute_system_trigger_batch("turn_end", battle_state, content_index):
+        return
     var field_change = _apply_turn_end_field_tick(battle_state)
+    _decrement_rule_mods_and_log(battle_state, "turn_end")
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.SYSTEM_TURN_END,
         battle_state,
@@ -56,7 +88,12 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
             "payload_summary": "turn end",
         }
     ))
+    var turn_end_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
+    if turn_end_faint_invalid_code != null:
+        _terminate_invalid_battle(battle_state, str(turn_end_faint_invalid_code))
+        return
     _clear_turn_end_state(battle_state)
+
     battle_state.phase = BattlePhasesScript.VICTORY_CHECK
     if _resolve_standard_victory(battle_state):
         return
@@ -78,7 +115,8 @@ func _apply_turn_start_regen(battle_state) -> void:
         if active_unit == null or active_unit.current_hp <= 0:
             continue
         var before_mp: int = active_unit.current_mp
-        active_unit.current_mp = mp_service.apply_turn_start_regen(active_unit.current_mp, active_unit.regen_per_turn, active_unit.max_mp)
+        var regen_value: int = rule_mod_service.resolve_mp_regen_value(battle_state, active_unit.unit_instance_id, active_unit.regen_per_turn)
+        active_unit.current_mp = mp_service.apply_turn_start_regen(active_unit.current_mp, regen_value, active_unit.max_mp)
         if before_mp == active_unit.current_mp:
             continue
         var value_change = ValueChangeScript.new()
@@ -98,9 +136,11 @@ func _apply_turn_start_regen(battle_state) -> void:
             }
         ))
 
-func _resolve_commands_for_turn(battle_state, content_index, commands: Array) -> Array:
+func _resolve_commands_for_turn(battle_state, content_index, commands: Array) -> Dictionary:
     var commands_by_side: Dictionary = {}
     for command in commands:
+        if commands_by_side.has(command.side_id):
+            return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
         commands_by_side[command.side_id] = command
     var locked_commands: Array = []
     for side_state in battle_state.sides:
@@ -126,41 +166,56 @@ func _resolve_commands_for_turn(battle_state, content_index, commands: Array) ->
                 "actor_id": legal_action_set.actor_id,
             })
         else:
-            assert(command_validator.validate_command(provided_command, battle_state, content_index), "Illegal command entered execution: %s" % provided_command.command_id)
+            if not command_validator.validate_command(provided_command, battle_state, content_index):
+                return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
             resolved_command = provided_command
         side_state.selection_state.selected_command = resolved_command
         side_state.selection_state.selection_locked = true
         side_state.selection_state.timed_out = resolved_command.command_type == CommandTypesScript.TIMEOUT_DEFAULT
         locked_commands.append(resolved_command)
-    return locked_commands
+    return {"locked_commands": locked_commands, "invalid_code": null}
 
-func _resolve_surrender(battle_state, commands: Array) -> bool:
-    var surrendering_sides: Array = []
-    for command in commands:
-        if command.command_type == CommandTypesScript.SURRENDER:
-            surrendering_sides.append(command.side_id)
-    if surrendering_sides.is_empty():
+func _execute_system_trigger_batch(trigger_name: String, battle_state, content_index) -> bool:
+    var owner_unit_ids: Array = _collect_active_unit_ids(battle_state)
+    var effect_events: Array = []
+    effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
+    if effect_events.is_empty():
         return false
-    battle_state.battle_result.finished = true
-    battle_state.phase = BattlePhasesScript.FINISHED
-    if surrendering_sides.size() == 1:
-        var winner_side = battle_state.get_opponent_side(surrendering_sides[0])
-        battle_state.battle_result.winner_side_id = winner_side.side_id if winner_side != null else null
-        battle_state.battle_result.result_type = "win"
-    else:
-        battle_state.battle_result.winner_side_id = null
-        battle_state.battle_result.result_type = "draw"
-    battle_state.battle_result.reason = "surrender"
-    battle_state.chain_context = _build_system_chain(EventTypesScript.RESULT_BATTLE_END, battle_state)
-    battle_logger.append_event(log_event_builder.build_event(
-        EventTypesScript.RESULT_BATTLE_END,
-        battle_state,
-        {
-            "source_instance_id": "system:battle_end",
-            "payload_summary": "battle ended by surrender",
-        }
-    ))
-    return true
+    battle_state.pending_effect_queue = effect_events
+    var sorted_events = effect_queue_service.sort_events(effect_events, rng_service)
+    if rng_service != null:
+        battle_state.rng_stream_index = rng_service.get_stream_index()
+    for effect_event in sorted_events:
+        payload_executor.execute_effect_event(effect_event, battle_state, content_index)
+        if payload_executor.last_invalid_battle_code != null:
+            _terminate_invalid_battle(battle_state, str(payload_executor.last_invalid_battle_code))
+            battle_state.pending_effect_queue.clear()
+            return true
+    battle_state.pending_effect_queue.clear()
+    var faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
+    if faint_invalid_code != null:
+        _terminate_invalid_battle(battle_state, str(faint_invalid_code))
+        return true
+    if _resolve_standard_victory(battle_state):
+        return true
+    return false
+
+func _decrement_rule_mods_and_log(battle_state, trigger_name: String) -> void:
+    var removed_instances: Array = rule_mod_service.decrement_for_trigger(battle_state, trigger_name)
+    for removed in removed_instances:
+        var removed_instance = removed["instance"]
+        battle_logger.append_event(log_event_builder.build_event(
+            EventTypesScript.EFFECT_RULE_MOD_REMOVE,
+            battle_state,
+            {
+                "source_instance_id": removed_instance.instance_id,
+                "target_instance_id": removed["owner_id"],
+                "priority": removed_instance.priority,
+                "payload_summary": "rule mod expired: %s" % removed_instance.mod_kind,
+            }
+        ))
 
 func _apply_turn_end_field_tick(battle_state):
     if battle_state.field_state == null:
@@ -190,6 +245,34 @@ func _clear_turn_end_state(battle_state) -> void:
         side_state.selection_state = SelectionStateScript.new()
         for unit_state in side_state.team_units:
             unit_state.action_window_passed = false
+
+func _resolve_surrender(battle_state, commands: Array) -> bool:
+    var surrendering_sides: Array = []
+    for command in commands:
+        if command.command_type == CommandTypesScript.SURRENDER:
+            surrendering_sides.append(command.side_id)
+    if surrendering_sides.is_empty():
+        return false
+    battle_state.battle_result.finished = true
+    battle_state.phase = BattlePhasesScript.FINISHED
+    if surrendering_sides.size() == 1:
+        var winner_side = battle_state.get_opponent_side(surrendering_sides[0])
+        battle_state.battle_result.winner_side_id = winner_side.side_id if winner_side != null else null
+        battle_state.battle_result.result_type = "win"
+    else:
+        battle_state.battle_result.winner_side_id = null
+        battle_state.battle_result.result_type = "draw"
+    battle_state.battle_result.reason = "surrender"
+    battle_state.chain_context = _build_system_chain(EventTypesScript.RESULT_BATTLE_END, battle_state)
+    battle_logger.append_event(log_event_builder.build_event(
+        EventTypesScript.RESULT_BATTLE_END,
+        battle_state,
+        {
+            "source_instance_id": "system:battle_end",
+            "payload_summary": "battle ended by surrender",
+        }
+    ))
+    return true
 
 func _resolve_standard_victory(battle_state) -> bool:
     var alive_side_ids: Array = []
@@ -286,6 +369,14 @@ func _side_has_available_unit(side_state) -> bool:
             return true
     return false
 
+func _collect_active_unit_ids(battle_state) -> Array:
+    var owner_ids: Array = []
+    for side_state in battle_state.sides:
+        var active_unit = side_state.get_active_unit()
+        if active_unit != null and active_unit.current_hp > 0:
+            owner_ids.append(active_unit.unit_instance_id)
+    return owner_ids
+
 func _terminate_invalid_battle(battle_state, invalid_code: String) -> void:
     battle_state.battle_result.finished = true
     battle_state.battle_result.winner_side_id = null
@@ -303,11 +394,23 @@ func _terminate_invalid_battle(battle_state, invalid_code: String) -> void:
         }
     ))
 
-func _build_system_chain(command_type: String, battle_state):
+func _build_system_chain(command_type: String, _battle_state):
     var chain_context = ChainContextScript.new()
     chain_context.event_chain_id = id_factory.next_id("chain")
-    chain_context.chain_origin = command_type
+    chain_context.chain_origin = _resolve_chain_origin(command_type)
     chain_context.command_type = command_type
     chain_context.command_source = "system"
-    chain_context.select_deadline_ms = battle_state.selection_deadline_ms
+    chain_context.select_deadline_ms = null
+    chain_context.select_timeout = null
     return chain_context
+
+func _resolve_chain_origin(command_type: String) -> String:
+    match command_type:
+        EventTypesScript.SYSTEM_BATTLE_INIT:
+            return "battle_init"
+        EventTypesScript.SYSTEM_TURN_START:
+            return "turn_start"
+        EventTypesScript.SYSTEM_TURN_END:
+            return "turn_end"
+        _:
+            return "system_replace"

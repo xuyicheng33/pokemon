@@ -12,6 +12,12 @@ const ChainContextScript := preload("res://src/battle_core/contracts/chain_conte
 
 var id_factory
 var rng_service
+var faint_resolver
+var passive_skill_service
+var passive_item_service
+var field_service
+var effect_queue_service
+var payload_executor
 var battle_logger
 var log_event_builder
 
@@ -33,7 +39,8 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     for side_setup in battle_setup.sides:
         var side_state = _build_side_state(side_setup, format_config, content_index)
         battle_state.sides.append(side_state)
-    battle_state.chain_context = _build_battle_init_chain()
+
+    var initial_active_ids: Array = _collect_active_unit_ids(battle_state)
     for side_state in battle_state.sides:
         var active_unit = side_state.get_active_unit()
         battle_logger.append_event(log_event_builder.build_event(
@@ -46,6 +53,20 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
                 "payload_summary": "%s entered battle" % active_unit.public_id,
             }
         ))
+
+    battle_state.chain_context = _build_system_chain("system:replace", "system_replace")
+    var on_enter_invalid_code = _execute_trigger_batch("on_enter", battle_state, content_index, initial_active_ids)
+    if on_enter_invalid_code != null:
+        _terminate_invalid_battle(battle_state, str(on_enter_invalid_code))
+        return
+    var on_enter_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
+    if on_enter_faint_invalid_code != null:
+        _terminate_invalid_battle(battle_state, str(on_enter_faint_invalid_code))
+        return
+    if _resolve_startup_victory(battle_state):
+        return
+
+    battle_state.chain_context = _build_battle_init_chain()
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.SYSTEM_BATTLE_INIT,
         battle_state,
@@ -54,6 +75,18 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
             "payload_summary": "battle initialized",
         }
     ))
+    var battle_init_owner_ids: Array = _collect_active_unit_ids(battle_state)
+    var battle_init_invalid_code = _execute_trigger_batch("battle_init", battle_state, content_index, battle_init_owner_ids)
+    if battle_init_invalid_code != null:
+        _terminate_invalid_battle(battle_state, str(battle_init_invalid_code))
+        return
+    var battle_init_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
+    if battle_init_faint_invalid_code != null:
+        _terminate_invalid_battle(battle_state, str(battle_init_faint_invalid_code))
+        return
+    if _resolve_startup_victory(battle_state):
+        return
+
     battle_state.phase = BattlePhasesScript.SELECTION
 
 func _build_side_state(side_setup, format_config, content_index):
@@ -62,7 +95,7 @@ func _build_side_state(side_setup, format_config, content_index):
     var side_state = SideStateScript.new()
     side_state.side_id = side_setup.side_id
     side_state.selection_state = SelectionStateScript.new()
-    var label_suffixes := ["A", "B", "C", "D"]
+    var label_suffixes = ["A", "B", "C", "D"]
     for unit_index in range(side_setup.unit_definition_ids.size()):
         var unit_definition_id = side_setup.unit_definition_ids[unit_index]
         var unit_definition = content_index.units.get(unit_definition_id)
@@ -91,10 +124,91 @@ func _build_side_state(side_setup, format_config, content_index):
             side_state.bench_order.append(unit_state.unit_instance_id)
     return side_state
 
+func _execute_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
+    var effect_events: Array = []
+    effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
+    if effect_events.is_empty():
+        return null
+    battle_state.pending_effect_queue = effect_events
+    var sorted_events = effect_queue_service.sort_events(effect_events, rng_service)
+    battle_state.rng_stream_index = rng_service.get_stream_index()
+    for effect_event in sorted_events:
+        payload_executor.execute_effect_event(effect_event, battle_state, content_index)
+        if payload_executor.last_invalid_battle_code != null:
+            battle_state.pending_effect_queue.clear()
+            return payload_executor.last_invalid_battle_code
+    battle_state.pending_effect_queue.clear()
+    return null
+
+func _collect_active_unit_ids(battle_state) -> Array:
+    var active_ids: Array = []
+    for side_state in battle_state.sides:
+        var active_unit = side_state.get_active_unit()
+        if active_unit != null and active_unit.current_hp > 0:
+            active_ids.append(active_unit.unit_instance_id)
+    return active_ids
+
+func _resolve_startup_victory(battle_state) -> bool:
+    var alive_side_ids: Array = []
+    for side_state in battle_state.sides:
+        if _side_has_available_unit(side_state):
+            alive_side_ids.append(side_state.side_id)
+    if alive_side_ids.size() == battle_state.sides.size():
+        return false
+    battle_state.battle_result.finished = true
+    battle_state.phase = BattlePhasesScript.FINISHED
+    if alive_side_ids.is_empty():
+        battle_state.battle_result.winner_side_id = null
+        battle_state.battle_result.result_type = "draw"
+        battle_state.battle_result.reason = "double_faint"
+    else:
+        battle_state.battle_result.winner_side_id = alive_side_ids[0]
+        battle_state.battle_result.result_type = "win"
+        battle_state.battle_result.reason = "elimination"
+    battle_logger.append_event(log_event_builder.build_event(
+        EventTypesScript.RESULT_BATTLE_END,
+        battle_state,
+        {
+            "source_instance_id": "system:battle_end",
+            "payload_summary": "battle finished during initialization",
+        }
+    ))
+    return true
+
+func _side_has_available_unit(side_state) -> bool:
+    for unit_state in side_state.team_units:
+        if unit_state.current_hp > 0:
+            return true
+    return false
+
+func _terminate_invalid_battle(battle_state, invalid_code: String) -> void:
+    battle_state.battle_result.finished = true
+    battle_state.battle_result.winner_side_id = null
+    battle_state.battle_result.result_type = "no_winner"
+    battle_state.battle_result.reason = invalid_code
+    battle_state.phase = BattlePhasesScript.FINISHED
+    battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_INVALID_BATTLE, "system_replace")
+    battle_logger.append_event(log_event_builder.build_event(
+        EventTypesScript.SYSTEM_INVALID_BATTLE,
+        battle_state,
+        {
+            "source_instance_id": "system:invalid_battle",
+            "invalid_battle_code": invalid_code,
+            "payload_summary": "invalid battle: %s" % invalid_code,
+        }
+    ))
+
 func _build_battle_init_chain():
+    return _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, "battle_init")
+
+func _build_system_chain(command_type: String, chain_origin: String):
     var chain_context = ChainContextScript.new()
     chain_context.event_chain_id = id_factory.next_id("chain")
-    chain_context.chain_origin = "battle_init"
-    chain_context.command_type = EventTypesScript.SYSTEM_BATTLE_INIT
+    chain_context.chain_origin = chain_origin
+    chain_context.command_type = command_type
     chain_context.command_source = "system"
+    chain_context.select_deadline_ms = null
+    chain_context.select_timeout = null
     return chain_context

@@ -14,6 +14,7 @@ const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_pa
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
 const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_logger
 var log_event_builder
@@ -22,12 +23,18 @@ var effect_instance_service
 var rule_mod_service
 var damage_service
 var stat_calculator
+var last_invalid_battle_code: Variant = null
 
 func execute_effect_event(effect_event, battle_state, content_index) -> void:
+    last_invalid_battle_code = null
     var effect_definition = content_index.effects.get(effect_event.effect_definition_id)
-    assert(effect_definition != null, "Missing effect definition: %s" % effect_event.effect_definition_id)
+    if effect_definition == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+        return
     for payload in effect_definition.payloads:
         execute_payload(payload, effect_definition, effect_event, battle_state, content_index)
+        if last_invalid_battle_code != null:
+            return
 
 func execute_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
     if payload is DamagePayloadScript:
@@ -54,7 +61,7 @@ func execute_payload(payload, effect_definition, effect_event, battle_state, con
     if payload is RuleModPayloadScript:
         _apply_rule_mod_payload(payload, effect_definition, effect_event, battle_state)
         return
-    assert(false, "Unsupported payload type: %s" % payload.get_class())
+    last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
 
 func _apply_damage_payload(payload, effect_definition, effect_event, battle_state, _content_index) -> void:
     var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
@@ -162,7 +169,9 @@ func _apply_effect_payload(payload, effect_definition, effect_event, battle_stat
     if not _is_effect_target_valid(target_unit):
         return
     var target_definition = content_index.effects.get(payload.effect_definition_id)
-    assert(target_definition != null, "Missing nested effect definition: %s" % payload.effect_definition_id)
+    if target_definition == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+        return
     var created_instance = effect_instance_service.create_instance(
         target_definition,
         target_unit.unit_instance_id,
@@ -212,6 +221,9 @@ func _apply_rule_mod_payload(payload, effect_definition, effect_event, battle_st
         effect_event.source_kind_order,
         effect_event.source_order_speed_snapshot
     )
+    if created_instance == null:
+        last_invalid_battle_code = rule_mod_service.last_error_code if rule_mod_service != null else ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+        return
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.EFFECT_RULE_MOD_APPLY,
         battle_state,

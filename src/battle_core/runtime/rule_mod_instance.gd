@@ -5,6 +5,8 @@ var instance_id: String = ""
 var mod_kind: String = ""
 var mod_op: String = ""
 var value = null
+var scope: String = "self"
+var duration_mode: String = "permanent"
 var owner: String = ""
 var remaining: int = 0
 var created_turn: int = 0
@@ -20,6 +22,8 @@ func to_stable_dict() -> Dictionary:
         "mod_kind": mod_kind,
         "mod_op": mod_op,
         "value": value,
+        "scope": scope,
+        "duration_mode": duration_mode,
         "owner": owner,
         "remaining": remaining,
         "created_turn": created_turn,

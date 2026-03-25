@@ -73,6 +73,8 @@ func execute_action(queued_action, battle_state, content_index):
     ))
     result.consumed_mp = consumed_mp
     _dispatch_skill_effects(skill_definition.effects_on_cast_ids if skill_definition != null else PackedStringArray(), "on_cast", queued_action, actor, battle_state, content_index, result)
+    if result.invalid_battle_code != null:
+        return result
     if command.command_type == CommandTypesScript.SWITCH:
         var switch_result = _execute_switch_action(queued_action, battle_state)
         switch_result.action_id = queued_action.action_id
@@ -114,6 +116,8 @@ func execute_action(queued_action, battle_state, content_index):
             }
         ))
         _dispatch_skill_effects(skill_definition.effects_on_miss_ids if skill_definition != null else PackedStringArray(), "on_miss", queued_action, actor, battle_state, content_index, result)
+        if result.invalid_battle_code != null:
+            return result
         result.result_type = "miss"
         return result
     battle_logger.append_event(log_event_builder.build_event(
@@ -136,6 +140,8 @@ func execute_action(queued_action, battle_state, content_index):
     if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT or command.command_type == CommandTypesScript.TIMEOUT_DEFAULT:
         _apply_default_recoil(queued_action, actor, battle_state)
     _dispatch_skill_effects(skill_definition.effects_on_hit_ids if skill_definition != null else PackedStringArray(), "on_hit", queued_action, actor, battle_state, content_index, result)
+    if result.invalid_battle_code != null:
+        return result
     result.result_type = "resolved"
     return result
 
@@ -312,6 +318,9 @@ func _dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String
     battle_state.rng_stream_index = rng_service.get_stream_index()
     for effect_event in sorted_events:
         payload_executor.execute_effect_event(effect_event, battle_state, content_index)
+        if payload_executor.last_invalid_battle_code != null:
+            result.invalid_battle_code = payload_executor.last_invalid_battle_code
+            break
         result.generated_effects.append(effect_event)
     battle_state.pending_effect_queue.clear()
 
