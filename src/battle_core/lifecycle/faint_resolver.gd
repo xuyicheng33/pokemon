@@ -17,6 +17,7 @@ var trigger_dispatcher
 var effect_instance_dispatcher
 var effect_queue_service
 var payload_executor
+var trigger_batch_runner
 var rng_service
 var battle_logger
 var log_event_builder
@@ -127,24 +128,14 @@ func resolve_faint_window(battle_state, content_index):
     return null
 
 func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array, extra_effect_events: Array = []):
-    var effect_events: Array = []
-    effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
-    effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
-    effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
-    effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
-    effect_events.append_array(extra_effect_events)
-    if effect_events.is_empty():
-        return null
-    battle_state.pending_effect_queue = effect_events
-    var sorted_events = effect_queue_service.sort_events(effect_events, rng_service)
-    battle_state.rng_stream_index = rng_service.get_stream_index()
-    for effect_event in sorted_events:
-        payload_executor.execute_effect_event(effect_event, battle_state, content_index)
-        if payload_executor.last_invalid_battle_code != null:
-            battle_state.pending_effect_queue.clear()
-            return payload_executor.last_invalid_battle_code
-    battle_state.pending_effect_queue.clear()
-    return null
+    return trigger_batch_runner.execute_trigger_batch(
+        trigger_name,
+        battle_state,
+        content_index,
+        owner_unit_ids,
+        battle_state.chain_context,
+        extra_effect_events
+    )
 
 func _resolve_killer_units(battle_state, fainted_unit_ids: Array) -> Dictionary:
     var killer_unit_ids: Array = []

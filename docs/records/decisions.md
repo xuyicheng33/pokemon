@@ -309,3 +309,11 @@
 ### 174. 关键依赖缺失统一视为状态破坏并立即终止
 - 移除 `effect_instance_dispatcher`、`rule_mod_service` 等关键依赖的“为空就跳过”路径。
 - 在 composition 增加依赖完整性断言，并在运行入口追加依赖完整性检查；缺失时立即 `invalid_state_corruption` 终止。
+
+### 175. 依赖缺失终止链必须支持“无日志降级硬终止”
+- 当缺失 `id_factory / battle_logger / log_event_builder` 这类终止链本身依赖时，不再尝试走完整日志终止流程。
+- 统一改为“先保证 `battle_result/phase` 落到 finished，再按可用依赖决定是否写日志”，避免二次崩溃掩盖首个故障。
+
+### 176. 生命周期触发批次执行收口到单一执行器
+- 新增 `TriggerBatchRunner` 统一承载“收集事件 -> 排序 -> 执行 payload -> 传播 invalid code”流程。
+- `battle_initializer / turn_loop_controller / action_executor / faint_resolver / replacement_service` 不再各自复制一套触发批次流水线，后续扩展只改一个点。

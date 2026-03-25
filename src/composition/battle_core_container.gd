@@ -20,6 +20,7 @@ var faint_resolver
 var replacement_selector
 var replacement_service
 var trigger_dispatcher
+var trigger_batch_runner
 var effect_queue_service
 var payload_executor
 var effect_instance_service
@@ -49,6 +50,7 @@ func dispose() -> void:
         action_executor.effect_queue_service = null
         action_executor.payload_executor = null
         action_executor.faint_resolver = null
+        action_executor.trigger_batch_runner = null
         action_executor.battle_logger = null
         action_executor.log_event_builder = null
         action_executor.rng_service = null
@@ -72,6 +74,7 @@ func dispose() -> void:
         faint_resolver.effect_instance_dispatcher = null
         faint_resolver.effect_queue_service = null
         faint_resolver.payload_executor = null
+        faint_resolver.trigger_batch_runner = null
         faint_resolver.rng_service = null
         faint_resolver.battle_logger = null
         faint_resolver.log_event_builder = null
@@ -85,6 +88,7 @@ func dispose() -> void:
         battle_initializer.effect_instance_dispatcher = null
         battle_initializer.effect_queue_service = null
         battle_initializer.payload_executor = null
+        battle_initializer.trigger_batch_runner = null
         battle_initializer.battle_logger = null
         battle_initializer.log_event_builder = null
     if turn_loop_controller != null:
@@ -99,6 +103,7 @@ func dispose() -> void:
         turn_loop_controller.field_service = null
         turn_loop_controller.passive_skill_service = null
         turn_loop_controller.passive_item_service = null
+        turn_loop_controller.trigger_batch_runner = null
         turn_loop_controller.effect_instance_dispatcher = null
         turn_loop_controller.effect_queue_service = null
         turn_loop_controller.payload_executor = null
@@ -122,6 +127,14 @@ func dispose() -> void:
         action_queue_builder.stat_calculator = null
     if trigger_dispatcher != null:
         trigger_dispatcher.id_factory = null
+    if trigger_batch_runner != null:
+        trigger_batch_runner.passive_skill_service = null
+        trigger_batch_runner.passive_item_service = null
+        trigger_batch_runner.field_service = null
+        trigger_batch_runner.effect_instance_dispatcher = null
+        trigger_batch_runner.effect_queue_service = null
+        trigger_batch_runner.payload_executor = null
+        trigger_batch_runner.rng_service = null
     if passive_skill_service != null:
         passive_skill_service.trigger_dispatcher = null
     if passive_item_service != null:
@@ -148,6 +161,7 @@ func dispose() -> void:
         replacement_service.effect_instance_dispatcher = null
         replacement_service.effect_queue_service = null
         replacement_service.payload_executor = null
+        replacement_service.trigger_batch_runner = null
         replacement_service.rng_service = null
 
     id_factory = null
@@ -169,6 +183,7 @@ func dispose() -> void:
     replacement_selector = null
     replacement_service = null
     trigger_dispatcher = null
+    trigger_batch_runner = null
     effect_queue_service = null
     payload_executor = null
     effect_instance_service = null

@@ -5,6 +5,7 @@ const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const SelectionStateScript := preload("res://src/battle_core/contracts/selection_state.gd")
+const BattleResultScript := preload("res://src/battle_core/contracts/battle_result.gd")
 const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
 const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
@@ -21,6 +22,7 @@ var mp_service
 var field_service
 var passive_skill_service
 var passive_item_service
+var trigger_batch_runner
 var effect_instance_dispatcher
 var effect_queue_service
 var payload_executor
@@ -202,23 +204,16 @@ func _resolve_commands_for_turn(battle_state, content_index, commands: Array) ->
 
 func _execute_system_trigger_batch(trigger_name: String, battle_state, content_index) -> bool:
     var owner_unit_ids: Array = _collect_active_unit_ids(battle_state)
-    var effect_events: Array = []
-    effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
-    effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
-    effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
-    effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
-    if effect_events.is_empty():
-        return false
-    battle_state.pending_effect_queue = effect_events
-    var sorted_events = effect_queue_service.sort_events(effect_events, rng_service)
-    battle_state.rng_stream_index = rng_service.get_stream_index()
-    for effect_event in sorted_events:
-        payload_executor.execute_effect_event(effect_event, battle_state, content_index)
-        if payload_executor.last_invalid_battle_code != null:
-            _terminate_invalid_battle(battle_state, str(payload_executor.last_invalid_battle_code))
-            battle_state.pending_effect_queue.clear()
-            return true
-    battle_state.pending_effect_queue.clear()
+    var invalid_code = trigger_batch_runner.execute_trigger_batch(
+        trigger_name,
+        battle_state,
+        content_index,
+        owner_unit_ids,
+        battle_state.chain_context
+    )
+    if invalid_code != null:
+        _terminate_invalid_battle(battle_state, str(invalid_code))
+        return true
     var faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
     if faint_invalid_code != null:
         _terminate_invalid_battle(battle_state, str(faint_invalid_code))
@@ -521,7 +516,7 @@ func _validate_dependencies_or_terminate(battle_state) -> bool:
     var missing_dependency := _resolve_missing_dependency()
     if missing_dependency.is_empty():
         return false
-    _terminate_invalid_battle(battle_state, ErrorCodesScript.INVALID_STATE_CORRUPTION)
+    _hard_terminate_invalid_state(battle_state, ErrorCodesScript.INVALID_STATE_CORRUPTION, missing_dependency)
     return true
 
 func _resolve_missing_dependency() -> String:
@@ -543,20 +538,47 @@ func _resolve_missing_dependency() -> String:
         return "mp_service"
     if field_service == null:
         return "field_service"
-    if passive_skill_service == null:
-        return "passive_skill_service"
-    if passive_item_service == null:
-        return "passive_item_service"
+    if trigger_batch_runner == null:
+        return "trigger_batch_runner"
+    var trigger_batch_missing: String = str(trigger_batch_runner.resolve_missing_dependency())
+    if not trigger_batch_missing.is_empty():
+        return "trigger_batch_runner.%s" % trigger_batch_missing
     if effect_instance_dispatcher == null:
         return "effect_instance_dispatcher"
-    if effect_queue_service == null:
-        return "effect_queue_service"
-    if payload_executor == null:
-        return "payload_executor"
     if rule_mod_service == null:
         return "rule_mod_service"
-    if rng_service == null:
-        return "rng_service"
+    if battle_logger == null:
+        return "battle_logger"
+    if log_event_builder == null:
+        return "log_event_builder"
+    return ""
+
+func _hard_terminate_invalid_state(battle_state, invalid_code: String, missing_dependency: String) -> void:
+    if battle_state.battle_result == null:
+        battle_state.battle_result = BattleResultScript.new()
+    battle_state.battle_result.finished = true
+    battle_state.battle_result.winner_side_id = null
+    battle_state.battle_result.result_type = "no_winner"
+    battle_state.battle_result.reason = invalid_code
+    battle_state.phase = BattlePhasesScript.FINISHED
+    var missing_logging_dependency := _resolve_missing_logging_dependency()
+    if not missing_logging_dependency.is_empty():
+        battle_state.chain_context = null
+        return
+    battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_INVALID_BATTLE, battle_state)
+    battle_logger.append_event(log_event_builder.build_event(
+        EventTypesScript.SYSTEM_INVALID_BATTLE,
+        battle_state,
+        {
+            "source_instance_id": "system:invalid_battle",
+            "invalid_battle_code": invalid_code,
+            "payload_summary": "invalid battle: %s (missing dependency: %s)" % [invalid_code, missing_dependency],
+        }
+    ))
+
+func _resolve_missing_logging_dependency() -> String:
+    if id_factory == null:
+        return "id_factory"
     if battle_logger == null:
         return "battle_logger"
     if log_event_builder == null:

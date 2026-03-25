@@ -21,6 +21,7 @@ const FaintResolverScript := preload("res://src/battle_core/lifecycle/faint_reso
 const DefaultReplacementSelectorScript := preload("res://src/battle_core/lifecycle/default_replacement_selector.gd")
 const ReplacementServiceScript := preload("res://src/battle_core/lifecycle/replacement_service.gd")
 const TriggerDispatcherScript := preload("res://src/battle_core/effects/trigger_dispatcher.gd")
+const TriggerBatchRunnerScript := preload("res://src/battle_core/effects/trigger_batch_runner.gd")
 const EffectQueueServiceScript := preload("res://src/battle_core/effects/effect_queue_service.gd")
 const PayloadExecutorScript := preload("res://src/battle_core/effects/payload_executor.gd")
 const EffectInstanceServiceScript := preload("res://src/battle_core/effects/effect_instance_service.gd")
@@ -54,6 +55,7 @@ func compose():
     container.replacement_selector = DefaultReplacementSelectorScript.new()
     container.replacement_service = ReplacementServiceScript.new()
     container.trigger_dispatcher = TriggerDispatcherScript.new()
+    container.trigger_batch_runner = TriggerBatchRunnerScript.new()
     container.effect_queue_service = EffectQueueServiceScript.new()
     container.payload_executor = PayloadExecutorScript.new()
     container.effect_instance_service = EffectInstanceServiceScript.new()
@@ -76,6 +78,7 @@ func compose():
     container.battle_initializer.effect_instance_dispatcher = container.effect_instance_dispatcher
     container.battle_initializer.effect_queue_service = container.effect_queue_service
     container.battle_initializer.payload_executor = container.payload_executor
+    container.battle_initializer.trigger_batch_runner = container.trigger_batch_runner
     container.battle_initializer.battle_logger = container.battle_logger
     container.battle_initializer.log_event_builder = container.log_event_builder
     container.action_queue_builder.id_factory = container.id_factory
@@ -93,6 +96,7 @@ func compose():
     container.replacement_service.effect_instance_dispatcher = container.effect_instance_dispatcher
     container.replacement_service.effect_queue_service = container.effect_queue_service
     container.replacement_service.payload_executor = container.payload_executor
+    container.replacement_service.trigger_batch_runner = container.trigger_batch_runner
     container.replacement_service.rng_service = container.rng_service
     container.faint_resolver.leave_service = container.leave_service
     container.faint_resolver.replacement_service = container.replacement_service
@@ -103,6 +107,7 @@ func compose():
     container.faint_resolver.effect_instance_dispatcher = container.effect_instance_dispatcher
     container.faint_resolver.effect_queue_service = container.effect_queue_service
     container.faint_resolver.payload_executor = container.payload_executor
+    container.faint_resolver.trigger_batch_runner = container.trigger_batch_runner
     container.faint_resolver.rng_service = container.rng_service
     container.faint_resolver.battle_logger = container.battle_logger
     container.faint_resolver.log_event_builder = container.log_event_builder
@@ -110,6 +115,13 @@ func compose():
     container.passive_skill_service.trigger_dispatcher = container.trigger_dispatcher
     container.passive_item_service.trigger_dispatcher = container.trigger_dispatcher
     container.field_service.trigger_dispatcher = container.trigger_dispatcher
+    container.trigger_batch_runner.passive_skill_service = container.passive_skill_service
+    container.trigger_batch_runner.passive_item_service = container.passive_item_service
+    container.trigger_batch_runner.field_service = container.field_service
+    container.trigger_batch_runner.effect_instance_dispatcher = container.effect_instance_dispatcher
+    container.trigger_batch_runner.effect_queue_service = container.effect_queue_service
+    container.trigger_batch_runner.payload_executor = container.payload_executor
+    container.trigger_batch_runner.rng_service = container.rng_service
     container.effect_instance_service.id_factory = container.id_factory
     container.effect_instance_dispatcher.id_factory = container.id_factory
     container.rule_mod_service.id_factory = container.id_factory
@@ -137,6 +149,7 @@ func compose():
     container.action_executor.effect_queue_service = container.effect_queue_service
     container.action_executor.payload_executor = container.payload_executor
     container.action_executor.faint_resolver = container.faint_resolver
+    container.action_executor.trigger_batch_runner = container.trigger_batch_runner
     container.action_executor.battle_logger = container.battle_logger
     container.action_executor.log_event_builder = container.log_event_builder
     container.action_executor.rng_service = container.rng_service
@@ -151,6 +164,7 @@ func compose():
     container.turn_loop_controller.field_service = container.field_service
     container.turn_loop_controller.passive_skill_service = container.passive_skill_service
     container.turn_loop_controller.passive_item_service = container.passive_item_service
+    container.turn_loop_controller.trigger_batch_runner = container.trigger_batch_runner
     container.turn_loop_controller.effect_instance_dispatcher = container.effect_instance_dispatcher
     container.turn_loop_controller.effect_queue_service = container.effect_queue_service
     container.turn_loop_controller.payload_executor = container.payload_executor
@@ -168,11 +182,23 @@ func compose():
 
 func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.legal_action_service, "legal_action_service", "rule_mod_service")
+    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "passive_skill_service")
+    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "passive_item_service")
+    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "field_service")
+    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "effect_instance_dispatcher")
+    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "effect_queue_service")
+    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "payload_executor")
+    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "rng_service")
     _assert_dependency(container.battle_initializer, "battle_initializer", "effect_instance_dispatcher")
     _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "effect_instance_dispatcher")
+    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "trigger_batch_runner")
     _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "rule_mod_service")
+    _assert_dependency(container.battle_initializer, "battle_initializer", "trigger_batch_runner")
+    _assert_dependency(container.action_executor, "action_executor", "trigger_batch_runner")
     _assert_dependency(container.action_executor, "action_executor", "effect_instance_dispatcher")
+    _assert_dependency(container.faint_resolver, "faint_resolver", "trigger_batch_runner")
     _assert_dependency(container.faint_resolver, "faint_resolver", "effect_instance_dispatcher")
+    _assert_dependency(container.replacement_service, "replacement_service", "trigger_batch_runner")
     _assert_dependency(container.payload_executor, "payload_executor", "replacement_service")
     _assert_dependency(container.replacement_service, "replacement_service", "payload_executor")
 
