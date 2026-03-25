@@ -8,7 +8,8 @@
 |---|---|
 |`leave_service.gd`|统一执行离场状态清理并写 `state:exit`|
 |`faint_resolver.gd`|处理 `fainted_pending_leave` 窗口与触发批次|
-|`replacement_service.gd`|在 active 为空时执行补位并写 `state:replace/state:enter`|
+|`replacement_service.gd`|处理强制换下/补位目标合法性并执行入场|
+|`replacement_selector.gd`|系统替补选择接口，返回合法 bench 目标|
 
 ## 2. LeaveService
 
@@ -35,6 +36,7 @@
 6. 若 active 为空，调用 `ReplacementService` 立刻补位。
 7. 对新上场单位执行 `on_enter` 批次。
 8. 若补位或触发链引发新倒下，递归处理到窗口稳定。
+9. 若替补选择接口返回空值、非法目标或超时，返回 `invalid_replacement_selection` 并终止。
 
 fail-fast：任一批次产生 invalid code，立即返回上层终止战斗。
 
@@ -43,7 +45,8 @@ fail-fast：任一批次产生 invalid code，立即返回上层终止战斗。
 |场景|说明|
 |---|---|
 |击倒补位|只在击倒窗口内触发，不进入行动队列|
-|补位来源|当前从 `bench_order` 中选择首个可上场单位|
+|补位来源|先计算合法 bench 候选；候选数 > 1 时调用 `ReplacementSelector`，候选数 = 1 自动锁定|
+|失败语义|系统选择返回空值/非法/超时 -> `invalid_replacement_selection`|
 |入场日志|补位时写 `state:replace`，随后写 `state:enter`|
 
 ## 5. 约束

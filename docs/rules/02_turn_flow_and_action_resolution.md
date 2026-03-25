@@ -9,7 +9,7 @@
 |回合开始|先执行当前在场单位的 MP 回复，再处理 `turn_start` 效果|
 |选择指令|双方同时选择本回合指令|
 |选择限时|每方 `30s`；超时未提交合法指令则自动替代为 `timeout_default`|
-|合法性校验|非法指令立即拦截并重选，不得进入执行阶段|
+|合法性校验|选择阶段提交非法指令立即 `invalid_battle`（fail-fast），不保留重选语义|
 |队列锁定|双方都提交合法指令后，按统一排序链生成本回合行动队列|
 |执行行动|按队列顺序逐个执行|
 |行动后击倒窗口|每个行动结算后，立即检查击倒并处理强制补位|
@@ -37,6 +37,7 @@
 3. 手动换人指令在选择阶段必须指定唯一 bench 目标 `unit_id`，队列锁定后不允许改选。
 4. 强制换下与强制补位的替补选择不进入行动队列，具体见模块 04。
 5. 当前 1v1 基线里，bench 单位不会在手动换人执行前被战场效果直接命中；若执行起点发现所选 bench 目标已不在合法后备列表，按 `invalid_battle` 处理。
+6. 强制换下与强制补位在“合法 bench 候选数 > 1”时必须调用系统替补选择接口；候选数 `= 1` 自动锁定；接口返回非法/空值/超时一律 `invalid_battle`（`invalid_replacement_selection`）。
 
 ## 3. 统一 `priority` 体系
 
@@ -107,7 +108,7 @@
 
 |类别|发生时点|例子|是否扣 MP|是否消耗本次行动|日志口径|
 |---|---|---|---|---|---|
-|硬非法指令|选择阶段|MP 不足、没有可换单位、奥义入口配置不合法|否|否|拦截重选，不写执行日志|
+|硬非法指令|选择阶段|MP 不足、提交内容不在 legal 集、奥义入口配置不合法|否|否|立即 `invalid_battle` 并写 `system:invalid_battle`|
 |资源型默认动作替代|选择阶段结束前|没有任何合法主动方案|按默认动作规则|是|按正常行动写日志|
 |超时型默认动作替代|选择超时|超时前未提交合法指令|按默认动作规则|是|写 `command_type = timeout_default`、`command_source = timeout_auto`|
 |未开始就取消|行动轮到前|行动者先被击倒或被强制换下|否|否|记 `cancelled_pre_start`|
@@ -166,8 +167,9 @@
 
 |错误码|触发条件|
 |---|---|
-|`invalid_command_payload`|指令结构缺失必填字段或字段类型错误|
+|`invalid_command_payload`|选择阶段提交非法指令：结构缺失、字段类型错误、side/actor 不合法、重复提交、或提交内容不在 legal 集|
 |`invalid_switch_target_not_bench`|执行中的手动换人目标不在当前合法 bench 列表|
+|`invalid_replacement_selection`|强制换下/强制补位阶段，系统替补选择接口返回空值、非法目标或超时|
 |`invalid_effect_definition`|效果定义不存在或引用了未支持的 payload 类型|
 |`invalid_effect_remove_ambiguous`|`remove_effect` 命中歧义或非法匹配（见模块 06）|
 |`invalid_rule_mod_definition`|`rule_mod` 字段或取值不在允许范围内|

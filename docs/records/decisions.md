@@ -262,3 +262,12 @@
 ### 163. `battle_end` 日志严格归入系统链
 - `result:battle_end` 事件的 `command_type` 必须为 `system:*`，禁止写入 `result:battle_end`。
 - `chain_origin` 由系统链上下文提供，保持非行动链口径不变。
+
+### 164. 选择阶段非法提交统一 fail-fast，不保留“拦截重选”
+- 选择阶段收到非法提交（结构非法、side/actor 非法、重复提交、不在 legal 集）一律 `invalid_battle`。
+- 统一错误码为 `invalid_command_payload`，并写 `system:invalid_battle` 日志。
+
+### 165. 强制换下/强制补位统一走系统替补选择接口
+- 引擎新增 `ReplacementSelector` 注入点：输入战斗态、side、合法候选、原因；输出目标 `unit_id`。
+- 候选数 > 1 时必须调用接口；候选数 = 1 自动锁定。
+- 接口返回空值、非法目标或超时，一律 `invalid_replacement_selection` fail-fast。

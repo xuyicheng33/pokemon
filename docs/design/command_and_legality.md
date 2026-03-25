@@ -53,11 +53,11 @@
   - 只做结构化，不做规则判断。
 - `CommandValidator`
   - 负责硬非法拦截。
-  - 失败直接 fail-fast，不做静默修复。
+  - 失败直接 fail-fast：选择阶段立即 `invalid_battle`，不保留“拦截后重选”语义。
 
 ## 4. 校验规则
 
-- MP 不足、目标不合法、奥义入口非法：选择阶段拦截。
+- MP 不足、目标不合法、奥义入口非法、提交内容不在 legal 集：选择阶段按 `invalid_command_payload` 直接 `invalid_battle`。
 - `timeout_default` 只能由回合控制器自动生成。
 - `resource_forced_default` 只能由合法性服务产出，不接受外部伪造。
 - `surrender` 立即结束，不进入行动队列。
