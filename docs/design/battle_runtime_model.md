@@ -1,0 +1,127 @@
+# Battle Runtime Model（运行时模型）
+
+本文件定义战斗运行态结构。运行态对象必须是强类型对象，不以裸 `Dictionary` 作为正式跨模块接口。
+
+## 1. 核心原则
+
+- `BattleState` 是一场战斗的唯一真相。
+- 所有服务都读写同一个 `BattleState` 实例，不自行缓存分叉副本。
+- 运行态字段分为“持久字段”和“回合临时字段”；临时字段必须在明确节点重置。
+
+## 2. Runtime 文件清单
+
+|文件|职责|
+|---|---|
+|`battle_state.gd`|整场战斗运行态根对象|
+|`side_state.gd`|单边队伍运行态|
+|`unit_state.gd`|单单位运行态|
+|`field_state.gd`|全场 field 运行态|
+|`effect_instance.gd`|持续效果实例|
+|`rule_mod_instance.gd`|规则修正实例|
+
+## 3. 枚举与常量
+
+|常量类|用途|
+|---|---|
+|`BattlePhases`|`init / selection / execution / turn_end / finished`|
+|`LeaveStates`|`active / fainted_pending_leave / left`|
+
+## 4. BattleState
+
+|字段|类型|说明|
+|---|---|---|
+|`battle_id`|`String`|本场战斗唯一 ID|
+|`seed`|`int`|随机种子|
+|`turn_index`|`int`|当前回合号，初始化后从 `1` 开始|
+|`phase`|`String`|当前阶段，必须取自 `BattlePhases`|
+|`sides`|`Array[SideState]`|双方运行态|
+|`field_state`|`FieldState` 或 `null`|当前生效的 field|
+|`pending_effect_queue`|`Array[EffectEvent]`|当前待处理效果队列|
+|`chain_context`|`ChainContext`|当前链上下文|
+|`battle_result`|`BattleResult`|战斗结果|
+|`rng_stream_index`|`int`|当前随机消费序号快照|
+
+## 5. SideState
+
+|字段|类型|说明|
+|---|---|---|
+|`side_id`|`String`|`P1 / P2`|
+|`team_units`|`Array[UnitState]`|全部队伍成员|
+|`active_unit_id`|`String`|当前在场单位实例 ID|
+|`bench_order`|`Array[String]`|bench 顺序|
+|`public_labels`|`Dictionary`|稳定公开标签映射|
+|`selection_state`|`SelectionState`|本回合选择态|
+
+## 6. UnitState
+
+|字段|类型|说明|
+|---|---|---|
+|`unit_instance_id`|`String`|实例 ID|
+|`public_id`|`String`|公开编号|
+|`definition_id`|`String`|内容定义 ID|
+|`current_hp`|`int`|当前 HP|
+|`current_mp`|`int`|当前 MP|
+|`stat_stages`|`Dictionary`|能力阶段|
+|`effect_instances`|`Array[EffectInstance]`|挂载的持续效果实例|
+|`rule_mod_instances`|`Array[RuleModInstance]`|挂载的规则修正实例|
+|`has_acted`|`bool`|本回合是否已开始行动|
+|`action_window_passed`|`bool`|本回合行动机会是否已过|
+|`leave_state`|`String`|必须取自 `LeaveStates`|
+
+## 7. FieldState
+
+|字段|类型|说明|
+|---|---|---|
+|`field_def_id`|`String`|field 定义 ID|
+|`instance_id`|`String`|field 实例 ID|
+|`creator`|`String`|来源单位或系统名|
+|`remaining_turns`|`int`|剩余回合|
+|`source_instance_id`|`String`|触发源实例|
+|`source_kind_order`|`int`|来源类型枚举值|
+|`source_order_speed_snapshot`|`int`|速度快照|
+
+## 8. EffectInstance
+
+|字段|类型|说明|
+|---|---|---|
+|`instance_id`|`String`|实例 ID|
+|`def_id`|`String`|效果定义 ID|
+|`owner`|`String`|挂载对象实例 ID|
+|`remaining`|`int`|剩余回合|
+|`created_turn`|`int`|创建时回合号|
+|`source_instance_id`|`String`|根来源实例|
+|`source_kind_order`|`int`|根来源类型|
+|`source_order_speed_snapshot`|`int`|根来源速度快照|
+|`meta`|`Dictionary`|仅用于明确允许的扩展字段|
+
+## 9. RuleModInstance
+
+|字段|类型|说明|
+|---|---|---|
+|`instance_id`|`String`|实例 ID|
+|`mod_kind`|`String`|`final_mod / mp_regen / skill_legality`|
+|`mod_op`|`String`|`mul / add / set / allow / deny`|
+|`value`|`Variant`|运算值|
+|`owner`|`String`|挂载对象|
+|`remaining`|`int`|剩余回合|
+|`created_turn`|`int`|创建回合|
+|`decrement_on`|`String`|`turn_start / turn_end`|
+|`source_instance_id`|`String`|来源实例|
+|`source_kind_order`|`int`|来源类型|
+|`source_order_speed_snapshot`|`int`|速度快照|
+|`priority`|`int`|读取顺序优先级|
+
+## 10. 临时状态重置点
+
+|字段|重置节点|
+|---|---|
+|`has_acted`|每个 `turn_start` 前重置|
+|`action_window_passed`|回合结算结束后重置|
+|`selection_state`|进入新回合选择阶段前重置|
+|`pending_effect_queue`|每个触发批次结束后清空|
+
+## 11. 禁止事项
+
+- 不允许在模块间传递 `Dictionary` 来替代这些 runtime 对象。
+- 不允许在 UI/AI 层缓存 `UnitState` 的私有副本后自行修改。
+- 不允许由 `math` 模块直接改运行态。

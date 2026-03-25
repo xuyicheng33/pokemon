@@ -1,0 +1,85 @@
+# 战斗系统架构总览（骨架阶段）
+
+本文件描述当前原型期战斗核心的工程总览。规则权威仍以 `docs/rules/` 为准；本文件只回答“按什么结构实现，才能不分叉”。
+
+## 1. 架构目标
+
+|目标|说明|
+|---|---|
+|deterministic|同一 `seed + content snapshot + command stream` 必须得到同一结果|
+|强类型|跨模块正式接口不使用裸 `Dictionary` 作为长期契约|
+|单一真相|`BattleState` 是运行态唯一真相，其他模块不得各自缓存状态副本|
+|显式装配|核心依赖由 composition root 显式组装，不靠全局单例偷偷注入|
+|可回放|日志、随机消费与状态哈希有固定落点|
+
+## 2. 总体分层
+
+|层级|目录|职责|禁止事项|
+|---|---|---|---|
+|内容资源层|`content/`|放 `.tres` 战斗定义资源|不放美术资源|
+|内容类型层|`src/battle_core/content`|定义 `Resource` 类|不写运行态逻辑|
+|运行时层|`src/battle_core/runtime`|保存唯一运行态真相|不直接读场景树|
+|契约层|`src/battle_core/contracts`|定义跨模块 I/O 契约|不持有全局状态|
+|领域服务层|`src/battle_core/*`|实现各模块职责边界|不直接依赖 UI/AI|
+|组合装配层|`src/composition`|组装核心服务依赖图|不承载业务规则|
+|适配层|`src/adapters`|向 UI/AI/测试暴露接口|不直接改内部状态|
+|场景入口层|`scenes/`|Godot 入口与 sandbox 组装|不承载核心战斗规则|
+
+## 3. 模块拆分
+
+|模块|目录|职责|
+|---|---|---|
+|Runtime|`battle_core/runtime`|`BattleState`、`SideState`、`UnitState` 等运行态对象|
+|Contracts|`battle_core/contracts`|`QueuedAction`、`ActionResult`、`LogEvent` 等跨模块契约|
+|Commands|`battle_core/commands`|选择、构建、验证指令|
+|Turn|`battle_core/turn`|初始化、回合推进、行动排序|
+|Actions|`battle_core/actions`|执行单次行动与目标锁定|
+|Math|`battle_core/math`|纯计算服务|
+|Lifecycle|`battle_core/lifecycle`|倒下、离场、补位|
+|Effects|`battle_core/effects`|触发、排序、payload 执行、rule mod 接入|
+|Passives|`battle_core/passives`|被动技能、被动持有物、field 作为 trigger source 接入|
+|Logging|`battle_core/logging`|日志构造、写入、回放|
+
+## 4. 数据流
+
+1. `BattleSandboxRunner` 或测试入口请求 `BattleCoreComposer` 创建核心依赖图。
+2. `BattleInitializer` 读取内容资源与队伍快照，构造 `BattleState`。
+3. `TurnLoopController` 驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`。
+4. `LegalActionService` 产出 `LegalActionSet`；`CommandBuilder` 组装 `Command`；`CommandValidator` 做硬校验。
+5. `ActionQueueBuilder` 生成 `QueuedAction` 列表。
+6. `ActionExecutor` 执行行动，调用 `TargetResolver`、`math`、`effects` 与 `lifecycle`。
+7. `BattleLogger` 与 `LogEventBuilder` 为每个步骤写 `LogEvent`。
+8. `ReplayRunner` 使用 `ReplayInput` 重建流程，产出 `ReplayOutput`。
+
+## 5. 依赖纪律
+
+- `battle_core` 不依赖 `adapters`、`composition`、`scenes`。
+- `shared` 不依赖 `battle_core`。
+- `math` 不写 `BattleState`。
+- `logging` 不改写运行态，只观察并记录。
+- `effects` 只能通过 `PayloadExecutor` 与实例服务改写持续效果/field/rule mod。
+- `adapters` 只通过公开 contract 访问核心，不直接拼内部细节。
+- `composition` 负责 new 依赖，但不做业务判断。
+
+## 6. Composition Root
+
+当前采用 `Scene + Composition Root`：
+
+- `scenes/boot/Boot.tscn`
+  - 作为 Godot 主场景。
+  - 只负责进入 `BattleSandbox.tscn`。
+- `scenes/sandbox/BattleSandbox.tscn`
+  - 作为战斗骨架试跑入口。
+  - 挂载 `BattleSandboxRunner`。
+- `src/composition/battle_core_composer.gd`
+  - 负责创建 RNG、ID、commands、turn、effects、logging 等服务对象。
+  - 返回一个明确的依赖容器。
+
+当前不采用 autoload 主导架构，避免原型期过早引入全局状态污染。
+
+## 7. 扩展纪律
+
+- 新机制先改 `docs/rules/`，再改 `docs/design/`，最后改骨架代码。
+- 多目标、`scope = side`、双打、状态包都不属于当前骨架范围。
+- `rule_mod` 只能修改已明文开放的读取节点，不得改写核心流程。
+- 对外接口新增字段时，必须同步更新 contract 类和设计文档，不能只改聊天口径。

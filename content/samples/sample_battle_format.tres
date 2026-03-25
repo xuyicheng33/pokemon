@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="BattleFormatConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/battle_format_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+format_id = "prototype_full_open"
+max_turn = 40
+team_size = 3
+level = 50

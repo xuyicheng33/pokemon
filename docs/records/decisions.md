@@ -99,6 +99,26 @@
 
 ## 2026-03-25
 
+### 145. 战斗内容资源独立为 `content/`
+- 战斗格式、单位、技能、被动、effect、field 等定义不再放进 `assets/`。
+- `assets/` 继续只承载美术、音频、UI 静态资源。
+
+### 146. 当前内容格式固定为 Godot `Resource`
+- 原型期正式内容格式采用 `.tres`。
+- 当前不走 JSON 与 Resource 双轨，避免 schema 漂移与导入逻辑翻倍。
+
+### 147. 核心依赖采用 Scene + Composition Root 组装
+- `Boot.tscn` 作为主场景入口，`BattleSandbox.tscn` 作为战斗骨架试跑入口。
+- 核心服务由 `BattleCoreComposer` 显式 new 并组装，不以 autoload 作为主依赖模式。
+
+### 148. 跨模块正式接口采用强类型 contract
+- `QueuedAction`、`ActionResult`、`LogEvent`、`SelectionState`、`ReplayInput/Output` 等全部落成独立类。
+- 裸 `Dictionary` 只允许保留在显式扩展字段或临时输入边界，不再作为长期正式 contract。
+
+### 149. 本轮“骨架完成”的定义是决策完整，不是逻辑完整
+- 本轮目标是补齐目录、文档、contract、模块入口、场景和测试脚手架。
+- 具体战斗逻辑、角色技能、正式 AI、正式 UI 不属于当前完成标准。
+
 ### 126. 当前基线移除“行动开始前被拦下”失败类型
 - 当前极简基线没有 `before_action` 触发点，也没有通用状态包。
 - 因此现行文档不再保留 `action_failed_pre_start`；若以后确实需要“行动到窗口前被拦下”，必须先补明确触发点，再补扣 MP 与日志语义。

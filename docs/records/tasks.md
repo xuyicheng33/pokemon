@@ -10,6 +10,35 @@
 
 ## 2026-03-25
 
+### 工程骨架补全 + 强类型契约落盘（已完成：v0.8.0 骨架补丁）
+- 目标：把战斗核心从“提纲式文档 + 半截目录”升级为“决策完整骨架”，让后续实现者不再需要自行决定目录、contract、场景入口和内容资源格式。
+- 范围：`content/` 根目录、`docs/design/` 修订、`src/battle_core/contracts/`、runtime 强类型化、各模块 service skeleton、`src/composition/`、`Boot/BattleSandbox` 场景、测试脚手架占位。
+- 验收标准：目录结构、设计文档、强类型 contract、模块入口类、主场景接线与记录文档全部一致；仓库中不再存在“文档提到但没有对应类/目录”的骨架缺口。
+
+#### 已完成内容
+- 新增独立 `content/` 根目录，明确战斗定义资源与 `assets/` 分离。
+- 把 `docs/design/` 从提纲式文档修订为实现级骨架方案，写死 `contracts/`、`composition/`、Scene Composition Root 与 Resource 方向。
+- 新增强类型 contract：`Command / LegalActionSet / SelectionState / ChainContext / EffectEvent / QueuedAction / ActionResult / LogEvent / ReplayInput / ReplayOutput / BattleResult`。
+- 把 runtime 层升级为强类型对象，`BattleState / SideState / UnitState` 不再继续使用长期裸 `Dictionary` 口径。
+- 新增内容 `Resource` 类与 payload 基类，确立 `.tres` 为正式内容格式。
+- 补齐 `commands / turn / actions / math / lifecycle / effects / passives / logging / adapters` 的模块入口类。
+- 新增 `BattleCoreComposer` 与 `BattleCoreContainer`，确立显式装配方式。
+- 新增 `Boot.tscn`、`BattleSandbox.tscn` 并将 `project.godot` 主场景指向 boot。
+- 新增 `content/README.md`、样例 `sample_battle_format.tres`、`tests/README.md` 与空目录占位文件。
+- 通过 Godot 4.6.1 本地运行自检：项目能正常进入 `BattleSandbox`，输出 `Battle sandbox ready: battle_1`，无解析错误。
+
+#### 最小可玩性检查清单（骨架基线）
+- 可启动：Godot 工程有明确主场景，启动后可进入 `BattleSandbox`。
+- 可操作：核心服务可被 `BattleCoreComposer` 一次性装配，sandbox 可创建空 `BattleState`。
+- 无致命错误：不会再出现“文档提到 contract 但仓库里没有类”“内容资源和美术资源混放”“只有目录没有入口类”的结构分叉。
+
+#### 回归检查要点
+- `project.godot` 是否已指向 `scenes/boot/Boot.tscn`。
+- `docs/design/` 是否与当前目录、contract、composition root 口径一致。
+- `src/battle_core/contracts/` 是否覆盖文档中提到的核心 contract。
+- `content/` 是否已经独立于 `assets/`。
+- 各模块空目录是否都已变成“至少有一个明确入口类”。
+
 ### 规则歧义补齐 + 日志事件枚举收口（已完成：v0.7.2 文档补丁）
 - 目标：补齐剩余歧义点，避免实现分叉，并把日志事件类型与非法终止错误码写死。
 - 范围：回合节点触发范围、`action_failed_post_start` 触发点、持续时间扣减起算、`rule_mod` 运行时模型、日志 `event_type` 与 `invalid_battle_code`、`invalid_battle` 错误码表。
