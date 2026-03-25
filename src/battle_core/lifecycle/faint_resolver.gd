@@ -130,8 +130,7 @@ func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_ind
     var effect_events: Array = []
     effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
-    if effect_instance_dispatcher != null:
-        effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
     effect_events.append_array(extra_effect_events)
     if effect_events.is_empty():

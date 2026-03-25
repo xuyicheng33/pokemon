@@ -38,6 +38,5 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     return legal_action_set
 
 func _is_skill_legal_with_rule_mod(battle_state, actor_id: String, skill_id: String) -> bool:
-    if rule_mod_service == null:
-        return true
+    assert(rule_mod_service != null, "LegalActionService.rule_mod_service is required")
     return rule_mod_service.is_skill_allowed(battle_state, actor_id, skill_id)

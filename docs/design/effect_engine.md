@@ -87,3 +87,4 @@ fail-fast 约束：
 - 回合节点触发范围固定为 active + field；bench 不触发。
 - `rule_mod` 不进入第二效果队列，不参与二次排序。
 - 持续效果实例在 `turn_start / turn_end` 触发后按 `decrement_on` 扣减，`remaining <= 0` 立即移除并写 `effect:remove_effect`。
+- 核心依赖缺失（如 `effect_instance_dispatcher`、`rule_mod_service`）不允许静默跳过，必须在启动或执行起点直接失败。

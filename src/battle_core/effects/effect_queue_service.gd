@@ -2,6 +2,7 @@ extends RefCounted
 class_name EffectQueueService
 
 func sort_events(effect_events: Array, rng_service) -> Array:
+    assert(rng_service != null, "EffectQueueService.rng_service is required")
     var grouped_events: Dictionary = {}
     for effect_event in effect_events:
         var group_key: String = "%d|%d|%d|%s" % [
@@ -15,7 +16,7 @@ func sort_events(effect_events: Array, rng_service) -> Array:
         grouped_events[group_key].append(effect_event)
     for group_key in grouped_events.keys():
         var group: Array = grouped_events[group_key]
-        if group.size() > 1 and rng_service != null:
+        if group.size() > 1:
             for effect_event in group:
                 effect_event.sort_random_roll = rng_service.next_float()
     var sorted_events: Array = effect_events.duplicate()

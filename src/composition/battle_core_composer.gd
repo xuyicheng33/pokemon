@@ -163,4 +163,19 @@ func compose():
     container.replay_runner.battle_logger = container.battle_logger
     container.replay_runner.id_factory = container.id_factory
     container.replay_runner.rng_service = container.rng_service
+    _assert_container_dependencies(container)
     return container
+
+func _assert_container_dependencies(container) -> void:
+    _assert_dependency(container.legal_action_service, "legal_action_service", "rule_mod_service")
+    _assert_dependency(container.battle_initializer, "battle_initializer", "effect_instance_dispatcher")
+    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "effect_instance_dispatcher")
+    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "rule_mod_service")
+    _assert_dependency(container.action_executor, "action_executor", "effect_instance_dispatcher")
+    _assert_dependency(container.faint_resolver, "faint_resolver", "effect_instance_dispatcher")
+    _assert_dependency(container.payload_executor, "payload_executor", "replacement_service")
+    _assert_dependency(container.replacement_service, "replacement_service", "payload_executor")
+
+func _assert_dependency(owner, owner_name: String, dependency_name: String) -> void:
+    assert(owner != null, "Composer missing owner: %s" % owner_name)
+    assert(owner.get(dependency_name) != null, "%s missing dependency: %s" % [owner_name, dependency_name])

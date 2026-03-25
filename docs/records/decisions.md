@@ -301,3 +301,11 @@
 - 新增 `forced_replace` payload，执行起点先校验合法 bench，再按候选规则调用系统替补选择接口。
 - 成功路径固定顺序为 `on_switch -> on_exit -> leave(forced_replace) -> state:replace -> state:enter -> on_enter`。
 - 系统选择返回空值或非法目标时，统一以 `invalid_replacement_selection` 立即终止战斗。
+
+### 173. 日志构建移除 `system:orphan` 自动兜底
+- `LogEventBuilder` 不再在 `chain_context` 缺失时自动补链。
+- `chain_context` 或 `event_chain_id` 缺失时直接硬失败，避免日志来源漂移被静默吞掉。
+
+### 174. 关键依赖缺失统一视为状态破坏并立即终止
+- 移除 `effect_instance_dispatcher`、`rule_mod_service` 等关键依赖的“为空就跳过”路径。
+- 在 composition 增加依赖完整性断言，并在运行入口追加依赖完整性检查；缺失时立即 `invalid_state_corruption` 终止。

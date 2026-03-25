@@ -32,7 +32,7 @@
 
 实现状态说明（2026-03-25）：
 
-- 当前实现仍保留 `system:orphan` 临时兜底（`chain_context` 缺失时自动补链），本轮收口计划会在后续批次移除并改为硬失败。
+- `LogEventBuilder` 已移除 `system:orphan` 自动补链；`chain_context` 缺失会直接硬失败。
 
 ### 2.2 空值口径
 

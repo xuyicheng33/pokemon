@@ -32,6 +32,8 @@ var log_event_builder
 func run_turn(battle_state, content_index, commands: Array) -> void:
     if battle_state.battle_result.finished:
         return
+    if _validate_dependencies_or_terminate(battle_state):
+        return
     _reset_turn_state(battle_state)
     if _validate_runtime_or_terminate(battle_state):
         return
@@ -203,15 +205,13 @@ func _execute_system_trigger_batch(trigger_name: String, battle_state, content_i
     var effect_events: Array = []
     effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
-    if effect_instance_dispatcher != null:
-        effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
     if effect_events.is_empty():
         return false
     battle_state.pending_effect_queue = effect_events
     var sorted_events = effect_queue_service.sort_events(effect_events, rng_service)
-    if rng_service != null:
-        battle_state.rng_stream_index = rng_service.get_stream_index()
+    battle_state.rng_stream_index = rng_service.get_stream_index()
     for effect_event in sorted_events:
         payload_executor.execute_effect_event(effect_event, battle_state, content_index)
         if payload_executor.last_invalid_battle_code != null:
@@ -246,8 +246,6 @@ func _decrement_rule_mods_and_log(battle_state, trigger_name: String) -> void:
         battle_logger.append_event(log_event)
 
 func _decrement_effect_instances_and_log(battle_state, content_index, trigger_name: String, owner_unit_ids: Array) -> void:
-    if effect_instance_dispatcher == null:
-        return
     var removed_instances: Array = effect_instance_dispatcher.decrement_for_trigger(trigger_name, battle_state, content_index, owner_unit_ids)
     for removed in removed_instances:
         var removed_instance = removed["instance"]
@@ -499,6 +497,8 @@ func _validate_runtime_or_terminate(battle_state) -> bool:
     return true
 
 func _validate_runtime_state(battle_state):
+    if battle_state.chain_context == null:
+        return ErrorCodesScript.INVALID_STATE_CORRUPTION
     if battle_state.max_chain_depth <= 0:
         return ErrorCodesScript.INVALID_STATE_CORRUPTION
     for side_state in battle_state.sides:
@@ -516,3 +516,49 @@ func _validate_runtime_state(battle_state):
     if battle_state.field_state != null and battle_state.field_state.remaining_turns < 0:
         return ErrorCodesScript.INVALID_STATE_CORRUPTION
     return null
+
+func _validate_dependencies_or_terminate(battle_state) -> bool:
+    var missing_dependency := _resolve_missing_dependency()
+    if missing_dependency.is_empty():
+        return false
+    _terminate_invalid_battle(battle_state, ErrorCodesScript.INVALID_STATE_CORRUPTION)
+    return true
+
+func _resolve_missing_dependency() -> String:
+    if id_factory == null:
+        return "id_factory"
+    if legal_action_service == null:
+        return "legal_action_service"
+    if command_builder == null:
+        return "command_builder"
+    if command_validator == null:
+        return "command_validator"
+    if action_queue_builder == null:
+        return "action_queue_builder"
+    if action_executor == null:
+        return "action_executor"
+    if faint_resolver == null:
+        return "faint_resolver"
+    if mp_service == null:
+        return "mp_service"
+    if field_service == null:
+        return "field_service"
+    if passive_skill_service == null:
+        return "passive_skill_service"
+    if passive_item_service == null:
+        return "passive_item_service"
+    if effect_instance_dispatcher == null:
+        return "effect_instance_dispatcher"
+    if effect_queue_service == null:
+        return "effect_queue_service"
+    if payload_executor == null:
+        return "payload_executor"
+    if rule_mod_service == null:
+        return "rule_mod_service"
+    if rng_service == null:
+        return "rng_service"
+    if battle_logger == null:
+        return "battle_logger"
+    if log_event_builder == null:
+        return "log_event_builder"
+    return ""

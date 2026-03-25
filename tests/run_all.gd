@@ -56,6 +56,8 @@ func _init() -> void:
     _run_test("invalid_chain_depth_max_guard", failures, _test_invalid_chain_depth_max_guard)
     _run_test("invalid_chain_depth_dedupe_guard", failures, _test_invalid_chain_depth_dedupe_guard)
     _run_test("invalid_state_corruption_guard", failures, _test_invalid_state_corruption_guard)
+    _run_test("missing_chain_context_hard_fail", failures, _test_missing_chain_context_hard_fail)
+    _run_test("missing_core_dependency_hard_fail", failures, _test_missing_core_dependency_hard_fail)
     _run_test("rule_mod_paths", failures, _test_rule_mod_paths)
     _run_test("rule_mod_field_scope_paths", failures, _test_rule_mod_field_scope_paths)
     _run_test("rule_mod_skill_legality_enforced", failures, _test_rule_mod_skill_legality_enforced)
@@ -1363,6 +1365,53 @@ func _test_invalid_state_corruption_guard() -> Dictionary:
     if battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
         return _fail("expected invalid_state_corruption, got %s" % str(battle_state.battle_result.reason))
     return _pass()
+
+func _test_missing_chain_context_hard_fail() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 222)
+    battle_state.chain_context = null
+
+    core.turn_loop_controller.run_turn(battle_state, content_index, [])
+    if not battle_state.battle_result.finished:
+        return _fail("missing chain_context should fail-fast")
+    if battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+        return _fail("missing chain_context should map to invalid_state_corruption")
+    for ev in core.battle_logger.event_log:
+        if String(ev.event_chain_id) == "system:orphan":
+            return _fail("system:orphan fallback should not exist")
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_STATE_CORRUPTION:
+            return _pass()
+    return _fail("missing invalid_battle log for missing chain_context")
+
+func _test_missing_core_dependency_hard_fail() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 223)
+    core.turn_loop_controller.effect_instance_dispatcher = null
+
+    core.turn_loop_controller.run_turn(battle_state, content_index, [])
+    if not battle_state.battle_result.finished:
+        return _fail("missing core dependency should fail-fast")
+    if battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+        return _fail("missing dependency should map to invalid_state_corruption")
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_STATE_CORRUPTION:
+            return _pass()
+    return _fail("missing invalid_battle log for dependency hard-fail")
 
 func _test_rule_mod_paths() -> Dictionary:
     var core_payload = _build_core()
