@@ -12,6 +12,7 @@ const SkillDefinitionScript := preload("res://src/battle_core/content/skill_defi
 const UnitDefinitionScript := preload("res://src/battle_core/content/unit_definition.gd")
 const FieldDefinitionScript := preload("res://src/battle_core/content/field_definition.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
+const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
@@ -1907,9 +1908,24 @@ func _test_content_validation_failures() -> Dictionary:
     var bad_skill = SkillDefinitionScript.new()
     bad_skill.id = "bad_skill"
     bad_skill.display_name = "Bad Skill"
+    bad_skill.damage_kind = "bad_kind"
+    bad_skill.accuracy = 120
+    bad_skill.mp_cost = -1
     bad_skill.targeting = "bad_target"
     bad_skill.priority = 9
     content_index.register_resource(bad_skill)
+
+    var duplicate_skill_a = SkillDefinitionScript.new()
+    duplicate_skill_a.id = "duplicate_skill"
+    duplicate_skill_a.display_name = "Duplicate Skill A"
+    duplicate_skill_a.targeting = ContentSchemaScript.TARGET_ENEMY_ACTIVE
+    content_index.register_resource(duplicate_skill_a)
+
+    var duplicate_skill_b = SkillDefinitionScript.new()
+    duplicate_skill_b.id = "duplicate_skill"
+    duplicate_skill_b.display_name = "Duplicate Skill B"
+    duplicate_skill_b.targeting = ContentSchemaScript.TARGET_ENEMY_ACTIVE
+    content_index.register_resource(duplicate_skill_b)
 
     var bad_unit = UnitDefinitionScript.new()
     bad_unit.id = "bad_unit"
@@ -1938,12 +1954,45 @@ func _test_content_validation_failures() -> Dictionary:
     bad_effect.payloads.append(bad_rule_mod)
     content_index.register_resource(bad_effect)
 
+    var bad_resource_payload = ResourceModPayloadScript.new()
+    bad_resource_payload.payload_type = "resource_mod"
+    bad_resource_payload.resource_key = "energy"
+    bad_resource_payload.amount = 2
+    var bad_resource_effect = EffectDefinitionScript.new()
+    bad_resource_effect.id = "bad_resource_effect"
+    bad_resource_effect.display_name = "Bad Resource Effect"
+    bad_resource_effect.scope = "self"
+    bad_resource_effect.duration_mode = "permanent"
+    bad_resource_effect.trigger_names = PackedStringArray(["on_cast"])
+    bad_resource_effect.payloads.clear()
+    bad_resource_effect.payloads.append(bad_resource_payload)
+    content_index.register_resource(bad_resource_effect)
+
+    var bad_stat_payload = StatModPayloadScript.new()
+    bad_stat_payload.payload_type = "stat_mod"
+    bad_stat_payload.stat_name = "luck"
+    bad_stat_payload.stage_delta = 1
+    var bad_stat_effect = EffectDefinitionScript.new()
+    bad_stat_effect.id = "bad_stat_effect"
+    bad_stat_effect.display_name = "Bad Stat Effect"
+    bad_stat_effect.scope = "self"
+    bad_stat_effect.duration_mode = "permanent"
+    bad_stat_effect.trigger_names = PackedStringArray(["on_cast"])
+    bad_stat_effect.payloads.clear()
+    bad_stat_effect.payloads.append(bad_stat_payload)
+    content_index.register_resource(bad_stat_effect)
+
     var errors: Array = content_index.validate_snapshot()
     if errors.is_empty():
         return _fail("content validator did not report failures")
     var has_priority_error: bool = false
     var has_rule_mod_error: bool = false
     var has_missing_ref: bool = false
+    var has_accuracy_error: bool = false
+    var has_mp_cost_error: bool = false
+    var has_duplicate_id_error: bool = false
+    var has_resource_key_error: bool = false
+    var has_stat_name_error: bool = false
     for error_msg in errors:
         var msg = str(error_msg)
         if msg.find("priority out of range") != -1:
@@ -1952,7 +2001,17 @@ func _test_content_validation_failures() -> Dictionary:
             has_rule_mod_error = true
         if msg.find("missing skill") != -1:
             has_missing_ref = true
-    if not (has_priority_error and has_rule_mod_error and has_missing_ref):
+        if msg.find("accuracy out of range") != -1:
+            has_accuracy_error = true
+        if msg.find("mp_cost must be >= 0") != -1:
+            has_mp_cost_error = true
+        if msg.find("duplicated id") != -1:
+            has_duplicate_id_error = true
+        if msg.find("invalid resource_key") != -1:
+            has_resource_key_error = true
+        if msg.find("invalid stat_name") != -1:
+            has_stat_name_error = true
+    if not (has_priority_error and has_rule_mod_error and has_missing_ref and has_accuracy_error and has_mp_cost_error and has_duplicate_id_error and has_resource_key_error and has_stat_name_error):
         return _fail("content validation errors missing expected categories")
     return _pass()
 
@@ -1962,21 +2021,21 @@ func _test_content_validation_new_constraints() -> Dictionary:
     var regular_ok = SkillDefinitionScript.new()
     regular_ok.id = "regular_ok"
     regular_ok.display_name = "Regular OK"
-    regular_ok.targeting = "enemy_active"
+    regular_ok.targeting = ContentSchemaScript.TARGET_ENEMY_ACTIVE
     regular_ok.priority = 0
     content_index.register_resource(regular_ok)
 
     var regular_bad = SkillDefinitionScript.new()
     regular_bad.id = "regular_bad_priority"
     regular_bad.display_name = "Regular Bad Priority"
-    regular_bad.targeting = "enemy_active"
+    regular_bad.targeting = ContentSchemaScript.TARGET_ENEMY_ACTIVE
     regular_bad.priority = 5
     content_index.register_resource(regular_bad)
 
     var ultimate_bad = SkillDefinitionScript.new()
     ultimate_bad.id = "ultimate_bad_priority"
     ultimate_bad.display_name = "Ultimate Bad Priority"
-    ultimate_bad.targeting = "enemy_active"
+    ultimate_bad.targeting = ContentSchemaScript.TARGET_ENEMY_ACTIVE
     ultimate_bad.priority = 0
     content_index.register_resource(ultimate_bad)
 

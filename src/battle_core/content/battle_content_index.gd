@@ -26,6 +26,7 @@ var passive_skills: Dictionary = {}
 var passive_items: Dictionary = {}
 var effects: Dictionary = {}
 var fields: Dictionary = {}
+var duplicate_registration_errors: Array[String] = []
 
 func clear() -> void:
     battle_formats.clear()
@@ -35,6 +36,7 @@ func clear() -> void:
     passive_items.clear()
     effects.clear()
     fields.clear()
+    duplicate_registration_errors.clear()
 
 func load_snapshot(content_snapshot_paths: PackedStringArray) -> void:
     clear()
@@ -47,34 +49,39 @@ func load_snapshot(content_snapshot_paths: PackedStringArray) -> void:
 
 func register_resource(resource: Resource) -> void:
     if resource is BattleFormatConfigScript:
-        battle_formats[resource.format_id] = resource
+        _register_unique_resource(battle_formats, String(resource.format_id), resource, "battle_format")
         return
     if resource is UnitDefinitionScript:
-        units[resource.id] = resource
+        _register_unique_resource(units, String(resource.id), resource, "unit")
         return
     if resource is SkillDefinitionScript:
-        skills[resource.id] = resource
+        _register_unique_resource(skills, String(resource.id), resource, "skill")
         return
     if resource is PassiveSkillDefinitionScript:
-        passive_skills[resource.id] = resource
+        _register_unique_resource(passive_skills, String(resource.id), resource, "passive_skill")
         return
     if resource is PassiveItemDefinitionScript:
-        passive_items[resource.id] = resource
+        _register_unique_resource(passive_items, String(resource.id), resource, "passive_item")
         return
     if resource is EffectDefinitionScript:
-        effects[resource.id] = resource
+        _register_unique_resource(effects, String(resource.id), resource, "effect")
         return
     if resource is FieldDefinitionScript:
-        fields[resource.id] = resource
+        _register_unique_resource(fields, String(resource.id), resource, "field")
         return
     assert(false, "Unsupported content resource: %s" % resource.resource_path)
 
 func validate_snapshot() -> Array:
-    var errors: Array = []
+    var errors: Array = duplicate_registration_errors.duplicate()
     var allowed_targets: PackedStringArray = PackedStringArray([
         ContentSchemaScript.TARGET_ENEMY_ACTIVE,
         ContentSchemaScript.TARGET_SELF,
         ContentSchemaScript.TARGET_FIELD,
+    ])
+    var allowed_damage_kinds: PackedStringArray = PackedStringArray([
+        ContentSchemaScript.DAMAGE_KIND_PHYSICAL,
+        ContentSchemaScript.DAMAGE_KIND_SPECIAL,
+        ContentSchemaScript.DAMAGE_KIND_NONE,
     ])
     var allowed_scopes: PackedStringArray = PackedStringArray(["self", "target", "field"])
     var allowed_triggers: PackedStringArray = PackedStringArray([
@@ -116,8 +123,16 @@ func validate_snapshot() -> Array:
         var skill_definition = skills[skill_id]
         if not allowed_targets.has(skill_definition.targeting):
             errors.append("skill[%s].targeting invalid: %s" % [skill_id, skill_definition.targeting])
+        if not allowed_damage_kinds.has(skill_definition.damage_kind):
+            errors.append("skill[%s].damage_kind invalid: %s" % [skill_id, skill_definition.damage_kind])
+        if int(skill_definition.accuracy) < 0 or int(skill_definition.accuracy) > 100:
+            errors.append("skill[%s].accuracy out of range: %d" % [skill_id, int(skill_definition.accuracy)])
+        if int(skill_definition.mp_cost) < 0:
+            errors.append("skill[%s].mp_cost must be >= 0, got %d" % [skill_id, int(skill_definition.mp_cost)])
         if int(skill_definition.priority) < -5 or int(skill_definition.priority) > 5:
             errors.append("skill[%s].priority out of range: %d" % [skill_id, int(skill_definition.priority)])
+        if skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and int(skill_definition.power) <= 0:
+            errors.append("skill[%s].power must be > 0 for damage skills, got %d" % [skill_id, int(skill_definition.power)])
         _validate_effect_refs(errors, "skill[%s].effects_on_cast_ids" % skill_id, skill_definition.effects_on_cast_ids)
         _validate_effect_refs(errors, "skill[%s].effects_on_hit_ids" % skill_id, skill_definition.effects_on_hit_ids)
         _validate_effect_refs(errors, "skill[%s].effects_on_miss_ids" % skill_id, skill_definition.effects_on_miss_ids)
@@ -165,6 +180,8 @@ func validate_snapshot() -> Array:
         var effect_definition = effects[effect_id]
         if not allowed_scopes.has(effect_definition.scope):
             errors.append("effect[%s].scope invalid: %s" % [effect_id, effect_definition.scope])
+        if int(effect_definition.priority) < -5 or int(effect_definition.priority) > 5:
+            errors.append("effect[%s].priority out of range: %d" % [effect_id, int(effect_definition.priority)])
         if effect_definition.duration_mode != ContentSchemaScript.DURATION_TURNS and effect_definition.duration_mode != ContentSchemaScript.DURATION_PERMANENT:
             errors.append("effect[%s].duration_mode invalid: %s" % [effect_id, effect_definition.duration_mode])
         if effect_definition.duration_mode == ContentSchemaScript.DURATION_TURNS:
@@ -213,16 +230,31 @@ func _validate_effect_refs(errors: Array, label: String, effect_ids: PackedStrin
             errors.append("%s missing effect: %s" % [label, effect_id])
 
 func _validate_payload(errors: Array, effect_id: String, payload) -> void:
+    var allowed_stat_names: PackedStringArray = PackedStringArray([
+        "attack",
+        "defense",
+        "sp_attack",
+        "sp_defense",
+        "speed",
+    ])
     if payload == null:
         errors.append("effect[%s].payloads contains null" % effect_id)
         return
     if payload is DamagePayloadScript:
+        if int(payload.amount) <= 0:
+            errors.append("effect[%s].damage amount must be > 0, got %d" % [effect_id, int(payload.amount)])
         return
     if payload is HealPayloadScript:
+        if int(payload.amount) <= 0:
+            errors.append("effect[%s].heal amount must be > 0, got %d" % [effect_id, int(payload.amount)])
         return
     if payload is ResourceModPayloadScript:
+        if String(payload.resource_key) != "mp":
+            errors.append("effect[%s].resource_mod invalid resource_key: %s" % [effect_id, payload.resource_key])
         return
     if payload is StatModPayloadScript:
+        if not allowed_stat_names.has(String(payload.stat_name)):
+            errors.append("effect[%s].stat_mod invalid stat_name: %s" % [effect_id, payload.stat_name])
         return
     if payload is ApplyFieldPayloadScript:
         if String(payload.field_definition_id).is_empty() or not fields.has(payload.field_definition_id):
@@ -248,6 +280,16 @@ func _validate_payload(errors: Array, effect_id: String, payload) -> void:
             errors.append("effect[%s].forced_replace selector_reason must not be empty" % effect_id)
         return
     errors.append("effect[%s].payloads invalid type: %s" % [effect_id, payload])
+
+func _register_unique_resource(store: Dictionary, raw_id: String, resource: Resource, label: String) -> void:
+    var normalized_id := raw_id.strip_edges()
+    if normalized_id.is_empty():
+        duplicate_registration_errors.append("%s id must not be empty" % label)
+        return
+    if store.has(normalized_id) and store[normalized_id] != resource:
+        duplicate_registration_errors.append("%s duplicated id: %s" % [label, normalized_id])
+        return
+    store[normalized_id] = resource
 
 func _validate_rule_mod_payload(rule_mod_payload) -> Array:
     var errors: Array = []
