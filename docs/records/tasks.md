@@ -10,6 +10,30 @@
 
 ## 2026-03-25
 
+### 规则歧义补齐 + 日志事件枚举收口（已完成：v0.7.2 文档补丁）
+- 目标：补齐剩余歧义点，避免实现分叉，并把日志事件类型与非法终止错误码写死。
+- 范围：回合节点触发范围、`action_failed_post_start` 触发点、持续时间扣减起算、`rule_mod` 运行时模型、日志 `event_type` 与 `invalid_battle_code`、`invalid_battle` 错误码表。
+- 验收标准：实现者只读现行文档，就能唯一确定回合节点触发范围、行动失败语义、持续时间扣减起算、`rule_mod` 应用顺序与日志事件类型。
+
+#### 已完成内容
+- 写死回合节点触发范围：仅在场单位与 field 生效，bench 不参与。
+- 收口 `action_failed_post_start`：仅在执行起点判定，后续 payload 目标无效只跳过该 payload。
+- 明确 `turns` 持续时间扣减起算点：创建后遇到的第一个对应节点即为首次扣减。
+- 补齐 `rule_mod` payload 最小字段与 `RuleModInstance` 运行时模型与应用顺序。
+- 日志新增 `event_type` 最小枚举与 `invalid_battle_code` 字段，补齐错误码表。
+
+#### 最小可玩性检查清单（文档基线）
+- 可启动：实现者能唯一实现回合节点触发范围、持续时间扣减与 `rule_mod` 应用顺序。
+- 可操作：行动失败语义与日志事件类型只有一套口径，不会分叉。
+- 无致命错误：不会出现 bench 触发回合节点、`action_failed_post_start` 乱用、field 回合数起算不一致等实现歧义。
+
+#### 回归检查要点
+- 模块 04/06 是否一致声明回合节点只对在场单位与 field 生效。
+- 模块 02 是否将 `action_failed_post_start` 限定为执行起点判定，并补齐 payload 跳过口径。
+- 模块 05/06 是否写死持续时间扣减起算点。
+- 模块 06 是否补齐 `rule_mod` payload 字段与运行时应用顺序。
+- 模块 05 是否新增 `event_type` 枚举与 `invalid_battle_code` 字段。
+
 ### 规则执行契约补齐 + 运行时日志收口（已完成：v0.7.2 文档补丁）
 - 目标：把现行文档里还会逼实现者临场拍板的执行契约补齐，并修掉剩余术语漂移。
 - 范围：首发 `on_enter / battle_init` 时序、`fainted_pending_leave` 统一命名、持续效果排序继承、行动链日志字段继承、AI 合法列表边界、`on_cast` / payload 顺序、field 扣减节点、技能对接字段收口。

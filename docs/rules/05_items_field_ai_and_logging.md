@@ -23,6 +23,7 @@
 |是否进入行动队列|否|
 |公开时机|战前随完整队伍信息一并公开|
 |常见触发路径|常驻、受击、回合节点、命中后等|
+|回合节点触发范围|仅当前在场单位触发；bench 不触发|
 
 ## 2. field（全局效果）
 
@@ -52,6 +53,7 @@
 |场上已有 field，新的后结算|旧 field 被替换|
 |同一窗口里多个 field 同时待生效|先进入统一效果队列，后结算完成的那个最终留下|
 |剩余回合扣减|固定在 `turn_end` 效果全部结算完成后；`remaining <= 0` 时立即移除|
+|剩余回合起算|field 生效后，遇到的第一个 `turn_end` 结算节点即为首次扣减点；若本回合 `turn_end` 尚未执行，则本回合末立即扣减|
 |field 到期|在约定节点移除，并写日志|
 
 ## 3. 统一效果排序
@@ -119,6 +121,7 @@
 |`turn_index`|当前回合序号|
 |`event_chain_id`|触发链路 ID|
 |`event_step_id`|链路步骤 ID|
+|`event_type`|事件类型枚举（见 5.4）|
 |`action_id`|当前根行动唯一 ID；同一行动链内的衍生效果事件继承该值；非行动系统链为 `null`|
 |`action_queue_index`|当前根行动在本回合队列中的执行序位；非行动系统链为 `null`|
 |`actor_id`|当前根行动的行动者；非行动系统链为 `null`|
@@ -136,6 +139,7 @@
 |`rng_stream_index`|本次随机在 RNG 流中的消费序号|
 |`select_deadline_ms`|本回合选指令截止时间|
 |`select_timeout`|是否触发超时自动替代|
+|`invalid_battle_code`|仅 `system:invalid_battle` 时填写错误码；其他事件写 `null`|
 |HP/MP 变化|谁变了多少、变化前后数值|
 |field 变化|创建、覆盖、剩余回合变化、移除|
 
@@ -160,6 +164,37 @@
 |公开摘要日志|给玩家看，强调发生了什么|
 |完整战斗日志|给调试、回放、回归测试用，必须可复现|
 |调试扩展日志|可以更详细，但不能替代完整战斗日志|
+
+### 5.4 `event_type` 枚举（最小集）
+
+|`event_type`|说明|
+|---|---|
+|`system:battle_init`|战斗开始统一检查|
+|`system:turn_start`|回合开始系统结算|
+|`system:turn_end`|回合末系统结算|
+|`system:turn_limit`|回合上限比较|
+|`system:invalid_battle`|非法终止|
+|`action:cast`|行动开始执行|
+|`action:cancelled_pre_start`|行动轮到前被取消|
+|`action:failed_post_start`|行动执行起点失败|
+|`action:hit`|命中成功|
+|`action:miss`|命中失败|
+|`effect:damage`|伤害结算|
+|`effect:heal`|治疗结算|
+|`effect:resource_mod`|资源变更结算|
+|`effect:stat_mod`|能力阶段变更|
+|`effect:apply_effect`|施加持续效果实例|
+|`effect:remove_effect`|移除持续效果实例|
+|`effect:apply_field`|创建或替换 field|
+|`effect:field_expire`|field 到期移除|
+|`effect:rule_mod_apply`|规则修正生效|
+|`effect:rule_mod_remove`|规则修正移除|
+|`state:enter`|入场|
+|`state:exit`|离场|
+|`state:switch`|换人|
+|`state:faint`|倒下|
+|`state:replace`|强制补位|
+|`result:battle_end`|战斗结束|
 
 ## 6. 当前模块回归点
 

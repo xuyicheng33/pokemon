@@ -71,6 +71,7 @@
 4. `battle_init` 只用于“战斗开始时统一检查一次”的来源，不因为某个单位刚入场而重复触发。
 5. 首发入场仍然走 `on_enter`；同一份效果不能因为“首发入场”同时挂在 `on_enter` 和 `battle_init` 两边重复结算。
 6. `battle_init` 固定发生在初始 `on_enter` 与其引发的补位链完全稳定之后；不同触发点不跨批次混排。
+7. `turn_start / turn_end` 触发只对“当前在场单位”和全场 field 生效；bench 单位不参与回合节点触发。
 
 ## 5. 当前基线 payload 类型
 
@@ -92,6 +93,47 @@
 3. `payloads` 列表严格按声明顺序执行；后一个 payload 必须读取前一个 payload 已经写回的最新运行态。
 4. 每个 payload 单独适用模块 02 的目标有效性与模块 04 的生命周期规则；若前序 payload 已让目标进入 `fainted_pending_leave`，后续直接作用该目标的普通 payload 按目标无效处理。
 5. 当前基线的 `remove_effect` 只允许按目标 owner 上的精确 `def_id` 移除单个效果实例；若出现文档未允许的歧义匹配，按 `invalid_battle` 处理。
+
+### 5.1 `rule_mod` payload 约束（最小集）
+
+|字段|说明|
+|---|---|
+|`mod_kind`|`final_mod / mp_regen / skill_legality`|
+|`mod_op`|`final_mod` 允许 `mul / add / set`；`mp_regen` 允许 `add / set`；`skill_legality` 允许 `allow / deny`|
+|`value`|数值或布尔含义（由 `mod_kind / mod_op` 解释）|
+|`scope`|`self / target / field`，与创建时的目标一致|
+|`duration_mode`|`turns / permanent`|
+|`duration`|`turns` 模式必填|
+|`decrement_on`|`turn_start / turn_end`，声明扣减节点|
+|`stacking`|`none / refresh / replace`|
+|`priority`|可选，默认 `0`，用于同一 hook 内的应用顺序|
+
+补充规则：
+
+1. `rule_mod` 必须显式声明 `decrement_on`；否则按 `invalid_battle` 处理。
+2. `skill_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段。
+
+### 5.2 `RuleModInstance` 运行时模型
+
+|字段|说明|
+|---|---|
+|`instance_id`|规则修正实例唯一 ID|
+|`mod_kind / mod_op / value`|来自 payload|
+|`owner`|当前挂载对象（与 `scope` 对齐）|
+|`remaining`|剩余回合数|
+|`created_turn`|创建回合|
+|`decrement_on`|扣减节点|
+|`source_instance_id`|创建它的根来源实例 ID|
+|`source_kind_order`|根来源类型枚举|
+|`source_order_speed_snapshot`|排序速度快照|
+|`priority`|用于同一 hook 的应用排序|
+
+应用规则：
+
+1. `rule_mod` 在执行 payload 时创建/刷新/替换实例，不进入效果队列二次排序。
+2. 需要读取规则修正的节点（`final_mod`、`turn_start` MP 回复、技能合法性）必须收集所有仍有效的 `RuleModInstance`。
+3. 同一 hook 内的应用顺序固定为：`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`。
+4. `stacking = none` 时遇到同键（`mod_kind + scope + owner + mod_op`）直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
 
 ## 6. 叠加与替换
 
@@ -134,8 +176,9 @@
 补充规则：
 
 1. 当前若某个技能要引入持续效果，必须在技能定义里写清“在哪个节点扣减”。
-2. 若未显式声明 `persists_on_switch = true`，则离场时移除。
-3. 当前不允许只写“按触发次数移除”这种口头规则；因为现行基线还没有这套持续模型。
+2. 扣减起算点：实例创建后，遇到的第一个对应扣减节点即为首次扣减点；若本回合该节点尚未结算，则本回合就会扣减。
+3. 若未显式声明 `persists_on_switch = true`，则离场时移除。
+4. 当前不允许只写“按触发次数移除”这种口头规则；因为现行基线还没有这套持续模型。
 
 ## 9. 防循环与安全保护
 

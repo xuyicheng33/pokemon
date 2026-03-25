@@ -155,3 +155,23 @@
 - 技能、奥义、两类默认动作的执行起点固定为：`has_acted = true -> 扣 MP -> on_cast -> 命中判定 -> 后续 payload / on_hit / on_miss`。
 - `payloads` 严格按声明顺序执行，后序 payload 读取前序写回的最新运行态。
 - `resource_forced_default` 与 `timeout_default` 进入行动队列后仍属于 `action` 链，不额外发明 `timeout` 链。
+
+### 140. 回合节点触发范围统一为“仅在场单位 + field”
+- `turn_start / turn_end` 的回合节点触发只对当前在场单位和全场 field 生效。
+- bench 单位不参与回合节点触发；其被动与持有物的回合节点效果同样不触发。
+
+### 141. `action_failed_post_start` 只在执行起点判定
+- 行动执行起点若目标无效或硬条件不满足，记为 `action_failed_post_start`。
+- 行动已开始后，若后续 payload 目标无效，仅跳过该 payload，不改写行动状态。
+
+### 142. 持续时间扣减起算点写死
+- `turns` 模式的持续效果与 field 在创建后，遇到的第一个对应扣减节点即为首次扣减点。
+- 若本回合该节点尚未结算，则本回合会立即扣减。
+
+### 143. `rule_mod` 运行时模型与 payload 最小契约冻结
+- `rule_mod` 必须显式声明 `mod_kind / mod_op / value / scope / duration_mode / duration / decrement_on / stacking`。
+- 运行时统一创建 `RuleModInstance`，并在读取 `final_mod`、MP 回复与技能合法性时按稳定顺序应用。
+
+### 144. 战斗日志新增 `event_type` 枚举与 `invalid_battle_code`
+- 完整日志新增 `event_type` 字段，使用固定最小枚举。
+- `invalid_battle` 终止必须写入 `invalid_battle_code`，避免回放与回归测试漂移。

@@ -112,8 +112,13 @@
 |超时型默认动作替代|选择超时|超时前未提交合法指令|按默认动作规则|是|写 `command_type = timeout_default`、`command_source = timeout_auto`|
 |未开始就取消|行动轮到前|行动者先被击倒或被强制换下|否|否|记 `cancelled_pre_start`|
 |命中失败|命中判定|技能未命中|是|是|触发 `on_miss`|
-|开始后失效|已经开始执行后|目标位置为空、目标已进入 `fainted_pending_leave`、条件不满足|是|是|记 `action_failed_post_start`|
+|开始后失效|已经开始执行后（执行起点）|执行起点目标位置为空、目标已进入 `fainted_pending_leave`、硬条件不满足|是|是|记 `action_failed_post_start`|
 |成功结算|正常命中或正常生效|伤害、回复、换人、展开 field|是|是|按完整链路写日志|
+
+补充规则：
+
+1. `action_failed_post_start` 只在“行动执行起点”判定；若行动已经开始，后续 payload 过程中目标因前序效果进入 `fainted_pending_leave`，该 payload 视为目标无效并跳过，但不改写本次行动状态。
+2. 被跳过的 payload 不产生日志事件；行动链仍保持 `has_acted = true`。
 
 ## 7. 击倒窗口与强制补位
 
@@ -156,3 +161,16 @@
 |同窗双方均无可上场单位|平局|
 |投降|即时认负|
 |`invalid_battle`|立即终止，本场记为 `no_winner`，并保留完整日志|
+
+### 10.1 `invalid_battle` 错误码（最小集）
+
+|错误码|触发条件|
+|---|---|
+|`invalid_command_payload`|指令结构缺失必填字段或字段类型错误|
+|`invalid_action_target_missing`|行动执行起点目标位置为空或目标已进入 `fainted_pending_leave`|
+|`invalid_switch_target_not_bench`|执行中的手动换人目标不在当前合法 bench 列表|
+|`invalid_effect_definition`|效果定义不存在或引用了未支持的 payload 类型|
+|`invalid_effect_remove_ambiguous`|`remove_effect` 命中歧义或非法匹配（见模块 06）|
+|`invalid_rule_mod_definition`|`rule_mod` 字段或取值不在允许范围内|
+|`invalid_chain_depth`|触发链深超出 `max_chain_depth`|
+|`invalid_state_corruption`|运行态字段不满足硬约束（如 HP/MP 越界、负值）|
