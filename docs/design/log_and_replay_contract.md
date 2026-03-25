@@ -39,7 +39,9 @@
 - 非适用字段一律写 `null`，不写空串、不省略。
 - `invalid_battle_code` 仅在 `event_type = system:invalid_battle` 时填写，其余事件写 `null`。
 - 未消费随机的字段（`speed_tie_roll / hit_roll / effect_roll`）写 `null`。
-- 非 effect 事件 `trigger_name / cause_event_id` 写 `null`；effect 事件必须填。
+- effect 事件必须填写 `trigger_name / cause_event_id`。
+- 系统锚点事件（`system:battle_init / system:turn_start / system:turn_end`）允许保留对应节点名到 `trigger_name`，便于日志排查；其 `cause_event_id` 仍写 `null`。
+- 其他非 effect 事件 `trigger_name / cause_event_id` 写 `null`。
 - `killer_id` 无归属时写 `null`。
 
 ### 2.3 事件类型

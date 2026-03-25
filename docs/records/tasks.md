@@ -378,3 +378,28 @@
 - `docs/rules/README.md` 是否明确要求全局搜索时排除 `docs/records/archive/`。
 - `docs/records/archive/` 的文件头是否明确标注“历史归档，不能直接实现”。
 - 退役总表是否已明确声明“只读 `docs/rules/`，不要据此实现”。
+
+## 2026-03-25
+
+### 战斗骨架审查问题修复（已完成：三批提交收口）
+- 目标：把本轮架构审查中确认的真实问题修平，避免“日志语义漂移”和“脏内容静默进入运行态”继续积累。
+- 范围：`battle_end` 系统链归因、`turn_limit` 链来源、内容快照加载期校验补强、日志/内容 schema 文档收口、记录更新。
+- 验收标准：终局日志继承真实系统来源；重复 ID 与非法内容字段在加载期直接失败；文档口径与现行实现一致。
+
+#### 已完成内容
+- 第一批：修复 `battle_end` 在 `turn_start / surrender / turn_limit` 路径上可能丢失真实系统来源的问题，并补充针对 `turn_start` 与 `turn_limit` 的专门回归测试。
+- 第二批：补齐内容快照校验，新增重复 ID、技能 `accuracy / mp_cost / damage_kind / power`、效果优先级、`resource_mod.resource_key`、`stat_mod.stat_name` 等硬校验。
+- 第二批同时补充测试，覆盖新的加载期失败类别，防止后续回归。
+- 第三批：同步更新日志契约和内容 schema 文档，并把本轮修复决策写入 `docs/records/decisions.md`。
+- 分批提交完成：`fix: preserve battle end system origins`、`fix: harden content snapshot validation`。
+
+#### 最小可玩性检查清单
+- 可启动：样例战斗仍可正常初始化、回放并打到终局。
+- 可操作：现有技能、换人、补位、field、默认动作路径没有因新校验或链路收口而失效。
+- 无致命错误：`battle_end` 与 `system:turn_limit` 不再挂错系统来源；非法内容不会再静默覆盖或带病运行。
+
+#### 回归检查要点
+- `tests/run_with_gate.sh` 必须全绿。
+- `result:battle_end` 在 `turn_start` 终局路径上必须继承 `system:turn_start / turn_start`。
+- `system:turn_limit` 与它收尾的 `result:battle_end` 必须归入 `turn_end`。
+- 内容快照若出现重复 ID、非法 `accuracy/mp_cost`、非法 `resource_key/stat_name`，必须在加载期直接失败。

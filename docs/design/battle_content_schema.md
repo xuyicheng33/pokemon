@@ -126,7 +126,7 @@
 - `RuleModPayload`
 - `ForcedReplacePayload`
 
-本轮只建立统一基类与方向，不实现具体结算逻辑。
+当前这些 payload 已接入运行时结算链；内容层负责声明，运行时负责统一调度与执行。
 
 实现状态说明（2026-03-25）：
 
@@ -138,7 +138,15 @@
 - 本轮不支持 JSON 与 `.tres` 双轨并存。
 - 本轮不做角色/技能平衡设计。
 
-## 6. 运行前校验（BattleSetup）
+## 6. 内容快照加载期校验
+
+- 各类资源 ID / `format_id` 不能为空，且在各自类型内必须唯一；重复注册直接视为非法内容。
+- 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
+- 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单、效果优先级范围、payload 类型与跨资源引用完整性。
+- payload 额外校验覆盖：`DamagePayload.amount > 0`、`HealPayload.amount > 0`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`RuleModPayload` 组合合法、`ForcedReplacePayload.selector_reason` 非空。
+- 内容快照校验失败直接 fail-fast，不进入运行态。
+
+## 7. 运行前校验（BattleSetup）
 
 - 同一 side 的队伍中，被动持有物 `passive_item_id` 不可重复。
 - 该校验在战斗初始化前执行；失败直接 fail-fast，不进入运行态。

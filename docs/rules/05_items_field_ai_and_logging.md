@@ -165,7 +165,7 @@
 |`command_type / command_source`|非行动系统链固定写 `system:*` 与 `system`，例如 `system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
 |`select_timeout`|`timeout_default` 所属整条行动链都写 `true`；其他行动链写 `false`；非行动系统链写 `null`|
 |`select_deadline_ms`|整条行动链都写本回合截止时间；非行动系统链写 `null`|
-|`trigger_name / cause_event_id / killer_id`|非 effect 事件写 `null`；effect 事件必须填 `trigger_name / cause_event_id`；`killer_id` 没有归属则写 `null`|
+|`trigger_name / cause_event_id / killer_id`|effect 事件必须填 `trigger_name / cause_event_id`；系统锚点事件（如 `system:battle_init / system:turn_start / system:turn_end`）允许填写对应节点名作为 `trigger_name`；其他非 effect 事件 `cause_event_id` 写 `null`；`killer_id` 没有归属则写 `null`|
 
 实现状态说明（2026-03-25）：
 

@@ -317,3 +317,18 @@
 ### 176. 生命周期触发批次执行收口到单一执行器
 - 新增 `TriggerBatchRunner` 统一承载“收集事件 -> 排序 -> 执行 payload -> 传播 invalid code”流程。
 - `battle_initializer / turn_loop_controller / action_executor / faint_resolver / replacement_service` 不再各自复制一套触发批次流水线，后续扩展只改一个点。
+
+### 177. `battle_end` 与 `turn_limit` 必须继承真实系统来源
+- `result:battle_end` 不允许因为先把 `phase` 改成 `finished` 而丢失真实来源阶段。
+- `turn_start / turn_end / battle_init / turn_limit` 触发的终局日志，必须沿用对应系统链的 `command_type / chain_origin`。
+- `system:turn_limit` 的 `chain_origin` 固定归入 `turn_end`。
+
+### 178. 内容快照校验补齐字段边界与重复 ID 检查
+- 内容资源加载期除跨引用校验外，还必须拦截重复 ID、空 ID、技能数值越界、效果优先级越界和 payload 字段非法。
+- 重复资源 ID 不再允许“后加载静默覆盖前加载”，必须在内容加载期直接失败。
+- `resource_mod.resource_key` 与 `stat_mod.stat_name` 这类字段必须在内容层就收紧白名单，不能等运行时默默兜底。
+
+### 179. 系统锚点日志允许保留 `trigger_name`
+- effect 事件仍然必须填写 `trigger_name / cause_event_id`。
+- `system:battle_init / system:turn_start / system:turn_end` 这类系统锚点事件允许保留对应节点名到 `trigger_name`，用于日志诊断。
+- 非 effect 事件不再强求 `trigger_name` 一律为 `null`；但 `cause_event_id` 仍只在 effect 事件中使用。
