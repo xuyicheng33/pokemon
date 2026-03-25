@@ -89,13 +89,19 @@ func validate_snapshot() -> Array:
         "on_faint",
         "on_kill",
     ])
+    var regular_skill_refs: Dictionary = {}
+    var ultimate_skill_refs: Dictionary = {}
 
     for unit_id in units.keys():
         var unit_definition = units[unit_id]
+        if unit_definition.skill_ids.size() != 3:
+            errors.append("unit[%s].skill_ids must contain exactly 3 entries, got %d" % [unit_id, unit_definition.skill_ids.size()])
         for skill_id in unit_definition.skill_ids:
+            regular_skill_refs[skill_id] = true
             if not skills.has(skill_id):
                 errors.append("unit[%s].skill_ids missing skill: %s" % [unit_id, skill_id])
         if not unit_definition.ultimate_skill_id.is_empty():
+            ultimate_skill_refs[unit_definition.ultimate_skill_id] = true
             if not skills.has(unit_definition.ultimate_skill_id):
                 errors.append("unit[%s].ultimate_skill_id missing skill: %s" % [unit_id, unit_definition.ultimate_skill_id])
             if unit_definition.skill_ids.has(unit_definition.ultimate_skill_id):
@@ -115,6 +121,22 @@ func validate_snapshot() -> Array:
         _validate_effect_refs(errors, "skill[%s].effects_on_hit_ids" % skill_id, skill_definition.effects_on_hit_ids)
         _validate_effect_refs(errors, "skill[%s].effects_on_miss_ids" % skill_id, skill_definition.effects_on_miss_ids)
         _validate_effect_refs(errors, "skill[%s].effects_on_kill_ids" % skill_id, skill_definition.effects_on_kill_ids)
+
+    for skill_id in regular_skill_refs.keys():
+        if not skills.has(skill_id):
+            continue
+        var skill_definition = skills[skill_id]
+        if int(skill_definition.priority) < -2 or int(skill_definition.priority) > 2:
+            errors.append("skill[%s] used in unit.skill_ids must have priority in -2..2, got %d" % [skill_id, int(skill_definition.priority)])
+
+    for skill_id in ultimate_skill_refs.keys():
+        if not skills.has(skill_id):
+            continue
+        var skill_definition = skills[skill_id]
+        if int(skill_definition.priority) != 5 and int(skill_definition.priority) != -5:
+            errors.append("skill[%s] used as ultimate must have priority +5 or -5, got %d" % [skill_id, int(skill_definition.priority)])
+        if regular_skill_refs.has(skill_id):
+            errors.append("skill[%s] used as ultimate must not appear in any unit.skill_ids" % skill_id)
 
     for passive_id in passive_skills.keys():
         var passive_definition = passive_skills[passive_id]
