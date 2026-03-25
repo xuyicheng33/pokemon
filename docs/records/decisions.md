@@ -276,3 +276,19 @@
 - `unit.skill_ids` 固定为 3 槽；普通技能优先级只能是 `-2..+2`。
 - `ultimate_skill_id` 对应技能优先级只能是 `+5/-5`，且不得出现在任意单位的 `skill_ids`。
 - `BattleSetup` 维度新增“同队被动持有物不可重复”运行前校验，校验失败直接 fail-fast。
+
+### 167. Battle Core 收口执行顺序固定为“先文档后代码”
+- 先把规则文档、设计文档、记录文档统一到同一口径，再落代码与测试。
+- 若实现中发现规则冲突，必须先改 `docs/rules/`，禁止跳过文档层直接拍板实现。
+
+### 168. `PassiveItemDefinition.on_receive_effect_ids` 进入禁用迁移态
+- 字段暂时保留用于资源迁移，但当前基线不允许其承载运行逻辑。
+- 内容快照校验将收紧为“非空即失败”，避免“文档禁用但运行时悄悄生效”。
+
+### 169. `forced_replace` 采用最小闭环落地策略
+- 本轮只落地 1v1 单 active 槽位所需链路，不扩到多目标、多槽位。
+- 执行顺序固定为 `on_switch -> on_exit -> leave(forced_replace) -> replace -> on_enter`，选择失败统一 `invalid_replacement_selection`。
+
+### 170. 去除日志与依赖兜底，改为显式硬失败
+- `LogEventBuilder` 不再自动构造 `system:orphan` 链；缺失 `chain_context` 时直接失败。
+- 关键依赖（如 `effect_instance_dispatcher`）不允许“为空就跳过”，装配阶段必须断言完整性。

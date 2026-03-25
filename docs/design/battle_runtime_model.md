@@ -47,7 +47,7 @@
 |---|---|---|
 |`side_id`|`String`|`P1 / P2`|
 |`team_units`|`Array[UnitState]`|全部队伍成员|
-|`active_unit_id`|`String`|当前在场单位实例 ID|
+|`active_slots`|`Dictionary`|当前在场槽位映射（当前基线仅使用 `active_0`）|
 |`bench_order`|`Array[String]`|bench 顺序|
 |`public_labels`|`Dictionary`|稳定公开标签映射|
 |`selection_state`|`SelectionState`|本回合选择态|

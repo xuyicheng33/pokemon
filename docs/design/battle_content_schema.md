@@ -85,7 +85,7 @@
 |字段|类型|说明|
 |---|---|---|
 |`always_on_effect_ids`|`PackedStringArray`|常驻效果|
-|`on_receive_effect_ids`|`PackedStringArray`|受击效果|
+|`on_receive_effect_ids`|`PackedStringArray`|禁用字段（迁移过渡保留；非空即校验失败）|
 |`on_turn_effect_ids`|`PackedStringArray`|回合节点效果|
 
 ### 3.5 EffectDefinition
@@ -126,6 +126,10 @@
 - `RuleModPayload`
 
 本轮只建立统一基类与方向，不实现具体结算逻辑。
+
+实现状态说明（2026-03-25）：
+
+- `forced_replace` payload 将在本轮收口计划的后续批次落地；当前内容快照里不应提前引用未接线类型。
 
 ## 5. 非目标
 

@@ -22,8 +22,12 @@
 |同队同名限制|不可重复|
 |是否进入行动队列|否|
 |公开时机|战前随完整队伍信息一并公开|
-|常见触发路径|常驻、受击、回合节点、命中后等|
+|常见触发路径|常驻、回合节点、命中后等|
 |回合节点触发范围|仅当前在场单位触发；bench 不触发|
+
+补充规则：
+
+1. `on_receive_effect_ids` 当前为禁用迁移字段：资源中允许保留字段，但值必须为空；非空按内容加载期校验直接失败。
 
 ## 2. field（全局效果）
 
@@ -162,6 +166,10 @@
 |`select_timeout`|`timeout_default` 所属整条行动链都写 `true`；其他行动链写 `false`；非行动系统链写 `null`|
 |`select_deadline_ms`|整条行动链都写本回合截止时间；非行动系统链写 `null`|
 |`trigger_name / cause_event_id / killer_id`|非 effect 事件写 `null`；effect 事件必须填 `trigger_name / cause_event_id`；`killer_id` 没有归属则写 `null`|
+
+实现状态说明（2026-03-25）：
+
+1. 当前实现仍存在 `system:orphan` 临时补链逻辑；本轮收口计划后续批次会移除，并改为 `chain_context` 缺失直接失败。
 
 ### 5.3 日志分层
 

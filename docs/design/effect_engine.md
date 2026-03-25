@@ -50,6 +50,10 @@
 - `apply_field`
 - `rule_mod`
 
+实现状态说明（2026-03-25）：
+
+- `forced_replace` payload 已进入本轮收口计划，当前批次前仍未接线到 `PayloadExecutor`。
+
 fail-fast 约束：
 
 - 缺失效果定义或 payload 类型非法：`last_invalid_battle_code = invalid_effect_definition`。

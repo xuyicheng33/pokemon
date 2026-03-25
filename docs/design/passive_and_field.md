@@ -36,6 +36,7 @@
 
 - `turn_start / turn_end` 只对 active 生效。
 - `battle_init / on_enter` 可读取 `always_on_effect_ids`。
+- `on_receive_effect_ids` 当前为禁用迁移字段：内容层允许保留该字段，但只要非空就必须在加载期 fail-fast。
 
 ## 5. FieldService
 

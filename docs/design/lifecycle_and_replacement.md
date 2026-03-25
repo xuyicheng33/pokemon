@@ -49,6 +49,10 @@ fail-fast：任一批次产生 invalid code，立即返回上层终止战斗。
 |失败语义|系统选择返回空值/非法/超时 -> `invalid_replacement_selection`|
 |入场日志|补位时写 `state:replace`，随后写 `state:enter`|
 
+实现状态说明（2026-03-25）：
+
+- `forced_replace` 生命周期链（`on_switch -> on_exit -> leave -> replace -> on_enter`）已冻结为规则目标，当前计划在后续批次把 payload 执行路径补齐。
+
 ## 5. 约束
 
 - `fainted_pending_leave` 单位不再作为普通 payload 合法目标。

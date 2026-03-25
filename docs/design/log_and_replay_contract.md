@@ -30,6 +30,10 @@
 |`select_timeout`|`timeout_default` 链为 `true`，其他行动链为 `false`|`null`|
 |`select_deadline_ms`|整条行动链写本回合截止时间|`null`|
 
+实现状态说明（2026-03-25）：
+
+- 当前实现仍保留 `system:orphan` 临时兜底（`chain_context` 缺失时自动补链），本轮收口计划会在后续批次移除并改为硬失败。
+
 ### 2.2 空值口径
 
 - 非适用字段一律写 `null`，不写空串、不省略。

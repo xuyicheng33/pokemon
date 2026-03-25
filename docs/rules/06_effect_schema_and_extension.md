@@ -220,8 +220,12 @@
 |字段|说明|
 |---|---|
 |`effects_always_on`|常驻效果|
-|`effects_on_receive`|受击或被命中时触发|
+|`effects_on_receive`|禁用迁移字段（当前必须为空，非空即加载期失败）|
 |`effects_on_turn`|回合节点触发|
+
+补充规则：
+
+1. 本轮会补齐 `forced_replace` payload 的最小执行链（候选校验、系统选择、生命周期触发顺序）；未接线前内容资源不得提前引用。
 
 ## 11. 扩展纪律
 
