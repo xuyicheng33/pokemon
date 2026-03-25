@@ -334,7 +334,7 @@ func _enter_effect_guard(effect_event, battle_state) -> bool:
     if battle_state.chain_context == null or battle_state.max_chain_depth <= 0:
         last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
         return false
-    var dedupe_key := "%s|%s|%d" % [effect_event.source_instance_id, effect_event.trigger_name, battle_state.chain_context.step_counter]
+    var dedupe_key := "%s|%s|%s" % [effect_event.source_instance_id, effect_event.trigger_name, effect_event.event_id]
     if battle_state.chain_context.effect_dedupe_keys.has(dedupe_key):
         last_invalid_battle_code = ErrorCodesScript.INVALID_CHAIN_DEPTH
         return false

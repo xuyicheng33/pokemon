@@ -19,6 +19,8 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
+var _core_pool: Array = []
+
 func _init() -> void:
     var failures: Array[String] = []
     _run_test("deterministic_replay", failures, _test_deterministic_replay)
@@ -41,6 +43,7 @@ func _init() -> void:
     _run_test("rule_mod_skill_legality_enforced", failures, _test_rule_mod_skill_legality_enforced)
     _run_test("invalid_battle_rule_mod_definition", failures, _test_invalid_battle_rule_mod_definition)
     _run_test("log_contract_semantics", failures, _test_log_contract_semantics)
+    _dispose_core_pool()
     if failures.is_empty():
         print("ALL TESTS PASSED")
         quit(0)
@@ -87,7 +90,14 @@ func _build_core() -> Dictionary:
     for service_name in required_services:
         if core.get(service_name) == null:
             return {"error": "missing core service: %s" % service_name}
+    _core_pool.append(core)
     return {"core": core}
+
+func _dispose_core_pool() -> void:
+    for core in _core_pool:
+        if core != null and core.has_method("dispose"):
+            core.dispose()
+    _core_pool.clear()
 
 func _build_sample_factory():
     var sample_factory = SampleBattleFactoryScript.new()

@@ -29,7 +29,7 @@ func clear() -> void:
 func load_snapshot(content_snapshot_paths: PackedStringArray) -> void:
     clear()
     for path in content_snapshot_paths:
-        var resource = load(path)
+        var resource = ResourceLoader.load(path, "", 0)
         assert(resource != null, "Missing content resource: %s" % path)
         register_resource(resource)
 

@@ -186,7 +186,7 @@
 |---|---|
 |`event_chain_id`|每次独立结算链都要建立|
 |`chain_origin`|固定为 `battle_init / action / turn_start / turn_end / system_replace` 之一|
-|去重键|同一链路内使用 `instance_id + trigger + event_step_id`|
+|去重键|同一链路内使用 `source_instance_id + trigger + event_id`|
 |链深限制|使用可配置项 `max_chain_depth`|
 |fail-fast|链深超限、非法实例、去重保护命中时立即报错|
 |终止语义|进入 `invalid_battle` 后，本场立即结束并记为 `no_winner`|

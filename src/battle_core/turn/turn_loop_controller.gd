@@ -133,18 +133,19 @@ func _apply_turn_start_regen(battle_state) -> void:
         value_change.before_value = before_mp
         value_change.after_value = active_unit.current_mp
         value_change.delta = active_unit.current_mp - before_mp
-        battle_logger.append_event(log_event_builder.build_event(
+        var log_event = log_event_builder.build_event(
             EventTypesScript.EFFECT_RESOURCE_MOD,
             battle_state,
             {
                 "source_instance_id": "system:turn_start",
                 "target_instance_id": active_unit.unit_instance_id,
                 "trigger_name": "turn_start",
-                "cause_event_id": "system:turn_start",
                 "value_changes": [value_change],
                 "payload_summary": "%s regenerated %d mp" % [active_unit.public_id, value_change.delta],
             }
-        ))
+        )
+        log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
+        battle_logger.append_event(log_event)
 
 func _resolve_commands_for_turn(battle_state, content_index, commands: Array) -> Dictionary:
     var allowed_side_ids: Dictionary = {}
@@ -225,7 +226,7 @@ func _decrement_rule_mods_and_log(battle_state, trigger_name: String) -> void:
     var removed_instances: Array = rule_mod_service.decrement_for_trigger(battle_state, trigger_name)
     for removed in removed_instances:
         var removed_instance = removed["instance"]
-        battle_logger.append_event(log_event_builder.build_event(
+        var log_event = log_event_builder.build_event(
             EventTypesScript.EFFECT_RULE_MOD_REMOVE,
             battle_state,
             {
@@ -233,10 +234,11 @@ func _decrement_rule_mods_and_log(battle_state, trigger_name: String) -> void:
                 "target_instance_id": removed["owner_id"],
                 "priority": removed_instance.priority,
                 "trigger_name": trigger_name,
-                "cause_event_id": "system:%s" % trigger_name,
                 "payload_summary": "rule mod expired: %s" % removed_instance.mod_kind,
             }
-        ))
+        )
+        log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
+        battle_logger.append_event(log_event)
 
 func _apply_turn_end_field_tick(battle_state):
     if battle_state.field_state == null:
@@ -249,17 +251,18 @@ func _apply_turn_end_field_tick(battle_state):
     field_change.after_field_id = battle_state.field_state.field_def_id if not expired else null
     field_change.after_remaining_turns = battle_state.field_state.remaining_turns if not expired else 0
     if expired:
-        battle_logger.append_event(log_event_builder.build_event(
+        var log_event = log_event_builder.build_event(
             EventTypesScript.EFFECT_FIELD_EXPIRE,
             battle_state,
             {
                 "source_instance_id": battle_state.field_state.instance_id,
                 "trigger_name": "turn_end",
-                "cause_event_id": "system:turn_end",
                 "field_change": field_change,
                 "payload_summary": "field expired",
             }
-        ))
+        )
+        log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
+        battle_logger.append_event(log_event)
         battle_state.field_state = null
     return field_change
 

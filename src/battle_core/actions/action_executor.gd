@@ -45,6 +45,7 @@ func execute_action(queued_action, battle_state, content_index):
                 "target_instance_id": command.actor_id,
                 "priority": queued_action.priority,
                 "speed_tie_roll": queued_action.speed_tie_roll,
+                "trigger_name": "cancelled_pre_start",
                 "payload_summary": "%s cancelled before start" % command.command_type,
             }
         ))
@@ -73,6 +74,7 @@ func execute_action(queued_action, battle_state, content_index):
             "action_window_passed": actor.action_window_passed,
             "has_acted": actor.has_acted,
             "speed_tie_roll": queued_action.speed_tie_roll,
+            "trigger_name": "on_cast",
             "value_changes": mp_changes,
             "payload_summary": "%s cast" % command.command_type,
         }
@@ -99,6 +101,7 @@ func execute_action(queued_action, battle_state, content_index):
                 "action_window_passed": actor.action_window_passed,
                 "has_acted": actor.has_acted,
                 "speed_tie_roll": queued_action.speed_tie_roll,
+                "trigger_name": "action_failed_post_start",
                 "payload_summary": "%s failed at execution start" % command.command_type,
             }
         ))
@@ -118,6 +121,7 @@ func execute_action(queued_action, battle_state, content_index):
                 "has_acted": actor.has_acted,
                 "speed_tie_roll": queued_action.speed_tie_roll,
                 "hit_roll": hit_info["hit_roll"],
+                "trigger_name": "on_miss",
                 "payload_summary": "%s missed" % command.command_type,
             }
         ))
@@ -138,6 +142,7 @@ func execute_action(queued_action, battle_state, content_index):
             "has_acted": actor.has_acted,
             "speed_tie_roll": queued_action.speed_tie_roll,
             "hit_roll": hit_info["hit_roll"],
+            "trigger_name": "on_hit",
             "payload_summary": "%s hit" % command.command_type,
         }
     ))
@@ -300,11 +305,11 @@ func _apply_direct_damage(queued_action, actor, target, skill_definition, battle
             "priority": queued_action.priority,
             "target_slot": queued_action.target_snapshot.target_slot,
             "trigger_name": "on_hit",
-            "cause_event_id": queued_action.action_id,
             "value_changes": [value_change],
             "payload_summary": "%s dealt %d damage to %s" % [actor.public_id, damage_amount, target.public_id],
         }
     )
+    log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
     battle_logger.append_event(log_event)
     _record_fatal_damage(
         battle_state,
@@ -331,11 +336,11 @@ func _apply_default_recoil(queued_action, actor, battle_state) -> void:
             "target_instance_id": actor.unit_instance_id,
             "priority": queued_action.priority,
             "trigger_name": "recoil",
-            "cause_event_id": queued_action.action_id,
             "value_changes": [value_change],
             "payload_summary": "%s recoil %d" % [actor.public_id, recoil_amount],
         }
     )
+    log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
     battle_logger.append_event(log_event)
     _record_fatal_damage(
         battle_state,
