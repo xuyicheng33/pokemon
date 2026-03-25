@@ -48,6 +48,27 @@
 - `tests/run_with_gate.sh`：通过，输出 `GATE PASSED: assertions and engine logs are clean`。
 - `godot --headless --path . --script tests/run_all.gd`：通过，输出 `ALL TESTS PASSED`。
 
+### Battle Core 深度修复计划（后续收口：日志链路与资源释放）
+- 目标：补齐 V2 日志链路的去重与归因口径，修复测试残留导致的资源泄露告警。
+- 范围：effect 去重键改为 `source_instance_id + trigger + event_id`；所有 effect/system 事件写入 `cause_event_id = event_chain_id:event_step_id`；测试流程在结束后统一 dispose battle core；内容快照加载改为显式 `ResourceLoader`。
+- 验收标准：`tests/run_with_gate.sh` 通过且引擎日志干净；`invalid_chain_depth_dedupe_guard` 保持稳定；日志 V2 字段不再出现链路归因缺口。
+
+#### 批次执行与提交
+
+|批次|结果|提交|
+|---|---|---|
+|后续收口：日志链路与资源释放|已完成|`a84bca4` (`fix: log v2 follow-up and cleanup`)|
+
+#### 最小可玩性检查清单（后续收口）
+- 可启动：测试脚本无解析错误，可完整跑完并退出。
+- 可操作：触发链去重不再依赖 `step_counter`，同事件重复触发仍可稳定 fail-fast。
+- 无致命错误：引擎不再报告 `ObjectDB` 泄露告警。
+
+#### 回归检查要点
+- `effect` 去重键是否为 `source_instance_id + trigger + event_id`。
+- `cause_event_id` 是否统一为 `event_chain_id:event_step_id`。
+- 测试结束是否显式释放 core，且引擎日志为 0 错误。
+
 ### 工程骨架补全 + 强类型契约落盘（已完成：v0.8.0 骨架补丁）
 - 目标：把战斗核心从“提纲式文档 + 半截目录”升级为“决策完整骨架”，让后续实现者不再需要自行决定目录、contract、场景入口和内容资源格式。
 - 范围：`content/` 根目录、`docs/design/` 修订、`src/battle_core/contracts/`、runtime 强类型化、各模块 service skeleton、`src/composition/`、`Boot/BattleSandbox` 场景、测试脚手架占位。
