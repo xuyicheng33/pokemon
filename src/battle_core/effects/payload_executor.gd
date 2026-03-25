@@ -151,7 +151,7 @@ func _apply_field_payload(payload, effect_definition, effect_event, battle_state
     var field_state = FieldStateScript.new()
     field_state.field_def_id = payload.field_definition_id
     field_state.instance_id = id_factory.next_id("field")
-    field_state.creator = str(effect_event.chain_context.actor_id)
+    field_state.creator = _resolve_field_creator(effect_event)
     field_state.remaining_turns = effect_definition.duration
     field_state.source_instance_id = effect_event.source_instance_id
     field_state.source_kind_order = effect_event.source_kind_order
@@ -175,6 +175,17 @@ func _apply_field_payload(payload, effect_definition, effect_event, battle_state
             "payload_summary": "field -> %s" % field_state.field_def_id,
         }
     ))
+
+func _resolve_field_creator(effect_event) -> String:
+    if effect_event != null and effect_event.owner_id != null:
+        var owner_id := str(effect_event.owner_id)
+        if not owner_id.is_empty():
+            return owner_id
+    if effect_event != null and effect_event.chain_context != null and effect_event.chain_context.actor_id != null:
+        var actor_id := str(effect_event.chain_context.actor_id)
+        if not actor_id.is_empty():
+            return actor_id
+    return ""
 
 func _apply_effect_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
     var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)

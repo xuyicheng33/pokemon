@@ -111,7 +111,11 @@ func resolve_faint_window(battle_state, content_index):
     var entered_unit_ids: Array = []
     for side_state in battle_state.sides:
         if side_state.get_active_unit() == null:
-            var entered_unit = replacement_service.resolve_replacement(battle_state, side_state)
+            var replacement_result: Dictionary = replacement_service.resolve_replacement(battle_state, side_state, "faint")
+            var replacement_invalid_code = replacement_result.get("invalid_code", null)
+            if replacement_invalid_code != null:
+                return replacement_invalid_code
+            var entered_unit = replacement_result.get("entered_unit", null)
             if entered_unit != null:
                 entered_unit_ids.append(entered_unit.unit_instance_id)
     if not entered_unit_ids.is_empty():

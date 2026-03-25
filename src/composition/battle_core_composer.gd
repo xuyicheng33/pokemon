@@ -18,6 +18,7 @@ const HitServiceScript := preload("res://src/battle_core/math/hit_service.gd")
 const DamageServiceScript := preload("res://src/battle_core/math/damage_service.gd")
 const LeaveServiceScript := preload("res://src/battle_core/lifecycle/leave_service.gd")
 const FaintResolverScript := preload("res://src/battle_core/lifecycle/faint_resolver.gd")
+const DefaultReplacementSelectorScript := preload("res://src/battle_core/lifecycle/default_replacement_selector.gd")
 const ReplacementServiceScript := preload("res://src/battle_core/lifecycle/replacement_service.gd")
 const TriggerDispatcherScript := preload("res://src/battle_core/effects/trigger_dispatcher.gd")
 const EffectQueueServiceScript := preload("res://src/battle_core/effects/effect_queue_service.gd")
@@ -50,6 +51,7 @@ func compose():
     container.damage_service = DamageServiceScript.new()
     container.leave_service = LeaveServiceScript.new()
     container.faint_resolver = FaintResolverScript.new()
+    container.replacement_selector = DefaultReplacementSelectorScript.new()
     container.replacement_service = ReplacementServiceScript.new()
     container.trigger_dispatcher = TriggerDispatcherScript.new()
     container.effect_queue_service = EffectQueueServiceScript.new()
@@ -83,6 +85,7 @@ func compose():
     container.leave_service.log_event_builder = container.log_event_builder
     container.replacement_service.battle_logger = container.battle_logger
     container.replacement_service.log_event_builder = container.log_event_builder
+    container.replacement_service.replacement_selector = container.replacement_selector
     container.faint_resolver.leave_service = container.leave_service
     container.faint_resolver.replacement_service = container.replacement_service
     container.faint_resolver.passive_skill_service = container.passive_skill_service

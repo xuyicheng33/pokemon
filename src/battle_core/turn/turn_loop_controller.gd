@@ -342,7 +342,7 @@ func _resolve_standard_victory(battle_state) -> bool:
     else:
         battle_state.battle_result.winner_side_id = alive_side_ids[0]
         battle_state.battle_result.result_type = "win"
-    battle_state.battle_result.reason = "elimination"
+        battle_state.battle_result.reason = "elimination"
     battle_state.chain_context = _build_battle_end_chain(battle_state)
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.RESULT_BATTLE_END,

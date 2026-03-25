@@ -17,6 +17,7 @@ var hit_service
 var damage_service
 var leave_service
 var faint_resolver
+var replacement_selector
 var replacement_service
 var trigger_dispatcher
 var effect_queue_service
@@ -138,6 +139,7 @@ func dispose() -> void:
     if replacement_service != null:
         replacement_service.battle_logger = null
         replacement_service.log_event_builder = null
+        replacement_service.replacement_selector = null
 
     id_factory = null
     rng_service = null
@@ -155,6 +157,7 @@ func dispose() -> void:
     damage_service = null
     leave_service = null
     faint_resolver = null
+    replacement_selector = null
     replacement_service = null
     trigger_dispatcher = null
     effect_queue_service = null
