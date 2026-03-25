@@ -32,6 +32,8 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     if battle_state.battle_result.finished:
         return
     _reset_turn_state(battle_state)
+    if _validate_runtime_or_terminate(battle_state):
+        return
     battle_state.phase = BattlePhasesScript.TURN_START
     battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_TURN_START, battle_state)
     battle_logger.append_event(log_event_builder.build_event(
@@ -66,6 +68,8 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
         if action_result.invalid_battle_code != null:
             _terminate_invalid_battle(battle_state, str(action_result.invalid_battle_code))
             return
+        if _validate_runtime_or_terminate(battle_state):
+            return
         var faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
         if faint_invalid_code != null:
             _terminate_invalid_battle(battle_state, str(faint_invalid_code))
@@ -91,6 +95,8 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     var turn_end_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
     if turn_end_faint_invalid_code != null:
         _terminate_invalid_battle(battle_state, str(turn_end_faint_invalid_code))
+        return
+    if _validate_runtime_or_terminate(battle_state):
         return
     _clear_turn_end_state(battle_state)
 
@@ -436,3 +442,29 @@ func _is_command_in_legal_set(command, legal_action_set) -> bool:
             return true
         _:
             return false
+
+func _validate_runtime_or_terminate(battle_state) -> bool:
+    var invalid_code = _validate_runtime_state(battle_state)
+    if invalid_code == null:
+        return false
+    _terminate_invalid_battle(battle_state, str(invalid_code))
+    return true
+
+func _validate_runtime_state(battle_state):
+    if battle_state.max_chain_depth <= 0:
+        return ErrorCodesScript.INVALID_STATE_CORRUPTION
+    for side_state in battle_state.sides:
+        for unit_state in side_state.team_units:
+            if unit_state.max_hp <= 0 or unit_state.max_mp < 0:
+                return ErrorCodesScript.INVALID_STATE_CORRUPTION
+            if unit_state.current_hp < 0 or unit_state.current_hp > unit_state.max_hp:
+                return ErrorCodesScript.INVALID_STATE_CORRUPTION
+            if unit_state.current_mp < 0 or unit_state.current_mp > unit_state.max_mp:
+                return ErrorCodesScript.INVALID_STATE_CORRUPTION
+        for slot_id in side_state.active_slots.keys():
+            var active_unit_id: String = str(side_state.active_slots[slot_id])
+            if active_unit_id.is_empty() or side_state.find_unit(active_unit_id) == null:
+                return ErrorCodesScript.INVALID_STATE_CORRUPTION
+    if battle_state.field_state != null and battle_state.field_state.remaining_turns < 0:
+        return ErrorCodesScript.INVALID_STATE_CORRUPTION
+    return null

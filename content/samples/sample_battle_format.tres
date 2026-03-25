@@ -8,3 +8,4 @@ format_id = "prototype_full_open"
 max_turn = 40
 team_size = 3
 level = 50
+max_chain_depth = 32

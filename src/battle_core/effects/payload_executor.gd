@@ -28,14 +28,19 @@ var last_invalid_battle_code: Variant = null
 
 func execute_effect_event(effect_event, battle_state, content_index) -> void:
     last_invalid_battle_code = null
+    if not _enter_effect_guard(effect_event, battle_state):
+        return
     var effect_definition = content_index.effects.get(effect_event.effect_definition_id)
     if effect_definition == null:
         last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+        _leave_effect_guard(battle_state)
         return
     for payload in effect_definition.payloads:
         execute_payload(payload, effect_definition, effect_event, battle_state, content_index)
         if last_invalid_battle_code != null:
+            _leave_effect_guard(battle_state)
             return
+    _leave_effect_guard(battle_state)
 
 func execute_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
     if payload is DamagePayloadScript:
@@ -310,3 +315,26 @@ func _build_value_change(entity_id: String, resource_name: String, before_value:
     value_change.after_value = after_value
     value_change.delta = after_value - before_value
     return value_change
+
+func _enter_effect_guard(effect_event, battle_state) -> bool:
+    if battle_state.chain_context == null or battle_state.max_chain_depth <= 0:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return false
+    var dedupe_key := "%s|%s|%d" % [effect_event.source_instance_id, effect_event.trigger_name, battle_state.chain_context.step_counter]
+    if battle_state.chain_context.effect_dedupe_keys.has(dedupe_key):
+        last_invalid_battle_code = ErrorCodesScript.INVALID_CHAIN_DEPTH
+        return false
+    battle_state.chain_context.effect_dedupe_keys[dedupe_key] = true
+    battle_state.chain_context.chain_depth += 1
+    if battle_state.chain_context.chain_depth > battle_state.max_chain_depth:
+        battle_state.chain_context.chain_depth -= 1
+        battle_state.chain_context.effect_dedupe_keys.erase(dedupe_key)
+        last_invalid_battle_code = ErrorCodesScript.INVALID_CHAIN_DEPTH
+        return false
+    return true
+
+func _leave_effect_guard(battle_state) -> void:
+    if battle_state.chain_context == null:
+        return
+    if battle_state.chain_context.chain_depth > 0:
+        battle_state.chain_context.chain_depth -= 1

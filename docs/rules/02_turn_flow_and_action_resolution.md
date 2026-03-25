@@ -167,7 +167,6 @@
 |错误码|触发条件|
 |---|---|
 |`invalid_command_payload`|指令结构缺失必填字段或字段类型错误|
-|`invalid_action_target_missing`|行动执行起点目标位置为空或目标已进入 `fainted_pending_leave`|
 |`invalid_switch_target_not_bench`|执行中的手动换人目标不在当前合法 bench 列表|
 |`invalid_effect_definition`|效果定义不存在或引用了未支持的 payload 类型|
 |`invalid_effect_remove_ambiguous`|`remove_effect` 命中歧义或非法匹配（见模块 06）|

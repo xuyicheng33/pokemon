@@ -29,6 +29,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     battle_logger.reset()
     battle_state.format_id = battle_setup.format_id
     battle_state.max_turn = format_config.max_turn
+    battle_state.max_chain_depth = max(1, int(format_config.max_chain_depth))
     battle_state.battle_level = format_config.level
     battle_state.selection_deadline_ms = format_config.selection_deadline_ms
     battle_state.rng_profile = rng_service.get_profile()

@@ -14,6 +14,7 @@ const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd"
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
+const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
@@ -32,6 +33,9 @@ func _init() -> void:
     _run_test("action_effects_on_kill_dispatch", failures, _test_action_effects_on_kill_dispatch)
     _run_test("invalid_command_payload_hard_failures", failures, _test_invalid_command_payload_hard_failures)
     _run_test("action_failed_post_start_target_missing", failures, _test_action_failed_post_start_target_missing)
+    _run_test("invalid_chain_depth_max_guard", failures, _test_invalid_chain_depth_max_guard)
+    _run_test("invalid_chain_depth_dedupe_guard", failures, _test_invalid_chain_depth_dedupe_guard)
+    _run_test("invalid_state_corruption_guard", failures, _test_invalid_state_corruption_guard)
     _run_test("rule_mod_paths", failures, _test_rule_mod_paths)
     _run_test("rule_mod_field_scope_paths", failures, _test_rule_mod_field_scope_paths)
     _run_test("rule_mod_skill_legality_enforced", failures, _test_rule_mod_skill_legality_enforced)
@@ -839,6 +843,126 @@ func _test_action_failed_post_start_target_missing() -> Dictionary:
         if ev.event_type == EventTypesScript.ACTION_FAILED_POST_START:
             return _pass()
     return _fail("missing action_failed_post_start log event")
+
+func _test_invalid_chain_depth_max_guard() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 118)
+
+    var depth_guard_payload = StatModPayloadScript.new()
+    depth_guard_payload.payload_type = "stat_mod"
+    depth_guard_payload.stat_name = "attack"
+    depth_guard_payload.stage_delta = 1
+    var depth_guard_effect = EffectDefinitionScript.new()
+    depth_guard_effect.id = "test_depth_guard_effect"
+    depth_guard_effect.display_name = "Depth Guard Effect"
+    depth_guard_effect.scope = "self"
+    depth_guard_effect.trigger_names = PackedStringArray(["on_cast"])
+    depth_guard_effect.payloads.clear()
+    depth_guard_effect.payloads.append(depth_guard_payload)
+    content_index.register_resource(depth_guard_effect)
+
+    var p1_active = battle_state.get_side("P1").get_active_unit()
+    var chain_context = ChainContextScript.new()
+    chain_context.event_chain_id = "test_depth_chain"
+    chain_context.chain_origin = "action"
+    chain_context.command_type = CommandTypesScript.SKILL
+    chain_context.command_source = "manual"
+    chain_context.actor_id = p1_active.unit_instance_id
+    chain_context.chain_depth = battle_state.max_chain_depth
+    battle_state.chain_context = chain_context
+    var effect_events = core.trigger_dispatcher.collect_events(
+        "on_cast",
+        battle_state,
+        content_index,
+        PackedStringArray([depth_guard_effect.id]),
+        p1_active.unit_instance_id,
+        "action_depth_guard",
+        2,
+        p1_active.base_speed,
+        battle_state.chain_context
+    )
+    if effect_events.is_empty():
+        return _fail("failed to build depth guard effect event")
+    core.payload_executor.execute_effect_event(effect_events[0], battle_state, content_index)
+    if core.payload_executor.last_invalid_battle_code != ErrorCodesScript.INVALID_CHAIN_DEPTH:
+        return _fail("expected invalid_chain_depth on max depth guard, got %s" % str(core.payload_executor.last_invalid_battle_code))
+    return _pass()
+
+func _test_invalid_chain_depth_dedupe_guard() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 119)
+
+    var dedupe_effect = EffectDefinitionScript.new()
+    dedupe_effect.id = "test_dedupe_guard_effect"
+    dedupe_effect.display_name = "Dedupe Guard Effect"
+    dedupe_effect.scope = "self"
+    dedupe_effect.trigger_names = PackedStringArray(["on_cast"])
+    dedupe_effect.payloads.clear()
+    content_index.register_resource(dedupe_effect)
+
+    var p1_active = battle_state.get_side("P1").get_active_unit()
+    var chain_context = ChainContextScript.new()
+    chain_context.event_chain_id = "test_dedupe_chain"
+    chain_context.chain_origin = "action"
+    chain_context.command_type = CommandTypesScript.SKILL
+    chain_context.command_source = "manual"
+    chain_context.actor_id = p1_active.unit_instance_id
+    chain_context.step_counter = 7
+    battle_state.chain_context = chain_context
+    var effect_events = core.trigger_dispatcher.collect_events(
+        "on_cast",
+        battle_state,
+        content_index,
+        PackedStringArray([dedupe_effect.id]),
+        p1_active.unit_instance_id,
+        "action_dedupe_guard",
+        2,
+        p1_active.base_speed,
+        battle_state.chain_context
+    )
+    if effect_events.is_empty():
+        return _fail("failed to build dedupe guard effect event")
+    core.payload_executor.execute_effect_event(effect_events[0], battle_state, content_index)
+    if core.payload_executor.last_invalid_battle_code != null:
+        return _fail("first dedupe event should pass")
+    battle_state.chain_context.step_counter = 7
+    core.payload_executor.execute_effect_event(effect_events[0], battle_state, content_index)
+    if core.payload_executor.last_invalid_battle_code != ErrorCodesScript.INVALID_CHAIN_DEPTH:
+        return _fail("expected invalid_chain_depth on dedupe guard, got %s" % str(core.payload_executor.last_invalid_battle_code))
+    return _pass()
+
+func _test_invalid_state_corruption_guard() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 120)
+    var p1_active = battle_state.get_side("P1").get_active_unit()
+    p1_active.current_hp = p1_active.max_hp + 1
+    core.turn_loop_controller.run_turn(battle_state, content_index, [])
+    if not battle_state.battle_result.finished:
+        return _fail("state corruption should fail-fast")
+    if battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+        return _fail("expected invalid_state_corruption, got %s" % str(battle_state.battle_result.reason))
+    return _pass()
 
 func _test_rule_mod_paths() -> Dictionary:
     var core_payload = _build_core()

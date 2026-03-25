@@ -10,6 +10,7 @@ var seed: int = 0
 var rng_profile: String = ""
 var format_id: String = ""
 var max_turn: int = 0
+var max_chain_depth: int = 32
 var battle_level: int = 0
 var selection_deadline_ms: int = 30000
 var turn_index: int = 0
@@ -77,6 +78,7 @@ func to_stable_dict() -> Dictionary:
         "rng_profile": rng_profile,
         "format_id": format_id,
         "max_turn": max_turn,
+        "max_chain_depth": max_chain_depth,
         "battle_level": battle_level,
         "selection_deadline_ms": selection_deadline_ms,
         "turn_index": turn_index,
