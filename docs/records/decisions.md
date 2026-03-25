@@ -224,3 +224,11 @@
 ### 156. 文档、记录、实现三方收敛到 `docs/rules/00~06`
 - `docs/rules/` 作为唯一规则权威，`docs/design/` 只描述实现落点。
 - 任何口径变更必须同步更新记录文档，避免聊天口径漂移。
+
+### 157. 启动阶段系统日志必须提前绑定系统链上下文
+- 初始化最早的 `state:enter` 日志也必须满足“非行动系统链 = `null + system:*`”口径。
+- 不允许落入 `system:orphan` 导致 `command_type` 为空或链路来源漂移。
+
+### 158. 提交指令必须属于 legal_action_set，不能只靠结构校验
+- `skill_legality` 不仅影响“展示给玩家/AI 的可选列表”，还必须拦截提交路径。
+- 提交了不在 legal 集内的指令，直接按 `invalid_command_payload` fail-fast 终止并写日志。

@@ -22,7 +22,7 @@
 |批次 1：编译与类型系统修复|已完成|`8989750` (`fix: batch1 compile-type stabilization`)|
 |批次 2：测试可信化与 deterministic 基线|已完成|`924a542` (`fix: batch2 deterministic test gate`)|
 |批次 3：规则最小全集补齐|已完成|`845e7d1` (`fix: batch3 rule chain and lifecycle parity`)|
-|批次 4：文档收口 + 回归矩阵 + 封板|已完成|本次提交（见下方回归记录）|
+|批次 4：文档收口 + 回归矩阵 + 封板|已完成|`0df94fb` + `f9abe49` + `c3174fd`|
 
 #### 本轮已落地内容（批次 1~3）
 - 批次 1：修复 headless 脚本加载断裂、类型推断不稳定、跨脚本类型依赖问题，恢复可执行骨架。
@@ -40,7 +40,7 @@
 |回合节点范围（仅 active + field）|通过：`PASS turn_scope_active_and_field`|
 |生命周期（倒下窗口、补位、`on_faint/on_kill/on_exit/on_enter`）|通过：`PASS lifecycle_faint_replace_chain`|
 |field（替换、扣减、到期移除）|通过：`PASS field_expire_path`|
-|rule_mod（三读取点、扣减、过期移除）|通过：`PASS rule_mod_paths`|
+|rule_mod（三读取点、扣减、过期移除）|通过：`PASS rule_mod_paths` + `PASS rule_mod_skill_legality_enforced`|
 |非法终止（`invalid_battle_code` 即停）|通过：`PASS invalid_battle_rule_mod_definition`|
 |日志契约（`null` 语义、`event_type`、`command_type/source`）|通过：`PASS log_contract_semantics`|
 
