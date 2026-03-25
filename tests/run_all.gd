@@ -2146,25 +2146,46 @@ func _test_battle_end_system_chain() -> Dictionary:
     var sample_factory = _build_sample_factory()
     if sample_factory == null:
         return _fail("SampleBattleFactory init failed")
-    var replay_output = core.replay_runner.run_replay(sample_factory.build_demo_replay_input(core.command_builder))
-    if replay_output == null:
-        return _fail("replay output is null")
-    var has_battle_end: bool = false
-    for ev in replay_output.event_log:
-        if ev.event_type != EventTypesScript.RESULT_BATTLE_END:
-            continue
-        has_battle_end = true
-        if String(ev.command_type) == EventTypesScript.RESULT_BATTLE_END:
-            return _fail("battle_end command_type should not be result:battle_end")
-        if not String(ev.command_type).begins_with("system:"):
-            return _fail("battle_end command_type should be system:*")
-        if String(ev.command_source) != "system":
-            return _fail("battle_end command_source should be system")
-        if ev.chain_origin == "action":
-            return _fail("battle_end chain_origin should not be action")
-    if not has_battle_end:
-        return _fail("battle_end event missing in replay log")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var turn_start_battle = _build_initialized_battle(core, content_index, sample_factory, 261)
+    var turn_start_side = turn_start_battle.get_side("P2")
+    if turn_start_side == null:
+        return _fail("turn_start side missing")
+    for unit_state in turn_start_side.team_units:
+        unit_state.current_hp = 0
+    core.turn_loop_controller.run_turn(turn_start_battle, content_index, [])
+    var turn_start_battle_end = _find_last_event(core.battle_logger.event_log, EventTypesScript.RESULT_BATTLE_END)
+    if turn_start_battle_end == null:
+        return _fail("turn_start battle_end event missing")
+    if turn_start_battle_end.command_type != EventTypesScript.SYSTEM_TURN_START:
+        return _fail("turn_start battle_end should inherit system:turn_start")
+    if turn_start_battle_end.chain_origin != "turn_start":
+        return _fail("turn_start battle_end chain_origin should be turn_start")
+
+    var turn_limit_battle = _build_initialized_battle(core, content_index, sample_factory, 262)
+    turn_limit_battle.max_turn = 1
+    core.turn_loop_controller.run_turn(turn_limit_battle, content_index, [])
+    var turn_limit_event = _find_last_event(core.battle_logger.event_log, EventTypesScript.SYSTEM_TURN_LIMIT)
+    if turn_limit_event == null:
+        return _fail("turn_limit event missing")
+    if turn_limit_event.chain_origin != "turn_end":
+        return _fail("turn_limit chain_origin should be turn_end")
+    var turn_limit_battle_end = _find_last_event(core.battle_logger.event_log, EventTypesScript.RESULT_BATTLE_END)
+    if turn_limit_battle_end == null:
+        return _fail("turn_limit battle_end event missing")
+    if turn_limit_battle_end.command_type != EventTypesScript.SYSTEM_TURN_LIMIT:
+        return _fail("turn_limit battle_end should inherit system:turn_limit")
+    if turn_limit_battle_end.chain_origin != "turn_end":
+        return _fail("turn_limit battle_end chain_origin should be turn_end")
     return _pass()
+
+func _find_last_event(event_log: Array, event_type: String):
+    for idx in range(event_log.size() - 1, -1, -1):
+        var ev = event_log[idx]
+        if ev.event_type == event_type:
+            return ev
+    return null
 
 func _extract_damage_from_log(event_log: Array, attacker_public_id: String) -> int:
     for ev in event_log:

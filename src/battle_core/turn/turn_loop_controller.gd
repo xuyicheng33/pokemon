@@ -298,6 +298,7 @@ func _resolve_surrender(battle_state, commands: Array) -> bool:
             surrendering_sides.append(command.side_id)
     if surrendering_sides.is_empty():
         return false
+    var resolved_phase: String = battle_state.phase
     battle_state.battle_result.finished = true
     battle_state.phase = BattlePhasesScript.FINISHED
     if surrendering_sides.size() == 1:
@@ -308,7 +309,7 @@ func _resolve_surrender(battle_state, commands: Array) -> bool:
         battle_state.battle_result.winner_side_id = null
         battle_state.battle_result.result_type = "draw"
     battle_state.battle_result.reason = "surrender"
-    battle_state.chain_context = _build_battle_end_chain(battle_state)
+    battle_state.chain_context = _build_battle_end_chain(resolved_phase, battle_state)
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.RESULT_BATTLE_END,
         battle_state,
@@ -326,6 +327,7 @@ func _resolve_standard_victory(battle_state) -> bool:
             alive_side_ids.append(side_state.side_id)
     if alive_side_ids.size() == battle_state.sides.size():
         return false
+    var resolved_phase: String = battle_state.phase
     battle_state.battle_result.finished = true
     battle_state.phase = BattlePhasesScript.FINISHED
     if alive_side_ids.is_empty():
@@ -336,7 +338,7 @@ func _resolve_standard_victory(battle_state) -> bool:
         battle_state.battle_result.winner_side_id = alive_side_ids[0]
         battle_state.battle_result.result_type = "win"
         battle_state.battle_result.reason = "elimination"
-    battle_state.chain_context = _build_battle_end_chain(battle_state)
+    battle_state.chain_context = _build_battle_end_chain(resolved_phase, battle_state)
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.RESULT_BATTLE_END,
         battle_state,
@@ -449,8 +451,8 @@ func _build_system_chain(command_type: String, _battle_state):
     chain_context.select_timeout = null
     return chain_context
 
-func _build_battle_end_chain(battle_state):
-    match battle_state.phase:
+func _build_battle_end_chain(resolved_phase: String, battle_state):
+    match resolved_phase:
         BattlePhasesScript.BATTLE_INIT:
             return _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, battle_state)
         BattlePhasesScript.TURN_START:
@@ -466,7 +468,7 @@ func _resolve_chain_origin(command_type: String) -> String:
             return "battle_init"
         EventTypesScript.SYSTEM_TURN_START:
             return "turn_start"
-        EventTypesScript.SYSTEM_TURN_END:
+        EventTypesScript.SYSTEM_TURN_END, EventTypesScript.SYSTEM_TURN_LIMIT:
             return "turn_end"
         _:
             return "system_replace"
