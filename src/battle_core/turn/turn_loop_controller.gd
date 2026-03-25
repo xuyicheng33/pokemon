@@ -168,6 +168,8 @@ func _resolve_commands_for_turn(battle_state, content_index, commands: Array) ->
         else:
             if not command_validator.validate_command(provided_command, battle_state, content_index):
                 return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
+            if not _is_command_in_legal_set(provided_command, legal_action_set):
+                return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
             resolved_command = provided_command
         side_state.selection_state.selected_command = resolved_command
         side_state.selection_state.selection_locked = true
@@ -414,3 +416,16 @@ func _resolve_chain_origin(command_type: String) -> String:
             return "turn_end"
         _:
             return "system_replace"
+
+func _is_command_in_legal_set(command, legal_action_set) -> bool:
+    match command.command_type:
+        CommandTypesScript.SKILL:
+            return legal_action_set.legal_skill_ids.has(command.skill_id)
+        CommandTypesScript.ULTIMATE:
+            return legal_action_set.legal_ultimate_ids.has(command.skill_id)
+        CommandTypesScript.SWITCH:
+            return legal_action_set.legal_switch_target_ids.has(command.target_unit_id)
+        CommandTypesScript.SURRENDER:
+            return true
+        _:
+            return false

@@ -29,6 +29,7 @@ func _init() -> void:
     _run_test("turn_scope_active_and_field", failures, _test_turn_scope_active_and_field)
     _run_test("lifecycle_faint_replace_chain", failures, _test_lifecycle_faint_replace_chain)
     _run_test("rule_mod_paths", failures, _test_rule_mod_paths)
+    _run_test("rule_mod_skill_legality_enforced", failures, _test_rule_mod_skill_legality_enforced)
     _run_test("invalid_battle_rule_mod_definition", failures, _test_invalid_battle_rule_mod_definition)
     _run_test("log_contract_semantics", failures, _test_log_contract_semantics)
     if failures.is_empty():
@@ -664,6 +665,62 @@ func _test_invalid_battle_rule_mod_definition() -> Dictionary:
         if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_RULE_MOD_DEFINITION:
             return _pass()
     return _fail("invalid_battle log event missing")
+
+func _test_rule_mod_skill_legality_enforced() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 107)
+    var p1_active = battle_state.get_side("P1").get_active_unit()
+    if p1_active == null:
+        return _fail("P1 active unit missing")
+
+    var deny_payload = RuleModPayloadScript.new()
+    deny_payload.payload_type = "rule_mod"
+    deny_payload.mod_kind = "skill_legality"
+    deny_payload.mod_op = "deny"
+    deny_payload.value = "sample_strike"
+    deny_payload.scope = "self"
+    deny_payload.duration_mode = "turns"
+    deny_payload.duration = 2
+    deny_payload.decrement_on = "turn_start"
+    deny_payload.stacking = "replace"
+    deny_payload.priority = 10
+    if core.rule_mod_service.create_instance(deny_payload, p1_active.unit_instance_id, battle_state, "test_skill_legality_gate", 0, p1_active.base_speed) == null:
+        return _fail("failed to create skill_legality deny instance")
+
+    var commands: Array = [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": "sample_strike",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+    ]
+    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
+    if not battle_state.battle_result.finished:
+        return _fail("illegal manual command should fail-fast")
+    if battle_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
+        return _fail("expected invalid_command_payload, got %s" % str(battle_state.battle_result.reason))
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
+            return _pass()
+    return _fail("missing invalid_battle log for illegal command")
 
 func _test_log_contract_semantics() -> Dictionary:
     var core_payload = _build_core()
