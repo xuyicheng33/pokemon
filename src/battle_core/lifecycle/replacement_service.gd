@@ -28,6 +28,7 @@ func resolve_replacement(battle_state, side_state):
                 "source_instance_id": bench_unit.unit_instance_id,
                 "target_instance_id": bench_unit.unit_instance_id,
                 "target_slot": ContentSchemaScript.ACTIVE_SLOT_PRIMARY,
+                "trigger_name": "replace",
                 "payload_summary": "%s replaced into battle" % bench_unit.public_id,
             }
         ))
@@ -38,6 +39,7 @@ func resolve_replacement(battle_state, side_state):
                 "source_instance_id": bench_unit.unit_instance_id,
                 "target_instance_id": bench_unit.unit_instance_id,
                 "target_slot": ContentSchemaScript.ACTIVE_SLOT_PRIMARY,
+                "trigger_name": "on_enter",
                 "payload_summary": "%s entered battle" % bench_unit.public_id,
             }
         ))

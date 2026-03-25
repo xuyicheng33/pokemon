@@ -118,10 +118,15 @@
 |---|---|
 |`battle_seed`|整场战斗随机种子|
 |`battle_rng_profile`|RNG 配置（算法、参数、版本）|
+|`log_schema_version`|日志契约版本号；当前固定为 `2`|
 |`turn_index`|当前回合序号|
 |`event_chain_id`|触发链路 ID|
 |`event_step_id`|链路步骤 ID|
 |`event_type`|事件类型枚举（见 5.4）|
+|`chain_origin`|链路来源：`battle_init / action / turn_start / turn_end / system_replace`|
+|`trigger_name`|触发点名；仅 effect 类事件必须填写|
+|`cause_event_id`|触发源事件 ID；仅 effect 类事件必须填写|
+|`killer_id`|击杀归属的单位实例 ID；无归属则为 `null`|
 |`action_id`|当前根行动唯一 ID；同一行动链内的衍生效果事件继承该值；非行动系统链为 `null`|
 |`action_queue_index`|当前根行动在本回合队列中的执行序位；非行动系统链为 `null`|
 |`actor_id`|当前根行动的行动者；非行动系统链为 `null`|
@@ -156,6 +161,7 @@
 |`command_type / command_source`|非行动系统链固定写 `system:*` 与 `system`，例如 `system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
 |`select_timeout`|`timeout_default` 所属整条行动链都写 `true`；其他行动链写 `false`；非行动系统链写 `null`|
 |`select_deadline_ms`|整条行动链都写本回合截止时间；非行动系统链写 `null`|
+|`trigger_name / cause_event_id / killer_id`|非 effect 事件写 `null`；effect 事件必须填 `trigger_name / cause_event_id`；`killer_id` 没有归属则写 `null`|
 
 ### 5.3 日志分层
 

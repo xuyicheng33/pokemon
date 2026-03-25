@@ -40,6 +40,7 @@ func leave_unit(battle_state, unit_state, reason: String) -> void:
             "source_instance_id": unit_state.unit_instance_id,
             "target_instance_id": unit_state.unit_instance_id,
             "leave_reason": reason,
+            "trigger_name": "on_exit",
             "payload_summary": "%s left battle" % unit_state.public_id,
         }
     ))

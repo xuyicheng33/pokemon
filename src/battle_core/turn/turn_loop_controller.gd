@@ -41,6 +41,7 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
         battle_state,
         {
             "source_instance_id": "system:turn_start",
+            "trigger_name": "turn_start",
             "payload_summary": "turn start",
         }
     ))
@@ -88,6 +89,7 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
         battle_state,
         {
             "source_instance_id": "system:turn_end",
+            "trigger_name": "turn_end",
             "field_change": field_change,
             "payload_summary": "turn end",
         }
@@ -137,6 +139,8 @@ func _apply_turn_start_regen(battle_state) -> void:
             {
                 "source_instance_id": "system:turn_start",
                 "target_instance_id": active_unit.unit_instance_id,
+                "trigger_name": "turn_start",
+                "cause_event_id": "system:turn_start",
                 "value_changes": [value_change],
                 "payload_summary": "%s regenerated %d mp" % [active_unit.public_id, value_change.delta],
             }
@@ -228,6 +232,8 @@ func _decrement_rule_mods_and_log(battle_state, trigger_name: String) -> void:
                 "source_instance_id": removed_instance.instance_id,
                 "target_instance_id": removed["owner_id"],
                 "priority": removed_instance.priority,
+                "trigger_name": trigger_name,
+                "cause_event_id": "system:%s" % trigger_name,
                 "payload_summary": "rule mod expired: %s" % removed_instance.mod_kind,
             }
         ))
@@ -248,6 +254,8 @@ func _apply_turn_end_field_tick(battle_state):
             battle_state,
             {
                 "source_instance_id": battle_state.field_state.instance_id,
+                "trigger_name": "turn_end",
+                "cause_event_id": "system:turn_end",
                 "field_change": field_change,
                 "payload_summary": "field expired",
             }

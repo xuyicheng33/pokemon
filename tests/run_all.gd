@@ -1326,13 +1326,24 @@ func _test_log_contract_semantics() -> Dictionary:
 
     var system_turn_start_event = null
     var action_cast_event = null
+    var effect_damage_event = null
     for ev in replay_output.event_log:
         if system_turn_start_event == null and ev.event_type == EventTypesScript.SYSTEM_TURN_START:
             system_turn_start_event = ev
         if action_cast_event == null and ev.event_type == EventTypesScript.ACTION_CAST and ev.command_source == "manual":
             action_cast_event = ev
+        if effect_damage_event == null and ev.event_type == EventTypesScript.EFFECT_DAMAGE:
+            effect_damage_event = ev
     if system_turn_start_event == null or action_cast_event == null:
         return _fail("missing system/action events for log contract checks")
+    if effect_damage_event == null:
+        return _fail("missing effect event for log contract checks")
+    if system_turn_start_event.log_schema_version != 2 or action_cast_event.log_schema_version != 2:
+        return _fail("log_schema_version should be 2 for all events")
+    if system_turn_start_event.chain_origin != "turn_start":
+        return _fail("system event chain_origin mismatch")
+    if action_cast_event.chain_origin != "action":
+        return _fail("action event chain_origin mismatch")
     if system_turn_start_event.action_id != null or system_turn_start_event.action_queue_index != null or system_turn_start_event.actor_id != null:
         return _fail("system event action fields must be null")
     if system_turn_start_event.command_type != EventTypesScript.SYSTEM_TURN_START or system_turn_start_event.command_source != "system":
@@ -1345,6 +1356,8 @@ func _test_log_contract_semantics() -> Dictionary:
         return _fail("action event command_source should be manual")
     if action_cast_event.select_timeout != false:
         return _fail("manual action chain select_timeout should be false")
+    if effect_damage_event.trigger_name == null or effect_damage_event.cause_event_id == null:
+        return _fail("effect event should include trigger_name and cause_event_id")
     return _pass()
 
 func _extract_damage_from_log(event_log: Array, attacker_public_id: String) -> int:

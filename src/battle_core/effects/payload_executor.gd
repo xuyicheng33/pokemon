@@ -115,6 +115,8 @@ func _apply_resource_mod_payload(payload, effect_definition, effect_event, battl
             "source_instance_id": effect_event.source_instance_id,
             "target_instance_id": target_unit.unit_instance_id,
             "priority": effect_event.priority,
+            "trigger_name": effect_event.trigger_name,
+            "cause_event_id": effect_event.event_id,
             "value_changes": [value_change],
             "payload_summary": "%s mp %+d" % [target_unit.public_id, value_change.delta],
         }
@@ -137,6 +139,8 @@ func _apply_stat_mod_payload(payload, effect_definition, effect_event, battle_st
             "source_instance_id": effect_event.source_instance_id,
             "target_instance_id": target_unit.unit_instance_id,
             "priority": effect_event.priority,
+            "trigger_name": effect_event.trigger_name,
+            "cause_event_id": effect_event.event_id,
             "value_changes": [value_change],
             "payload_summary": "%s %s %+d" % [target_unit.public_id, payload.stat_name, value_change.delta],
         }
@@ -165,6 +169,8 @@ func _apply_field_payload(payload, effect_definition, effect_event, battle_state
         {
             "source_instance_id": effect_event.source_instance_id,
             "priority": effect_event.priority,
+            "trigger_name": effect_event.trigger_name,
+            "cause_event_id": effect_event.event_id,
             "field_change": field_change,
             "payload_summary": "field -> %s" % field_state.field_def_id,
         }
@@ -193,6 +199,8 @@ func _apply_effect_payload(payload, effect_definition, effect_event, battle_stat
             "source_instance_id": effect_event.source_instance_id,
             "target_instance_id": target_unit.unit_instance_id,
             "priority": effect_event.priority,
+            "trigger_name": effect_event.trigger_name,
+            "cause_event_id": effect_event.event_id,
             "payload_summary": "apply effect %s (%s)" % [payload.effect_definition_id, created_instance.instance_id],
         }
     ))
@@ -211,6 +219,8 @@ func _remove_effect_payload(payload, effect_definition, effect_event, battle_sta
             "source_instance_id": effect_event.source_instance_id,
             "target_instance_id": target_unit.unit_instance_id,
             "priority": effect_event.priority,
+            "trigger_name": effect_event.trigger_name,
+            "cause_event_id": effect_event.event_id,
             "payload_summary": "remove effect %s" % payload.effect_definition_id,
         }
     ))
@@ -237,6 +247,8 @@ func _apply_rule_mod_payload(payload, effect_definition, effect_event, battle_st
             "source_instance_id": effect_event.source_instance_id,
             "target_instance_id": owner_ref["id"],
             "priority": effect_event.priority,
+            "trigger_name": effect_event.trigger_name,
+            "cause_event_id": effect_event.event_id,
             "payload_summary": "rule mod %s (%s)" % [created_instance.mod_kind, created_instance.instance_id],
         }
     ))
@@ -288,6 +300,8 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
             "source_instance_id": effect_event.source_instance_id,
             "target_instance_id": target_unit.unit_instance_id,
             "priority": effect_event.priority,
+            "trigger_name": effect_event.trigger_name,
+            "cause_event_id": effect_event.event_id,
             "value_changes": [value_change],
             "payload_summary": "%s %s %+d" % [target_unit.public_id, summary_tag, value_change.delta],
         }

@@ -13,6 +13,11 @@
 
 ## 2. LogEvent 契约
 
+### 2.0 版本
+
+- `log_schema_version` 固定为 `2`。
+- V2 追加字段：`chain_origin / trigger_name / cause_event_id / killer_id`。
+
 ### 2.1 链路字段语义
 
 |字段|行动链（`chain_origin = action`）|非行动系统链（`battle_init / turn_start / turn_end / system_replace`）|
@@ -30,6 +35,8 @@
 - 非适用字段一律写 `null`，不写空串、不省略。
 - `invalid_battle_code` 仅在 `event_type = system:invalid_battle` 时填写，其余事件写 `null`。
 - 未消费随机的字段（`speed_tie_roll / hit_roll / effect_roll`）写 `null`。
+- 非 effect 事件 `trigger_name / cause_event_id` 写 `null`；effect 事件必须填。
+- `killer_id` 无归属时写 `null`。
 
 ### 2.3 事件类型
 
@@ -62,6 +69,7 @@
 - 每次回放都按输入 `battle_seed` 调用 `rng_service.reset(seed)`。
 - 相同 `seed + content snapshot + command stream` 必须得到相同 `final_state_hash` 与等长日志。
 - 命令解析允许通过 `actor_public_id/target_public_id` 重新映射运行时实例 ID，避免历史 ID 污染。
+- 回放结束后必须校验日志符合 V2 字段完整性（`log_schema_version=2`，effect 事件带 `trigger_name / cause_event_id`）。
 
 ## 4. 失败语义（测试口径）
 

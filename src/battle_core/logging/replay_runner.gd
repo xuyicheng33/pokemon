@@ -37,7 +37,7 @@ func run_replay(replay_input):
     var replay_output = ReplayOutputScript.new()
     replay_output.event_log = battle_logger.snapshot()
     replay_output.final_state_hash = _compute_state_hash(battle_state)
-    replay_output.succeeded = true
+    replay_output.succeeded = _validate_log_schema_v2(replay_output.event_log)
     replay_output.battle_result = battle_state.battle_result
     replay_output.final_battle_state = battle_state
     return replay_output
@@ -48,3 +48,24 @@ func _compute_state_hash(battle_state) -> String:
     hashing_context.start(HashingContext.HASH_SHA256)
     hashing_context.update(json_text.to_utf8_buffer())
     return hashing_context.finish().hex_encode()
+
+func _validate_log_schema_v2(event_log: Array) -> bool:
+    for log_event in event_log:
+        if log_event == null:
+            return false
+        if int(log_event.log_schema_version) != 2:
+            return false
+        if String(log_event.chain_origin).is_empty():
+            return false
+        if String(log_event.event_type).is_empty():
+            return false
+        if String(log_event.event_chain_id).is_empty():
+            return false
+        if int(log_event.event_step_id) <= 0:
+            return false
+        if String(log_event.event_type).begins_with("effect:"):
+            if log_event.trigger_name == null:
+                return false
+            if log_event.cause_event_id == null:
+                return false
+    return true

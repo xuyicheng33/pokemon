@@ -232,3 +232,8 @@
 ### 158. 提交指令必须属于 legal_action_set，不能只靠结构校验
 - `skill_legality` 不仅影响“展示给玩家/AI 的可选列表”，还必须拦截提交路径。
 - 提交了不在 legal 集内的指令，直接按 `invalid_command_payload` fail-fast 终止并写日志。
+
+### 159. 日志契约升级为 V2
+- 新增 `log_schema_version = 2`，并补齐 `chain_origin / trigger_name / cause_event_id / killer_id` 字段。
+- effect 事件必须携带 `trigger_name / cause_event_id`；其他事件允许 `null`。
+- 回放器需校验 V2 字段完整性，未通过视为回放失败。

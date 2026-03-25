@@ -197,6 +197,7 @@ func _execute_switch_action(queued_action, battle_state, content_index):
             "priority": queued_action.priority,
             "target_slot": ContentSchemaScript.ACTIVE_SLOT_PRIMARY,
             "leave_reason": "manual_switch",
+            "trigger_name": "on_switch",
             "payload_summary": "%s switched to %s" % [actor.public_id, target_unit.public_id if target_unit != null else "unknown"],
         }
     ))
@@ -227,6 +228,7 @@ func _execute_switch_action(queued_action, battle_state, content_index):
             "source_instance_id": target_unit.unit_instance_id,
             "target_instance_id": target_unit.unit_instance_id,
             "target_slot": ContentSchemaScript.ACTIVE_SLOT_PRIMARY,
+            "trigger_name": "on_enter",
             "payload_summary": "%s entered battle" % target_unit.public_id,
         }
     ))
@@ -297,6 +299,8 @@ func _apply_direct_damage(queued_action, actor, target, skill_definition, battle
             "target_instance_id": target.unit_instance_id,
             "priority": queued_action.priority,
             "target_slot": queued_action.target_snapshot.target_slot,
+            "trigger_name": "on_hit",
+            "cause_event_id": queued_action.action_id,
             "value_changes": [value_change],
             "payload_summary": "%s dealt %d damage to %s" % [actor.public_id, damage_amount, target.public_id],
         }
@@ -326,6 +330,8 @@ func _apply_default_recoil(queued_action, actor, battle_state) -> void:
             "source_instance_id": queued_action.action_id,
             "target_instance_id": actor.unit_instance_id,
             "priority": queued_action.priority,
+            "trigger_name": "recoil",
+            "cause_event_id": queued_action.action_id,
             "value_changes": [value_change],
             "payload_summary": "%s recoil %d" % [actor.public_id, recoil_amount],
         }

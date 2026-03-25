@@ -3,10 +3,15 @@ class_name LogEvent
 
 var battle_seed: int = 0
 var battle_rng_profile: String = ""
+var log_schema_version: int = 2
 var turn_index: int = 0
 var event_type: String = ""
 var event_chain_id: String = ""
 var event_step_id: int = 0
+var chain_origin: String = ""
+var trigger_name: Variant = null
+var cause_event_id: Variant = null
+var killer_id: Variant = null
 var action_id: Variant = null
 var action_queue_index: Variant = null
 var actor_id: Variant = null
@@ -37,10 +42,15 @@ func to_stable_dict() -> Dictionary:
     return {
         "battle_seed": battle_seed,
         "battle_rng_profile": battle_rng_profile,
+        "log_schema_version": log_schema_version,
         "turn_index": turn_index,
         "event_type": event_type,
         "event_chain_id": event_chain_id,
         "event_step_id": event_step_id,
+        "chain_origin": chain_origin,
+        "trigger_name": trigger_name,
+        "cause_event_id": cause_event_id,
+        "killer_id": killer_id,
         "action_id": action_id,
         "action_queue_index": action_queue_index,
         "actor_id": actor_id,

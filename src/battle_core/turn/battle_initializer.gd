@@ -54,6 +54,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
                 "source_instance_id": active_unit.unit_instance_id,
                 "target_instance_id": active_unit.unit_instance_id,
                 "target_slot": ContentSchemaScript.ACTIVE_SLOT_PRIMARY,
+                "trigger_name": "on_enter",
                 "payload_summary": "%s entered battle" % active_unit.public_id,
             }
         ))
@@ -74,6 +75,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
         battle_state,
         {
             "source_instance_id": "system:battle_init",
+            "trigger_name": "battle_init",
             "payload_summary": "battle initialized",
         }
     ))
