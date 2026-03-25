@@ -14,6 +14,7 @@ var rng_service
 func run_replay(replay_input):
     assert(replay_input != null, "Replay input is required")
     assert(replay_input.battle_setup != null, "Replay battle setup is required")
+    id_factory.reset()
     var content_index = BattleContentIndexScript.new()
     content_index.load_snapshot(replay_input.content_snapshot_paths)
     rng_service.reset(replay_input.battle_seed)

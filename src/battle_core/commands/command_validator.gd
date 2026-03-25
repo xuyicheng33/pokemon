@@ -36,11 +36,11 @@ func validate_command(command, battle_state, content_index) -> bool:
             return false
 
 func _resolve_runtime_ids(command, battle_state) -> void:
-    if command.actor_id.is_empty() and not command.actor_public_id.is_empty():
+    if not command.actor_public_id.is_empty():
         var actor_unit = battle_state.get_unit_by_public_id(command.actor_public_id)
         assert(actor_unit != null, "Unknown actor public id: %s" % command.actor_public_id)
         command.actor_id = actor_unit.unit_instance_id
-    if command.target_unit_id.is_empty() and not command.target_public_id.is_empty():
+    if not command.target_public_id.is_empty():
         var target_unit = battle_state.get_unit_by_public_id(command.target_public_id)
         assert(target_unit != null, "Unknown target public id: %s" % command.target_public_id)
         command.target_unit_id = target_unit.unit_instance_id
