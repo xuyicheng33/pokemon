@@ -41,6 +41,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
         battle_state.sides.append(side_state)
 
     var initial_active_ids: Array = _collect_active_unit_ids(battle_state)
+    battle_state.chain_context = _build_system_chain("system:replace", "system_replace")
     for side_state in battle_state.sides:
         var active_unit = side_state.get_active_unit()
         battle_logger.append_event(log_event_builder.build_event(
@@ -53,8 +54,6 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
                 "payload_summary": "%s entered battle" % active_unit.public_id,
             }
         ))
-
-    battle_state.chain_context = _build_system_chain("system:replace", "system_replace")
     var on_enter_invalid_code = _execute_trigger_batch("on_enter", battle_state, content_index, initial_active_ids)
     if on_enter_invalid_code != null:
         _terminate_invalid_battle(battle_state, str(on_enter_invalid_code))

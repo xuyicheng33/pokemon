@@ -9,7 +9,11 @@ func build_event(event_type: String, battle_state, payload: Dictionary = {}):
     if chain_context == null:
         chain_context = ChainContextScript.new()
         chain_context.event_chain_id = "system:orphan"
-        chain_context.chain_origin = "system"
+        chain_context.chain_origin = "system_replace"
+        chain_context.command_type = "system:replace"
+        chain_context.command_source = "system"
+        chain_context.select_deadline_ms = null
+        chain_context.select_timeout = null
         battle_state.chain_context = chain_context
     chain_context.step_counter += 1
     var log_event = LogEventScript.new()
