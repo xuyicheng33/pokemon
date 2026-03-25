@@ -92,6 +92,7 @@
 |`scope`|`String`|`self / target / field`|
 |`duration_mode`|`String`|`turns / permanent`|
 |`duration`|`int`|持续值|
+|`decrement_on`|`String`|`turn_start / turn_end`（仅 `turns`）|
 |`stacking`|`String`|`none / refresh / replace`|
 |`priority`|`int`|效果优先级|
 |`trigger_names`|`PackedStringArray`|允许的触发点|

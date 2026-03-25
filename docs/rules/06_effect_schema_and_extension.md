@@ -26,6 +26,7 @@
 |`scope`|`self / target / field`|
 |`duration_mode`|当前只允许 `turns / permanent`|
 |`duration`|持续值；`turns` 模式必填|
+|`decrement_on`|`turn_start / turn_end`；仅 `turns` 模式必填|
 |`stacking`|`none / refresh / replace`|
 |`priority`|统一优先级字段；默认 `0`；数值越大越先|
 |`trigger`|触发点列表|

@@ -22,6 +22,7 @@ var trigger_dispatcher
 var effect_queue_service
 var payload_executor
 var effect_instance_service
+var effect_instance_dispatcher
 var rule_mod_service
 var passive_skill_service
 var passive_item_service
@@ -43,6 +44,7 @@ func dispose() -> void:
         action_executor.field_service = null
         action_executor.target_resolver = null
         action_executor.trigger_dispatcher = null
+        action_executor.effect_instance_dispatcher = null
         action_executor.effect_queue_service = null
         action_executor.payload_executor = null
         action_executor.faint_resolver = null
@@ -65,6 +67,7 @@ func dispose() -> void:
         faint_resolver.passive_item_service = null
         faint_resolver.field_service = null
         faint_resolver.trigger_dispatcher = null
+        faint_resolver.effect_instance_dispatcher = null
         faint_resolver.effect_queue_service = null
         faint_resolver.payload_executor = null
         faint_resolver.rng_service = null
@@ -77,6 +80,7 @@ func dispose() -> void:
         battle_initializer.passive_skill_service = null
         battle_initializer.passive_item_service = null
         battle_initializer.field_service = null
+        battle_initializer.effect_instance_dispatcher = null
         battle_initializer.effect_queue_service = null
         battle_initializer.payload_executor = null
         battle_initializer.battle_logger = null
@@ -93,6 +97,7 @@ func dispose() -> void:
         turn_loop_controller.field_service = null
         turn_loop_controller.passive_skill_service = null
         turn_loop_controller.passive_item_service = null
+        turn_loop_controller.effect_instance_dispatcher = null
         turn_loop_controller.effect_queue_service = null
         turn_loop_controller.payload_executor = null
         turn_loop_controller.rule_mod_service = null
@@ -123,6 +128,8 @@ func dispose() -> void:
         field_service.trigger_dispatcher = null
     if effect_instance_service != null:
         effect_instance_service.id_factory = null
+    if effect_instance_dispatcher != null:
+        effect_instance_dispatcher.id_factory = null
     if rule_mod_service != null:
         rule_mod_service.id_factory = null
     if leave_service != null:
@@ -153,6 +160,7 @@ func dispose() -> void:
     effect_queue_service = null
     payload_executor = null
     effect_instance_service = null
+    effect_instance_dispatcher = null
     rule_mod_service = null
     passive_skill_service = null
     passive_item_service = null

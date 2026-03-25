@@ -59,7 +59,7 @@
 |---|---|
 |`event_log`|完整日志快照|
 |`final_state_hash`|`BattleState.to_stable_dict()` 的 SHA-256|
-|`succeeded`|回放执行是否成功完成|
+|`succeeded`|完整执行成功 + 日志 V2 校验通过 + 终局结果有效|
 |`battle_result`|终局结果对象|
 |`final_battle_state`|最终运行态对象|
 
@@ -69,6 +69,7 @@
 - 每次回放都按输入 `battle_seed` 调用 `rng_service.reset(seed)`。
 - 相同 `seed + content snapshot + command stream` 必须得到相同 `final_state_hash` 与等长日志。
 - 命令解析允许通过 `actor_public_id/target_public_id` 重新映射运行时实例 ID，避免历史 ID 污染。
+- 回放运行必须持续到战斗结束或回合上限触发（不允许半局成功返回）。
 - 回放结束后必须校验日志符合 V2 字段完整性（`log_schema_version=2`，effect 事件带 `trigger_name / cause_event_id`）。
 
 ## 4. 失败语义（测试口径）

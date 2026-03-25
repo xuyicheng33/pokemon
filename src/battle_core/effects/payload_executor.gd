@@ -211,6 +211,7 @@ func _remove_effect_payload(payload, effect_definition, effect_event, battle_sta
         return
     var removed_instance = effect_instance_service.remove_instance(target_unit.unit_instance_id, payload.effect_definition_id, battle_state)
     if removed_instance == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_REMOVE_AMBIGUOUS
         return
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.EFFECT_REMOVE_EFFECT,

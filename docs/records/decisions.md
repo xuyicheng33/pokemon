@@ -245,3 +245,20 @@
 - 新增 `log_schema_version = 2`，并补齐 `chain_origin / trigger_name / cause_event_id / killer_id` 字段。
 - effect 事件必须携带 `trigger_name / cause_event_id`；其他事件允许 `null`。
 - 回放器需校验 V2 字段完整性，未通过视为回放失败。
+
+### 160. 回放必须完整跑到终局并强化成功判定
+- `ReplayRunner` 运行至“战斗结束或回合上限触发”，不再允许半局成功返回。
+- `ReplayOutput.succeeded` 需同时满足“执行完成 + V2 日志校验通过 + 终局结果有效”。
+
+### 161. 持续效果实例接入统一触发链并补齐扣减移除日志
+- 新增持续效果调度层，按触发点收集 `effect_instances` 并纳入统一排序链。
+- `turn_start / turn_end` 触发后按 `decrement_on` 扣减，`remaining <= 0` 立即移除并写 `effect:remove_effect`。
+- 离场时若未标记 `persists_on_switch`，则移除并写移除日志。
+
+### 162. 内容快照加载时强制校验
+- 内容层加载后立即校验，非法配置直接 fail-fast。
+- 校验覆盖：技能优先级范围、奥义引用、目标/触发/作用域白名单、`rule_mod` 组合、跨资源引用完整性。
+
+### 163. `battle_end` 日志严格归入系统链
+- `result:battle_end` 事件的 `command_type` 必须为 `system:*`，禁止写入 `result:battle_end`。
+- `chain_origin` 由系统链上下文提供，保持非行动链口径不变。

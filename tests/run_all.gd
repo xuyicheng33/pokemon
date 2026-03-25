@@ -9,10 +9,13 @@ const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/pas
 const PassiveItemDefinitionScript := preload("res://src/battle_core/content/passive_item_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
+const UnitDefinitionScript := preload("res://src/battle_core/content/unit_definition.gd")
 const FieldDefinitionScript := preload("res://src/battle_core/content/field_definition.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
+const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
+const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -24,6 +27,7 @@ var _core_pool: Array = []
 func _init() -> void:
     var failures: Array[String] = []
     _run_test("deterministic_replay", failures, _test_deterministic_replay)
+    _run_test("replay_runs_to_end", failures, _test_replay_runs_to_end)
     _run_test("timeout_default_path", failures, _test_timeout_default_path)
     _run_test("resource_forced_default_path", failures, _test_resource_forced_default_path)
     _run_test("miss_path", failures, _test_miss_path)
@@ -42,6 +46,9 @@ func _init() -> void:
     _run_test("rule_mod_field_scope_paths", failures, _test_rule_mod_field_scope_paths)
     _run_test("rule_mod_skill_legality_enforced", failures, _test_rule_mod_skill_legality_enforced)
     _run_test("invalid_battle_rule_mod_definition", failures, _test_invalid_battle_rule_mod_definition)
+    _run_test("apply_effect_lifecycle_chain", failures, _test_apply_effect_lifecycle_chain)
+    _run_test("content_validation_failures", failures, _test_content_validation_failures)
+    _run_test("battle_end_system_chain", failures, _test_battle_end_system_chain)
     _run_test("log_contract_semantics", failures, _test_log_contract_semantics)
     _dispose_core_pool()
     if failures.is_empty():
@@ -143,6 +150,50 @@ func _test_deterministic_replay() -> Dictionary:
         return _fail("final_state_hash mismatch")
     if replay_output_a.event_log.size() != replay_output_b.event_log.size():
         return _fail("event_log size mismatch")
+    return _pass()
+
+func _test_replay_runs_to_end() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var replay_input = ReplayInputScript.new()
+    replay_input.battle_seed = 15
+    replay_input.content_snapshot_paths = sample_factory.content_snapshot_paths()
+    replay_input.battle_setup = sample_factory.build_sample_setup()
+    replay_input.command_stream = [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": "sample_strike",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+    ]
+    var replay_output = core.replay_runner.run_replay(replay_input)
+    if replay_output == null or not replay_output.succeeded:
+        return _fail("replay did not complete successfully")
+    if replay_output.battle_result == null or not replay_output.battle_result.finished:
+        return _fail("replay battle_result not finished")
+    var has_battle_end: bool = false
+    for ev in replay_output.event_log:
+        if ev.event_type == EventTypesScript.RESULT_BATTLE_END:
+            has_battle_end = true
+            break
+    if not has_battle_end:
+        return _fail("result:battle_end event missing in replay")
     return _pass()
 
 func _test_timeout_default_path() -> Dictionary:
@@ -1368,6 +1419,181 @@ func _test_log_contract_semantics() -> Dictionary:
         return _fail("manual action chain select_timeout should be false")
     if effect_damage_event.trigger_name == null or effect_damage_event.cause_event_id == null:
         return _fail("effect event should include trigger_name and cause_event_id")
+    return _pass()
+
+func _test_apply_effect_lifecycle_chain() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var dot_payload = DamagePayloadScript.new()
+    dot_payload.payload_type = "dot"
+    dot_payload.amount = 5
+    dot_payload.use_formula = false
+    var dot_effect = EffectDefinitionScript.new()
+    dot_effect.id = "test_dot_tick"
+    dot_effect.display_name = "Dot Tick"
+    dot_effect.scope = "self"
+    dot_effect.duration_mode = "turns"
+    dot_effect.duration = 1
+    dot_effect.decrement_on = "turn_end"
+    dot_effect.stacking = "replace"
+    dot_effect.priority = 0
+    dot_effect.trigger_names = PackedStringArray(["turn_end"])
+    dot_effect.payloads.clear()
+    dot_effect.payloads.append(dot_payload)
+    content_index.register_resource(dot_effect)
+
+    var apply_payload = ApplyEffectPayloadScript.new()
+    apply_payload.payload_type = "apply_effect"
+    apply_payload.effect_definition_id = dot_effect.id
+    var apply_effect = EffectDefinitionScript.new()
+    apply_effect.id = "test_apply_dot"
+    apply_effect.display_name = "Apply Dot"
+    apply_effect.scope = "target"
+    apply_effect.duration_mode = "permanent"
+    apply_effect.trigger_names = PackedStringArray(["on_cast"])
+    apply_effect.payloads.clear()
+    apply_effect.payloads.append(apply_payload)
+    content_index.register_resource(apply_effect)
+
+    var dot_skill = SkillDefinitionScript.new()
+    dot_skill.id = "test_dot_skill"
+    dot_skill.display_name = "Dot Skill"
+    dot_skill.damage_kind = "none"
+    dot_skill.power = 0
+    dot_skill.accuracy = 100
+    dot_skill.mp_cost = 0
+    dot_skill.priority = 0
+    dot_skill.targeting = "enemy_active_slot"
+    dot_skill.effects_on_cast_ids = PackedStringArray([apply_effect.id])
+    content_index.register_resource(dot_skill)
+    if not content_index.units["sample_pyron"].skill_ids.has(dot_skill.id):
+        content_index.units["sample_pyron"].skill_ids.append(dot_skill.id)
+
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 211)
+    var p2_active = battle_state.get_side("P2").get_active_unit()
+    p2_active.current_hp = min(p2_active.max_hp, max(20, p2_active.current_hp))
+    var commands: Array = [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": dot_skill.id,
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_whiff",
+        }),
+    ]
+    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
+
+    var has_apply: bool = false
+    var has_tick: bool = false
+    var has_remove: bool = false
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.EFFECT_APPLY_EFFECT and String(ev.payload_summary).find(dot_effect.id) != -1:
+            has_apply = true
+        if ev.event_type == EventTypesScript.EFFECT_DAMAGE and ev.trigger_name == "turn_end" and String(ev.payload_summary).find("dot") != -1:
+            has_tick = true
+        if ev.event_type == EventTypesScript.EFFECT_REMOVE_EFFECT and String(ev.payload_summary).find("effect expired: %s" % dot_effect.id) != -1:
+            has_remove = true
+    if not has_apply or not has_tick or not has_remove:
+        return _fail("apply_effect lifecycle events missing")
+    return _pass()
+
+func _test_content_validation_failures() -> Dictionary:
+    var content_index = BattleContentIndexScript.new()
+
+    var bad_skill = SkillDefinitionScript.new()
+    bad_skill.id = "bad_skill"
+    bad_skill.display_name = "Bad Skill"
+    bad_skill.targeting = "bad_target"
+    bad_skill.priority = 9
+    content_index.register_resource(bad_skill)
+
+    var bad_unit = UnitDefinitionScript.new()
+    bad_unit.id = "bad_unit"
+    bad_unit.display_name = "Bad Unit"
+    bad_unit.skill_ids = PackedStringArray(["missing_skill"])
+    bad_unit.ultimate_skill_id = "missing_ultimate"
+    content_index.register_resource(bad_unit)
+
+    var bad_rule_mod = RuleModPayloadScript.new()
+    bad_rule_mod.payload_type = "rule_mod"
+    bad_rule_mod.mod_kind = "bad_kind"
+    bad_rule_mod.mod_op = "bad_op"
+    bad_rule_mod.scope = "self"
+    bad_rule_mod.duration_mode = "turns"
+    bad_rule_mod.duration = 1
+    bad_rule_mod.decrement_on = "turn_start"
+    bad_rule_mod.stacking = "none"
+    bad_rule_mod.priority = 0
+    var bad_effect = EffectDefinitionScript.new()
+    bad_effect.id = "bad_effect"
+    bad_effect.display_name = "Bad Effect"
+    bad_effect.scope = "self"
+    bad_effect.duration_mode = "permanent"
+    bad_effect.trigger_names = PackedStringArray(["on_cast"])
+    bad_effect.payloads.clear()
+    bad_effect.payloads.append(bad_rule_mod)
+    content_index.register_resource(bad_effect)
+
+    var errors: Array = content_index.validate_snapshot()
+    if errors.is_empty():
+        return _fail("content validator did not report failures")
+    var has_priority_error: bool = false
+    var has_rule_mod_error: bool = false
+    var has_missing_ref: bool = false
+    for error_msg in errors:
+        var msg = str(error_msg)
+        if msg.find("priority out of range") != -1:
+            has_priority_error = true
+        if msg.find("rule_mod invalid") != -1:
+            has_rule_mod_error = true
+        if msg.find("missing skill") != -1:
+            has_missing_ref = true
+    if not (has_priority_error and has_rule_mod_error and has_missing_ref):
+        return _fail("content validation errors missing expected categories")
+    return _pass()
+
+func _test_battle_end_system_chain() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var replay_output = core.replay_runner.run_replay(sample_factory.build_demo_replay_input(core.command_builder))
+    if replay_output == null:
+        return _fail("replay output is null")
+    var has_battle_end: bool = false
+    for ev in replay_output.event_log:
+        if ev.event_type != EventTypesScript.RESULT_BATTLE_END:
+            continue
+        has_battle_end = true
+        if String(ev.command_type) == EventTypesScript.RESULT_BATTLE_END:
+            return _fail("battle_end command_type should not be result:battle_end")
+        if not String(ev.command_type).begins_with("system:"):
+            return _fail("battle_end command_type should be system:*")
+        if String(ev.command_source) != "system":
+            return _fail("battle_end command_source should be system")
+        if ev.chain_origin == "action":
+            return _fail("battle_end chain_origin should not be action")
+    if not has_battle_end:
+        return _fail("battle_end event missing in replay log")
     return _pass()
 
 func _extract_damage_from_log(event_log: Array, attacker_public_id: String) -> int:

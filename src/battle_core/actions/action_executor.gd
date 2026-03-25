@@ -21,6 +21,7 @@ var leave_service
 var passive_skill_service
 var passive_item_service
 var field_service
+var effect_instance_dispatcher
 var target_resolver
 var trigger_dispatcher
 var effect_queue_service
@@ -217,7 +218,7 @@ func _execute_switch_action(queued_action, battle_state, content_index):
         result.invalid_battle_code = on_exit_invalid_code
         return result
     side_state.bench_order.append(actor.unit_instance_id)
-    leave_service.leave_unit(battle_state, actor, "manual_switch")
+    leave_service.leave_unit(battle_state, actor, "manual_switch", content_index)
     var bench_index: int = side_state.bench_order.find(command.target_unit_id)
     if bench_index >= 0:
         side_state.bench_order.remove_at(bench_index)
@@ -385,6 +386,8 @@ func _execute_lifecycle_trigger_batch(trigger_name: String, battle_state, conten
     var effect_events: Array = []
     effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    if effect_instance_dispatcher != null:
+        effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
     if effect_events.is_empty():
         return null

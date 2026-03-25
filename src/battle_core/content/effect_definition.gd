@@ -6,6 +6,7 @@ class_name EffectDefinition
 @export var scope: String = "self"
 @export var duration_mode: String = "permanent"
 @export var duration: int = 0
+@export var decrement_on: String = ""
 @export var stacking: String = "none"
 @export var priority: int = 0
 @export var trigger_names: PackedStringArray = PackedStringArray()

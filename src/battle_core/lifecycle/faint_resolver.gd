@@ -14,6 +14,7 @@ var passive_skill_service
 var passive_item_service
 var field_service
 var trigger_dispatcher
+var effect_instance_dispatcher
 var effect_queue_service
 var payload_executor
 var rng_service
@@ -100,11 +101,11 @@ func resolve_faint_window(battle_state, content_index):
             )
             if on_kill_invalid_code != null:
                 return on_kill_invalid_code
-        for fainted_unit in fainted_units:
-            leave_service.leave_unit(battle_state, fainted_unit, "faint")
         var on_exit_invalid_code = _execute_unit_trigger_batch("on_exit", battle_state, content_index, fainted_unit_ids)
         if on_exit_invalid_code != null:
             return on_exit_invalid_code
+        for fainted_unit in fainted_units:
+            leave_service.leave_unit(battle_state, fainted_unit, "faint", content_index)
         _clear_fatal_damage_records(battle_state, fainted_unit_ids)
 
     var entered_unit_ids: Array = []
@@ -125,6 +126,8 @@ func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_ind
     var effect_events: Array = []
     effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    if effect_instance_dispatcher != null:
+        effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
     effect_events.append_array(extra_effect_events)
     if effect_events.is_empty():

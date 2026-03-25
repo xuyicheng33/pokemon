@@ -23,6 +23,7 @@ const TriggerDispatcherScript := preload("res://src/battle_core/effects/trigger_
 const EffectQueueServiceScript := preload("res://src/battle_core/effects/effect_queue_service.gd")
 const PayloadExecutorScript := preload("res://src/battle_core/effects/payload_executor.gd")
 const EffectInstanceServiceScript := preload("res://src/battle_core/effects/effect_instance_service.gd")
+const EffectInstanceDispatcherScript := preload("res://src/battle_core/effects/effect_instance_dispatcher.gd")
 const RuleModServiceScript := preload("res://src/battle_core/effects/rule_mod_service.gd")
 const PassiveSkillServiceScript := preload("res://src/battle_core/passives/passive_skill_service.gd")
 const PassiveItemServiceScript := preload("res://src/battle_core/passives/passive_item_service.gd")
@@ -54,6 +55,7 @@ func compose():
     container.effect_queue_service = EffectQueueServiceScript.new()
     container.payload_executor = PayloadExecutorScript.new()
     container.effect_instance_service = EffectInstanceServiceScript.new()
+    container.effect_instance_dispatcher = EffectInstanceDispatcherScript.new()
     container.rule_mod_service = RuleModServiceScript.new()
     container.passive_skill_service = PassiveSkillServiceScript.new()
     container.passive_item_service = PassiveItemServiceScript.new()
@@ -69,6 +71,7 @@ func compose():
     container.battle_initializer.passive_skill_service = container.passive_skill_service
     container.battle_initializer.passive_item_service = container.passive_item_service
     container.battle_initializer.field_service = container.field_service
+    container.battle_initializer.effect_instance_dispatcher = container.effect_instance_dispatcher
     container.battle_initializer.effect_queue_service = container.effect_queue_service
     container.battle_initializer.payload_executor = container.payload_executor
     container.battle_initializer.battle_logger = container.battle_logger
@@ -86,6 +89,7 @@ func compose():
     container.faint_resolver.passive_item_service = container.passive_item_service
     container.faint_resolver.field_service = container.field_service
     container.faint_resolver.trigger_dispatcher = container.trigger_dispatcher
+    container.faint_resolver.effect_instance_dispatcher = container.effect_instance_dispatcher
     container.faint_resolver.effect_queue_service = container.effect_queue_service
     container.faint_resolver.payload_executor = container.payload_executor
     container.faint_resolver.rng_service = container.rng_service
@@ -96,6 +100,7 @@ func compose():
     container.passive_item_service.trigger_dispatcher = container.trigger_dispatcher
     container.field_service.trigger_dispatcher = container.trigger_dispatcher
     container.effect_instance_service.id_factory = container.id_factory
+    container.effect_instance_dispatcher.id_factory = container.id_factory
     container.rule_mod_service.id_factory = container.id_factory
     container.payload_executor.battle_logger = container.battle_logger
     container.payload_executor.log_event_builder = container.log_event_builder
@@ -116,6 +121,7 @@ func compose():
     container.action_executor.field_service = container.field_service
     container.action_executor.target_resolver = container.target_resolver
     container.action_executor.trigger_dispatcher = container.trigger_dispatcher
+    container.action_executor.effect_instance_dispatcher = container.effect_instance_dispatcher
     container.action_executor.effect_queue_service = container.effect_queue_service
     container.action_executor.payload_executor = container.payload_executor
     container.action_executor.faint_resolver = container.faint_resolver
@@ -133,6 +139,7 @@ func compose():
     container.turn_loop_controller.field_service = container.field_service
     container.turn_loop_controller.passive_skill_service = container.passive_skill_service
     container.turn_loop_controller.passive_item_service = container.passive_item_service
+    container.turn_loop_controller.effect_instance_dispatcher = container.effect_instance_dispatcher
     container.turn_loop_controller.effect_queue_service = container.effect_queue_service
     container.turn_loop_controller.payload_executor = container.payload_executor
     container.turn_loop_controller.rule_mod_service = container.rule_mod_service

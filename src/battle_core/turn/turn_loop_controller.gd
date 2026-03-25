@@ -21,6 +21,7 @@ var mp_service
 var field_service
 var passive_skill_service
 var passive_item_service
+var effect_instance_dispatcher
 var effect_queue_service
 var payload_executor
 var rule_mod_service
@@ -48,6 +49,7 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     _apply_turn_start_regen(battle_state)
     if _execute_system_trigger_batch("turn_start", battle_state, content_index):
         return
+    _decrement_effect_instances_and_log(battle_state, content_index, "turn_start", _collect_active_unit_ids(battle_state))
     _decrement_rule_mods_and_log(battle_state, "turn_start")
     if _resolve_standard_victory(battle_state):
         return
@@ -83,6 +85,7 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     if _execute_system_trigger_batch("turn_end", battle_state, content_index):
         return
     var field_change = _apply_turn_end_field_tick(battle_state)
+    _decrement_effect_instances_and_log(battle_state, content_index, "turn_end", _collect_active_unit_ids(battle_state))
     _decrement_rule_mods_and_log(battle_state, "turn_end")
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.SYSTEM_TURN_END,
@@ -200,6 +203,8 @@ func _execute_system_trigger_batch(trigger_name: String, battle_state, content_i
     var effect_events: Array = []
     effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    if effect_instance_dispatcher != null:
+        effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
     effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
     if effect_events.is_empty():
         return false
@@ -235,6 +240,27 @@ func _decrement_rule_mods_and_log(battle_state, trigger_name: String) -> void:
                 "priority": removed_instance.priority,
                 "trigger_name": trigger_name,
                 "payload_summary": "rule mod expired: %s" % removed_instance.mod_kind,
+            }
+        )
+        log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
+        battle_logger.append_event(log_event)
+
+func _decrement_effect_instances_and_log(battle_state, content_index, trigger_name: String, owner_unit_ids: Array) -> void:
+    if effect_instance_dispatcher == null:
+        return
+    var removed_instances: Array = effect_instance_dispatcher.decrement_for_trigger(trigger_name, battle_state, content_index, owner_unit_ids)
+    for removed in removed_instances:
+        var removed_instance = removed["instance"]
+        var effect_definition = removed["definition"]
+        var log_event = log_event_builder.build_event(
+            EventTypesScript.EFFECT_REMOVE_EFFECT,
+            battle_state,
+            {
+                "source_instance_id": removed_instance.source_instance_id,
+                "target_instance_id": removed["owner_id"],
+                "priority": effect_definition.priority,
+                "trigger_name": trigger_name,
+                "payload_summary": "effect expired: %s" % effect_definition.id,
             }
         )
         log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
@@ -289,7 +315,7 @@ func _resolve_surrender(battle_state, commands: Array) -> bool:
         battle_state.battle_result.winner_side_id = null
         battle_state.battle_result.result_type = "draw"
     battle_state.battle_result.reason = "surrender"
-    battle_state.chain_context = _build_system_chain(EventTypesScript.RESULT_BATTLE_END, battle_state)
+    battle_state.chain_context = _build_battle_end_chain(battle_state)
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.RESULT_BATTLE_END,
         battle_state,
@@ -316,8 +342,8 @@ func _resolve_standard_victory(battle_state) -> bool:
     else:
         battle_state.battle_result.winner_side_id = alive_side_ids[0]
         battle_state.battle_result.result_type = "win"
-        battle_state.battle_result.reason = "elimination"
-    battle_state.chain_context = _build_system_chain(EventTypesScript.RESULT_BATTLE_END, battle_state)
+    battle_state.battle_result.reason = "elimination"
+    battle_state.chain_context = _build_battle_end_chain(battle_state)
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.RESULT_BATTLE_END,
         battle_state,
@@ -429,6 +455,17 @@ func _build_system_chain(command_type: String, _battle_state):
     chain_context.select_deadline_ms = null
     chain_context.select_timeout = null
     return chain_context
+
+func _build_battle_end_chain(battle_state):
+    match battle_state.phase:
+        BattlePhasesScript.BATTLE_INIT:
+            return _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, battle_state)
+        BattlePhasesScript.TURN_START:
+            return _build_system_chain(EventTypesScript.SYSTEM_TURN_START, battle_state)
+        BattlePhasesScript.TURN_END, BattlePhasesScript.VICTORY_CHECK:
+            return _build_system_chain(EventTypesScript.SYSTEM_TURN_END, battle_state)
+        _:
+            return _build_system_chain("system:replace", battle_state)
 
 func _resolve_chain_origin(command_type: String) -> String:
     match command_type:

@@ -15,6 +15,7 @@ display_name = "Apply Focus Field"
 scope = "field"
 duration_mode = "turns"
 duration = 2
+decrement_on = "turn_end"
 stacking = "replace"
 priority = 0
 trigger_names = PackedStringArray("on_cast")

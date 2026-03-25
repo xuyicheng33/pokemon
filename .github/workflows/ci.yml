@@ -1,0 +1,20 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          version: "4.6.0"
+          use-dotnet: "false"
+          include-templates: "false"
+      - name: Run Test Gate
+        run: bash tests/run_with_gate.sh
