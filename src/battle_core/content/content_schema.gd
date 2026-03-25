@@ -9,6 +9,8 @@ const TARGET_ENEMY_ACTIVE := "enemy_active_slot"
 const TARGET_SELF := "self"
 const TARGET_FIELD := "field"
 
+const ACTIVE_SLOT_PRIMARY := "active_0"
+
 const DURATION_TURNS := "turns"
 const DURATION_PERMANENT := "permanent"
 

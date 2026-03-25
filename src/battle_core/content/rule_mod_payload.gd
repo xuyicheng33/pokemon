@@ -1,4 +1,4 @@
-extends EffectPayload
+extends "res://src/battle_core/content/effect_payload.gd"
 class_name RuleModPayload
 
 @export var mod_kind: String = "final_mod"

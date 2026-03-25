@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="UnitDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/unit_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sample_pyron"
+display_name = "Pyron"
+base_hp = 120
+base_attack = 70
+base_defense = 56
+base_sp_attack = 74
+base_sp_defense = 60
+base_speed = 80
+max_mp = 100
+init_mp = 80
+regen_per_turn = 20
+skill_ids = PackedStringArray("sample_strike", "sample_field_call", "sample_whiff")
+ultimate_skill_id = "sample_ultimate_burst"

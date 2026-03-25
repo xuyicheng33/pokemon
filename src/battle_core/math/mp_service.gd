@@ -1,10 +1,8 @@
 extends RefCounted
 class_name MpService
 
-func apply_turn_start_regen(_current_mp: int, _regen_amount: int) -> int:
-    assert(false, "MpService.apply_turn_start_regen not implemented")
-    return 0
+func apply_turn_start_regen(current_mp: int, regen_amount: int, max_mp: int) -> int:
+    return clamp(current_mp + regen_amount, 0, max_mp)
 
-func consume_mp(_current_mp: int, _mp_cost: int) -> int:
-    assert(false, "MpService.consume_mp not implemented")
-    return 0
+func consume_mp(current_mp: int, mp_cost: int) -> int:
+    return max(0, current_mp - mp_cost)

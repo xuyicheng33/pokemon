@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sample_ultimate_burst"
+display_name = "Ultimate Burst"
+damage_kind = "special"
+power = 80
+accuracy = 100
+mp_cost = 60
+priority = 5
+targeting = "enemy_active_slot"

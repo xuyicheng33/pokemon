@@ -1,0 +1,14 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sample_quick_jab"
+display_name = "Quick Jab"
+damage_kind = "physical"
+power = 30
+accuracy = 100
+mp_cost = 10
+priority = 1
+targeting = "enemy_active_slot"

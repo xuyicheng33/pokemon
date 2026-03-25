@@ -14,3 +14,18 @@ var source_kind_order: int = 0
 var source_order_speed_snapshot: int = 0
 var priority: int = 0
 
+func to_stable_dict() -> Dictionary:
+    return {
+        "instance_id": instance_id,
+        "mod_kind": mod_kind,
+        "mod_op": mod_op,
+        "value": value,
+        "owner": owner,
+        "remaining": remaining,
+        "created_turn": created_turn,
+        "decrement_on": decrement_on,
+        "source_instance_id": source_instance_id,
+        "source_kind_order": source_kind_order,
+        "source_order_speed_snapshot": source_order_speed_snapshot,
+        "priority": priority,
+    }
