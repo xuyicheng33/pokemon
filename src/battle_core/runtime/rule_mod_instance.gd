@@ -7,7 +7,8 @@ var mod_op: String = ""
 var value = null
 var scope: String = "self"
 var duration_mode: String = "permanent"
-var owner: String = ""
+var owner_scope: String = "unit"
+var owner_id: String = ""
 var remaining: int = 0
 var created_turn: int = 0
 var decrement_on: String = ""
@@ -24,7 +25,8 @@ func to_stable_dict() -> Dictionary:
         "value": value,
         "scope": scope,
         "duration_mode": duration_mode,
-        "owner": owner,
+        "owner_scope": owner_scope,
+        "owner_id": owner_id,
         "remaining": remaining,
         "created_turn": created_turn,
         "decrement_on": decrement_on,

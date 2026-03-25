@@ -21,6 +21,7 @@ var chain_context = null
 var battle_result = null
 var rng_stream_index: int = 0
 var fatal_damage_records_by_target: Dictionary = {}
+var field_rule_mod_instances: Array = []
 
 func get_side(side_id: String):
     for side_state in sides:
@@ -65,6 +66,11 @@ func to_stable_dict() -> Dictionary:
     sorted_sides.sort_custom(func(a, b): return a.side_id < b.side_id)
     for side_state in sorted_sides:
         side_dicts.append(side_state.to_stable_dict())
+    var field_rule_mod_dicts: Array = []
+    var sorted_field_rule_mods = field_rule_mod_instances.duplicate()
+    sorted_field_rule_mods.sort_custom(func(a, b): return a.instance_id < b.instance_id)
+    for rule_mod_instance in sorted_field_rule_mods:
+        field_rule_mod_dicts.append(rule_mod_instance.to_stable_dict())
     return {
         "battle_id": battle_id,
         "seed": seed,
@@ -77,6 +83,7 @@ func to_stable_dict() -> Dictionary:
         "phase": phase,
         "sides": side_dicts,
         "field_state": field_state.to_stable_dict() if field_state != null else null,
+        "field_rule_mod_instances": field_rule_mod_dicts,
         "battle_result": battle_result.to_stable_dict() if battle_result != null else null,
         "rng_stream_index": rng_stream_index,
     }

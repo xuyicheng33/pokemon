@@ -36,6 +36,8 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     battle_state.turn_index = 1
     battle_state.battle_result = BattleResultScript.new()
     battle_state.sides.clear()
+    battle_state.fatal_damage_records_by_target.clear()
+    battle_state.field_rule_mod_instances.clear()
     for side_setup in battle_setup.sides:
         var side_state = _build_side_state(side_setup, format_config, content_index)
         battle_state.sides.append(side_state)

@@ -211,12 +211,12 @@ func _remove_effect_payload(payload, effect_definition, effect_event, battle_sta
     ))
 
 func _apply_rule_mod_payload(payload, effect_definition, effect_event, battle_state) -> void:
-    var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
-    if not _is_effect_target_valid(target_unit):
+    var owner_ref = _resolve_rule_mod_owner(payload, effect_event, battle_state)
+    if owner_ref == null:
         return
     var created_instance = rule_mod_service.create_instance(
         payload,
-        target_unit.unit_instance_id,
+        owner_ref,
         battle_state,
         effect_event.source_instance_id,
         effect_event.source_kind_order,
@@ -230,11 +230,31 @@ func _apply_rule_mod_payload(payload, effect_definition, effect_event, battle_st
         battle_state,
         {
             "source_instance_id": effect_event.source_instance_id,
-            "target_instance_id": target_unit.unit_instance_id,
+            "target_instance_id": owner_ref["id"],
             "priority": effect_event.priority,
             "payload_summary": "rule mod %s (%s)" % [created_instance.mod_kind, created_instance.instance_id],
         }
     ))
+
+func _resolve_rule_mod_owner(payload, effect_event, battle_state):
+    match payload.scope:
+        "self":
+            var owner_unit = battle_state.get_unit(effect_event.owner_id)
+            if not _is_effect_target_valid(owner_unit):
+                return null
+            return {"scope": "unit", "id": owner_unit.unit_instance_id}
+        "target":
+            if effect_event.chain_context == null or effect_event.chain_context.target_unit_id == null:
+                return null
+            var target_unit = battle_state.get_unit(str(effect_event.chain_context.target_unit_id))
+            if not _is_effect_target_valid(target_unit):
+                return null
+            return {"scope": "unit", "id": target_unit.unit_instance_id}
+        "field":
+            return {"scope": "field", "id": "field"}
+        _:
+            last_invalid_battle_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+            return null
 
 func _resolve_target_unit(scope: String, effect_event, battle_state):
     match scope:

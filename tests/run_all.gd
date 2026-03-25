@@ -33,6 +33,7 @@ func _init() -> void:
     _run_test("invalid_command_payload_hard_failures", failures, _test_invalid_command_payload_hard_failures)
     _run_test("action_failed_post_start_target_missing", failures, _test_action_failed_post_start_target_missing)
     _run_test("rule_mod_paths", failures, _test_rule_mod_paths)
+    _run_test("rule_mod_field_scope_paths", failures, _test_rule_mod_field_scope_paths)
     _run_test("rule_mod_skill_legality_enforced", failures, _test_rule_mod_skill_legality_enforced)
     _run_test("invalid_battle_rule_mod_definition", failures, _test_invalid_battle_rule_mod_definition)
     _run_test("log_contract_semantics", failures, _test_log_contract_semantics)
@@ -863,7 +864,7 @@ func _test_rule_mod_paths() -> Dictionary:
     deny_payload.decrement_on = "turn_start"
     deny_payload.stacking = "replace"
     deny_payload.priority = 10
-    if core.rule_mod_service.create_instance(deny_payload, p1_active.unit_instance_id, battle_state, "test_rule_mod_deny", 0, p1_active.base_speed) == null:
+    if core.rule_mod_service.create_instance(deny_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_rule_mod_deny", 0, p1_active.base_speed) == null:
         return _fail("failed to create skill_legality rule_mod")
 
     var regen_payload = RuleModPayloadScript.new()
@@ -877,7 +878,7 @@ func _test_rule_mod_paths() -> Dictionary:
     regen_payload.decrement_on = "turn_start"
     regen_payload.stacking = "replace"
     regen_payload.priority = 10
-    if core.rule_mod_service.create_instance(regen_payload, p1_active.unit_instance_id, battle_state, "test_rule_mod_regen", 0, p1_active.base_speed) == null:
+    if core.rule_mod_service.create_instance(regen_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_rule_mod_regen", 0, p1_active.base_speed) == null:
         return _fail("failed to create mp_regen rule_mod")
 
     var legal_action_set = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
@@ -931,13 +932,132 @@ func _test_rule_mod_paths() -> Dictionary:
     final_mod_payload.stacking = "replace"
     final_mod_payload.priority = 10
     var modded_p1_active = modded_state.get_side("P1").get_active_unit()
-    if core.rule_mod_service.create_instance(final_mod_payload, modded_p1_active.unit_instance_id, modded_state, "test_rule_mod_final", 0, modded_p1_active.base_speed) == null:
+    if core.rule_mod_service.create_instance(final_mod_payload, {"scope": "unit", "id": modded_p1_active.unit_instance_id}, modded_state, "test_rule_mod_final", 0, modded_p1_active.base_speed) == null:
         return _fail("failed to create final_mod rule_mod")
     core.battle_logger.reset()
     core.turn_loop_controller.run_turn(modded_state, content_index, baseline_commands)
     var modded_damage = _extract_damage_from_log(core.battle_logger.event_log, "P1-A")
     if baseline_damage <= 0 or modded_damage <= baseline_damage:
         return _fail("final_mod rule_mod did not increase damage")
+    return _pass()
+
+func _test_rule_mod_field_scope_paths() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 115)
+    var p1_active = battle_state.get_side("P1").get_active_unit()
+    var p2_active = battle_state.get_side("P2").get_active_unit()
+    p1_active.regen_per_turn = 0
+    p2_active.regen_per_turn = 0
+    p1_active.current_mp = 0
+    p2_active.current_mp = 0
+
+    var field_regen_payload = RuleModPayloadScript.new()
+    field_regen_payload.payload_type = "rule_mod"
+    field_regen_payload.mod_kind = "mp_regen"
+    field_regen_payload.mod_op = "add"
+    field_regen_payload.value = 5
+    field_regen_payload.scope = "field"
+    field_regen_payload.duration_mode = "turns"
+    field_regen_payload.duration = 1
+    field_regen_payload.decrement_on = "turn_start"
+    field_regen_payload.stacking = "replace"
+    field_regen_payload.priority = 5
+    if core.rule_mod_service.create_instance(field_regen_payload, {"scope": "field", "id": "field"}, battle_state, "test_field_regen_mod", 0, 0) == null:
+        return _fail("failed to create field-scope mp_regen rule_mod")
+    core.turn_loop_controller.run_turn(battle_state, content_index, [])
+    if p1_active.current_mp != 5 or p2_active.current_mp != 5:
+        return _fail("field-scope mp_regen rule_mod did not apply to both active units")
+    var has_field_remove_log: bool = false
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.EFFECT_RULE_MOD_REMOVE and ev.target_instance_id == "field":
+            has_field_remove_log = true
+            break
+    if not has_field_remove_log:
+        return _fail("field-scope rule_mod remove event missing")
+
+    var baseline_state = _build_initialized_battle(core, content_index, sample_factory, 116)
+    var modded_state = _build_initialized_battle(core, content_index, sample_factory, 116)
+    var baseline_commands: Array = [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": "sample_strike",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+    ]
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(baseline_state, content_index, baseline_commands)
+    var baseline_damage = _extract_damage_from_log(core.battle_logger.event_log, "P1-A")
+    var field_final_mod_payload = RuleModPayloadScript.new()
+    field_final_mod_payload.payload_type = "rule_mod"
+    field_final_mod_payload.mod_kind = "final_mod"
+    field_final_mod_payload.mod_op = "mul"
+    field_final_mod_payload.value = 2.0
+    field_final_mod_payload.scope = "field"
+    field_final_mod_payload.duration_mode = "turns"
+    field_final_mod_payload.duration = 2
+    field_final_mod_payload.decrement_on = "turn_end"
+    field_final_mod_payload.stacking = "replace"
+    field_final_mod_payload.priority = 10
+    if core.rule_mod_service.create_instance(field_final_mod_payload, {"scope": "field", "id": "field"}, modded_state, "test_field_final_mod", 0, 0) == null:
+        return _fail("failed to create field-scope final_mod rule_mod")
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(modded_state, content_index, baseline_commands)
+    var modded_damage = _extract_damage_from_log(core.battle_logger.event_log, "P1-A")
+    if baseline_damage <= 0 or modded_damage <= baseline_damage:
+        return _fail("field-scope final_mod rule_mod did not increase damage")
+
+    var legality_state = _build_initialized_battle(core, content_index, sample_factory, 117)
+    var field_legality_payload = RuleModPayloadScript.new()
+    field_legality_payload.payload_type = "rule_mod"
+    field_legality_payload.mod_kind = "skill_legality"
+    field_legality_payload.mod_op = "deny"
+    field_legality_payload.value = "sample_strike"
+    field_legality_payload.scope = "field"
+    field_legality_payload.duration_mode = "turns"
+    field_legality_payload.duration = 2
+    field_legality_payload.decrement_on = "turn_start"
+    field_legality_payload.stacking = "replace"
+    field_legality_payload.priority = 10
+    if core.rule_mod_service.create_instance(field_legality_payload, {"scope": "field", "id": "field"}, legality_state, "test_field_skill_legality", 0, 0) == null:
+        return _fail("failed to create field-scope skill_legality rule_mod")
+    var legal_action_set = core.legal_action_service.get_legal_actions(legality_state, "P1", content_index)
+    if legal_action_set.legal_skill_ids.has("sample_strike"):
+        return _fail("field-scope skill_legality rule_mod did not block sample_strike")
+
+    var invalid_scope_payload = RuleModPayloadScript.new()
+    invalid_scope_payload.payload_type = "rule_mod"
+    invalid_scope_payload.mod_kind = "final_mod"
+    invalid_scope_payload.mod_op = "mul"
+    invalid_scope_payload.value = 1.1
+    invalid_scope_payload.scope = "field"
+    invalid_scope_payload.duration_mode = "turns"
+    invalid_scope_payload.duration = 1
+    invalid_scope_payload.decrement_on = "turn_start"
+    invalid_scope_payload.stacking = "replace"
+    var invalid_owner = legality_state.get_side("P1").get_active_unit()
+    if core.rule_mod_service.create_instance(invalid_scope_payload, {"scope": "unit", "id": invalid_owner.unit_instance_id}, legality_state, "test_invalid_field_owner", 0, invalid_owner.base_speed) != null:
+        return _fail("invalid field owner binding should fail")
+    if core.rule_mod_service.last_error_code != ErrorCodesScript.INVALID_RULE_MOD_DEFINITION:
+        return _fail("invalid field owner binding should return invalid_rule_mod_definition")
     return _pass()
 
 func _test_invalid_battle_rule_mod_definition() -> Dictionary:
@@ -1037,7 +1157,7 @@ func _test_rule_mod_skill_legality_enforced() -> Dictionary:
     deny_payload.decrement_on = "turn_start"
     deny_payload.stacking = "replace"
     deny_payload.priority = 10
-    if core.rule_mod_service.create_instance(deny_payload, p1_active.unit_instance_id, battle_state, "test_skill_legality_gate", 0, p1_active.base_speed) == null:
+    if core.rule_mod_service.create_instance(deny_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_skill_legality_gate", 0, p1_active.base_speed) == null:
         return _fail("failed to create skill_legality deny instance")
 
     var commands: Array = [
