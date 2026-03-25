@@ -51,7 +51,7 @@ fail-fast：任一批次产生 invalid code，立即返回上层终止战斗。
 
 实现状态说明（2026-03-25）：
 
-- `forced_replace` 生命周期链（`on_switch -> on_exit -> leave -> replace -> on_enter`）已冻结为规则目标，当前计划在后续批次把 payload 执行路径补齐。
+- `forced_replace` 生命周期链（`on_switch -> on_exit -> leave -> replace -> on_enter`）已接入 payload 执行路径。
 
 ## 5. 约束
 

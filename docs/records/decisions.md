@@ -296,3 +296,8 @@
 ### 171. 内容快照对 `on_receive_effect_ids` 执行加载期硬拦截
 - `PassiveItemDefinition.on_receive_effect_ids` 当前只作为迁移占位字段，运行时禁用。
 - 校验策略固定为“字段可存在，但值非空立即失败”，错误应在加载期暴露，而非战斗中兜底。
+
+### 172. `forced_replace` payload 以最小生命周期闭环接入主链
+- 新增 `forced_replace` payload，执行起点先校验合法 bench，再按候选规则调用系统替补选择接口。
+- 成功路径固定顺序为 `on_switch -> on_exit -> leave(forced_replace) -> state:replace -> state:enter -> on_enter`。
+- 系统选择返回空值或非法目标时，统一以 `invalid_replacement_selection` 立即终止战斗。

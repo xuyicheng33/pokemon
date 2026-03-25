@@ -11,6 +11,7 @@ const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_fi
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
+const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
 const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
@@ -21,6 +22,7 @@ var log_event_builder
 var id_factory
 var effect_instance_service
 var rule_mod_service
+var replacement_service
 var damage_service
 var stat_calculator
 var faint_resolver
@@ -66,6 +68,9 @@ func execute_payload(payload, effect_definition, effect_event, battle_state, con
         return
     if payload is RuleModPayloadScript:
         _apply_rule_mod_payload(payload, effect_definition, effect_event, battle_state)
+        return
+    if payload is ForcedReplacePayloadScript:
+        _apply_forced_replace_payload(payload, effect_event, battle_state, content_index)
         return
     last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
 
@@ -264,6 +269,26 @@ func _apply_rule_mod_payload(payload, effect_definition, effect_event, battle_st
             "payload_summary": "rule mod %s (%s)" % [created_instance.mod_kind, created_instance.instance_id],
         }
     ))
+
+func _apply_forced_replace_payload(payload, effect_event, battle_state, content_index) -> void:
+    var target_unit = _resolve_target_unit(payload.scope, effect_event, battle_state)
+    if not _is_effect_target_valid(target_unit):
+        return
+    if replacement_service == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return
+    var selector_reason: String = String(payload.selector_reason).strip_edges()
+    if selector_reason.is_empty():
+        selector_reason = "forced_replace"
+    var replacement_result: Dictionary = replacement_service.execute_forced_replace(
+        battle_state,
+        content_index,
+        target_unit.unit_instance_id,
+        selector_reason
+    )
+    var invalid_code = replacement_result.get("invalid_code", null)
+    if invalid_code != null:
+        last_invalid_battle_code = invalid_code
 
 func _resolve_rule_mod_owner(payload, effect_event, battle_state):
     match payload.scope:

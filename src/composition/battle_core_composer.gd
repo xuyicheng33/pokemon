@@ -86,6 +86,14 @@ func compose():
     container.replacement_service.battle_logger = container.battle_logger
     container.replacement_service.log_event_builder = container.log_event_builder
     container.replacement_service.replacement_selector = container.replacement_selector
+    container.replacement_service.leave_service = container.leave_service
+    container.replacement_service.passive_skill_service = container.passive_skill_service
+    container.replacement_service.passive_item_service = container.passive_item_service
+    container.replacement_service.field_service = container.field_service
+    container.replacement_service.effect_instance_dispatcher = container.effect_instance_dispatcher
+    container.replacement_service.effect_queue_service = container.effect_queue_service
+    container.replacement_service.payload_executor = container.payload_executor
+    container.replacement_service.rng_service = container.rng_service
     container.faint_resolver.leave_service = container.leave_service
     container.faint_resolver.replacement_service = container.replacement_service
     container.faint_resolver.passive_skill_service = container.passive_skill_service
@@ -110,6 +118,7 @@ func compose():
     container.payload_executor.id_factory = container.id_factory
     container.payload_executor.effect_instance_service = container.effect_instance_service
     container.payload_executor.rule_mod_service = container.rule_mod_service
+    container.payload_executor.replacement_service = container.replacement_service
     container.payload_executor.damage_service = container.damage_service
     container.payload_executor.stat_calculator = container.stat_calculator
     container.payload_executor.faint_resolver = container.faint_resolver

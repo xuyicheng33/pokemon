@@ -58,6 +58,7 @@ func dispose() -> void:
         payload_executor.id_factory = null
         payload_executor.effect_instance_service = null
         payload_executor.rule_mod_service = null
+        payload_executor.replacement_service = null
         payload_executor.damage_service = null
         payload_executor.stat_calculator = null
         payload_executor.faint_resolver = null
@@ -140,6 +141,14 @@ func dispose() -> void:
         replacement_service.battle_logger = null
         replacement_service.log_event_builder = null
         replacement_service.replacement_selector = null
+        replacement_service.leave_service = null
+        replacement_service.passive_skill_service = null
+        replacement_service.passive_item_service = null
+        replacement_service.field_service = null
+        replacement_service.effect_instance_dispatcher = null
+        replacement_service.effect_queue_service = null
+        replacement_service.payload_executor = null
+        replacement_service.rng_service = null
 
     id_factory = null
     rng_service = null

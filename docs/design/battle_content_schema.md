@@ -124,12 +124,13 @@
 - `RemoveEffectPayload`
 - `ApplyFieldPayload`
 - `RuleModPayload`
+- `ForcedReplacePayload`
 
 本轮只建立统一基类与方向，不实现具体结算逻辑。
 
 实现状态说明（2026-03-25）：
 
-- `forced_replace` payload 将在本轮收口计划的后续批次落地；当前内容快照里不应提前引用未接线类型。
+- `forced_replace` payload 已在本轮收口计划中落地，当前仅覆盖 1v1 单 active 槽位链路。
 
 ## 5. 非目标
 

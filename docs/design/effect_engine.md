@@ -49,10 +49,11 @@
 - `remove_effect`
 - `apply_field`
 - `rule_mod`
+- `forced_replace`
 
 实现状态说明（2026-03-25）：
 
-- `forced_replace` payload 已进入本轮收口计划，当前批次前仍未接线到 `PayloadExecutor`。
+- `forced_replace` payload 已接线到 `PayloadExecutor`，执行顺序固定为 `on_switch -> on_exit -> leave -> replace -> on_enter`。
 
 fail-fast 约束：
 

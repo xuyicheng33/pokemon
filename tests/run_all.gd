@@ -18,6 +18,7 @@ const ResourceModPayloadScript := preload("res://src/battle_core/content/resourc
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
+const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
@@ -49,6 +50,8 @@ func _init() -> void:
     _run_test("invalid_command_payload_hard_failures", failures, _test_invalid_command_payload_hard_failures)
     _run_test("invalid_command_payload_out_of_legal_set", failures, _test_invalid_command_payload_out_of_legal_set)
     _run_test("replacement_selector_paths", failures, _test_replacement_selector_paths)
+    _run_test("forced_replace_success_chain", failures, _test_forced_replace_success_chain)
+    _run_test("forced_replace_invalid_selection", failures, _test_forced_replace_invalid_selection)
     _run_test("action_failed_post_start_target_missing", failures, _test_action_failed_post_start_target_missing)
     _run_test("invalid_chain_depth_max_guard", failures, _test_invalid_chain_depth_max_guard)
     _run_test("invalid_chain_depth_dedupe_guard", failures, _test_invalid_chain_depth_dedupe_guard)
@@ -963,6 +966,247 @@ func _test_replacement_selector_paths() -> Dictionary:
         return _fail("empty replacement selection should fail-fast with invalid_replacement_selection")
 
     return _pass()
+
+func _test_forced_replace_success_chain() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var forced_payload = ForcedReplacePayloadScript.new()
+    forced_payload.payload_type = "forced_replace"
+    forced_payload.scope = "target"
+    forced_payload.selector_reason = "forced_replace"
+    var forced_effect = EffectDefinitionScript.new()
+    forced_effect.id = "test_forced_replace_effect"
+    forced_effect.display_name = "Forced Replace Effect"
+    forced_effect.scope = "target"
+    forced_effect.trigger_names = PackedStringArray(["on_cast"])
+    forced_effect.payloads.clear()
+    forced_effect.payloads.append(forced_payload)
+    content_index.register_resource(forced_effect)
+
+    var forced_skill = SkillDefinitionScript.new()
+    forced_skill.id = "test_forced_replace_skill"
+    forced_skill.display_name = "Forced Replace Skill"
+    forced_skill.damage_kind = "none"
+    forced_skill.power = 0
+    forced_skill.accuracy = 100
+    forced_skill.mp_cost = 0
+    forced_skill.priority = 0
+    forced_skill.targeting = "enemy_active_slot"
+    forced_skill.effects_on_cast_ids = PackedStringArray([forced_effect.id])
+    content_index.register_resource(forced_skill)
+    if not content_index.units["sample_pyron"].skill_ids.has(forced_skill.id):
+        content_index.units["sample_pyron"].skill_ids.append(forced_skill.id)
+
+    var switch_payload = StatModPayloadScript.new()
+    switch_payload.payload_type = "stat_mod"
+    switch_payload.stat_name = "attack"
+    switch_payload.stage_delta = 1
+    var switch_effect = EffectDefinitionScript.new()
+    switch_effect.id = "test_forced_replace_on_switch_effect"
+    switch_effect.display_name = "Forced Replace On Switch"
+    switch_effect.scope = "self"
+    switch_effect.trigger_names = PackedStringArray(["on_switch"])
+    switch_effect.payloads.clear()
+    switch_effect.payloads.append(switch_payload)
+    var switch_passive = PassiveSkillDefinitionScript.new()
+    switch_passive.id = "test_forced_replace_on_switch_passive"
+    switch_passive.display_name = "Forced Replace On Switch Passive"
+    switch_passive.trigger_names = PackedStringArray(["on_switch"])
+    switch_passive.effect_ids = PackedStringArray([switch_effect.id])
+    content_index.register_resource(switch_effect)
+    content_index.register_resource(switch_passive)
+
+    var exit_payload = StatModPayloadScript.new()
+    exit_payload.payload_type = "stat_mod"
+    exit_payload.stat_name = "defense"
+    exit_payload.stage_delta = 1
+    var exit_effect = EffectDefinitionScript.new()
+    exit_effect.id = "test_forced_replace_on_exit_effect"
+    exit_effect.display_name = "Forced Replace On Exit"
+    exit_effect.scope = "self"
+    exit_effect.trigger_names = PackedStringArray(["on_exit"])
+    exit_effect.payloads.clear()
+    exit_effect.payloads.append(exit_payload)
+    var exit_item = PassiveItemDefinitionScript.new()
+    exit_item.id = "test_forced_replace_on_exit_item"
+    exit_item.display_name = "Forced Replace On Exit Item"
+    exit_item.trigger_names = PackedStringArray(["on_exit"])
+    exit_item.effect_ids = PackedStringArray([exit_effect.id])
+    content_index.register_resource(exit_effect)
+    content_index.register_resource(exit_item)
+
+    var enter_payload = StatModPayloadScript.new()
+    enter_payload.payload_type = "stat_mod"
+    enter_payload.stat_name = "speed"
+    enter_payload.stage_delta = 1
+    var enter_effect = EffectDefinitionScript.new()
+    enter_effect.id = "test_forced_replace_on_enter_effect"
+    enter_effect.display_name = "Forced Replace On Enter"
+    enter_effect.scope = "self"
+    enter_effect.trigger_names = PackedStringArray(["on_enter"])
+    enter_effect.payloads.clear()
+    enter_effect.payloads.append(enter_payload)
+    var enter_passive = PassiveSkillDefinitionScript.new()
+    enter_passive.id = "test_forced_replace_on_enter_passive"
+    enter_passive.display_name = "Forced Replace On Enter Passive"
+    enter_passive.trigger_names = PackedStringArray(["on_enter"])
+    enter_passive.effect_ids = PackedStringArray([enter_effect.id])
+    content_index.register_resource(enter_effect)
+    content_index.register_resource(enter_passive)
+
+    content_index.units["sample_tidekit"].passive_skill_id = switch_passive.id
+    content_index.units["sample_tidekit"].passive_item_id = exit_item.id
+    content_index.units["sample_mossaur"].passive_skill_id = enter_passive.id
+
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 220)
+    var p1_active = battle_state.get_side("P1").get_active_unit()
+    var p2_active = battle_state.get_side("P2").get_active_unit()
+    if p1_active == null or p2_active == null:
+        return _fail("missing active units for forced_replace success test")
+    p1_active.base_speed = 999
+    var selected_unit = battle_state.get_unit_by_public_id("P2-C")
+    if selected_unit == null:
+        return _fail("missing selected replacement unit P2-C")
+
+    var selector := TestReplacementSelector.new()
+    selector.next_selection = selected_unit.unit_instance_id
+    core.replacement_service.replacement_selector = selector
+
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": forced_skill.id,
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_whiff",
+        }),
+    ])
+    if battle_state.battle_result.finished and battle_state.battle_result.reason == ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
+        return _fail("forced_replace success path should not fail with invalid_replacement_selection")
+    if battle_state.get_side("P2").get_active_unit().unit_instance_id != selected_unit.unit_instance_id:
+        return _fail("forced_replace did not replace target with selected bench unit")
+
+    var switch_idx := -1
+    var on_switch_effect_idx := -1
+    var on_exit_effect_idx := -1
+    var state_exit_idx := -1
+    var state_replace_idx := -1
+    var state_enter_idx := -1
+    var on_enter_effect_idx := -1
+    for i in range(core.battle_logger.event_log.size()):
+        var ev = core.battle_logger.event_log[i]
+        if switch_idx == -1 and ev.event_type == EventTypesScript.STATE_SWITCH and ev.leave_reason == "forced_replace" and ev.source_instance_id == p2_active.unit_instance_id:
+            switch_idx = i
+            continue
+        if switch_idx == -1:
+            continue
+        if on_switch_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.trigger_name == "on_switch" and ev.target_instance_id == p2_active.unit_instance_id:
+            on_switch_effect_idx = i
+        if on_exit_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.trigger_name == "on_exit" and ev.target_instance_id == p2_active.unit_instance_id:
+            on_exit_effect_idx = i
+        if state_exit_idx == -1 and ev.event_type == EventTypesScript.STATE_EXIT and ev.leave_reason == "forced_replace" and ev.target_instance_id == p2_active.unit_instance_id:
+            state_exit_idx = i
+        if state_replace_idx == -1 and ev.event_type == EventTypesScript.STATE_REPLACE and ev.target_instance_id == selected_unit.unit_instance_id:
+            state_replace_idx = i
+        if state_enter_idx == -1 and ev.event_type == EventTypesScript.STATE_ENTER and ev.target_instance_id == selected_unit.unit_instance_id and state_replace_idx != -1 and i > state_replace_idx:
+            state_enter_idx = i
+        if on_enter_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.trigger_name == "on_enter" and ev.target_instance_id == selected_unit.unit_instance_id and state_enter_idx != -1 and i > state_enter_idx:
+            on_enter_effect_idx = i
+    if switch_idx == -1 or on_switch_effect_idx == -1 or on_exit_effect_idx == -1 or state_exit_idx == -1 or state_replace_idx == -1 or state_enter_idx == -1 or on_enter_effect_idx == -1:
+        return _fail("missing forced_replace lifecycle events")
+    if not (switch_idx < on_switch_effect_idx and on_switch_effect_idx < on_exit_effect_idx and on_exit_effect_idx < state_exit_idx and state_exit_idx < state_replace_idx and state_replace_idx < state_enter_idx and state_enter_idx < on_enter_effect_idx):
+        return _fail("forced_replace lifecycle ordering mismatch")
+    return _pass()
+
+func _test_forced_replace_invalid_selection() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var forced_payload = ForcedReplacePayloadScript.new()
+    forced_payload.payload_type = "forced_replace"
+    forced_payload.scope = "target"
+    forced_payload.selector_reason = "forced_replace"
+    var forced_effect = EffectDefinitionScript.new()
+    forced_effect.id = "test_forced_replace_invalid_effect"
+    forced_effect.display_name = "Forced Replace Invalid Selection Effect"
+    forced_effect.scope = "target"
+    forced_effect.trigger_names = PackedStringArray(["on_cast"])
+    forced_effect.payloads.clear()
+    forced_effect.payloads.append(forced_payload)
+    content_index.register_resource(forced_effect)
+
+    var forced_skill = SkillDefinitionScript.new()
+    forced_skill.id = "test_forced_replace_invalid_skill"
+    forced_skill.display_name = "Forced Replace Invalid Selection Skill"
+    forced_skill.damage_kind = "none"
+    forced_skill.power = 0
+    forced_skill.accuracy = 100
+    forced_skill.mp_cost = 0
+    forced_skill.priority = 0
+    forced_skill.targeting = "enemy_active_slot"
+    forced_skill.effects_on_cast_ids = PackedStringArray([forced_effect.id])
+    content_index.register_resource(forced_skill)
+    if not content_index.units["sample_pyron"].skill_ids.has(forced_skill.id):
+        content_index.units["sample_pyron"].skill_ids.append(forced_skill.id)
+
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 221)
+    var p1_active = battle_state.get_side("P1").get_active_unit()
+    if p1_active == null:
+        return _fail("missing P1 active unit for forced_replace invalid test")
+    p1_active.base_speed = 999
+
+    var selector := TestReplacementSelector.new()
+    selector.next_selection = "unit_not_in_bench"
+    core.replacement_service.replacement_selector = selector
+
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": forced_skill.id,
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_whiff",
+        }),
+    ])
+    if not battle_state.battle_result.finished:
+        return _fail("invalid replacement selection should end battle immediately")
+    if battle_state.battle_result.reason != ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
+        return _fail("expected invalid_replacement_selection, got %s" % str(battle_state.battle_result.reason))
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
+            return _pass()
+    return _fail("missing invalid_battle log for invalid replacement selection")
 
 func _test_action_failed_post_start_target_missing() -> Dictionary:
     var core_payload = _build_core()

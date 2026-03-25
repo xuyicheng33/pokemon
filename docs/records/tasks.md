@@ -20,8 +20,8 @@
 |批次|结果|提交|
 |---|---|---|
 |批次 1：文档与契约收口（`on_receive` 禁用、`forced_replace` 落地计划、runtime 字段纠偏）|已完成|`1d31974`|
-|批次 2：内容层 fail-fast 收紧（`on_receive_effect_ids` 非空即加载失败）|已完成|待提交|
-|批次 3：`forced_replace` 最小闭环（payload + 生命周期顺序 + 失败语义）|待开始|—|
+|批次 2：内容层 fail-fast 收紧（`on_receive_effect_ids` 非空即加载失败）|已完成|`4a7b49d`|
+|批次 3：`forced_replace` 最小闭环（payload + 生命周期顺序 + 失败语义）|已完成|待提交|
 |批次 4：去兜底与依赖强约束（去 `system:orphan`、关键依赖缺失硬失败）|待开始|—|
 
 #### 最小可玩性检查清单（本计划）

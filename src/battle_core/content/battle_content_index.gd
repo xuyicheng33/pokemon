@@ -17,6 +17,7 @@ const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_fi
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
+const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
 
 var battle_formats: Dictionary = {}
 var units: Dictionary = {}
@@ -239,6 +240,12 @@ func _validate_payload(errors: Array, effect_id: String, payload) -> void:
         var rule_mod_errors = _validate_rule_mod_payload(payload)
         for error_msg in rule_mod_errors:
             errors.append("effect[%s].rule_mod invalid: %s" % [effect_id, error_msg])
+        return
+    if payload is ForcedReplacePayloadScript:
+        if payload.scope != "self" and payload.scope != "target":
+            errors.append("effect[%s].forced_replace invalid scope: %s" % [effect_id, payload.scope])
+        if String(payload.selector_reason).strip_edges().is_empty():
+            errors.append("effect[%s].forced_replace selector_reason must not be empty" % effect_id)
         return
     errors.append("effect[%s].payloads invalid type: %s" % [effect_id, payload])
 
