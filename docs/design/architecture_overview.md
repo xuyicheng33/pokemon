@@ -2,6 +2,8 @@
 
 本文件描述当前原型期战斗核心的工程总览。规则权威仍以 `docs/rules/` 为准；本文件只回答“按什么结构实现，才能不分叉”。
 
+> 详细红线见：`docs/design/battle_core_architecture_constraints.md`。
+
 ## 1. 架构目标
 
 |目标|说明|
@@ -24,6 +26,11 @@
 |组合装配层|`src/composition`|组装核心服务依赖图|不承载业务规则|
 |适配层|`src/adapters`|向 UI/AI/测试暴露接口|不直接改内部状态|
 |场景入口层|`scenes/`|Godot 入口与 sandbox 组装|不承载核心战斗规则|
+
+补充约束：
+
+- 外围层（`composition/adapters/scenes`）不得直接依赖 `battle_core/runtime/*`。
+- 外围只能通过 facade 与公开 contract 调核心。
 
 ## 3. 模块拆分
 
@@ -83,3 +90,14 @@
 - 多目标、`scope = side`、双打、状态包都不属于当前骨架范围。
 - `rule_mod` 只能修改已明文开放的读取节点，不得改写核心流程。
 - 对外接口新增字段时，必须同步更新 contract 类和设计文档，不能只改聊天口径。
+
+## 8. Facade 稳定入口
+
+`battle_core` 对外围公开稳定 facade，当前最小接口为：
+
+- `initialize_battle`
+- `get_legal_actions`
+- `build_command`
+- `run_turn`
+- `run_replay`
+- `build_public_snapshot`

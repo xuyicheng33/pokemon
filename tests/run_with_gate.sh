@@ -22,4 +22,6 @@ if [[ $status -ne 0 ]]; then
   exit "$status"
 fi
 
+tests/check_architecture_constraints.sh
+
 echo "GATE PASSED: assertions and engine logs are clean"

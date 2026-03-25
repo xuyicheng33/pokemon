@@ -35,13 +35,14 @@ func build_sample_setup():
     battle_setup.sides = [p1, p2]
     return battle_setup
 
-func build_demo_replay_input(command_builder):
+func build_demo_replay_input(command_port):
+    assert(command_port != null and command_port.has_method("build_command"), "build_demo_replay_input requires build_command port")
     var replay_input = ReplayInputScript.new()
     replay_input.battle_seed = 17
     replay_input.content_snapshot_paths = content_snapshot_paths()
     replay_input.battle_setup = build_sample_setup()
     replay_input.command_stream = [
-        command_builder.build_command({
+        command_port.build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -49,7 +50,7 @@ func build_demo_replay_input(command_builder):
             "actor_public_id": "P1-A",
             "skill_id": "sample_field_call",
         }),
-        command_builder.build_command({
+        command_port.build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -57,7 +58,7 @@ func build_demo_replay_input(command_builder):
             "actor_public_id": "P2-A",
             "skill_id": "sample_strike",
         }),
-        command_builder.build_command({
+        command_port.build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -65,7 +66,7 @@ func build_demo_replay_input(command_builder):
             "actor_public_id": "P1-A",
             "skill_id": "sample_strike",
         }),
-        command_builder.build_command({
+        command_port.build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",

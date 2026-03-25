@@ -8,6 +8,13 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const OWNER_SCOPE_UNIT := "unit"
 const OWNER_SCOPE_FIELD := "field"
 const FIELD_OWNER_ID := "field"
+const SKILL_LEGALITY_GLOBAL_KEY := "__all_skills__"
+
+const STACKING_KEY_SCHEMA_BY_KIND := {
+    ContentSchemaScript.RULE_MOD_FINAL_MOD: ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
+    ContentSchemaScript.RULE_MOD_MP_REGEN: ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
+    ContentSchemaScript.RULE_MOD_SKILL_LEGALITY: ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"],
+}
 
 var id_factory
 var last_error_code: Variant = null
@@ -19,7 +26,8 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
     if not _validate_owner_ref(owner_ref, rule_mod_payload.scope, battle_state):
         return null
     var owner_instances: Array = _get_owner_instances(battle_state, owner_ref)
-    var existing_instance = _find_existing(owner_instances, rule_mod_payload)
+    var stacking_key: String = _build_stacking_key(rule_mod_payload, owner_ref)
+    var existing_instance = _find_existing(owner_instances, stacking_key)
     match rule_mod_payload.stacking:
         ContentSchemaScript.STACKING_NONE:
             if existing_instance != null:
@@ -40,6 +48,7 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
     rule_mod_instance.duration_mode = rule_mod_payload.duration_mode
     rule_mod_instance.owner_scope = owner_ref["scope"]
     rule_mod_instance.owner_id = owner_ref["id"]
+    rule_mod_instance.stacking_key = stacking_key
     rule_mod_instance.remaining = rule_mod_payload.duration if rule_mod_payload.duration_mode == "turns" else -1
     rule_mod_instance.created_turn = battle_state.turn_index
     rule_mod_instance.decrement_on = rule_mod_payload.decrement_on
@@ -131,11 +140,9 @@ func _sorted_active_instances_for_read(battle_state, owner_id: String) -> Array:
     ordered_instances.sort_custom(_sort_rule_mods)
     return ordered_instances
 
-func _find_existing(owner_instances: Array, rule_mod_payload):
+func _find_existing(owner_instances: Array, stacking_key: String):
     for rule_mod_instance in owner_instances:
-        if rule_mod_instance.mod_kind == rule_mod_payload.mod_kind \
-        and rule_mod_instance.mod_op == rule_mod_payload.mod_op \
-        and rule_mod_instance.scope == rule_mod_payload.scope:
+        if rule_mod_instance.stacking_key == stacking_key:
             return rule_mod_instance
     return null
 
@@ -254,3 +261,32 @@ func _sort_rule_mods(left, right) -> bool:
     if left.source_instance_id != right.source_instance_id:
         return left.source_instance_id < right.source_instance_id
     return left.instance_id < right.instance_id
+
+func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary) -> String:
+    var schema: Array = STACKING_KEY_SCHEMA_BY_KIND.get(rule_mod_payload.mod_kind, [])
+    assert(not schema.is_empty(), "Missing stacking key schema for rule_mod kind: %s" % rule_mod_payload.mod_kind)
+    var key_parts: PackedStringArray = PackedStringArray()
+    for field_name in schema:
+        match str(field_name):
+            "mod_kind":
+                key_parts.append(str(rule_mod_payload.mod_kind))
+            "scope":
+                key_parts.append(str(rule_mod_payload.scope))
+            "owner_scope":
+                key_parts.append(str(owner_ref["scope"]))
+            "owner_id":
+                key_parts.append(str(owner_ref["id"]))
+            "mod_op":
+                key_parts.append(str(rule_mod_payload.mod_op))
+            "value":
+                key_parts.append(_resolve_stacking_value_token(rule_mod_payload))
+            _:
+                assert(false, "Unknown stacking key field: %s" % str(field_name))
+    return "|".join(key_parts)
+
+func _resolve_stacking_value_token(rule_mod_payload) -> String:
+    if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
+        if typeof(rule_mod_payload.value) == TYPE_STRING and not String(rule_mod_payload.value).is_empty():
+            return "skill:%s" % String(rule_mod_payload.value)
+        return SKILL_LEGALITY_GLOBAL_KEY
+    return str(rule_mod_payload.value)

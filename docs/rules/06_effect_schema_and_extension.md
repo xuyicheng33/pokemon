@@ -91,7 +91,7 @@
 补充规则：
 
 1. 当前内容层不开放“任意 rule_mod”；只允许改写模块 03 / 05 已明确留口的 `final_mod` 链、MP 回复规则或技能合法性。
-2. `rule_mod` 不得修改 `priority`、行动排序、目标锁定、击倒窗口、胜负判定等核心流程。
+2. `rule_mod` 是“读取点修正器”，不是流程节点扩展口；不得修改 `priority`、行动排序、目标锁定、击倒窗口、胜负判定、回合阶段顺序、生命周期顺序、日志链路语义等核心流程。
 3. `payloads` 列表严格按声明顺序执行；后一个 payload 必须读取前一个 payload 已经写回的最新运行态。
 4. 每个 payload 单独适用模块 02 的目标有效性与模块 04 的生命周期规则；若前序 payload 已让目标进入 `fainted_pending_leave`，后续直接作用该目标的普通 payload 按目标无效处理。
 5. 当前基线的 `remove_effect` 只允许按目标 owner 上的精确 `def_id` 移除单个效果实例；若出现文档未允许的歧义匹配，按 `invalid_battle` 处理。
@@ -136,6 +136,15 @@
 2. 需要读取规则修正的节点（`final_mod`、`turn_start` MP 回复、技能合法性）必须收集所有仍有效的 `RuleModInstance`。
 3. 同一 hook 内的应用顺序固定为：`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`。
 4. `stacking = none` 时遇到同键（`mod_kind + scope + owner + mod_op`）直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
+
+### 5.3 `rule_mod` 边界冻结（架构强约束）
+
+|项|规则|
+|---|---|
+|白名单读取点|固定为 `final_mod / mp_regen / skill_legality`|
+|流程控制权|禁止通过 `rule_mod` 改行动排序、回合阶段顺序、击倒窗口、补位时机、胜负判定、目标模型、生命周期、日志语义|
+|新增读取点流程|先改 `docs/rules/06` 与架构约束文档，再实现|
+|扩展策略|若玩法长期需要更多权限，优先新建专用机制，不继续扩大 `rule_mod` 放权范围|
 
 ## 6. 叠加与替换
 

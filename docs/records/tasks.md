@@ -10,6 +10,34 @@
 
 ## 2026-03-25
 
+### Battle Core 完美架构约束方案 v1（分层/门面/拆分）
+- 目标：把 battle core 收敛为“高内聚、低耦合、强边界、早拆分”的长期骨架，外围不再直连 runtime。
+- 范围：仅 `battle_core`、`adapters`、`composition`、测试与规则/设计/记录文档；不扩到正式 UI、scene 交互与复杂 AI。
+- 验收标准：三阶段改造全部落地，`tests/run_with_gate.sh` 全绿，且新增架构闸门能拦截外围直连 runtime。
+
+#### 阶段执行与提交
+
+|阶段|结果|提交|
+|---|---|---|
+|阶段 1：硬约束文档与规则落盘（6 层依赖、rule_mod 白名单、阈值治理）|已完成|待提交|
+|阶段 2：新增 facade 并切断外围直连 runtime|已完成|待提交|
+|阶段 3：拆 `TurnLoopController`、`ActionExecutor` 与测试总入口|已完成|待提交|
+
+#### 最小可玩性检查清单（本计划）
+- 可启动：sandbox 与回放可正常执行。
+- 可操作：facade 可完成初始化、合法性查询、构建指令、回合推进与回放。
+- 无致命错误：外围不再直接依赖 runtime，非法依赖可被闸门拦截。
+
+#### 回归检查要点（本计划）
+- `battle_end / turn_limit / invalid_battle` 语义不回归。
+- `on_cast / on_hit / on_miss / switch / default action` 日志语义不回归。
+- `rule_mod` 仍只影响白名单读取点，不能改流程。
+- 测试入口拆分后总闸门仍支持一键执行全部断言。
+
+#### 当前验证结果（2026-03-25）
+- `tests/run_with_gate.sh`：通过（含 `tests/check_architecture_constraints.sh`）。
+- `tests/run_all.gd`：通过，34 个核心断言全部 PASS。
+
 ### Battle Core 收口与反兜底改造计划（文档先行，4 批次）
 - 目标：按“先文档后代码”收口 Battle Core 契约，消除文档-实现漂移，补齐 `forced_replace`，移除关键兜底并强化依赖 fail-fast。
 - 范围：仅战斗核心（content/lifecycle/effects/logging/composition）与测试闸门；不扩到多槽/多目标，不引入兼容旧行为的运行时回退。

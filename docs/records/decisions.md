@@ -332,3 +332,27 @@
 - effect 事件仍然必须填写 `trigger_name / cause_event_id`。
 - `system:battle_init / system:turn_start / system:turn_end` 这类系统锚点事件允许保留对应节点名到 `trigger_name`，用于日志诊断。
 - 非 effect 事件不再强求 `trigger_name` 一律为 `null`；但 `cause_event_id` 仍只在 effect 事件中使用。
+
+### 180. Battle Core 分层冻结为 6 层单向依赖
+- 核心层次固定为：`content/contracts/runtime/shared constants -> pure domain -> subsystem coordinators -> orchestrators -> facades -> 外围层`。
+- 依赖只能向下，外围层只能通过 facade 或明确 contract 进入核心。
+- `runtime/math/logging/orchestrator` 的职责边界写死为硬约束，不做口头约定。
+
+### 181. `rule_mod` 永久定位为“受限读取修正器”
+- 白名单读取点冻结为：`final_mod / mp_regen / skill_legality`。
+- 禁止通过 `rule_mod` 改排序、阶段顺序、击倒窗口、补位时机、胜负判定、目标模型、生命周期与日志链路语义。
+- 新读取点必须先更新 `docs/rules/06` 与架构约束文档，再允许实现。
+
+### 182. 大文件治理采用“职责优先 + 行数强预警”
+- 核心服务超过 250 行触发职责复核；orchestrator/coordinator 超过 350 行默认拆分；单测试文件超过 600 行默认按子域拆分。
+- 超阈值仍不拆必须在记录中写明“为什么合理 + 预计何时拆”。
+
+### 183. 外围禁止直连 runtime，改由 facade 出口统一收口
+- `adapters/composition/scenes` 不得直接 import `battle_core/runtime/*`。
+- 对外只暴露 public snapshot，不暴露内部 `unit_instance_id` 与核心对象图。
+- 架构闸门新增静态检查，发现外围直连 runtime 即失败。
+
+### 184. 当前超阈值文件复核结果（保留并记录原因）
+- `src/battle_core/content/battle_content_index.gd`：当前仍作为内容注册与快照校验集中点，待内容校验规则稳定后再拆分 schema 校验子服务。
+- `src/battle_core/effects/rule_mod_service.gd`：当前刚完成 stacking key schema 收口，先保持单点实现，后续按读取点拆为 `rule_mod_read_service + rule_mod_instance_service`。
+- `src/battle_core/effects/payload_executor.gd`：当前仍是 payload 主执行枢纽，后续按 payload 家族拆成 `resource/stat/field/rule_mod/lifecycle` 子执行器。

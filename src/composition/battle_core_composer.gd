@@ -10,7 +10,13 @@ const CommandValidatorScript := preload("res://src/battle_core/commands/command_
 const BattleInitializerScript := preload("res://src/battle_core/turn/battle_initializer.gd")
 const ActionQueueBuilderScript := preload("res://src/battle_core/turn/action_queue_builder.gd")
 const TurnLoopControllerScript := preload("res://src/battle_core/turn/turn_loop_controller.gd")
+const TurnResolutionServiceScript := preload("res://src/battle_core/turn/turn_resolution_service.gd")
+const BattleResultServiceScript := preload("res://src/battle_core/turn/battle_result_service.gd")
+const RuntimeGuardServiceScript := preload("res://src/battle_core/turn/runtime_guard_service.gd")
 const ActionExecutorScript := preload("res://src/battle_core/actions/action_executor.gd")
+const ActionCastServiceScript := preload("res://src/battle_core/actions/action_cast_service.gd")
+const SwitchActionServiceScript := preload("res://src/battle_core/actions/switch_action_service.gd")
+const ActionLogServiceScript := preload("res://src/battle_core/actions/action_log_service.gd")
 const TargetResolverScript := preload("res://src/battle_core/actions/target_resolver.gd")
 const StatCalculatorScript := preload("res://src/battle_core/math/stat_calculator.gd")
 const MpServiceScript := preload("res://src/battle_core/math/mp_service.gd")
@@ -33,6 +39,7 @@ const FieldServiceScript := preload("res://src/battle_core/passives/field_servic
 const BattleLoggerScript := preload("res://src/battle_core/logging/battle_logger.gd")
 const LogEventBuilderScript := preload("res://src/battle_core/logging/log_event_builder.gd")
 const ReplayRunnerScript := preload("res://src/battle_core/logging/replay_runner.gd")
+const BattleCoreFacadeScript := preload("res://src/battle_core/facades/battle_core_facade.gd")
 
 func compose():
     var container = BattleCoreContainerScript.new()
@@ -44,7 +51,13 @@ func compose():
     container.battle_initializer = BattleInitializerScript.new()
     container.action_queue_builder = ActionQueueBuilderScript.new()
     container.turn_loop_controller = TurnLoopControllerScript.new()
+    container.turn_resolution_service = TurnResolutionServiceScript.new()
+    container.battle_result_service = BattleResultServiceScript.new()
+    container.runtime_guard_service = RuntimeGuardServiceScript.new()
     container.action_executor = ActionExecutorScript.new()
+    container.action_cast_service = ActionCastServiceScript.new()
+    container.switch_action_service = SwitchActionServiceScript.new()
+    container.action_log_service = ActionLogServiceScript.new()
     container.target_resolver = TargetResolverScript.new()
     container.stat_calculator = StatCalculatorScript.new()
     container.mp_service = MpServiceScript.new()
@@ -67,6 +80,7 @@ func compose():
     container.battle_logger = BattleLoggerScript.new()
     container.log_event_builder = LogEventBuilderScript.new()
     container.replay_runner = ReplayRunnerScript.new()
+    container.facade = BattleCoreFacadeScript.new()
     container.command_builder.id_factory = container.id_factory
     container.legal_action_service.rule_mod_service = container.rule_mod_service
     container.battle_initializer.id_factory = container.id_factory
@@ -134,42 +148,48 @@ func compose():
     container.payload_executor.damage_service = container.damage_service
     container.payload_executor.stat_calculator = container.stat_calculator
     container.payload_executor.faint_resolver = container.faint_resolver
-    container.action_executor.mp_service = container.mp_service
-    container.action_executor.hit_service = container.hit_service
-    container.action_executor.damage_service = container.damage_service
-    container.action_executor.stat_calculator = container.stat_calculator
-    container.action_executor.rule_mod_service = container.rule_mod_service
-    container.action_executor.leave_service = container.leave_service
-    container.action_executor.passive_skill_service = container.passive_skill_service
-    container.action_executor.passive_item_service = container.passive_item_service
-    container.action_executor.field_service = container.field_service
-    container.action_executor.target_resolver = container.target_resolver
-    container.action_executor.trigger_dispatcher = container.trigger_dispatcher
-    container.action_executor.effect_instance_dispatcher = container.effect_instance_dispatcher
-    container.action_executor.effect_queue_service = container.effect_queue_service
-    container.action_executor.payload_executor = container.payload_executor
-    container.action_executor.faint_resolver = container.faint_resolver
-    container.action_executor.trigger_batch_runner = container.trigger_batch_runner
-    container.action_executor.battle_logger = container.battle_logger
-    container.action_executor.log_event_builder = container.log_event_builder
-    container.action_executor.rng_service = container.rng_service
-    container.turn_loop_controller.id_factory = container.id_factory
-    container.turn_loop_controller.legal_action_service = container.legal_action_service
-    container.turn_loop_controller.command_builder = container.command_builder
-    container.turn_loop_controller.command_validator = container.command_validator
+    container.action_log_service.battle_logger = container.battle_logger
+    container.action_log_service.log_event_builder = container.log_event_builder
+    container.action_cast_service.mp_service = container.mp_service
+    container.action_cast_service.hit_service = container.hit_service
+    container.action_cast_service.damage_service = container.damage_service
+    container.action_cast_service.stat_calculator = container.stat_calculator
+    container.action_cast_service.rule_mod_service = container.rule_mod_service
+    container.action_cast_service.target_resolver = container.target_resolver
+    container.action_cast_service.trigger_dispatcher = container.trigger_dispatcher
+    container.action_cast_service.effect_queue_service = container.effect_queue_service
+    container.action_cast_service.payload_executor = container.payload_executor
+    container.action_cast_service.faint_resolver = container.faint_resolver
+    container.action_cast_service.trigger_batch_runner = container.trigger_batch_runner
+    container.action_cast_service.rng_service = container.rng_service
+    container.action_cast_service.action_log_service = container.action_log_service
+    container.switch_action_service.leave_service = container.leave_service
+    container.switch_action_service.action_cast_service = container.action_cast_service
+    container.switch_action_service.action_log_service = container.action_log_service
+    container.action_executor.action_cast_service = container.action_cast_service
+    container.action_executor.switch_action_service = container.switch_action_service
+    container.action_executor.action_log_service = container.action_log_service
+    container.turn_resolution_service.legal_action_service = container.legal_action_service
+    container.turn_resolution_service.command_builder = container.command_builder
+    container.turn_resolution_service.command_validator = container.command_validator
+    container.turn_resolution_service.mp_service = container.mp_service
+    container.turn_resolution_service.field_service = container.field_service
+    container.turn_resolution_service.trigger_batch_runner = container.trigger_batch_runner
+    container.turn_resolution_service.effect_instance_dispatcher = container.effect_instance_dispatcher
+    container.turn_resolution_service.rule_mod_service = container.rule_mod_service
+    container.turn_resolution_service.faint_resolver = container.faint_resolver
+    container.turn_resolution_service.battle_logger = container.battle_logger
+    container.turn_resolution_service.log_event_builder = container.log_event_builder
+    container.turn_resolution_service.battle_result_service = container.battle_result_service
+    container.battle_result_service.id_factory = container.id_factory
+    container.battle_result_service.battle_logger = container.battle_logger
+    container.battle_result_service.log_event_builder = container.log_event_builder
     container.turn_loop_controller.action_queue_builder = container.action_queue_builder
     container.turn_loop_controller.action_executor = container.action_executor
     container.turn_loop_controller.faint_resolver = container.faint_resolver
-    container.turn_loop_controller.mp_service = container.mp_service
-    container.turn_loop_controller.field_service = container.field_service
-    container.turn_loop_controller.passive_skill_service = container.passive_skill_service
-    container.turn_loop_controller.passive_item_service = container.passive_item_service
-    container.turn_loop_controller.trigger_batch_runner = container.trigger_batch_runner
-    container.turn_loop_controller.effect_instance_dispatcher = container.effect_instance_dispatcher
-    container.turn_loop_controller.effect_queue_service = container.effect_queue_service
-    container.turn_loop_controller.payload_executor = container.payload_executor
-    container.turn_loop_controller.rule_mod_service = container.rule_mod_service
-    container.turn_loop_controller.rng_service = container.rng_service
+    container.turn_loop_controller.turn_resolution_service = container.turn_resolution_service
+    container.turn_loop_controller.battle_result_service = container.battle_result_service
+    container.turn_loop_controller.runtime_guard_service = container.runtime_guard_service
     container.turn_loop_controller.battle_logger = container.battle_logger
     container.turn_loop_controller.log_event_builder = container.log_event_builder
     container.replay_runner.battle_initializer = container.battle_initializer
@@ -177,8 +197,20 @@ func compose():
     container.replay_runner.battle_logger = container.battle_logger
     container.replay_runner.id_factory = container.id_factory
     container.replay_runner.rng_service = container.rng_service
+    container.facade.id_factory = container.id_factory
+    container.facade.rng_service = container.rng_service
+    container.facade.battle_initializer = container.battle_initializer
+    container.facade.legal_action_service = container.legal_action_service
+    container.facade.command_builder = container.command_builder
+    container.facade.turn_loop_controller = container.turn_loop_controller
+    container.facade.replay_runner = container.replay_runner
     _assert_container_dependencies(container)
     return container
+
+func compose_facade():
+    var container = compose()
+    assert(container != null and container.facade != null, "compose_facade requires facade")
+    return container.facade
 
 func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.legal_action_service, "legal_action_service", "rule_mod_service")
@@ -190,17 +222,34 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "payload_executor")
     _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "rng_service")
     _assert_dependency(container.battle_initializer, "battle_initializer", "effect_instance_dispatcher")
-    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "effect_instance_dispatcher")
-    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "trigger_batch_runner")
-    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "rule_mod_service")
+    _assert_dependency(container.turn_resolution_service, "turn_resolution_service", "trigger_batch_runner")
+    _assert_dependency(container.turn_resolution_service, "turn_resolution_service", "effect_instance_dispatcher")
+    _assert_dependency(container.turn_resolution_service, "turn_resolution_service", "rule_mod_service")
+    _assert_dependency(container.battle_result_service, "battle_result_service", "id_factory")
+    _assert_dependency(container.battle_result_service, "battle_result_service", "battle_logger")
+    _assert_dependency(container.battle_result_service, "battle_result_service", "log_event_builder")
+    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "turn_resolution_service")
+    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "battle_result_service")
+    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "runtime_guard_service")
     _assert_dependency(container.battle_initializer, "battle_initializer", "trigger_batch_runner")
-    _assert_dependency(container.action_executor, "action_executor", "trigger_batch_runner")
-    _assert_dependency(container.action_executor, "action_executor", "effect_instance_dispatcher")
+    _assert_dependency(container.action_cast_service, "action_cast_service", "trigger_batch_runner")
+    _assert_dependency(container.action_cast_service, "action_cast_service", "effect_queue_service")
+    _assert_dependency(container.action_cast_service, "action_cast_service", "payload_executor")
+    _assert_dependency(container.action_cast_service, "action_cast_service", "target_resolver")
+    _assert_dependency(container.switch_action_service, "switch_action_service", "leave_service")
+    _assert_dependency(container.action_executor, "action_executor", "action_cast_service")
+    _assert_dependency(container.action_executor, "action_executor", "switch_action_service")
+    _assert_dependency(container.action_executor, "action_executor", "action_log_service")
     _assert_dependency(container.faint_resolver, "faint_resolver", "trigger_batch_runner")
     _assert_dependency(container.faint_resolver, "faint_resolver", "effect_instance_dispatcher")
     _assert_dependency(container.replacement_service, "replacement_service", "trigger_batch_runner")
     _assert_dependency(container.payload_executor, "payload_executor", "replacement_service")
     _assert_dependency(container.replacement_service, "replacement_service", "payload_executor")
+    _assert_dependency(container.facade, "facade", "battle_initializer")
+    _assert_dependency(container.facade, "facade", "legal_action_service")
+    _assert_dependency(container.facade, "facade", "command_builder")
+    _assert_dependency(container.facade, "facade", "turn_loop_controller")
+    _assert_dependency(container.facade, "facade", "replay_runner")
 
 func _assert_dependency(owner, owner_name: String, dependency_name: String) -> void:
     assert(owner != null, "Composer missing owner: %s" % owner_name)

@@ -9,6 +9,7 @@ var scope: String = "self"
 var duration_mode: String = "permanent"
 var owner_scope: String = "unit"
 var owner_id: String = ""
+var stacking_key: String = ""
 var remaining: int = 0
 var created_turn: int = 0
 var decrement_on: String = ""
@@ -27,6 +28,7 @@ func to_stable_dict() -> Dictionary:
         "duration_mode": duration_mode,
         "owner_scope": owner_scope,
         "owner_id": owner_id,
+        "stacking_key": stacking_key,
         "remaining": remaining,
         "created_turn": created_turn,
         "decrement_on": decrement_on,

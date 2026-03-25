@@ -9,7 +9,13 @@ var command_validator
 var battle_initializer
 var action_queue_builder
 var turn_loop_controller
+var turn_resolution_service
+var battle_result_service
+var runtime_guard_service
 var action_executor
+var action_cast_service
+var switch_action_service
+var action_log_service
 var target_resolver
 var stat_calculator
 var mp_service
@@ -32,28 +38,43 @@ var field_service
 var battle_logger
 var log_event_builder
 var replay_runner
+var facade
 
 func dispose() -> void:
+    if facade != null:
+        facade.dispose()
+        facade.id_factory = null
+        facade.rng_service = null
+        facade.battle_initializer = null
+        facade.legal_action_service = null
+        facade.command_builder = null
+        facade.turn_loop_controller = null
+        facade.replay_runner = null
     if action_executor != null:
-        action_executor.mp_service = null
-        action_executor.hit_service = null
-        action_executor.damage_service = null
-        action_executor.stat_calculator = null
-        action_executor.rule_mod_service = null
-        action_executor.leave_service = null
-        action_executor.passive_skill_service = null
-        action_executor.passive_item_service = null
-        action_executor.field_service = null
-        action_executor.target_resolver = null
-        action_executor.trigger_dispatcher = null
-        action_executor.effect_instance_dispatcher = null
-        action_executor.effect_queue_service = null
-        action_executor.payload_executor = null
-        action_executor.faint_resolver = null
-        action_executor.trigger_batch_runner = null
-        action_executor.battle_logger = null
-        action_executor.log_event_builder = null
-        action_executor.rng_service = null
+        action_executor.action_cast_service = null
+        action_executor.switch_action_service = null
+        action_executor.action_log_service = null
+    if action_cast_service != null:
+        action_cast_service.mp_service = null
+        action_cast_service.hit_service = null
+        action_cast_service.damage_service = null
+        action_cast_service.stat_calculator = null
+        action_cast_service.rule_mod_service = null
+        action_cast_service.target_resolver = null
+        action_cast_service.trigger_dispatcher = null
+        action_cast_service.effect_queue_service = null
+        action_cast_service.payload_executor = null
+        action_cast_service.faint_resolver = null
+        action_cast_service.trigger_batch_runner = null
+        action_cast_service.rng_service = null
+        action_cast_service.action_log_service = null
+    if switch_action_service != null:
+        switch_action_service.leave_service = null
+        switch_action_service.action_cast_service = null
+        switch_action_service.action_log_service = null
+    if action_log_service != null:
+        action_log_service.battle_logger = null
+        action_log_service.log_event_builder = null
     if payload_executor != null:
         payload_executor.battle_logger = null
         payload_executor.log_event_builder = null
@@ -92,25 +113,31 @@ func dispose() -> void:
         battle_initializer.battle_logger = null
         battle_initializer.log_event_builder = null
     if turn_loop_controller != null:
-        turn_loop_controller.id_factory = null
-        turn_loop_controller.legal_action_service = null
-        turn_loop_controller.command_builder = null
-        turn_loop_controller.command_validator = null
         turn_loop_controller.action_queue_builder = null
         turn_loop_controller.action_executor = null
         turn_loop_controller.faint_resolver = null
-        turn_loop_controller.mp_service = null
-        turn_loop_controller.field_service = null
-        turn_loop_controller.passive_skill_service = null
-        turn_loop_controller.passive_item_service = null
-        turn_loop_controller.trigger_batch_runner = null
-        turn_loop_controller.effect_instance_dispatcher = null
-        turn_loop_controller.effect_queue_service = null
-        turn_loop_controller.payload_executor = null
-        turn_loop_controller.rule_mod_service = null
-        turn_loop_controller.rng_service = null
+        turn_loop_controller.turn_resolution_service = null
+        turn_loop_controller.battle_result_service = null
+        turn_loop_controller.runtime_guard_service = null
         turn_loop_controller.battle_logger = null
         turn_loop_controller.log_event_builder = null
+    if turn_resolution_service != null:
+        turn_resolution_service.legal_action_service = null
+        turn_resolution_service.command_builder = null
+        turn_resolution_service.command_validator = null
+        turn_resolution_service.mp_service = null
+        turn_resolution_service.field_service = null
+        turn_resolution_service.trigger_batch_runner = null
+        turn_resolution_service.effect_instance_dispatcher = null
+        turn_resolution_service.rule_mod_service = null
+        turn_resolution_service.faint_resolver = null
+        turn_resolution_service.battle_logger = null
+        turn_resolution_service.log_event_builder = null
+        turn_resolution_service.battle_result_service = null
+    if battle_result_service != null:
+        battle_result_service.id_factory = null
+        battle_result_service.battle_logger = null
+        battle_result_service.log_event_builder = null
     if replay_runner != null:
         replay_runner.battle_initializer = null
         replay_runner.turn_loop_controller = null
@@ -172,7 +199,13 @@ func dispose() -> void:
     battle_initializer = null
     action_queue_builder = null
     turn_loop_controller = null
+    turn_resolution_service = null
+    battle_result_service = null
+    runtime_guard_service = null
     action_executor = null
+    action_cast_service = null
+    switch_action_service = null
+    action_log_service = null
     target_resolver = null
     stat_calculator = null
     mp_service = null
@@ -195,3 +228,4 @@ func dispose() -> void:
     battle_logger = null
     log_event_builder = null
     replay_runner = null
+    facade = null

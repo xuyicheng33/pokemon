@@ -1,22 +1,22 @@
 extends RefCounted
 class_name BattleUIViewModelBuilder
 
-func build_view_model(battle_state) -> Dictionary:
+func build_view_model(public_snapshot: Dictionary) -> Dictionary:
+    assert(public_snapshot != null, "BattleUIViewModelBuilder requires public snapshot")
     var side_models: Array = []
-    for side_state in battle_state.sides:
-        var active_unit = side_state.get_active_unit()
+    for side_snapshot in public_snapshot.get("sides", []):
         side_models.append({
-            "side_id": side_state.side_id,
-            "active_public_id": active_unit.public_id if active_unit != null else null,
-            "active_hp": active_unit.current_hp if active_unit != null else null,
-            "active_mp": active_unit.current_mp if active_unit != null else null,
-            "bench_order": side_state.bench_order,
+            "side_id": side_snapshot.get("side_id", ""),
+            "active_public_id": side_snapshot.get("active_public_id", null),
+            "active_hp": side_snapshot.get("active_hp", null),
+            "active_mp": side_snapshot.get("active_mp", null),
+            "bench_public_ids": side_snapshot.get("bench_public_ids", []),
         })
     return {
-        "battle_id": battle_state.battle_id,
-        "turn_index": battle_state.turn_index,
-        "phase": battle_state.phase,
-        "field_id": battle_state.field_state.field_def_id if battle_state.field_state != null else null,
+        "battle_id": public_snapshot.get("battle_id", ""),
+        "turn_index": int(public_snapshot.get("turn_index", 0)),
+        "phase": public_snapshot.get("phase", ""),
+        "field_id": public_snapshot.get("field_id", null),
         "sides": side_models,
-        "battle_result": battle_state.battle_result.to_stable_dict() if battle_state.battle_result != null else null,
+        "battle_result": public_snapshot.get("battle_result", null),
     }
