@@ -20,6 +20,7 @@ var pending_effect_queue: Array = []
 var chain_context = null
 var battle_result = null
 var rng_stream_index: int = 0
+var fatal_damage_records_by_target: Dictionary = {}
 
 func get_side(side_id: String):
     for side_state in sides:

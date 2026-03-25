@@ -137,8 +137,13 @@ func _apply_turn_start_regen(battle_state) -> void:
         ))
 
 func _resolve_commands_for_turn(battle_state, content_index, commands: Array) -> Dictionary:
+    var allowed_side_ids: Dictionary = {}
+    for side_state in battle_state.sides:
+        allowed_side_ids[side_state.side_id] = true
     var commands_by_side: Dictionary = {}
     for command in commands:
+        if command == null or not allowed_side_ids.has(command.side_id):
+            return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
         if commands_by_side.has(command.side_id):
             return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
         commands_by_side[command.side_id] = command
@@ -150,6 +155,8 @@ func _resolve_commands_for_turn(battle_state, content_index, commands: Array) ->
         if provided_command != null and provided_command.command_type == CommandTypesScript.SURRENDER:
             resolved_command = provided_command
         elif not legal_action_set.forced_command_type.is_empty():
+            if provided_command != null:
+                return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
             resolved_command = command_builder.build_command({
                 "turn_index": battle_state.turn_index,
                 "command_type": CommandTypesScript.RESOURCE_FORCED_DEFAULT,

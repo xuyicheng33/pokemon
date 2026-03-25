@@ -23,6 +23,7 @@ var effect_instance_service
 var rule_mod_service
 var damage_service
 var stat_calculator
+var faint_resolver
 var last_invalid_battle_code: Variant = null
 
 func execute_effect_event(effect_event, battle_state, content_index) -> void:
@@ -255,7 +256,7 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
     if before_value == target_unit.current_hp:
         return
     var value_change = _build_value_change(target_unit.unit_instance_id, "hp", before_value, target_unit.current_hp)
-    battle_logger.append_event(log_event_builder.build_event(
+    var log_event = log_event_builder.build_event(
         event_type,
         battle_state,
         {
@@ -265,7 +266,21 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
             "value_changes": [value_change],
             "payload_summary": "%s %s %+d" % [target_unit.public_id, summary_tag, value_change.delta],
         }
-    ))
+    )
+    battle_logger.append_event(log_event)
+    if event_type == EventTypesScript.EFFECT_DAMAGE and faint_resolver != null:
+        faint_resolver.record_fatal_damage(
+            battle_state,
+            target_unit.unit_instance_id,
+            before_value,
+            target_unit.current_hp,
+            effect_event.owner_id,
+            effect_event.source_instance_id,
+            effect_event.source_kind_order,
+            effect_event.source_order_speed_snapshot,
+            effect_event.priority,
+            log_event.event_step_id
+        )
 
 func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int):
     var value_change = ValueChangeScript.new()

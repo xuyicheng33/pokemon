@@ -9,6 +9,7 @@ var action_queue_index: Variant = null
 var actor_id: Variant = null
 var command_type: Variant = null
 var command_source: Variant = null
+var skill_id: Variant = null
 var select_timeout: Variant = null
 var select_deadline_ms: Variant = null
 var target_unit_id: Variant = null
@@ -24,6 +25,7 @@ func copy_shallow():
     clone.actor_id = actor_id
     clone.command_type = command_type
     clone.command_source = command_source
+    clone.skill_id = skill_id
     clone.select_timeout = select_timeout
     clone.select_deadline_ms = select_deadline_ms
     clone.target_unit_id = target_unit_id

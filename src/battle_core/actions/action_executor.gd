@@ -10,16 +10,22 @@ const ActionResultScript := preload("res://src/battle_core/contracts/action_resu
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
 
+const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
+
 var mp_service
 var hit_service
 var damage_service
 var stat_calculator
 var rule_mod_service
 var leave_service
+var passive_skill_service
+var passive_item_service
+var field_service
 var target_resolver
 var trigger_dispatcher
 var effect_queue_service
 var payload_executor
+var faint_resolver
 var battle_logger
 var log_event_builder
 var rng_service
@@ -76,7 +82,7 @@ func execute_action(queued_action, battle_state, content_index):
     if result.invalid_battle_code != null:
         return result
     if command.command_type == CommandTypesScript.SWITCH:
-        var switch_result = _execute_switch_action(queued_action, battle_state)
+        var switch_result = _execute_switch_action(queued_action, battle_state, content_index)
         switch_result.action_id = queued_action.action_id
         return switch_result
     var resolved_target = target_resolver.resolve_target(queued_action, battle_state)
@@ -154,6 +160,7 @@ func _build_chain_context(queued_action, battle_state):
     chain_context.actor_id = queued_action.command.actor_id
     chain_context.command_type = queued_action.command.command_type
     chain_context.command_source = queued_action.command.command_source
+    chain_context.skill_id = queued_action.command.skill_id if queued_action.command.command_type == CommandTypesScript.SKILL or queued_action.command.command_type == CommandTypesScript.ULTIMATE else null
     chain_context.select_timeout = queued_action.command.command_type == CommandTypesScript.TIMEOUT_DEFAULT
     chain_context.select_deadline_ms = battle_state.selection_deadline_ms
     chain_context.target_unit_id = queued_action.target_snapshot.target_unit_id
@@ -171,7 +178,7 @@ func _resolve_mp_cost(command, skill_definition) -> int:
         return skill_definition.mp_cost
     return 0
 
-func _execute_switch_action(queued_action, battle_state):
+func _execute_switch_action(queued_action, battle_state, content_index):
     var result = ActionResultScript.new()
     var command = queued_action.command
     var side_state = battle_state.get_side(command.side_id)
@@ -193,6 +200,16 @@ func _execute_switch_action(queued_action, battle_state):
             "payload_summary": "%s switched to %s" % [actor.public_id, target_unit.public_id if target_unit != null else "unknown"],
         }
     ))
+    var on_switch_invalid_code = _execute_lifecycle_trigger_batch("on_switch", battle_state, content_index, [actor.unit_instance_id])
+    if on_switch_invalid_code != null:
+        result.result_type = "invalid_battle"
+        result.invalid_battle_code = on_switch_invalid_code
+        return result
+    var on_exit_invalid_code = _execute_lifecycle_trigger_batch("on_exit", battle_state, content_index, [actor.unit_instance_id])
+    if on_exit_invalid_code != null:
+        result.result_type = "invalid_battle"
+        result.invalid_battle_code = on_exit_invalid_code
+        return result
     side_state.bench_order.append(actor.unit_instance_id)
     leave_service.leave_unit(battle_state, actor, "manual_switch")
     var bench_index: int = side_state.bench_order.find(command.target_unit_id)
@@ -213,6 +230,11 @@ func _execute_switch_action(queued_action, battle_state):
             "payload_summary": "%s entered battle" % target_unit.public_id,
         }
     ))
+    var on_enter_invalid_code = _execute_lifecycle_trigger_batch("on_enter", battle_state, content_index, [target_unit.unit_instance_id])
+    if on_enter_invalid_code != null:
+        result.result_type = "invalid_battle"
+        result.invalid_battle_code = on_enter_invalid_code
+        return result
     result.result_type = "resolved"
     return result
 
@@ -267,7 +289,7 @@ func _apply_direct_damage(queued_action, actor, target, skill_definition, battle
     var before_hp: int = target.current_hp
     target.current_hp = clamp(target.current_hp - damage_amount, 0, target.max_hp)
     var value_change = _build_value_change(target.unit_instance_id, "hp", before_hp, target.current_hp)
-    battle_logger.append_event(log_event_builder.build_event(
+    var log_event = log_event_builder.build_event(
         EventTypesScript.EFFECT_DAMAGE,
         battle_state,
         {
@@ -278,14 +300,26 @@ func _apply_direct_damage(queued_action, actor, target, skill_definition, battle
             "value_changes": [value_change],
             "payload_summary": "%s dealt %d damage to %s" % [actor.public_id, damage_amount, target.public_id],
         }
-    ))
+    )
+    battle_logger.append_event(log_event)
+    _record_fatal_damage(
+        battle_state,
+        target.unit_instance_id,
+        before_hp,
+        target.current_hp,
+        actor.unit_instance_id,
+        queued_action.action_id,
+        queued_action.priority,
+        queued_action.speed_snapshot,
+        log_event.event_step_id
+    )
 
 func _apply_default_recoil(queued_action, actor, battle_state) -> void:
     var recoil_amount: int = max(1, int(floor(float(actor.max_hp) / 4.0)))
     var before_hp: int = actor.current_hp
     actor.current_hp = clamp(actor.current_hp - recoil_amount, 0, actor.max_hp)
     var value_change = _build_value_change(actor.unit_instance_id, "hp", before_hp, actor.current_hp)
-    battle_logger.append_event(log_event_builder.build_event(
+    var log_event = log_event_builder.build_event(
         EventTypesScript.EFFECT_DAMAGE,
         battle_state,
         {
@@ -295,7 +329,19 @@ func _apply_default_recoil(queued_action, actor, battle_state) -> void:
             "value_changes": [value_change],
             "payload_summary": "%s recoil %d" % [actor.public_id, recoil_amount],
         }
-    ))
+    )
+    battle_logger.append_event(log_event)
+    _record_fatal_damage(
+        battle_state,
+        actor.unit_instance_id,
+        before_hp,
+        actor.current_hp,
+        actor.unit_instance_id,
+        queued_action.action_id,
+        queued_action.priority,
+        queued_action.speed_snapshot,
+        log_event.event_step_id
+    )
 
 func _dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String, queued_action, actor, battle_state, content_index, result) -> void:
     if effect_ids.is_empty():
@@ -307,7 +353,7 @@ func _dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String
         effect_ids,
         actor.unit_instance_id,
         queued_action.action_id,
-        2,
+        SOURCE_KIND_ORDER_ACTIVE_SKILL,
         queued_action.speed_snapshot,
         battle_state.chain_context
     )
@@ -323,6 +369,40 @@ func _dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String
             break
         result.generated_effects.append(effect_event)
     battle_state.pending_effect_queue.clear()
+
+func _execute_lifecycle_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
+    var effect_events: Array = []
+    effect_events.append_array(passive_skill_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    effect_events.append_array(passive_item_service.collect_trigger_events(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context))
+    effect_events.append_array(field_service.collect_trigger_events(trigger_name, battle_state, content_index, battle_state.chain_context))
+    if effect_events.is_empty():
+        return null
+    battle_state.pending_effect_queue = effect_events
+    var sorted_events = effect_queue_service.sort_events(effect_events, rng_service)
+    battle_state.rng_stream_index = rng_service.get_stream_index()
+    for effect_event in sorted_events:
+        payload_executor.execute_effect_event(effect_event, battle_state, content_index)
+        if payload_executor.last_invalid_battle_code != null:
+            battle_state.pending_effect_queue.clear()
+            return payload_executor.last_invalid_battle_code
+    battle_state.pending_effect_queue.clear()
+    return null
+
+func _record_fatal_damage(battle_state, target_unit_id: String, before_hp: int, after_hp: int, killer_unit_id: Variant, source_instance_id: String, priority: int, source_order_speed_snapshot: int, cause_event_step_id: int) -> void:
+    if faint_resolver == null:
+        return
+    faint_resolver.record_fatal_damage(
+        battle_state,
+        target_unit_id,
+        before_hp,
+        after_hp,
+        killer_unit_id,
+        source_instance_id,
+        SOURCE_KIND_ORDER_ACTIVE_SKILL,
+        source_order_speed_snapshot,
+        priority,
+        cause_event_step_id
+    )
 
 func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int):
     var value_change = ValueChangeScript.new()

@@ -8,7 +8,8 @@ func validate_command(command, battle_state, content_index) -> bool:
         return false
     if battle_state.get_side(command.side_id) == null:
         return false
-    _resolve_runtime_ids(command, battle_state)
+    if not _resolve_runtime_ids(command, battle_state):
+        return false
     if battle_state.get_unit(command.actor_id) == null:
         return false
     if command.turn_index != battle_state.turn_index:
@@ -35,15 +36,18 @@ func validate_command(command, battle_state, content_index) -> bool:
         _:
             return false
 
-func _resolve_runtime_ids(command, battle_state) -> void:
+func _resolve_runtime_ids(command, battle_state) -> bool:
     if not command.actor_public_id.is_empty():
         var actor_unit = battle_state.get_unit_by_public_id(command.actor_public_id)
-        assert(actor_unit != null, "Unknown actor public id: %s" % command.actor_public_id)
+        if actor_unit == null:
+            return false
         command.actor_id = actor_unit.unit_instance_id
     if not command.target_public_id.is_empty():
         var target_unit = battle_state.get_unit_by_public_id(command.target_public_id)
-        assert(target_unit != null, "Unknown target public id: %s" % command.target_public_id)
+        if target_unit == null:
+            return false
         command.target_unit_id = target_unit.unit_instance_id
+    return true
 
 func _validate_skill(command, active_unit, content_index, require_ultimate: bool) -> bool:
     var unit_definition = content_index.units.get(active_unit.definition_id)

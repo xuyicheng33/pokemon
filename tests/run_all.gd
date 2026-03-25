@@ -28,6 +28,10 @@ func _init() -> void:
     _run_test("init_chain_order", failures, _test_init_chain_order)
     _run_test("turn_scope_active_and_field", failures, _test_turn_scope_active_and_field)
     _run_test("lifecycle_faint_replace_chain", failures, _test_lifecycle_faint_replace_chain)
+    _run_test("manual_switch_lifecycle_chain", failures, _test_manual_switch_lifecycle_chain)
+    _run_test("action_effects_on_kill_dispatch", failures, _test_action_effects_on_kill_dispatch)
+    _run_test("invalid_command_payload_hard_failures", failures, _test_invalid_command_payload_hard_failures)
+    _run_test("action_failed_post_start_target_missing", failures, _test_action_failed_post_start_target_missing)
     _run_test("rule_mod_paths", failures, _test_rule_mod_paths)
     _run_test("rule_mod_skill_legality_enforced", failures, _test_rule_mod_skill_legality_enforced)
     _run_test("invalid_battle_rule_mod_definition", failures, _test_invalid_battle_rule_mod_definition)
@@ -492,6 +496,348 @@ func _test_lifecycle_faint_replace_chain() -> Dictionary:
     if not (faint_idx < kill_effect_idx and kill_effect_idx < exit_idx and exit_idx < replace_idx and replace_idx < enter_idx):
         return _fail("faint lifecycle ordering mismatch")
     return _pass()
+
+func _test_manual_switch_lifecycle_chain() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var switch_payload = StatModPayloadScript.new()
+    switch_payload.payload_type = "stat_mod"
+    switch_payload.stat_name = "attack"
+    switch_payload.stage_delta = 1
+    var switch_effect = EffectDefinitionScript.new()
+    switch_effect.id = "test_manual_switch_on_switch_effect"
+    switch_effect.display_name = "Manual Switch On Switch"
+    switch_effect.scope = "self"
+    switch_effect.trigger_names = PackedStringArray(["on_switch"])
+    switch_effect.payloads.clear()
+    switch_effect.payloads.append(switch_payload)
+    var switch_passive = PassiveSkillDefinitionScript.new()
+    switch_passive.id = "test_manual_switch_on_switch_passive"
+    switch_passive.display_name = "Manual Switch On Switch Passive"
+    switch_passive.trigger_names = PackedStringArray(["on_switch"])
+    switch_passive.effect_ids = PackedStringArray([switch_effect.id])
+    content_index.register_resource(switch_effect)
+    content_index.register_resource(switch_passive)
+
+    var exit_payload = StatModPayloadScript.new()
+    exit_payload.payload_type = "stat_mod"
+    exit_payload.stat_name = "defense"
+    exit_payload.stage_delta = 1
+    var exit_effect = EffectDefinitionScript.new()
+    exit_effect.id = "test_manual_switch_on_exit_effect"
+    exit_effect.display_name = "Manual Switch On Exit"
+    exit_effect.scope = "self"
+    exit_effect.trigger_names = PackedStringArray(["on_exit"])
+    exit_effect.payloads.clear()
+    exit_effect.payloads.append(exit_payload)
+    var exit_item = PassiveItemDefinitionScript.new()
+    exit_item.id = "test_manual_switch_on_exit_item"
+    exit_item.display_name = "Manual Switch On Exit Item"
+    exit_item.trigger_names = PackedStringArray(["on_exit"])
+    exit_item.effect_ids = PackedStringArray([exit_effect.id])
+    content_index.register_resource(exit_effect)
+    content_index.register_resource(exit_item)
+
+    var enter_payload = StatModPayloadScript.new()
+    enter_payload.payload_type = "stat_mod"
+    enter_payload.stat_name = "speed"
+    enter_payload.stage_delta = 1
+    var enter_effect = EffectDefinitionScript.new()
+    enter_effect.id = "test_manual_switch_on_enter_effect"
+    enter_effect.display_name = "Manual Switch On Enter"
+    enter_effect.scope = "self"
+    enter_effect.trigger_names = PackedStringArray(["on_enter"])
+    enter_effect.payloads.clear()
+    enter_effect.payloads.append(enter_payload)
+    var enter_passive = PassiveSkillDefinitionScript.new()
+    enter_passive.id = "test_manual_switch_on_enter_passive"
+    enter_passive.display_name = "Manual Switch On Enter Passive"
+    enter_passive.trigger_names = PackedStringArray(["on_enter"])
+    enter_passive.effect_ids = PackedStringArray([enter_effect.id])
+    content_index.register_resource(enter_effect)
+    content_index.register_resource(enter_passive)
+
+    content_index.units["sample_pyron"].passive_skill_id = switch_passive.id
+    content_index.units["sample_pyron"].passive_item_id = exit_item.id
+    content_index.units["sample_mossaur"].passive_skill_id = enter_passive.id
+
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 108)
+    var commands: Array = [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SWITCH,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "target_public_id": "P1-B",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+    ]
+    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
+
+    var switch_idx := -1
+    var on_switch_effect_idx := -1
+    var on_exit_effect_idx := -1
+    var state_exit_idx := -1
+    var state_enter_idx := -1
+    var on_enter_effect_idx := -1
+    for i in range(core.battle_logger.event_log.size()):
+        var ev = core.battle_logger.event_log[i]
+        if switch_idx == -1 and ev.event_type == EventTypesScript.STATE_SWITCH:
+            switch_idx = i
+        if on_switch_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("passive_skill:"):
+            on_switch_effect_idx = i
+        if on_exit_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("passive_item:"):
+            on_exit_effect_idx = i
+        if state_exit_idx == -1 and ev.event_type == EventTypesScript.STATE_EXIT:
+            state_exit_idx = i
+        if state_enter_idx == -1 and ev.event_type == EventTypesScript.STATE_ENTER and ev.target_instance_id == battle_state.get_unit_by_public_id("P1-B").unit_instance_id:
+            state_enter_idx = i
+        if on_enter_effect_idx == -1 and state_enter_idx != -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("passive_skill:") and i > state_enter_idx:
+            on_enter_effect_idx = i
+    if switch_idx == -1 or on_switch_effect_idx == -1 or on_exit_effect_idx == -1 or state_exit_idx == -1 or state_enter_idx == -1 or on_enter_effect_idx == -1:
+        return _fail("missing manual switch lifecycle events")
+    if not (switch_idx < on_switch_effect_idx and on_switch_effect_idx < on_exit_effect_idx and on_exit_effect_idx < state_exit_idx and state_exit_idx < state_enter_idx and state_enter_idx < on_enter_effect_idx):
+        return _fail("manual switch lifecycle ordering mismatch (%d,%d,%d,%d,%d,%d)" % [switch_idx, on_switch_effect_idx, on_exit_effect_idx, state_exit_idx, state_enter_idx, on_enter_effect_idx])
+    return _pass()
+
+func _test_action_effects_on_kill_dispatch() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var kill_effect_payload = StatModPayloadScript.new()
+    kill_effect_payload.payload_type = "stat_mod"
+    kill_effect_payload.stat_name = "attack"
+    kill_effect_payload.stage_delta = 1
+    var kill_effect = EffectDefinitionScript.new()
+    kill_effect.id = "test_action_kill_effect"
+    kill_effect.display_name = "Action Kill Effect"
+    kill_effect.scope = "self"
+    kill_effect.trigger_names = PackedStringArray(["on_kill"])
+    kill_effect.payloads.clear()
+    kill_effect.payloads.append(kill_effect_payload)
+    content_index.register_resource(kill_effect)
+
+    var kill_skill = SkillDefinitionScript.new()
+    kill_skill.id = "test_action_kill_skill"
+    kill_skill.display_name = "Action Kill Skill"
+    kill_skill.damage_kind = "physical"
+    kill_skill.power = 40
+    kill_skill.accuracy = 100
+    kill_skill.mp_cost = 0
+    kill_skill.priority = 0
+    kill_skill.targeting = "enemy_active_slot"
+    kill_skill.effects_on_kill_ids = PackedStringArray([kill_effect.id])
+    content_index.register_resource(kill_skill)
+    if not content_index.units["sample_pyron"].skill_ids.has(kill_skill.id):
+        content_index.units["sample_pyron"].skill_ids.append(kill_skill.id)
+
+    var kill_state = _build_initialized_battle(core, content_index, sample_factory, 109)
+    var kill_p1_active = kill_state.get_side("P1").get_active_unit()
+    kill_p1_active.base_speed = 999
+    var kill_p2_active = kill_state.get_side("P2").get_active_unit()
+    kill_p2_active.current_hp = 1
+    core.turn_loop_controller.run_turn(kill_state, content_index, [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": kill_skill.id,
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+    ])
+    var has_kill_effect_log: bool = false
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.target_instance_id == kill_p1_active.unit_instance_id and str(ev.source_instance_id).begins_with("action_"):
+            has_kill_effect_log = true
+            break
+    if not has_kill_effect_log:
+        return _fail("effects_on_kill did not trigger on kill")
+
+    var non_kill_state = _build_initialized_battle(core, content_index, sample_factory, 110)
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(non_kill_state, content_index, [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": kill_skill.id,
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+    ])
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("action_"):
+            return _fail("effects_on_kill should not trigger without kill")
+    return _pass()
+
+func _test_invalid_command_payload_hard_failures() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+
+    var unknown_side_state = _build_initialized_battle(core, content_index, sample_factory, 111)
+    core.turn_loop_controller.run_turn(unknown_side_state, content_index, [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": "sample_strike",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P3",
+            "actor_public_id": "P1-A",
+            "skill_id": "sample_strike",
+        }),
+    ])
+    if not unknown_side_state.battle_result.finished or unknown_side_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
+        return _fail("unknown side command should fail-fast with invalid_command_payload")
+
+    var duplicate_state = _build_initialized_battle(core, content_index, sample_factory, 112)
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(duplicate_state, content_index, [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": "sample_strike",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SWITCH,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "target_public_id": "P1-B",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+    ])
+    if not duplicate_state.battle_result.finished or duplicate_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
+        return _fail("duplicate submit should fail-fast with invalid_command_payload")
+
+    var non_participant_state = _build_initialized_battle(core, content_index, sample_factory, 113)
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(non_participant_state, content_index, [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-B",
+            "skill_id": "sample_strike",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_strike",
+        }),
+    ])
+    if not non_participant_state.battle_result.finished or non_participant_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
+        return _fail("non-participant actor should fail-fast with invalid_command_payload")
+    return _pass()
+
+func _test_action_failed_post_start_target_missing() -> Dictionary:
+    var core_payload = _build_core()
+    if core_payload.has("error"):
+        return _fail(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = _build_sample_factory()
+    if sample_factory == null:
+        return _fail("SampleBattleFactory init failed")
+    var content_index = _build_loaded_content_index(sample_factory)
+    var battle_state = _build_initialized_battle(core, content_index, sample_factory, 114)
+
+    var actor = battle_state.get_unit_by_public_id("P1-A")
+    if actor == null:
+        return _fail("missing P1-A actor")
+    var command = core.command_builder.build_command({
+        "turn_index": 1,
+        "command_type": CommandTypesScript.SKILL,
+        "command_source": "manual",
+        "side_id": "P1",
+        "actor_id": actor.unit_instance_id,
+        "skill_id": "sample_strike",
+    })
+    var queued_action = core.action_queue_builder.build_queue([command], battle_state, content_index)[0]
+    var p2_side = battle_state.get_side("P2")
+    p2_side.clear_active_unit()
+
+    var action_result = core.action_executor.execute_action(queued_action, battle_state, content_index)
+    if action_result.invalid_battle_code != null:
+        return _fail("target missing at execution start should not raise invalid_battle")
+    if action_result.result_type != "action_failed_post_start":
+        return _fail("expected action_failed_post_start when target slot missing, got %s" % str(action_result.result_type))
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.ACTION_FAILED_POST_START:
+            return _pass()
+    return _fail("missing action_failed_post_start log event")
 
 func _test_rule_mod_paths() -> Dictionary:
     var core_payload = _build_core()
