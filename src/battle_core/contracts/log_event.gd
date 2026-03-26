@@ -3,7 +3,7 @@ class_name LogEvent
 
 var battle_seed: int = 0
 var battle_rng_profile: String = ""
-var log_schema_version: int = 2
+var log_schema_version: int = 3
 var turn_index: int = 0
 var event_type: String = ""
 var event_chain_id: String = ""
@@ -34,6 +34,7 @@ var invalid_battle_code: Variant = null
 var value_changes: Array = []
 var field_change = null
 var payload_summary: String = ""
+var header_snapshot: Variant = null
 
 func to_stable_dict() -> Dictionary:
     var value_change_dicts: Array = []
@@ -73,4 +74,5 @@ func to_stable_dict() -> Dictionary:
         "value_changes": value_change_dicts,
         "field_change": field_change.to_stable_dict() if field_change != null else null,
         "payload_summary": payload_summary,
+        "header_snapshot": header_snapshot,
     }

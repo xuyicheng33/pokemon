@@ -122,11 +122,12 @@
 |---|---|
 |`battle_seed`|整场战斗随机种子|
 |`battle_rng_profile`|RNG 配置（算法、参数、版本）|
-|`log_schema_version`|日志契约版本号；当前固定为 `2`|
+|`log_schema_version`|日志契约版本号；当前固定为 `3`|
 |`turn_index`|当前回合序号|
 |`event_chain_id`|触发链路 ID|
 |`event_step_id`|链路步骤 ID|
 |`event_type`|事件类型枚举（见 5.4）|
+|`header_snapshot`|仅 `system:battle_header` 事件填写；字段固定为 `visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`|
 |`chain_origin`|链路来源：`battle_init / action / turn_start / turn_end / system_replace`|
 |`trigger_name`|触发点名；仅 effect 类事件必须填写|
 |`cause_event_id`|触发源事件 ID；仅 effect 类事件必须填写|
@@ -135,7 +136,7 @@
 |`action_queue_index`|当前根行动在本回合队列中的执行序位；非行动系统链为 `null`|
 |`actor_id`|当前根行动的行动者；非行动系统链为 `null`|
 |`source_instance_id`|当前触发源的稳定实例 ID；纯行动日志可与 `action_id` 相同|
-|`command_type`|当前根链的动作类型：技能 / 换人 / 奥义 / `resource_forced_default` / `timeout_default` / `system:*`|
+|`command_type`|当前根链的动作类型：技能 / 换人 / 奥义 / `resource_forced_default` / `timeout_default` / `system:*`（含 `system:battle_header`）|
 |`command_source`|当前根链的指令来源：`manual / ai / resource_auto / timeout_auto / system`|
 |`priority`|本次行动或效果使用的优先级|
 |`target_slot`|目标位置|
@@ -162,9 +163,10 @@
 |`speed_tie_roll / hit_roll / effect_roll`|本事件未消费对应 RNG 时写 `null`|
 |资源型默认动作|固定写 `command_type = resource_forced_default`、`command_source = resource_auto`|
 |超时型默认动作|固定写 `command_type = timeout_default`、`command_source = timeout_auto`|
-|`command_type / command_source`|非行动系统链固定写 `system:*` 与 `system`，例如 `system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
+|`command_type / command_source`|非行动系统链固定写 `system:*` 与 `system`，例如 `system:battle_header`、`system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
 |`select_timeout`|`timeout_default` 所属整条行动链都写 `true`；其他行动链写 `false`；非行动系统链写 `null`|
 |`select_deadline_ms`|整条行动链都写本回合截止时间；非行动系统链写 `null`|
+|`header_snapshot`|仅 `system:battle_header` 事件写入；其余事件写 `null`；且字段内禁止出现私有实例 ID（如 `unit_instance_id`）|
 |`trigger_name / cause_event_id / killer_id`|effect 事件必须填 `trigger_name / cause_event_id`；系统锚点事件（如 `system:battle_init / system:turn_start / system:turn_end`）允许填写对应节点名作为 `trigger_name`；其他非 effect 事件 `cause_event_id` 写 `null`；`killer_id` 没有归属则写 `null`|
 
 实现状态说明（2026-03-25）：
@@ -184,6 +186,7 @@
 |`event_type`|说明|
 |---|---|
 |`system:battle_init`|战斗开始统一检查|
+|`system:battle_header`|初始化日志头（结构化公开快照）|
 |`system:turn_start`|回合开始系统结算|
 |`system:turn_end`|回合末系统结算|
 |`system:turn_limit`|回合上限比较|

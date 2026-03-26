@@ -22,9 +22,11 @@ var payload_executor
 var trigger_batch_runner
 var battle_logger
 var log_event_builder
+var public_snapshot_builder
 
 func initialize_battle(battle_state, content_index, battle_setup) -> void:
     assert(battle_setup != null, "Battle setup is required")
+    assert(public_snapshot_builder != null, "BattleInitializer requires public_snapshot_builder")
     var format_config = content_index.battle_formats.get(battle_setup.format_id)
     assert(format_config != null, "Missing battle format: %s" % battle_setup.format_id)
     assert(battle_setup.sides.size() == 2, "Current baseline requires exactly 2 sides")
@@ -48,6 +50,17 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     for side_setup in battle_setup.sides:
         var side_state = _build_side_state(side_setup, format_config, content_index)
         battle_state.sides.append(side_state)
+
+    battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_HEADER, "battle_init")
+    battle_logger.append_event(log_event_builder.build_event(
+        EventTypesScript.SYSTEM_BATTLE_HEADER,
+        battle_state,
+        {
+            "source_instance_id": EventTypesScript.SYSTEM_BATTLE_HEADER,
+            "header_snapshot": public_snapshot_builder.build_header_snapshot(battle_state, content_index),
+            "payload_summary": "battle header",
+        }
+    ))
 
     var initial_active_ids: Array = _collect_active_unit_ids(battle_state)
     battle_state.chain_context = _build_system_chain("system:replace", "system_replace")

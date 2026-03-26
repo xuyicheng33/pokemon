@@ -60,7 +60,7 @@
 |2|公开双方完整队伍战斗信息并分配稳定公开编号|
 |3|双方选择首发|
 |4|双方首发同时入场|
-|5|写入日志头：`battle_seed`、队伍快照、首发快照|
+|5|写入 `system:battle_header`：`visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`（无 field 写 `null`）|
 |6|先收集并结算当前 active 产生的 `on_enter`；统一效果排序只在本次 `on_enter` 批次内生效，不与其他触发点混排|
 |7|若 `on_enter` 批次导致击倒，立即处理击倒窗口与强制补位，直到 active 稳定|
 |8|以上述稳定战场为输入，统一检查一次 `battle_init` 触发的战斗开始时被动 / 持有物 / field 效果；统一效果排序只在本次 `battle_init` 批次内生效|
@@ -71,6 +71,7 @@
 
 1. `battle_init` 是“战斗开始时统一检查一次”的批次，不因为后续有单位再次入场而重复触发。
 2. 若首发 `on_enter` 期间发生击倒并完成强制补位，则 `battle_init` 读取补位后稳定下来的当前战场，不读取已离场单位。
+3. `system:battle_header` 必须先于首条 `state:enter` 写入，且日志头中禁止泄露 `unit_instance_id` 等私有运行态 ID。
 
 ## 6. 胜负与结束条件
 

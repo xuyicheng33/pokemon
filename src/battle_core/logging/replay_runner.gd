@@ -4,6 +4,7 @@ class_name ReplayRunner
 const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const ReplayOutputScript := preload("res://src/battle_core/contracts/replay_output.gd")
+const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 var battle_initializer
 var turn_loop_controller
@@ -12,6 +13,9 @@ var id_factory
 var rng_service
 
 func run_replay(replay_input):
+    return run_replay_with_context(replay_input)["replay_output"]
+
+func run_replay_with_context(replay_input) -> Dictionary:
     assert(replay_input != null, "Replay input is required")
     assert(replay_input.battle_setup != null, "Replay battle setup is required")
     id_factory.reset()
@@ -34,10 +38,13 @@ func run_replay(replay_input):
     replay_output.event_log = battle_logger.snapshot()
     replay_output.final_state_hash = _compute_state_hash(battle_state)
     var run_completed: bool = battle_state.battle_result != null and battle_state.battle_result.finished
-    replay_output.succeeded = run_completed and _validate_log_schema_v2(replay_output.event_log) and _validate_battle_result(battle_state.battle_result)
+    replay_output.succeeded = run_completed and _validate_log_schema_v3(replay_output.event_log) and _validate_battle_result(battle_state.battle_result)
     replay_output.battle_result = battle_state.battle_result
     replay_output.final_battle_state = battle_state
-    return replay_output
+    return {
+        "replay_output": replay_output,
+        "content_index": content_index,
+    }
 
 func _compute_state_hash(battle_state) -> String:
     var json_text := JSON.stringify(battle_state.to_stable_dict())
@@ -46,11 +53,12 @@ func _compute_state_hash(battle_state) -> String:
     hashing_context.update(json_text.to_utf8_buffer())
     return hashing_context.finish().hex_encode()
 
-func _validate_log_schema_v2(event_log: Array) -> bool:
+func _validate_log_schema_v3(event_log: Array) -> bool:
+    var battle_header_count: int = 0
     for log_event in event_log:
         if log_event == null:
             return false
-        if int(log_event.log_schema_version) != 2:
+        if int(log_event.log_schema_version) != 3:
             return false
         if String(log_event.chain_origin).is_empty():
             return false
@@ -67,12 +75,46 @@ func _validate_log_schema_v2(event_log: Array) -> bool:
             return false
         if int(log_event.event_step_id) <= 0:
             return false
+        if String(log_event.event_type) == EventTypesScript.SYSTEM_BATTLE_HEADER:
+            battle_header_count += 1
+            if String(log_event.command_type) != EventTypesScript.SYSTEM_BATTLE_HEADER:
+                return false
+            if not _validate_header_snapshot(log_event.header_snapshot):
+                return false
         if String(log_event.event_type).begins_with("effect:"):
             if log_event.trigger_name == null:
                 return false
             if log_event.cause_event_id == null:
                 return false
-    return true
+    return battle_header_count == 1
+
+func _validate_header_snapshot(header_snapshot) -> bool:
+    if typeof(header_snapshot) != TYPE_DICTIONARY:
+        return false
+    var required_fields: Array[String] = [
+        "visibility_mode",
+        "prebattle_public_teams",
+        "initial_active_public_ids_by_side",
+        "initial_field",
+    ]
+    for field_name in required_fields:
+        if not header_snapshot.has(field_name):
+            return false
+    return not _contains_private_instance_id_key(header_snapshot)
+
+func _contains_private_instance_id_key(value) -> bool:
+    if typeof(value) == TYPE_DICTIONARY:
+        for key in value.keys():
+            var key_text := String(key)
+            if key_text == "unit_instance_id" or key_text.ends_with("_instance_id"):
+                return true
+            if _contains_private_instance_id_key(value[key]):
+                return true
+    elif typeof(value) == TYPE_ARRAY:
+        for element in value:
+            if _contains_private_instance_id_key(element):
+                return true
+    return false
 
 func _validate_battle_result(battle_result) -> bool:
     if battle_result == null:

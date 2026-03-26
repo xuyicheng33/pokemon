@@ -10,6 +10,37 @@
 
 ## 2026-03-26
 
+### Battle Core 会话隔离 + 日志 V3 收口（manager/session）
+- 目标：完成会话级隔离重构，修复回放快照上下文一致性，升级日志到 V3 并补齐初始化结构化日志头。
+- 范围：`battle_core/facades`、`composition`、`turn/logging/contracts`、sandbox 与测试套件、规则/设计/记录文档；不扩展 UI 与角色内容。
+- 验收标准：manager API 全量可用；`run_replay` 隔离执行且快照完整；`system:battle_header` 契约与私有 ID 约束生效；`tests/run_with_gate.sh` 全绿。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|新增 `BattleCoreManager + BattleCoreSession`，每局独立 compose 容器|已完成|待提交|
+|删除旧 facade 调用链（sandbox/tests 全迁移）|已完成|待提交|
+|`run_replay` 临时容器隔离 + 快照上下文修复|已完成|待提交|
+|日志升级 V3，新增 `system:battle_header` 与 `header_snapshot`|已完成|待提交|
+|新增回归测试（会话隔离/回放隔离/日志头与 V3）|已完成|待提交|
+|规则、设计、记录文档同步|已完成|待提交|
+
+#### 最小可玩性检查清单（本轮）
+- 可启动：headless 全量测试可完整执行。
+- 可操作：manager 可完成建局、查合法动作、构建指令、推进回合、查快照、关局、隔离回放。
+- 无致命错误：并行会话互不串扰，回放不污染活跃会话池，日志头不泄露私有实例 ID。
+
+#### 回归检查要点（本轮）
+- `create_session/get_public_snapshot/run_replay` 均返回完整 `prebattle_public_teams`。
+- `run_replay` 执行前后不会改变活跃 session 数量与既有会话快照。
+- 日志全量 `log_schema_version = 3`，且存在且仅存在一条 `system:battle_header`。
+- `system:battle_header` 在首条 `state:enter` 之前，`header_snapshot` 字段齐全且递归不含 `unit_instance_id`。
+
+#### 当前验证结果（2026-03-26）
+- `godot --headless --path . --script tests/run_all.gd`：通过（41 个断言全绿）。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
 ### 复查问题修复落地（full-open 快照 + effect_roll + 架构瘦身）
 - 目标：修复复查阶段发现的“规则/文档/实现偏差”，把核心契约收敛到可扩展且可回归验证的单一口径。
 - 范围：`battle_core facade/effects/lifecycle/composition`、测试套件、规则/设计/记录文档；不扩到 UI 展示层与正式角色内容设计。

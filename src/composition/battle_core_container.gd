@@ -37,19 +37,10 @@ var passive_item_service
 var field_service
 var battle_logger
 var log_event_builder
+var public_snapshot_builder
 var replay_runner
-var facade
 
 func dispose() -> void:
-    if facade != null:
-        facade.dispose()
-        facade.id_factory = null
-        facade.rng_service = null
-        facade.battle_initializer = null
-        facade.legal_action_service = null
-        facade.command_builder = null
-        facade.turn_loop_controller = null
-        facade.replay_runner = null
     if action_executor != null:
         action_executor.action_cast_service = null
         action_executor.switch_action_service = null
@@ -112,6 +103,7 @@ func dispose() -> void:
         battle_initializer.trigger_batch_runner = null
         battle_initializer.battle_logger = null
         battle_initializer.log_event_builder = null
+        battle_initializer.public_snapshot_builder = null
     if turn_loop_controller != null:
         turn_loop_controller.action_queue_builder = null
         turn_loop_controller.action_executor = null
@@ -220,5 +212,5 @@ func dispose() -> void:
     field_service = null
     battle_logger = null
     log_event_builder = null
+    public_snapshot_builder = null
     replay_runner = null
-    facade = null

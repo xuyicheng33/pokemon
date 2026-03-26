@@ -39,7 +39,8 @@ const FieldServiceScript := preload("res://src/battle_core/passives/field_servic
 const BattleLoggerScript := preload("res://src/battle_core/logging/battle_logger.gd")
 const LogEventBuilderScript := preload("res://src/battle_core/logging/log_event_builder.gd")
 const ReplayRunnerScript := preload("res://src/battle_core/logging/replay_runner.gd")
-const BattleCoreFacadeScript := preload("res://src/battle_core/facades/battle_core_facade.gd")
+const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_core_manager.gd")
+const PublicSnapshotBuilderScript := preload("res://src/battle_core/facades/public_snapshot_builder.gd")
 
 func compose():
     var container = BattleCoreContainerScript.new()
@@ -79,8 +80,8 @@ func compose():
     container.field_service = FieldServiceScript.new()
     container.battle_logger = BattleLoggerScript.new()
     container.log_event_builder = LogEventBuilderScript.new()
+    container.public_snapshot_builder = PublicSnapshotBuilderScript.new()
     container.replay_runner = ReplayRunnerScript.new()
-    container.facade = BattleCoreFacadeScript.new()
     container.command_builder.id_factory = container.id_factory
     container.legal_action_service.rule_mod_service = container.rule_mod_service
     container.battle_initializer.id_factory = container.id_factory
@@ -95,6 +96,7 @@ func compose():
     container.battle_initializer.trigger_batch_runner = container.trigger_batch_runner
     container.battle_initializer.battle_logger = container.battle_logger
     container.battle_initializer.log_event_builder = container.log_event_builder
+    container.battle_initializer.public_snapshot_builder = container.public_snapshot_builder
     container.action_queue_builder.id_factory = container.id_factory
     container.action_queue_builder.rng_service = container.rng_service
     container.action_queue_builder.stat_calculator = container.stat_calculator
@@ -190,20 +192,18 @@ func compose():
     container.replay_runner.battle_logger = container.battle_logger
     container.replay_runner.id_factory = container.id_factory
     container.replay_runner.rng_service = container.rng_service
-    container.facade.id_factory = container.id_factory
-    container.facade.rng_service = container.rng_service
-    container.facade.battle_initializer = container.battle_initializer
-    container.facade.legal_action_service = container.legal_action_service
-    container.facade.command_builder = container.command_builder
-    container.facade.turn_loop_controller = container.turn_loop_controller
-    container.facade.replay_runner = container.replay_runner
     _assert_container_dependencies(container)
     return container
 
-func compose_facade():
-    var container = compose()
-    assert(container != null and container.facade != null, "compose_facade requires facade")
-    return container.facade
+func compose_manager():
+    var manager = BattleCoreManagerScript.new()
+    assert(manager != null, "compose_manager requires manager")
+    manager.composer = self
+    manager.command_id_factory = IdFactoryScript.new()
+    manager.command_builder = CommandBuilderScript.new()
+    manager.command_builder.id_factory = manager.command_id_factory
+    manager.public_snapshot_builder = PublicSnapshotBuilderScript.new()
+    return manager
 
 func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.legal_action_service, "legal_action_service", "rule_mod_service")
@@ -215,6 +215,7 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "payload_executor")
     _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "rng_service")
     _assert_dependency(container.battle_initializer, "battle_initializer", "effect_instance_dispatcher")
+    _assert_dependency(container.battle_initializer, "battle_initializer", "public_snapshot_builder")
     _assert_dependency(container.turn_resolution_service, "turn_resolution_service", "trigger_batch_runner")
     _assert_dependency(container.turn_resolution_service, "turn_resolution_service", "effect_instance_dispatcher")
     _assert_dependency(container.turn_resolution_service, "turn_resolution_service", "rule_mod_service")
@@ -237,11 +238,6 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.faint_resolver, "faint_resolver", "effect_instance_dispatcher")
     _assert_dependency(container.replacement_service, "replacement_service", "trigger_batch_runner")
     _assert_dependency(container.payload_executor, "payload_executor", "replacement_service")
-    _assert_dependency(container.facade, "facade", "battle_initializer")
-    _assert_dependency(container.facade, "facade", "legal_action_service")
-    _assert_dependency(container.facade, "facade", "command_builder")
-    _assert_dependency(container.facade, "facade", "turn_loop_controller")
-    _assert_dependency(container.facade, "facade", "replay_runner")
 
 func _assert_dependency(owner, owner_name: String, dependency_name: String) -> void:
     assert(owner != null, "Composer missing owner: %s" % owner_name)

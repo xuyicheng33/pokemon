@@ -16,6 +16,7 @@ class TestReplacementSelector:
         return next_selection
 
 var _core_pool: Array = []
+var _manager_pool: Array = []
 
 func pass_result() -> Dictionary:
     return {"ok": true}
@@ -41,7 +42,7 @@ func build_core() -> Dictionary:
         "battle_logger",
         "id_factory",
         "rng_service",
-        "facade",
+        "public_snapshot_builder",
     ]
     for service_name in required_services:
         if core.get(service_name) == null:
@@ -49,11 +50,34 @@ func build_core() -> Dictionary:
     _core_pool.append(core)
     return {"core": core}
 
+func build_manager() -> Dictionary:
+    var composer = BattleCoreComposerScript.new()
+    if composer == null:
+        return {"error": "BattleCoreComposer init failed"}
+    var manager = composer.compose_manager()
+    if manager == null:
+        return {"error": "compose_manager returned null"}
+    var required_ports: Array[String] = [
+        "composer",
+        "command_builder",
+        "command_id_factory",
+        "public_snapshot_builder",
+    ]
+    for port_name in required_ports:
+        if manager.get(port_name) == null:
+            return {"error": "missing manager port: %s" % port_name}
+    _manager_pool.append(manager)
+    return {"manager": manager}
+
 func dispose_core_pool() -> void:
     for core in _core_pool:
         if core != null and core.has_method("dispose"):
             core.dispose()
     _core_pool.clear()
+    for manager in _manager_pool:
+        if manager != null and manager.has_method("dispose"):
+            manager.dispose()
+    _manager_pool.clear()
 
 func build_sample_factory():
     var sample_factory = SampleBattleFactoryScript.new()

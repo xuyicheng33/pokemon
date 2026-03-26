@@ -7,6 +7,28 @@
 
 - `docs/records/archive/decisions_pre_v0.6.3.md`
 
+## 2026-03-26
+
+### 186. Battle Core 对外入口切换为 Manager + Session 显式生命周期
+- 不再由单 facade 内部维护全局 `_sessions + 全局 id/rng reset` 语义。
+- 对外统一为 `create_session / get_legal_actions / build_command / run_turn / get_public_snapshot / close_session / run_replay`。
+- 每次 `create_session` 都独立 compose 容器，隔离 `id_factory / rng_service / battle_state / content_index`，避免跨局污染。
+
+### 187. 回放执行固定使用临时容器，不读写活跃会话池
+- `run_replay` 在临时容器中执行，结束后立即释放资源。
+- 回放结果只通过返回值暴露，不注册到 manager 会话池。
+- 现有活跃会话的快照和生命周期不得受回放过程影响。
+
+### 188. 日志契约升级到 V3，并新增 `system:battle_header`
+- `log_schema_version` 固定升级为 `3`，回放校验同步收紧到 V3。
+- 初始化链新增 `system:battle_header`，位置固定在首条 `state:enter` 之前。
+- V3 额外约束：完整日志必须存在且仅存在一条 `system:battle_header`。
+
+### 189. 初始化日志头采用结构化公开快照，并禁止私有运行态 ID 泄露
+- `header_snapshot` 字段固定为 `visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`。
+- `header_snapshot` 仅允许出现在 `system:battle_header` 事件，其余事件写 `null`。
+- `header_snapshot` 递归禁止出现 `unit_instance_id` 等私有实例标识。
+
 ## 2026-03-24
 
 ### 106. 规则基线主动瘦身为极简闭环

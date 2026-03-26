@@ -6,7 +6,7 @@ const LifecycleReplaceSuiteScript := preload("res://tests/suites/lifecycle_repla
 const ActionGuardSuiteScript := preload("res://tests/suites/action_guard_suite.gd")
 const RuleModSuiteScript := preload("res://tests/suites/rule_mod_suite.gd")
 const ContentLoggingSuiteScript := preload("res://tests/suites/content_logging_suite.gd")
-const FacadeContractSuiteScript := preload("res://tests/suites/facade_contract_suite.gd")
+const ManagerContractSuiteScript := preload("res://tests/suites/manager_contract_suite.gd")
 
 var _harness
 
@@ -19,7 +19,7 @@ func _init() -> void:
         ActionGuardSuiteScript.new(),
         RuleModSuiteScript.new(),
         ContentLoggingSuiteScript.new(),
-        FacadeContractSuiteScript.new(),
+        ManagerContractSuiteScript.new(),
     ]
     for suite in suites:
         suite.register_tests(self, failures, _harness)

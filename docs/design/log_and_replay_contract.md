@@ -15,8 +15,8 @@
 
 ### 2.0 版本
 
-- `log_schema_version` 固定为 `2`。
-- V2 追加字段：`chain_origin / trigger_name / cause_event_id / killer_id`。
+- `log_schema_version` 固定为 `3`。
+- V3 在 V2 基础上新增 `system:battle_header` 与 `header_snapshot` 结构化字段。
 
 ### 2.1 链路字段语义
 
@@ -25,7 +25,7 @@
 |`action_id`|根行动 `action_id`，同链衍生事件继承|`null`|
 |`action_queue_index`|根行动队列序位，衍生事件继承|`null`|
 |`actor_id`|根行动者实例 ID，衍生事件继承|`null`|
-|`command_type`|`skill / switch / ultimate / resource_forced_default / timeout_default`|固定 `system:*`，如 `system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
+|`command_type`|`skill / switch / ultimate / resource_forced_default / timeout_default`|固定 `system:*`，如 `system:battle_header`、`system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
 |`command_source`|`manual / ai / resource_auto / timeout_auto`|固定 `system`|
 |`select_timeout`|`timeout_default` 链为 `true`，其他行动链为 `false`|`null`|
 |`select_deadline_ms`|整条行动链写本回合截止时间|`null`|
@@ -40,6 +40,8 @@
 - `invalid_battle_code` 仅在 `event_type = system:invalid_battle` 时填写，其余事件写 `null`。
 - 未消费随机的字段（`speed_tie_roll / hit_roll / effect_roll`）写 `null`。
 - effect 事件必须填写 `trigger_name / cause_event_id`。
+- `header_snapshot` 仅在 `event_type = system:battle_header` 时填写，其余事件写 `null`。
+- `header_snapshot` 必填字段固定为 `visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`，且禁止出现 `unit_instance_id` 等私有运行态 ID。
 - 系统锚点事件（`system:battle_init / system:turn_start / system:turn_end`）允许保留对应节点名到 `trigger_name`，便于日志排查；其 `cause_event_id` 仍写 `null`。
 - 其他非 effect 事件 `trigger_name / cause_event_id` 写 `null`。
 - `killer_id` 无归属时写 `null`。
@@ -68,7 +70,7 @@
 |---|---|
 |`event_log`|完整日志快照|
 |`final_state_hash`|`BattleState.to_stable_dict()` 的 SHA-256|
-|`succeeded`|完整执行成功 + 日志 V2 校验通过 + 终局结果有效|
+|`succeeded`|完整执行成功 + 日志 V3 校验通过 + 终局结果有效|
 |`battle_result`|终局结果对象|
 |`final_battle_state`|最终运行态对象|
 
@@ -79,7 +81,8 @@
 - 相同 `seed + content snapshot + command stream` 必须得到相同 `final_state_hash` 与等长日志。
 - 命令解析允许通过 `actor_public_id/target_public_id` 重新映射运行时实例 ID，避免历史 ID 污染。
 - 回放运行必须持续到战斗结束或回合上限触发（不允许半局成功返回）。
-- 回放结束后必须校验日志符合 V2 字段完整性（`log_schema_version=2`，effect 事件带 `trigger_name / cause_event_id`）。
+- 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`）。
+- `run_replay` 使用临时容器隔离执行，不读写活跃会话池；回放完成后释放临时容器。
 
 ## 4. 失败语义（测试口径）
 
@@ -91,4 +94,5 @@
 
 1. 同输入重复回放，`final_state_hash` 一致。
 2. 日志链路字段遵守“行动链继承、系统链 `null + system:*`”语义。
-3. `tests/run_with_gate.sh` 返回 `GATE PASSED`。
+3. `system:battle_header` 先于首条 `state:enter`，且 `header_snapshot` 不含私有实例 ID。
+4. `tests/run_with_gate.sh` 返回 `GATE PASSED`。

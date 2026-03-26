@@ -2,6 +2,7 @@ extends RefCounted
 class_name EventTypes
 
 const SYSTEM_BATTLE_INIT := "system:battle_init"
+const SYSTEM_BATTLE_HEADER := "system:battle_header"
 const SYSTEM_TURN_START := "system:turn_start"
 const SYSTEM_TURN_END := "system:turn_end"
 const SYSTEM_TURN_LIMIT := "system:turn_limit"

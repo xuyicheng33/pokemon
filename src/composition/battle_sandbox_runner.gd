@@ -6,14 +6,14 @@ const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_
 const BattleUIViewModelBuilderScript := preload("res://src/adapters/battle_ui_view_model_builder.gd")
 
 var composer
-var facade
+var manager
 
 func _ready() -> void:
     composer = BattleCoreComposerScript.new()
-    facade = composer.compose_facade()
+    manager = composer.compose_manager()
     var sample_factory: Variant = SampleBattleFactoryScript.new()
-    var replay_input = sample_factory.build_demo_replay_input(facade)
-    var replay_result: Dictionary = facade.run_replay(replay_input)
+    var replay_input = sample_factory.build_demo_replay_input(manager)
+    var replay_result: Dictionary = manager.run_replay(replay_input)
     var replay_output = replay_result["replay_output"]
     var view_model = BattleUIViewModelBuilderScript.new().build_view_model(replay_result["public_snapshot"])
     print("Battle sandbox ready: %s hash=%s events=%d phase=%s" % [

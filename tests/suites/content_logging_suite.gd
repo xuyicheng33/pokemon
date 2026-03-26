@@ -52,8 +52,8 @@ func _test_log_contract_semantics(harness) -> Dictionary:
         return harness.fail_result("missing system/action events for log contract checks")
     if effect_damage_event == null:
         return harness.fail_result("missing effect event for log contract checks")
-    if system_turn_start_event.log_schema_version != 2 or action_cast_event.log_schema_version != 2:
-        return harness.fail_result("log_schema_version should be 2 for all events")
+    if system_turn_start_event.log_schema_version != 3 or action_cast_event.log_schema_version != 3:
+        return harness.fail_result("log_schema_version should be 3 for all events")
     if system_turn_start_event.chain_origin != "turn_start":
         return harness.fail_result("system event chain_origin mismatch")
     if action_cast_event.chain_origin != "action":
