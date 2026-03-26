@@ -10,6 +10,7 @@
 |`faint_resolver.gd`|处理 `fainted_pending_leave` 窗口与触发批次|
 |`replacement_service.gd`|处理强制换下/补位目标合法性并执行入场|
 |`replacement_selector.gd`|系统替补选择接口，返回合法 bench 目标|
+|`default_replacement_selector.gd`|默认系统替补策略实现（从合法候选中确定目标）|
 
 ## 2. LeaveService
 

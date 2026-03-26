@@ -10,6 +10,30 @@
 
 ## 2026-03-26
 
+### 文档二次对齐优化（runtime/effect/模块清单/阈值说明）
+- 目标：按最新复查结论补齐剩余文档偏差，确保进入角色设计前“规则-设计-实现-记录”四层口径一致。
+- 范围：`docs/design/battle_runtime_model.md`、`docs/design/effect_engine.md`、`docs/design/lifecycle_and_replacement.md`、`docs/design/turn_orchestrator.md`、`docs/design/action_execution.md`、`docs/records/decisions.md`；不改运行时代码。
+- 验收标准：EffectInstance/RuleModInstance/EffectEvent 字段对齐代码；lifecycle/turn/actions 文件清单对齐实际目录；超阈值暂不拆分理由在 decisions 里补充到可复核粒度。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|核实字段偏差与目录清单差异|已完成|待提交|
+|更新 5 份设计文档（runtime/effect/lifecycle/turn/actions）|已完成|待提交|
+|补充超阈值文件复核说明（decisions）|已完成|待提交|
+|闸门回归（`tests/run_with_gate.sh`）|已完成|待提交|
+
+#### 最小可玩性检查清单（本轮）
+- 可启动：`tests/run_with_gate.sh` 可执行完成。
+- 可操作：设计文档字段与模块文件清单可直接映射到当前代码。
+- 无致命错误：闸门输出无引擎级错误。
+
+#### 回归检查要点（本轮）
+- `EffectInstance` 含 `persists_on_switch`，`RuleModInstance` 含 `scope/duration_mode/owner_scope/owner_id/stacking_key`。
+- `EffectEvent` 文档含 `priority/sort_random_roll`。
+- `lifecycle/turn/actions` 文件清单与 `src/battle_core/*` 实际文件一一对应。
+
 ### Battle Core 文档偏差同步（runtime/command/manager API）
 - 目标：核实“全面复查报告”中的文档偏差并完成一次性同步，避免角色设计阶段误读。
 - 范围：`docs/design/battle_runtime_model.md`、`docs/design/command_and_legality.md`、`README.md`；不改运行时代码与测试逻辑。

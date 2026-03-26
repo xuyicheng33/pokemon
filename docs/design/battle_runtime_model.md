@@ -111,6 +111,7 @@
 |`source_instance_id`|`String`|根来源实例|
 |`source_kind_order`|`int`|根来源类型|
 |`source_order_speed_snapshot`|`int`|根来源速度快照|
+|`persists_on_switch`|`bool`|非击倒离场时是否保留该持续效果|
 |`meta`|`Dictionary`|仅用于明确允许的扩展字段|
 
 ## 9. RuleModInstance
@@ -121,7 +122,11 @@
 |`mod_kind`|`String`|`final_mod / mp_regen / skill_legality`|
 |`mod_op`|`String`|`mul / add / set / allow / deny`|
 |`value`|`Variant`|运算值|
-|`owner`|`String`|挂载对象|
+|`scope`|`String`|生效域（如 `self / field`）|
+|`duration_mode`|`String`|`turns / permanent`|
+|`owner_scope`|`String`|挂载域（`unit / field`）|
+|`owner_id`|`String`|挂载对象 ID（单位实例或 `field`）|
+|`stacking_key`|`String`|叠加判定键|
 |`remaining`|`int`|剩余回合|
 |`created_turn`|`int`|创建回合|
 |`decrement_on`|`String`|`turn_start / turn_end`|

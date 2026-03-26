@@ -397,3 +397,8 @@
 ### 190. 回放输入口径收敛为 `ReplayInput`，日志定位为校验与诊断
 - 回放执行输入固定为 `battle_seed + content_snapshot_paths + battle_setup + command_stream`。
 - 完整日志用于可复现校验、问题定位与回归比对，不再描述为“单独可驱动重放”的唯一输入。
+
+### 191. 超阈值文件维持单点实现，暂不拆分（2026-03-26 复核）
+- `src/battle_core/effects/payload_executor.gd`（403 行）：当前承载 9 类 payload 的统一执行与链路日志语义，拆分会同时改执行边界与回归基线；待 payload 家族稳定后再拆。
+- `src/battle_core/content/battle_content_index.gd`（328 行）：当前承载内容快照加载 + schema 强校验的 fail-fast 入口，拆分时机放在内容 schema 进入稳定期后。
+- `src/battle_core/effects/rule_mod_service.gd`（292 行）：当前承载实例创建、读取排序、扣减与移除日志的完整闭环，待读取点新增需求明确后再拆 `read/instance` 子服务。

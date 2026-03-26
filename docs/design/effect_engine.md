@@ -8,6 +8,7 @@
 |---|---|
 |`trigger_dispatcher.gd`|把定义资源转换为 `EffectEvent`|
 |`effect_instance_dispatcher.gd`|按触发点收集持续效果实例 + 回合节点扣减|
+|`trigger_batch_runner.gd`|统一执行单个触发批次（收集 -> 排序 -> 执行）|
 |`effect_queue_service.gd`|对同批次 `EffectEvent` 排序|
 |`payload_executor.gd`|执行 payload 并写日志|
 |`effect_instance_service.gd`|管理持续效果实例|
@@ -22,12 +23,14 @@
 |---|---|
 |`event_id`|效果事件 ID|
 |`trigger_name`|触发点名（如 `on_hit`）|
+|`priority`|效果优先级（同批次排序第一关键字）|
 |`source_instance_id`|稳定来源实例 ID|
 |`source_kind_order`|来源桶（system/field/active_skill/passive_skill/passive_item）|
 |`source_order_speed_snapshot`|排序速度快照|
 |`effect_definition_id`|效果定义 ID|
 |`owner_id`|效果归属单位|
 |`chain_context`|当前链上下文，用于日志继承|
+|`sort_random_roll`|同排序组随机打平值（未消费时为 `null`）|
 
 ## 3. 统一排序链
 

@@ -8,6 +8,9 @@
 |---|---|
 |`action_executor.gd`|执行单个 `QueuedAction`|
 |`target_resolver.gd`|根据 targeting 解析目标|
+|`action_cast_service.gd`|执行行动主链（扣 MP、命中判定、payload、击倒归因记录）|
+|`switch_action_service.gd`|执行手动换人行动链|
+|`action_log_service.gd`|统一写入行动链结构化日志|
 
 ## 2. Contract
 
