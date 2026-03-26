@@ -31,8 +31,8 @@
 1. 把 `HP <= 0` 且仍在场单位标记为 `fainted_pending_leave`，写 `state:faint`。
 2. 执行 `on_faint` 批次。
 3. 若可归属击杀来源，执行 `on_kill` 批次。
-4. 调用 `leave_service.leave_unit(..., "faint")` 执行离场清理。
-5. 执行 `on_exit` 批次。
+4. 执行 `on_exit` 批次。
+5. 调用 `leave_service.leave_unit(..., "faint")` 执行离场清理。
 6. 若 active 为空，调用 `ReplacementService` 立刻补位。
 7. 对新上场单位执行 `on_enter` 批次。
 8. 若补位或触发链引发新倒下，递归处理到窗口稳定。

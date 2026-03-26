@@ -15,12 +15,13 @@
 固定顺序：
 
 1. 按 `BattleSetup` 构建双方运行态与首发。
-2. 写首发 `state:enter` 日志。
-3. 执行首发 `on_enter` 批次（仅当前 active + field）。
-4. 立即处理由 `on_enter` 引发的击倒窗口与补位链，直到战场稳定。
-5. 执行一次 `battle_init` 批次（仅当前 active + field）。
-6. 再次处理击倒窗口；若已结束则直接终局。
-7. 进入 `selection`。
+2. 先写 `system:battle_header`（结构化公开快照）。
+3. 再写首发 `state:enter` 日志。
+4. 执行首发 `on_enter` 批次（仅当前 active + field）。
+5. 立即处理由 `on_enter` 引发的击倒窗口与补位链，直到战场稳定。
+6. 执行一次 `battle_init` 批次（仅当前 active + field）。
+7. 再次处理击倒窗口；若已结束则直接终局。
+8. 进入 `selection`。
 
 约束：
 
