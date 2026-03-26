@@ -25,6 +25,7 @@
 |`target_snapshot`|`TargetSnapshot`|锁定目标快照|
 |`priority`|`int`|排序用优先级|
 |`speed_snapshot`|`int`|排序用速度快照|
+|`speed_tie_roll`|`Variant`|同速打平随机值；非同速时为 `null`|
 
 ### 2.2 TargetSnapshot
 
@@ -42,6 +43,7 @@
 |`result_type`|`String`|`resolved / cancelled_pre_start / action_failed_post_start / miss`|
 |`consumed_mp`|`int`|本次消耗 MP|
 |`generated_effects`|`Array[EffectEvent]`|生成的效果事件|
+|`invalid_battle_code`|`Variant`|无效对局终止码；非适用为 `null`|
 
 ## 3. 固定执行顺序
 

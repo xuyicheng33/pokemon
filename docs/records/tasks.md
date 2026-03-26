@@ -10,6 +10,20 @@
 
 ## 2026-03-26
 
+### 审查报告复核与文档纠偏（action 字段 + README 目录示例）
+- 目标：核对外部审查报告真实性，只修复当前仓库中属实偏差并保持工作区可提交。
+- 范围：`docs/design/action_execution.md`、`README.md`、`docs/records/tasks.md`；不改运行时代码与规则语义。
+- 验收标准：`QueuedAction` 与 `ActionResult` 字段说明和代码一致；README 目录示例不再省略 `content/` 关键子目录；本轮提交后工作区恢复干净。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|复核报告中的代码规模、目录与字段差异|已完成|待提交|
+|修正文档滞后（`speed_tie_roll`、`invalid_battle_code`）|已完成|待提交|
+|补全 README `content/` 子目录示例|已完成|待提交|
+|闸门回归（`tests/run_with_gate.sh`）|已完成|待提交|
+
 ### 文档二次对齐优化（runtime/effect/模块清单/阈值说明）
 - 目标：按最新复查结论补齐剩余文档偏差，确保进入角色设计前“规则-设计-实现-记录”四层口径一致。
 - 范围：`docs/design/battle_runtime_model.md`、`docs/design/effect_engine.md`、`docs/design/lifecycle_and_replacement.md`、`docs/design/turn_orchestrator.md`、`docs/design/action_execution.md`、`docs/records/decisions.md`；不改运行时代码。

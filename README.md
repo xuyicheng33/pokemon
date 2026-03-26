@@ -32,7 +32,13 @@
 ```text
 content/                # 战斗定义资源（.tres）
   samples/              # 最小可运行样例
-  units/ skills/ ...
+  units/
+  skills/
+  passive_skills/
+  passive_items/
+  effects/
+  fields/
+  battle_formats/
 docs/
   rules/                # 规则权威
   design/               # 工程实现说明
