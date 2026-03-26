@@ -209,150 +209,169 @@
 - 再修测试失败语义与引擎错误闸门，避免“假绿灯”掩盖实现问题。
 - 规则链补齐后再做文档收口，避免先写文档后反复返工。
 
-### 151. deterministic 契约必须显式重置 ID 与 RNG
+### 153. deterministic 契约必须显式重置 ID 与 RNG
 - `ReplayRunner.run_replay()` 每次执行前重置 `id_factory`，并按输入种子重置 `rng_service`。
 - 命令解析优先使用 `actor_public_id/target_public_id` 重映射运行时实例，避免历史运行残留污染回放。
 
-### 152. 测试通过语义升级为“双闸门”
+### 154. 测试通过语义升级为“双闸门”
 - 通过标准不再仅是业务断言全绿。
 - 还必须同时满足引擎日志无 `SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`。
 
-### 153. 初始化链路按批次冻结
+### 155. 初始化链路按批次冻结
 - 固定为首发 `on_enter` 批次 -> 击倒窗口稳定 -> `battle_init` 批次。
 - 不允许跨触发点混排，不允许把两者塞进同一排序池。
 
-### 154. `rule_mod` 读取点冻结为三入口
+### 156. `rule_mod` 读取点冻结为三入口
 - 允许读取点只有：`final_mod`、`mp_regen`、`skill_legality`。
 - 扣减节点只允许 `turn_start / turn_end`，到期即移除并写移除日志。
 
-### 155. 非行动系统链日志字段采用 `null + system:*` 口径
+### 157. 非行动系统链日志字段采用 `null + system:*` 口径
 - 非行动系统链的 `action_id / action_queue_index / actor_id / select_*` 一律写 `null`。
 - `command_type` 必须写 `system:*`，`command_source` 必须写 `system`。
 
-### 156. 文档、记录、实现三方收敛到 `docs/rules/00~06`
+### 158. 文档、记录、实现三方收敛到 `docs/rules/00~06`
 - `docs/rules/` 作为唯一规则权威，`docs/design/` 只描述实现落点。
 - 任何口径变更必须同步更新记录文档，避免聊天口径漂移。
 
-### 157. 启动阶段系统日志必须提前绑定系统链上下文
+### 159. 启动阶段系统日志必须提前绑定系统链上下文
 - 初始化最早的 `state:enter` 日志也必须满足“非行动系统链 = `null + system:*`”口径。
 - 不允许落入 `system:orphan` 导致 `command_type` 为空或链路来源漂移。
 
-### 158. 提交指令必须属于 legal_action_set，不能只靠结构校验
+### 160. 提交指令必须属于 legal_action_set，不能只靠结构校验
 - `skill_legality` 不仅影响“展示给玩家/AI 的可选列表”，还必须拦截提交路径。
 - 提交了不在 legal 集内的指令，直接按 `invalid_command_payload` fail-fast 终止并写日志。
 
-### 159. 日志契约升级为 V2
+### 161. 日志契约升级为 V2
 - 新增 `log_schema_version = 2`，并补齐 `chain_origin / trigger_name / cause_event_id / killer_id` 字段。
 - effect 事件必须携带 `trigger_name / cause_event_id`；其他事件允许 `null`。
 - 回放器需校验 V2 字段完整性，未通过视为回放失败。
 
-### 160. 回放必须完整跑到终局并强化成功判定
+### 162. 回放必须完整跑到终局并强化成功判定
 - `ReplayRunner` 运行至“战斗结束或回合上限触发”，不再允许半局成功返回。
 - `ReplayOutput.succeeded` 需同时满足“执行完成 + V2 日志校验通过 + 终局结果有效”。
 
-### 161. 持续效果实例接入统一触发链并补齐扣减移除日志
+### 163. 持续效果实例接入统一触发链并补齐扣减移除日志
 - 新增持续效果调度层，按触发点收集 `effect_instances` 并纳入统一排序链。
 - `turn_start / turn_end` 触发后按 `decrement_on` 扣减，`remaining <= 0` 立即移除并写 `effect:remove_effect`。
 - 离场时若未标记 `persists_on_switch`，则移除并写移除日志。
 
-### 162. 内容快照加载时强制校验
+### 164. 内容快照加载时强制校验
 - 内容层加载后立即校验，非法配置直接 fail-fast。
 - 校验覆盖：技能优先级范围、奥义引用、目标/触发/作用域白名单、`rule_mod` 组合、跨资源引用完整性。
 
-### 163. `battle_end` 日志严格归入系统链
+### 165. `battle_end` 日志严格归入系统链
 - `result:battle_end` 事件的 `command_type` 必须为 `system:*`，禁止写入 `result:battle_end`。
 - `chain_origin` 由系统链上下文提供，保持非行动链口径不变。
 
-### 164. 选择阶段非法提交统一 fail-fast，不保留“拦截重选”
+### 166. 选择阶段非法提交统一 fail-fast，不保留“拦截重选”
 - 选择阶段收到非法提交（结构非法、side/actor 非法、重复提交、不在 legal 集）一律 `invalid_battle`。
 - 统一错误码为 `invalid_command_payload`，并写 `system:invalid_battle` 日志。
 
-### 165. 强制换下/强制补位统一走系统替补选择接口
+### 167. 强制换下/强制补位统一走系统替补选择接口
 - 引擎新增 `ReplacementSelector` 注入点：输入战斗态、side、合法候选、原因；输出目标 `unit_id`。
 - 候选数 > 1 时必须调用接口；候选数 = 1 自动锁定。
 - 接口返回空值、非法目标或超时，一律 `invalid_replacement_selection` fail-fast。
 
-### 166. 内容层与组队阶段新增硬校验约束
+### 168. 内容层与组队阶段新增硬校验约束
 - `unit.skill_ids` 固定为 3 槽；普通技能优先级只能是 `-2..+2`。
 - `ultimate_skill_id` 对应技能优先级只能是 `+5/-5`，且不得出现在任意单位的 `skill_ids`。
 - `BattleSetup` 维度新增“同队被动持有物不可重复”运行前校验，校验失败直接 fail-fast。
 
-### 167. Battle Core 收口执行顺序固定为“先文档后代码”
+### 169. Battle Core 收口执行顺序固定为“先文档后代码”
 - 先把规则文档、设计文档、记录文档统一到同一口径，再落代码与测试。
 - 若实现中发现规则冲突，必须先改 `docs/rules/`，禁止跳过文档层直接拍板实现。
 
-### 168. `PassiveItemDefinition.on_receive_effect_ids` 进入禁用迁移态
+### 170. `PassiveItemDefinition.on_receive_effect_ids` 进入禁用迁移态
 - 字段暂时保留用于资源迁移，但当前基线不允许其承载运行逻辑。
 - 内容快照校验将收紧为“非空即失败”，避免“文档禁用但运行时悄悄生效”。
 
-### 169. `forced_replace` 采用最小闭环落地策略
+### 171. `forced_replace` 采用最小闭环落地策略
 - 本轮只落地 1v1 单 active 槽位所需链路，不扩到多目标、多槽位。
 - 执行顺序固定为 `on_switch -> on_exit -> leave(forced_replace) -> replace -> on_enter`，选择失败统一 `invalid_replacement_selection`。
 
-### 170. 去除日志与依赖兜底，改为显式硬失败
+### 172. 去除日志与依赖兜底，改为显式硬失败
 - `LogEventBuilder` 不再自动构造 `system:orphan` 链；缺失 `chain_context` 时直接失败。
 - 关键依赖（如 `effect_instance_dispatcher`）不允许“为空就跳过”，装配阶段必须断言完整性。
 
-### 171. 内容快照对 `on_receive_effect_ids` 执行加载期硬拦截
+### 173. 内容快照对 `on_receive_effect_ids` 执行加载期硬拦截
 - `PassiveItemDefinition.on_receive_effect_ids` 当前只作为迁移占位字段，运行时禁用。
 - 校验策略固定为“字段可存在，但值非空立即失败”，错误应在加载期暴露，而非战斗中兜底。
 
-### 172. `forced_replace` payload 以最小生命周期闭环接入主链
+### 174. `forced_replace` payload 以最小生命周期闭环接入主链
 - 新增 `forced_replace` payload，执行起点先校验合法 bench，再按候选规则调用系统替补选择接口。
 - 成功路径固定顺序为 `on_switch -> on_exit -> leave(forced_replace) -> state:replace -> state:enter -> on_enter`。
 - 系统选择返回空值或非法目标时，统一以 `invalid_replacement_selection` 立即终止战斗。
 
-### 173. 日志构建移除 `system:orphan` 自动兜底
+### 175. 日志构建移除 `system:orphan` 自动兜底
 - `LogEventBuilder` 不再在 `chain_context` 缺失时自动补链。
 - `chain_context` 或 `event_chain_id` 缺失时直接硬失败，避免日志来源漂移被静默吞掉。
 
-### 174. 关键依赖缺失统一视为状态破坏并立即终止
+### 176. 关键依赖缺失统一视为状态破坏并立即终止
 - 移除 `effect_instance_dispatcher`、`rule_mod_service` 等关键依赖的“为空就跳过”路径。
 - 在 composition 增加依赖完整性断言，并在运行入口追加依赖完整性检查；缺失时立即 `invalid_state_corruption` 终止。
 
-### 175. 依赖缺失终止链必须支持“无日志降级硬终止”
+### 177. 依赖缺失终止链必须支持“无日志降级硬终止”
 - 当缺失 `id_factory / battle_logger / log_event_builder` 这类终止链本身依赖时，不再尝试走完整日志终止流程。
 - 统一改为“先保证 `battle_result/phase` 落到 finished，再按可用依赖决定是否写日志”，避免二次崩溃掩盖首个故障。
 
-### 176. 生命周期触发批次执行收口到单一执行器
+### 178. 生命周期触发批次执行收口到单一执行器
 - 新增 `TriggerBatchRunner` 统一承载“收集事件 -> 排序 -> 执行 payload -> 传播 invalid code”流程。
 - `battle_initializer / turn_loop_controller / action_executor / faint_resolver / replacement_service` 不再各自复制一套触发批次流水线，后续扩展只改一个点。
 
-### 177. `battle_end` 与 `turn_limit` 必须继承真实系统来源
+### 179. `battle_end` 与 `turn_limit` 必须继承真实系统来源
 - `result:battle_end` 不允许因为先把 `phase` 改成 `finished` 而丢失真实来源阶段。
 - `turn_start / turn_end / battle_init / turn_limit` 触发的终局日志，必须沿用对应系统链的 `command_type / chain_origin`。
 - `system:turn_limit` 的 `chain_origin` 固定归入 `turn_end`。
 
-### 178. 内容快照校验补齐字段边界与重复 ID 检查
+### 180. 内容快照校验补齐字段边界与重复 ID 检查
 - 内容资源加载期除跨引用校验外，还必须拦截重复 ID、空 ID、技能数值越界、效果优先级越界和 payload 字段非法。
 - 重复资源 ID 不再允许“后加载静默覆盖前加载”，必须在内容加载期直接失败。
 - `resource_mod.resource_key` 与 `stat_mod.stat_name` 这类字段必须在内容层就收紧白名单，不能等运行时默默兜底。
 
-### 179. 系统锚点日志允许保留 `trigger_name`
+### 181. 系统锚点日志允许保留 `trigger_name`
 - effect 事件仍然必须填写 `trigger_name / cause_event_id`。
 - `system:battle_init / system:turn_start / system:turn_end` 这类系统锚点事件允许保留对应节点名到 `trigger_name`，用于日志诊断。
 - 非 effect 事件不再强求 `trigger_name` 一律为 `null`；但 `cause_event_id` 仍只在 effect 事件中使用。
 
-### 180. Battle Core 分层冻结为 6 层单向依赖
+### 182. Battle Core 分层冻结为 6 层单向依赖
 - 核心层次固定为：`content/contracts/runtime/shared constants -> pure domain -> subsystem coordinators -> orchestrators -> facades -> 外围层`。
 - 依赖只能向下，外围层只能通过 facade 或明确 contract 进入核心。
 - `runtime/math/logging/orchestrator` 的职责边界写死为硬约束，不做口头约定。
 
-### 181. `rule_mod` 永久定位为“受限读取修正器”
+### 183. `rule_mod` 永久定位为“受限读取修正器”
 - 白名单读取点冻结为：`final_mod / mp_regen / skill_legality`。
 - 禁止通过 `rule_mod` 改排序、阶段顺序、击倒窗口、补位时机、胜负判定、目标模型、生命周期与日志链路语义。
 - 新读取点必须先更新 `docs/rules/06` 与架构约束文档，再允许实现。
 
-### 182. 大文件治理采用“职责优先 + 行数强预警”
+### 184. 大文件治理采用“职责优先 + 行数强预警”
 - 核心服务超过 250 行触发职责复核；orchestrator/coordinator 超过 350 行默认拆分；单测试文件超过 600 行默认按子域拆分。
 - 超阈值仍不拆必须在记录中写明“为什么合理 + 预计何时拆”。
 
-### 183. 外围禁止直连 runtime，改由 facade 出口统一收口
+### 185. 外围禁止直连 runtime，改由 facade 出口统一收口
 - `adapters/composition/scenes` 不得直接 import `battle_core/runtime/*`。
 - 对外只暴露 public snapshot，不暴露内部 `unit_instance_id` 与核心对象图。
 - 架构闸门新增静态检查，发现外围直连 runtime 即失败。
 
-### 184. 当前超阈值文件复核结果（保留并记录原因）
+### 186. 当前超阈值文件复核结果（保留并记录原因）
 - `src/battle_core/content/battle_content_index.gd`：当前仍作为内容注册与快照校验集中点，待内容校验规则稳定后再拆分 schema 校验子服务。
 - `src/battle_core/effects/rule_mod_service.gd`：当前刚完成 stacking key schema 收口，先保持单点实现，后续按读取点拆为 `rule_mod_read_service + rule_mod_instance_service`。
 - `src/battle_core/effects/payload_executor.gd`：当前仍是 payload 主执行枢纽，后续按 payload 家族拆成 `resource/stat/field/rule_mod/lifecycle` 子执行器。
+
+## 2026-03-26
+
+### 187. `prototype_full_open` 对外快照在引擎层补齐全公开字段并保留旧字段
+- `BattleCoreFacade` 统一输出 `team_units + field + prebattle_public_teams` 的 full-open 快照信息。
+- 保留 `active_public_id / active_hp / active_mp / bench_public_ids` 等既有字段，避免外围读取契约断裂。
+- 对外快照禁止泄露运行态私有实例 ID（如 `unit_instance_id`）。
+
+### 188. effect 日志统一补齐 `effect_roll` 空值语义
+- effect 事件日志的 `effect_roll` 一律来自 `EffectEvent.sort_random_roll`。
+- 同排序组打平消耗随机时写具体值；未消费时固定写 `null`，禁止缺省或混写。
+
+### 189. `ReplacementService` 依赖注入按最小职责瘦身
+- 移除未使用依赖（被动/field/effect/rng 等）并同步清理 composer/container 接线。
+- 保留 `replacement_selector + leave_service + trigger_batch_runner + logger` 最小闭环依赖，降低耦合面。
+
+### 190. 回放输入口径收敛为 `ReplayInput`，日志定位为校验与诊断
+- 回放执行输入固定为 `battle_seed + content_snapshot_paths + battle_setup + command_stream`。
+- 完整日志用于可复现校验、问题定位与回归比对，不再描述为“单独可驱动重放”的唯一输入。

@@ -50,6 +50,9 @@
 
 ## 3. Replay 契约
 
+回放执行输入固定为 `ReplayInput`（`battle_seed + content_snapshot_paths + battle_setup + command_stream`）。  
+日志不是“单独就能驱动重放”的唯一输入，而是用于可复现校验、定位问题与比对执行轨迹。
+
 ### 3.1 ReplayInput
 
 |字段|说明|

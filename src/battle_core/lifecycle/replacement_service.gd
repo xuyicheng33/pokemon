@@ -10,14 +10,7 @@ var battle_logger
 var log_event_builder
 var replacement_selector
 var leave_service
-var passive_skill_service
-var passive_item_service
-var field_service
-var effect_instance_dispatcher
-var effect_queue_service
-var payload_executor
 var trigger_batch_runner
-var rng_service
 
 func resolve_replacement(battle_state, side_state, reason: String) -> Dictionary:
     var legal_bench_ids := _collect_legal_bench_ids(battle_state, side_state)

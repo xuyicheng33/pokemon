@@ -8,6 +8,37 @@
 
 当前生效规则以 `docs/rules/` 为准。
 
+## 2026-03-26
+
+### 复查问题修复落地（full-open 快照 + effect_roll + 架构瘦身）
+- 目标：修复复查阶段发现的“规则/文档/实现偏差”，把核心契约收敛到可扩展且可回归验证的单一口径。
+- 范围：`battle_core facade/effects/lifecycle/composition`、测试套件、规则/设计/记录文档；不扩到 UI 展示层与正式角色内容设计。
+- 验收标准：full-open 快照契约补齐且不泄露私有实例 ID；effect 日志补齐 `effect_roll`；ReplacementService 依赖瘦身；文档口径一致；`tests/run_with_gate.sh` 全绿。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|full-open 快照契约补齐（含 `prebattle_public_teams`）|已完成|待提交|
+|effect 日志补齐 `effect_roll`|已完成|待提交|
+|ReplacementService 依赖注入瘦身|已完成|待提交|
+|新增回归测试（快照契约 + effect_roll 语义）|已完成|待提交|
+|规则/设计文档与记录收口|已完成|待提交|
+
+#### 最小可玩性检查清单（本轮）
+- 可启动：headless 测试可完整执行。
+- 可操作：facade 可返回 full-open 公共快照；effect 队列排序随机语义可被日志验证。
+- 无致命错误：架构闸门通过，无分层越界与超阈值文件违规。
+
+#### 回归检查要点（本轮）
+- 快照包含 `visibility_mode / field / sides.team_units / prebattle_public_teams`，并保留旧字段兼容。
+- 公共快照不出现 `unit_instance_id`。
+- tie-group effect 事件日志 `effect_roll != null`，单事件 `effect_roll == null`。
+- `tests/run_with_gate.sh` 输出 `GATE PASSED`。
+
+#### 当前验证结果（2026-03-26）
+- `HOME=/tmp XDG_DATA_HOME=/tmp tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
 ## 2026-03-25
 
 ### Battle Core 完美架构约束方案 v1（分层/门面/拆分）

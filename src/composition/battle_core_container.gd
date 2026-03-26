@@ -182,14 +182,7 @@ func dispose() -> void:
         replacement_service.log_event_builder = null
         replacement_service.replacement_selector = null
         replacement_service.leave_service = null
-        replacement_service.passive_skill_service = null
-        replacement_service.passive_item_service = null
-        replacement_service.field_service = null
-        replacement_service.effect_instance_dispatcher = null
-        replacement_service.effect_queue_service = null
-        replacement_service.payload_executor = null
         replacement_service.trigger_batch_runner = null
-        replacement_service.rng_service = null
 
     id_factory = null
     rng_service = null

@@ -64,7 +64,7 @@
 |行动排序|`priority -> speed -> random`|
 |效果排序|`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`|
 |RNG 契约|所有随机判定必须使用同一确定性 RNG，按消费顺序写入完整日志|
-|日志目标|完整日志必须足够回放整场战斗，公开日志只负责给玩家看懂发生了什么|
+|日志目标|回放执行输入固定为 `ReplayInput`（`seed + content snapshot + setup + command_stream`）；完整日志用于确定性校验与诊断，公开日志只负责给玩家看懂发生了什么|
 |玩家上手原则|规则层可以 full open，但 UI 默认展示必须分层，避免把全部细节一股脑砸给玩家|
 
 ## 6. 当前最小可玩闭环

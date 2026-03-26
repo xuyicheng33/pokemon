@@ -104,14 +104,7 @@ func compose():
     container.replacement_service.log_event_builder = container.log_event_builder
     container.replacement_service.replacement_selector = container.replacement_selector
     container.replacement_service.leave_service = container.leave_service
-    container.replacement_service.passive_skill_service = container.passive_skill_service
-    container.replacement_service.passive_item_service = container.passive_item_service
-    container.replacement_service.field_service = container.field_service
-    container.replacement_service.effect_instance_dispatcher = container.effect_instance_dispatcher
-    container.replacement_service.effect_queue_service = container.effect_queue_service
-    container.replacement_service.payload_executor = container.payload_executor
     container.replacement_service.trigger_batch_runner = container.trigger_batch_runner
-    container.replacement_service.rng_service = container.rng_service
     container.faint_resolver.leave_service = container.leave_service
     container.faint_resolver.replacement_service = container.replacement_service
     container.faint_resolver.passive_skill_service = container.passive_skill_service
@@ -244,7 +237,6 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.faint_resolver, "faint_resolver", "effect_instance_dispatcher")
     _assert_dependency(container.replacement_service, "replacement_service", "trigger_batch_runner")
     _assert_dependency(container.payload_executor, "payload_executor", "replacement_service")
-    _assert_dependency(container.replacement_service, "replacement_service", "payload_executor")
     _assert_dependency(container.facade, "facade", "battle_initializer")
     _assert_dependency(container.facade, "facade", "legal_action_service")
     _assert_dependency(container.facade, "facade", "command_builder")

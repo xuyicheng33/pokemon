@@ -122,6 +122,7 @@ func _apply_resource_mod_payload(payload, effect_definition, effect_event, battl
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
+            "effect_roll": _resolve_effect_roll(effect_event),
             "value_changes": [value_change],
             "payload_summary": "%s mp %+d" % [target_unit.public_id, value_change.delta],
         }
@@ -146,6 +147,7 @@ func _apply_stat_mod_payload(payload, effect_definition, effect_event, battle_st
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
+            "effect_roll": _resolve_effect_roll(effect_event),
             "value_changes": [value_change],
             "payload_summary": "%s %s %+d" % [target_unit.public_id, payload.stat_name, value_change.delta],
         }
@@ -176,6 +178,7 @@ func _apply_field_payload(payload, effect_definition, effect_event, battle_state
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
+            "effect_roll": _resolve_effect_roll(effect_event),
             "field_change": field_change,
             "payload_summary": "field -> %s" % field_state.field_def_id,
         }
@@ -217,6 +220,7 @@ func _apply_effect_payload(payload, effect_definition, effect_event, battle_stat
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
+            "effect_roll": _resolve_effect_roll(effect_event),
             "payload_summary": "apply effect %s (%s)" % [payload.effect_definition_id, created_instance.instance_id],
         }
     ))
@@ -238,6 +242,7 @@ func _remove_effect_payload(payload, effect_definition, effect_event, battle_sta
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
+            "effect_roll": _resolve_effect_roll(effect_event),
             "payload_summary": "remove effect %s" % payload.effect_definition_id,
         }
     ))
@@ -266,6 +271,7 @@ func _apply_rule_mod_payload(payload, effect_definition, effect_event, battle_st
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
+            "effect_roll": _resolve_effect_roll(effect_event),
             "payload_summary": "rule mod %s (%s)" % [created_instance.mod_kind, created_instance.instance_id],
         }
     ))
@@ -339,6 +345,7 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
+            "effect_roll": _resolve_effect_roll(effect_event),
             "value_changes": [value_change],
             "payload_summary": "%s %s %+d" % [target_unit.public_id, summary_tag, value_change.delta],
         }
@@ -366,6 +373,11 @@ func _build_value_change(entity_id: String, resource_name: String, before_value:
     value_change.after_value = after_value
     value_change.delta = after_value - before_value
     return value_change
+
+func _resolve_effect_roll(effect_event) -> Variant:
+    if effect_event == null:
+        return null
+    return effect_event.sort_random_roll
 
 func _enter_effect_guard(effect_event, battle_state) -> bool:
     if battle_state.chain_context == null or battle_state.max_chain_depth <= 0:
