@@ -18,12 +18,16 @@
 |字段|类型|说明|
 |---|---|---|
 |`command_id`|`String`|唯一 ID|
+|`turn_index`|`int`|该指令所属回合号|
 |`command_type`|`String`|`skill / switch / ultimate / resource_forced_default / timeout_default / surrender`|
 |`command_source`|`String`|`manual / ai / resource_auto / timeout_auto`|
 |`side_id`|`String`|下达指令的 side|
 |`actor_id`|`String`|行动者实例 ID|
+|`actor_public_id`|`String`|行动者公开 ID（回放/外层输入可用）|
 |`skill_id`|`String`|技能或奥义 ID，非适用为 `""`|
 |`target_unit_id`|`String`|换人目标，非适用为 `""`|
+|`target_public_id`|`String`|目标公开 ID，非适用为 `""`|
+|`target_slot`|`String`|目标槽位，非适用为 `""`|
 
 ### 2.2 LegalActionSet
 

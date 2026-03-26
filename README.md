@@ -97,6 +97,9 @@ tests/run_with_gate.sh
 - `get_public_snapshot(session_id)`
 - `close_session(session_id)`
 - `run_replay(replay_input)`
+- `active_session_count()`（返回当前活跃会话数量）
+- `dispose()`（释放全部会话与管理器依赖）
+- `resolve_missing_dependency()`（返回缺失依赖名；为空表示依赖完整）
 
 其中 `run_replay` 使用临时容器隔离执行，不污染活跃会话池。
 
@@ -145,4 +148,3 @@ tests/run_with_gate.sh
 2. 角色设计优先复用现有 payload 与触发点，不先扩流程控制口。
 3. 新角色/技能接入必须附带回归用例（至少覆盖命中、伤害、生命周期、日志字段）。
 4. 每个小任务都走 `tests/run_with_gate.sh`，再进入下一步扩展。
-

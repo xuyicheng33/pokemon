@@ -10,6 +10,29 @@
 
 ## 2026-03-26
 
+### Battle Core 文档偏差同步（runtime/command/manager API）
+- 目标：核实“全面复查报告”中的文档偏差并完成一次性同步，避免角色设计阶段误读。
+- 范围：`docs/design/battle_runtime_model.md`、`docs/design/command_and_legality.md`、`README.md`；不改运行时代码与测试逻辑。
+- 验收标准：BattleState/UnitState/Command/BattlePhases 与代码字段一致；README §6 补齐 3 个 manager 辅助方法说明；工作区提交后恢复干净。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|核对代码与文档差异（runtime/command/phases/manager API）|已完成|待提交|
+|同步更新 3 份文档|已完成|待提交|
+|闸门回归（`tests/run_with_gate.sh`）|已完成|待提交|
+
+#### 最小可玩性检查清单（本轮）
+- 可启动：`tests/run_with_gate.sh` 可执行完成。
+- 可操作：核心战斗流程相关文档可直接映射到现有代码字段。
+- 无致命错误：闸门输出无引擎级错误。
+
+#### 回归检查要点（本轮）
+- `BattlePhases` 文档值与 `src/shared/battle_phases.gd` 完全一致。
+- `BattleState` 缺失字段（8 项）与 `UnitState` 缺失字段（11 项）已补齐。
+- `Command` 缺失字段（4 项）已补齐；README §6 补齐 `active_session_count / dispose / resolve_missing_dependency`。
+
 ### Battle Core 会话隔离 + 日志 V3 收口（manager/session）
 - 目标：完成会话级隔离重构，修复回放快照上下文一致性，升级日志到 V3 并补齐初始化结构化日志头。
 - 范围：`battle_core/facades`、`composition`、`turn/logging/contracts`、sandbox 与测试套件、规则/设计/记录文档；不扩展 UI 与角色内容。

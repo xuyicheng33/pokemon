@@ -23,7 +23,7 @@
 
 |常量类|用途|
 |---|---|
-|`BattlePhases`|`init / selection / execution / turn_end / finished`|
+|`BattlePhases`|`battle_init / turn_start / selection / queue_lock / execution / turn_end / victory_check / finished`|
 |`LeaveStates`|`active / fainted_pending_leave / left`|
 
 ## 4. BattleState
@@ -32,6 +32,12 @@
 |---|---|---|
 |`battle_id`|`String`|本场战斗唯一 ID|
 |`seed`|`int`|随机种子|
+|`rng_profile`|`String`|随机策略配置 ID（用于区分 RNG 规则）|
+|`format_id`|`String`|战斗格式定义 ID|
+|`max_turn`|`int`|回合上限|
+|`max_chain_depth`|`int`|事件链最大深度|
+|`battle_level`|`int`|本场统一等级快照|
+|`selection_deadline_ms`|`int`|选择阶段超时阈值（毫秒）|
 |`turn_index`|`int`|当前回合号，初始化后从 `1` 开始|
 |`phase`|`String`|当前阶段，必须取自 `BattlePhases`|
 |`sides`|`Array[SideState]`|双方运行态|
@@ -40,6 +46,8 @@
 |`chain_context`|`ChainContext`|当前链上下文|
 |`battle_result`|`BattleResult`|战斗结果|
 |`rng_stream_index`|`int`|当前随机消费序号快照|
+|`fatal_damage_records_by_target`|`Dictionary`|目标维度的致命伤害归因记录（击倒链读取）|
+|`field_rule_mod_instances`|`Array[RuleModInstance]`|挂载在全场作用域的规则修正实例|
 
 ## 5. SideState
 
@@ -59,14 +67,25 @@
 |`unit_instance_id`|`String`|实例 ID|
 |`public_id`|`String`|公开编号|
 |`definition_id`|`String`|内容定义 ID|
+|`display_name`|`String`|展示名|
+|`max_hp`|`int`|最大 HP|
 |`current_hp`|`int`|当前 HP|
+|`max_mp`|`int`|最大 MP|
 |`current_mp`|`int`|当前 MP|
+|`regen_per_turn`|`int`|每回合 MP 回复基值|
+|`base_attack`|`int`|基础攻击|
+|`base_defense`|`int`|基础防御|
+|`base_sp_attack`|`int`|基础特攻|
+|`base_sp_defense`|`int`|基础特防|
+|`base_speed`|`int`|基础速度|
 |`stat_stages`|`Dictionary`|能力阶段|
 |`effect_instances`|`Array[EffectInstance]`|挂载的持续效果实例|
 |`rule_mod_instances`|`Array[RuleModInstance]`|挂载的规则修正实例|
 |`has_acted`|`bool`|本回合是否已开始行动|
 |`action_window_passed`|`bool`|本回合行动机会是否已过|
 |`leave_state`|`String`|必须取自 `LeaveStates`|
+|`leave_reason`|`Variant`|离场原因快照（如击倒、替换、投降链）|
+|`last_effective_speed`|`int`|最近一次用于排序的有效速度快照|
 
 ## 7. FieldState
 
