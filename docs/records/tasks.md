@@ -10,6 +10,34 @@
 
 ## 2026-03-27
 
+### 审查报告复核与文档收口（`combat_type` + 代码规模）
+- 目标：复核本轮外部审查报告，只修复仓库中已确认属实的文档偏差，并把复核结果写入记录。
+- 范围：`README.md`、`docs/rules/00_rule_baseline.md`、`docs/rules/player_quick_start.md`、`docs/design/combat_math.md`、`docs/records/tasks.md`、`docs/records/decisions.md`；不改运行时代码。
+- 验收标准：总则/玩家速览不再误报“属性系统未接入”；`combat_math.md` 补齐 `CombatTypeService`；README 代码规模改为当前实测值；`tests/run_with_gate.sh` 通过。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|复核审查报告中的实现、测试与文档结论|已完成|待提交|
+|修正 `combat_type` 已接入后的总则与玩家速览口径|已完成|待提交|
+|补齐 `combat_math.md` 服务清单并更新 README 代码规模|已完成|待提交|
+|任务/决策记录同步|已完成|待提交|
+|闸门回归（`tests/run_with_gate.sh`）|已完成|待提交|
+
+#### 最小可玩性检查清单（本轮）
+- 可启动：`tests/run_with_gate.sh` 可执行完成。
+- 可操作：文档对外口径能直接映射到当前 `combat_type` 实现与测试。
+- 无致命错误：本轮只改文档与记录，不引入运行时代码回归。
+
+#### 回归检查要点（本轮）
+- `00_rule_baseline` 与 `player_quick_start` 明确“有属性克制、无 STAB / 免疫”。
+- `combat_math.md` 文件清单与 math 层实际服务一致。
+- README 代码规模与命令 `find src tests -name '*.gd' | xargs wc -l` 当前输出一致。
+
+#### 当前验证结果（2026-03-27）
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
 ### 17 属性系统 v1（`combat_type`）落地
 - 目标：一次性落地 `combat_type` 战斗属性系统，包括 schema、内容校验、伤害接入、sample content、日志字段、文档与回归测试。
 - 范围：`content/combat_types/*`、`content/samples/sample_battle_format.tres`、`content/skills/*`、`content/units/*`、`src/battle_core/**/*`、`src/composition/*`、`tests/suites/*`、`tests/run_all.gd`、`README.md`、`docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/records/*`。

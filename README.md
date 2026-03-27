@@ -147,9 +147,9 @@ tests/run_with_gate.sh
 
 ## 9. 当前代码规模（2026-03-27）
 
-- `src/**/*.gd`：`5802` 行
-- `tests/**/*.gd`：`2825` 行
-- GDScript 合计：`8627` 行
+- `src/**/*.gd`：`6008` 行
+- `tests/**/*.gd`：`3317` 行
+- GDScript 合计：`9325` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

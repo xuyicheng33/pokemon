@@ -9,6 +9,15 @@
 
 ## 2026-03-27
 
+### 199. 摘要型文档必须同步已落地的 `combat_type` 事实
+- `docs/rules/00_rule_baseline.md` 与 `docs/rules/player_quick_start.md` 可以做摘要，但不能继续把已上线机制写成“下一阶段再接入”。
+- 当前摘要层固定口径为：属性克制已接入；STAB 不做；属性免疫不做。
+- `docs/design/combat_math.md` 必须把 `CombatTypeService` 视为 math 层正式服务，避免设计文档漏项。
+
+### 200. README 代码规模统计按命令实测值维护
+- `README.md` 的代码规模段落以文中统计命令的当次实际输出为准。
+- 若 `src/**/*.gd` 或 `tests/**/*.gd` 发生增删改并同步维护 README，不保留旧数字占位。
+
 ### 196. 战斗属性系统命名统一为 `combat_type`
 - `combat_type` 表示“战斗结算使用的属性”，不等于角色出处设定标签。
 - `damage_kind` 继续只负责物理 / 特殊 / 无伤害分类，不与 `combat_type` 混用。

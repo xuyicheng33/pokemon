@@ -10,6 +10,7 @@
 |`mp_service.gd`|MP 回复与消耗结果计算|
 |`hit_service.gd`|命中判定|
 |`damage_service.gd`|基础伤害与最终倍率计算|
+|`combat_type_service.gd`|属性克制查表与连乘计算|
 
 ## 2. 接口约束
 
@@ -27,6 +28,7 @@
 |`HitService.roll_hit`|accuracy + rng|是否命中|
 |`DamageService.calc_base_damage`|攻击/防御/威力/等级|基础伤害|
 |`DamageService.apply_final_mod`|基础伤害 + rule mod|最终伤害|
+|`CombatTypeService.calc_effectiveness`|技能属性 + 目标属性列表|属性倍率|
 
 ## 4. RNG 约束
 
