@@ -102,8 +102,9 @@
 |场景|规则|
 |---|---|
 |直接技能伤害|使用技能自身 `combat_type_id` 参与克制|
-|`DamagePayload.use_formula = true` 且存在 `chain_context.skill_id`|继承该技能的 `combat_type_id`|
-|非技能链公式伤害|`type_effectiveness = 1.0`|
+|`DamagePayload.use_formula = true` 且存在 `chain_context.skill_id`|继承该技能的 `combat_type_id`；若该技能已声明 `damage_kind = physical / special`，公式伤害也继承该攻防路径|
+|链技能 `damage_kind = none`|公式伤害回退使用 payload 自身 `damage_kind`|
+|非技能链公式伤害|使用 payload 自身 `damage_kind`；`type_effectiveness = 1.0`|
 |默认动作与反伤|`type_effectiveness = 1.0`|
 
 日志口径：

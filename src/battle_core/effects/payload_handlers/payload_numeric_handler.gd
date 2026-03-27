@@ -1,6 +1,7 @@
 extends RefCounted
 class_name PayloadNumericHandler
 
+const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
@@ -13,6 +14,7 @@ var battle_logger
 var log_event_builder
 var damage_service
 var combat_type_service
+var stat_calculator
 var rule_mod_service
 var faint_resolver
 
@@ -27,6 +29,8 @@ func resolve_missing_dependency() -> String:
         return "damage_service"
     if combat_type_service == null:
         return "combat_type_service"
+    if stat_calculator == null:
+        return "stat_calculator"
     if rule_mod_service == null:
         return "rule_mod_service"
     return ""
@@ -57,16 +61,29 @@ func _apply_damage_payload(payload, effect_definition, effect_event, battle_stat
         var actor_unit = battle_state.get_unit(effect_event.owner_id)
         if actor_unit == null:
             return
+        var formula_skill_definition = _resolve_chain_skill_definition(effect_event, content_index)
+        var damage_kind := _resolve_formula_damage_kind(payload, formula_skill_definition)
+        var attack_stat_name := "attack"
+        var defense_stat_name := "defense"
+        var attack_value: int = actor_unit.base_attack
+        var defense_value: int = target_unit.base_defense
+        if damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
+            attack_stat_name = "sp_attack"
+            defense_stat_name = "sp_defense"
+            attack_value = actor_unit.base_sp_attack
+            defense_value = target_unit.base_sp_defense
+        attack_value = stat_calculator.calc_effective_stat(attack_value, int(actor_unit.stat_stages.get(attack_stat_name, 0)))
+        defense_value = stat_calculator.calc_effective_stat(defense_value, int(target_unit.stat_stages.get(defense_stat_name, 0)))
         type_effectiveness = combat_type_service.calc_effectiveness(
-            _resolve_chain_skill_type(effect_event, content_index),
+            _resolve_skill_combat_type_id(formula_skill_definition),
             _resolve_unit_combat_types(target_unit)
         )
         amount = damage_service.apply_final_mod(
             damage_service.calc_base_damage(
                 battle_state.battle_level,
                 max(1, amount),
-                actor_unit.base_attack,
-                target_unit.base_defense
+                attack_value,
+                defense_value
             ),
             rule_mod_service.get_final_multiplier(battle_state, effect_event.owner_id) * type_effectiveness
         )
@@ -204,25 +221,28 @@ func _build_value_change(entity_id: String, resource_name: String, before_value:
     return value_change
 
 func _resolve_effect_roll(effect_event) -> Variant:
-    if effect_event == null:
-        return null
-    return effect_event.sort_random_roll
+    return null if effect_event == null else effect_event.sort_random_roll
 
-func _resolve_chain_skill_type(effect_event, content_index) -> String:
+func _resolve_chain_skill_definition(effect_event, content_index):
     if effect_event == null or effect_event.chain_context == null:
-        return ""
+        return null
     var raw_skill_id = effect_event.chain_context.skill_id
     if raw_skill_id == null or content_index == null:
-        return ""
+        return null
     var skill_id := str(raw_skill_id)
     if skill_id.is_empty():
-        return ""
-    var skill_definition = content_index.skills.get(skill_id, null)
-    if skill_definition == null:
-        return ""
-    if skill_definition.combat_type_id == null:
-        return ""
-    return str(skill_definition.combat_type_id)
+        return null
+    return content_index.skills.get(skill_id, null)
+
+func _resolve_skill_combat_type_id(skill_definition) -> String:
+    return "" if skill_definition == null or skill_definition.combat_type_id == null else str(skill_definition.combat_type_id)
+
+func _resolve_formula_damage_kind(payload, skill_definition) -> String:
+    if skill_definition != null:
+        var skill_damage_kind := str(skill_definition.damage_kind)
+        if skill_damage_kind == ContentSchemaScript.DAMAGE_KIND_PHYSICAL or skill_damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
+            return skill_damage_kind
+    return ContentSchemaScript.DAMAGE_KIND_SPECIAL if str(payload.damage_kind) == ContentSchemaScript.DAMAGE_KIND_SPECIAL else ContentSchemaScript.DAMAGE_KIND_PHYSICAL
 
 func _resolve_unit_combat_types(target_unit) -> PackedStringArray:
     if target_unit == null or target_unit.combat_type_ids == null:

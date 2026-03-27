@@ -215,7 +215,9 @@
 
 1. 当前不做“反向自动推导”；chart 里写什么就按什么算，没有就是中立。
 2. `DamagePayload.use_formula = true` 且存在 `chain_context.skill_id` 时，也继承该技能的 `combat_type_id` 参与克制。
-3. 默认动作、反伤、非技能链公式伤害一律按 `type_effectiveness = 1.0` 处理。
+3. `DamagePayload.use_formula = true` 时，若链技能自身 `damage_kind` 已声明为 `physical / special`，则公式伤害继承该攻防路径与对应阶段修正；若链技能为 `none`，则回退到 payload 自身的 `damage_kind`。
+4. 非技能链公式伤害使用 `DamagePayload.damage_kind` 决定 `A / D` 与阶段修正；这类路径固定 `type_effectiveness = 1.0`。
+5. 默认动作与反伤一律按 `type_effectiveness = 1.0` 处理。
 
 ## 9. 当前明确不做的伤害机制
 

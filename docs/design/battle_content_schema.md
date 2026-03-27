@@ -147,6 +147,14 @@
 
 当前这些 payload 已接入运行时结算链；内容层负责声明，运行时负责统一调度与执行。
 
+### 4.1 DamagePayload
+
+|字段|类型|说明|
+|---|---|---|
+|`amount`|`int`|平伤数值，或在 `use_formula = true` 时作为公式威力|
+|`use_formula`|`bool`|是否走简化伤害公式|
+|`damage_kind`|`String`|仅 `use_formula = true` 时生效；允许 `physical / special`|
+
 实现状态说明（2026-03-25）：
 
 - `forced_replace` payload 已在本轮收口计划中落地，当前仅覆盖 1v1 单 active 槽位链路。
@@ -166,7 +174,7 @@
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
 - 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单、效果优先级范围、payload 类型与跨资源引用完整性。
-- payload 额外校验覆盖：`DamagePayload.amount > 0`、`HealPayload.amount > 0`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`RuleModPayload` 组合合法、`ForcedReplacePayload.selector_reason` 非空。
+- payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、`HealPayload.amount > 0`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`RuleModPayload` 组合合法、`ForcedReplacePayload.selector_reason` 非空。
 - 内容快照校验失败直接 fail-fast，不进入运行态。
 
 ## 7. 运行前校验（BattleSetup）

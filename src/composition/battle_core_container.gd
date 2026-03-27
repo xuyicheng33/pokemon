@@ -80,6 +80,7 @@ func dispose() -> void:
         payload_numeric_handler.log_event_builder = null
         payload_numeric_handler.damage_service = null
         payload_numeric_handler.combat_type_service = null
+        payload_numeric_handler.stat_calculator = null
         payload_numeric_handler.rule_mod_service = null
         payload_numeric_handler.faint_resolver = null
     if payload_state_handler != null:

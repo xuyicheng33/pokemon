@@ -4,12 +4,8 @@ class_name CombatTypeSuite
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const BattleSetupScript := preload("res://src/battle_core/contracts/battle_setup.gd")
 const SideSetupScript := preload("res://src/battle_core/contracts/side_setup.gd")
-const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
-const BattleFormatConfigScript := preload("res://src/battle_core/content/battle_format_config.gd")
-const CombatTypeDefinitionScript := preload("res://src/battle_core/content/combat_type_definition.gd")
 const CombatTypeChartEntryScript := preload("res://src/battle_core/content/combat_type_chart_entry.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
-const UnitDefinitionScript := preload("res://src/battle_core/content/unit_definition.gd")
 const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/passive_skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
@@ -333,6 +329,7 @@ func _run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
     payload.payload_type = "damage"
     payload.amount = 30
     payload.use_formula = true
+    payload.damage_kind = "special"
 
     var effect = EffectDefinitionScript.new()
     effect.id = "test_formula_fire_effect"
@@ -405,6 +402,7 @@ func _run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
     payload.payload_type = "damage"
     payload.amount = 20
     payload.use_formula = true
+    payload.damage_kind = "special"
 
     var effect = EffectDefinitionScript.new()
     effect.id = "test_enter_formula_damage_effect"

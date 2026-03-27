@@ -24,6 +24,11 @@
 - 外层输入、公开快照与玩家可见目标固定使用 `public_id`；当前 `Command` 推荐由 `actor_public_id / target_public_id` 进入。
 - 核心内部的手动换人固化目标、合法 bench 列表和 `ReplacementSelector` 返回值一律使用运行时 `unit_instance_id`。
 
+### 204. `DamagePayload` 公式伤害口径补齐 `damage_kind`
+- `DamagePayload.use_formula = true` 时，payload 必须显式携带 `damage_kind = physical / special`，用于非技能链公式伤害，或作为“链技能 `damage_kind = none`”时的回退值。
+- 若公式伤害来自技能链，且链技能自身已声明 `damage_kind = physical / special`，则优先继承链技能的攻防路径与阶段修正，不让 payload 覆盖技能口径。
+- `combat_type` 继承规则保持不变：只有技能链公式伤害才继承链技能 `combat_type_id`；非技能链公式伤害固定中立 `type_effectiveness = 1.0`。
+
 ### 199. 摘要型文档必须同步已落地的 `combat_type` 事实
 - `docs/rules/00_rule_baseline.md` 与 `docs/rules/player_quick_start.md` 可以做摘要，但不能继续把已上线机制写成“下一阶段再接入”。
 - 当前摘要层固定口径为：属性克制已接入；STAB 不做；属性免疫不做。

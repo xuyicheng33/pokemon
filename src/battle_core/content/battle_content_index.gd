@@ -302,6 +302,10 @@ func _validate_payload(errors: Array, effect_id: String, payload) -> void:
     if payload is DamagePayloadScript:
         if int(payload.amount) <= 0:
             errors.append("effect[%s].damage amount must be > 0, got %d" % [effect_id, int(payload.amount)])
+        if bool(payload.use_formula):
+            var formula_damage_kind := String(payload.damage_kind)
+            if formula_damage_kind != ContentSchemaScript.DAMAGE_KIND_PHYSICAL and formula_damage_kind != ContentSchemaScript.DAMAGE_KIND_SPECIAL:
+                errors.append("effect[%s].damage invalid damage_kind for formula: %s" % [effect_id, formula_damage_kind])
         return
     if payload is HealPayloadScript:
         if int(payload.amount) <= 0:

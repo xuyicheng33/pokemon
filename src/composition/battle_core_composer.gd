@@ -147,6 +147,7 @@ func compose():
     container.payload_numeric_handler.log_event_builder = container.log_event_builder
     container.payload_numeric_handler.damage_service = container.damage_service
     container.payload_numeric_handler.combat_type_service = container.combat_type_service
+    container.payload_numeric_handler.stat_calculator = container.stat_calculator
     container.payload_numeric_handler.rule_mod_service = container.rule_mod_service
     container.payload_numeric_handler.faint_resolver = container.faint_resolver
     container.payload_state_handler.battle_logger = container.battle_logger
@@ -258,6 +259,7 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.payload_executor, "payload_executor", "numeric_payload_handler")
     _assert_dependency(container.payload_executor, "payload_executor", "state_payload_handler")
     _assert_dependency(container.payload_executor, "payload_executor", "forced_replace_payload_handler")
+    _assert_dependency(container.payload_numeric_handler, "payload_numeric_handler", "stat_calculator")
 
 func _assert_dependency(owner, owner_name: String, dependency_name: String) -> void:
     assert(owner != null, "Composer missing owner: %s" % owner_name)
