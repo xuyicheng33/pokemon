@@ -10,10 +10,11 @@
 - 核心能力：
   - 1v1、每队 3 单位、固定 Lv50
   - 指令选择、行动排序、命中/伤害、换人、击倒补位
+  - `combat_type` 战斗属性系统（单位 `0..2`、技能 `0..1`、显式克制表）
   - field、被动技能、被动持有物、受限 rule_mod
   - deterministic 回放（同输入同结果）
   - 完整日志契约（`log_schema_version = 3`）
-- 明确不做：通用状态包、暴击、属性克制、主动道具、多目标/双打
+- 明确不做：通用状态包、暴击、STAB、属性免疫、主动道具、多目标/双打
 
 ## 2. 权威文档入口
 
@@ -32,6 +33,7 @@
 ```text
 content/                # 战斗定义资源（.tres）
   samples/              # 最小可运行样例
+  combat_types/
   units/
   skills/
   passive_skills/
@@ -116,6 +118,7 @@ tests/run_with_gate.sh
 主要资源类型：
 
 - `BattleFormatConfig`
+- `CombatTypeDefinition`
 - `UnitDefinition`
 - `SkillDefinition`
 - `PassiveSkillDefinition`
@@ -128,6 +131,8 @@ tests/run_with_gate.sh
 特点：
 
 - 加载期强校验（非法内容直接 fail-fast）
+- `combat_type_chart` 使用强类型 `CombatTypeChartEntry` 资源条目，不做代码侧反向推导
+- `combat_type` 与 `damage_kind` 完全独立；缺失 pair 默认 `1.0`
 - `on_receive_effect_ids` 为禁用迁移字段，非空即失败
 - 普通技能与奥义优先级约束分离校验
 

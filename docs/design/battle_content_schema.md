@@ -14,6 +14,7 @@
 |目录|Resource 类|
 |---|---|
 |`content/battle_formats/`|`BattleFormatConfig`|
+|`content/combat_types/`|`CombatTypeDefinition`|
 |`content/units/`|`UnitDefinition`|
 |`content/skills/`|`SkillDefinition`|
 |`content/passive_skills/`|`PassiveSkillDefinition`|
@@ -32,6 +33,7 @@
 |`max_turn`|`int`|回合上限|
 |`team_size`|`int`|队伍规模|
 |`level`|`int`|固定等级|
+|`combat_type_chart`|`Array[Resource]`|战斗属性克制表，元素类型固定为 `CombatTypeChartEntry`|
 
 ### 3.2 UnitDefinition
 
@@ -45,6 +47,7 @@
 |`base_sp_attack`|`int`|基础特攻|
 |`base_sp_defense`|`int`|基础特防|
 |`base_speed`|`int`|基础速度|
+|`combat_type_ids`|`PackedStringArray`|战斗属性列表，允许 `0..2` 个|
 |`skill_ids`|`PackedStringArray`|常规技能列表（固定 3 槽）|
 |`ultimate_skill_id`|`String`|奥义技能 ID（不得出现在 `skill_ids`）|
 |`passive_skill_id`|`String`|被动技能 ID|
@@ -61,6 +64,7 @@
 |`accuracy`|`int`|命中率|
 |`mp_cost`|`int`|MP 消耗|
 |`priority`|`int`|行动优先级|
+|`combat_type_id`|`String`|技能战斗属性；空串表示无属性|
 |`targeting`|`String`|`enemy_active_slot / self / field`|
 |`effects_on_cast_ids`|`PackedStringArray`|施放触发效果 ID|
 |`effects_on_hit_ids`|`PackedStringArray`|命中触发效果 ID|
@@ -112,6 +116,21 @@
 |`display_name`|`String`|显示名|
 |`effect_ids`|`PackedStringArray`|field 内含效果 ID|
 
+### 3.7 CombatTypeDefinition
+
+|字段|类型|说明|
+|---|---|---|
+|`id`|`String`|战斗属性 ID|
+|`display_name`|`String`|显示名|
+
+### 3.8 CombatTypeChartEntry
+
+|字段|类型|说明|
+|---|---|---|
+|`atk`|`String`|攻击侧 `combat_type` ID|
+|`def`|`String`|防御侧 `combat_type` ID|
+|`mul`|`float`|倍率；当前只允许 `2.0 / 1.0 / 0.5`|
+
 ## 4. Payload 资源
 
 当前 payload 方向也用 `Resource` 表达，最小支持类型：
@@ -141,6 +160,10 @@
 ## 6. 内容快照加载期校验
 
 - 各类资源 ID / `format_id` 不能为空，且在各自类型内必须唯一；重复注册直接视为非法内容。
+- `CombatTypeDefinition.id` 必须非空且唯一；`display_name` 不得为空。
+- `UnitDefinition.combat_type_ids` 最多 2 个，不能重复、不能含空串，且必须命中已注册 `combat_type`。
+- `SkillDefinition.combat_type_id` 可为空；非空时必须命中已注册 `combat_type`。
+- `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
 - 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单、效果优先级范围、payload 类型与跨资源引用完整性。
 - payload 额外校验覆盖：`DamagePayload.amount > 0`、`HealPayload.amount > 0`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`RuleModPayload` 组合合法、`ForcedReplacePayload.selector_reason` 非空。

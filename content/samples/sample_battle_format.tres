@@ -1,6 +1,547 @@
-[gd_resource type="Resource" script_class="BattleFormatConfig" load_steps=2 format=3]
+[gd_resource type="Resource" script_class="BattleFormatConfig" load_steps=91 format=3]
 
 [ext_resource type="Script" path="res://src/battle_core/content/battle_format_config.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/combat_type_chart_entry.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+atk = "fire"
+def = "wood"
+mul = 2.0
+
+[sub_resource type="Resource" id="2"]
+script = ExtResource("2")
+atk = "fire"
+def = "ice"
+mul = 2.0
+
+[sub_resource type="Resource" id="3"]
+script = ExtResource("2")
+atk = "fire"
+def = "steel"
+mul = 2.0
+
+[sub_resource type="Resource" id="4"]
+script = ExtResource("2")
+atk = "wood"
+def = "fire"
+mul = 0.5
+
+[sub_resource type="Resource" id="5"]
+script = ExtResource("2")
+atk = "ice"
+def = "fire"
+mul = 0.5
+
+[sub_resource type="Resource" id="6"]
+script = ExtResource("2")
+atk = "steel"
+def = "fire"
+mul = 0.5
+
+[sub_resource type="Resource" id="7"]
+script = ExtResource("2")
+atk = "water"
+def = "fire"
+mul = 2.0
+
+[sub_resource type="Resource" id="8"]
+script = ExtResource("2")
+atk = "water"
+def = "earth"
+mul = 2.0
+
+[sub_resource type="Resource" id="9"]
+script = ExtResource("2")
+atk = "fire"
+def = "water"
+mul = 0.5
+
+[sub_resource type="Resource" id="10"]
+script = ExtResource("2")
+atk = "earth"
+def = "water"
+mul = 0.5
+
+[sub_resource type="Resource" id="11"]
+script = ExtResource("2")
+atk = "wind"
+def = "wood"
+mul = 2.0
+
+[sub_resource type="Resource" id="12"]
+script = ExtResource("2")
+atk = "wind"
+def = "fighting"
+mul = 2.0
+
+[sub_resource type="Resource" id="13"]
+script = ExtResource("2")
+atk = "wood"
+def = "wind"
+mul = 0.5
+
+[sub_resource type="Resource" id="14"]
+script = ExtResource("2")
+atk = "fighting"
+def = "wind"
+mul = 0.5
+
+[sub_resource type="Resource" id="15"]
+script = ExtResource("2")
+atk = "thunder"
+def = "water"
+mul = 2.0
+
+[sub_resource type="Resource" id="16"]
+script = ExtResource("2")
+atk = "thunder"
+def = "wind"
+mul = 2.0
+
+[sub_resource type="Resource" id="17"]
+script = ExtResource("2")
+atk = "water"
+def = "thunder"
+mul = 0.5
+
+[sub_resource type="Resource" id="18"]
+script = ExtResource("2")
+atk = "wind"
+def = "thunder"
+mul = 0.5
+
+[sub_resource type="Resource" id="19"]
+script = ExtResource("2")
+atk = "ice"
+def = "wind"
+mul = 2.0
+
+[sub_resource type="Resource" id="20"]
+script = ExtResource("2")
+atk = "ice"
+def = "wood"
+mul = 2.0
+
+[sub_resource type="Resource" id="21"]
+script = ExtResource("2")
+atk = "ice"
+def = "dragon"
+mul = 2.0
+
+[sub_resource type="Resource" id="22"]
+script = ExtResource("2")
+atk = "wind"
+def = "ice"
+mul = 0.5
+
+[sub_resource type="Resource" id="23"]
+script = ExtResource("2")
+atk = "wood"
+def = "ice"
+mul = 0.5
+
+[sub_resource type="Resource" id="24"]
+script = ExtResource("2")
+atk = "dragon"
+def = "ice"
+mul = 0.5
+
+[sub_resource type="Resource" id="25"]
+script = ExtResource("2")
+atk = "earth"
+def = "thunder"
+mul = 2.0
+
+[sub_resource type="Resource" id="26"]
+script = ExtResource("2")
+atk = "earth"
+def = "fire"
+mul = 2.0
+
+[sub_resource type="Resource" id="27"]
+script = ExtResource("2")
+atk = "earth"
+def = "steel"
+mul = 2.0
+
+[sub_resource type="Resource" id="28"]
+script = ExtResource("2")
+atk = "thunder"
+def = "earth"
+mul = 0.5
+
+[sub_resource type="Resource" id="29"]
+script = ExtResource("2")
+atk = "fire"
+def = "earth"
+mul = 0.5
+
+[sub_resource type="Resource" id="30"]
+script = ExtResource("2")
+atk = "steel"
+def = "earth"
+mul = 0.5
+
+[sub_resource type="Resource" id="31"]
+script = ExtResource("2")
+atk = "wood"
+def = "water"
+mul = 2.0
+
+[sub_resource type="Resource" id="32"]
+script = ExtResource("2")
+atk = "wood"
+def = "earth"
+mul = 2.0
+
+[sub_resource type="Resource" id="33"]
+script = ExtResource("2")
+atk = "water"
+def = "wood"
+mul = 0.5
+
+[sub_resource type="Resource" id="34"]
+script = ExtResource("2")
+atk = "earth"
+def = "wood"
+mul = 0.5
+
+[sub_resource type="Resource" id="35"]
+script = ExtResource("2")
+atk = "steel"
+def = "ice"
+mul = 2.0
+
+[sub_resource type="Resource" id="36"]
+script = ExtResource("2")
+atk = "steel"
+def = "light"
+mul = 2.0
+
+[sub_resource type="Resource" id="37"]
+script = ExtResource("2")
+atk = "steel"
+def = "holy"
+mul = 2.0
+
+[sub_resource type="Resource" id="38"]
+script = ExtResource("2")
+atk = "steel"
+def = "dragon"
+mul = 2.0
+
+[sub_resource type="Resource" id="39"]
+script = ExtResource("2")
+atk = "ice"
+def = "steel"
+mul = 0.5
+
+[sub_resource type="Resource" id="40"]
+script = ExtResource("2")
+atk = "light"
+def = "steel"
+mul = 0.5
+
+[sub_resource type="Resource" id="41"]
+script = ExtResource("2")
+atk = "holy"
+def = "steel"
+mul = 0.5
+
+[sub_resource type="Resource" id="42"]
+script = ExtResource("2")
+atk = "dragon"
+def = "steel"
+mul = 0.5
+
+[sub_resource type="Resource" id="43"]
+script = ExtResource("2")
+atk = "light"
+def = "dark"
+mul = 2.0
+
+[sub_resource type="Resource" id="44"]
+script = ExtResource("2")
+atk = "light"
+def = "spirit"
+mul = 2.0
+
+[sub_resource type="Resource" id="45"]
+script = ExtResource("2")
+atk = "light"
+def = "demon"
+mul = 2.0
+
+[sub_resource type="Resource" id="46"]
+script = ExtResource("2")
+atk = "dark"
+def = "light"
+mul = 0.5
+
+[sub_resource type="Resource" id="47"]
+script = ExtResource("2")
+atk = "spirit"
+def = "light"
+mul = 0.5
+
+[sub_resource type="Resource" id="48"]
+script = ExtResource("2")
+atk = "demon"
+def = "light"
+mul = 0.5
+
+[sub_resource type="Resource" id="49"]
+script = ExtResource("2")
+atk = "dark"
+def = "psychic"
+mul = 2.0
+
+[sub_resource type="Resource" id="50"]
+script = ExtResource("2")
+atk = "dark"
+def = "spirit"
+mul = 2.0
+
+[sub_resource type="Resource" id="51"]
+script = ExtResource("2")
+atk = "psychic"
+def = "dark"
+mul = 0.5
+
+[sub_resource type="Resource" id="52"]
+script = ExtResource("2")
+atk = "spirit"
+def = "dark"
+mul = 0.5
+
+[sub_resource type="Resource" id="53"]
+script = ExtResource("2")
+atk = "space"
+def = "light"
+mul = 2.0
+
+[sub_resource type="Resource" id="54"]
+script = ExtResource("2")
+atk = "space"
+def = "holy"
+mul = 2.0
+
+[sub_resource type="Resource" id="55"]
+script = ExtResource("2")
+atk = "space"
+def = "fighting"
+mul = 2.0
+
+[sub_resource type="Resource" id="56"]
+script = ExtResource("2")
+atk = "light"
+def = "space"
+mul = 0.5
+
+[sub_resource type="Resource" id="57"]
+script = ExtResource("2")
+atk = "holy"
+def = "space"
+mul = 0.5
+
+[sub_resource type="Resource" id="58"]
+script = ExtResource("2")
+atk = "fighting"
+def = "space"
+mul = 0.5
+
+[sub_resource type="Resource" id="59"]
+script = ExtResource("2")
+atk = "demon"
+def = "spirit"
+mul = 2.0
+
+[sub_resource type="Resource" id="60"]
+script = ExtResource("2")
+atk = "demon"
+def = "psychic"
+mul = 2.0
+
+[sub_resource type="Resource" id="61"]
+script = ExtResource("2")
+atk = "spirit"
+def = "demon"
+mul = 0.5
+
+[sub_resource type="Resource" id="62"]
+script = ExtResource("2")
+atk = "psychic"
+def = "demon"
+mul = 0.5
+
+[sub_resource type="Resource" id="63"]
+script = ExtResource("2")
+atk = "psychic"
+def = "fighting"
+mul = 2.0
+
+[sub_resource type="Resource" id="64"]
+script = ExtResource("2")
+atk = "psychic"
+def = "space"
+mul = 2.0
+
+[sub_resource type="Resource" id="65"]
+script = ExtResource("2")
+atk = "fighting"
+def = "psychic"
+mul = 0.5
+
+[sub_resource type="Resource" id="66"]
+script = ExtResource("2")
+atk = "space"
+def = "psychic"
+mul = 0.5
+
+[sub_resource type="Resource" id="67"]
+script = ExtResource("2")
+atk = "spirit"
+def = "psychic"
+mul = 2.0
+
+[sub_resource type="Resource" id="68"]
+script = ExtResource("2")
+atk = "spirit"
+def = "space"
+mul = 2.0
+
+[sub_resource type="Resource" id="69"]
+script = ExtResource("2")
+atk = "psychic"
+def = "spirit"
+mul = 0.5
+
+[sub_resource type="Resource" id="70"]
+script = ExtResource("2")
+atk = "space"
+def = "spirit"
+mul = 0.5
+
+[sub_resource type="Resource" id="71"]
+script = ExtResource("2")
+atk = "fighting"
+def = "steel"
+mul = 2.0
+
+[sub_resource type="Resource" id="72"]
+script = ExtResource("2")
+atk = "fighting"
+def = "dark"
+mul = 2.0
+
+[sub_resource type="Resource" id="73"]
+script = ExtResource("2")
+atk = "fighting"
+def = "demon"
+mul = 2.0
+
+[sub_resource type="Resource" id="74"]
+script = ExtResource("2")
+atk = "steel"
+def = "fighting"
+mul = 0.5
+
+[sub_resource type="Resource" id="75"]
+script = ExtResource("2")
+atk = "dark"
+def = "fighting"
+mul = 0.5
+
+[sub_resource type="Resource" id="76"]
+script = ExtResource("2")
+atk = "demon"
+def = "fighting"
+mul = 0.5
+
+[sub_resource type="Resource" id="77"]
+script = ExtResource("2")
+atk = "holy"
+def = "demon"
+mul = 2.0
+
+[sub_resource type="Resource" id="78"]
+script = ExtResource("2")
+atk = "holy"
+def = "dark"
+mul = 2.0
+
+[sub_resource type="Resource" id="79"]
+script = ExtResource("2")
+atk = "holy"
+def = "dragon"
+mul = 2.0
+
+[sub_resource type="Resource" id="80"]
+script = ExtResource("2")
+atk = "demon"
+def = "holy"
+mul = 0.5
+
+[sub_resource type="Resource" id="81"]
+script = ExtResource("2")
+atk = "dark"
+def = "holy"
+mul = 0.5
+
+[sub_resource type="Resource" id="82"]
+script = ExtResource("2")
+atk = "dragon"
+def = "holy"
+mul = 0.5
+
+[sub_resource type="Resource" id="83"]
+script = ExtResource("2")
+atk = "dragon"
+def = "fire"
+mul = 2.0
+
+[sub_resource type="Resource" id="84"]
+script = ExtResource("2")
+atk = "dragon"
+def = "water"
+mul = 2.0
+
+[sub_resource type="Resource" id="85"]
+script = ExtResource("2")
+atk = "dragon"
+def = "thunder"
+mul = 2.0
+
+[sub_resource type="Resource" id="86"]
+script = ExtResource("2")
+atk = "dragon"
+def = "wind"
+mul = 2.0
+
+[sub_resource type="Resource" id="87"]
+script = ExtResource("2")
+atk = "fire"
+def = "dragon"
+mul = 0.5
+
+[sub_resource type="Resource" id="88"]
+script = ExtResource("2")
+atk = "water"
+def = "dragon"
+mul = 0.5
+
+[sub_resource type="Resource" id="89"]
+script = ExtResource("2")
+atk = "thunder"
+def = "dragon"
+mul = 0.5
+
+[sub_resource type="Resource" id="90"]
+script = ExtResource("2")
+atk = "wind"
+def = "dragon"
+mul = 0.5
 
 [resource]
 script = ExtResource("1")
@@ -8,4 +549,97 @@ format_id = "prototype_full_open"
 max_turn = 40
 team_size = 3
 level = 50
+selection_deadline_ms = 30000
 max_chain_depth = 32
+combat_type_chart = Array[Resource]([
+SubResource("1"),
+SubResource("2"),
+SubResource("3"),
+SubResource("4"),
+SubResource("5"),
+SubResource("6"),
+SubResource("7"),
+SubResource("8"),
+SubResource("9"),
+SubResource("10"),
+SubResource("11"),
+SubResource("12"),
+SubResource("13"),
+SubResource("14"),
+SubResource("15"),
+SubResource("16"),
+SubResource("17"),
+SubResource("18"),
+SubResource("19"),
+SubResource("20"),
+SubResource("21"),
+SubResource("22"),
+SubResource("23"),
+SubResource("24"),
+SubResource("25"),
+SubResource("26"),
+SubResource("27"),
+SubResource("28"),
+SubResource("29"),
+SubResource("30"),
+SubResource("31"),
+SubResource("32"),
+SubResource("33"),
+SubResource("34"),
+SubResource("35"),
+SubResource("36"),
+SubResource("37"),
+SubResource("38"),
+SubResource("39"),
+SubResource("40"),
+SubResource("41"),
+SubResource("42"),
+SubResource("43"),
+SubResource("44"),
+SubResource("45"),
+SubResource("46"),
+SubResource("47"),
+SubResource("48"),
+SubResource("49"),
+SubResource("50"),
+SubResource("51"),
+SubResource("52"),
+SubResource("53"),
+SubResource("54"),
+SubResource("55"),
+SubResource("56"),
+SubResource("57"),
+SubResource("58"),
+SubResource("59"),
+SubResource("60"),
+SubResource("61"),
+SubResource("62"),
+SubResource("63"),
+SubResource("64"),
+SubResource("65"),
+SubResource("66"),
+SubResource("67"),
+SubResource("68"),
+SubResource("69"),
+SubResource("70"),
+SubResource("71"),
+SubResource("72"),
+SubResource("73"),
+SubResource("74"),
+SubResource("75"),
+SubResource("76"),
+SubResource("77"),
+SubResource("78"),
+SubResource("79"),
+SubResource("80"),
+SubResource("81"),
+SubResource("82"),
+SubResource("83"),
+SubResource("84"),
+SubResource("85"),
+SubResource("86"),
+SubResource("87"),
+SubResource("88"),
+SubResource("89"),
+SubResource("90")
+])

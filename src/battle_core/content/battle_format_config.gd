@@ -7,3 +7,4 @@ class_name BattleFormatConfig
 @export var level: int = 50
 @export var selection_deadline_ms: int = 30000
 @export var max_chain_depth: int = 32
+@export var combat_type_chart: Array[Resource] = []

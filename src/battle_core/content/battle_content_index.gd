@@ -2,6 +2,8 @@ extends RefCounted
 class_name BattleContentIndex
 
 const BattleFormatConfigScript := preload("res://src/battle_core/content/battle_format_config.gd")
+const CombatTypeDefinitionScript := preload("res://src/battle_core/content/combat_type_definition.gd")
+const CombatTypeChartEntryScript := preload("res://src/battle_core/content/combat_type_chart_entry.gd")
 const UnitDefinitionScript := preload("res://src/battle_core/content/unit_definition.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/passive_skill_definition.gd")
@@ -20,6 +22,7 @@ const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_pa
 const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
 
 var battle_formats: Dictionary = {}
+var combat_types: Dictionary = {}
 var units: Dictionary = {}
 var skills: Dictionary = {}
 var passive_skills: Dictionary = {}
@@ -30,6 +33,7 @@ var duplicate_registration_errors: Array[String] = []
 
 func clear() -> void:
     battle_formats.clear()
+    combat_types.clear()
     units.clear()
     skills.clear()
     passive_skills.clear()
@@ -50,6 +54,9 @@ func load_snapshot(content_snapshot_paths: PackedStringArray) -> void:
 func register_resource(resource: Resource) -> void:
     if resource is BattleFormatConfigScript:
         _register_unique_resource(battle_formats, String(resource.format_id), resource, "battle_format")
+        return
+    if resource is CombatTypeDefinitionScript:
+        _register_unique_resource(combat_types, String(resource.id), resource, "combat_type")
         return
     if resource is UnitDefinitionScript:
         _register_unique_resource(units, String(resource.id), resource, "unit")
@@ -97,11 +104,61 @@ func validate_snapshot() -> Array:
         "on_faint",
         "on_kill",
     ])
+    var allowed_chart_multipliers: Array[float] = [2.0, 1.0, 0.5]
     var regular_skill_refs: Dictionary = {}
     var ultimate_skill_refs: Dictionary = {}
 
+    for combat_type_id in combat_types.keys():
+        var combat_type_definition = combat_types[combat_type_id]
+        if String(combat_type_definition.display_name).strip_edges().is_empty():
+            errors.append("combat_type[%s].display_name must not be empty" % combat_type_id)
+
+    for format_id in battle_formats.keys():
+        var format_definition = battle_formats[format_id]
+        var seen_chart_pairs: Dictionary = {}
+        for chart_entry in format_definition.combat_type_chart:
+            if chart_entry == null:
+                errors.append("battle_format[%s].combat_type_chart contains null" % format_id)
+                continue
+            if not chart_entry is CombatTypeChartEntryScript:
+                errors.append("battle_format[%s].combat_type_chart invalid type: %s" % [format_id, chart_entry])
+                continue
+            var attacker_type_id := String(chart_entry.atk).strip_edges()
+            var defender_type_id := String(chart_entry.def).strip_edges()
+            var multiplier := float(chart_entry.mul)
+            if attacker_type_id.is_empty():
+                errors.append("battle_format[%s].combat_type_chart missing atk" % format_id)
+            elif not combat_types.has(attacker_type_id):
+                errors.append("battle_format[%s].combat_type_chart unknown atk: %s" % [format_id, attacker_type_id])
+            if defender_type_id.is_empty():
+                errors.append("battle_format[%s].combat_type_chart missing def" % format_id)
+            elif not combat_types.has(defender_type_id):
+                errors.append("battle_format[%s].combat_type_chart unknown def: %s" % [format_id, defender_type_id])
+            if not allowed_chart_multipliers.has(multiplier):
+                errors.append("battle_format[%s].combat_type_chart invalid mul: %s" % [format_id, multiplier])
+            if not attacker_type_id.is_empty() and not defender_type_id.is_empty():
+                var chart_pair_key := "%s|%s" % [attacker_type_id, defender_type_id]
+                if seen_chart_pairs.has(chart_pair_key):
+                    errors.append("battle_format[%s].combat_type_chart duplicated pair: %s" % [format_id, chart_pair_key])
+                else:
+                    seen_chart_pairs[chart_pair_key] = true
+
     for unit_id in units.keys():
         var unit_definition = units[unit_id]
+        if unit_definition.combat_type_ids.size() > 2:
+            errors.append("unit[%s].combat_type_ids must contain at most 2 entries, got %d" % [unit_id, unit_definition.combat_type_ids.size()])
+        var seen_unit_types: Dictionary = {}
+        for combat_type_id in unit_definition.combat_type_ids:
+            var normalized_type_id := String(combat_type_id).strip_edges()
+            if normalized_type_id.is_empty():
+                errors.append("unit[%s].combat_type_ids must not contain empty entry" % unit_id)
+                continue
+            if seen_unit_types.has(normalized_type_id):
+                errors.append("unit[%s].combat_type_ids duplicated type: %s" % [unit_id, normalized_type_id])
+                continue
+            seen_unit_types[normalized_type_id] = true
+            if not combat_types.has(normalized_type_id):
+                errors.append("unit[%s].combat_type_ids missing combat type: %s" % [unit_id, normalized_type_id])
         if unit_definition.skill_ids.size() != 3:
             errors.append("unit[%s].skill_ids must contain exactly 3 entries, got %d" % [unit_id, unit_definition.skill_ids.size()])
         for skill_id in unit_definition.skill_ids:
@@ -121,6 +178,8 @@ func validate_snapshot() -> Array:
 
     for skill_id in skills.keys():
         var skill_definition = skills[skill_id]
+        if not String(skill_definition.combat_type_id).is_empty() and not combat_types.has(skill_definition.combat_type_id):
+            errors.append("skill[%s].combat_type_id missing combat type: %s" % [skill_id, skill_definition.combat_type_id])
         if not allowed_targets.has(skill_definition.targeting):
             errors.append("skill[%s].targeting invalid: %s" % [skill_id, skill_definition.targeting])
         if not allowed_damage_kinds.has(skill_definition.damage_kind):

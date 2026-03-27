@@ -48,7 +48,7 @@ func execute_effect_event(effect_event, battle_state, content_index) -> void:
     _leave_effect_guard(battle_state)
 
 func execute_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
-    if numeric_payload_handler.execute(payload, effect_definition, effect_event, battle_state):
+    if numeric_payload_handler.execute(payload, effect_definition, effect_event, battle_state, content_index):
         _capture_handler_invalid_code(numeric_payload_handler)
         return
     if state_payload_handler.execute(payload, effect_definition, effect_event, battle_state, content_index):

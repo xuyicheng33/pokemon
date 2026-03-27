@@ -23,12 +23,15 @@ var trigger_batch_runner
 var battle_logger
 var log_event_builder
 var public_snapshot_builder
+var combat_type_service
 
 func initialize_battle(battle_state, content_index, battle_setup) -> void:
     assert(battle_setup != null, "Battle setup is required")
     assert(public_snapshot_builder != null, "BattleInitializer requires public_snapshot_builder")
+    assert(combat_type_service != null, "BattleInitializer requires combat_type_service")
     var format_config = content_index.battle_formats.get(battle_setup.format_id)
     assert(format_config != null, "Missing battle format: %s" % battle_setup.format_id)
+    combat_type_service.build_chart(format_config.combat_type_chart)
     assert(battle_setup.sides.size() == 2, "Current baseline requires exactly 2 sides")
     var setup_errors: Array = content_index.validate_setup(battle_setup)
     assert(setup_errors.is_empty(), "Battle setup validation failed:\n%s" % "\n".join(setup_errors))
@@ -133,6 +136,7 @@ func _build_side_state(side_setup, format_config, content_index):
         unit_state.max_mp = unit_definition.max_mp
         unit_state.current_mp = unit_definition.init_mp
         unit_state.regen_per_turn = unit_definition.regen_per_turn
+        unit_state.combat_type_ids = unit_definition.combat_type_ids.duplicate()
         unit_state.base_attack = unit_definition.base_attack
         unit_state.base_defense = unit_definition.base_defense
         unit_state.base_sp_attack = unit_definition.base_sp_attack

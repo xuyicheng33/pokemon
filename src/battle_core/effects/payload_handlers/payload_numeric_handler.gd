@@ -12,6 +12,7 @@ const ValueChangeScript := preload("res://src/battle_core/contracts/value_change
 var battle_logger
 var log_event_builder
 var damage_service
+var combat_type_service
 var rule_mod_service
 var faint_resolver
 
@@ -24,14 +25,16 @@ func resolve_missing_dependency() -> String:
         return "log_event_builder"
     if damage_service == null:
         return "damage_service"
+    if combat_type_service == null:
+        return "combat_type_service"
     if rule_mod_service == null:
         return "rule_mod_service"
     return ""
 
-func execute(payload, effect_definition, effect_event, battle_state) -> bool:
+func execute(payload, effect_definition, effect_event, battle_state, content_index) -> bool:
     last_invalid_battle_code = null
     if payload is DamagePayloadScript:
-        _apply_damage_payload(payload, effect_definition, effect_event, battle_state)
+        _apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index)
         return true
     if payload is HealPayloadScript:
         _apply_heal_payload(payload, effect_definition, effect_event, battle_state)
@@ -44,15 +47,20 @@ func execute(payload, effect_definition, effect_event, battle_state) -> bool:
         return true
     return false
 
-func _apply_damage_payload(payload, effect_definition, effect_event, battle_state) -> void:
+func _apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
     var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
     if not _is_effect_target_valid(target_unit):
         return
     var amount: int = payload.amount
+    var type_effectiveness: float = 1.0
     if payload.use_formula:
         var actor_unit = battle_state.get_unit(effect_event.owner_id)
         if actor_unit == null:
             return
+        type_effectiveness = combat_type_service.calc_effectiveness(
+            _resolve_chain_skill_type(effect_event, content_index),
+            _resolve_unit_combat_types(target_unit)
+        )
         amount = damage_service.apply_final_mod(
             damage_service.calc_base_damage(
                 battle_state.battle_level,
@@ -60,7 +68,7 @@ func _apply_damage_payload(payload, effect_definition, effect_event, battle_stat
                 actor_unit.base_attack,
                 target_unit.base_defense
             ),
-            rule_mod_service.get_final_multiplier(battle_state, effect_event.owner_id)
+            rule_mod_service.get_final_multiplier(battle_state, effect_event.owner_id) * type_effectiveness
         )
     _apply_hp_change(
         battle_state,
@@ -68,7 +76,8 @@ func _apply_damage_payload(payload, effect_definition, effect_event, battle_stat
         target_unit,
         -max(1, amount),
         EventTypesScript.EFFECT_DAMAGE,
-        payload.payload_type if not payload.payload_type.is_empty() else "damage"
+        payload.payload_type if not payload.payload_type.is_empty() else "damage",
+        type_effectiveness
     )
 
 func _apply_heal_payload(payload, effect_definition, effect_event, battle_state) -> void:
@@ -140,7 +149,16 @@ func _resolve_target_unit(scope: String, effect_event, battle_state):
 func _is_effect_target_valid(target_unit) -> bool:
     return target_unit != null and target_unit.leave_state == LeaveStatesScript.ACTIVE and target_unit.current_hp > 0
 
-func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event_type: String, summary_tag: String) -> void:
+func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event_type: String, summary_tag: String, type_effectiveness: Variant = null) -> void:
+    var is_damage_event := event_type == EventTypesScript.EFFECT_DAMAGE
+    assert(
+        (is_damage_event and type_effectiveness != null) or (not is_damage_event and type_effectiveness == null),
+        "type_effectiveness contract mismatch for event_type=%s" % event_type
+    )
+    assert(
+        type_effectiveness == null or typeof(type_effectiveness) == TYPE_FLOAT,
+        "type_effectiveness must be float or null, got %s" % typeof(type_effectiveness)
+    )
     var before_value: int = target_unit.current_hp
     target_unit.current_hp = clamp(target_unit.current_hp + delta, 0, target_unit.max_hp)
     if before_value == target_unit.current_hp:
@@ -156,12 +174,13 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
             "effect_roll": _resolve_effect_roll(effect_event),
+            "type_effectiveness": type_effectiveness if is_damage_event else null,
             "value_changes": [value_change],
             "payload_summary": "%s %s %+d" % [target_unit.public_id, summary_tag, value_change.delta],
         }
     )
     battle_logger.append_event(log_event)
-    if event_type == EventTypesScript.EFFECT_DAMAGE and faint_resolver != null:
+    if is_damage_event and faint_resolver != null:
         faint_resolver.record_fatal_damage(
             battle_state,
             target_unit.unit_instance_id,
@@ -188,3 +207,24 @@ func _resolve_effect_roll(effect_event) -> Variant:
     if effect_event == null:
         return null
     return effect_event.sort_random_roll
+
+func _resolve_chain_skill_type(effect_event, content_index) -> String:
+    if effect_event == null or effect_event.chain_context == null:
+        return ""
+    var raw_skill_id = effect_event.chain_context.skill_id
+    if raw_skill_id == null or content_index == null:
+        return ""
+    var skill_id := str(raw_skill_id)
+    if skill_id.is_empty():
+        return ""
+    var skill_definition = content_index.skills.get(skill_id, null)
+    if skill_definition == null:
+        return ""
+    if skill_definition.combat_type_id == null:
+        return ""
+    return str(skill_definition.combat_type_id)
+
+func _resolve_unit_combat_types(target_unit) -> PackedStringArray:
+    if target_unit == null or target_unit.combat_type_ids == null:
+        return PackedStringArray()
+    return target_unit.combat_type_ids

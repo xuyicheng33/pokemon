@@ -22,6 +22,7 @@ const StatCalculatorScript := preload("res://src/battle_core/math/stat_calculato
 const MpServiceScript := preload("res://src/battle_core/math/mp_service.gd")
 const HitServiceScript := preload("res://src/battle_core/math/hit_service.gd")
 const DamageServiceScript := preload("res://src/battle_core/math/damage_service.gd")
+const CombatTypeServiceScript := preload("res://src/battle_core/math/combat_type_service.gd")
 const LeaveServiceScript := preload("res://src/battle_core/lifecycle/leave_service.gd")
 const FaintResolverScript := preload("res://src/battle_core/lifecycle/faint_resolver.gd")
 const DefaultReplacementSelectorScript := preload("res://src/battle_core/lifecycle/default_replacement_selector.gd")
@@ -67,6 +68,7 @@ func compose():
     container.mp_service = MpServiceScript.new()
     container.hit_service = HitServiceScript.new()
     container.damage_service = DamageServiceScript.new()
+    container.combat_type_service = CombatTypeServiceScript.new()
     container.leave_service = LeaveServiceScript.new()
     container.faint_resolver = FaintResolverScript.new()
     container.replacement_selector = DefaultReplacementSelectorScript.new()
@@ -103,6 +105,7 @@ func compose():
     container.battle_initializer.battle_logger = container.battle_logger
     container.battle_initializer.log_event_builder = container.log_event_builder
     container.battle_initializer.public_snapshot_builder = container.public_snapshot_builder
+    container.battle_initializer.combat_type_service = container.combat_type_service
     container.action_queue_builder.id_factory = container.id_factory
     container.action_queue_builder.rng_service = container.rng_service
     container.action_queue_builder.stat_calculator = container.stat_calculator
@@ -143,6 +146,7 @@ func compose():
     container.payload_numeric_handler.battle_logger = container.battle_logger
     container.payload_numeric_handler.log_event_builder = container.log_event_builder
     container.payload_numeric_handler.damage_service = container.damage_service
+    container.payload_numeric_handler.combat_type_service = container.combat_type_service
     container.payload_numeric_handler.rule_mod_service = container.rule_mod_service
     container.payload_numeric_handler.faint_resolver = container.faint_resolver
     container.payload_state_handler.battle_logger = container.battle_logger
@@ -159,6 +163,7 @@ func compose():
     container.action_cast_service.mp_service = container.mp_service
     container.action_cast_service.hit_service = container.hit_service
     container.action_cast_service.damage_service = container.damage_service
+    container.action_cast_service.combat_type_service = container.combat_type_service
     container.action_cast_service.stat_calculator = container.stat_calculator
     container.action_cast_service.rule_mod_service = container.rule_mod_service
     container.action_cast_service.target_resolver = container.target_resolver
@@ -237,10 +242,12 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "battle_result_service")
     _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "runtime_guard_service")
     _assert_dependency(container.battle_initializer, "battle_initializer", "trigger_batch_runner")
+    _assert_dependency(container.battle_initializer, "battle_initializer", "combat_type_service")
     _assert_dependency(container.action_cast_service, "action_cast_service", "trigger_batch_runner")
     _assert_dependency(container.action_cast_service, "action_cast_service", "effect_queue_service")
     _assert_dependency(container.action_cast_service, "action_cast_service", "payload_executor")
     _assert_dependency(container.action_cast_service, "action_cast_service", "target_resolver")
+    _assert_dependency(container.action_cast_service, "action_cast_service", "combat_type_service")
     _assert_dependency(container.switch_action_service, "switch_action_service", "leave_service")
     _assert_dependency(container.action_executor, "action_executor", "action_cast_service")
     _assert_dependency(container.action_executor, "action_executor", "switch_action_service")

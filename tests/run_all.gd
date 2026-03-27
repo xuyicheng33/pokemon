@@ -8,6 +8,7 @@ const ActionGuardSuiteScript := preload("res://tests/suites/action_guard_suite.g
 const RuleModSuiteScript := preload("res://tests/suites/rule_mod_suite.gd")
 const ContentLoggingSuiteScript := preload("res://tests/suites/content_logging_suite.gd")
 const ManagerContractSuiteScript := preload("res://tests/suites/manager_contract_suite.gd")
+const CombatTypeSuiteScript := preload("res://tests/suites/combat_type_suite.gd")
 
 var _harness
 
@@ -22,6 +23,7 @@ func _init() -> void:
         RuleModSuiteScript.new(),
         ContentLoggingSuiteScript.new(),
         ManagerContractSuiteScript.new(),
+        CombatTypeSuiteScript.new(),
     ]
     for suite in suites:
         suite.register_tests(self, failures, _harness)

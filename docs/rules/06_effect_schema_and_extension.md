@@ -97,7 +97,22 @@
 5. 若 `on_cast` 链上的前序 payload（含默认动作反伤）让施法者 HP 归 0，本次行动链不提前终止；仍按模块 02 的“行动开始后不回滚”语义继续本次剩余步骤，并在行动结束后进入击倒窗口。
 6. 当前基线的 `remove_effect` 只允许按目标 owner 上的精确 `def_id` 移除单个效果实例；若出现文档未允许的歧义匹配，按 `invalid_battle` 处理。
 
-### 5.1 `rule_mod` payload 约束（最小集）
+### 5.1 damage payload 与 `combat_type` 接口
+
+|场景|规则|
+|---|---|
+|直接技能伤害|使用技能自身 `combat_type_id` 参与克制|
+|`DamagePayload.use_formula = true` 且存在 `chain_context.skill_id`|继承该技能的 `combat_type_id`|
+|非技能链公式伤害|`type_effectiveness = 1.0`|
+|默认动作与反伤|`type_effectiveness = 1.0`|
+
+日志口径：
+
+1. 只有伤害事件写 `type_effectiveness`。
+2. 直接技能伤害与 effect damage 都必须带 `type_effectiveness`。
+3. 非伤害事件该字段固定写 `null`。
+
+### 5.2 `rule_mod` payload 约束（最小集）
 
 |字段|说明|
 |---|---|
@@ -116,7 +131,7 @@
 1. `rule_mod` 必须显式声明 `decrement_on`；否则按 `invalid_battle` 处理。
 2. `skill_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段。
 
-### 5.2 `RuleModInstance` 运行时模型
+### 5.3 `RuleModInstance` 运行时模型
 
 |字段|说明|
 |---|---|
@@ -138,7 +153,7 @@
 3. 同一 hook 内的应用顺序固定为：`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`。
 4. `stacking = none` 时遇到同键（`mod_kind + scope + owner + mod_op`）直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
 
-### 5.3 `rule_mod` 边界冻结（架构强约束）
+### 5.4 `rule_mod` 边界冻结（架构强约束）
 
 |项|规则|
 |---|---|

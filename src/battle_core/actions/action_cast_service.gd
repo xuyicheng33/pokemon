@@ -10,6 +10,7 @@ const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 var mp_service
 var hit_service
 var damage_service
+var combat_type_service
 var stat_calculator
 var rule_mod_service
 var target_resolver
@@ -28,6 +29,8 @@ func resolve_missing_dependency() -> String:
         return "hit_service"
     if damage_service == null:
         return "damage_service"
+    if combat_type_service == null:
+        return "combat_type_service"
     if stat_calculator == null:
         return "stat_calculator"
     if rule_mod_service == null:
@@ -110,14 +113,26 @@ func apply_direct_damage(queued_action, actor, target, skill_definition, battle_
     attack_value = stat_calculator.calc_effective_stat(attack_value, int(actor.stat_stages.get("attack" if damage_kind == ContentSchemaScript.DAMAGE_KIND_PHYSICAL else "sp_attack", 0)))
     defense_value = stat_calculator.calc_effective_stat(defense_value, int(target.stat_stages.get("defense" if damage_kind == ContentSchemaScript.DAMAGE_KIND_PHYSICAL else "sp_defense", 0)))
     var final_multiplier: float = rule_mod_service.get_final_multiplier(battle_state, actor.unit_instance_id)
+    var type_effectiveness: float = combat_type_service.calc_effectiveness(
+        _resolve_skill_combat_type_id(skill_definition),
+        _resolve_unit_combat_types(target)
+    )
     var damage_amount: int = damage_service.apply_final_mod(
         damage_service.calc_base_damage(battle_state.battle_level, power, attack_value, defense_value),
-        final_multiplier
+        final_multiplier * type_effectiveness
     )
     var before_hp: int = target.current_hp
     target.current_hp = clamp(target.current_hp - damage_amount, 0, target.max_hp)
     var value_change = action_log_service.build_value_change(target.unit_instance_id, "hp", before_hp, target.current_hp)
-    var log_event = action_log_service.log_damage(queued_action, battle_state, actor, target, damage_amount, value_change)
+    var log_event = action_log_service.log_damage(
+        queued_action,
+        battle_state,
+        actor,
+        target,
+        damage_amount,
+        value_change,
+        type_effectiveness
+    )
     _record_fatal_damage(
         battle_state,
         target.unit_instance_id,
@@ -199,3 +214,13 @@ func _record_fatal_damage(battle_state, target_unit_id: String, before_hp: int, 
         priority,
         cause_event_step_id
     )
+
+func _resolve_skill_combat_type_id(skill_definition) -> String:
+    if skill_definition == null or skill_definition.combat_type_id == null:
+        return ""
+    return str(skill_definition.combat_type_id)
+
+func _resolve_unit_combat_types(target) -> PackedStringArray:
+    if target == null or target.combat_type_ids == null:
+        return PackedStringArray()
+    return target.combat_type_ids

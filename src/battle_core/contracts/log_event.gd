@@ -31,6 +31,7 @@ var rng_stream_index: int = 0
 var select_deadline_ms: Variant = null
 var select_timeout: Variant = null
 var invalid_battle_code: Variant = null
+var type_effectiveness: Variant = null
 var value_changes: Array = []
 var field_change = null
 var payload_summary: String = ""
@@ -71,6 +72,7 @@ func to_stable_dict() -> Dictionary:
         "select_deadline_ms": select_deadline_ms,
         "select_timeout": select_timeout,
         "invalid_battle_code": invalid_battle_code,
+        "type_effectiveness": type_effectiveness,
         "value_changes": value_change_dicts,
         "field_change": field_change.to_stable_dict() if field_change != null else null,
         "payload_summary": payload_summary,

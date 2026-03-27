@@ -83,8 +83,23 @@
 |`accuracy`|命中率，百分比口径 `0 ~ 100`，默认 `100`|
 |`mp_cost`|MP 消耗|
 |`priority`|优先级；普通技能允许 `-2 ~ +2`，奥义只能是 `+5` 或 `-5`|
+|`combat_type_id`|战斗属性；空串表示无属性技能|
 |`targeting`|`enemy_active_slot / self / field`|
 |`effects_on_cast` 等|见模块 06|
+
+### 4.3 `combat_type` 战斗属性字段
+
+|对象|规则|
+|---|---|
+|单位|`combat_type_ids` 允许 `0..2` 个|
+|技能|`combat_type_id` 允许 `0..1` 个；空串表示无属性|
+|系统边界|`combat_type` 只参与属性克制，不替代 `damage_kind`|
+
+补充规则：
+
+1. `damage_kind = physical / special / none` 仍只决定攻防取值，不决定属性克制。
+2. 单位无属性或技能无属性时，该次伤害的属性倍率固定为 `1.0`。
+3. 当前不做战中改属性；运行时只镜像定义层的 `combat_type_ids`。
 
 ## 5. 默认动作
 
@@ -152,7 +167,7 @@
 
 ### 8.1 基础公式
 
-参考官方骨架，但去掉暴击、随机伤害、属性克制、同属性加成、真伤与护盾。
+参考官方骨架，但去掉暴击、随机伤害、同属性加成、真伤与护盾。
 
 |步骤|公式|
 |---|---|
@@ -176,12 +191,31 @@
 |技能自身倍率|技能描述写清楚时可用|
 |被动持有物倍率|被动持有物可加减伤|
 |field 倍率|当前 field 可按技能描述改伤害|
+|`type_effectiveness`|按 `combat_type_chart` 查表得到的属性克制倍率|
 
 默认：
 
-`final_mod = skill_mod * item_mod * field_mod`
+`final_mod = skill_mod * item_mod * field_mod * type_effectiveness`
 
-未声明时三者都按 `1.0`。
+未声明时各项都按 `1.0`。
+
+### 8.4 属性克制规则
+
+|项|规则|
+|---|---|
+|查表来源|`BattleFormatConfig.combat_type_chart`|
+|表项粒度|只认显式 `(atk, def) -> mul` 条目|
+|缺失 pair|默认 `1.0`|
+|单位双属性|对目标 `combat_type_ids` 逐项查表并连乘|
+|合法倍率|单条表项只允许 `2.0 / 1.0 / 0.5`|
+|STAB|当前不做|
+|免疫|当前不做 `0.0`|
+
+补充规则：
+
+1. 当前不做“反向自动推导”；chart 里写什么就按什么算，没有就是中立。
+2. `DamagePayload.use_formula = true` 且存在 `chain_context.skill_id` 时，也继承该技能的 `combat_type_id` 参与克制。
+3. 默认动作、反伤、非技能链公式伤害一律按 `type_effectiveness = 1.0` 处理。
 
 ## 9. 当前明确不做的伤害机制
 
@@ -191,8 +225,7 @@
 |伤害随机浮动|当前不做|
 |真实伤害|当前不做|
 |护盾吸收|当前不做|
-|属性克制|等属性系统接入后再补|
-|同属性加成|等属性系统接入后再补|
+|同属性加成|当前不做|
 
 ## 10. 伤害边界
 

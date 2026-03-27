@@ -186,7 +186,7 @@ func _test_miss_path(harness) -> Dictionary:
             "command_source": "manual",
             "side_id": "P1",
             "actor_public_id": "P1-A",
-            "skill_id": "sample_whiff",
+            "skill_id": "sample_strike",
         }),
         core.command_builder.build_command({
             "turn_index": 1,
@@ -194,7 +194,7 @@ func _test_miss_path(harness) -> Dictionary:
             "command_source": "manual",
             "side_id": "P2",
             "actor_public_id": "P2-A",
-            "skill_id": "sample_strike",
+            "skill_id": "sample_whiff",
         }),
     ]
     var replay_output = core.replay_runner.run_replay(replay_input)

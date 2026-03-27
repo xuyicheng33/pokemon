@@ -50,12 +50,25 @@ func _test_full_open_public_snapshot_contract(harness) -> Dictionary:
             return harness.fail_result("side snapshot missing bench/team fields")
         if side_snapshot["team_units"].size() != 3:
             return harness.fail_result("team_units should include 3 entries per side")
+        for unit_snapshot in side_snapshot["team_units"]:
+            if typeof(unit_snapshot) != TYPE_DICTIONARY:
+                return harness.fail_result("team unit snapshot should be Dictionary")
+            if typeof(unit_snapshot.get("combat_type_ids", null)) != TYPE_PACKED_STRING_ARRAY:
+                return harness.fail_result("team unit snapshot missing combat_type_ids")
 
     var prebattle_public_teams = init_result.get("prebattle_public_teams", null)
     if typeof(prebattle_public_teams) != TYPE_ARRAY or prebattle_public_teams.size() != 2:
         return harness.fail_result("create_session should expose prebattle_public_teams")
     if prebattle_public_teams != public_snapshot.get("prebattle_public_teams", []):
         return harness.fail_result("prebattle_public_teams should equal snapshot payload")
+    var p1_prebattle_units: Array = prebattle_public_teams[0].get("units", [])
+    if p1_prebattle_units.is_empty():
+        return harness.fail_result("prebattle_public_teams should include unit payloads")
+    var p1_lead_snapshot = p1_prebattle_units[0]
+    if typeof(p1_lead_snapshot.get("combat_type_ids", null)) != TYPE_PACKED_STRING_ARRAY:
+        return harness.fail_result("prebattle unit snapshot missing combat_type_ids")
+    if p1_lead_snapshot["combat_type_ids"] != PackedStringArray(["fire"]):
+        return harness.fail_result("prebattle unit combat_type_ids should expose sample fire typing")
     var snapshot_after_init = manager.get_public_snapshot(session_id)
     if snapshot_after_init.get("prebattle_public_teams", []).size() != 2:
         return harness.fail_result("get_public_snapshot should keep prebattle_public_teams")
@@ -120,7 +133,7 @@ func _test_manager_session_isolation_interleaved_turns(harness) -> Dictionary:
             "command_source": "manual",
             "side_id": "P1",
             "actor_public_id": "P1-A",
-            "skill_id": "sample_whiff",
+            "skill_id": "sample_field_call",
         }),
         manager.build_command({
             "turn_index": 1,
@@ -128,7 +141,7 @@ func _test_manager_session_isolation_interleaved_turns(harness) -> Dictionary:
             "command_source": "manual",
             "side_id": "P2",
             "actor_public_id": "P2-A",
-            "skill_id": "sample_field_call",
+            "skill_id": "sample_whiff",
         }),
     ]
     manager.run_turn(session_b, commands_b)
@@ -321,6 +334,21 @@ func _validate_snapshot_shape(public_snapshot: Dictionary) -> String:
             return "side snapshot must be Dictionary"
         if typeof(side_snapshot.get("team_units", null)) != TYPE_ARRAY:
             return "side snapshot missing team_units"
+        for unit_snapshot in side_snapshot["team_units"]:
+            if typeof(unit_snapshot) != TYPE_DICTIONARY:
+                return "team unit snapshot must be Dictionary"
+            if typeof(unit_snapshot.get("combat_type_ids", null)) != TYPE_PACKED_STRING_ARRAY:
+                return "team unit snapshot missing combat_type_ids"
+    for side_snapshot in public_snapshot["prebattle_public_teams"]:
+        if typeof(side_snapshot) != TYPE_DICTIONARY:
+            return "prebattle side snapshot must be Dictionary"
+        if typeof(side_snapshot.get("units", null)) != TYPE_ARRAY:
+            return "prebattle side snapshot missing units"
+        for unit_snapshot in side_snapshot["units"]:
+            if typeof(unit_snapshot) != TYPE_DICTIONARY:
+                return "prebattle unit snapshot must be Dictionary"
+            if typeof(unit_snapshot.get("combat_type_ids", null)) != TYPE_PACKED_STRING_ARRAY:
+                return "prebattle unit snapshot missing combat_type_ids"
     return ""
 
 func _contains_key_recursive(value, expected_key: String) -> bool:

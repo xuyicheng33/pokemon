@@ -10,6 +10,38 @@
 
 ## 2026-03-27
 
+### 17 属性系统 v1（`combat_type`）落地
+- 目标：一次性落地 `combat_type` 战斗属性系统，包括 schema、内容校验、伤害接入、sample content、日志字段、文档与回归测试。
+- 范围：`content/combat_types/*`、`content/samples/sample_battle_format.tres`、`content/skills/*`、`content/units/*`、`src/battle_core/**/*`、`src/composition/*`、`tests/suites/*`、`tests/run_all.gd`、`README.md`、`docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/records/*`。
+- 验收标准：`combat_type` 资源与显式克制表可加载；直接伤害和公式伤害接入 `type_effectiveness`；公共快照与日志契约补齐；`tests/run_with_gate.sh` 全绿。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|新增 `CombatTypeDefinition / CombatTypeChartEntry / CombatTypeService`|已完成|待提交|
+|BattleFormat / Unit / Skill / UnitState / LogEvent / public snapshot 扩展|已完成|待提交|
+|内容校验追加 `combat_type` 约束|已完成|待提交|
+|直接伤害、公式伤害、默认动作/反伤日志接入 `type_effectiveness`|已完成|待提交|
+|新增 17 个 `combat_type` 资源、3 个 typed sample skill、sample unit 属性与显式 chart|已完成|待提交|
+|新增 `combat_type_suite` 并修正受 sample 槽位调整影响的旧测试|已完成|待提交|
+|README / rules / schema / records 同步|已完成|待提交|
+|闸门回归（`tests/run_with_gate.sh`）|已完成|待提交|
+
+#### 最小可玩性检查清单（本轮）
+- 可启动：`tests/run_with_gate.sh` 可执行完成。
+- 可操作：typed 技能、公式伤害继承属性、默认动作与反伤中立路径都可通过自动化用例验证。
+- 无致命错误：闸门输出无引擎级错误，架构约束检查通过。
+
+#### 回归检查要点（本轮）
+- `combat_type` 与 `damage_kind` 语义独立，`UnitState.combat_type_ids` 仅为运行态镜像。
+- `combat_type_chart` 采用强类型资源条目，缺失 pair 默认 `1.0`，不做反向推导。
+- 伤害日志 `type_effectiveness` 在直接伤害、effect damage、默认动作、反伤路径上都符合口径。
+- 公共快照与 `prebattle_public_teams` 已公开 `combat_type_ids`，且不泄露私有实例 ID。
+
+#### 当前验证结果（2026-03-27）
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
 ### 问题全量修复（规则收口 + payload 拆分 + 测试治理）
 - 目标：一次性修复术语缺口、`on_cast` 自伤语义边界、`PayloadExecutor` 超阈值和生命周期测试膨胀问题，并清理过期审查产物。
 - 范围：`docs/rules/*`、`docs/design/action_execution.md`、`docs/records/tasks.md`、`docs/records/decisions.md`、`src/battle_core/effects/*`、`src/composition/*`、`tests/suites/*`、`tests/run_all.gd`、`tests/check_architecture_constraints.sh`、`_review/full_review_report.md`。

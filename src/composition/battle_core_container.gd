@@ -21,6 +21,7 @@ var stat_calculator
 var mp_service
 var hit_service
 var damage_service
+var combat_type_service
 var leave_service
 var faint_resolver
 var replacement_selector
@@ -52,6 +53,7 @@ func dispose() -> void:
         action_cast_service.mp_service = null
         action_cast_service.hit_service = null
         action_cast_service.damage_service = null
+        action_cast_service.combat_type_service = null
         action_cast_service.stat_calculator = null
         action_cast_service.rule_mod_service = null
         action_cast_service.target_resolver = null
@@ -77,6 +79,7 @@ func dispose() -> void:
         payload_numeric_handler.battle_logger = null
         payload_numeric_handler.log_event_builder = null
         payload_numeric_handler.damage_service = null
+        payload_numeric_handler.combat_type_service = null
         payload_numeric_handler.rule_mod_service = null
         payload_numeric_handler.faint_resolver = null
     if payload_state_handler != null:
@@ -115,6 +118,7 @@ func dispose() -> void:
         battle_initializer.battle_logger = null
         battle_initializer.log_event_builder = null
         battle_initializer.public_snapshot_builder = null
+        battle_initializer.combat_type_service = null
     if turn_loop_controller != null:
         turn_loop_controller.action_queue_builder = null
         turn_loop_controller.action_executor = null
@@ -207,6 +211,7 @@ func dispose() -> void:
     mp_service = null
     hit_service = null
     damage_service = null
+    combat_type_service = null
     leave_service = null
     faint_resolver = null
     replacement_selector = null

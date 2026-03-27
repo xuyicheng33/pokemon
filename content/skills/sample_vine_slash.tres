@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sample_vine_slash"
+display_name = "Vine Slash"
+damage_kind = "physical"
+power = 50
+accuracy = 100
+mp_cost = 15
+priority = 0
+combat_type_id = "wood"
+targeting = "enemy_active_slot"

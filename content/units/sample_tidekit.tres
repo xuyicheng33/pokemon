@@ -15,5 +15,6 @@ base_speed = 80
 max_mp = 100
 init_mp = 65
 regen_per_turn = 15
-skill_ids = PackedStringArray("sample_strike", "sample_whiff", "sample_field_call")
+combat_type_ids = PackedStringArray("water")
+skill_ids = PackedStringArray("sample_strike", "sample_whiff", "sample_tide_surge")
 ultimate_skill_id = "sample_ultimate_burst"

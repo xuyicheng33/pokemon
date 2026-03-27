@@ -9,6 +9,21 @@
 
 ## 2026-03-27
 
+### 196. 战斗属性系统命名统一为 `combat_type`
+- `combat_type` 表示“战斗结算使用的属性”，不等于角色出处设定标签。
+- `damage_kind` 继续只负责物理 / 特殊 / 无伤害分类，不与 `combat_type` 混用。
+- `UnitState.combat_type_ids` 作为运行态只读镜像字段，在初始化时从 `UnitDefinition` 复制；v1 不支持战中改属性。
+
+### 197. `combat_type` 克制表采用强类型显式条目，不做反向推导
+- `BattleFormatConfig.combat_type_chart` 固定使用 `CombatTypeChartEntry` 资源数组，不接受裸 `Array[Dictionary]`。
+- 克制表采取“写什么算什么”的显式策略；未出现的 `(atk, def)` pair 默认 `1.0`。
+- 当前 sample format 已按冻结表完整落盘所有非中立 pair；实现侧不补全反向关系，也不生成隐式默认项。
+
+### 198. v1 属性结算边界固定为“无 STAB、无免疫、伤害日志带 `type_effectiveness`”
+- 单位允许 `0..2` 个 `combat_type`，技能允许 `0..1` 个。
+- 单条 chart entry 只允许 `2.0 / 1.0 / 0.5`；双属性目标按乘法叠加，因此最终结果允许出现 `4.0 / 0.25` 等复合倍率。
+- 直接技能伤害、effect damage、默认动作和反伤都会写入伤害日志的 `type_effectiveness`；非伤害事件统一写 `null`。
+
 ### 192. `on_cast` 阶段自伤致死保持“行动链继续”语义
 - 当施法者在 `on_cast` 链上因默认动作反伤或其他前序 payload 导致 HP 归 0，不提前中断本次行动链。
 - 当前行动仍按既定执行边界走完，击倒窗口在该行动结束后统一处理。

@@ -99,7 +99,7 @@ func log_action_hit(queued_action, battle_state, command, target_instance_id: Va
         }
     ))
 
-func log_damage(queued_action, battle_state, actor, target, damage_amount: int, value_change) -> Variant:
+func log_damage(queued_action, battle_state, actor, target, damage_amount: int, value_change, type_effectiveness: float) -> Variant:
     var log_event = log_event_builder.build_event(
         EventTypesScript.EFFECT_DAMAGE,
         battle_state,
@@ -109,6 +109,7 @@ func log_damage(queued_action, battle_state, actor, target, damage_amount: int, 
             "priority": queued_action.priority,
             "target_slot": queued_action.target_snapshot.target_slot,
             "trigger_name": "on_hit",
+            "type_effectiveness": type_effectiveness,
             "value_changes": [value_change],
             "payload_summary": "%s dealt %d damage to %s" % [actor.public_id, damage_amount, target.public_id],
         }
@@ -126,6 +127,7 @@ func log_recoil(queued_action, battle_state, actor, recoil_amount: int, value_ch
             "target_instance_id": actor.unit_instance_id,
             "priority": queued_action.priority,
             "trigger_name": "recoil",
+            "type_effectiveness": 1.0,
             "value_changes": [value_change],
             "payload_summary": "%s recoil %d" % [actor.public_id, recoil_amount],
         }

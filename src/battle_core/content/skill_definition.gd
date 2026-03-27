@@ -8,6 +8,7 @@ class_name SkillDefinition
 @export var accuracy: int = 100
 @export var mp_cost: int = 0
 @export var priority: int = 0
+@export var combat_type_id: String = ""
 @export var targeting: String = "enemy_active_slot"
 @export var effects_on_cast_ids: PackedStringArray = PackedStringArray()
 @export var effects_on_hit_ids: PackedStringArray = PackedStringArray()
