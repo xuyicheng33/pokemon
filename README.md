@@ -53,6 +53,8 @@ src/
   shared/               # 通用常量与工具
 tests/
   suites/               # 回归测试套件
+    lifecycle_core_suite.gd
+    forced_replace_suite.gd
   run_all.gd            # 测试入口
   run_with_gate.sh      # 测试闸门（断言 + 引擎错误）
 ```
@@ -64,7 +66,7 @@ tests/
 - `commands`：合法性计算、指令构建与校验
 - `turn`：回合编排（`turn_start -> selection -> queue_lock -> execution -> turn_end`）
 - `actions`：单行动执行与目标解析
-- `effects`：触发收集、排序、payload 执行、rule_mod
+- `effects`：触发收集、排序、payload 协调执行、rule_mod
 - `lifecycle`：离场/倒下/补位链
 - `passives`：被动技能、被动持有物、field 接入
 - `logging`：日志构造、回放、确定性校验
@@ -138,11 +140,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 9. 当前代码规模（2026-03-26）
+## 9. 当前代码规模（2026-03-27）
 
-- `src/**/*.gd`：`5628` 行
-- `tests/**/*.gd`：`2716` 行
-- GDScript 合计：`8344` 行
+- `src/**/*.gd`：`5802` 行
+- `tests/**/*.gd`：`2825` 行
+- GDScript 合计：`8627` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

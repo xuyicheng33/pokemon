@@ -51,8 +51,9 @@
 2. 扣 MP
 3. 触发 `on_cast`
 4. 命中判定
-5. 处理命中侧 payload
-6. 触发 `effects_on_hit` 或 `effects_on_miss`
+5. 处理命中侧 payload（命中成功时）
+6. 资源型/超时型默认动作在命中后追加默认反伤
+7. 触发 `effects_on_hit` 或 `effects_on_miss`
 
 ## 4. TargetResolver
 
@@ -71,3 +72,9 @@
 |`miss`|命中失败|
 
 后续 payload 若因前序效果导致目标无效，只跳过该 payload，不回头改写根行动状态。
+
+默认动作补充：
+
+- 默认反伤在命中后执行，固定对施法者造成 `floor(max_hp / 4)`，最少 `1`。
+- 默认反伤日志写 `event_type = effect:damage`、`trigger_name = recoil`。
+- 若施法者因此 HP 归 0，不提前中断当前行动链；击倒窗口在该行动结束后统一处理。

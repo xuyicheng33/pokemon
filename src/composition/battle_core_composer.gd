@@ -30,6 +30,9 @@ const TriggerDispatcherScript := preload("res://src/battle_core/effects/trigger_
 const TriggerBatchRunnerScript := preload("res://src/battle_core/effects/trigger_batch_runner.gd")
 const EffectQueueServiceScript := preload("res://src/battle_core/effects/effect_queue_service.gd")
 const PayloadExecutorScript := preload("res://src/battle_core/effects/payload_executor.gd")
+const PayloadNumericHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_numeric_handler.gd")
+const PayloadStateHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_state_handler.gd")
+const PayloadForcedReplaceHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_forced_replace_handler.gd")
 const EffectInstanceServiceScript := preload("res://src/battle_core/effects/effect_instance_service.gd")
 const EffectInstanceDispatcherScript := preload("res://src/battle_core/effects/effect_instance_dispatcher.gd")
 const RuleModServiceScript := preload("res://src/battle_core/effects/rule_mod_service.gd")
@@ -72,6 +75,9 @@ func compose():
     container.trigger_batch_runner = TriggerBatchRunnerScript.new()
     container.effect_queue_service = EffectQueueServiceScript.new()
     container.payload_executor = PayloadExecutorScript.new()
+    container.payload_numeric_handler = PayloadNumericHandlerScript.new()
+    container.payload_state_handler = PayloadStateHandlerScript.new()
+    container.payload_forced_replace_handler = PayloadForcedReplaceHandlerScript.new()
     container.effect_instance_service = EffectInstanceServiceScript.new()
     container.effect_instance_dispatcher = EffectInstanceDispatcherScript.new()
     container.rule_mod_service = RuleModServiceScript.new()
@@ -134,15 +140,20 @@ func compose():
     container.effect_instance_service.id_factory = container.id_factory
     container.effect_instance_dispatcher.id_factory = container.id_factory
     container.rule_mod_service.id_factory = container.id_factory
-    container.payload_executor.battle_logger = container.battle_logger
-    container.payload_executor.log_event_builder = container.log_event_builder
-    container.payload_executor.id_factory = container.id_factory
-    container.payload_executor.effect_instance_service = container.effect_instance_service
-    container.payload_executor.rule_mod_service = container.rule_mod_service
-    container.payload_executor.replacement_service = container.replacement_service
-    container.payload_executor.damage_service = container.damage_service
-    container.payload_executor.stat_calculator = container.stat_calculator
-    container.payload_executor.faint_resolver = container.faint_resolver
+    container.payload_numeric_handler.battle_logger = container.battle_logger
+    container.payload_numeric_handler.log_event_builder = container.log_event_builder
+    container.payload_numeric_handler.damage_service = container.damage_service
+    container.payload_numeric_handler.rule_mod_service = container.rule_mod_service
+    container.payload_numeric_handler.faint_resolver = container.faint_resolver
+    container.payload_state_handler.battle_logger = container.battle_logger
+    container.payload_state_handler.log_event_builder = container.log_event_builder
+    container.payload_state_handler.id_factory = container.id_factory
+    container.payload_state_handler.effect_instance_service = container.effect_instance_service
+    container.payload_state_handler.rule_mod_service = container.rule_mod_service
+    container.payload_forced_replace_handler.replacement_service = container.replacement_service
+    container.payload_executor.numeric_payload_handler = container.payload_numeric_handler
+    container.payload_executor.state_payload_handler = container.payload_state_handler
+    container.payload_executor.forced_replace_payload_handler = container.payload_forced_replace_handler
     container.action_log_service.battle_logger = container.battle_logger
     container.action_log_service.log_event_builder = container.log_event_builder
     container.action_cast_service.mp_service = container.mp_service
@@ -237,7 +248,9 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.faint_resolver, "faint_resolver", "trigger_batch_runner")
     _assert_dependency(container.faint_resolver, "faint_resolver", "effect_instance_dispatcher")
     _assert_dependency(container.replacement_service, "replacement_service", "trigger_batch_runner")
-    _assert_dependency(container.payload_executor, "payload_executor", "replacement_service")
+    _assert_dependency(container.payload_executor, "payload_executor", "numeric_payload_handler")
+    _assert_dependency(container.payload_executor, "payload_executor", "state_payload_handler")
+    _assert_dependency(container.payload_executor, "payload_executor", "forced_replace_payload_handler")
 
 func _assert_dependency(owner, owner_name: String, dependency_name: String) -> void:
     assert(owner != null, "Composer missing owner: %s" % owner_name)

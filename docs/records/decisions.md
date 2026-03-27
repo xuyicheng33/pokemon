@@ -7,6 +7,28 @@
 
 - `docs/records/archive/decisions_pre_v0.6.3.md`
 
+## 2026-03-27
+
+### 192. `on_cast` 阶段自伤致死保持“行动链继续”语义
+- 当施法者在 `on_cast` 链上因默认动作反伤或其他前序 payload 导致 HP 归 0，不提前中断本次行动链。
+- 当前行动仍按既定执行边界走完，击倒窗口在该行动结束后统一处理。
+- 该语义与现有执行实现保持一致，避免引入中途回滚分支。
+
+### 193. `PayloadExecutor` 拆为子处理器并恢复阈值治理
+- `payload_executor` 收敛为守卫 + 分发协调器，按 numeric/state/forced_replace 三类下放到子处理器。
+- 保持现有日志与错误码语义，不改对外 facade 契约。
+- 拆分后移除 `payload_executor` 的超阈值临时豁免，恢复常规架构闸门约束。
+
+### 194. 生命周期测试按子域拆分
+- 原 `lifecycle_replace_suite` 拆分为“生命周期链”和“forced_replace 链”两个 suite。
+- `tests/run_all.gd` 直接注册两个 suite，原有测试名保持不变，确保回归可追溯。
+- 同轮补充 `on_cast` 自伤致死语义回归用例，覆盖“行动链继续 + 行动后击倒窗口”的关键边界。
+
+### 195. 本轮收尾状态（规则/实现/闸门）
+- `_review/full_review_report.md` 已删除，不再作为现行实现依据。
+- 架构闸门中 `payload_executor` 超阈值临时豁免已移除，恢复常规阈值治理。
+- `tests/run_with_gate.sh` 已通过，确认本轮改动在断言、引擎日志和架构约束上均无回归。
+
 ## 2026-03-26
 
 ### 186. Battle Core 对外入口切换为 Manager + Session 显式生命周期

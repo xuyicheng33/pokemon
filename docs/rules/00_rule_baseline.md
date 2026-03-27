@@ -45,6 +45,8 @@
 |方 `side`|玩家方或敌方|
 |在场位 `active_slot`|当前 1v1 场上的唯一位置|
 |后备位 `bench`|未在场但仍可上场的单位列表|
+|单位模板 ID `unit_id`|内容层单位定义 ID（`UnitDefinition.id`），用于队伍构筑与资源引用|
+|单位实例 ID `unit_instance_id`|运行时单位实例 ID，仅在核心内部与完整日志链路中使用，不对外公开|
 |行动 `action`|本回合一次合法进入行动队列的指令|
 |效果 `effect`|由技能、奥义、被动、持有物、field 触发的结算单元|
 |公开信息 `public info`|玩家和 AI 都允许读取的信息|

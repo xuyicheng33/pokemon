@@ -29,6 +29,9 @@ var trigger_dispatcher
 var trigger_batch_runner
 var effect_queue_service
 var payload_executor
+var payload_numeric_handler
+var payload_state_handler
+var payload_forced_replace_handler
 var effect_instance_service
 var effect_instance_dispatcher
 var rule_mod_service
@@ -67,15 +70,23 @@ func dispose() -> void:
         action_log_service.battle_logger = null
         action_log_service.log_event_builder = null
     if payload_executor != null:
-        payload_executor.battle_logger = null
-        payload_executor.log_event_builder = null
-        payload_executor.id_factory = null
-        payload_executor.effect_instance_service = null
-        payload_executor.rule_mod_service = null
-        payload_executor.replacement_service = null
-        payload_executor.damage_service = null
-        payload_executor.stat_calculator = null
-        payload_executor.faint_resolver = null
+        payload_executor.numeric_payload_handler = null
+        payload_executor.state_payload_handler = null
+        payload_executor.forced_replace_payload_handler = null
+    if payload_numeric_handler != null:
+        payload_numeric_handler.battle_logger = null
+        payload_numeric_handler.log_event_builder = null
+        payload_numeric_handler.damage_service = null
+        payload_numeric_handler.rule_mod_service = null
+        payload_numeric_handler.faint_resolver = null
+    if payload_state_handler != null:
+        payload_state_handler.battle_logger = null
+        payload_state_handler.log_event_builder = null
+        payload_state_handler.id_factory = null
+        payload_state_handler.effect_instance_service = null
+        payload_state_handler.rule_mod_service = null
+    if payload_forced_replace_handler != null:
+        payload_forced_replace_handler.replacement_service = null
     if faint_resolver != null:
         faint_resolver.leave_service = null
         faint_resolver.replacement_service = null
@@ -204,6 +215,9 @@ func dispose() -> void:
     trigger_batch_runner = null
     effect_queue_service = null
     payload_executor = null
+    payload_numeric_handler = null
+    payload_state_handler = null
+    payload_forced_replace_handler = null
     effect_instance_service = null
     effect_instance_dispatcher = null
     rule_mod_service = null

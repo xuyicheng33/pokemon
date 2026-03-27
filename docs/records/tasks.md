@@ -8,6 +8,37 @@
 
 当前生效规则以 `docs/rules/` 为准。
 
+## 2026-03-27
+
+### 问题全量修复（规则收口 + payload 拆分 + 测试治理）
+- 目标：一次性修复术语缺口、`on_cast` 自伤语义边界、`PayloadExecutor` 超阈值和生命周期测试膨胀问题，并清理过期审查产物。
+- 范围：`docs/rules/*`、`docs/design/action_execution.md`、`docs/records/tasks.md`、`docs/records/decisions.md`、`src/battle_core/effects/*`、`src/composition/*`、`tests/suites/*`、`tests/run_all.gd`、`tests/check_architecture_constraints.sh`、`_review/full_review_report.md`。
+- 验收标准：文档语义无空白；`payload_executor.gd` 降到阈值内并移除对应 allowlist；生命周期 suite 拆分完成且新增 `on_cast` 自伤回归；`tests/run_with_gate.sh` 全绿。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|术语与 `on_cast` 自伤语义文档收口|已完成|待提交|
+|`PayloadExecutor` 子处理器拆分 + 组合根接线|已完成|待提交|
+|生命周期测试拆分 + 新增回归用例|已完成|待提交|
+|删除 `_review/full_review_report.md`|已完成|待提交|
+|闸门回归（`tests/run_with_gate.sh`）|已完成|待提交|
+
+#### 最小可玩性检查清单（本轮）
+- 可启动：`tests/run_with_gate.sh` 可执行完成。
+- 可操作：默认动作反伤、`on_cast` 链与击倒窗口语义可通过自动化用例验证。
+- 无致命错误：闸门输出无引擎级错误，架构约束检查通过。
+
+#### 回归检查要点（本轮）
+- `unit_id` 与 `unit_instance_id` 术语边界在规则总则中明确。
+- `on_cast` 自伤致死后，行动链继续到本次行动结束，再进入击倒窗口。
+- payload 各类型日志字段语义保持（`trigger_name / cause_event_id / payload_summary`）。
+- `forced_replace` 成功/非法路径与既有行为一致。
+
+#### 当前验证结果（2026-03-27）
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
 ## 2026-03-26
 
 ### 审查报告复核与文档纠偏（action 字段 + README 目录示例）

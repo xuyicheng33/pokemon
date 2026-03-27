@@ -2,7 +2,8 @@ extends SceneTree
 
 const BattleCoreTestHarnessScript := preload("res://tests/support/battle_core_test_harness.gd")
 const ReplayTurnSuiteScript := preload("res://tests/suites/replay_turn_suite.gd")
-const LifecycleReplaceSuiteScript := preload("res://tests/suites/lifecycle_replace_suite.gd")
+const LifecycleCoreSuiteScript := preload("res://tests/suites/lifecycle_core_suite.gd")
+const ForcedReplaceSuiteScript := preload("res://tests/suites/forced_replace_suite.gd")
 const ActionGuardSuiteScript := preload("res://tests/suites/action_guard_suite.gd")
 const RuleModSuiteScript := preload("res://tests/suites/rule_mod_suite.gd")
 const ContentLoggingSuiteScript := preload("res://tests/suites/content_logging_suite.gd")
@@ -15,7 +16,8 @@ func _init() -> void:
     _harness = BattleCoreTestHarnessScript.new()
     var suites: Array = [
         ReplayTurnSuiteScript.new(),
-        LifecycleReplaceSuiteScript.new(),
+        LifecycleCoreSuiteScript.new(),
+        ForcedReplaceSuiteScript.new(),
         ActionGuardSuiteScript.new(),
         RuleModSuiteScript.new(),
         ContentLoggingSuiteScript.new(),
