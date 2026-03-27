@@ -22,11 +22,11 @@
 |`command_type`|`String`|`skill / switch / ultimate / resource_forced_default / timeout_default / surrender`|
 |`command_source`|`String`|`manual / ai / resource_auto / timeout_auto`|
 |`side_id`|`String`|下达指令的 side|
-|`actor_id`|`String`|行动者实例 ID|
-|`actor_public_id`|`String`|行动者公开 ID（回放/外层输入可用）|
+|`actor_id`|`String`|行动者运行时 `unit_instance_id`|
+|`actor_public_id`|`String`|行动者公开 ID（回放/外层输入推荐使用）|
 |`skill_id`|`String`|技能或奥义 ID，非适用为 `""`|
-|`target_unit_id`|`String`|换人目标，非适用为 `""`|
-|`target_public_id`|`String`|目标公开 ID，非适用为 `""`|
+|`target_unit_id`|`String`|换人目标的运行时 `unit_instance_id`，非适用为 `""`|
+|`target_public_id`|`String`|目标公开 ID（外层输入可用），非适用为 `""`|
 |`target_slot`|`String`|目标槽位，非适用为 `""`|
 
 ### 2.2 LegalActionSet
@@ -65,6 +65,7 @@
 - `timeout_default` 只能由回合控制器自动生成。
 - `resource_forced_default` 只能由合法性服务产出，不接受外部伪造。
 - `surrender` 立即结束，不进入行动队列。
+- 外层输入与回放默认优先提交 `actor_public_id / target_public_id`；`CommandValidator` 在选择阶段统一映射到运行时 `actor_id / target_unit_id`。
 
 ## 5. 非目标
 

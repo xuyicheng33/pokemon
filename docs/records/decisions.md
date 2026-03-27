@@ -19,6 +19,11 @@
 - `UnitState.combat_type_ids` 是运行态真相的一部分，不允许只出现在代码和 README，遗漏在 runtime 设计文档里。
 - 测试目录文档应同时体现当前已存在的 `suites / support` 与预留目录，避免目录规范再次落后于仓库事实。
 
+### 203. 输入层、公开层与运行时层的单位 ID 口径必须分层
+- `unit_id` 继续专指内容层 `UnitDefinition.id`，只用于队伍构筑和资源引用，不再拿来描述换人目标或补位候选。
+- 外层输入、公开快照与玩家可见目标固定使用 `public_id`；当前 `Command` 推荐由 `actor_public_id / target_public_id` 进入。
+- 核心内部的手动换人固化目标、合法 bench 列表和 `ReplacementSelector` 返回值一律使用运行时 `unit_instance_id`。
+
 ### 199. 摘要型文档必须同步已落地的 `combat_type` 事实
 - `docs/rules/00_rule_baseline.md` 与 `docs/rules/player_quick_start.md` 可以做摘要，但不能继续把已上线机制写成“下一阶段再接入”。
 - 当前摘要层固定口径为：属性克制已接入；STAB 不做；属性免疫不做。
