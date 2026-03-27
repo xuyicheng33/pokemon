@@ -79,12 +79,16 @@
 
 当前核心 facade 最小职责：
 
-- `initialize_battle`
+- `create_session`
 - `get_legal_actions`
 - `build_command`
 - `run_turn`
+- `get_public_snapshot`
+- `close_session`
 - `run_replay`
-- `build_public_snapshot`
+- `active_session_count`
+- `dispose`
+- `resolve_missing_dependency`
 
 输出契约分离：
 

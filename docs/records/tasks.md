@@ -10,6 +10,30 @@
 
 ## 2026-03-27
 
+### 审查问题分批收口（设计文档同步 + 术语统一 + 公式伤害契约）
+- 目标：按复核后的真实问题分三批收口设计文档、规则术语与 `DamagePayload` 公式伤害契约，保证 README / rules / design / code / tests 五层口径一致。
+- 范围：`README.md`、`docs/design/*`、`docs/rules/*`、`docs/records/*`、`src/battle_core/**/*`、`tests/suites/*`；按批次逐步提交。
+- 验收标准：design 文档对齐当前 manager facade 与 `combat_type` 运行态；换人/补位目标 ID 术语无歧义；`DamagePayload` 公式伤害具备明确 `damage_kind` 契约与回归覆盖；`tests/run_with_gate.sh` 全绿。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|第一批：同步 facade、目录与 runtime 文档事实|已完成|待提交|
+|第二批：统一换人/补位目标 ID 术语|进行中|待提交|
+|第三批：补 `DamagePayload` 公式伤害契约、实现与测试|未开始|待提交|
+
+#### 最小可玩性检查清单（本计划）
+- 可启动：每批提交前都能独立完成本批相关验证。
+- 可操作：外围接入、规则阅读与属性系统扩展都能直接映射到当前代码。
+- 无致命错误：最终以 `tests/run_with_gate.sh` 全绿为准。
+
+#### 回归检查要点（本计划）
+- design 文档的 facade 入口必须与 `BattleCoreManager` 当前公开 API 一致。
+- `combat_type` 必须同时出现在内容目录说明与运行态模型说明中。
+- 外部输入、手动换人和系统补位的目标 ID 术语不能混用模板 ID 与实例 ID。
+- `DamagePayload.use_formula` 的 `damage_kind`、阶段修正与属性继承规则必须有文档和测试双重约束。
+
 ### 审查报告复核与文档收口（`combat_type` + 代码规模）
 - 目标：复核本轮外部审查报告，只修复仓库中已确认属实的文档偏差，并把复核结果写入记录。
 - 范围：`README.md`、`docs/rules/00_rule_baseline.md`、`docs/rules/player_quick_start.md`、`docs/design/combat_math.md`、`docs/records/tasks.md`、`docs/records/decisions.md`；不改运行时代码。

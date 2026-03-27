@@ -8,6 +8,7 @@
 /
   content/
     battle_formats/
+    combat_types/
     units/
     skills/
     passive_skills/
@@ -39,6 +40,8 @@
     composition/
     shared/
   tests/
+    suites/
+    support/
     fixtures/
     helpers/
     replay_cases/
@@ -50,6 +53,7 @@
 |目录|职责|
 |---|---|
 |`content/`|战斗规则资源定义与最小样例|
+|`content/combat_types`|战斗属性定义资源|
 |`docs/design/`|工程实现方案文档|
 |`docs/rules/`|规则权威文档|
 |`docs/records/`|任务与决策记录|
@@ -62,9 +66,11 @@
 |`src/shared`|无业务依赖的通用工具和常量|
 |`scenes/boot`|应用启动入口|
 |`scenes/sandbox`|战斗骨架调试场景|
+|`tests/suites`|业务回归测试套件|
+|`tests/support`|测试 harness 与公共构造器|
 |`tests/fixtures`|回放/样例输入|
-|`tests/helpers`|测试辅助脚本|
-|`tests/replay_cases`|deterministic 回放用例说明|
+|`tests/helpers`|预留的测试辅助脚本目录|
+|`tests/replay_cases`|预留的 deterministic 回放用例说明目录|
 |`assets/`|美术、音频、UI 静态资源|
 
 ## 3. 命名规范

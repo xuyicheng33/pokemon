@@ -73,6 +73,7 @@
 |`max_mp`|`int`|最大 MP|
 |`current_mp`|`int`|当前 MP|
 |`regen_per_turn`|`int`|每回合 MP 回复基值|
+|`combat_type_ids`|`PackedStringArray`|运行态战斗属性镜像，初始化时从 `UnitDefinition` 复制|
 |`base_attack`|`int`|基础攻击|
 |`base_defense`|`int`|基础防御|
 |`base_sp_attack`|`int`|基础特攻|

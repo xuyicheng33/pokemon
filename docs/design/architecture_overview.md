@@ -93,11 +93,24 @@
 
 ## 8. Facade 稳定入口
 
-`battle_core` 对外围公开稳定 facade，当前最小接口为：
+`battle_core` 对外围公开稳定 facade 的当前实现是 `BattleCoreManager`。
 
-- `initialize_battle`
+对外围稳定开放的最小接口为：
+
+- `create_session`
 - `get_legal_actions`
 - `build_command`
 - `run_turn`
+- `get_public_snapshot`
+- `close_session`
 - `run_replay`
-- `build_public_snapshot`
+
+管理器级辅助接口：
+
+- `active_session_count`
+- `dispose`
+- `resolve_missing_dependency`
+
+补充说明：
+
+- `initialize_battle` 与 `build_public_snapshot` 仍然存在于核心内部服务图中，但属于 `composition + facades` 内部装配细节，不作为外围稳定入口。

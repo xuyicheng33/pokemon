@@ -9,6 +9,16 @@
 
 ## 2026-03-27
 
+### 201. `BattleCoreManager` session API 是当前唯一稳定 facade 口径
+- 对外围公开的稳定入口固定为 `create_session / get_legal_actions / build_command / run_turn / get_public_snapshot / close_session / run_replay`。
+- `active_session_count / dispose / resolve_missing_dependency` 视为管理器级辅助接口，也属于当前 README 口径的一部分。
+- `battle_initializer`、`public_snapshot_builder` 等低层服务虽然仍存在，但只属于核心内部装配细节，不再在 design 文档中冒充外围 facade。
+
+### 202. `combat_type` 必须在目录与运行时模型文档中作为正式要素出现
+- `content/combat_types/` 不是样例侧目录，而是当前正式内容层资源目录。
+- `UnitState.combat_type_ids` 是运行态真相的一部分，不允许只出现在代码和 README，遗漏在 runtime 设计文档里。
+- 测试目录文档应同时体现当前已存在的 `suites / support` 与预留目录，避免目录规范再次落后于仓库事实。
+
 ### 199. 摘要型文档必须同步已落地的 `combat_type` 事实
 - `docs/rules/00_rule_baseline.md` 与 `docs/rules/player_quick_start.md` 可以做摘要，但不能继续把已上线机制写成“下一阶段再接入”。
 - 当前摘要层固定口径为：属性克制已接入；STAB 不做；属性免疫不做。
