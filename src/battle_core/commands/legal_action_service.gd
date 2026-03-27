@@ -15,23 +15,39 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     assert(unit_definition != null, "Missing unit definition: %s" % actor.definition_id)
     var legal_action_set = LegalActionSetScript.new()
     legal_action_set.actor_id = actor.unit_instance_id
+    var has_non_mp_blocked_option: bool = false
+    var has_any_skill_or_ultimate_option: bool = false
     for skill_id in unit_definition.skill_ids:
         var skill_definition = content_index.skills.get(skill_id)
-        if skill_definition != null \
-        and actor.current_mp >= skill_definition.mp_cost \
-        and _is_skill_legal_with_rule_mod(battle_state, actor.unit_instance_id, skill_id):
+        if skill_definition == null:
+            continue
+        var can_pay_mp: bool = actor.current_mp >= skill_definition.mp_cost
+        var allowed_by_rule_mod: bool = _is_skill_legal_with_rule_mod(battle_state, actor.unit_instance_id, skill_id)
+        if can_pay_mp and allowed_by_rule_mod:
             legal_action_set.legal_skill_ids.append(skill_id)
+            has_any_skill_or_ultimate_option = true
+            continue
+        if not allowed_by_rule_mod:
+            has_non_mp_blocked_option = true
     if not unit_definition.ultimate_skill_id.is_empty():
         var ultimate_definition = content_index.skills.get(unit_definition.ultimate_skill_id)
-        if ultimate_definition != null \
-        and actor.current_mp >= ultimate_definition.mp_cost \
-        and _is_skill_legal_with_rule_mod(battle_state, actor.unit_instance_id, unit_definition.ultimate_skill_id):
-            legal_action_set.legal_ultimate_ids.append(unit_definition.ultimate_skill_id)
+        if ultimate_definition != null:
+            var can_pay_ultimate_mp: bool = actor.current_mp >= ultimate_definition.mp_cost
+            var ultimate_allowed_by_rule_mod: bool = _is_skill_legal_with_rule_mod(battle_state, actor.unit_instance_id, unit_definition.ultimate_skill_id)
+            if can_pay_ultimate_mp and ultimate_allowed_by_rule_mod:
+                has_any_skill_or_ultimate_option = true
+                legal_action_set.legal_ultimate_ids.append(unit_definition.ultimate_skill_id)
+            elif not ultimate_allowed_by_rule_mod:
+                has_non_mp_blocked_option = true
     for bench_unit_id in side_state.bench_order:
         var bench_unit = battle_state.get_unit(bench_unit_id)
         if bench_unit != null and bench_unit.current_hp > 0:
             legal_action_set.legal_switch_target_ids.append(bench_unit_id)
-    if legal_action_set.legal_skill_ids.is_empty() \
+    var has_legal_switch: bool = not legal_action_set.legal_switch_target_ids.is_empty()
+    var has_any_legal_manual_option: bool = has_any_skill_or_ultimate_option or has_legal_switch
+    legal_action_set.wait_allowed = has_any_legal_manual_option or has_non_mp_blocked_option
+    if not legal_action_set.wait_allowed \
+    and legal_action_set.legal_skill_ids.is_empty() \
     and legal_action_set.legal_switch_target_ids.is_empty() \
     and legal_action_set.legal_ultimate_ids.is_empty():
         legal_action_set.forced_command_type = CommandTypesScript.RESOURCE_FORCED_DEFAULT

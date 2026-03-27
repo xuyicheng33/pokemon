@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sukuna_kai"
+display_name = "解"
+damage_kind = "physical"
+power = 42
+accuracy = 100
+mp_cost = 10
+priority = 1
+combat_type_id = ""
+power_bonus_source = ""
+targeting = "enemy_active_slot"

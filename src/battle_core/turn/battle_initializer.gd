@@ -13,12 +13,7 @@ const ChainContextScript := preload("res://src/battle_core/contracts/chain_conte
 var id_factory
 var rng_service
 var faint_resolver
-var passive_skill_service
-var passive_item_service
 var field_service
-var effect_instance_dispatcher
-var effect_queue_service
-var payload_executor
 var trigger_batch_runner
 var battle_logger
 var log_event_builder
@@ -50,6 +45,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     battle_state.sides.clear()
     battle_state.fatal_damage_records_by_target.clear()
     battle_state.field_rule_mod_instances.clear()
+    battle_state.last_matchup_signature = ""
     for side_setup in battle_setup.sides:
         var side_state = _build_side_state(side_setup, format_config, content_index)
         battle_state.sides.append(side_state)
@@ -88,10 +84,14 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     if on_enter_faint_invalid_code != null:
         _terminate_invalid_battle(battle_state, str(on_enter_faint_invalid_code))
         return
+    var matchup_invalid_code = _execute_matchup_changed_if_needed(battle_state, content_index)
+    if matchup_invalid_code != null:
+        _terminate_invalid_battle(battle_state, str(matchup_invalid_code))
+        return
     if _resolve_startup_victory(battle_state):
         return
 
-    battle_state.chain_context = _build_battle_init_chain()
+    battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, "battle_init")
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.SYSTEM_BATTLE_INIT,
         battle_state,
@@ -175,6 +175,17 @@ func _collect_active_unit_ids(battle_state) -> Array:
             active_ids.append(active_unit.unit_instance_id)
     return active_ids
 
+func _execute_matchup_changed_if_needed(battle_state, content_index):
+    var signature: String = field_service.build_matchup_signature(battle_state)
+    if signature.is_empty() or signature == battle_state.last_matchup_signature:
+        return null
+    var owner_unit_ids: Array = _collect_active_unit_ids(battle_state)
+    var invalid_code = _execute_trigger_batch("on_matchup_changed", battle_state, content_index, owner_unit_ids)
+    if invalid_code != null:
+        return invalid_code
+    battle_state.last_matchup_signature = signature
+    return null
+
 func _resolve_startup_victory(battle_state) -> bool:
     var alive_side_ids: Array = []
     for side_state in battle_state.sides:
@@ -224,9 +235,6 @@ func _terminate_invalid_battle(battle_state, invalid_code: String) -> void:
             "payload_summary": "invalid battle: %s" % invalid_code,
         }
     ))
-
-func _build_battle_init_chain():
-    return _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, "battle_init")
 
 func _build_system_chain(command_type: String, chain_origin: String):
     var chain_context = ChainContextScript.new()

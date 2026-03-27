@@ -87,6 +87,12 @@ func _apply_damage_payload(payload, effect_definition, effect_event, battle_stat
             ),
             rule_mod_service.get_final_multiplier(battle_state, effect_event.owner_id) * type_effectiveness
         )
+    elif not String(payload.combat_type_id).is_empty():
+        type_effectiveness = combat_type_service.calc_effectiveness(
+            String(payload.combat_type_id),
+            _resolve_unit_combat_types(target_unit)
+        )
+        amount = damage_service.apply_final_mod(max(1, amount), type_effectiveness)
     _apply_hp_change(
         battle_state,
         effect_event,
@@ -101,7 +107,10 @@ func _apply_heal_payload(payload, effect_definition, effect_event, battle_state)
     var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
     if not _is_effect_target_valid(target_unit):
         return
-    _apply_hp_change(battle_state, effect_event, target_unit, payload.amount, EventTypesScript.EFFECT_HEAL, "heal")
+    var resolved_amount: int = int(payload.amount)
+    if bool(payload.use_percent):
+        resolved_amount = max(1, int(floor(float(target_unit.max_hp) * float(payload.percent) / 100.0)))
+    _apply_hp_change(battle_state, effect_event, target_unit, resolved_amount, EventTypesScript.EFFECT_HEAL, "heal")
 
 func _apply_resource_mod_payload(payload, effect_definition, effect_event, battle_state) -> void:
     var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)

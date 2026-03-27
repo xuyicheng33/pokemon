@@ -111,14 +111,13 @@
 2. 没有合法手动换人。
 3. 奥义非法或当前无可用奥义。
 
-### 5.2 超时型默认动作触发条件
+### 5.2 超时替代动作触发条件
 
-当选择阶段超时且该方尚未提交合法指令时，系统自动改用 `timeout_default`：
+当选择阶段超时且该方尚未提交合法指令时：
 
-1. 不再回头检查“是否存在合法换人”。
-2. 直接替代为默认动作。
-3. 必须写入超时日志字段。
-4. 若该方在本回合已不存在任何合法主动方案（触发 5.1 条件），则优先改用 `resource_forced_default`，不记录为 `timeout_default`。
+1. 若满足 5.1（强制 Struggle）则自动改用 `resource_forced_default`。
+2. 否则自动改用 `wait`，并写入 `command_source = timeout_auto`。
+3. `select_timeout` 由 `command_source == timeout_auto` 判定，不依赖动作类型名。
 
 ### 5.3 默认动作定义
 
@@ -142,6 +141,7 @@
 |判定方式|抽 `hit_roll`；若 `hit_roll < hit_rate` 则命中|
 |`accuracy = 100`|视为必中，不需要再判 miss|
 |闪避率|当前没有该属性|
+|field 命中覆盖|若当前 field 的 `creator_accuracy_override >= 0`，且行动者正是该 field creator，则本次命中直接改用这个覆盖值|
 
 补充规则：
 

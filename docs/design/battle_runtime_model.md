@@ -48,6 +48,7 @@
 |`rng_stream_index`|`int`|当前随机消费序号快照|
 |`fatal_damage_records_by_target`|`Dictionary`|目标维度的致命伤害归因记录（击倒链读取）|
 |`field_rule_mod_instances`|`Array[RuleModInstance]`|挂载在全场作用域的规则修正实例|
+|`last_matchup_signature`|`String`|最近一次已结算 `on_matchup_changed` 的对位签名，用于去重|
 
 ## 5. SideState
 

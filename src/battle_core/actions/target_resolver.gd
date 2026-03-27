@@ -17,5 +17,7 @@ func resolve_target(queued_action, battle_state):
             return battle_state.get_unit(queued_action.command.actor_id)
         ContentSchemaScript.TARGET_FIELD:
             return battle_state.field_state
+        ContentSchemaScript.TARGET_NONE:
+            return null
         _:
             return null

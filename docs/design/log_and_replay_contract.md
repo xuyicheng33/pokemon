@@ -25,9 +25,9 @@
 |`action_id`|根行动 `action_id`，同链衍生事件继承|`null`|
 |`action_queue_index`|根行动队列序位，衍生事件继承|`null`|
 |`actor_id`|根行动者实例 ID，衍生事件继承|`null`|
-|`command_type`|`skill / switch / ultimate / resource_forced_default / timeout_default`|固定 `system:*`，如 `system:battle_header`、`system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
+|`command_type`|`skill / switch / ultimate / wait / resource_forced_default`|固定 `system:*`，如 `system:battle_header`、`system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
 |`command_source`|`manual / ai / resource_auto / timeout_auto`|固定 `system`|
-|`select_timeout`|`timeout_default` 链为 `true`，其他行动链为 `false`|`null`|
+|`select_timeout`|`command_source = timeout_auto` 链为 `true`，其他行动链为 `false`|`null`|
 |`select_deadline_ms`|整条行动链写本回合截止时间|`null`|
 
 实现状态说明（2026-03-25）：

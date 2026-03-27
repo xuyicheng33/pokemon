@@ -16,6 +16,9 @@ var log_event_builder
 var id_factory
 var effect_instance_service
 var rule_mod_service
+var rule_mod_value_resolver
+var field_service
+var trigger_batch_runner
 
 var last_invalid_battle_code: Variant = null
 
@@ -30,12 +33,18 @@ func resolve_missing_dependency() -> String:
         return "effect_instance_service"
     if rule_mod_service == null:
         return "rule_mod_service"
+    if rule_mod_value_resolver == null:
+        return "rule_mod_value_resolver"
+    if field_service == null:
+        return "field_service"
+    if trigger_batch_runner == null:
+        return "trigger_batch_runner"
     return ""
 
 func execute(payload, effect_definition, effect_event, battle_state, content_index) -> bool:
     last_invalid_battle_code = null
     if payload is ApplyFieldPayloadScript:
-        _apply_field_payload(payload, effect_definition, effect_event, battle_state)
+        _apply_field_payload(payload, effect_definition, effect_event, battle_state, content_index)
         return true
     if payload is ApplyEffectPayloadScript:
         _apply_effect_payload(payload, effect_definition, effect_event, battle_state, content_index)
@@ -48,8 +57,33 @@ func execute(payload, effect_definition, effect_event, battle_state, content_ind
         return true
     return false
 
-func _apply_field_payload(payload, effect_definition, effect_event, battle_state) -> void:
+func _apply_field_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
     var before_field = battle_state.field_state
+    if before_field != null:
+        var before_field_definition = field_service.get_field_definition_for_state(before_field, content_index)
+        if before_field_definition != null and not before_field_definition.on_break_effect_ids.is_empty():
+            var break_events: Array = field_service.collect_lifecycle_effect_events(
+                "field_break",
+                before_field,
+                before_field_definition.on_break_effect_ids,
+                battle_state,
+                content_index,
+                effect_event.chain_context
+            )
+            if not break_events.is_empty():
+                var break_invalid_code = trigger_batch_runner.execute_trigger_batch(
+                    "__field_break__",
+                    battle_state,
+                    content_index,
+                    [],
+                    battle_state.chain_context,
+                    break_events
+                )
+                if break_invalid_code != null:
+                    last_invalid_battle_code = break_invalid_code
+                    return
+        battle_state.field_rule_mod_instances.clear()
+        battle_state.field_state = null
     var field_state = FieldStateScript.new()
     field_state.field_def_id = payload.field_definition_id
     field_state.instance_id = id_factory.next_id("field")
@@ -135,13 +169,18 @@ func _apply_rule_mod_payload(payload, effect_event, battle_state) -> void:
     var owner_ref = _resolve_rule_mod_owner(payload, effect_event, battle_state)
     if owner_ref == null:
         return
+    var resolved_value = rule_mod_value_resolver.resolve_value(payload, effect_event, battle_state)
+    if rule_mod_value_resolver.last_error_code != null:
+        last_invalid_battle_code = rule_mod_value_resolver.last_error_code
+        return
     var created_instance = rule_mod_service.create_instance(
         payload,
         owner_ref,
         battle_state,
         effect_event.source_instance_id,
         effect_event.source_kind_order,
-        effect_event.source_order_speed_snapshot
+        effect_event.source_order_speed_snapshot,
+        resolved_value
     )
     if created_instance == null:
         last_invalid_battle_code = rule_mod_service.last_error_code if rule_mod_service != null else ErrorCodesScript.INVALID_RULE_MOD_DEFINITION

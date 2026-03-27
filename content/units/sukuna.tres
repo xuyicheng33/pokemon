@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="UnitDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/unit_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sukuna"
+display_name = "宿傩"
+base_hp = 126
+base_attack = 78
+base_defense = 62
+base_sp_attack = 84
+base_sp_defense = 60
+base_speed = 76
+max_mp = 100
+init_mp = 45
+regen_per_turn = 12
+combat_type_ids = PackedStringArray("fire", "demon")
+skill_ids = PackedStringArray("sukuna_kai", "sukuna_hatsu", "sukuna_hiraku")
+ultimate_skill_id = "sukuna_fukuma_mizushi"
+passive_skill_id = "sukuna_teach_love"
+passive_item_id = ""

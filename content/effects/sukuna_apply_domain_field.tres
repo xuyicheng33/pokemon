@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/apply_field_payload.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "apply_field"
+field_definition_id = "sukuna_malevolent_shrine"
+
+[resource]
+script = ExtResource("1")
+id = "sukuna_apply_domain_field"
+display_name = "展开领域"
+scope = "field"
+duration_mode = "turns"
+duration = 3
+decrement_on = "turn_end"
+stacking = "replace"
+trigger_names = PackedStringArray("on_hit")
+payloads = Array[Resource]([SubResource("1")])

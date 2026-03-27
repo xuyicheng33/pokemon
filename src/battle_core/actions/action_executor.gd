@@ -51,6 +51,10 @@ func execute_action(queued_action, battle_state, content_index):
     action_log_service.log_action_cast(queued_action, battle_state, command, mp_changes)
     result.consumed_mp = consumed_mp
 
+    if command.command_type == CommandTypesScript.WAIT:
+        result.result_type = "resolved"
+        return result
+
     action_cast_service.dispatch_skill_effects(
         skill_definition.effects_on_cast_ids if skill_definition != null else PackedStringArray(),
         "on_cast",
@@ -76,7 +80,7 @@ func execute_action(queued_action, battle_state, content_index):
         result.result_type = "action_failed_post_start"
         return result
 
-    var hit_info: Dictionary = action_cast_service.resolve_hit(command, skill_definition, battle_state)
+    var hit_info: Dictionary = action_cast_service.resolve_hit(command, skill_definition, battle_state, content_index)
     if not hit_info["hit"]:
         action_log_service.log_action_miss(
             queued_action,
@@ -108,7 +112,7 @@ func execute_action(queued_action, battle_state, content_index):
     )
     if action_cast_service.is_damage_action(command, skill_definition):
         action_cast_service.apply_direct_damage(queued_action, actor, resolved_target, skill_definition, battle_state)
-    if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT or command.command_type == CommandTypesScript.TIMEOUT_DEFAULT:
+    if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
         action_cast_service.apply_default_recoil(queued_action, actor, battle_state)
 
     action_cast_service.dispatch_skill_effects(
@@ -135,7 +139,7 @@ func _build_chain_context(queued_action, battle_state):
     chain_context.command_type = queued_action.command.command_type
     chain_context.command_source = queued_action.command.command_source
     chain_context.skill_id = queued_action.command.skill_id if queued_action.command.command_type == CommandTypesScript.SKILL or queued_action.command.command_type == CommandTypesScript.ULTIMATE else null
-    chain_context.select_timeout = queued_action.command.command_type == CommandTypesScript.TIMEOUT_DEFAULT
+    chain_context.select_timeout = queued_action.command.command_source == "timeout_auto"
     chain_context.select_deadline_ms = battle_state.selection_deadline_ms
     chain_context.target_unit_id = queued_action.target_snapshot.target_unit_id
     chain_context.target_slot = queued_action.target_snapshot.target_slot

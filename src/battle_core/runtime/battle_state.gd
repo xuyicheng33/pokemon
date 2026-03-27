@@ -23,6 +23,7 @@ var battle_result = null
 var rng_stream_index: int = 0
 var fatal_damage_records_by_target: Dictionary = {}
 var field_rule_mod_instances: Array = []
+var last_matchup_signature: String = ""
 
 func get_side(side_id: String):
     for side_state in sides:
@@ -86,6 +87,7 @@ func to_stable_dict() -> Dictionary:
         "sides": side_dicts,
         "field_state": field_state.to_stable_dict() if field_state != null else null,
         "field_rule_mod_instances": field_rule_mod_dicts,
+        "last_matchup_signature": last_matchup_signature,
         "battle_result": battle_result.to_stable_dict() if battle_result != null else null,
         "rng_stream_index": rng_stream_index,
     }

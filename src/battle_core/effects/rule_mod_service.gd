@@ -19,7 +19,7 @@ const STACKING_KEY_SCHEMA_BY_KIND := {
 var id_factory
 var last_error_code: Variant = null
 
-func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int):
+func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null):
     last_error_code = null
     if not _validate_rule_mod_payload(rule_mod_payload):
         return null
@@ -43,7 +43,7 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
     rule_mod_instance.instance_id = id_factory.next_id("rule_mod")
     rule_mod_instance.mod_kind = rule_mod_payload.mod_kind
     rule_mod_instance.mod_op = rule_mod_payload.mod_op
-    rule_mod_instance.value = rule_mod_payload.value
+    rule_mod_instance.value = resolved_value if resolved_value != null else rule_mod_payload.value
     rule_mod_instance.scope = rule_mod_payload.scope
     rule_mod_instance.duration_mode = rule_mod_payload.duration_mode
     rule_mod_instance.owner_scope = owner_ref["scope"]

@@ -27,9 +27,10 @@
 |`duration_mode`|当前只允许 `turns / permanent`|
 |`duration`|持续值；`turns` 模式必填|
 |`decrement_on`|`turn_start / turn_end`；仅 `turns` 模式必填|
-|`stacking`|`none / refresh / replace`|
+|`stacking`|`none / refresh / replace / stack`|
 |`priority`|统一优先级字段；默认 `0`；数值越大越先|
 |`trigger_names`|触发点列表|
+|`on_expire_effect_ids`|实例到期后追加执行的效果 ID 列表|
 |`payloads`|效果行为列表|
 |`persists_on_switch`|是否跨离场保留；默认 `false`|
 
@@ -65,6 +66,7 @@
 |回合|`turn_start`, `turn_end`|
 |行动|`on_cast`, `on_hit`, `on_miss`|
 |换人|`on_enter`, `on_exit`, `on_switch`|
+|对位变化|`on_matchup_changed`|
 |倒下|`on_faint`, `on_kill`|
 
 补充规则：
@@ -129,11 +131,14 @@
 |`decrement_on`|`turn_start / turn_end`，声明扣减节点|
 |`stacking`|`none / refresh / replace`|
 |`priority`|可选，默认 `0`，用于同一 hook 内的应用顺序|
+|`dynamic_value_formula`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`|
+|`dynamic_value_thresholds / dynamic_value_outputs / dynamic_value_default`|动态求值所需阈值、输出和值兜底|
 
 补充规则：
 
 1. `rule_mod` 必须显式声明 `decrement_on`；否则按 `invalid_battle` 处理。
 2. `skill_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段。
+3. 动态值公式当前只允许用于数值型 `rule_mod`，且运行时求值不得回写共享内容资源。
 
 ### 5.3 `RuleModInstance` 运行时模型
 
@@ -177,10 +182,11 @@
 |`none`|重复施加无效|
 |`refresh`|刷新持续时间|
 |`replace`|新实例替换旧实例|
+|`stack`|创建并保留并行实例；每层独立持有 `remaining` 与触发次数|
 
 当前补充规则：
 
-1. 单位级持续效果默认不允许无限叠加。
+1. 只有显式声明 `stack` 的 effect 才允许叠层；`none / refresh / replace` 都不允许并行同定义实例。
 2. field 当前只有 1 个生效实例，因此 `apply_field` 的默认行为就是替换旧 field。
 3. 当前不支持“按触发次数耗尽”这类持续方式；若以后需要，先补数据模型，再补生命周期规则。
 
@@ -228,7 +234,7 @@
 
 补充规则：
 
-1. `resource_forced_default` 与 `timeout_default` 虽然是自动替代动作，但进入行动队列后仍属于 `chain_origin = action`。
+1. `resource_forced_default` 与 `wait(command_source = timeout_auto)` 虽然是自动替代动作，但进入行动队列后仍属于 `chain_origin = action`。
 
 ## 10. 技能、被动、持有物对接字段
 

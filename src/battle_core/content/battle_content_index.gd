@@ -84,6 +84,7 @@ func validate_snapshot() -> Array:
         ContentSchemaScript.TARGET_ENEMY_ACTIVE,
         ContentSchemaScript.TARGET_SELF,
         ContentSchemaScript.TARGET_FIELD,
+        ContentSchemaScript.TARGET_NONE,
     ])
     var allowed_damage_kinds: PackedStringArray = PackedStringArray([
         ContentSchemaScript.DAMAGE_KIND_PHYSICAL,
@@ -103,7 +104,9 @@ func validate_snapshot() -> Array:
         "on_switch",
         "on_faint",
         "on_kill",
+        "on_matchup_changed",
     ])
+    var allowed_power_bonus_sources: PackedStringArray = PackedStringArray(["", "mp_diff_clamped"])
     var allowed_chart_multipliers: Array[float] = [2.0, 1.0, 0.5]
     var regular_skill_refs: Dictionary = {}
     var ultimate_skill_refs: Dictionary = {}
@@ -190,6 +193,8 @@ func validate_snapshot() -> Array:
             errors.append("skill[%s].mp_cost must be >= 0, got %d" % [skill_id, int(skill_definition.mp_cost)])
         if int(skill_definition.priority) < -5 or int(skill_definition.priority) > 5:
             errors.append("skill[%s].priority out of range: %d" % [skill_id, int(skill_definition.priority)])
+        if not allowed_power_bonus_sources.has(String(skill_definition.power_bonus_source)):
+            errors.append("skill[%s].power_bonus_source invalid: %s" % [skill_id, String(skill_definition.power_bonus_source)])
         if skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and int(skill_definition.power) <= 0:
             errors.append("skill[%s].power must be > 0 for damage skills, got %d" % [skill_id, int(skill_definition.power)])
         _validate_effect_refs(errors, "skill[%s].effects_on_cast_ids" % skill_id, skill_definition.effects_on_cast_ids)
@@ -234,6 +239,10 @@ func validate_snapshot() -> Array:
     for field_id in fields.keys():
         var field_definition = fields[field_id]
         _validate_effect_refs(errors, "field[%s].effect_ids" % field_id, field_definition.effect_ids)
+        _validate_effect_refs(errors, "field[%s].on_expire_effect_ids" % field_id, field_definition.on_expire_effect_ids)
+        _validate_effect_refs(errors, "field[%s].on_break_effect_ids" % field_id, field_definition.on_break_effect_ids)
+        if int(field_definition.creator_accuracy_override) < -1 or int(field_definition.creator_accuracy_override) > 100:
+            errors.append("field[%s].creator_accuracy_override out of range: %d" % [field_id, int(field_definition.creator_accuracy_override)])
 
     for effect_id in effects.keys():
         var effect_definition = effects[effect_id]
@@ -252,11 +261,13 @@ func validate_snapshot() -> Array:
             errors.append("effect[%s].decrement_on must be empty for permanent effects" % effect_id)
         if effect_definition.stacking != ContentSchemaScript.STACKING_NONE \
         and effect_definition.stacking != ContentSchemaScript.STACKING_REFRESH \
-        and effect_definition.stacking != ContentSchemaScript.STACKING_REPLACE:
+        and effect_definition.stacking != ContentSchemaScript.STACKING_REPLACE \
+        and effect_definition.stacking != ContentSchemaScript.STACKING_STACK:
             errors.append("effect[%s].stacking invalid: %s" % [effect_id, effect_definition.stacking])
         for trigger_name in effect_definition.trigger_names:
             if not allowed_triggers.has(trigger_name):
                 errors.append("effect[%s].trigger_names invalid: %s" % [effect_id, trigger_name])
+        _validate_effect_refs(errors, "effect[%s].on_expire_effect_ids" % effect_id, effect_definition.on_expire_effect_ids)
         for payload in effect_definition.payloads:
             _validate_payload(errors, effect_id, payload)
 
@@ -306,9 +317,14 @@ func _validate_payload(errors: Array, effect_id: String, payload) -> void:
             var formula_damage_kind := String(payload.damage_kind)
             if formula_damage_kind != ContentSchemaScript.DAMAGE_KIND_PHYSICAL and formula_damage_kind != ContentSchemaScript.DAMAGE_KIND_SPECIAL:
                 errors.append("effect[%s].damage invalid damage_kind for formula: %s" % [effect_id, formula_damage_kind])
+        elif not String(payload.combat_type_id).is_empty() and not combat_types.has(String(payload.combat_type_id)):
+            errors.append("effect[%s].damage combat_type_id missing combat type: %s" % [effect_id, String(payload.combat_type_id)])
         return
     if payload is HealPayloadScript:
-        if int(payload.amount) <= 0:
+        if bool(payload.use_percent):
+            if int(payload.percent) < 1 or int(payload.percent) > 100:
+                errors.append("effect[%s].heal percent out of range: %d" % [effect_id, int(payload.percent)])
+        elif int(payload.amount) <= 0:
             errors.append("effect[%s].heal amount must be > 0, got %d" % [effect_id, int(payload.amount)])
         return
     if payload is ResourceModPayloadScript:
@@ -388,4 +404,27 @@ func _validate_rule_mod_payload(rule_mod_payload) -> Array:
     elif rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
         if rule_mod_payload.mod_op != "allow" and rule_mod_payload.mod_op != "deny":
             errors.append("mod_op %s" % rule_mod_payload.mod_op)
+    var dynamic_formula := String(rule_mod_payload.dynamic_value_formula)
+    var dynamic_thresholds: PackedInt32Array = rule_mod_payload.dynamic_value_thresholds
+    var dynamic_outputs: PackedFloat32Array = rule_mod_payload.dynamic_value_outputs
+    if dynamic_formula.is_empty():
+        if not dynamic_thresholds.is_empty() or not dynamic_outputs.is_empty():
+            errors.append("dynamic value schema requires formula when thresholds/outputs are present")
+    else:
+        if dynamic_formula != ContentSchemaScript.RULE_MOD_VALUE_FORMULA_MATCHUP_BST_GAP_BAND:
+            errors.append("dynamic_value_formula %s" % dynamic_formula)
+        if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
+            errors.append("dynamic value formula is not allowed for skill_legality")
+        if dynamic_thresholds.is_empty():
+            errors.append("dynamic_value_thresholds must not be empty")
+        if dynamic_outputs.is_empty():
+            errors.append("dynamic_value_outputs must not be empty")
+        if dynamic_thresholds.size() != dynamic_outputs.size():
+            errors.append("dynamic_value_thresholds/dynamic_value_outputs size mismatch")
+        var previous_threshold: Variant = null
+        for threshold in dynamic_thresholds:
+            if previous_threshold != null and int(threshold) <= int(previous_threshold):
+                errors.append("dynamic_value_thresholds must be strictly ascending")
+                break
+            previous_threshold = threshold
     return errors

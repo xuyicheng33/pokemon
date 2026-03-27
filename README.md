@@ -9,9 +9,10 @@
 - 阶段：概念/原型期（非发布版）
 - 核心能力：
   - 1v1、每队 3 单位、固定 Lv50
-  - 指令选择、行动排序、命中/伤害、换人、击倒补位
+  - 指令选择、`wait / resource_forced_default` 分流、行动排序、命中/伤害、换人、击倒补位
   - `combat_type` 战斗属性系统（单位 `0..2`、技能 `0..1`、显式克制表）
-  - field、被动技能、被动持有物、受限 rule_mod
+  - `on_matchup_changed`、field 生命周期（自然到期 / 提前打断）、被动技能、被动持有物、受限 rule_mod
+  - 默认装配可直接加载的宿傩原型内容包
   - deterministic 回放（同输入同结果）
   - 完整日志契约（`log_schema_version = 3`）
 - 明确不做：通用状态包、暴击、STAB、属性免疫、主动道具、多目标/双打
@@ -71,10 +72,10 @@ tests/
 - `content`：内容 `Resource` 类型与快照加载校验
 - `contracts`：跨模块强类型契约（`Command`、`LogEvent`、`ReplayInput`...）
 - `commands`：合法性计算、指令构建与校验
-- `turn`：回合编排（`turn_start -> selection -> queue_lock -> execution -> turn_end`）
+- `turn`：回合编排与子域协调（初始化、选指解析、field/对位生命周期、`turn_start -> selection -> queue_lock -> execution -> turn_end`）
 - `actions`：单行动执行与目标解析
 - `math`：纯计算服务（命中、伤害、能力阶段、属性克制）
-- `effects`：触发收集、排序、payload 协调执行、rule_mod
+- `effects`：触发收集、排序、payload 协调执行、effect/rule_mod 实例管理
 - `lifecycle`：离场/倒下/补位链
 - `passives`：被动技能、被动持有物、field 接入
 - `logging`：日志构造、回放、确定性校验
@@ -140,6 +141,9 @@ tests/run_with_gate.sh
 - `combat_type_chart` 使用强类型 `CombatTypeChartEntry` 资源条目，不做代码侧反向推导
 - `combat_type` 与 `damage_kind` 完全独立；缺失 pair 默认 `1.0`
 - `on_receive_effect_ids` 为禁用迁移字段，非空即失败
+- `EffectDefinition.stacking` 已开放 `stack`
+- `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
+- `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`）
 - 普通技能与奥义优先级约束分离校验
 
 ## 8. 日志与回放契约
@@ -151,11 +155,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 9. 当前代码规模（2026-03-27）
+## 9. 当前代码规模（2026-03-28）
 
-- `src/**/*.gd`：`6036` 行
-- `tests/**/*.gd`：`3575` 行
-- GDScript 合计：`9611` 行
+- `src/**/*.gd`：`6577` 行
+- `tests/**/*.gd`：`4357` 行
+- GDScript 合计：`10934` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

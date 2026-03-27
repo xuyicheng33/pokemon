@@ -475,6 +475,32 @@
 - 完整日志用于可复现校验、问题定位与回归比对，不再描述为“单独可驱动重放”的唯一输入。
 
 ### 191. 当前超阈值文件维持单点实现，暂不拆分（2026-03-27 复核）
-- `src/battle_core/content/battle_content_index.gd`（391 行）：当前承载内容快照加载 + schema 强校验的 fail-fast 入口，拆分时机放在内容 schema 进入稳定期后。
+- `src/battle_core/content/battle_content_index.gd`（430 行）：当前承载内容快照加载 + schema 强校验的 fail-fast 入口，拆分时机放在内容 schema 进入稳定期后。
 - `src/battle_core/effects/rule_mod_service.gd`（292 行）：当前承载实例创建、读取排序、扣减与移除日志的完整闭环，待读取点新增需求明确后再拆 `read/instance` 子服务。
 - `src/battle_core/effects/payload_executor.gd` 已完成子处理器拆分，不再属于当前超阈值文件集合。
+
+### 192. `wait + 领域生命周期 + 数值扩展` 实装期超阈值文件保留（2026-03-27）
+- `src/battle_core/turn/turn_resolution_service.gd`：本轮把 `wait/Struggle` 自动替代、effect 到期触发链、field 自然到期/提前打断顺序统一收口到单协调点，先保留集中实现，后续按“选指解析/领域生命周期/到期执行”拆分。
+- `src/battle_core/turn/battle_initializer.gd`：首发对位稳定判定与 `on_matchup_changed` 启动链路需要紧贴初始化时序，当前保留在 bootstrap coordinator 内，待启动流程稳定后再拆。
+- `src/battle_core/effects/payload_handlers/payload_numeric_handler.gd`：固定属性伤害与百分比治疗属于数值语义同域扩展，先集中在 numeric handler 保障 fail-fast 行为一致，再按 payload 家族拆分。
+
+### 193. `wait` 正式替代 `timeout_default`，默认动作按原因分流
+- 移除 `timeout_default` 行动类型，新增可手动提交的 `wait`。
+- 选指超时时统一先判“是否应强制 `resource_forced_default`”，否则自动提交 `wait` 并写 `command_source = timeout_auto`。
+- `select_timeout` 与 `selection_state.timed_out` 改为按 `command_source == timeout_auto` 判定，避免再依赖具体动作类型名。
+
+### 194. 生命周期扩展冻结：effect 到期后效 + field 自然到期/提前打断分离
+- `effect_definition.on_expire_effect_ids` 在实例到期时先执行，再写 expired 日志并移除实例。
+- field 自然到期顺序冻结为：tick -> `on_expire_effect_ids` -> `field_expire` 日志 -> 清空 `field_rule_mod_instances` 与 `field_state`。
+- field 提前打断（覆盖或 creator 离场/倒下）只执行 `on_break_effect_ids`，随后清空 field 相关运行态。
+
+### 195. 内容 schema 扩展冻结：`on_matchup_changed / stack / none-target / 百分比治疗 / 固定属性伤害`
+- 新增 `on_matchup_changed` 触发点，并以“对位签名变化后触发一次”作为运行时去重口径。
+- `stack` 进入 effect stacking 白名单；`TARGET_NONE` 进入目标白名单用于 `wait`。
+- `HealPayload` 新增 `use_percent/percent`；`DamagePayload` 新增 `combat_type_id`（仅 `use_formula=false` 参与克制）。
+- `FieldDefinition` 新增 `on_expire_effect_ids/on_break_effect_ids/creator_accuracy_override`，并在校验层收紧范围。
+
+### 196. 回合协调器按子域拆分，恢复常规尺寸约束（2026-03-28）
+- `src/battle_core/turn/turn_resolution_service.gd` 已拆出 `turn_selection_resolver.gd` 与 `turn_field_lifecycle_service.gd`，主协调器只保留 MP 回复、effect/rule_mod 扣减与系统批次终止处理。
+- `src/battle_core/turn/battle_initializer.gd` 已清理未使用依赖，当前行数回落到常规阈值内，同时保留 `on_enter -> on_matchup_changed -> battle_init` 的启动时序。
+- 架构闸门不再对白名单豁免 `turn_resolution_service.gd` 与 `battle_initializer.gd`。

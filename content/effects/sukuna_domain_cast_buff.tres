@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/stat_mod_payload.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "stat_mod"
+stat_name = "attack"
+stage_delta = 1
+
+[sub_resource type="Resource" id="2"]
+script = ExtResource("2")
+payload_type = "stat_mod"
+stat_name = "sp_attack"
+stage_delta = 1
+
+[resource]
+script = ExtResource("1")
+id = "sukuna_domain_cast_buff"
+display_name = "伏魔御厨子增幅"
+scope = "self"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_cast")
+payloads = Array[Resource]([SubResource("1"), SubResource("2")])

@@ -13,6 +13,7 @@
 |`payload_executor.gd`|执行 payload 并写日志|
 |`effect_instance_service.gd`|管理持续效果实例|
 |`rule_mod_service.gd`|管理 `RuleModInstance` 与读取接口|
+|`rule_mod_value_resolver.gd`|对动态 `rule_mod` 值做运行时求值，不回写共享内容资源|
 |`passive_skill_service.gd`|按触发点收集被动技能事件|
 |`passive_item_service.gd`|按触发点收集被动持有物事件|
 |`field_service.gd`|按触发点收集 field 事件 + `turn_end` 扣减|
@@ -74,7 +75,7 @@ fail-fast 约束：
 
 ### 5.2 生命周期
 
-- `create_instance()` 支持 `none / refresh / replace`。
+- `RuleModService.create_instance()` 支持 `none / refresh / replace`。
 - `decrement_for_trigger()` 只在 `turn_start` 或 `turn_end` 扣减。
 - 过期实例必须移除并写 `effect:rule_mod_remove` 日志。
 
@@ -87,6 +88,7 @@ fail-fast 约束：
 ## 6. 约束
 
 - `rule_mod` 只允许改写已开放读取点，不可绕开核心流程。
+- `EffectInstanceService.create_instance()` 支持 `stack`，每层 effect instance 独立扣减 `remaining`。
 - 回合节点触发范围固定为 active + field；bench 不触发。
 - `rule_mod` 不进入第二效果队列，不参与二次排序。
 - 持续效果实例在 `turn_start / turn_end` 触发后按 `decrement_on` 扣减，`remaining <= 0` 立即移除并写 `effect:remove_effect`。

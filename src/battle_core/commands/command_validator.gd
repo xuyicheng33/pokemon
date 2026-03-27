@@ -29,8 +29,8 @@ func validate_command(command, battle_state, content_index) -> bool:
             if command.command_source != "resource_auto":
                 return false
             return true
-        CommandTypesScript.TIMEOUT_DEFAULT:
-            return command.command_source == "timeout_auto"
+        CommandTypesScript.WAIT:
+            return command.command_source == "manual" or command.command_source == "timeout_auto"
         CommandTypesScript.SURRENDER:
             return true
         _:
