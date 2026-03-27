@@ -9,6 +9,16 @@
 
 ## 2026-03-27
 
+### 205. `docs/rules/06` 与扩展入口文档不得继续保留已退役 schema 别名
+- 当前效果系统文档必须直接对齐 `display_name / trigger_names / *_ids` 等现行 `Resource` 字段名，不再保留 `name / trigger / conditions / effects_on_receive` 这类旧口径。
+- 若未来真要恢复 `conditions` 之类字段，必须先扩 `Resource` 类型、内容校验和运行时读取点，再写回规则文档，不能只在文档里预留。
+- 规则摘要层与设计层都必须按当前代码事实书写，避免继续误导新增模块接入。
+
+### 206. 架构闸门把 `adapters/scenes` 与内部服务实现彻底隔离
+- `src/adapters` 与 `scenes` 继续禁止直连 `runtime/*`，并进一步禁止直连 `actions / content / effects / lifecycle / logging / math / passives / turn` 等内部服务实现。
+- 当前外围允许依赖的 `battle_core` 范围固定为 `facades/*`、`contracts/*` 与输入枚举常量 `commands/command_types.gd`。
+- `composition` 仍作为装配层保留对核心实现的显式依赖权，不纳入这条更严的服务实现封锁。
+
 ### 201. `BattleCoreManager` session API 是当前唯一稳定 facade 口径
 - 对外围公开的稳定入口固定为 `create_session / get_legal_actions / build_command / run_turn / get_public_snapshot / close_session / run_replay`。
 - `active_session_count / dispose / resolve_missing_dependency` 视为管理器级辅助接口，也属于当前 README 口径的一部分。
@@ -170,7 +180,7 @@
 ### 122. 效果系统触发点删到当前最小集
 - 当前基线只保留 `battle_init / turn_start / turn_end / on_cast / on_hit / on_miss / on_enter / on_exit / on_switch / on_faint / on_kill`。
 - `on_action_attempt / before_action / after_action / on_resource_change` 不属于当前极简基线，先移出文档。
-- 技能侧 `effects_on_cast` 明确对应 `on_cast`，不再靠近似命名猜含义。
+- 技能侧 `effects_on_cast_ids` 明确对应 `on_cast`，不再靠近似命名猜含义。
 
 ### 123. 历史文档继续保留，但必须显式防误读
 - `docs/records/archive/` 和已退役总表会继续保留，方便回溯讨论过程。
@@ -221,7 +231,7 @@
 
 ### 129. 奥义继续复用普通技能字段
 - 奥义不设独立资源槽，也不额外发明第二套命中或 payload 体系。
-- 奥义只是主动技能中的一个受限分支：沿用 `mp_cost / accuracy / targeting / effects_on_cast` 等通用字段，只额外限制 `priority`。
+- 奥义只是主动技能中的一个受限分支：沿用 `mp_cost / accuracy / targeting / effects_on_cast_ids` 等通用字段，只额外限制 `priority`。
 
 ### 130. 日志空值与自动来源口径统一写死
 - `resource_forced_default` 固定搭配 `command_source = resource_auto`，`timeout_default` 固定搭配 `command_source = timeout_auto`。
@@ -448,7 +458,7 @@
 ## 2026-03-26
 
 ### 187. `prototype_full_open` 对外快照在引擎层补齐全公开字段并保留旧字段
-- `BattleCoreFacade` 统一输出 `team_units + field + prebattle_public_teams` 的 full-open 快照信息。
+- `BattleCoreManager` 统一输出 `team_units + field + prebattle_public_teams` 的 full-open 快照信息。
 - 保留 `active_public_id / active_hp / active_mp / bench_public_ids` 等既有字段，避免外围读取契约断裂。
 - 对外快照禁止泄露运行态私有实例 ID（如 `unit_instance_id`）。
 
@@ -464,7 +474,7 @@
 - 回放执行输入固定为 `battle_seed + content_snapshot_paths + battle_setup + command_stream`。
 - 完整日志用于可复现校验、问题定位与回归比对，不再描述为“单独可驱动重放”的唯一输入。
 
-### 191. 超阈值文件维持单点实现，暂不拆分（2026-03-26 复核）
-- `src/battle_core/effects/payload_executor.gd`（403 行）：当前承载 9 类 payload 的统一执行与链路日志语义，拆分会同时改执行边界与回归基线；待 payload 家族稳定后再拆。
-- `src/battle_core/content/battle_content_index.gd`（328 行）：当前承载内容快照加载 + schema 强校验的 fail-fast 入口，拆分时机放在内容 schema 进入稳定期后。
+### 191. 当前超阈值文件维持单点实现，暂不拆分（2026-03-27 复核）
+- `src/battle_core/content/battle_content_index.gd`（391 行）：当前承载内容快照加载 + schema 强校验的 fail-fast 入口，拆分时机放在内容 schema 进入稳定期后。
 - `src/battle_core/effects/rule_mod_service.gd`（292 行）：当前承载实例创建、读取排序、扣减与移除日志的完整闭环，待读取点新增需求明确后再拆 `read/instance` 子服务。
+- `src/battle_core/effects/payload_executor.gd` 已完成子处理器拆分，不再属于当前超阈值文件集合。

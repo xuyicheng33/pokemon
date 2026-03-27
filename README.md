@@ -57,6 +57,10 @@ tests/
   suites/               # 回归测试套件
     lifecycle_core_suite.gd
     forced_replace_suite.gd
+  support/              # 测试 harness 与公共构造器
+  fixtures/             # 预留样例输入与内容快照
+  helpers/              # 预留测试辅助脚本
+  replay_cases/         # 预留 deterministic 回放案例
   run_all.gd            # 测试入口
   run_with_gate.sh      # 测试闸门（断言 + 引擎错误）
 ```
@@ -64,10 +68,12 @@ tests/
 ## 4. 架构分层（核心）
 
 - `runtime`：唯一运行态真相（`BattleState` 等）
+- `content`：内容 `Resource` 类型与快照加载校验
 - `contracts`：跨模块强类型契约（`Command`、`LogEvent`、`ReplayInput`...）
 - `commands`：合法性计算、指令构建与校验
 - `turn`：回合编排（`turn_start -> selection -> queue_lock -> execution -> turn_end`）
 - `actions`：单行动执行与目标解析
+- `math`：纯计算服务（命中、伤害、能力阶段、属性克制）
 - `effects`：触发收集、排序、payload 协调执行、rule_mod
 - `lifecycle`：离场/倒下/补位链
 - `passives`：被动技能、被动持有物、field 接入
@@ -147,9 +153,9 @@ tests/run_with_gate.sh
 
 ## 9. 当前代码规模（2026-03-27）
 
-- `src/**/*.gd`：`6008` 行
-- `tests/**/*.gd`：`3317` 行
-- GDScript 合计：`9325` 行
+- `src/**/*.gd`：`6036` 行
+- `tests/**/*.gd`：`3575` 行
+- GDScript 合计：`9611` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

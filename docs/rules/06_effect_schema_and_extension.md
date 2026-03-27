@@ -22,17 +22,20 @@
 |字段|说明|
 |---|---|
 |`id`|唯一标识|
-|`name`|效果名|
+|`display_name`|效果名|
 |`scope`|`self / target / field`|
 |`duration_mode`|当前只允许 `turns / permanent`|
 |`duration`|持续值；`turns` 模式必填|
 |`decrement_on`|`turn_start / turn_end`；仅 `turns` 模式必填|
 |`stacking`|`none / refresh / replace`|
 |`priority`|统一优先级字段；默认 `0`；数值越大越先|
-|`trigger`|触发点列表|
-|`conditions`|触发条件过滤器|
+|`trigger_names`|触发点列表|
 |`payloads`|效果行为列表|
 |`persists_on_switch`|是否跨离场保留；默认 `false`|
+
+补充规则：
+
+1. 当前 schema 没有 `conditions` 字段；若未来需要触发条件过滤器，必须先补 `Resource` 类型、加载期校验与运行时读取规则。
 
 ## 3. `EffectInstance`
 
@@ -40,13 +43,13 @@
 |---|---|
 |`instance_id`|效果实例唯一 ID|
 |`def_id`|引用定义|
-|`source`|效果来源|
 |`owner`|当前挂载对象|
 |`remaining`|剩余回合数|
 |`created_turn`|创建回合|
 |`source_instance_id`|当前触发源的稳定实例 ID|
 |`source_kind_order`|创建它的根来源类型枚举；持续效果后续触发时继续沿用|
 |`source_order_speed_snapshot`|排序速度快照，入队时固化|
+|`persists_on_switch`|非击倒离场时是否保留|
 |`meta`|扩展字段|
 
 补充规则：
@@ -119,7 +122,7 @@
 |---|---|
 |`mod_kind`|`final_mod / mp_regen / skill_legality`|
 |`mod_op`|`final_mod` 允许 `mul / add / set`；`mp_regen` 允许 `add / set`；`skill_legality` 允许 `allow / deny`|
-|`value`|数值或布尔含义（由 `mod_kind / mod_op` 解释）|
+|`value`|`final_mod / mp_regen` 下为数值；`skill_legality` 下为目标技能 ID，空值表示全局技能|
 |`scope`|`self / target / field`，与创建时的目标一致|
 |`duration_mode`|`turns / permanent`|
 |`duration`|`turns` 模式必填|
@@ -138,7 +141,11 @@
 |---|---|
 |`instance_id`|规则修正实例唯一 ID|
 |`mod_kind / mod_op / value`|来自 payload|
-|`owner`|当前挂载对象（与 `scope` 对齐）|
+|`scope`|生效域（`self / target / field`）|
+|`duration_mode`|`turns / permanent`|
+|`owner_scope`|当前挂载域（`unit / field`）|
+|`owner_id`|当前挂载对象 ID|
+|`stacking_key`|叠加判定键|
 |`remaining`|剩余回合数|
 |`created_turn`|创建回合|
 |`decrement_on`|扣减节点|
@@ -152,7 +159,7 @@
 1. `rule_mod` 在执行 payload 时创建/刷新/替换实例，不进入效果队列二次排序。
 2. 需要读取规则修正的节点（`final_mod`、`turn_start` MP 回复、技能合法性）必须收集所有仍有效的 `RuleModInstance`。
 3. 同一 hook 内的应用顺序固定为：`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`。
-4. `stacking = none` 时遇到同键（`mod_kind + scope + owner + mod_op`）直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
+4. `stacking_key` 当前固定由 `mod_kind + scope + owner_scope + owner_id + mod_op` 组成；`skill_legality` 额外把 `value` 纳入键。`none` 遇到同键直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
 
 ### 5.4 `rule_mod` 边界冻结（架构强约束）
 
@@ -229,26 +236,25 @@
 
 |字段|说明|
 |---|---|
-|`effects_on_cast`|在 `on_cast` 触发；固定发生在扣 MP 之后、命中判定之前|
-|`effects_on_hit`|命中侧 payload 全部完成后触发|
-|`effects_on_miss`|未命中确认后触发|
-|`effects_on_kill`|当前行动在本窗口被判定为 `killer` 后触发|
+|`effects_on_cast_ids`|在 `on_cast` 触发；固定发生在扣 MP 之后、命中判定之前|
+|`effects_on_hit_ids`|命中侧 payload 全部完成后触发|
+|`effects_on_miss_ids`|未命中确认后触发|
+|`effects_on_kill_ids`|当前行动在本窗口被判定为 `killer` 后触发|
 
 ### 10.2 被动
 
 |字段|说明|
 |---|---|
-|`triggers`|监听的触发点列表|
-|`effects`|触发后施加的效果|
-|`conditions`|触发条件|
+|`trigger_names`|监听的触发点列表|
+|`effect_ids`|触发后施加的效果 ID 列表|
 
 ### 10.3 持有物
 
 |字段|说明|
 |---|---|
-|`effects_always_on`|常驻效果|
-|`effects_on_receive`|禁用迁移字段（当前必须为空，非空即加载期失败）|
-|`effects_on_turn`|回合节点触发|
+|`always_on_effect_ids`|常驻效果|
+|`on_receive_effect_ids`|禁用迁移字段（当前必须为空，非空即加载期失败）|
+|`on_turn_effect_ids`|回合节点触发|
 
 补充规则：
 

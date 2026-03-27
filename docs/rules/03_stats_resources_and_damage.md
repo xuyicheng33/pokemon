@@ -53,7 +53,7 @@
 
 1. `turn_start` 的 MP 回复只读取“本回合开始前已经生效”的常驻状态：当前在场单位面板、已存在的被动持有物常驻效果、已存在的 field、以及上一结算窗口已经落地的规则修正。
 2. 同一个 `turn_start` 节点里新触发的 `apply_field`、`apply_effect`、`rule_mod`，不回头改写本次 MP 回复结果，只影响后续节点或下一次对应节点。
-3. 对技能、奥义和两类默认动作，执行起点固定顺序为：`has_acted = true -> 扣 MP -> 触发 on_cast / effects_on_cast -> 命中判定 -> 后续 payload / on_hit / on_miss`。
+3. 对技能、奥义和两类默认动作，执行起点固定顺序为：`has_acted = true -> 扣 MP -> 触发 on_cast / effects_on_cast_ids -> 命中判定 -> 后续 payload / on_hit / on_miss`。
 
 ## 4. 技能系统
 
@@ -68,7 +68,7 @@
 
 补充规则：
 
-1. 奥义不另立第二套资源或命中体系；继续使用 `mp_cost / accuracy / targeting / effects_on_cast` 等通用技能字段。
+1. 奥义不另立第二套资源或命中体系；继续使用 `mp_cost / accuracy / targeting / effects_on_cast_ids` 等通用技能字段。
 2. 奥义可承载当前基线已允许的 payload 类型；不得绕开模块 06 另写专用 payload。
 3. 当前没有单独的奥义资源槽；奥义能否使用只看 MP、指令合法性与技能定义本身。
 
@@ -77,7 +77,7 @@
 |字段|说明|
 |---|---|
 |`id`|技能唯一标识|
-|`name`|技能名|
+|`display_name`|技能名|
 |`damage_kind`|`physical / special / none`|
 |`power`|技能威力；伤害技能必填|
 |`accuracy`|命中率，百分比口径 `0 ~ 100`，默认 `100`|
@@ -85,7 +85,7 @@
 |`priority`|优先级；普通技能允许 `-2 ~ +2`，奥义只能是 `+5` 或 `-5`|
 |`combat_type_id`|战斗属性；空串表示无属性技能|
 |`targeting`|`enemy_active_slot / self / field`|
-|`effects_on_cast` 等|见模块 06|
+|`effects_on_cast_ids / effects_on_hit_ids / effects_on_miss_ids / effects_on_kill_ids`|见模块 06|
 
 ### 4.3 `combat_type` 战斗属性字段
 
@@ -147,7 +147,7 @@
 
 1. 当前没有命中阶段、闪避阶段、`ignore_evasion`、`allow_full_evasion` 这类机制。
 2. 命中失败时只记 `miss`，不要混成“目标免疫”或“被闪避”。
-3. 命中成立后，行动本体的伤害或效果 payload 按模块 06 的声明顺序执行；全部完成后再进入 `effects_on_hit`。未命中则不执行命中侧 payload，直接进入 `effects_on_miss`。
+3. 命中成立后，行动本体的伤害或效果 payload 按模块 06 的声明顺序执行；全部完成后再进入 `effects_on_hit_ids`。未命中则不执行命中侧 payload，直接进入 `effects_on_miss_ids`。
 
 ## 7. RNG 契约
 
@@ -191,11 +191,12 @@
 |技能自身倍率|技能描述写清楚时可用|
 |被动持有物倍率|被动持有物可加减伤|
 |field 倍率|当前 field 可按技能描述改伤害|
+|`rule_mod`|只允许通过 `final_mod` 白名单读取点进入|
 |`type_effectiveness`|按 `combat_type_chart` 查表得到的属性克制倍率|
 
 默认：
 
-`final_mod = skill_mod * item_mod * field_mod * type_effectiveness`
+`final_mod = skill_mod * item_mod * field_mod * rule_mod * type_effectiveness`
 
 未声明时各项都按 `1.0`。
 

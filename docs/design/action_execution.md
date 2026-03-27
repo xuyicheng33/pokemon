@@ -31,7 +31,7 @@
 
 |字段|类型|说明|
 |---|---|---|
-|`target_kind`|`String`|`enemy_active_slot / self / field`|
+|`target_kind`|`String`|`enemy_active_slot / self / field / bench_unit`|
 |`target_unit_id`|`String`|目标单位 ID，非适用为空串|
 |`target_slot`|`String`|目标槽位，当前 1v1 固定为单槽|
 
@@ -53,7 +53,7 @@
 4. 命中判定
 5. 处理命中侧 payload（命中成功时）
 6. 资源型/超时型默认动作在命中后追加默认反伤
-7. 触发 `effects_on_hit` 或 `effects_on_miss`
+7. 触发 `effects_on_hit_ids` 或 `effects_on_miss_ids`
 
 ## 4. TargetResolver
 
@@ -62,6 +62,7 @@
 |`enemy_active_slot`|锁定敌方当前在场槽位|
 |`self`|锁定行动者自身|
 |`field`|锁定全场 field|
+|`bench_unit`|手动换人时锁定已通过合法性校验的 bench `unit_instance_id`|
 
 ## 5. 失败语义
 

@@ -100,4 +100,5 @@
 工程闸门必须包含：
 
 - 外围层（`src/adapters`、`src/composition`、`scenes`）不得 import `src/battle_core/runtime/*`。
+- `src/adapters` 与 `scenes` 不得 import `battle_core` 内部服务实现；允许范围固定为 `facades/*`、`contracts/*` 与 `commands/command_types.gd`。
 - 若出现超阈值文件，必须有拆分或记录解释。

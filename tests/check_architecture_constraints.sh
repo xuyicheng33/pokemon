@@ -12,6 +12,14 @@ if rg -n "res://src/battle_core/runtime/" src/adapters src/composition scenes >/
 fi
 rm -f /tmp/runtime_imports.out
 
+if rg -n "res://src/battle_core/(actions|content|effects|lifecycle|logging|math|passives|turn)/" src/adapters scenes >/tmp/outer_internal_imports.out 2>/dev/null; then
+  echo "ARCH_GATE_FAILED: adapters/scenes must not import battle_core internal services" >&2
+  cat /tmp/outer_internal_imports.out
+  rm -f /tmp/outer_internal_imports.out
+  exit 1
+fi
+rm -f /tmp/outer_internal_imports.out
+
 python3 - <<'PY'
 from pathlib import Path
 import sys

@@ -10,6 +10,36 @@
 
 ## 2026-03-27
 
+### 复查问题收口（二次文档同步 + 闸门补强）
+- 目标：把复查中确认属实的剩余漂移一次性收口，重点修正 `03/06` 规则字段口径、README 实况、action 设计细节与架构闸门覆盖面。
+- 范围：`README.md`、`docs/rules/03_stats_resources_and_damage.md`、`docs/rules/06_effect_schema_and_extension.md`、`docs/design/action_execution.md`、`docs/design/architecture_overview.md`、`docs/design/battle_core_architecture_constraints.md`、`docs/records/tasks.md`、`docs/records/decisions.md`、`tests/check_architecture_constraints.sh`；不改运行时代码。
+- 验收标准：规则文档不再混用旧 schema 字段名；README 目录/分层/代码规模与仓库事实一致；`TargetSnapshot` 文档含 `bench_unit`；架构闸门新增对 `adapters/scenes` 直连内部服务的阻断；`tests/run_with_gate.sh` 全绿。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|收口 `03/06` 规则中的旧 schema 术语与 `final_mod` 公式漂移|已完成|待提交|
+|修正 README 目录、分层与代码规模统计|已完成|待提交|
+|补齐 action 设计文档中的 `bench_unit` 目标快照口径|已完成|待提交|
+|补强架构闸门并同步约束文档|已完成|待提交|
+|任务/决策记录同步|已完成|待提交|
+|闸门回归（`tests/run_with_gate.sh`）|已完成|待提交|
+
+#### 最小可玩性检查清单（本轮）
+- 可启动：`tests/run_with_gate.sh` 可执行完成。
+- 可操作：规则阅读、适配层接入与后续扩展都能直接映射到当前代码。
+- 无致命错误：本轮只改文档、记录与闸门，不引入运行时代码回归。
+
+#### 回归检查要点（本轮）
+- `EffectDefinition / SkillDefinition / PassiveItemDefinition` 字段名必须与当前 `Resource` 类一致。
+- `final_mod` 汇总公式必须体现 `rule_mod` 白名单读取点。
+- README 代码规模与命令 `find src tests -name '*.gd' | xargs wc -l` 当前输出一致。
+- `tests/check_architecture_constraints.sh` 必须能拦住 `adapters/scenes` 直连 `battle_core` 内部服务实现。
+
+#### 当前验证结果（2026-03-27）
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
 ### 审查问题分批收口（设计文档同步 + 术语统一 + 公式伤害契约）
 - 目标：按复核后的真实问题分三批收口设计文档、规则术语与 `DamagePayload` 公式伤害契约，保证 README / rules / design / code / tests 五层口径一致。
 - 范围：`README.md`、`docs/design/*`、`docs/rules/*`、`docs/records/*`、`src/battle_core/**/*`、`tests/suites/*`；按批次逐步提交。
@@ -486,7 +516,7 @@
 - 为持续效果实例补上 `source_kind_order` 继承规则，避免 `apply_effect` 落地后出现“到底归哪个排序桶”的实现分叉。
 - 把行动链日志字段继承规则写清：同一行动链里的衍生效果事件继续沿用根行动的 `action_id / command_type / command_source`。
 - 收紧 AI 合法性契约，不再把“空合法列表”丢给 AI；无合法主动方案时由引擎直接生成 `resource_forced_default`。
-- 写死技能、奥义、默认动作的执行起点顺序，并补齐 `payloads` 声明顺序、`effects_on_cast / effects_on_hit / effects_on_miss / effects_on_kill` 的精确落点。
+- 写死技能、奥义、默认动作的执行起点顺序，并补齐 `payloads` 声明顺序、`effects_on_cast_ids / effects_on_hit_ids / effects_on_miss_ids / effects_on_kill_ids` 的精确落点。
 - 写明 field 剩余回合固定在 `turn_end` 扣减，并删除主动技能对接字段里多余的 `effects_on_enter` 口子。
 - 同步更新 `docs/records/decisions.md`，把本轮新增契约和裁剪原则落盘。
 
@@ -500,7 +530,7 @@
 - 模块 04 是否已只使用 `fainted_pending_leave` 作为运行态名。
 - 模块 05 是否已写明持续效果继承根来源类型、AI 不接收空合法列表、行动链日志字段继承规则、field 在 `turn_end` 扣减。
 - 模块 06 是否已补齐 `source_kind_order`、`chain_origin`、payload 顺序与技能触发字段时序。
-- 模块 03 是否已写明 `on_cast` 在扣 MP 之后、命中之前，以及命中侧 payload 与 `effects_on_hit` 的先后。
+- 模块 03 是否已写明 `on_cast` 在扣 MP 之后、命中之前，以及命中侧 payload 与 `effects_on_hit_ids` 的先后。
 
 ### 执行契约收口 + 效果模型再瘦身（已完成：v0.7.1 文档补丁）
 - 目标：把上一轮审查里真正会阻断实现的规则口补齐，同时把还能再瘦的保留口继续收紧。
@@ -614,17 +644,17 @@
 
 #### 已完成内容
 - 从当前基线触发点中移除 `on_action_attempt / before_action / after_action / on_resource_change`。
-- 新增并明确使用 `on_cast`，与 `effects_on_cast` 直接对应。
+- 新增并明确使用 `on_cast`，与 `effects_on_cast_ids` 直接对应。
 - 把“只保留当前最小触发点集合”同步写入决策记录。
 
 #### 最小可玩性检查清单（文档基线）
 - 可启动：实现者只需支持当前最小触发点集合，就能覆盖现行技能、换人、倒下和回合节点。
-- 可操作：技能侧 `effects_on_cast / effects_on_hit / effects_on_miss` 都能找到唯一对应触发点。
+- 可操作：技能侧 `effects_on_cast_ids / effects_on_hit_ids / effects_on_miss_ids` 都能找到唯一对应触发点。
 - 无致命错误：不会再出现“字段叫 cast、触发点却没有 cast”这种文档自相矛盾。
 
 #### 回归检查要点
 - 模块 06 的触发点表里是否已不存在 `on_action_attempt / before_action / after_action / on_resource_change`。
-- `effects_on_cast` 是否已明确对应 `on_cast`。
+- `effects_on_cast_ids` 是否已明确对应 `on_cast`。
 
 ### 极简基线审查与历史文档防误读（已完成：v0.7.0 审查补丁）
 - 目标：确认当前极简基线已经自洽，同时把仍然保留旧口径的历史文档明确标成“只能追溯，不能实现”。
