@@ -29,6 +29,11 @@
 - 公开快照、`system:battle_header.header_snapshot.visibility_mode` 与 `BattleState.to_stable_dict()` 统一读取 `BattleState.visibility_mode`，不再复用 `format_id` 字段。
 - 当前样例格式仍固定为 `prototype_full_open`，本轮只切扩展缝，不改变现有玩法行为。
 
+### 219. 公开编号分配抽离为 `PublicIdAllocator`
+- 公开编号生成从 `BattleInitializer` 内部逻辑抽离到 `src/battle_core/turn/public_id_allocator.gd`，归属 battle core 初始化/编排子域，不放到 `shared`。
+- 生成规则固定为 `<side_id>-<label>`，`label` 使用字母序列：`A..Z, AA..AZ, BA...`，不再把上限写死在 4 个名额。
+- 当前 1v1、每队 3 人行为保持不变，仍为 `P1-A / P1-B / P1-C` 与 `P2-A / P2-B / P2-C`。
+
 ### 210. `cause_event_id` 回归为“真实上游触发事件 ID”
 - 旧的“`cause_event_id = 当前日志自己的 chain_id:step_id`”口径作废，不再作为有效基线。
 - 直接伤害与默认动作反伤统一指向对应 `action:hit` 日志事件；effect payload 产出的 `effect:*` 继续指向内部 `effect_event_*`；`turn_start / turn_end` 的回复与到期链统一指向对应系统锚点；离场清理统一指向 `state:exit`。

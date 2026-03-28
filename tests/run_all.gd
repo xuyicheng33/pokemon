@@ -9,6 +9,7 @@ const RuleModSuiteScript := preload("res://tests/suites/rule_mod_suite.gd")
 const SukunaSuiteScript := preload("res://tests/suites/sukuna_suite.gd")
 const ContentLoggingSuiteScript := preload("res://tests/suites/content_logging_suite.gd")
 const SetupLoadoutSuiteScript := preload("res://tests/suites/setup_loadout_suite.gd")
+const PublicIdAllocatorSuiteScript := preload("res://tests/suites/public_id_allocator_suite.gd")
 const ManagerContractSuiteScript := preload("res://tests/suites/manager_contract_suite.gd")
 const CombatTypeSuiteScript := preload("res://tests/suites/combat_type_suite.gd")
 const DamagePayloadContractSuiteScript := preload("res://tests/suites/damage_payload_contract_suite.gd")
@@ -27,6 +28,7 @@ func _init() -> void:
         SukunaSuiteScript.new(),
         ContentLoggingSuiteScript.new(),
         SetupLoadoutSuiteScript.new(),
+        PublicIdAllocatorSuiteScript.new(),
         ManagerContractSuiteScript.new(),
         CombatTypeSuiteScript.new(),
         DamagePayloadContractSuiteScript.new(),

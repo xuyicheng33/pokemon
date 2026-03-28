@@ -9,6 +9,7 @@ const SideStateScript := preload("res://src/battle_core/runtime/side_state.gd")
 const SelectionStateScript := preload("res://src/battle_core/contracts/selection_state.gd")
 const UnitStateScript := preload("res://src/battle_core/runtime/unit_state.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
+const PublicIdAllocatorScript := preload("res://src/battle_core/turn/public_id_allocator.gd")
 
 var id_factory
 var rng_service
@@ -19,11 +20,13 @@ var battle_logger
 var log_event_builder
 var public_snapshot_builder
 var combat_type_service
+var public_id_allocator = PublicIdAllocatorScript.new()
 
 func initialize_battle(battle_state, content_index, battle_setup) -> void:
     assert(battle_setup != null, "Battle setup is required")
     assert(public_snapshot_builder != null, "BattleInitializer requires public_snapshot_builder")
     assert(combat_type_service != null, "BattleInitializer requires combat_type_service")
+    assert(public_id_allocator != null, "BattleInitializer requires public_id_allocator")
     var format_config = content_index.battle_formats.get(battle_setup.format_id)
     assert(format_config != null, "Missing battle format: %s" % battle_setup.format_id)
     combat_type_service.build_chart(format_config.combat_type_chart)
@@ -123,14 +126,13 @@ func _build_side_state(side_setup, format_config, content_index):
     var side_state = SideStateScript.new()
     side_state.side_id = side_setup.side_id
     side_state.selection_state = SelectionStateScript.new()
-    var label_suffixes = ["A", "B", "C", "D"]
     for unit_index in range(side_setup.unit_definition_ids.size()):
         var unit_definition_id = side_setup.unit_definition_ids[unit_index]
         var unit_definition = content_index.units.get(unit_definition_id)
         assert(unit_definition != null, "Missing unit definition: %s" % unit_definition_id)
         var unit_state = UnitStateScript.new()
         unit_state.unit_instance_id = id_factory.next_id("unit")
-        unit_state.public_id = "%s-%s" % [side_setup.side_id, label_suffixes[unit_index]]
+        unit_state.public_id = public_id_allocator.build_public_id(side_setup.side_id, unit_index)
         unit_state.definition_id = unit_definition.id
         unit_state.display_name = unit_definition.display_name
         unit_state.max_hp = unit_definition.base_hp
