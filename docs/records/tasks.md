@@ -10,6 +10,15 @@
 
 ## 2026-03-28
 
+### Gojo 扩展口径回滚到当前代码事实（已完成）
+- 目标：把仓库级规则文档里提前写成“已实现”的 Gojo 扩展能力回滚掉，恢复为当前 main 真实支持范围，同时保留 Gojo 角色文档里的待实现设计。
+- 范围：`docs/design/battle_content_schema.md`、`docs/rules/06_effect_schema_and_extension.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/gojo_satoru_design.md`、`docs/records/*`；不改运行时代码。
+- 验收标准：仓库级正式文档不再把 `required_target_effects / action_legality / incoming_accuracy` 写成当前已接线能力；Gojo 文档明确这些是待实现扩展；`tests/run_with_gate.sh` 全绿。
+
+#### 当前验证结果（2026-03-28）
+- `bash tests/check_repo_consistency.sh`：通过（`REPO_CONSISTENCY_PASSED`）。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
 ### 启动对位补触发与动态公式边界收口（已完成）
 - 目标：修掉 `battle_init` 后补位漏跑 `on_matchup_changed` 的初始化时序缺口，并把 `dynamic_value_formula` 的可用边界从运行时假设改为内容校验期硬约束。
 - 范围：`src/battle_core/content/battle_content_index.gd`、`src/battle_core/turn/battle_initializer.gd`、`tests/suites/content_logging_suite.gd`、`tests/suites/replay_turn_suite.gd`、`README.md`、`docs/rules/*`、`docs/design/*`、`docs/records/*`。

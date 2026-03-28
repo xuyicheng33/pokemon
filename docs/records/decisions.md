@@ -9,6 +9,11 @@
 
 ## 2026-03-28
 
+### 222. 仓库级规则文档回到“当前代码真实口径”，不再提前同步 Gojo 待实现扩展
+- `docs/rules/06_effect_schema_and_extension.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md` 只记录当前 main 已接线能力。
+- 因此当前正式口径里，`EffectDefinition` 不包含 `required_target_effects`，`rule_mod` 白名单也只包含 `final_mod / mp_regen / skill_legality`。
+- Gojo 文档里需要的 `action_legality / required_target_effects / incoming_accuracy` 保留在角色设计文档中，明确标记为“待实现扩展”，避免仓库出现“两套当前真相”。
+
 ### 215. `matchup_bst_gap_band` 当前只开放单位 owner 路径
 - `dynamic_value_formula = matchup_bst_gap_band` 当前语义固定为“根据单位与当前对手的面板差值求数值”。
 - 因此它只允许用于 owner 为单位的数值型 `rule_mod`；`scope = field` 的动态公式在内容校验期直接失败，不再等到运行时炸成 `invalid_state_corruption`。

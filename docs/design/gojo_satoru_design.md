@@ -7,7 +7,7 @@
 | 茈 | 保留“苍+赫双标记”条件爆发，**不做自伤** |
 | 无下限 | 改为“敌方技能攻击五条悟时，若该次不是必中，则命中率 -10” |
 | 领域后摇 | **删除**（不再追加封印/回滚） |
-| 引擎改动范围 | 仅保留 `action_legality`、`required_target_effects`、`incoming_accuracy` 三块 |
+| 待实现引擎扩展 | 若要落地 Gojo，需新增 `action_legality`、`required_target_effects`、`incoming_accuracy` 三块 |
 | 明确不做 | `effects_pre_damage_ids`、`on_before_damage`、`damage_override`、`action_tags`、`last_dealt_damage`、反噬链路 |
 
 ---
@@ -261,7 +261,12 @@
 
 ---
 
-## 4. 引擎改动范围（可施工）
+## 4. 若要落地 Gojo，需新增的引擎扩展（当前 main 尚未接线）
+
+口径说明：
+
+- `docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md` 当前仍以主线代码真实实现为准。
+- 本节只定义 Gojo 方案所需的待实现扩展，不代表这些字段、`mod_kind` 或读取点已经进入仓库级正式 contract。
 
 ### 4.1 `action_legality`（替代 `skill_legality`）
 
@@ -431,7 +436,7 @@
 
 ---
 
-## 6. 测试计划（gojo_suite）
+## 6. 测试计划（gojo_suite，扩展落地时执行）
 
 | 编号 | 用例 | 验证点 |
 |------|------|--------|
