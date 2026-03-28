@@ -8,6 +8,16 @@
 
 当前生效规则以 `docs/rules/` 为准。
 
+## 2026-03-29
+
+### 五条悟设计文档实施边界与扩展 contract 修订（已完成）
+- 目标：把 Gojo 设计文档里仍会误导后续实现的点彻底写死，特别是“先扩引擎还是先建资源”“`required_target_effects` / `incoming_accuracy` / `action_legality` 的细部 contract”“无量空处 `on_cast` 自 buff 语义”等边界。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`；不改运行时代码。
+- 验收标准：Gojo 文档必须明确两阶段施工顺序、`required_target_effects` 的合法作用域与跳过日志口径、`incoming_accuracy` 的多实例求值顺序、`action_legality` 同 key 覆盖不复活语义，以及无量空处 miss 仍拿 `sp_attack +1` 的固定时序；相关决策已落盘；`tests/run_with_gate.sh` 全绿。
+
+#### 当前验证结果（2026-03-29）
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
 ## 2026-03-28
 
 ### 五条悟设计审计收口到当前主线语义（已完成）

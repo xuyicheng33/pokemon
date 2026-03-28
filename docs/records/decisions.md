@@ -7,6 +7,16 @@
 
 - `docs/records/archive/decisions_pre_v0.6.3.md`
 
+## 2026-03-29
+
+### 224. 五条悟文档施工顺序与扩展 contract 再收紧
+- Gojo 文档正式写死为“两阶段施工”：先实现 `action_legality / required_target_effects / incoming_accuracy` 三块扩展并同步仓库级 contract 文档，再创建 Gojo 内容资源；未接线前不得先提交引用这些字段或 `mod_kind` 的 `.tres`。
+- `required_target_effects` 只允许挂在 `scope=target` 的 effect 上；前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写出任何由该 effect 产生的 payload 日志。
+- `incoming_accuracy` 的多实例合成顺序固定复用现有 `RuleModService` 读取链：按统一排序读取，`add` 叠加、`set` 覆盖，读完整轮后统一 clamp 到 `0~99`。
+- `action_legality` 当前沿用现有 rule_mod stacking 模型：同 key 旧实例若被 `replace` 覆盖，后实例到期后旧实例不会“复活”；若未来玩法要支持多来源恢复语义，必须另改实例模型或 stacking key。
+- `gojo_domain_cast_buff` 继续明确为 `effects_on_cast_ids` 语义：无量空处即使 miss，五条悟仍拿到 `sp_attack +1`；若以后想改成“命中才给 buff”，必须移动到 `effects_on_hit_ids`，不能口头解释。
+- 当前冻结的“团队共享标记”方案仍不读取标记来源；但若团队预期未来大概率改成“本人专属消耗”，推荐在 v1 就把来源单位标识预埋到 `EffectInstance.meta`，先写不读。
+
 ## 2026-03-28
 
 ### 223. 五条悟设计审计收口到当前主线语义（2026-03-28）

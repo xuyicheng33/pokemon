@@ -1,12 +1,13 @@
-# 五条悟（Gojo Satoru）设计方案（审计收口版 v3）
+# 五条悟（Gojo Satoru）设计方案（审计收口版 v4）
 
-## 0. 审计后冻结结论（2026-03-28）
+## 0. 审计后冻结结论（2026-03-29）
 
 | 项目 | 结论 |
 |------|------|
 | 茈 | 保留“苍+赫双标记”条件爆发，**不做自伤** |
 | 无下限 | 改为“敌方技能攻击五条悟时，若该次不是必中，则命中率 -10” |
 | 领域后摇 | **删除**（不再追加封印/回滚） |
+| 施工顺序 | **先实现第 4 节扩展并同步仓库级 contract 文档，再创建第 5 节 Gojo 资源** |
 | 苍/赫标记归属 | 标记挂在**目标**身上；换人清除只发生在**标记持有者**离场时 |
 | 苍/赫标记消耗语义 | 当前冻结为**团队共享资源**：只检查目标是否同时持有双标记，不校验由哪一个五条悟施加 |
 | 待实现引擎扩展 | 若按“团队共享标记”落地 Gojo，需新增 `action_legality`、`required_target_effects`、`incoming_accuracy` 三块；若要收紧为“必须同一施法者本人消耗标记”，还需**第 4 块扩展** |
@@ -122,7 +123,7 @@
 
 `gojo_ao_mark_apply` / `gojo_aka_mark_apply`（施加标记）：
 
-- EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=[]`
+- EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=["on_hit"]`
 - payload：`apply_effect(gojo_ao_mark)` 或 `apply_effect(gojo_aka_mark)`
 
 `gojo_ao_mark` / `gojo_aka_mark`（纯标记本体）：
@@ -154,7 +155,7 @@
 
 `gojo_murasaki_conditional_burst`（单 effect 完成条件爆发 + 清标记）：
 
-- EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=[]`
+- EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=["on_hit"]`
 - `required_target_effects = ["gojo_ao_mark", "gojo_aka_mark"]`
 - payload 顺序：
 1. `damage(use_formula=true, amount=32, damage_kind=special)`（条件追加一段伤害；`amount` 在 `use_formula=true` 下作为公式威力）
@@ -165,6 +166,7 @@
 
 - 此处不额外写 `combat_type_id`：`DamagePayload.use_formula=true` 且处于技能链中时，类型继承链技能 `gojo_murasaki` 的 `combat_type_id=space`。
 - `required_target_effects` 当前只检查“目标身上是否同时存在双标记”，**不检查标记施加者是谁**。因此它与上面的“团队共享标记”设计是配套的。
+- `required_target_effects` 的设计目标是“effect 级前置守卫”，不是 payload 级条件分支；前置不满足时，整条 effect 直接退出，payload 循环不会开始，因此也不会写出任何由该 effect 产生的 payload 日志。
 - 若未来要改成“只有同一个五条悟本人打上的双标记，才允许该五条悟自己触发茈追加段”，则仅靠 `required_target_effects` 不够，必须新增第 4 块扩展能力来校验标记来源。
 
 语义：
@@ -236,6 +238,10 @@
 2. `gojo_apply_domain_field`：`apply_field(gojo_unlimited_void_field, duration=3, decrement_on=turn_end)`（field）
 3. `gojo_domain_action_lock`：`action_legality deny all, duration=1, decrement_on=turn_end`（target）
 
+补充语义：
+
+- `gojo_domain_cast_buff` 挂在 `effects_on_cast_ids`，因此按当前主线固定时序，它会在“扣 MP 后、命中判定前”生效；这代表**无量空处即使 miss，五条悟也仍会拿到 `sp_attack +1`**。若以后想把这条 buff 改成“只有命中才给”，必须把它移到 `effects_on_hit_ids`，不能靠口头理解。
+
 顺序约束：
 
 - `gojo_apply_domain_field` 与 `gojo_domain_action_lock` 同属 `effects_on_hit_ids` 同批次 effect；当前设计不依赖它们的相对先后。
@@ -250,7 +256,7 @@
 
 `gojo_domain_action_lock` 资源口径：
 
-1. EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`
+1. EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=["on_hit"]`
 2. payload：`rule_mod(mod_kind=action_legality, mod_op=deny, value=all, scope=target, duration_mode=turns, duration=1, decrement_on=turn_end, stacking=replace)`
 
 时间语义：
@@ -280,7 +286,7 @@
 
 `gojo_mugen_incoming_accuracy_down`（EffectDefinition）：
 
-- EffectDefinition：`scope=self`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=[]`
+- EffectDefinition：`scope=self`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=["on_enter"]`
 - payload：`rule_mod(mod_kind="incoming_accuracy", mod_op="add", value=-10, scope="self", duration_mode="permanent", decrement_on="turn_end", stacking="none")`
 
 说明：
@@ -299,6 +305,7 @@
 - `docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 当前仍以主线代码真实实现为准。
 - 本节只定义 Gojo 方案所需的待实现扩展，不代表这些字段、`mod_kind` 或读取点已经进入仓库级正式 contract。
 - 若按本文当前冻结的“团队共享标记”方案实现，需新增 3 块扩展；若要把标记消耗收紧为“同一施法者本人专属”，还需第 4 块扩展。
+- **施工纪律写死**：在第 4.1~4.3 任一扩展未接线完成前，不得先行创建或提交引用 `action_legality / required_target_effects / incoming_accuracy` 的 Gojo `.tres` 资源；否则当前主线内容校验会直接失败。
 
 ### 4.1 `action_legality`（新增并逐步替代 `skill_legality`）
 
@@ -347,6 +354,7 @@
 
 - `["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"]`
 - 说明：`value=all`、`value=switch`、`value=具体skill_id` 必须是不同 key，避免互相覆盖
+- 额外冻结：按当前 `RuleModService` 设计，同 key 实例若用 `replace` 被新实例覆盖，旧实例会被直接移除；**后来的锁到期后，旧锁不会“复活”**。若未来玩法需要“多来源同 key 并存、后过期的那条消失后恢复更早来源”的语义，必须另改 stacking key 或实例模型，不能把恢复行为当成默认存在。
 
 匹配矩阵（必须写死）：
 
@@ -376,13 +384,15 @@
 执行规则：
 
 - `PayloadExecutor.execute_effect_event()` 在 payload 循环前做 effect 级前置检查
+- `required_target_effects` 只允许出现在 `scope=target` 的 effect 上；`scope=self/field` 一律视为 schema 非法并在加载期 fail-fast
 - 目标固定取 `effect_event.chain_context.target_unit_id` 对应单位；若为空、单位不存在、目标已不满足 `ACTIVE && hp>0`、或缺少任一 required effect，则整条 effect 跳过
-- 不满足则跳过该 effect，不报错
+- 不满足则跳过该 effect，不报错，也不写任何由该 effect 产生的 payload 日志
 - 安全前提：只要前置检查实现正确，`remove_effect` 不会走到“目标标记不存在”分支，自然不会触发 `INVALID_EFFECT_REMOVE_AMBIGUOUS`
 
 加载期 fail-fast（必须补齐）：
 
 - `content_snapshot_validator.gd` 必须校验 `required_target_effects`：每个 effect id 非空、不得重复、且必须命中 `content_index.effects`
+- `content_snapshot_validator.gd` 还必须校验：凡 `required_target_effects` 非空的 effect，`scope` 必须等于 `target`
 - 任一引用非法时，内容加载期直接失败；禁止把错误引用留到运行期再“静默跳过”
 - 真正接线时，需同步更新 `docs/rules/06_effect_schema_and_extension.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 与 `docs/records/decisions.md`
 - 测试必须包含“坏引用触发加载期失败”的坏例用例
@@ -412,6 +422,7 @@
 - 最终命中率 clamp 到 `0~99`
 - `0~99` 是刻意设计：`incoming_accuracy` 不得把命中改成“硬必中”；`100` 只由技能本体或 field 覆盖产生
 - `incoming_accuracy.value` 必须是数值；非数值或 NaN 口径在内容加载期直接失败
+- 多个 `incoming_accuracy` 实例的合成顺序，必须**完全复用**现有 `RuleModService` 读取顺序（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`）；读取时 `add` 叠到当前命中值上，`set` 覆盖当前命中值，整轮读完后再统一 clamp 到 `0~99`
 - 读取范围必须收紧为“敌方来袭技能 / 奥义”：
 1. 仅当 `command_type in {skill, ultimate}` 且技能 `targeting=enemy_active_slot` 时才可读取
 2. 仅当 `target` 为敌方 active 单位时读取；`self/field/none` 与无目标动作一律跳过
@@ -438,6 +449,7 @@
 - 标记实例需要记录可校验的施加者身份（不能只看 `def_id`）
 - 茈的前置检查必须能同时检查“目标持有双标记 + 标记来源匹配当前施法者”
 - 该能力需要明确是扩在 `EffectInstance.meta`、新 schema 字段，还是新增专用条件机制；在拍板前，不得把它伪装成现有 `required_target_effects` 已能解决的问题
+- 若团队已经预判后续大概率会走“本人专属消耗”路线，推荐在 v1 施加标记时就把 `source_unit_id` 之类的来源标识预埋进 `EffectInstance.meta`；当前冻结方案下可以**只写不读**，但不要等到要改玩法时才发现旧链路完全没留下可校验来源。
 
 ### 4.5 本版明确不纳入实现
 
@@ -453,6 +465,8 @@
 ---
 
 ## 5. 资源文件清单
+
+以下清单是 **Gojo 目标态资源面**，不是“当前 main 立即可落盘”的内容；只有在第 4.1~4.3 已经接线、并且仓库级正式 contract 文档同步完成后，才允许真正创建这些资源。
 
 ### 5.1 `content/units/`
 
@@ -529,6 +543,10 @@
 | 27 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
 | 28 | 双 `+5` 先后手竞争 | 对手也使用 `+5` 奥义时，若对手先动，则 Gojo 本回合不得被文档误写成“仍然锁到对方” |
 | 29 | 标记 / 领域时间线 | `duration=3 + decrement_on=turn_end` 必须按“施放当回合起连续 3 次 `turn_end` 扣减”验证 |
+| 30 | 无量空处 miss 仍得自 buff | `gojo_domain_cast_buff` 挂在 `effects_on_cast_ids` 时，即使奥义 miss，`sp_attack +1` 仍必须成立 |
+| 31 | required_target_effects 跳过无日志 | 前置条件不满足时，`gojo_murasaki_conditional_burst` 不执行 payload，也不得写出该 effect 产生的 payload 日志 |
+| 32 | incoming_accuracy 多实例顺序 | `add/set` 混用时，必须按统一 rule_mod 读取顺序求值，再统一 clamp 到 `0~99` |
+| 33 | action_legality 同 key 覆盖语义 | 同 key `replace` 覆盖后，后实例到期不得把旧实例“复活”；若要支持恢复，必须另扩实例模型 |
 
 ---
 
