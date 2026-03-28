@@ -237,6 +237,17 @@
 - 本版明确**不**添加 `stat_mod(sp_attack, -1)` 回退；`gojo_domain_cast_buff(+1)` 作为独立收益，不和 field break 绑定反向回滚。
 - 过期与打破在当前 field 生命周期实现中互斥，不会同一实例同时触发两条链。
 
+时间线（`gojo_domain_expire_seal`，`duration=2, decrement_on=turn_end`）：
+
+1. `T` 回合 `turn_end`：field 到期，触发封印 effect，3 条 `rule_mod` 创建时 `remaining=2`。
+2. 同一个 `T` 回合 `turn_end`：`rule_mod` 扣减节点执行，`remaining: 2 -> 1`。
+3. `T+1` 回合整轮（选择 + 执行）：封印仍然生效（玩家体感“被封 1 回合”）。
+4. `T+1` 回合 `turn_end`：再次扣减，`remaining: 1 -> 0`，实例移除。
+
+待决策（本版不强行拍板）：
+
+- `gojo_domain_rollback` 在“creator 已离场/倒下导致 field_break”场景下是否仍应处罚，目前不在本版可施工口径内；后续单独冻结语义后再落实现。
+
 ---
 
 ## 3. 被动技能：无下限（Mugen）
@@ -310,6 +321,23 @@
 - `["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"]`
 - 说明：`value=all`、`value=switch`、`value=具体skill_id` 必须是不同 key，避免互相覆盖。
 
+匹配矩阵（必须写死）：
+
+| 当前动作 | 命中的 `value` |
+|---|---|
+| `skill(skill_id=X)` | `all`、`skill`、`X` |
+| `ultimate(skill_id=Y)` | `all`、`ultimate`、`Y` |
+| `switch` | `all`、`switch` |
+| `wait` | 不命中任何 `action_legality`（恒合法） |
+
+最终判定顺序（必须写死）：
+
+1. 默认 `allowed = true`。
+2. 兼容期统一收集 `action_legality + skill_legality` 两类实例，并走同一排序链（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`）。
+3. 逐条判断是否命中当前动作；命中则按 `deny => allowed=false`、`allow => allowed=true` 覆盖。
+4. 最终结果以“最后一条命中的 rule_mod”状态为准（last-write-wins）。
+5. `skill_legality` 兼容读取只参与 `skill/ultimate` 两类动作；`switch/wait` 不读取旧 `skill_legality`。
+
 ### 4.2 `required_target_effects`
 
 `effect_definition.gd` 新增：
@@ -324,6 +352,13 @@
 - 目标固定取 `effect_event.chain_context.target_unit_id` 对应单位；若为空、单位不存在、或缺少任一 required effect，则整条 effect 跳过。
 - 不满足则跳过该 effect，不报错。
 - 安全前提：只要前置检查实现正确，`remove_effect` 不会走到“目标标记不存在”分支，自然不会触发 `INVALID_EFFECT_REMOVE_AMBIGUOUS`。
+
+加载期 fail-fast（必须补齐）：
+
+- `content_snapshot_validator.gd` 必须校验 `required_target_effects`：每个 effect id 非空、不得重复、且必须命中 `content_index.effects`。
+- 任一引用非法时，内容加载期直接失败；禁止把错误引用留到运行期再“静默跳过”。
+- `content schema / rules` 文档必须同步增加该字段定义，避免实现与规范分叉。
+- 测试必须包含“坏引用触发加载期失败”的坏例用例。
 
 该能力仅用于茈的条件追加爆发，不引入 `action_tags`。
 
@@ -349,6 +384,10 @@
 - 只在 `resolved_accuracy < 100` 时读取（必中不受影响）。
 - 最终命中率 clamp 到 `0~99`。
 - `0~99` 是刻意设计：`incoming_accuracy` 不得把命中改成“硬必中”；`100` 只由技能本体或 field 覆盖产生。
+- 读取范围必须收紧为“敌方来袭技能/奥义”：
+1. 仅当 `command_type in {skill, ultimate}` 且技能 `targeting=enemy_active_slot` 时才可读取。
+2. 仅当 `target` 为敌方 active 单位时读取；`self/field/none` 与无目标动作一律跳过。
+3. `switch / wait / resource_forced_default` 一律不读取 `incoming_accuracy`。
 
 `incoming_accuracy` stacking key schema：
 
@@ -435,6 +474,13 @@
 | 15 | 领域打破回滚 | 与过期封印同链 |
 | 16 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
 | 17 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
+| 18 | 标记随换人清除 | 目标换下后 `gojo_ao_mark/gojo_aka_mark` 被移除（`persists_on_switch=false`） |
+| 19 | 茈追加击杀边界 | 追加段把目标打到 `hp<=0` 时，后续 `remove_effect` 静默跳过且不产生 `invalid_battle` |
+| 20 | required_target_effects 坏引用 | `required_target_effects` 指向不存在 effect 时内容加载期直接失败 |
+| 21 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
+| 22 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
+| 23 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
+| 24 | 领域后摇时序 | 验证“`duration=2 + turn_end` 在 field 过期当回合先挂后扣，玩家体感为下一整回合封印” |
 
 ---
 
@@ -448,3 +494,11 @@
 | 资源节奏 | 中 | `init_mp=50`、`regen=14`，避免过快连续开大 |
 
 本版目标不是最终平衡值，而是先落地“可施工、可验收、可迭代”的玩法闭环。
+
+## 8. 待你拍板（本轮不改）
+
+| 议题 | 说明 |
+|---|---|
+| rollback 在 creator 离场/倒下时是否仍处罚 | 当前文档不强行冻结该语义，等你定后再收口实现 |
+| 领域后摇是否允许 `reverse_ritual` 绕开 | 当前保留为待决策项，不擅自改成“封已装配全部常规技能” |
+| 领域强度是否继续下调 | 属于平衡取舍，不属于本轮“明显错误修正”范围 |
