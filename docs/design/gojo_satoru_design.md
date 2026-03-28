@@ -6,6 +6,7 @@
 |------|------|
 | 茈 | 保留“苍+赫双标记”条件爆发，**不做自伤** |
 | 无下限 | 改为“敌方技能攻击五条悟时，若该次不是必中，则命中率 -10” |
+| 领域后摇 | **删除**（不再追加封印/回滚） |
 | 引擎改动范围 | 仅保留 `action_legality`、`required_target_effects`、`incoming_accuracy` 三块 |
 | 明确不做 | `effects_pre_damage_ids`、`on_before_damage`、`damage_override`、`action_tags`、`last_dealt_damage`、反噬链路 |
 
@@ -205,8 +206,8 @@
 | display_name | `无量空处` |
 | creator_accuracy_override | **100** |
 | effect_ids | `[]` |
-| on_expire_effect_ids | `["gojo_domain_expire_seal"]` |
-| on_break_effect_ids | `["gojo_domain_rollback"]` |
+| on_expire_effect_ids | `[]` |
+| on_break_effect_ids | `[]` |
 
 **展开效果链**
 
@@ -226,27 +227,7 @@
 1. EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`
 2. payload：`rule_mod(mod_kind=action_legality, mod_op=deny, value=all, scope=target, duration_mode=turns, duration=1, decrement_on=turn_end, stacking=replace)`
 
-- `gojo_domain_expire_seal` 资源口径：
-1. EffectDefinition：`scope=self`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`
-2. payload（3 条）：`rule_mod(mod_kind=action_legality, mod_op=deny, value=gojo_ao/gojo_aka/gojo_murasaki, scope=self, duration_mode=turns, duration=2, decrement_on=turn_end, stacking=replace)`
-
-- `gojo_domain_rollback` 资源口径：
-1. EffectDefinition：`scope=self`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`
-2. payload（3 条）：与 `gojo_domain_expire_seal` 相同，仅事件来源为 `on_break`
-
-- 本版明确**不**添加 `stat_mod(sp_attack, -1)` 回退；`gojo_domain_cast_buff(+1)` 作为独立收益，不和 field break 绑定反向回滚。
-- 过期与打破在当前 field 生命周期实现中互斥，不会同一实例同时触发两条链。
-
-时间线（`gojo_domain_expire_seal`，`duration=2, decrement_on=turn_end`）：
-
-1. `T` 回合 `turn_end`：field 到期，触发封印 effect，3 条 `rule_mod` 创建时 `remaining=2`。
-2. 同一个 `T` 回合 `turn_end`：`rule_mod` 扣减节点执行，`remaining: 2 -> 1`。
-3. `T+1` 回合整轮（选择 + 执行）：封印仍然生效（玩家体感“被封 1 回合”）。
-4. `T+1` 回合 `turn_end`：再次扣减，`remaining: 1 -> 0`，实例移除。
-
-待决策（本版不强行拍板）：
-
-- `gojo_domain_rollback` 在“creator 已离场/倒下导致 field_break”场景下是否仍应处罚，目前不在本版可施工口径内；后续单独冻结语义后再落实现。
+- 本版删除领域后摇：不再追加 `expire_seal / rollback`，领域结束或被打破后不对五条悟追加封印处罚。
 
 ---
 
@@ -296,7 +277,7 @@
 迁移策略（避免一次性硬切导致旧内容失效）：
 
 1. **阶段 A（兼容期）**：新增 `action_legality` 并保留 `skill_legality` 兼容读取；
-2. **阶段 B（迁移期）**：迁移 `content/effects/sukuna_domain_expire_seal.tres` 和相关测试；
+2. **阶段 B（迁移期）**：现存主线资源无 `skill_legality` 迁移动作；新内容一律只用 `action_legality`。
 3. **阶段 C（收口期）**：移除 `skill_legality` 常量、校验与读取路径。
 
 实现清单（阶段 A 起步）：
@@ -309,7 +290,6 @@
 3. 新增 `is_action_allowed(battle_state, owner_id, action_type, skill_id="")`
 - `legal_action_service.gd`：技能、奥义、换人都改读 `is_action_allowed`
 - `action_executor.gd`：`_can_start_action()` 执行前复检 `is_action_allowed`，覆盖排队后中途上锁场景
-- `content/effects/sukuna_domain_expire_seal.tres` 与相关测试：迁移为 `action_legality`
 
 兼容期读取策略（必须写死）：
 
@@ -434,8 +414,6 @@
 - `gojo_domain_cast_buff.tres`
 - `gojo_apply_domain_field.tres`
 - `gojo_domain_action_lock.tres`
-- `gojo_domain_expire_seal.tres`
-- `gojo_domain_rollback.tres`
 - `gojo_mugen_incoming_accuracy_down.tres`
 
 ### 5.4 `content/fields/`
@@ -470,17 +448,14 @@
 | 11 | 无量空处 action_lock | 当回合敌方已排队技能/换人被 `cancelled_pre_start` |
 | 12 | action_legality + wait | `deny all` 时 `wait` 仍可选 |
 | 13 | 领域内必中 | `creator_accuracy_override=100` 生效 |
-| 14 | 领域过期封印 | 下一回合苍/赫/茈被封印 1 回合体感 |
-| 15 | 领域打破回滚 | 与过期封印同链 |
-| 16 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
-| 17 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
-| 18 | 标记随换人清除 | 目标换下后 `gojo_ao_mark/gojo_aka_mark` 被移除（`persists_on_switch=false`） |
-| 19 | 茈追加击杀边界 | 追加段把目标打到 `hp<=0` 时，后续 `remove_effect` 静默跳过且不产生 `invalid_battle` |
-| 20 | required_target_effects 坏引用 | `required_target_effects` 指向不存在 effect 时内容加载期直接失败 |
-| 21 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
-| 22 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
-| 23 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
-| 24 | 领域后摇时序 | 验证“`duration=2 + turn_end` 在 field 过期当回合先挂后扣，玩家体感为下一整回合封印” |
+| 14 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
+| 15 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
+| 16 | 标记随换人清除 | 目标换下后 `gojo_ao_mark/gojo_aka_mark` 被移除（`persists_on_switch=false`） |
+| 17 | 茈追加击杀边界 | 追加段把目标打到 `hp<=0` 时，后续 `remove_effect` 静默跳过且不产生 `invalid_battle` |
+| 18 | required_target_effects 坏引用 | `required_target_effects` 指向不存在 effect 时内容加载期直接失败 |
+| 19 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
+| 20 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
+| 21 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
 
 ---
 
@@ -489,16 +464,15 @@
 | 维度 | 五条悟（本版） | 说明 |
 |------|----------------|------|
 | 爆发 | 中高 | 茈有条件追加，但去掉自伤摇摆链 |
-| 控场 | 高 | 领域首回合锁行动 + 后续封印 |
+| 控场 | 高 | 领域首回合锁行动 + 领域内必中 |
 | 生存 | 中 | 反转术式 + 稳定命中干扰，但不再“30% 改伤害为 1” |
 | 资源节奏 | 中 | `init_mp=50`、`regen=14`，避免过快连续开大 |
 
 本版目标不是最终平衡值，而是先落地“可施工、可验收、可迭代”的玩法闭环。
 
-## 8. 待你拍板（本轮不改）
+## 8. 当前冻结
 
-| 议题 | 说明 |
+| 项目 | 说明 |
 |---|---|
-| rollback 在 creator 离场/倒下时是否仍处罚 | 当前文档不强行冻结该语义，等你定后再收口实现 |
-| 领域后摇是否允许 `reverse_ritual` 绕开 | 当前保留为待决策项，不擅自改成“封已装配全部常规技能” |
-| 领域强度是否继续下调 | 属于平衡取舍，不属于本轮“明显错误修正”范围 |
+| 领域后摇 | 已删除（Gojo / Sukuna 同口径） |
+| 领域强度 | 暂不下调，后续按实战数据再调 |

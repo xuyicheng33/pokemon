@@ -952,3 +952,20 @@
 - `docs/rules/06`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_content_schema.md` 必须与 Gojo 文档使用同一术语集合（`action_legality / incoming_accuracy / required_target_effects`）。
 - Gojo 文档必须明确 `wait` 不受 `action_legality` 影响，且 `switch` 必须命中 `value=switch/all` 才受管控。
 - Gojo 文档必须保留“待拍板项”隔离区，不允许把未定语义伪装成已冻结实现口径。
+
+### 领域后摇删除（Gojo + Sukuna）（已完成）
+- 目标：按你拍板直接删除“领域放完后的后摇”，并让宿傩现有实现与 Gojo 新文档保持同口径。
+- 范围：`content/fields/sukuna_malevolent_shrine.tres`、`tests/suites/sukuna_suite.gd`、`src/composition/sample_battle_factory.gd`、`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。
+- 验收标准：领域到期/打破后不再追加封印或回滚；领域强度本轮不下调；回归全绿。
+
+#### 已完成内容
+- Sukuna 领域资源改为“到期仅终爆、打破无后效”：移除 `sukuna_domain_expire_seal` 与 `sukuna_domain_rollback` 触发。
+- 删除未再使用的资源文件：`content/effects/sukuna_domain_expire_seal.tres`、`content/effects/sukuna_domain_rollback.tres`。
+- `sample_battle_factory` 移除两份已删除资源路径，防止快照加载死链。
+- Sukuna 回归用例改为新语义：验证“领域结束后不封技能、不回退攻阶”。
+- Gojo 设计文档删除后摇设计（field 的 `on_expire_effect_ids/on_break_effect_ids` 置空、资源清单和测试计划同步）。
+
+#### 回归检查要点
+- `sukuna_domain_expire_chain_path` 必须验证“终爆仍生效，但无封印、无 rollback”。
+- `sukuna_domain_break_chain_path` 必须验证“打破无终爆、无封印、无 rollback”。
+- Gojo 文档不得再出现 `gojo_domain_expire_seal / gojo_domain_rollback` 的可施工定义。

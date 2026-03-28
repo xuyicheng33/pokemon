@@ -616,3 +616,8 @@
 - `incoming_accuracy` 读取范围写死为“敌方来袭技能/奥义 + enemy_active_slot + 目标为敌方 active 且 `resolved_accuracy < 100`”；`self/field/none` 与 `switch/wait/resource_forced_default` 一律跳过。
 - `gojo_domain_expire_seal duration=2,decrement_on=turn_end` 补了显式时间线，冻结“玩家体感封印 1 回合”成立条件，避免后续误改成 `duration=1`。
 - rollback 在 creator 离场/倒下触发 break 时是否仍处罚、后摇是否允许 `reverse_ritual` 绕开、领域强度是否继续下调，标记为待拍板项，本轮不擅自改语义。
+
+### 203. 领域后摇删除（Gojo / Sukuna 同口径，2026-03-28）
+- 领域结束后的“封印/回滚后摇”从设计口径中移除：Gojo 不再定义 `gojo_domain_expire_seal / gojo_domain_rollback`，Sukuna 现有内容也移除同类后摇。
+- Sukuna `sukuna_malevolent_shrine` 调整为：自然到期仅保留 `sukuna_domain_expire_burst`，`on_break_effect_ids` 置空；不再施加 `skill_legality` 封印与 stat rollback。
+- 领域强度本轮不下调，后续按实战与回归数据再做平衡收敛。
