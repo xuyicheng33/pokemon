@@ -33,5 +33,5 @@
 
 ## 审查提醒（2026-03-24）
 
-- 当前仓库里保留旧口径的文档，仅包括 `docs/records/archive/*` 与 `docs/records/battle_system_rules.md`。
-- 这些文件都只用于追溯历史，不用于实现；代码实现与评审只读 `docs/rules/`。
+- 当前代码实现与规则评审只读 `docs/rules/` 与 `docs/design/`。
+- `docs/records/` 只用于追溯任务与决策背景；若其中历史说法与现行规则冲突，以 `docs/rules/` 为准。

@@ -1,11 +1,17 @@
 extends RefCounted
 class_name ManagerContractSuite
 
+const LegalActionSetScript := preload("res://src/battle_core/contracts/legal_action_set.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const BattleAIAdapterScript := preload("res://src/adapters/battle_ai_adapter.gd")
+const PlayerSelectionAdapterScript := preload("res://src/adapters/player_selection_adapter.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("full_open_public_snapshot_contract", failures, Callable(self, "_test_full_open_public_snapshot_contract").bind(harness))
+    runner.run_test("legal_action_public_id_contract", failures, Callable(self, "_test_legal_action_public_id_contract").bind(harness))
+    runner.run_test("selection_adapters_public_id_contract", failures, Callable(self, "_test_selection_adapters_public_id_contract").bind(harness))
+    runner.run_test("validator_internal_id_backfill_contract", failures, Callable(self, "_test_validator_internal_id_backfill_contract").bind(harness))
     runner.run_test("manager_session_isolation_interleaved_turns", failures, Callable(self, "_test_manager_session_isolation_interleaved_turns").bind(harness))
     runner.run_test("session_seed_and_replay_hash_isolation", failures, Callable(self, "_test_session_seed_and_replay_hash_isolation").bind(harness))
     runner.run_test("replay_isolation_no_session_side_effect", failures, Callable(self, "_test_replay_isolation_no_session_side_effect").bind(harness))
@@ -77,6 +83,83 @@ func _test_full_open_public_snapshot_contract(harness) -> Dictionary:
     if _contains_key_recursive(prebattle_public_teams, "unit_instance_id"):
         return harness.fail_result("prebattle_public_teams leaks unit_instance_id")
     manager.close_session(session_id)
+    return harness.pass_result()
+
+func _test_legal_action_public_id_contract(harness) -> Dictionary:
+    var manager_payload = harness.build_manager()
+    if manager_payload.has("error"):
+        return harness.fail_result(str(manager_payload["error"]))
+    var manager = manager_payload["manager"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+
+    var init_result = manager.create_session({
+        "battle_seed": 302,
+        "content_snapshot_paths": sample_factory.content_snapshot_paths(),
+        "battle_setup": sample_factory.build_sample_setup(),
+    })
+    var session_id: String = str(init_result.get("session_id", ""))
+    var legal_actions = manager.get_legal_actions(session_id, "P1")
+    if legal_actions == null:
+        return harness.fail_result("manager get_legal_actions returned null")
+    if legal_actions.actor_public_id != "P1-A":
+        return harness.fail_result("legal_action_set actor should expose actor_public_id only")
+    if legal_actions.legal_switch_target_public_ids != PackedStringArray(["P1-B", "P1-C"]):
+        return harness.fail_result("legal_action_set switch targets should expose public bench ids only")
+    var property_names: Array[String] = []
+    for property_data in legal_actions.get_property_list():
+        property_names.append(str(property_data.get("name", "")))
+    if property_names.has("actor_id") or property_names.has("legal_switch_target_ids"):
+        return harness.fail_result("legal_action_set should not leak deprecated runtime instance id fields")
+    manager.close_session(session_id)
+    return harness.pass_result()
+
+func _test_selection_adapters_public_id_contract(_harness) -> Dictionary:
+    var legal_actions = LegalActionSetScript.new()
+    legal_actions.actor_public_id = "P1-A"
+    legal_actions.legal_switch_target_public_ids = PackedStringArray(["P1-B"])
+    var ai_choice = BattleAIAdapterScript.new().choose_command(legal_actions)
+    if ai_choice.get("target_public_id", "") != "P1-B":
+        return {"ok": false, "error": "BattleAIAdapter should emit target_public_id for switch commands"}
+    if ai_choice.has("target_unit_id"):
+        return {"ok": false, "error": "BattleAIAdapter should not emit target_unit_id in external payload"}
+    var player_payload = PlayerSelectionAdapterScript.new().build_player_payload({
+        "command_type": CommandTypesScript.SWITCH,
+        "target_public_id": "P1-B",
+    })
+    if player_payload.get("target_public_id", "") != "P1-B":
+        return {"ok": false, "error": "PlayerSelectionAdapter should preserve target_public_id"}
+    if player_payload.has("target_unit_id"):
+        return {"ok": false, "error": "PlayerSelectionAdapter should not leak target_unit_id"}
+    return {"ok": true}
+
+func _test_validator_internal_id_backfill_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 303)
+    var actor_unit = battle_state.get_unit_by_public_id("P1-A")
+    var target_unit = battle_state.get_unit_by_public_id("P1-B")
+    if actor_unit == null or target_unit == null:
+        return harness.fail_result("validator backfill test missing units")
+    var command = core.command_builder.build_command({
+        "turn_index": 1,
+        "command_type": CommandTypesScript.SWITCH,
+        "command_source": "resource_auto",
+        "side_id": "P1",
+        "actor_id": actor_unit.unit_instance_id,
+        "target_unit_id": target_unit.unit_instance_id,
+    })
+    if not core.command_validator.validate_command(command, battle_state, content_index):
+        return harness.fail_result("internal switch command using runtime ids should remain valid")
+    if command.actor_public_id != "P1-A" or command.target_public_id != "P1-B":
+        return harness.fail_result("validator should backfill public ids when internal runtime ids are supplied")
     return harness.pass_result()
 
 func _test_manager_session_isolation_interleaved_turns(harness) -> Dictionary:

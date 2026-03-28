@@ -49,7 +49,7 @@
 |锁定目标 / 蓄力标记 / 本行动临时标记|移除|移除|移除|不得跨离场保留|
 |当前回合队列项|若尚未轮到则取消|若尚未轮到则取消|取消|见模块 02|
 |被动持有物|保留|保留|随单位失效|装备关系不变|
-|field|保留|保留|保留|field 属于全场，不属于单位|
+|field|若离场者不是 creator 则保留；若离场者是 creator，则离场清理完成后立即提前打断|若离场者不是 creator 则保留；若离场者是 creator，则离场清理完成后立即提前打断|若离场者不是 creator 则保留；若离场者是 creator，则离场清理完成后立即提前打断|field 属于全场，但 creator 离场会触发提前打断|
 |已公开信息|保留为公开|保留为公开|保留为公开|日志与回放需要稳定信息|
 
 ## 4. 主动换人顺序
@@ -60,15 +60,17 @@
 |2|旧单位触发 `on_switch`，并带 `leave_reason = manual_switch`|
 |3|旧单位触发 `on_exit`|
 |4|按离场重置表清理旧单位战斗态|
-|5|新单位入场|
-|6|新单位触发 `on_enter`|
-|7|由入场触发的被动 / 持有物 / field 效果进入统一效果队列|
+|5|若旧单位是当前 field creator，则立刻执行 `field_break`；只跑 `on_break_effect_ids`|
+|6|新单位入场|
+|7|新单位触发 `on_enter`|
+|8|由入场触发的被动 / 持有物 / field 效果进入统一效果队列|
 
 补充规则：
 
 1. 手动换人指令在选择阶段必须指定唯一 bench 目标 `public_id`；校验通过后再映射到运行时 `unit_instance_id`，队列锁定后不再改选。
 2. 若行动轮到前行动者已离场或倒下，该换人行动按模块 02 的 `cancelled_pre_start` 处理，不再另行补选。
 3. 若行动已经开始执行，却发现所选目标不在合法 bench，视为运行态破坏规则，按 `invalid_battle` 处理。
+4. 新入场单位、其 `on_enter`、以及后续 `on_matchup_changed` 不得读取一个按本规则已被打断的旧 field。
 
 ## 5. 强制换下顺序
 
@@ -78,13 +80,15 @@
 |2|若存在合法替补，旧单位触发 `on_switch`，并带 `leave_reason = forced_replace`|
 |3|旧单位触发 `on_exit`|
 |4|按离场重置表清理旧单位战斗态|
-|5|替补立刻入场并触发 `on_enter`|
+|5|若旧单位是当前 field creator，则立刻执行 `field_break`；只跑 `on_break_effect_ids`|
+|6|替补立刻入场并触发 `on_enter`|
 
 补充规则：
 
 1. 强制换下的替补选择必须走系统接口：合法 bench 候选 > 1 时返回目标 `unit_instance_id`；若只剩 1 名则自动锁定。
 2. 若系统接口返回空值、返回不在合法候选列表、或超时，按 `invalid_replacement_selection` 立即终止战斗。
 3. 若当前没有合法 bench，强制换下效果直接失效；不触发 `on_switch / on_exit`，也不改写当前 active。
+4. 提前打断不会触发 `effect:field_expire`，也不会执行 `on_expire_effect_ids`。
 
 ## 6. 倒下离场顺序
 
@@ -96,8 +100,9 @@
 |4|若本次倒下存在可归属来源，则对来源触发 `on_kill`|
 |5|倒下单位触发 `on_exit`，并带 `leave_reason = faint`|
 |6|按离场重置表清理战斗态|
-|7|若该方仍有后备单位，则立即执行强制补位|
-|8|新单位入场并触发 `on_enter` 及其相关效果|
+|7|若离场单位是当前 field creator，则立刻执行 `field_break`；只跑 `on_break_effect_ids`|
+|8|若该方仍有后备单位，则立即执行强制补位|
+|9|新单位入场并触发 `on_enter` 及其相关效果|
 
 补充规则：
 
@@ -106,6 +111,7 @@
 3. 当前基线没有“可作用于倒下单位”的特例；治疗、资源变化与普通持续效果都不能再对 `fainted_pending_leave` 生效。
 4. 强制补位的替补选择必须走系统接口：合法 bench 候选 > 1 时返回目标 `unit_instance_id`；若只剩 1 名则自动锁定。
 5. 若系统接口返回空值、返回不在合法候选列表、或超时，按 `invalid_replacement_selection` 立即终止战斗。
+6. 旧 field 被提前打断后，补位链和新单位 `on_enter` 不得再读取它。
 
 ## 7. 同窗双倒下处理
 

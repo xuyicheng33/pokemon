@@ -7,6 +7,23 @@
 
 - `docs/records/archive/decisions_pre_v0.6.3.md`
 
+## 2026-03-28
+
+### 207. 外层 contract 全量收口到 `public_id`
+- `unit_id` 继续只用于内容定义与队伍构筑；`public_id` 成为玩家输入、AI 输入、合法性列表、公开快照、换人目标与回放输入的唯一外层标识。
+- `LegalActionSet` 对外固定暴露 `actor_public_id / legal_switch_target_public_ids`，不再公开 bench `unit_instance_id`。
+- `actor_id / target_unit_id` 继续保留，但只允许留在核心内部与系统自动动作注入路径中。
+
+### 208. field 提前打断必须发生在补位与新单位 `on_enter` 之前
+- creator 手动换下、被强制换下、倒下或离场后，旧 field 要在 `leave` 完成后立刻执行 `field_break`。
+- 提前打断只执行 `on_break_effect_ids`，不执行 `on_expire_effect_ids`，也不写自然到期日志。
+- 新入场单位、`on_enter`、`on_matchup_changed`、`battle_init` 与回合节点，都不得读取一个按规则已被打断的旧 field。
+
+### 209. 宿傩默认装配与候选技能池语义分离
+- 宿傩默认技能组固定为 `解 / 捌 / 开`，奥义固定为 `伏魔御厨子`，被动固定为“教会你爱的是...”。
+- `反转术式` 保留在内容包中，作为测试与未来配招系统使用的候选技能，不进入默认三技能装配。
+- 若 schema 暂不扩候选技能池字段，这层语义必须继续写死在 README 与内容说明文档里。
+
 ## 2026-03-27
 
 ### 205. `docs/rules/06` 与扩展入口文档不得继续保留已退役 schema 别名
@@ -31,7 +48,7 @@
 
 ### 203. 输入层、公开层与运行时层的单位 ID 口径必须分层
 - `unit_id` 继续专指内容层 `UnitDefinition.id`，只用于队伍构筑和资源引用，不再拿来描述换人目标或补位候选。
-- 外层输入、公开快照与玩家可见目标固定使用 `public_id`；当前 `Command` 推荐由 `actor_public_id / target_public_id` 进入。
+- 外层输入、公开快照与玩家可见目标固定使用 `public_id`；当前 `Command` 默认由 `actor_public_id / target_public_id` 进入。
 - 核心内部的手动换人固化目标、合法 bench 列表和 `ReplacementSelector` 返回值一律使用运行时 `unit_instance_id`。
 
 ### 204. `DamagePayload` 公式伤害口径补齐 `damage_kind`
@@ -173,9 +190,8 @@
 - 同一个 `turn_start` 里新触发的 field / effect / rule_mod，不回头改写本次回复结果。
 
 ### 121. 超时默认动作命名统一
-- 行动类型固定写 `timeout_default`。
-- 触发来源固定写 `timeout_auto`。
-- 不再保留 `timeout_auto_action` 这类并行命名。
+- 历史口径：当时将超时默认动作命名为 `timeout_default / timeout_auto`。
+- 该口径已被决策 193 覆盖；当前现行规则为 `wait / timeout_auto` 或 `resource_forced_default / resource_auto`。
 
 ### 122. 效果系统触发点删到当前最小集
 - 当前基线只保留 `battle_init / turn_start / turn_end / on_cast / on_hit / on_miss / on_enter / on_exit / on_switch / on_faint / on_kill`。
@@ -193,7 +209,7 @@
 
 ### 125. 极简基线终检结论
 - 本轮终检确认：现行规则冲突已收口到可实现状态。
-- 仍保留旧口径的文件仅限 `docs/records/archive/*` 和 `docs/records/battle_system_rules.md`，且都属于历史追溯用途。
+- 历史追溯文件只读 `docs/records/archive/*`；现行实现与评审不再把退役总表当作权威入口。
 
 ## 2026-03-25
 
@@ -222,8 +238,8 @@
 - 因此现行文档不再保留 `action_failed_pre_start`；若以后确实需要“行动到窗口前被拦下”，必须先补明确触发点，再补扣 MP 与日志语义。
 
 ### 127. 换人、强制换下、强制补位的替补选择契约写死
-- 手动换人在选择阶段锁定 bench 目标 `unit_id`，队列锁定后不允许改选。
-- 强制换下与强制补位都不进入行动队列，但仍保留从合法 bench 列表选替补的权利；若只剩 1 名则自动锁定。
+- 历史口径：早期手动换人目标曾写作 `unit_id`。
+- 当前现行规则已被决策 203 与 207 覆盖：外层锁定目标统一使用 `public_id`；系统替补选择接口仍返回内部 `unit_instance_id`。
 
 ### 128. `HP = 0` 的中间态显式命名为 `fainted_pending_leave`
 - 单位一旦 `HP = 0`，立即失去在场资格，并等待当前击倒窗口统一处理离场。
@@ -234,7 +250,8 @@
 - 奥义只是主动技能中的一个受限分支：沿用 `mp_cost / accuracy / targeting / effects_on_cast_ids` 等通用字段，只额外限制 `priority`。
 
 ### 130. 日志空值与自动来源口径统一写死
-- `resource_forced_default` 固定搭配 `command_source = resource_auto`，`timeout_default` 固定搭配 `command_source = timeout_auto`。
+- 历史口径：`resource_forced_default` 固定搭配 `command_source = resource_auto`，`timeout_default` 固定搭配 `command_source = timeout_auto`。
+- 其中 `timeout_default` 已被决策 193 覆盖为 `wait / timeout_auto`。
 - 非适用日志字段统一写 `null`，避免 `0 / 空串 / 省略` 三套口径并存。
 
 ### 131. 首发 `on_enter` 与 `battle_init` 明确分层
@@ -272,7 +289,8 @@
 ### 139. 行动执行起点、payload 顺序与自动动作链归属写死
 - 技能、奥义、两类默认动作的执行起点固定为：`has_acted = true -> 扣 MP -> on_cast -> 命中判定 -> 后续 payload / on_hit / on_miss`。
 - `payloads` 严格按声明顺序执行，后序 payload 读取前序写回的最新运行态。
-- `resource_forced_default` 与 `timeout_default` 进入行动队列后仍属于 `action` 链，不额外发明 `timeout` 链。
+- 历史口径：`resource_forced_default` 与 `timeout_default` 都属于 `action` 链。
+- 当前现行规则已被决策 193 覆盖为：`resource_forced_default` 与 `wait` 都属于 `action` 链，不额外发明 `timeout` 链。
 
 ### 140. 回合节点触发范围统一为“仅在场单位 + field”
 - `turn_start / turn_end` 的回合节点触发只对当前在场单位和全场 field 生效。
@@ -366,7 +384,7 @@
 - 统一错误码为 `invalid_command_payload`，并写 `system:invalid_battle` 日志。
 
 ### 167. 强制换下/强制补位统一走系统替补选择接口
-- 引擎新增 `ReplacementSelector` 注入点：输入战斗态、side、合法候选、原因；输出目标 `unit_id`。
+- 引擎新增 `ReplacementSelector` 注入点：输入战斗态、side、合法候选、原因；输出目标 `unit_instance_id`。
 - 候选数 > 1 时必须调用接口；候选数 = 1 自动锁定。
 - 接口返回空值、非法目标或超时，一律 `invalid_replacement_selection` fail-fast。
 

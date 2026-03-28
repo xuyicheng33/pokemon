@@ -71,6 +71,7 @@ func dispose() -> void:
         switch_action_service.leave_service = null
         switch_action_service.action_cast_service = null
         switch_action_service.action_log_service = null
+        switch_action_service.field_service = null
     if action_log_service != null:
         action_log_service.battle_logger = null
         action_log_service.log_event_builder = null
@@ -93,6 +94,7 @@ func dispose() -> void:
         payload_state_handler.effect_instance_service = null
         payload_state_handler.rule_mod_service = null
         payload_state_handler.rule_mod_value_resolver = null
+        payload_state_handler.field_service = null
     if payload_forced_replace_handler != null:
         payload_forced_replace_handler.replacement_service = null
     if faint_resolver != null:
@@ -183,6 +185,7 @@ func dispose() -> void:
         passive_item_service.trigger_dispatcher = null
     if field_service != null:
         field_service.trigger_dispatcher = null
+        field_service.trigger_batch_runner = null
     if effect_instance_service != null:
         effect_instance_service.id_factory = null
     if effect_instance_dispatcher != null:
@@ -200,6 +203,7 @@ func dispose() -> void:
         replacement_service.replacement_selector = null
         replacement_service.leave_service = null
         replacement_service.trigger_batch_runner = null
+        replacement_service.field_service = null
 
     id_factory = null
     rng_service = null

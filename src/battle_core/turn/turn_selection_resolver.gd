@@ -45,25 +45,27 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
         elif not legal_action_set.forced_command_type.is_empty():
             if provided_command != null:
                 return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
+            var forced_actor = side_state.get_active_unit()
             resolved_command = command_builder.build_command({
                 "turn_index": battle_state.turn_index,
                 "command_type": CommandTypesScript.RESOURCE_FORCED_DEFAULT,
                 "command_source": "resource_auto",
                 "side_id": side_state.side_id,
-                "actor_id": legal_action_set.actor_id,
+                "actor_id": forced_actor.unit_instance_id,
             })
         elif provided_command == null:
+            var timeout_actor = side_state.get_active_unit()
             resolved_command = command_builder.build_command({
                 "turn_index": battle_state.turn_index,
                 "command_type": CommandTypesScript.WAIT,
                 "command_source": "timeout_auto",
                 "side_id": side_state.side_id,
-                "actor_id": legal_action_set.actor_id,
+                "actor_id": timeout_actor.unit_instance_id,
             })
         else:
             if not command_validator.validate_command(provided_command, battle_state, content_index):
                 return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
-            if not _is_command_in_legal_set(provided_command, legal_action_set):
+            if not _is_command_in_legal_set(provided_command, legal_action_set, battle_state):
                 return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
             resolved_command = provided_command
         side_state.selection_state.selected_command = resolved_command
@@ -78,17 +80,27 @@ func clear_turn_end_state(battle_state) -> void:
         for unit_state in side_state.team_units:
             unit_state.action_window_passed = false
 
-func _is_command_in_legal_set(command, legal_action_set) -> bool:
+func _is_command_in_legal_set(command, legal_action_set, battle_state) -> bool:
     match command.command_type:
         CommandTypesScript.SKILL:
             return legal_action_set.legal_skill_ids.has(command.skill_id)
         CommandTypesScript.ULTIMATE:
             return legal_action_set.legal_ultimate_ids.has(command.skill_id)
         CommandTypesScript.SWITCH:
-            return legal_action_set.legal_switch_target_ids.has(command.target_unit_id)
+            return legal_action_set.legal_switch_target_public_ids.has(_resolve_switch_target_public_id(command, battle_state))
         CommandTypesScript.WAIT:
             return legal_action_set.wait_allowed
         CommandTypesScript.SURRENDER:
             return true
         _:
             return false
+
+func _resolve_switch_target_public_id(command, battle_state) -> String:
+    if not command.target_public_id.is_empty():
+        return command.target_public_id
+    if command.target_unit_id.is_empty():
+        return ""
+    var target_unit = battle_state.get_unit(command.target_unit_id)
+    if target_unit == null:
+        return ""
+    return target_unit.public_id

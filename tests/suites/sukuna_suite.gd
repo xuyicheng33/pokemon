@@ -6,12 +6,33 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
+    runner.run_test("sukuna_default_loadout_contract", failures, Callable(self, "_test_sukuna_default_loadout_contract").bind(harness))
     runner.run_test("sukuna_matchup_regen_runtime_path", failures, Callable(self, "_test_sukuna_matchup_regen_runtime_path").bind(harness))
     runner.run_test("sukuna_reverse_ritual_heal_path", failures, Callable(self, "_test_sukuna_reverse_ritual_heal_path").bind(harness))
     runner.run_test("sukuna_kamado_stack_on_exit_path", failures, Callable(self, "_test_sukuna_kamado_stack_on_exit_path").bind(harness))
     runner.run_test("sukuna_domain_expire_chain_path", failures, Callable(self, "_test_sukuna_domain_expire_chain_path").bind(harness))
     runner.run_test("sukuna_domain_break_chain_path", failures, Callable(self, "_test_sukuna_domain_break_chain_path").bind(harness))
     runner.run_test("sukuna_field_accuracy_override_path", failures, Callable(self, "_test_sukuna_field_accuracy_override_path").bind(harness))
+
+func _test_sukuna_default_loadout_contract(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var sukuna = content_index.units.get("sukuna", null)
+    if sukuna == null:
+        return harness.fail_result("missing sukuna unit definition")
+    if sukuna.skill_ids != PackedStringArray(["sukuna_kai", "sukuna_hatsu", "sukuna_hiraku"]):
+        return harness.fail_result("sukuna default loadout must stay fixed as 解/捌/开")
+    if sukuna.skill_ids.has("sukuna_reverse_ritual"):
+        return harness.fail_result("sukuna_reverse_ritual should stay in candidate pool, not default loadout")
+    if sukuna.ultimate_skill_id != "sukuna_fukuma_mizushi":
+        return harness.fail_result("sukuna ultimate should stay fixed as 伏魔御厨子")
+    if sukuna.passive_skill_id != "sukuna_teach_love":
+        return harness.fail_result("sukuna passive should stay fixed as 教会你爱的是...")
+    if not content_index.skills.has("sukuna_reverse_ritual"):
+        return harness.fail_result("sukuna candidate skill pool should retain 反转术式 for replacement tests")
+    return harness.pass_result()
 
 func _test_sukuna_matchup_regen_runtime_path(harness) -> Dictionary:
     var core_payload = harness.build_core()

@@ -14,7 +14,7 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     var unit_definition = content_index.units.get(actor.definition_id)
     assert(unit_definition != null, "Missing unit definition: %s" % actor.definition_id)
     var legal_action_set = LegalActionSetScript.new()
-    legal_action_set.actor_id = actor.unit_instance_id
+    legal_action_set.actor_public_id = actor.public_id
     var has_non_mp_blocked_option: bool = false
     var has_any_skill_or_ultimate_option: bool = false
     for skill_id in unit_definition.skill_ids:
@@ -42,13 +42,13 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     for bench_unit_id in side_state.bench_order:
         var bench_unit = battle_state.get_unit(bench_unit_id)
         if bench_unit != null and bench_unit.current_hp > 0:
-            legal_action_set.legal_switch_target_ids.append(bench_unit_id)
-    var has_legal_switch: bool = not legal_action_set.legal_switch_target_ids.is_empty()
+            legal_action_set.legal_switch_target_public_ids.append(bench_unit.public_id)
+    var has_legal_switch: bool = not legal_action_set.legal_switch_target_public_ids.is_empty()
     var has_any_legal_manual_option: bool = has_any_skill_or_ultimate_option or has_legal_switch
     legal_action_set.wait_allowed = has_any_legal_manual_option or has_non_mp_blocked_option
     if not legal_action_set.wait_allowed \
     and legal_action_set.legal_skill_ids.is_empty() \
-    and legal_action_set.legal_switch_target_ids.is_empty() \
+    and legal_action_set.legal_switch_target_public_ids.is_empty() \
     and legal_action_set.legal_ultimate_ids.is_empty():
         legal_action_set.forced_command_type = CommandTypesScript.RESOURCE_FORCED_DEFAULT
     return legal_action_set

@@ -66,6 +66,8 @@
 
 1. field 自然到期顺序固定为：`tick -> on_expire_effect_ids -> effect:field_expire -> 清空 field 运行态`。
 2. field 提前打断不会触发 `effect:field_expire`，也不会执行 `on_expire_effect_ids`。
+3. creator 离场、倒下、被强制换下或手动换下时，`field_break` 必须发生在补位与新单位 `on_enter` 之前。
+4. 新入场单位、`on_enter`、`on_matchup_changed`、`battle_init` 与回合节点，都不得读取一个按规则已被提前打断的旧 field。
 
 ## 3. 统一效果排序
 
@@ -112,6 +114,16 @@
 |纯系统来源|固定 `0`|
 
 ## 4. AI 读取边界
+
+### 4.1 对外 ID 契约
+
+|项|规则|
+|---|---|
+|`unit_id`|只用于内容定义与队伍构筑|
+|`public_id`|玩家输入、AI 输入、合法性列表、公开快照、换人目标、回放输入的唯一外层标识|
+|`unit_instance_id`|只允许留在核心内部运行态、内部日志归因、内部排序与系统自动动作中|
+|`LegalActionSet`|对外固定暴露 `actor_public_id / legal_skill_ids / legal_switch_target_public_ids / legal_ultimate_ids / wait_allowed / forced_command_type`|
+|外层 `Command`|默认只提交 `actor_public_id / target_public_id`；`actor_id / target_unit_id` 仅保留给核心内部或系统自动注入路径|
 
 |项|规则|
 |---|---|

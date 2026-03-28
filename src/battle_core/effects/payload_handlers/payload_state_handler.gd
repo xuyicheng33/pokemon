@@ -18,7 +18,6 @@ var effect_instance_service
 var rule_mod_service
 var rule_mod_value_resolver
 var field_service
-var trigger_batch_runner
 
 var last_invalid_battle_code: Variant = null
 
@@ -37,8 +36,6 @@ func resolve_missing_dependency() -> String:
         return "rule_mod_value_resolver"
     if field_service == null:
         return "field_service"
-    if trigger_batch_runner == null:
-        return "trigger_batch_runner"
     return ""
 
 func execute(payload, effect_definition, effect_event, battle_state, content_index) -> bool:
@@ -60,30 +57,15 @@ func execute(payload, effect_definition, effect_event, battle_state, content_ind
 func _apply_field_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
     var before_field = battle_state.field_state
     if before_field != null:
-        var before_field_definition = field_service.get_field_definition_for_state(before_field, content_index)
-        if before_field_definition != null and not before_field_definition.on_break_effect_ids.is_empty():
-            var break_events: Array = field_service.collect_lifecycle_effect_events(
-                "field_break",
-                before_field,
-                before_field_definition.on_break_effect_ids,
-                battle_state,
-                content_index,
-                effect_event.chain_context
-            )
-            if not break_events.is_empty():
-                var break_invalid_code = trigger_batch_runner.execute_trigger_batch(
-                    "__field_break__",
-                    battle_state,
-                    content_index,
-                    [],
-                    battle_state.chain_context,
-                    break_events
-                )
-                if break_invalid_code != null:
-                    last_invalid_battle_code = break_invalid_code
-                    return
-        battle_state.field_rule_mod_instances.clear()
-        battle_state.field_state = null
+        var break_invalid_code = field_service.break_active_field(
+            battle_state,
+            content_index,
+            "field_break",
+            effect_event.chain_context
+        )
+        if break_invalid_code != null:
+            last_invalid_battle_code = break_invalid_code
+            return
     var field_state = FieldStateScript.new()
     field_state.field_def_id = payload.field_definition_id
     field_state.instance_id = id_factory.next_id("field")

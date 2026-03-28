@@ -9,6 +9,7 @@ const ActionResultScript := preload("res://src/battle_core/contracts/action_resu
 var leave_service
 var action_cast_service
 var action_log_service
+var field_service
 
 func resolve_missing_dependency() -> String:
     if leave_service == null:
@@ -17,6 +18,8 @@ func resolve_missing_dependency() -> String:
         return "action_cast_service"
     if action_log_service == null:
         return "action_log_service"
+    if field_service == null:
+        return "field_service"
     return ""
 
 func execute_switch_action(queued_action, battle_state, content_index):
@@ -42,6 +45,15 @@ func execute_switch_action(queued_action, battle_state, content_index):
         return result
     side_state.bench_order.append(actor.unit_instance_id)
     leave_service.leave_unit(battle_state, actor, "manual_switch", content_index)
+    var field_break_invalid_code = field_service.break_field_if_creator_inactive(
+        battle_state,
+        content_index,
+        battle_state.chain_context
+    )
+    if field_break_invalid_code != null:
+        result.result_type = "invalid_battle"
+        result.invalid_battle_code = field_break_invalid_code
+        return result
     var bench_index: int = side_state.bench_order.find(command.target_unit_id)
     if bench_index >= 0:
         side_state.bench_order.remove_at(bench_index)

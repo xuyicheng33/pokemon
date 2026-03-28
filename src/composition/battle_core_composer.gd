@@ -134,6 +134,7 @@ func compose():
     container.passive_skill_service.trigger_dispatcher = container.trigger_dispatcher
     container.passive_item_service.trigger_dispatcher = container.trigger_dispatcher
     container.field_service.trigger_dispatcher = container.trigger_dispatcher
+    container.field_service.trigger_batch_runner = container.trigger_batch_runner
     container.trigger_batch_runner.passive_skill_service = container.passive_skill_service
     container.trigger_batch_runner.passive_item_service = container.passive_item_service
     container.trigger_batch_runner.field_service = container.field_service
@@ -158,7 +159,6 @@ func compose():
     container.payload_state_handler.rule_mod_service = container.rule_mod_service
     container.payload_state_handler.rule_mod_value_resolver = container.rule_mod_value_resolver
     container.payload_state_handler.field_service = container.field_service
-    container.payload_state_handler.trigger_batch_runner = container.trigger_batch_runner
     container.payload_forced_replace_handler.replacement_service = container.replacement_service
     container.payload_executor.numeric_payload_handler = container.payload_numeric_handler
     container.payload_executor.state_payload_handler = container.payload_state_handler
@@ -182,6 +182,7 @@ func compose():
     container.switch_action_service.leave_service = container.leave_service
     container.switch_action_service.action_cast_service = container.action_cast_service
     container.switch_action_service.action_log_service = container.action_log_service
+    container.switch_action_service.field_service = container.field_service
     container.action_executor.action_cast_service = container.action_cast_service
     container.action_executor.switch_action_service = container.switch_action_service
     container.action_executor.action_log_service = container.action_log_service
@@ -214,6 +215,7 @@ func compose():
     container.turn_loop_controller.runtime_guard_service = container.runtime_guard_service
     container.turn_loop_controller.battle_logger = container.battle_logger
     container.turn_loop_controller.log_event_builder = container.log_event_builder
+    container.replacement_service.field_service = container.field_service
     container.replay_runner.battle_initializer = container.battle_initializer
     container.replay_runner.turn_loop_controller = container.turn_loop_controller
     container.replay_runner.battle_logger = container.battle_logger
@@ -241,6 +243,8 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "effect_queue_service")
     _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "payload_executor")
     _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "rng_service")
+    _assert_dependency(container.field_service, "field_service", "trigger_dispatcher")
+    _assert_dependency(container.field_service, "field_service", "trigger_batch_runner")
     _assert_dependency(container.battle_initializer, "battle_initializer", "public_snapshot_builder")
     _assert_dependency(container.turn_selection_resolver, "turn_selection_resolver", "legal_action_service")
     _assert_dependency(container.turn_selection_resolver, "turn_selection_resolver", "command_builder")
@@ -264,12 +268,14 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.action_cast_service, "action_cast_service", "target_resolver")
     _assert_dependency(container.action_cast_service, "action_cast_service", "combat_type_service")
     _assert_dependency(container.switch_action_service, "switch_action_service", "leave_service")
+    _assert_dependency(container.switch_action_service, "switch_action_service", "field_service")
     _assert_dependency(container.action_executor, "action_executor", "action_cast_service")
     _assert_dependency(container.action_executor, "action_executor", "switch_action_service")
     _assert_dependency(container.action_executor, "action_executor", "action_log_service")
     _assert_dependency(container.faint_resolver, "faint_resolver", "trigger_batch_runner")
     _assert_dependency(container.faint_resolver, "faint_resolver", "effect_instance_dispatcher")
     _assert_dependency(container.replacement_service, "replacement_service", "trigger_batch_runner")
+    _assert_dependency(container.replacement_service, "replacement_service", "field_service")
     _assert_dependency(container.payload_executor, "payload_executor", "numeric_payload_handler")
     _assert_dependency(container.payload_executor, "payload_executor", "state_payload_handler")
     _assert_dependency(container.payload_executor, "payload_executor", "forced_replace_payload_handler")

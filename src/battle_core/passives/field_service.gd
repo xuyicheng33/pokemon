@@ -3,8 +3,10 @@ class_name FieldService
 
 const SOURCE_KIND_ORDER_FIELD := 1
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var trigger_dispatcher
+var trigger_batch_runner
 
 func collect_trigger_events(trigger_name: String, battle_state, content_index, chain_context) -> Array:
     if battle_state.field_state == null:
@@ -61,6 +63,47 @@ func collect_lifecycle_effect_events(
         field_state.source_order_speed_snapshot,
         lifecycle_chain_context
     )
+
+func break_field_if_creator_inactive(battle_state, content_index, chain_context) -> Variant:
+    if battle_state.field_state == null:
+        return null
+    var creator_id := String(battle_state.field_state.creator)
+    if creator_id.is_empty():
+        return null
+    var creator_unit = battle_state.get_unit(creator_id)
+    if creator_unit != null and creator_unit.current_hp > 0 and creator_unit.leave_state == LeaveStatesScript.ACTIVE:
+        return null
+    return break_active_field(battle_state, content_index, "field_break", chain_context)
+
+func break_active_field(battle_state, content_index, trigger_name: String, chain_context) -> Variant:
+    if battle_state.field_state == null:
+        return null
+    assert(trigger_batch_runner != null, "FieldService.trigger_batch_runner is required")
+    var current_field_state = battle_state.field_state
+    var field_definition = get_field_definition_for_state(current_field_state, content_index)
+    if field_definition != null and not field_definition.on_break_effect_ids.is_empty():
+        var break_events: Array = collect_lifecycle_effect_events(
+            trigger_name,
+            current_field_state,
+            field_definition.on_break_effect_ids,
+            battle_state,
+            content_index,
+            chain_context
+        )
+        if not break_events.is_empty():
+            var break_invalid_code = trigger_batch_runner.execute_trigger_batch(
+                "__field_break__",
+                battle_state,
+                content_index,
+                [],
+                battle_state.chain_context,
+                break_events
+            )
+            if break_invalid_code != null:
+                return break_invalid_code
+    battle_state.field_rule_mod_instances.clear()
+    battle_state.field_state = null
+    return null
 
 func tick_turn_end(field_state) -> bool:
     if field_state == null:

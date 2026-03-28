@@ -50,45 +50,27 @@ func execute_matchup_changed_if_needed(battle_state, content_index) -> bool:
     return false
 
 func break_field_if_creator_inactive(battle_state, content_index) -> bool:
-    if battle_state.field_state == null:
+    var invalid_code = field_service.break_field_if_creator_inactive(
+        battle_state,
+        content_index,
+        battle_state.chain_context
+    )
+    if invalid_code == null:
         return false
-    var creator_id := String(battle_state.field_state.creator)
-    if creator_id.is_empty():
-        return false
-    var creator_unit = battle_state.get_unit(creator_id)
-    if creator_unit != null and creator_unit.current_hp > 0 and creator_unit.leave_state == LeaveStatesScript.ACTIVE:
-        return false
-    return break_active_field(battle_state, content_index, "field_break")
+    battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
+    return true
 
 func break_active_field(battle_state, content_index, trigger_name: String) -> bool:
-    if battle_state.field_state == null:
+    var invalid_code = field_service.break_active_field(
+        battle_state,
+        content_index,
+        trigger_name,
+        battle_state.chain_context
+    )
+    if invalid_code == null:
         return false
-    var current_field_state = battle_state.field_state
-    var field_definition = field_service.get_field_definition_for_state(current_field_state, content_index)
-    if field_definition != null and not field_definition.on_break_effect_ids.is_empty():
-        var break_events: Array = field_service.collect_lifecycle_effect_events(
-            trigger_name,
-            current_field_state,
-            field_definition.on_break_effect_ids,
-            battle_state,
-            content_index,
-            battle_state.chain_context
-        )
-        if not break_events.is_empty():
-            var break_invalid_code = trigger_batch_runner.execute_trigger_batch(
-                "__field_break__",
-                battle_state,
-                content_index,
-                [],
-                battle_state.chain_context,
-                break_events
-            )
-            if break_invalid_code != null:
-                battle_result_service.terminate_invalid_battle(battle_state, str(break_invalid_code))
-                return true
-    battle_state.field_rule_mod_instances.clear()
-    battle_state.field_state = null
-    return false
+    battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
+    return true
 
 func apply_turn_end_field_tick(battle_state, content_index):
     if battle_state.field_state == null:
