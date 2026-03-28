@@ -34,6 +34,11 @@
 - 生成规则固定为 `<side_id>-<label>`，`label` 使用字母序列：`A..Z, AA..AZ, BA...`，不再把上限写死在 4 个名额。
 - 当前 1v1、每队 3 人行为保持不变，仍为 `P1-A / P1-B / P1-C` 与 `P2-A / P2-B / P2-C`。
 
+### 220. `BattleContentIndex` 保持 facade，内部拆为注册/快照校验/setup 校验三域
+- `BattleContentIndex` 继续作为对外唯一入口，外部调用方式不变：`load_snapshot()` 与 `validate_setup()` 仍是稳定入口。
+- 内部职责拆分为 `BattleContentRegistry`（加载与注册）、`ContentSnapshotValidator`（schema 校验）、`BattleSetupValidator`（setup/override 校验）。
+- `load_snapshot()` 固定执行“清理 -> 加载 -> 注册 -> schema 校验”；`validate_setup()` 固定委托给 setup 校验器；本轮不改任何现有校验规则语义。
+
 ### 210. `cause_event_id` 回归为“真实上游触发事件 ID”
 - 旧的“`cause_event_id = 当前日志自己的 chain_id:step_id`”口径作废，不再作为有效基线。
 - 直接伤害与默认动作反伤统一指向对应 `action:hit` 日志事件；effect payload 产出的 `effect:*` 继续指向内部 `effect_event_*`；`turn_start / turn_end` 的回复与到期链统一指向对应系统锚点；离场清理统一指向 `state:exit`。
