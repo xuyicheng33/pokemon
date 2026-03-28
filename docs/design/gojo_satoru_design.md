@@ -1,13 +1,15 @@
-# 五条悟（Gojo Satoru）设计方案（收敛版 v2）
+# 五条悟（Gojo Satoru）设计方案（审计收口版 v3）
 
-## 0. 本版收敛结论（2026-03-28）
+## 0. 审计后冻结结论（2026-03-28）
 
 | 项目 | 结论 |
 |------|------|
 | 茈 | 保留“苍+赫双标记”条件爆发，**不做自伤** |
 | 无下限 | 改为“敌方技能攻击五条悟时，若该次不是必中，则命中率 -10” |
 | 领域后摇 | **删除**（不再追加封印/回滚） |
-| 待实现引擎扩展 | 若要落地 Gojo，需新增 `action_legality`、`required_target_effects`、`incoming_accuracy` 三块 |
+| 苍/赫标记归属 | 标记挂在**目标**身上；换人清除只发生在**标记持有者**离场时 |
+| 苍/赫标记消耗语义 | 当前冻结为**团队共享资源**：只检查目标是否同时持有双标记，不校验由哪一个五条悟施加 |
+| 待实现引擎扩展 | 若按“团队共享标记”落地 Gojo，需新增 `action_legality`、`required_target_effects`、`incoming_accuracy` 三块；若要收紧为“必须同一施法者本人消耗标记”，还需**第 4 块扩展** |
 | 明确不做 | `effects_pre_damage_ids`、`on_before_damage`、`damage_override`、`action_tags`、`last_dealt_damage`、反噬链路 |
 
 ---
@@ -26,7 +28,7 @@
 | base_defense | **60** | 由旧稿上调，避免过脆 |
 | base_sp_attack | **88** | 术式主输出 |
 | base_sp_defense | **68** | 中等抗性 |
-| base_speed | **86** | 仍是高速定位 |
+| base_speed | **86** | 高速定位 |
 | BST | **482** | 低于宿傩（486） |
 
 ### 1.2 MP 系统
@@ -82,7 +84,7 @@
 命中后效果：
 
 - `gojo_ao_speed_up`：`scope=self`，`stat_mod(speed, +1)`
-- `gojo_ao_mark_apply`：`scope=target`，`apply_effect(gojo_ao_mark)`（纯标记，`duration=3 turns`，`stacking=refresh`，`decrement_on=turn_end`）
+- `gojo_ao_mark_apply`：`scope=target`，`apply_effect(gojo_ao_mark)`
 
 ### 2.2 赫（Aka）
 
@@ -105,9 +107,25 @@
 命中后效果：
 
 - `gojo_aka_slow_down`：`scope=target`，`stat_mod(speed, -1)`
-- `gojo_aka_mark_apply`：`scope=target`，`apply_effect(gojo_aka_mark)`（纯标记，`duration=3 turns`，`stacking=refresh`，`decrement_on=turn_end`）
+- `gojo_aka_mark_apply`：`scope=target`，`apply_effect(gojo_aka_mark)`
 
-### 2.3 茈（Murasaki）—— 条件追加爆发（无自伤）
+### 2.3 苍 / 赫标记 Effect 明细
+
+`gojo_ao_mark_apply` / `gojo_aka_mark_apply`（施加标记）：
+
+- EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=[]`
+- payload：`apply_effect(gojo_ao_mark)` 或 `apply_effect(gojo_aka_mark)`
+
+`gojo_ao_mark` / `gojo_aka_mark`（纯标记本体）：
+
+- EffectDefinition：`scope=self`, `duration_mode=turns`, `duration=3`, `decrement_on=turn_end`, `stacking=refresh`, `trigger_names=[]`, `payloads=[]`, `persists_on_switch=false`
+- 说明：纯标记 effect 无 payload，不直接产生数值结算；仅用于条件判定。
+- owner 语义：标记实例挂在**目标本人**身上，不挂在五条悟身上。
+- 换人语义：`persists_on_switch=false` 代表“**标记持有者**离场会清标记”；若五条悟自己离场，目标身上的标记不会因此自动消失。
+- 团队共享语义：当前冻结为“只要目标身上同时存在 `gojo_ao_mark + gojo_aka_mark`，任意同侧五条悟都可以接 `gojo_murasaki` 消耗它们”；这不是运行时偶然行为，而是当前设计的显式取舍。
+- 时间语义：`duration=3 + decrement_on=turn_end` 按当前引擎表示“从施加当回合开始，连续经过 3 次 `turn_end` 节点后到期”。例如第 1 回合中途施加，则会在第 1/2/3 回合的 `turn_end` 各扣 1 次，并在第 3 次后移除。
+
+### 2.4 茈（Murasaki）—— 条件追加爆发（无自伤）
 
 | 字段 | 值 |
 |------|-----|
@@ -137,28 +155,21 @@
 补充说明：
 
 - 此处不额外写 `combat_type_id`：`DamagePayload.use_formula=true` 且处于技能链中时，类型继承链技能 `gojo_murasaki` 的 `combat_type_id=space`。
+- `required_target_effects` 当前只检查“目标身上是否同时存在双标记”，**不检查标记施加者是谁**。因此它与上面的“团队共享标记”设计是配套的。
+- 若未来要改成“只有同一个五条悟本人打上的双标记，才允许该五条悟自己触发茈追加段”，则仅靠 `required_target_effects` 不够，必须新增第 4 块扩展能力来校验标记来源。
 
 语义：
 
 - 条件满足：追加爆发并消耗双标记。
 - 条件不满足：只结算茈本体伤害，不做额外动作。
-- **不做任何反噬/自伤**。
-- 边界：若追加伤害把目标直接打到 `hp<=0`，后续 `remove_effect` 会因目标不再满足 `ACTIVE && hp>0` 被静默跳过，不会报错；这属于预期行为。
+- **不做任何反噬 / 自伤**。
 
-### 2.6 标记 Effect 明细（避免实现歧义）
+边界：
 
-`gojo_ao_mark_apply` / `gojo_aka_mark_apply`（施加标记）：
+- 若茈本体伤害已经把目标打到 `hp <= 0`，则 `on_hit` 追加 effect 在当前执行模型里会因为目标已无效而整条跳过，不会再打追加段，也不会清标记。
+- 若追加伤害把目标打到 `hp <= 0`，后续 `remove_effect` 会因目标不再满足 `ACTIVE && hp > 0` 被静默跳过，不会报错；这属于当前 payload 有效性模型下的预期行为。
 
-- EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=[]`
-- payload：`apply_effect(gojo_ao_mark)` 或 `apply_effect(gojo_aka_mark)`
-
-`gojo_ao_mark` / `gojo_aka_mark`（纯标记本体）：
-
-- EffectDefinition：`scope=self`, `duration_mode=turns`, `duration=3`, `decrement_on=turn_end`, `stacking=refresh`, `trigger_names=[]`, `payloads=[]`, `persists_on_switch=false`
-- 说明：纯标记 effect 无 payload，不直接产生数值结算；仅用于条件判定。
-- 玩法语义：`persists_on_switch=false` 代表“换人会清标记”，不能通过换手跨单位保留苍/赫铺垫。
-
-### 2.4 反转术式（Reverse Ritual）
+### 2.5 反转术式（Reverse Ritual）
 
 | 字段 | 值 |
 |------|-----|
@@ -180,7 +191,7 @@
 
 - `gojo_reverse_heal`：`heal(use_percent=true, percent=25)`
 
-### 2.5 无量空处（Unlimited Void）—— 奥义
+### 2.6 无量空处（Unlimited Void）—— 奥义
 
 | 字段 | 值 |
 |------|-----|
@@ -219,15 +230,20 @@
 
 - 仅封禁技能 / 奥义 / 换人。
 - 不封禁 `wait`。
-- 若在排队后中途上锁，执行到该动作时按 `cancelled_pre_start` 跳过。
+- 若 Gojo **先于目标行动并且成功命中**，而目标本回合尚未开始执行，则目标已排队的技能 / 奥义 / 换人会在轮到它时按 `cancelled_pre_start` 跳过。
+- 这不是“领域展开后无条件首回合锁到对方”的硬保证：若对手已经更早行动，或在同优先级竞争里先于 Gojo 执行，则本回合不会被这条锁追溯性拦下。
 
-**领域过期与打破**
+`gojo_domain_action_lock` 资源口径：
 
-- `gojo_domain_action_lock` 资源口径：
 1. EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`
 2. payload：`rule_mod(mod_kind=action_legality, mod_op=deny, value=all, scope=target, duration_mode=turns, duration=1, decrement_on=turn_end, stacking=replace)`
 
-- 本版删除领域后摇：不再追加 `expire_seal / rollback`，领域结束或被打破后不对五条悟追加封印处罚。
+时间语义：
+
+- field 的 `duration=3 + decrement_on=turn_end` 与标记同口径：从施放当回合开始，连续经过 3 次 `turn_end` 节点后自然到期。
+- 因此文档里写“持续 3 回合”时，指的是“3 次 `turn_end` 扣减窗口”，不是“额外再经历 3 个完整后续回合”。
+
+本版删除领域后摇：不再追加 `expire_seal / rollback`，领域结束或被打破后不对五条悟追加封印处罚。
 
 ---
 
@@ -265,24 +281,25 @@
 
 口径说明：
 
-- `docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md` 当前仍以主线代码真实实现为准。
+- `docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 当前仍以主线代码真实实现为准。
 - 本节只定义 Gojo 方案所需的待实现扩展，不代表这些字段、`mod_kind` 或读取点已经进入仓库级正式 contract。
+- 若按本文当前冻结的“团队共享标记”方案实现，需新增 3 块扩展；若要把标记消耗收紧为“同一施法者本人专属”，还需第 4 块扩展。
 
-### 4.1 `action_legality`（替代 `skill_legality`）
+### 4.1 `action_legality`（新增并逐步替代 `skill_legality`）
 
-`rule_mod.mod_kind` 从 `skill_legality` 迁到 `action_legality`，`mod_op` 仍为 `allow / deny`，`value` 支持：
+`rule_mod.mod_kind` 从“只支持 `skill_legality`”扩展为同时支持 `action_legality`；`mod_op` 仍为 `allow / deny`，`value` 支持：
 
 - `"all"` / `"skill"` / `"ultimate"` / `"switch"` / 具体 `skill_id`
 
 补充：
 
 - `allow` 与 `deny` 使用同一套 `value` 取值范围。
-- `value="all"` 仅作用于技能/奥义/换人，不作用于 `wait`。
+- `value="all"` 仅作用于技能 / 奥义 / 换人，不作用于 `wait`。
 
 迁移策略（避免一次性硬切导致旧内容失效）：
 
-1. **阶段 A（兼容期）**：新增 `action_legality` 并保留 `skill_legality` 兼容读取；
-2. **阶段 B（迁移期）**：现存主线资源无 `skill_legality` 迁移动作；新内容一律只用 `action_legality`。
+1. **阶段 A（兼容期）**：新增 `action_legality` 并保留 `skill_legality` 兼容读取。
+2. **阶段 B（迁移期）**：现存主线资源无强制迁移动作；新内容一律只用 `action_legality`。
 3. **阶段 C（收口期）**：移除 `skill_legality` 常量、校验与读取路径。
 
 实现清单（阶段 A 起步）：
@@ -294,17 +311,18 @@
 2. `_validate_rule_mod_payload()` 增加 `action_legality`
 3. 新增 `is_action_allowed(battle_state, owner_id, action_type, skill_id="")`
 - `legal_action_service.gd`：技能、奥义、换人都改读 `is_action_allowed`
+- `command_validator.gd`：提交通道仍只能提交 legal set 内动作；不得只改 UI/AI 列表、不改提交校验
 - `action_executor.gd`：`_can_start_action()` 执行前复检 `is_action_allowed`，覆盖排队后中途上锁场景
 
 兼容期读取策略（必须写死）：
 
-- `is_action_allowed` 在阶段 A 同时读取两类实例：`action_legality` 与旧 `skill_legality`。
-- 混合实例统一按现有 rule_mod 排序链处理（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`），避免新旧规则并存时顺序漂移。
+- `is_action_allowed` 在阶段 A 同时读取两类实例：`action_legality` 与旧 `skill_legality`
+- 混合实例统一按现有 rule_mod 排序链处理（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`），避免新旧规则并存时顺序漂移
 
 `action_legality` stacking key schema：
 
 - `["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"]`
-- 说明：`value=all`、`value=switch`、`value=具体skill_id` 必须是不同 key，避免互相覆盖。
+- 说明：`value=all`、`value=switch`、`value=具体skill_id` 必须是不同 key，避免互相覆盖
 
 匹配矩阵（必须写死）：
 
@@ -317,11 +335,11 @@
 
 最终判定顺序（必须写死）：
 
-1. 默认 `allowed = true`。
-2. 兼容期统一收集 `action_legality + skill_legality` 两类实例，并走同一排序链（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`）。
-3. 逐条判断是否命中当前动作；命中则按 `deny => allowed=false`、`allow => allowed=true` 覆盖。
-4. 最终结果以“最后一条命中的 rule_mod”状态为准（last-write-wins）。
-5. `skill_legality` 兼容读取只参与 `skill/ultimate` 两类动作；`switch/wait` 不读取旧 `skill_legality`。
+1. 默认 `allowed = true`
+2. 兼容期统一收集 `action_legality + skill_legality` 两类实例，并走同一排序链（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`）
+3. 逐条判断是否命中当前动作；命中则按 `deny => allowed=false`、`allow => allowed=true` 覆盖
+4. 最终结果以“最后一条命中的 rule_mod”状态为准（last-write-wins）
+5. `skill_legality` 兼容读取只参与 `skill/ultimate` 两类动作；`switch/wait` 不读取旧 `skill_legality`
 
 ### 4.2 `required_target_effects`
 
@@ -333,19 +351,19 @@
 
 执行规则：
 
-- `PayloadExecutor.execute_effect_event()` 在 payload 循环前做 effect 级前置检查。
-- 目标固定取 `effect_event.chain_context.target_unit_id` 对应单位；若为空、单位不存在、或缺少任一 required effect，则整条 effect 跳过。
-- 不满足则跳过该 effect，不报错。
-- 安全前提：只要前置检查实现正确，`remove_effect` 不会走到“目标标记不存在”分支，自然不会触发 `INVALID_EFFECT_REMOVE_AMBIGUOUS`。
+- `PayloadExecutor.execute_effect_event()` 在 payload 循环前做 effect 级前置检查
+- 目标固定取 `effect_event.chain_context.target_unit_id` 对应单位；若为空、单位不存在、目标已不满足 `ACTIVE && hp>0`、或缺少任一 required effect，则整条 effect 跳过
+- 不满足则跳过该 effect，不报错
+- 安全前提：只要前置检查实现正确，`remove_effect` 不会走到“目标标记不存在”分支，自然不会触发 `INVALID_EFFECT_REMOVE_AMBIGUOUS`
 
 加载期 fail-fast（必须补齐）：
 
-- `content_snapshot_validator.gd` 必须校验 `required_target_effects`：每个 effect id 非空、不得重复、且必须命中 `content_index.effects`。
-- 任一引用非法时，内容加载期直接失败；禁止把错误引用留到运行期再“静默跳过”。
-- `content schema / rules` 文档必须同步增加该字段定义，避免实现与规范分叉。
-- 测试必须包含“坏引用触发加载期失败”的坏例用例。
+- `content_snapshot_validator.gd` 必须校验 `required_target_effects`：每个 effect id 非空、不得重复、且必须命中 `content_index.effects`
+- 任一引用非法时，内容加载期直接失败；禁止把错误引用留到运行期再“静默跳过”
+- 真正接线时，需同步更新 `docs/rules/06_effect_schema_and_extension.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 与 `docs/records/decisions.md`
+- 测试必须包含“坏引用触发加载期失败”的坏例用例
 
-该能力仅用于茈的条件追加爆发，不引入 `action_tags`。
+该能力仅用于茈的条件追加爆发，不引入 `action_tags`
 
 ### 4.3 `incoming_accuracy`（无下限命中干扰）
 
@@ -366,20 +384,28 @@
 
 约束：
 
-- 只在 `resolved_accuracy < 100` 时读取（必中不受影响）。
-- 最终命中率 clamp 到 `0~99`。
-- `0~99` 是刻意设计：`incoming_accuracy` 不得把命中改成“硬必中”；`100` 只由技能本体或 field 覆盖产生。
-- 读取范围必须收紧为“敌方来袭技能/奥义”：
-1. 仅当 `command_type in {skill, ultimate}` 且技能 `targeting=enemy_active_slot` 时才可读取。
-2. 仅当 `target` 为敌方 active 单位时读取；`self/field/none` 与无目标动作一律跳过。
-3. `switch / wait / resource_forced_default` 一律不读取 `incoming_accuracy`。
+- 只在 `resolved_accuracy < 100` 时读取（必中不受影响）
+- 最终命中率 clamp 到 `0~99`
+- `0~99` 是刻意设计：`incoming_accuracy` 不得把命中改成“硬必中”；`100` 只由技能本体或 field 覆盖产生
+- 读取范围必须收紧为“敌方来袭技能 / 奥义”：
+1. 仅当 `command_type in {skill, ultimate}` 且技能 `targeting=enemy_active_slot` 时才可读取
+2. 仅当 `target` 为敌方 active 单位时读取；`self/field/none` 与无目标动作一律跳过
+3. `switch / wait / resource_forced_default` 一律不读取 `incoming_accuracy`
 
 `incoming_accuracy` stacking key schema：
 
 - `["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"]`
-- 说明：不按 `value` 分键，沿用 `final_mod/mp_regen` 的同类 schema。
+- 说明：不按 `value` 分键，沿用 `final_mod/mp_regen` 的同类 schema
 
-### 4.4 本版明确不纳入实现
+### 4.4 可选第 4 块扩展（仅当要限制为“同一施法者本人消耗标记”时）
+
+当前冻结的“团队共享标记”方案**不需要**这一块；但若未来要把语义收紧为“只有打出苍/赫的那一名五条悟本人，才能用茈吃掉自己铺的双标记”，则必须补一个来源绑定能力，最小要求至少包括：
+
+- 标记实例需要记录可校验的施加者身份（不能只看 `def_id`）
+- 茈的前置检查必须能同时检查“目标持有双标记 + 标记来源匹配当前施法者”
+- 该能力需要明确是扩在 `EffectInstance.meta`、新 schema 字段，还是新增专用条件机制；在拍板前，不得把它伪装成现有 `required_target_effects` 已能解决的问题
+
+### 4.5 本版明确不纳入实现
 
 | 机制 | 状态 |
 |------|------|
@@ -445,22 +471,27 @@
 | 3 | 苍命中后效果 | 自身 speed +1；目标挂 `gojo_ao_mark` |
 | 4 | 赫命中后效果 | 目标 speed -1；目标挂 `gojo_aka_mark` |
 | 5 | 茈无双标记 | 只有本体伤害；标记不被误清 |
-| 6 | 茈双标记触发 | 追加伤害生效，并清除苍/赫标记 |
+| 6 | 茈双标记触发 | 追加伤害生效，并清除苍 / 赫标记 |
 | 7 | 茈触发后无自伤 | 施法者 HP 不因反噬扣减 |
 | 8 | 反转术式 | 回复 25% max_hp |
 | 9 | MP 回复 | 每回合回复 14 |
 | 10 | 无下限重入场 | 五条悟离场再入场后，`incoming_accuracy -10` 仍生效 |
-| 11 | 无量空处 action_lock | 当回合敌方已排队技能/换人被 `cancelled_pre_start` |
+| 11 | 无量空处 action_lock 生效时机 | 仅当 Gojo 先于目标行动并命中、且目标当回合尚未开始时，目标已排队技能 / 换人会被 `cancelled_pre_start` |
 | 12 | action_legality + wait | `deny all` 时 `wait` 仍可选 |
 | 13 | 领域内必中 | `creator_accuracy_override=100` 生效 |
 | 14 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
 | 15 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
-| 16 | 标记随换人清除 | 目标换下后 `gojo_ao_mark/gojo_aka_mark` 被移除（`persists_on_switch=false`） |
-| 17 | 茈追加击杀边界 | 追加段把目标打到 `hp<=0` 时，后续 `remove_effect` 静默跳过且不产生 `invalid_battle` |
-| 18 | required_target_effects 坏引用 | `required_target_effects` 指向不存在 effect 时内容加载期直接失败 |
-| 19 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
-| 20 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
-| 21 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
+| 16 | 标记持有者离场清除 | 目标换下后 `gojo_ao_mark/gojo_aka_mark` 被移除（`persists_on_switch=false`） |
+| 17 | 五条悟离场不清目标标记 | 五条悟自己换下时，敌方身上的苍 / 赫标记仍保留 |
+| 18 | 同队重复 Gojo 的共享标记语义 | A 五条悟铺双标记后，B 五条悟使用茈可以触发追加段并清标记 |
+| 19 | 茈追加击杀边界 | 追加段把目标打到 `hp<=0` 时，后续 `remove_effect` 静默跳过且不产生 `invalid_battle` |
+| 20 | 茈本体先击杀边界 | 若茈本体伤害已击杀目标，则 `gojo_murasaki_conditional_burst` 整条跳过，不再打追加段 |
+| 21 | required_target_effects 坏引用 | `required_target_effects` 指向不存在 effect 时内容加载期直接失败 |
+| 22 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
+| 23 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
+| 24 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
+| 25 | 双 `+5` 先后手竞争 | 对手也使用 `+5` 奥义时，若对手先动，则 Gojo 本回合不得被文档误写成“仍然锁到对方” |
+| 26 | 标记 / 领域时间线 | `duration=3 + decrement_on=turn_end` 必须按“施放当回合起连续 3 次 `turn_end` 扣减”验证 |
 
 ---
 
@@ -468,16 +499,19 @@
 
 | 维度 | 五条悟（本版） | 说明 |
 |------|----------------|------|
-| 爆发 | 中高 | 茈有条件追加，但去掉自伤摇摆链 |
-| 控场 | 高 | 领域首回合锁行动 + 领域内必中 |
-| 生存 | 中 | 反转术式 + 稳定命中干扰，但不再“30% 改伤害为 1” |
-| 资源节奏 | 中 | `init_mp=50`、`regen=14`，避免过快连续开大 |
+| 爆发 | 中高 | 茈双标记连段在当前公式下可打出明显高于单发技能的爆发 |
+| 控场 | 很高 | 领域命中后能锁未开始行动的对手，并让 creator 技能必中；但不是所有先手竞争场景都能保证首回合锁到人 |
+| 生存 | 中高 | 反转术式 + 稳定命中干扰，让它比“纯高速脆皮法师”更难处理 |
+| 资源节奏 | 中高 | `init_mp=50`、`regen=14` 让它在对局前中期就能持续施压，只是还没到“无脑连开奥义”的程度 |
 
-本版目标不是最终平衡值，而是先落地“可施工、可验收、可迭代”的玩法闭环。
+按当前 main 的 50 级简化公式与现有宿傩基线粗看，这版五条悟更接近“偏强压制型角色”，不是单纯的“中性强度高速术师”。
+
+本版目标不是最终平衡值，而是先落地“可施工、可验收、可迭代”的玩法闭环；最终强度仍需等 Gojo 落地后再用实战数据回调。
 
 ## 8. 当前冻结
 
 | 项目 | 说明 |
 |---|---|
+| 标记来源校验 | 当前不做；双标记默认是团队共享资源 |
 | 领域后摇 | 已删除（Gojo / Sukuna 同口径） |
 | 领域强度 | 暂不下调，后续按实战数据再调 |
