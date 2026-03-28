@@ -140,12 +140,13 @@ func _test_rule_mod_field_scope_paths(harness) -> Dictionary:
     field_regen_payload.value = 5
     field_regen_payload.scope = "field"
     field_regen_payload.duration_mode = "turns"
-    field_regen_payload.duration = 1
+    field_regen_payload.duration = 2
     field_regen_payload.decrement_on = "turn_start"
     field_regen_payload.stacking = "replace"
     field_regen_payload.priority = 5
     if core.rule_mod_service.create_instance(field_regen_payload, {"scope": "field", "id": "field"}, battle_state, "test_field_regen_mod", 0, 0) == null:
         return harness.fail_result("failed to create field-scope mp_regen rule_mod")
+    core.turn_loop_controller.run_turn(battle_state, content_index, [])
     core.turn_loop_controller.run_turn(battle_state, content_index, [])
     if p1_active.current_mp != 5 or p2_active.current_mp != 5:
         return harness.fail_result("field-scope mp_regen rule_mod did not apply to both active units")

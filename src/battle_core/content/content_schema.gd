@@ -23,5 +23,12 @@ const STACKING_STACK := "stack"
 const RULE_MOD_FINAL_MOD := "final_mod"
 const RULE_MOD_MP_REGEN := "mp_regen"
 const RULE_MOD_SKILL_LEGALITY := "skill_legality"
+const RULE_MOD_ACTION_LEGALITY := "action_legality"
+const RULE_MOD_INCOMING_ACCURACY := "incoming_accuracy"
+
+const ACTION_LEGALITY_ALL := "all"
+const ACTION_LEGALITY_SKILL := "skill"
+const ACTION_LEGALITY_ULTIMATE := "ultimate"
+const ACTION_LEGALITY_SWITCH := "switch"
 
 const RULE_MOD_VALUE_FORMULA_MATCHUP_BST_GAP_BAND := "matchup_bst_gap_band"

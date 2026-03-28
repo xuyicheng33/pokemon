@@ -107,6 +107,8 @@ func compose():
     container.battle_initializer.log_event_builder = container.log_event_builder
     container.battle_initializer.public_snapshot_builder = container.public_snapshot_builder
     container.battle_initializer.combat_type_service = container.combat_type_service
+    container.battle_initializer.mp_service = container.mp_service
+    container.battle_initializer.rule_mod_service = container.rule_mod_service
     container.action_queue_builder.id_factory = container.id_factory
     container.action_queue_builder.rng_service = container.rng_service
     container.action_queue_builder.stat_calculator = container.stat_calculator
@@ -186,6 +188,7 @@ func compose():
     container.action_executor.action_cast_service = container.action_cast_service
     container.action_executor.switch_action_service = container.switch_action_service
     container.action_executor.action_log_service = container.action_log_service
+    container.action_executor.rule_mod_service = container.rule_mod_service
     container.turn_selection_resolver.legal_action_service = container.legal_action_service
     container.turn_selection_resolver.command_builder = container.command_builder
     container.turn_selection_resolver.command_validator = container.command_validator
@@ -246,6 +249,8 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.field_service, "field_service", "trigger_dispatcher")
     _assert_dependency(container.field_service, "field_service", "trigger_batch_runner")
     _assert_dependency(container.battle_initializer, "battle_initializer", "public_snapshot_builder")
+    _assert_dependency(container.battle_initializer, "battle_initializer", "mp_service")
+    _assert_dependency(container.battle_initializer, "battle_initializer", "rule_mod_service")
     _assert_dependency(container.turn_selection_resolver, "turn_selection_resolver", "legal_action_service")
     _assert_dependency(container.turn_selection_resolver, "turn_selection_resolver", "command_builder")
     _assert_dependency(container.turn_selection_resolver, "turn_selection_resolver", "command_validator")
@@ -272,6 +277,7 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.action_executor, "action_executor", "action_cast_service")
     _assert_dependency(container.action_executor, "action_executor", "switch_action_service")
     _assert_dependency(container.action_executor, "action_executor", "action_log_service")
+    _assert_dependency(container.action_executor, "action_executor", "rule_mod_service")
     _assert_dependency(container.faint_resolver, "faint_resolver", "trigger_batch_runner")
     _assert_dependency(container.faint_resolver, "faint_resolver", "effect_instance_dispatcher")
     _assert_dependency(container.replacement_service, "replacement_service", "trigger_batch_runner")

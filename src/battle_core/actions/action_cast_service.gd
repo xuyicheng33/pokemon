@@ -85,7 +85,7 @@ func resolve_target_instance_id(queued_action, resolved_target):
         return null
     return resolved_target.unit_instance_id
 
-func resolve_hit(command, skill_definition, battle_state, content_index) -> Dictionary:
+func resolve_hit(command, skill_definition, resolved_target, battle_state, content_index) -> Dictionary:
     if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
         return {"hit": true, "hit_roll": null}
     var resolved_accuracy: int = int(skill_definition.accuracy)
@@ -93,6 +93,12 @@ func resolve_hit(command, skill_definition, battle_state, content_index) -> Dict
         var field_definition = content_index.fields.get(battle_state.field_state.field_def_id) if content_index != null else null
         if field_definition != null and int(field_definition.creator_accuracy_override) >= 0:
             resolved_accuracy = int(field_definition.creator_accuracy_override)
+    if resolved_accuracy < 100 and _should_read_incoming_accuracy(command, skill_definition, resolved_target, battle_state):
+        resolved_accuracy = rule_mod_service.resolve_incoming_accuracy(
+            battle_state,
+            resolved_target.unit_instance_id,
+            resolved_accuracy
+        )
     var hit_info: Dictionary = hit_service.roll_hit(resolved_accuracy, rng_service)
     battle_state.rng_stream_index = rng_service.get_stream_index()
     return hit_info
@@ -238,3 +244,14 @@ func _resolve_power_bonus(skill_definition, actor, target) -> int:
     if String(skill_definition.power_bonus_source) == "mp_diff_clamped":
         return max(0, int(actor.current_mp) - int(target.current_mp))
     return 0
+
+func _should_read_incoming_accuracy(command, skill_definition, resolved_target, battle_state) -> bool:
+    if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
+        return false
+    if skill_definition == null or String(skill_definition.targeting) != ContentSchemaScript.TARGET_ENEMY_ACTIVE:
+        return false
+    if resolved_target == null or resolved_target.leave_state != LeaveStatesScript.ACTIVE or resolved_target.current_hp <= 0:
+        return false
+    var actor_side = battle_state.get_side_for_unit(command.actor_id)
+    var target_side = battle_state.get_side_for_unit(resolved_target.unit_instance_id)
+    return actor_side != null and target_side != null and actor_side.side_id != target_side.side_id

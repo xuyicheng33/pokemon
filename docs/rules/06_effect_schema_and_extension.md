@@ -30,14 +30,16 @@
 |`stacking`|`none / refresh / replace / stack`|
 |`priority`|统一优先级字段；默认 `0`；数值越大越先|
 |`trigger_names`|触发点列表|
+|`required_target_effects`|effect 级前置条件；仅 `scope=target` 允许声明|
 |`on_expire_effect_ids`|实例到期后追加执行的效果 ID 列表|
 |`payloads`|效果行为列表|
 |`persists_on_switch`|是否跨离场保留；默认 `false`|
 
 补充规则：
 
-1. 当前 schema 没有 `conditions` 字段，也没有 `required_target_effects` 这类 effect 级前置条件字段。
-2. 若未来需要这类前置条件，必须先补 `Resource` 字段、加载期校验、运行时读取规则，再回写本文件。
+1. 当前 schema 仍然没有通用 `conditions` 字段；effect 级前置目前只开放 `required_target_effects`。
+2. `required_target_effects` 只允许挂在 `scope=target` 的 effect 上；加载期必须校验非空项、去重和引用存在性。
+3. 前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 
 ## 3. `EffectInstance`
 
@@ -97,7 +99,7 @@
 
 补充规则：
 
-1. 当前内容层不开放“任意 rule_mod”；只允许改写模块 03 / 05 已明确留口的 `final_mod` 链、MP 回复规则或技能合法性。
+1. 当前内容层不开放“任意 rule_mod”；只允许改写模块 03 / 05 已明确留口的 `final_mod` 链、MP 回复规则、动作合法性或命中干扰。
 2. `rule_mod` 是“读取点修正器”，不是流程节点扩展口；不得修改 `priority`、行动排序、目标锁定、击倒窗口、胜负判定、回合阶段顺序、生命周期顺序、日志链路语义等核心流程。
 3. `payloads` 列表严格按声明顺序执行；后一个 payload 必须读取前一个 payload 已经写回的最新运行态。
 4. 每个 payload 单独适用模块 02 的目标有效性与模块 04 的生命周期规则；若前序 payload 已让目标进入 `fainted_pending_leave`，后续直接作用该目标的普通 payload 按目标无效处理。
@@ -124,9 +126,9 @@
 
 |字段|说明|
 |---|---|
-|`mod_kind`|`final_mod / mp_regen / skill_legality`|
-|`mod_op`|`final_mod` 允许 `mul / add / set`；`mp_regen` 允许 `add / set`；`skill_legality` 允许 `allow / deny`|
-|`value`|`final_mod / mp_regen` 下为数值；`skill_legality` 下为技能 ID（空值=全局技能）|
+|`mod_kind`|`final_mod / mp_regen / skill_legality / action_legality / incoming_accuracy`|
+|`mod_op`|`final_mod` 允许 `mul / add / set`；`mp_regen / incoming_accuracy` 允许 `add / set`；`skill_legality / action_legality` 允许 `allow / deny`|
+|`value`|`final_mod / mp_regen / incoming_accuracy` 下为数值；`skill_legality` 下为技能 ID（空值=全局技能）；`action_legality` 下为 `all / skill / ultimate / switch / 已注册 skill_id`|
 |`scope`|`self / target / field`，与创建时的目标一致|
 |`duration_mode`|`turns / permanent`|
 |`duration`|`turns` 模式必填|
@@ -139,10 +141,10 @@
 补充规则：
 
 1. `rule_mod` 必须显式声明 `decrement_on`；否则按 `invalid_battle` 处理。
-2. `skill_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段。
+2. `skill_legality / action_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段。
 3. 动态值公式当前只允许用于“owner 为单位”的数值型 `rule_mod`（即当前只开放 `self / target`，不开放 `field`），且运行时求值不得回写共享内容资源。
 4. 若未来需要 field 作用域的动态公式，必须先补明确定义、校验和运行时语义，不能复用当前 `matchup_bst_gap_band` 口径。
-5. 若未来需要 `action_legality / incoming_accuracy` 这类新读取点，必须先更新本文件与架构约束文档，再实现代码；当前主线内容资源不得声明未接线的 `mod_kind`。
+5. `incoming_accuracy` 当前要求 `value` 为整数，并且禁止 `dynamic_value_formula`。
 
 ### 5.3 `RuleModInstance` 运行时模型
 
@@ -166,15 +168,15 @@
 应用规则：
 
 1. `rule_mod` 在执行 payload 时创建/刷新/替换实例，不进入效果队列二次排序。
-2. 需要读取规则修正的节点（`final_mod`、`turn_start` MP 回复、技能合法性）必须收集所有仍有效的 `RuleModInstance`。
+2. 需要读取规则修正的节点（`final_mod`、`turn_start` MP 回复、技能/动作合法性、命中干扰）必须收集所有仍有效的 `RuleModInstance`。
 3. 同一 hook 内的应用顺序固定为：`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`。
-4. `stacking_key` 当前固定由 `mod_kind + scope + owner_scope + owner_id + mod_op` 组成；`skill_legality` 额外把 `value` 纳入键。`none` 遇到同键直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
+4. `stacking_key` 当前固定由 `mod_kind + scope + owner_scope + owner_id + mod_op` 组成；`skill_legality / action_legality` 额外把 `value` 纳入键。`none` 遇到同键直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
 
 ### 5.4 `rule_mod` 边界冻结（架构强约束）
 
 |项|规则|
 |---|---|
-|白名单读取点|固定为 `final_mod / mp_regen / skill_legality`|
+|白名单读取点|固定为 `final_mod / mp_regen / skill_legality / action_legality / incoming_accuracy`|
 |流程控制权|禁止通过 `rule_mod` 改行动排序、回合阶段顺序、击倒窗口、补位时机、胜负判定、目标模型、生命周期、日志语义|
 |新增读取点流程|先改 `docs/rules/06` 与架构约束文档，再实现|
 |扩展策略|若玩法长期需要更多权限，优先新建专用机制，不继续扩大 `rule_mod` 放权范围|

@@ -30,6 +30,8 @@ allowlisted_reviews = {
     "src/battle_core/content/battle_content_index.gd": "content registry/validator remains centralized in prototype stage",
     "src/battle_core/effects/rule_mod_service.gd": "rule_mod stacking schema migration is centralized in one service",
     "src/battle_core/effects/payload_handlers/payload_numeric_handler.gd": "numeric payload semantics (typed fixed damage + percent heal) remain consolidated for fail-fast validation",
+    "src/battle_core/turn/battle_initializer.gd": "startup sequencing now also pre-applies first-turn regen; keep centralized until the next bootstrap refactor after Gojo v1 lands",
+    "src/battle_core/actions/action_cast_service.gd": "hit resolution now owns field override plus incoming_accuracy read-path; keep centralized until post-Gojo extraction of hit helpers",
 }
 
 decisions_text = (root / "docs/records/decisions.md").read_text(encoding="utf-8")

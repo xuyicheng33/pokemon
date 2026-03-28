@@ -54,6 +54,7 @@
 1. `turn_start` 的 MP 回复只读取“本回合开始前已经生效”的常驻状态：当前在场单位面板、已存在的被动持有物常驻效果、已存在的 field、以及上一结算窗口已经落地的规则修正。
 2. 同一个 `turn_start` 节点里新触发的 `apply_field`、`apply_effect`、`rule_mod`，不回头改写本次 MP 回复结果，只影响后续节点或下一次对应节点。
 3. 对技能、奥义和两类默认动作，执行起点固定顺序为：`has_acted = true -> 扣 MP -> 触发 on_cast / effects_on_cast_ids -> 命中判定 -> 后续 payload / on_hit / on_miss`。
+4. 当前 manager 建局后会按同一 `turn_start` 规则为第 1 回合选指预先应用一次 MP 回复；首个 `run_turn` 不得重复回这一次蓝。
 
 ## 4. 技能系统
 
@@ -136,18 +137,20 @@
 
 |项|规则|
 |---|---|
-|命中来源|当前只看技能自身 `accuracy`|
+|命中来源|先取技能自身 `accuracy`，再按当前已接线读取点修正|
 |内部换算|`hit_rate = clamp(accuracy / 100, 0, 1)`|
 |判定方式|抽 `hit_roll`；若 `hit_roll < hit_rate` 则命中|
 |`accuracy = 100`|视为必中，不需要再判 miss|
 |闪避率|当前没有该属性|
 |field 命中覆盖|若当前 field 的 `creator_accuracy_override >= 0`，且行动者正是该 field creator，则本次命中直接改用这个覆盖值|
+|目标侧命中干扰|若 `resolved_accuracy < 100`，且本次是敌方来袭 `skill / ultimate`、`targeting = enemy_active_slot`、目标为敌方 active，则再读取目标侧 `incoming_accuracy`，整轮结束后 clamp 到 `0..99`|
 
 补充规则：
 
 1. 当前没有命中阶段、闪避阶段、`ignore_evasion`、`allow_full_evasion` 这类机制。
 2. 命中失败时只记 `miss`，不要混成“目标免疫”或“被闪避”。
 3. 命中成立后，行动本体的伤害或效果 payload 按模块 06 的声明顺序执行；全部完成后再进入 `effects_on_hit_ids`。未命中则不执行命中侧 payload，直接进入 `effects_on_miss_ids`。
+4. `incoming_accuracy` 不得把命中改成硬必中；`100` 只由技能本体或 field 覆盖产生。
 
 ## 7. RNG 契约
 

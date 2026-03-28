@@ -65,13 +65,21 @@ fail-fast 约束：
 - `rule_mod` 定义非法：`last_invalid_battle_code = invalid_rule_mod_definition`。
 - 上游（`battle_initializer / turn_loop_controller / action_executor / faint_resolver`）命中该错误码后必须立即终止战斗。
 
+effect 级前置约束：
+
+- 当前 `required_target_effects` 已接线到 `PayloadExecutor`。
+- 该前置只允许挂在 `scope=target` 的 effect 上；目标固定读取 `chain_context.target_unit_id`。
+- 前置不满足时整条 effect 直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
+
 ## 5. RuleModService
 
 ### 5.1 读取点
 
 - `final_mod`：伤害最终倍率。
 - `mp_regen`：`turn_start` MP 回复值。
-- `skill_legality`：技能/奥义合法性读取点（当前不覆盖 `switch / wait`）。
+- `skill_legality`：技能/奥义合法性兼容读取点。
+- `action_legality`：技能 / 奥义 / 换人合法性正式读取点；`wait` 不受影响。
+- `incoming_accuracy`：目标侧命中干扰读取点；在 field 覆盖后、命中 roll 前参与计算。
 
 ### 5.2 生命周期
 

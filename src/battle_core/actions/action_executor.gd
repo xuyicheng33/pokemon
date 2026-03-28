@@ -10,6 +10,7 @@ const ChainContextScript := preload("res://src/battle_core/contracts/chain_conte
 var action_cast_service
 var switch_action_service
 var action_log_service
+var rule_mod_service
 
 func resolve_missing_dependency() -> String:
     if action_cast_service == null:
@@ -27,6 +28,8 @@ func resolve_missing_dependency() -> String:
     var log_missing := str(action_log_service.resolve_missing_dependency())
     if not log_missing.is_empty():
         return "action_log_service.%s" % log_missing
+    if rule_mod_service == null:
+        return "rule_mod_service"
     return ""
 
 func execute_action(queued_action, battle_state, content_index):
@@ -36,6 +39,10 @@ func execute_action(queued_action, battle_state, content_index):
     var actor = battle_state.get_unit(command.actor_id)
     battle_state.chain_context = _build_chain_context(queued_action, battle_state)
     if not _can_start_action(actor, command, battle_state):
+        action_log_service.log_action_cancelled_pre_start(queued_action, battle_state, command)
+        result.result_type = "cancelled_pre_start"
+        return result
+    if not _is_action_still_allowed(command, actor, battle_state):
         action_log_service.log_action_cancelled_pre_start(queued_action, battle_state, command)
         result.result_type = "cancelled_pre_start"
         return result
@@ -80,7 +87,7 @@ func execute_action(queued_action, battle_state, content_index):
         result.result_type = "action_failed_post_start"
         return result
 
-    var hit_info: Dictionary = action_cast_service.resolve_hit(command, skill_definition, battle_state, content_index)
+    var hit_info: Dictionary = action_cast_service.resolve_hit(command, skill_definition, resolved_target, battle_state, content_index)
     if not hit_info["hit"]:
         action_log_service.log_action_miss(
             queued_action,
@@ -150,3 +157,16 @@ func _can_start_action(actor, command, battle_state) -> bool:
         return false
     var side_state = battle_state.get_side(command.side_id)
     return side_state != null and side_state.get_active_unit() != null and side_state.get_active_unit().unit_instance_id == actor.unit_instance_id
+
+func _is_action_still_allowed(command, actor, battle_state) -> bool:
+    if actor == null:
+        return false
+    match command.command_type:
+        CommandTypesScript.SKILL:
+            return rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, CommandTypesScript.SKILL, command.skill_id)
+        CommandTypesScript.ULTIMATE:
+            return rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, CommandTypesScript.ULTIMATE, command.skill_id)
+        CommandTypesScript.SWITCH:
+            return rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, CommandTypesScript.SWITCH)
+        _:
+            return true

@@ -24,6 +24,7 @@ func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
             "bench_public_ids": bench_public_ids,
             "team_units": team_units,
         })
+    side_models.sort_custom(func(left, right): return String(left.get("side_id", "")) < String(right.get("side_id", "")))
     return {
         "battle_id": battle_state.battle_id,
         "turn_index": battle_state.turn_index,
@@ -128,6 +129,7 @@ func _build_prebattle_public_teams(battle_state, content_index) -> Array:
             "side_id": side_state.side_id,
             "units": unit_models,
         })
+    side_models.sort_custom(func(left, right): return String(left.get("side_id", "")) < String(right.get("side_id", "")))
     return side_models
 
 func _build_initial_active_public_ids_by_side(battle_state) -> Dictionary:

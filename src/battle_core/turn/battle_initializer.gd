@@ -20,6 +20,8 @@ var battle_logger
 var log_event_builder
 var public_snapshot_builder
 var combat_type_service
+var mp_service
+var rule_mod_service
 var public_id_allocator = PublicIdAllocatorScript.new()
 
 func initialize_battle(battle_state, content_index, battle_setup) -> void:
@@ -49,6 +51,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     battle_state.fatal_damage_records_by_target.clear()
     battle_state.field_rule_mod_instances.clear()
     battle_state.last_matchup_signature = ""
+    battle_state.pre_applied_turn_start_regen_turn_index = 0
     for side_setup in battle_setup.sides:
         var side_state = _build_side_state(side_setup, format_config, content_index)
         battle_state.sides.append(side_state)
@@ -116,6 +119,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     if post_battle_init_matchup_invalid_code != null:
         _terminate_invalid_battle(battle_state, str(post_battle_init_matchup_invalid_code))
         return
+    _apply_initial_turn_start_regen(battle_state)
     battle_state.phase = BattlePhasesScript.SELECTION
 
 func _build_side_state(side_setup, format_config, content_index):
@@ -210,6 +214,25 @@ func _resolve_startup_victory(battle_state) -> bool:
         }
     ))
     return true
+
+func _apply_initial_turn_start_regen(battle_state) -> void:
+    assert(mp_service != null, "BattleInitializer requires mp_service for initial turn_start regen")
+    assert(rule_mod_service != null, "BattleInitializer requires rule_mod_service for initial turn_start regen")
+    for side_state in battle_state.sides:
+        var active_unit = side_state.get_active_unit()
+        if active_unit == null or active_unit.current_hp <= 0:
+            continue
+        var regen_value: int = rule_mod_service.resolve_mp_regen_value(
+            battle_state,
+            active_unit.unit_instance_id,
+            active_unit.regen_per_turn
+        )
+        active_unit.current_mp = mp_service.apply_turn_start_regen(
+            active_unit.current_mp,
+            regen_value,
+            active_unit.max_mp
+        )
+    battle_state.pre_applied_turn_start_regen_turn_index = battle_state.turn_index
 
 func _side_has_available_unit(side_state) -> bool:
     for unit_state in side_state.team_units:

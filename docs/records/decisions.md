@@ -9,6 +9,16 @@
 
 ## 2026-03-29
 
+### 225. Gojo 扩展正式进入当前主线 contract
+- `action_legality / required_target_effects / incoming_accuracy` 已接线完成，并已同步进 `docs/rules/06_effect_schema_and_extension.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md` 与 `docs/design/battle_core_architecture_constraints.md`。
+- 这代表 2026-03-28 的“先把仓库级文档回滚到旧口径”只是一条阶段性历史记录；从本条起，仓库级正式文档必须把这三块能力视为当前主线事实。
+- `skill_legality` 继续保留为兼容读取口径，只参与 `skill / ultimate`；`action_legality` 是覆盖技能 / 奥义 / 换人的正式口径，`wait` 不受其影响。
+- 赛前 setup 继续允许同队重复 `unit_definition_id`；`SideSetup.regular_skill_loadout_overrides` 仍按槽位下标建模，不允许把“重复单位非法”偷偷写回校验器。
+
+### 226. 当前超阈值文件复核（Gojo 扩展接线后）
+- `src/battle_core/turn/battle_initializer.gd`：当前超出 250 行是因为启动时序还同时承载 `on_enter -> on_matchup_changed -> battle_init -> 首回合预回蓝` 的收口逻辑；在 Gojo v1 资源落地后的下一轮 bootstrap 重构里优先拆分。
+- `src/battle_core/actions/action_cast_service.gd`：当前超出 250 行是因为命中解析已经同时承载 field 命中覆盖、`incoming_accuracy` 读取与技能链 casting；在 Gojo v1 落地后的下一轮命中/施法 helper 拆分里优先处理。
+
 ### 224. 五条悟文档施工顺序与扩展 contract 再收紧
 - Gojo 文档正式写死为“两阶段施工”：先实现 `action_legality / required_target_effects / incoming_accuracy` 三块扩展并同步仓库级 contract 文档，再创建 Gojo 内容资源；未接线前不得先提交引用这些字段或 `mod_kind` 的 `.tres`。
 - `required_target_effects` 只允许挂在 `scope=target` 的 effect 上；前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写出任何由该 effect 产生的 payload 日志。

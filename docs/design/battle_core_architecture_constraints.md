@@ -34,6 +34,12 @@
 - `final_mod`
 - `mp_regen`
 - `skill_legality`
+- `action_legality`
+- `incoming_accuracy`
+
+补充说明：
+
+- `required_target_effects` 属于 effect 级前置守卫，不属于 `rule_mod` 读取点。
 
 ### 3.2 明确禁止
 

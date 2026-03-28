@@ -1,4 +1,4 @@
-# 五条悟（Gojo Satoru）设计方案（审计收口版 v4）
+# 五条悟（Gojo Satoru）设计方案（审计收口版 v4.1）
 
 ## 0. 审计后冻结结论（2026-03-29）
 
@@ -7,10 +7,10 @@
 | 茈 | 保留“苍+赫双标记”条件爆发，**不做自伤** |
 | 无下限 | 改为“敌方技能攻击五条悟时，若该次不是必中，则命中率 -10” |
 | 领域后摇 | **删除**（不再追加封印/回滚） |
-| 施工顺序 | **先实现第 4 节扩展并同步仓库级 contract 文档，再创建第 5 节 Gojo 资源** |
+| 施工顺序 | **第 4 节扩展已接线并同步仓库级 contract 文档；下一步可创建第 5 节 Gojo 资源** |
 | 苍/赫标记归属 | 标记挂在**目标**身上；换人清除只发生在**标记持有者**离场时 |
 | 苍/赫标记消耗语义 | 当前冻结为**团队共享资源**：只检查目标是否同时持有双标记，不校验由哪一个五条悟施加 |
-| 待实现引擎扩展 | 若按“团队共享标记”落地 Gojo，需新增 `action_legality`、`required_target_effects`、`incoming_accuracy` 三块；若要收紧为“必须同一施法者本人消耗标记”，还需**第 4 块扩展** |
+| 已接线引擎扩展 | `action_legality`、`required_target_effects`、`incoming_accuracy` 已进入当前主线；若要收紧为“必须同一施法者本人消耗标记”，仍需**第 4 块扩展** |
 | 明确不做 | `effects_pre_damage_ids`、`on_before_damage`、`damage_override`、`action_tags`、`last_dealt_damage`、反噬链路 |
 
 ---
@@ -298,14 +298,13 @@
 
 ---
 
-## 4. 若要落地 Gojo，需新增的引擎扩展（当前 main 尚未接线）
+## 4. Gojo 依赖的引擎扩展（2026-03-29 已接线）
 
 口径说明：
 
-- `docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 当前仍以主线代码真实实现为准。
-- 本节只定义 Gojo 方案所需的待实现扩展，不代表这些字段、`mod_kind` 或读取点已经进入仓库级正式 contract。
-- 若按本文当前冻结的“团队共享标记”方案实现，需新增 3 块扩展；若要把标记消耗收紧为“同一施法者本人专属”，还需第 4 块扩展。
-- **施工纪律写死**：在第 4.1~4.3 任一扩展未接线完成前，不得先行创建或提交引用 `action_legality / required_target_effects / incoming_accuracy` 的 Gojo `.tres` 资源；否则当前主线内容校验会直接失败。
+- `docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 当前已与这三块扩展同步。
+- 本节记录 Gojo 方案依赖的当前正式 contract，以及若玩法继续收紧时还需要追加的后续扩展。
+- 按本文当前冻结的“团队共享标记”方案，`action_legality / required_target_effects / incoming_accuracy` 已可直接用于 Gojo 资源。
 
 ### 4.1 `action_legality`（新增并逐步替代 `skill_legality`）
 
@@ -466,7 +465,7 @@
 
 ## 5. 资源文件清单
 
-以下清单是 **Gojo 目标态资源面**，不是“当前 main 立即可落盘”的内容；只有在第 4.1~4.3 已经接线、并且仓库级正式 contract 文档同步完成后，才允许真正创建这些资源。
+以下清单是 **Gojo 目标态资源面**。截至 2026-03-29，底层扩展与仓库级 contract 已接线完成，当前可以开始真正创建这些资源；只是本仓库此刻仍未落盘 Gojo 内容。
 
 ### 5.1 `content/units/`
 

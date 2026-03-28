@@ -218,6 +218,7 @@ func validate(content_index) -> Array:
         and effect_definition.stacking != ContentSchemaScript.STACKING_REPLACE \
         and effect_definition.stacking != ContentSchemaScript.STACKING_STACK:
             errors.append("effect[%s].stacking invalid: %s" % [effect_id, effect_definition.stacking])
+        _validate_required_target_effects(errors, effect_id, effect_definition)
         for trigger_name in effect_definition.trigger_names:
             if not allowed_triggers.has(trigger_name):
                 errors.append("effect[%s].trigger_names invalid: %s" % [effect_id, trigger_name])
@@ -226,3 +227,21 @@ func validate(content_index) -> Array:
             _payload_validator.validate_payload(errors, effect_id, payload, _content_index)
     _content_index = null
     return errors
+
+func _validate_required_target_effects(errors: Array, effect_id: String, effect_definition) -> void:
+    if effect_definition.required_target_effects.is_empty():
+        return
+    if effect_definition.scope != "target":
+        errors.append("effect[%s].required_target_effects requires scope=target" % effect_id)
+    var seen_required_effects: Dictionary = {}
+    for required_effect_id in effect_definition.required_target_effects:
+        var normalized_effect_id := String(required_effect_id).strip_edges()
+        if normalized_effect_id.is_empty():
+            errors.append("effect[%s].required_target_effects must not contain empty entry" % effect_id)
+            continue
+        if seen_required_effects.has(normalized_effect_id):
+            errors.append("effect[%s].required_target_effects duplicated effect: %s" % [effect_id, normalized_effect_id])
+            continue
+        seen_required_effects[normalized_effect_id] = true
+        if not _content_index.effects.has(normalized_effect_id):
+            errors.append("effect[%s].required_target_effects missing effect: %s" % [effect_id, normalized_effect_id])

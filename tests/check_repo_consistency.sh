@@ -75,18 +75,30 @@ require_contains(
 
 require_contains("tests/run_all.gd", 'const SetupLoadoutSuiteScript := preload("res://tests/suites/setup_loadout_suite.gd")', "setup loadout suite registration")
 require_contains("tests/run_all.gd", "SetupLoadoutSuiteScript.new()", "setup loadout suite execution")
+require_contains("tests/run_all.gd", 'const ExtensionContractSuiteScript := preload("res://tests/suites/extension_contract_suite.gd")', "extension suite registration")
+require_contains("tests/run_all.gd", "ExtensionContractSuiteScript.new()", "extension suite execution")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("candidate_skill_pool_validation"', "candidate skill pool dedicated regression")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("setup_loadout_override_validation"', "setup override dedicated regression")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("runtime_regular_skill_loadout_contract"', "runtime loadout dedicated regression")
+require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("same_side_duplicate_unit_allowed"', "same-side duplicate unit regression")
 
 require_contains("README.md", "candidate_skill_ids", "README candidate skill pool contract")
 require_contains("README.md", "regular_skill_loadout_overrides", "README setup override contract")
 require_contains("docs/design/battle_content_schema.md", "candidate_skill_ids", "schema candidate skill pool contract")
 require_contains("docs/design/battle_content_schema.md", "regular_skill_loadout_overrides", "schema setup override contract")
+require_contains("docs/design/battle_content_schema.md", "required_target_effects", "schema effect precondition contract")
+require_contains("docs/design/battle_content_schema.md", "action_legality", "schema action legality contract")
+require_contains("docs/design/battle_content_schema.md", "incoming_accuracy", "schema incoming accuracy contract")
 require_contains("docs/design/battle_runtime_model.md", "regular_skill_ids", "runtime equipped skill mirror contract")
+require_contains("docs/design/battle_runtime_model.md", "action_legality", "runtime action legality contract")
+require_contains("docs/design/battle_runtime_model.md", "incoming_accuracy", "runtime incoming accuracy contract")
 require_contains("docs/design/command_and_legality.md", "regular_skill_ids", "legality runtime equipped skill contract")
 require_contains("docs/rules/01_battle_format_and_visibility.md", "candidate_skill_ids", "rules candidate skill pool contract")
 require_contains("docs/rules/01_battle_format_and_visibility.md", "regular_skill_loadout_overrides", "rules setup override contract")
+require_contains("docs/rules/06_effect_schema_and_extension.md", "required_target_effects", "rules effect precondition contract")
+require_contains("docs/rules/06_effect_schema_and_extension.md", "action_legality", "rules action legality contract")
+require_contains("docs/rules/06_effect_schema_and_extension.md", "incoming_accuracy", "rules incoming accuracy contract")
+require_contains("docs/rules/03_stats_resources_and_damage.md", "incoming_accuracy", "rules incoming accuracy read-path")
 
 stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",

@@ -121,9 +121,15 @@
 |`stacking`|`String`|`none / refresh / replace / stack`|
 |`priority`|`int`|效果优先级|
 |`trigger_names`|`PackedStringArray`|允许的触发点|
+|`required_target_effects`|`PackedStringArray`|effect 级前置条件；仅 `scope=target` 允许声明|
 |`on_expire_effect_ids`|`PackedStringArray`|实例到期时追加执行的效果 ID|
 |`payloads`|`Array[Resource]`|payload 资源数组|
 |`persists_on_switch`|`bool`|离场是否保留|
+
+补充语义：
+
+- `required_target_effects` 只允许出现在 `scope=target` 的 effect 上。
+- 前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 
 ### 3.6 FieldDefinition
 
@@ -200,8 +206,9 @@
 
 补充约束：
 
-- `mod_kind` 当前实现白名单以 `docs/rules/06_effect_schema_and_extension.md` 为准，只包含 `final_mod / mp_regen / skill_legality`。
-- Gojo 设计文档中提到的 `action_legality / incoming_accuracy` 属于待实现扩展，不属于当前主线 schema contract。
+- `mod_kind` 当前实现白名单以 `docs/rules/06_effect_schema_and_extension.md` 为准，当前包含 `final_mod / mp_regen / skill_legality / action_legality / incoming_accuracy`。
+- `skill_legality` 当前作为技能/奥义兼容口径保留；`action_legality` 是覆盖技能 / 奥义 / 换人的正式扩展读取点。
+- `incoming_accuracy.value` 当前要求为 `int`，并且禁止 `dynamic_value_formula`。
 
 实现状态说明（2026-03-25）：
 
@@ -225,7 +232,7 @@
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
 - 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单（含 `on_matchup_changed`、`stack`）、效果优先级范围、payload 类型与跨资源引用完整性。
-- 当前 `EffectDefinition` 不包含 `required_target_effects`；若后续要为角色设计引入该字段，必须先同步 schema 类、内容校验与本文件。
+- `required_target_effects` 的加载期校验固定包含：非空项、去重、引用存在性、以及 `scope=target` 约束。
 - field 校验覆盖：`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
 - payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
 - 内容快照校验失败直接 fail-fast，不进入运行态。
@@ -233,6 +240,7 @@
 ## 7. 运行前校验（BattleSetup）
 
 - 同一 side 的队伍中，被动持有物 `passive_item_id` 不可重复。
+- 同队允许重复 `unit_definition_id`；赛前覆盖 contract 继续按槽位下标建模，不因重复单位失效。
 - `SideSetup.regular_skill_loadout_overrides` 固定为 `Dictionary<int, PackedStringArray>`：
   - 键固定为队伍槽位下标 `0..team_size-1`；因为同队允许重复单位，所以不用 `unit_definition_id` 做键。
   - 值固定为该槽位单位本场实际装配的 3 个常规技能。

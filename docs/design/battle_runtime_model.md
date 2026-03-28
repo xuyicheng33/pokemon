@@ -50,6 +50,7 @@
 |`fatal_damage_records_by_target`|`Dictionary`|目标维度的致命伤害归因记录（击倒链读取）|
 |`field_rule_mod_instances`|`Array[RuleModInstance]`|挂载在全场作用域的规则修正实例|
 |`last_matchup_signature`|`String`|最近一次已结算 `on_matchup_changed` 的对位签名，用于去重|
+|`pre_applied_turn_start_regen_turn_index`|`int`|建局后为首回合选指预先应用过 `turn_start` 回蓝时写入对应回合号；首个 `run_turn` 用它避免重复回蓝|
 
 ## 5. SideState
 
@@ -123,7 +124,7 @@
 |字段|类型|说明|
 |---|---|---|
 |`instance_id`|`String`|实例 ID|
-|`mod_kind`|`String`|`final_mod / mp_regen / skill_legality`|
+|`mod_kind`|`String`|`final_mod / mp_regen / skill_legality / action_legality / incoming_accuracy`|
 |`mod_op`|`String`|`mul / add / set / allow / deny`|
 |`value`|`Variant`|运算值|
 |`scope`|`String`|生效域（如 `self / field`）|
@@ -141,8 +142,8 @@
 
 补充说明：
 
-- 当前 main 运行态实际可见的 `mod_kind` 只有 `final_mod / mp_regen / skill_legality`。
-- Gojo 设计文档中提到的 `action_legality / incoming_accuracy` 仍属于待实现扩展，不在当前运行态 contract 内。
+- `skill_legality` 仍保留为兼容读取口径，但只参与 `skill / ultimate` 两类动作。
+- `action_legality` 与 `incoming_accuracy` 已是当前运行态 contract 的正式组成部分。
 
 ## 10. 临时状态重置点
 

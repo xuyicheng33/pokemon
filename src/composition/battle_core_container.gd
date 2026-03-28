@@ -52,6 +52,7 @@ func dispose() -> void:
         action_executor.action_cast_service = null
         action_executor.switch_action_service = null
         action_executor.action_log_service = null
+        action_executor.rule_mod_service = null
     if action_cast_service != null:
         action_cast_service.mp_service = null
         action_cast_service.hit_service = null
@@ -121,6 +122,8 @@ func dispose() -> void:
         battle_initializer.log_event_builder = null
         battle_initializer.public_snapshot_builder = null
         battle_initializer.combat_type_service = null
+        battle_initializer.mp_service = null
+        battle_initializer.rule_mod_service = null
     if turn_loop_controller != null:
         turn_loop_controller.action_queue_builder = null
         turn_loop_controller.action_executor = null

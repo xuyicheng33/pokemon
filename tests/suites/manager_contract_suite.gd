@@ -11,6 +11,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("full_open_public_snapshot_contract", failures, Callable(self, "_test_full_open_public_snapshot_contract").bind(harness))
     runner.run_test("visibility_mode_runtime_decoupled_contract", failures, Callable(self, "_test_visibility_mode_runtime_decoupled_contract").bind(harness))
     runner.run_test("legal_action_public_id_contract", failures, Callable(self, "_test_legal_action_public_id_contract").bind(harness))
+    runner.run_test("initial_selection_mp_contract", failures, Callable(self, "_test_initial_selection_mp_contract").bind(harness))
     runner.run_test("selection_adapters_public_id_contract", failures, Callable(self, "_test_selection_adapters_public_id_contract").bind(harness))
     runner.run_test("validator_internal_id_backfill_contract", failures, Callable(self, "_test_validator_internal_id_backfill_contract").bind(harness))
     runner.run_test("manager_session_isolation_interleaved_turns", failures, Callable(self, "_test_manager_session_isolation_interleaved_turns").bind(harness))
@@ -150,6 +151,84 @@ func _test_legal_action_public_id_contract(harness) -> Dictionary:
         property_names.append(str(property_data.get("name", "")))
     if property_names.has("actor_id") or property_names.has("legal_switch_target_ids"):
         return harness.fail_result("legal_action_set should not leak deprecated runtime instance id fields")
+    manager.close_session(session_id)
+    return harness.pass_result()
+
+func _test_initial_selection_mp_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var manager_payload = harness.build_manager()
+    if manager_payload.has("error"):
+        return harness.fail_result(str(manager_payload["error"]))
+    var manager = manager_payload["manager"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var battle_setup = sample_factory.build_sample_setup()
+    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_pyron", "sample_mossaur"])
+    battle_setup.sides[0].starting_index = 0
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var reference_state = harness.build_initialized_battle(core, content_index, sample_factory, 903, battle_setup)
+    var reference_snapshot = core.public_snapshot_builder.build_public_snapshot(reference_state, content_index)
+    var expected_p1_snapshot = _find_side_snapshot(reference_snapshot, "P1")
+    var expected_legal_actions = core.legal_action_service.get_legal_actions(reference_state, "P1", content_index)
+
+    var init_result = manager.create_session({
+        "battle_seed": 903,
+        "content_snapshot_paths": sample_factory.content_snapshot_paths(),
+        "battle_setup": battle_setup,
+    })
+    var session_id: String = str(init_result.get("session_id", ""))
+    var public_snapshot: Dictionary = init_result.get("public_snapshot", {})
+    var p1_snapshot = _find_side_snapshot(public_snapshot, "P1")
+    if p1_snapshot.is_empty():
+        return harness.fail_result("manager snapshot missing P1 side")
+    if int(p1_snapshot.get("active_mp", -1)) != int(expected_p1_snapshot.get("active_mp", -1)):
+        return harness.fail_result("create_session should expose the same pre-applied first-turn regen result as the core initializer")
+    var legal_actions = manager.get_legal_actions(session_id, "P1")
+    if legal_actions.legal_ultimate_ids != expected_legal_actions.legal_ultimate_ids:
+        return harness.fail_result("first-turn legal set should match the core initializer after pre-applied regen")
+
+    var after_turn = manager.run_turn(session_id, [
+        manager.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.WAIT,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+        }),
+        manager.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.WAIT,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+        }),
+    ])
+    core.turn_loop_controller.run_turn(reference_state, content_index, [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.WAIT,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.WAIT,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+        }),
+    ])
+    var expected_after_snapshot = core.public_snapshot_builder.build_public_snapshot(reference_state, content_index)
+    var after_snapshot: Dictionary = after_turn.get("public_snapshot", {})
+    var after_p1_snapshot = _find_side_snapshot(after_snapshot, "P1")
+    var expected_after_p1_snapshot = _find_side_snapshot(expected_after_snapshot, "P1")
+    if int(after_p1_snapshot.get("active_mp", -1)) != int(expected_after_p1_snapshot.get("active_mp", -1)):
+        return harness.fail_result("first run_turn must not apply turn_start regen twice or drift from the core path")
     manager.close_session(session_id)
     return harness.pass_result()
 
@@ -471,6 +550,12 @@ func _validate_snapshot_shape(public_snapshot: Dictionary) -> String:
             if typeof(unit_snapshot.get("combat_type_ids", null)) != TYPE_PACKED_STRING_ARRAY:
                 return "prebattle unit snapshot missing combat_type_ids"
     return ""
+
+func _find_side_snapshot(public_snapshot: Dictionary, side_id: String) -> Dictionary:
+    for side_snapshot in public_snapshot.get("sides", []):
+        if str(side_snapshot.get("side_id", "")) == side_id:
+            return side_snapshot
+    return {}
 
 func _contains_key_recursive(value, expected_key: String) -> bool:
     if typeof(value) == TYPE_DICTIONARY:

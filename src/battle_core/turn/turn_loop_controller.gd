@@ -36,7 +36,10 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     )
     battle_logger.append_event(turn_start_event)
     var turn_start_event_id: String = log_event_builder.resolve_event_id(turn_start_event)
-    turn_resolution_service.apply_turn_start_regen(battle_state, turn_start_event_id)
+    var skip_turn_start_regen: bool = battle_state.pre_applied_turn_start_regen_turn_index == battle_state.turn_index
+    if not skip_turn_start_regen:
+        turn_resolution_service.apply_turn_start_regen(battle_state, turn_start_event_id)
+    battle_state.pre_applied_turn_start_regen_turn_index = 0
     if turn_resolution_service.execute_system_trigger_batch("turn_start", battle_state, content_index):
         return
     if turn_resolution_service.break_field_if_creator_inactive(battle_state, content_index):

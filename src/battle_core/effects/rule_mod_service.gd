@@ -2,6 +2,7 @@ extends RefCounted
 class_name RuleModService
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const RuleModSchemaScript := preload("res://src/battle_core/content/rule_mod_schema.gd")
 const RuleModInstanceScript := preload("res://src/battle_core/runtime/rule_mod_instance.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
@@ -9,15 +10,11 @@ const OWNER_SCOPE_UNIT := "unit"
 const OWNER_SCOPE_FIELD := "field"
 const FIELD_OWNER_ID := "field"
 const SKILL_LEGALITY_GLOBAL_KEY := "__all_skills__"
-
-const STACKING_KEY_SCHEMA_BY_KIND := {
-    ContentSchemaScript.RULE_MOD_FINAL_MOD: ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
-    ContentSchemaScript.RULE_MOD_MP_REGEN: ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
-    ContentSchemaScript.RULE_MOD_SKILL_LEGALITY: ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"],
-}
+const STACKING_KEY_SCHEMA_BY_KIND := RuleModSchemaScript.STACKING_KEY_SCHEMA_BY_KIND
 
 var id_factory
 var last_error_code: Variant = null
+var _rule_mod_schema = RuleModSchemaScript.new()
 
 func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null):
     last_error_code = null
@@ -93,24 +90,43 @@ func resolve_mp_regen_value(battle_state, owner_id: String, base_regen: int) -> 
     return max(0, regen_value)
 
 func is_skill_allowed(battle_state, owner_id: String, skill_id: String) -> bool:
+    return is_action_allowed(battle_state, owner_id, "skill", skill_id)
+
+func is_action_allowed(battle_state, owner_id: String, action_type: String, skill_id: String = "") -> bool:
     if battle_state.get_unit(owner_id) == null:
         return false
+    if action_type == "wait" or action_type == "resource_forced_default" or action_type == "surrender":
+        return true
     var allowed: bool = true
     var ordered_instances: Array = _sorted_active_instances_for_read(battle_state, owner_id)
     for rule_mod_instance in ordered_instances:
-        if rule_mod_instance.mod_kind != ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
+        if rule_mod_instance.mod_kind == ContentSchemaScript.RULE_MOD_ACTION_LEGALITY:
+            if not _action_legality_matches(rule_mod_instance, action_type, skill_id):
+                continue
+        elif rule_mod_instance.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
+            if action_type != "skill" and action_type != "ultimate":
+                continue
+            if not _skill_legality_matches(rule_mod_instance, skill_id):
+                continue
+        else:
             continue
-        var affects_current_skill: bool = true
-        if typeof(rule_mod_instance.value) == TYPE_STRING and not String(rule_mod_instance.value).is_empty():
-            affects_current_skill = String(rule_mod_instance.value) == skill_id
-        if not affects_current_skill:
+        allowed = rule_mod_instance.mod_op == "allow"
+    return allowed
+
+func resolve_incoming_accuracy(battle_state, owner_id: String, base_accuracy: int) -> int:
+    if battle_state.get_unit(owner_id) == null:
+        return clamp(base_accuracy, 0, 99)
+    var resolved_accuracy: int = base_accuracy
+    var ordered_instances: Array = _sorted_active_instances_for_read(battle_state, owner_id)
+    for rule_mod_instance in ordered_instances:
+        if rule_mod_instance.mod_kind != ContentSchemaScript.RULE_MOD_INCOMING_ACCURACY:
             continue
         match rule_mod_instance.mod_op:
-            "deny":
-                allowed = false
-            "allow":
-                allowed = true
-    return allowed
+            "add":
+                resolved_accuracy += int(rule_mod_instance.value)
+            "set":
+                resolved_accuracy = int(rule_mod_instance.value)
+    return clamp(resolved_accuracy, 0, 99)
 
 func decrement_for_trigger(battle_state, trigger_name: String) -> Array:
     var removed_instances: Array = []
@@ -147,48 +163,10 @@ func _find_existing(owner_instances: Array, stacking_key: String):
     return null
 
 func _validate_rule_mod_payload(rule_mod_payload) -> bool:
-    var allowed_mod_kinds: PackedStringArray = PackedStringArray([
-        ContentSchemaScript.RULE_MOD_FINAL_MOD,
-        ContentSchemaScript.RULE_MOD_MP_REGEN,
-        ContentSchemaScript.RULE_MOD_SKILL_LEGALITY,
-    ])
-    if not allowed_mod_kinds.has(rule_mod_payload.mod_kind):
-        last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-        return false
-    var allowed_scopes: PackedStringArray = PackedStringArray(["self", "target", "field"])
-    if not allowed_scopes.has(rule_mod_payload.scope):
-        last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-        return false
-    var allowed_stacking: PackedStringArray = PackedStringArray([
-        ContentSchemaScript.STACKING_NONE,
-        ContentSchemaScript.STACKING_REFRESH,
-        ContentSchemaScript.STACKING_REPLACE,
-    ])
-    if not allowed_stacking.has(rule_mod_payload.stacking):
-        last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-        return false
-    if rule_mod_payload.decrement_on != "turn_start" and rule_mod_payload.decrement_on != "turn_end":
-        last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-        return false
-    if rule_mod_payload.duration_mode != ContentSchemaScript.DURATION_TURNS and rule_mod_payload.duration_mode != ContentSchemaScript.DURATION_PERMANENT:
-        last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-        return false
-    if rule_mod_payload.duration_mode == "turns" and int(rule_mod_payload.duration) <= 0:
-        last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-        return false
-    if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_FINAL_MOD:
-        if rule_mod_payload.mod_op != "mul" and rule_mod_payload.mod_op != "add" and rule_mod_payload.mod_op != "set":
-            last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-            return false
-    elif rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_MP_REGEN:
-        if rule_mod_payload.mod_op != "add" and rule_mod_payload.mod_op != "set":
-            last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-            return false
-    elif rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
-        if rule_mod_payload.mod_op != "allow" and rule_mod_payload.mod_op != "deny":
-            last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-            return false
-    return true
+    if _rule_mod_schema.validate_payload(rule_mod_payload).is_empty():
+        return true
+    last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+    return false
 
 func _validate_owner_ref(owner_ref: Dictionary, payload_scope: String, battle_state) -> bool:
     if owner_ref == null or not owner_ref.has("scope") or not owner_ref.has("id"):
@@ -262,6 +240,29 @@ func _sort_rule_mods(left, right) -> bool:
         return left.source_instance_id < right.source_instance_id
     return left.instance_id < right.instance_id
 
+func _action_legality_matches(rule_mod_instance, action_type: String, skill_id: String) -> bool:
+    var value := String(rule_mod_instance.value).strip_edges()
+    match action_type:
+        "skill":
+            return value == ContentSchemaScript.ACTION_LEGALITY_ALL \
+                or value == ContentSchemaScript.ACTION_LEGALITY_SKILL \
+                or value == skill_id
+        "ultimate":
+            return value == ContentSchemaScript.ACTION_LEGALITY_ALL \
+                or value == ContentSchemaScript.ACTION_LEGALITY_ULTIMATE \
+                or value == skill_id
+        "switch":
+            return value == ContentSchemaScript.ACTION_LEGALITY_ALL \
+                or value == ContentSchemaScript.ACTION_LEGALITY_SWITCH
+        _:
+            return false
+
+func _skill_legality_matches(rule_mod_instance, skill_id: String) -> bool:
+    if typeof(rule_mod_instance.value) != TYPE_STRING:
+        return false
+    var value := String(rule_mod_instance.value).strip_edges()
+    return value.is_empty() or value == skill_id
+
 func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary) -> String:
     var schema: Array = STACKING_KEY_SCHEMA_BY_KIND.get(rule_mod_payload.mod_kind, [])
     assert(not schema.is_empty(), "Missing stacking key schema for rule_mod kind: %s" % rule_mod_payload.mod_kind)
@@ -289,4 +290,12 @@ func _resolve_stacking_value_token(rule_mod_payload) -> String:
         if typeof(rule_mod_payload.value) == TYPE_STRING and not String(rule_mod_payload.value).is_empty():
             return "skill:%s" % String(rule_mod_payload.value)
         return SKILL_LEGALITY_GLOBAL_KEY
+    if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_ACTION_LEGALITY:
+        var action_value := String(rule_mod_payload.value).strip_edges()
+        if action_value == ContentSchemaScript.ACTION_LEGALITY_ALL \
+        or action_value == ContentSchemaScript.ACTION_LEGALITY_SKILL \
+        or action_value == ContentSchemaScript.ACTION_LEGALITY_ULTIMATE \
+        or action_value == ContentSchemaScript.ACTION_LEGALITY_SWITCH:
+            return "action:%s" % action_value
+        return "skill:%s" % action_value
     return str(rule_mod_payload.value)

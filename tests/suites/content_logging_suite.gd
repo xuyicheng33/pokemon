@@ -247,12 +247,12 @@ func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
             "actor_public_id": "P2-A",
         }),
     ])
-
     var turn_start_events := _find_events(core.battle_logger.event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_START)
     var turn_end_events := _find_events(core.battle_logger.event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_END)
     if turn_start_events.size() < 2 or turn_end_events.size() < 2:
         return harness.fail_result("missing turn anchor events for cause contract checks")
     var first_turn_start = turn_start_events[0]
+    var second_turn_start = turn_start_events[1]
     var second_turn_end = turn_end_events[1]
     var regen_event = _find_event(core.battle_logger.event_log, func(ev):
         return ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD \
@@ -266,7 +266,7 @@ func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
     var field_expire_event = _find_event(core.battle_logger.event_log, func(ev): return ev.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE)
     if regen_event == null or rule_mod_remove_event == null or field_expire_event == null:
         return harness.fail_result("missing turn_start/turn_end effect logs for cause contract checks")
-    if regen_event.cause_event_id != _event_id(first_turn_start):
+    if regen_event.cause_event_id != _event_id(second_turn_start):
         return harness.fail_result("turn_start regen cause_event_id should point to the real system:turn_start anchor")
     if rule_mod_remove_event.cause_event_id != _event_id(first_turn_start):
         return harness.fail_result("rule_mod remove cause_event_id should point to the real system:turn_start anchor")

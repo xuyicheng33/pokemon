@@ -7,6 +7,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("candidate_skill_pool_validation", failures, Callable(self, "_test_candidate_skill_pool_validation").bind(harness))
     runner.run_test("setup_loadout_override_validation", failures, Callable(self, "_test_setup_loadout_override_validation").bind(harness))
     runner.run_test("runtime_regular_skill_loadout_contract", failures, Callable(self, "_test_runtime_regular_skill_loadout_contract").bind(harness))
+    runner.run_test("same_side_duplicate_unit_allowed", failures, Callable(self, "_test_same_side_duplicate_unit_allowed").bind(harness))
 
 func _test_candidate_skill_pool_validation(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
@@ -85,10 +86,9 @@ func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
     var content_index = harness.build_loaded_content_index(sample_factory)
-    content_index.units["sample_tidekit"].candidate_skill_ids = PackedStringArray(["sample_strike", "sample_whiff", "sample_tide_surge", "sample_field_call"])
-    var override_loadout := PackedStringArray(["sample_field_call", "sample_whiff", "sample_tide_surge"])
+    content_index.units["sample_pyron"].candidate_skill_ids = PackedStringArray(["sample_strike", "sample_field_call", "sample_pyro_blast", "sample_whiff"])
+    var override_loadout := PackedStringArray(["sample_strike", "sample_field_call", "sample_whiff"])
     var battle_setup = sample_factory.build_sample_setup({"P1": {0: override_loadout}})
-    battle_setup.sides[0].unit_definition_ids[0] = "sample_tidekit"
     battle_setup.sides[0].starting_index = 0
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 901, battle_setup)
     var p1_active = battle_state.get_side("P1").get_active_unit()
@@ -100,9 +100,9 @@ func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
     if p2_active.regular_skill_ids != content_index.units["sample_tidekit"].skill_ids:
         return harness.fail_result("units without override should keep default loadout")
     var legal_action_set = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
-    if not legal_action_set.legal_skill_ids.has("sample_field_call"):
+    if not legal_action_set.legal_skill_ids.has("sample_whiff"):
         return harness.fail_result("override loadout should expose swapped-in skill")
-    if legal_action_set.legal_skill_ids.has("sample_strike"):
+    if legal_action_set.legal_skill_ids.has("sample_pyro_blast"):
         return harness.fail_result("override loadout should hide swapped-out default skill")
     var public_snapshot = core.public_snapshot_builder.build_public_snapshot(battle_state, content_index)
     var prebattle_teams: Array = public_snapshot.get("prebattle_public_teams", [])
@@ -135,6 +135,18 @@ func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
     ])
     if battle_state.field_state == null or battle_state.field_state.field_def_id != "sample_focus_field":
         return harness.fail_result("swapped-in skill should remain executable at runtime")
+    return harness.pass_result()
+
+func _test_same_side_duplicate_unit_allowed(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_setup = sample_factory.build_sample_setup()
+    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_pyron", "sample_tidekit"])
+    var errors: Array = content_index.validate_setup(battle_setup)
+    if _has_error(errors, "duplicated unit_definition_id"):
+        return harness.fail_result("same-side duplicate units should remain legal; setup validation must not reject repeated unit_definition_ids")
     return harness.pass_result()
 
 func _has_error(errors: Array, needle: String) -> bool:

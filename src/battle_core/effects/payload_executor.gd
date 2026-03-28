@@ -2,6 +2,7 @@ extends RefCounted
 class_name PayloadExecutor
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var numeric_payload_handler
 var state_payload_handler
@@ -38,6 +39,9 @@ func execute_effect_event(effect_event, battle_state, content_index) -> void:
     var effect_definition = content_index.effects.get(effect_event.effect_definition_id)
     if effect_definition == null:
         last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+        _leave_effect_guard(battle_state)
+        return
+    if not _passes_effect_preconditions(effect_definition, effect_event, battle_state):
         _leave_effect_guard(battle_state)
         return
     for payload in effect_definition.payloads:
@@ -94,3 +98,34 @@ func _leave_effect_guard(battle_state) -> void:
         return
     if battle_state.chain_context.chain_depth > 0:
         battle_state.chain_context.chain_depth -= 1
+
+func _passes_effect_preconditions(effect_definition, effect_event, battle_state) -> bool:
+    if effect_definition.required_target_effects.is_empty():
+        return true
+    if effect_definition.scope != "target":
+        last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+        return false
+    var target_unit = _resolve_required_target(effect_event, battle_state)
+    if not _is_required_target_valid(target_unit):
+        return false
+    for required_effect_id in effect_definition.required_target_effects:
+        if not _target_has_effect(target_unit, String(required_effect_id)):
+            return false
+    return true
+
+func _resolve_required_target(effect_event, battle_state):
+    if effect_event == null or effect_event.chain_context == null:
+        return null
+    var target_unit_id := str(effect_event.chain_context.target_unit_id)
+    if target_unit_id.is_empty():
+        return null
+    return battle_state.get_unit(target_unit_id)
+
+func _is_required_target_valid(target_unit) -> bool:
+    return target_unit != null and target_unit.leave_state == LeaveStatesScript.ACTIVE and target_unit.current_hp > 0
+
+func _target_has_effect(target_unit, effect_definition_id: String) -> bool:
+    for effect_instance in target_unit.effect_instances:
+        if effect_instance.def_id == effect_definition_id:
+            return true
+    return false
