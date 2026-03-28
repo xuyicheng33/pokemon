@@ -28,7 +28,7 @@ func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
         "battle_id": battle_state.battle_id,
         "turn_index": battle_state.turn_index,
         "phase": battle_state.phase,
-        "visibility_mode": battle_state.format_id,
+        "visibility_mode": battle_state.visibility_mode,
         "field_id": field_snapshot["field_id"],
         "field": field_snapshot,
         "sides": side_models,
@@ -39,7 +39,7 @@ func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
 func build_header_snapshot(battle_state, content_index = null) -> Dictionary:
     assert(battle_state != null, "BattleCorePublicSnapshotBuilder requires battle_state for header snapshot")
     return {
-        "visibility_mode": battle_state.format_id,
+        "visibility_mode": battle_state.visibility_mode,
         "prebattle_public_teams": _build_prebattle_public_teams(battle_state, content_index),
         "initial_active_public_ids_by_side": _build_initial_active_public_ids_by_side(battle_state),
         "initial_field": _build_public_field_snapshot(battle_state) if battle_state.field_state != null else null,

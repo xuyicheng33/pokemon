@@ -118,6 +118,8 @@ func validate_snapshot() -> Array:
 
     for format_id in battle_formats.keys():
         var format_definition = battle_formats[format_id]
+        if String(format_definition.visibility_mode).strip_edges().is_empty():
+            errors.append("battle_format[%s].visibility_mode must not be empty" % format_id)
         var seen_chart_pairs: Dictionary = {}
         for chart_entry in format_definition.combat_type_chart:
             if chart_entry == null:

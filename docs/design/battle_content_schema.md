@@ -30,6 +30,7 @@
 |字段|类型|说明|
 |---|---|---|
 |`format_id`|`String`|规则版本标识|
+|`visibility_mode`|`String`|可见性模式标识；当前样例固定为 `prototype_full_open`|
 |`max_turn`|`int`|回合上限|
 |`team_size`|`int`|队伍规模|
 |`level`|`int`|固定等级|

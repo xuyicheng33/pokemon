@@ -546,6 +546,7 @@ mul = 0.5
 [resource]
 script = ExtResource("1")
 format_id = "prototype_full_open"
+visibility_mode = "prototype_full_open"
 max_turn = 40
 team_size = 3
 level = 50

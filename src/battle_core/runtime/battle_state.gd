@@ -9,6 +9,7 @@ var battle_id: String = ""
 var seed: int = 0
 var rng_profile: String = ""
 var format_id: String = ""
+var visibility_mode: String = ""
 var max_turn: int = 0
 var max_chain_depth: int = 32
 var battle_level: int = 0
@@ -78,6 +79,7 @@ func to_stable_dict() -> Dictionary:
         "seed": seed,
         "rng_profile": rng_profile,
         "format_id": format_id,
+        "visibility_mode": visibility_mode,
         "max_turn": max_turn,
         "max_chain_depth": max_chain_depth,
         "battle_level": battle_level,

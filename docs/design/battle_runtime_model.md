@@ -34,6 +34,7 @@
 |`seed`|`int`|随机种子|
 |`rng_profile`|`String`|随机策略配置 ID（用于区分 RNG 规则）|
 |`format_id`|`String`|战斗格式定义 ID|
+|`visibility_mode`|`String`|当前战斗可见性模式（由 `BattleFormatConfig.visibility_mode` 初始化）|
 |`max_turn`|`int`|回合上限|
 |`max_chain_depth`|`int`|事件链最大深度|
 |`battle_level`|`int`|本场统一等级快照|

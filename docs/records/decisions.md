@@ -24,6 +24,11 @@
 - field 的持续时间语义收口为：`FieldDefinition` 只描述 field 内容与行为钩子，不承载持续回合；持续时长与扣减节点由施加它的 `EffectDefinition.duration / decrement_on` 决定。
 - 本轮仅修正文档口径，不改运行时行为与测试基线。
 
+### 218. `visibility_mode` 与 `format_id` 运行态解耦
+- `BattleFormatConfig` 新增 `visibility_mode`，并在初始化时写入 `BattleState.visibility_mode`；`format_id` 继续只表示战斗格式定义 ID。
+- 公开快照、`system:battle_header.header_snapshot.visibility_mode` 与 `BattleState.to_stable_dict()` 统一读取 `BattleState.visibility_mode`，不再复用 `format_id` 字段。
+- 当前样例格式仍固定为 `prototype_full_open`，本轮只切扩展缝，不改变现有玩法行为。
+
 ### 210. `cause_event_id` 回归为“真实上游触发事件 ID”
 - 旧的“`cause_event_id = 当前日志自己的 chain_id:step_id`”口径作废，不再作为有效基线。
 - 直接伤害与默认动作反伤统一指向对应 `action:hit` 日志事件；effect payload 产出的 `effect:*` 继续指向内部 `effect_event_*`；`turn_start / turn_end` 的回复与到期链统一指向对应系统锚点；离场清理统一指向 `state:exit`。

@@ -34,6 +34,8 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
         _validate_side_setup_constraints(side_setup, format_config, content_index)
     battle_logger.reset()
     battle_state.format_id = battle_setup.format_id
+    battle_state.visibility_mode = String(format_config.visibility_mode).strip_edges()
+    assert(not battle_state.visibility_mode.is_empty(), "Battle format visibility_mode must not be empty: %s" % battle_setup.format_id)
     battle_state.max_turn = format_config.max_turn
     battle_state.max_chain_depth = max(1, int(format_config.max_chain_depth))
     battle_state.battle_level = format_config.level

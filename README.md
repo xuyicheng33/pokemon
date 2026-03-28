@@ -160,7 +160,7 @@ tests/run_with_gate.sh
 - `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
 - field 持续时间不写在 `FieldDefinition`；由施加它的 `EffectDefinition.duration / decrement_on` 决定
 - `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 rule_mod 使用）
-- `BattleFormatConfig` 已包含 `selection_deadline_ms / max_chain_depth`
+- `BattleFormatConfig` 已包含 `visibility_mode / selection_deadline_ms / max_chain_depth`
 - `UnitDefinition` 已包含 `max_mp / init_mp / regen_per_turn`
 - `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
 - 普通技能与奥义优先级约束分离校验
