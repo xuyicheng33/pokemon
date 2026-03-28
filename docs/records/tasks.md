@@ -933,3 +933,22 @@
 - Gojo 文档必须包含 `action_legality` 与 `incoming_accuracy` 的 stacking key schema 字段列表。
 - Gojo 文档必须明确兼容期 `is_action_allowed` 同时读取新旧 mod_kind 并走统一排序。
 - Gojo 文档必须写明 `permanent` RuleModPayload 的 `decrement_on` 不参与实际扣减。
+
+### 五条悟文档三审明显错误修复（已完成）
+- 目标：只处理“无需拍板即可直接修”的硬缺口，消除实施歧义并同步仓库级规范文档。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/rules/06_effect_schema_and_extension.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_content_schema.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。
+- 验收标准：匹配矩阵、读取约束、fail-fast 校验、领域后摇时间线、测试边界与规则文档同步都落盘；待拍板项显式隔离。
+
+#### 已完成内容
+- Gojo 文档补齐 `action_legality` 匹配矩阵与统一判定顺序（含兼容期 `skill_legality + action_legality` 同排序链）。
+- Gojo 文档补齐 `required_target_effects` 的加载期 fail-fast 要求（非空/去重/存在性校验）与坏引用测试项。
+- Gojo 文档补齐 `incoming_accuracy` 的硬约束：仅敌方来袭技能/奥义读取；`self/field/none` 与 `switch/wait/resource_forced_default` 一律跳过。
+- Gojo 文档补齐领域后摇显式时间线，明确 `duration=2 + turn_end` 如何落到“体感封印 1 回合”。
+- Gojo 测试计划新增边界：标记换人清除、茈追加击杀后 remove skip、坏引用 fail-fast、兼容期双口径共读、矩阵组合用例。
+- 仓库级规则文档同步补齐 `action_legality / incoming_accuracy / required_target_effects` 的扩展规范，避免 Gojo 文档与 `docs/rules` 分叉。
+- 三个需要你拍板的议题已显式标记为“本轮不改语义”。
+
+#### 回归检查要点
+- `docs/rules/06`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_content_schema.md` 必须与 Gojo 文档使用同一术语集合（`action_legality / incoming_accuracy / required_target_effects`）。
+- Gojo 文档必须明确 `wait` 不受 `action_legality` 影响，且 `switch` 必须命中 `value=switch/all` 才受管控。
+- Gojo 文档必须保留“待拍板项”隔离区，不允许把未定语义伪装成已冻结实现口径。

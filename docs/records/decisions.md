@@ -608,3 +608,11 @@
 - `is_action_allowed` 在兼容期必须同时读取 `action_legality` 与 `skill_legality`，并沿用统一排序链处理，禁止分两套先后顺序。
 - `gojo_domain_expire_seal` 与 `gojo_domain_rollback` 的触发在 field 生命周期里互斥，不允许同一 field 实例双触发叠加。
 - 茈的 `required_target_effects` 前置检查是 `remove_effect` 安全性的必要保障；前置检查失败时必须整条 effect 跳过，不允许部分 payload 执行。
+
+### 202. 五条悟三审“明显错误先修”口径冻结（2026-03-28）
+- 仓库级规则文档与 Gojo 文档同步：`docs/rules/06`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_content_schema.md` 全部补齐 `action_legality / incoming_accuracy / required_target_effects` 口径，避免“两套真相”。
+- `action_legality` 匹配矩阵与判定顺序写死为：按动作类型命中 `value`，再按统一排序链逐条覆盖，最终 last-write-wins；`wait` 不受 `action_legality` 影响。
+- `required_target_effects` 必须在加载期做引用校验并 fail-fast；坏引用禁止留到运行期靠“整条 effect 跳过”兜底。
+- `incoming_accuracy` 读取范围写死为“敌方来袭技能/奥义 + enemy_active_slot + 目标为敌方 active 且 `resolved_accuracy < 100`”；`self/field/none` 与 `switch/wait/resource_forced_default` 一律跳过。
+- `gojo_domain_expire_seal duration=2,decrement_on=turn_end` 补了显式时间线，冻结“玩家体感封印 1 回合”成立条件，避免后续误改成 `duration=1`。
+- rollback 在 creator 离场/倒下触发 break 时是否仍处罚、后摇是否允许 `reverse_ritual` 绕开、领域强度是否继续下调，标记为待拍板项，本轮不擅自改语义。
