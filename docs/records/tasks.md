@@ -897,3 +897,21 @@
 - Gojo 文档中涉及赛前换装的描述必须使用 `SideSetup.regular_skill_loadout_overrides`。
 - `gojo_domain_expire_seal / rollback` 的结构描述必须是“1 个 effect 内 3 个 payload”。
 - 文档必须明确 `resolve_hit` 读取 `incoming_accuracy` 是目标侧语义且需要目标参数。
+
+### 五条悟文档全链路彻查收口（已完成）
+- 目标：按“实现层约束 -> 设计文档 -> 测试计划”三层做彻查，消除剩余歧义点，形成可直接施工的 Gojo 文档。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。
+- 验收标准：文档中所有关键资源定义都能映射到当前 schema/validator/服务行为，不再依赖口头补充。
+
+#### 已完成内容
+- 补齐茈条件爆发 effect 的完整字段定义（含 `scope=target`），并明确 `required_target_effects` 的目标解析来源为 `chain_context.target_unit_id`。
+- 补齐苍/赫标记（`gojo_ao_mark` / `gojo_aka_mark`）的完整 EffectDefinition 字段，消除“纯标记 effect”落地歧义。
+- 补齐领域三类关键 effect（action_lock / expire_seal / rollback）的“EffectDefinition 层 + RuleModPayload 层”双层配置口径。
+- 修正文档里无下限触发点：由 `battle_init` 改为 `on_enter`，并写明原因是离场会清空 `rule_mod_instances`。
+- 明确 `action_legality` 与 `incoming_accuracy` 的完整接入清单（含 validator 白名单、stacking key schema、服务函数签名与调用点变更）。
+- 明确 `incoming_accuracy` 的 `0~99` 上界是设计选择（不允许通过该规则把命中改成硬必中）。
+
+#### 回归检查要点
+- 无下限章节必须显式区分 EffectDefinition 层与 RuleModPayload 层的 `decrement_on` 约束。
+- 文档中无下限触发点必须是 `on_enter`，不能回退为 `battle_init`。
+- `action_legality / incoming_accuracy` 的改动清单必须覆盖 `content_schema + content_payload_validator + rule_mod_service + action_cast_service + action_executor + legal_action_service`。

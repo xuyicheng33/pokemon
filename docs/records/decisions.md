@@ -596,3 +596,9 @@
 - `gojo_domain_expire_seal / gojo_domain_rollback` 在文档中统一定义为“单个 effect 内含 3 个 `rule_mod` payload”，避免被误读成 3 个独立 effect 资源。
 - Gojo 方案继续保持“领域打破不做 `stat_mod(sp_attack,-1)` 回退”的设计取舍；`gojo_domain_cast_buff(+1)` 不与 field break 强绑定逆向回滚。
 - `incoming_accuracy` 的 `rule_mod` 文档口径固定为 `duration_mode=permanent + stacking=none + decrement_on 显式声明`（后者仅为满足当前 schema/validator）。
+
+### 200. 五条悟文档三层约束冻结（2026-03-28）
+- `gojo_mugen_incoming_accuracy_down` 必须区分 EffectDefinition 与 RuleModPayload 两层字段：EffectDefinition 使用 `duration_mode=permanent + decrement_on=""`；内部 RuleModPayload 保持 `decrement_on=turn_end`。
+- 无下限被动触发从 `battle_init` 改为 `on_enter`：因为 `LeaveService.leave_unit()` 会清空 `unit_state.rule_mod_instances`，仅靠 `battle_init` 无法覆盖“离场后再入场”场景。
+- `action_legality` 与 `incoming_accuracy` 接入按“兼容新增 -> 资源迁移 -> 移除旧口径”三阶段推进，避免一次性替换导致宿傩现有 `skill_legality` 资源失效。
+- `required_target_effects` 的检查目标固定为 `effect_event.chain_context.target_unit_id` 对应单位；不满足时整条 effect 跳过，不报 invalid。
