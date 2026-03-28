@@ -64,6 +64,7 @@ fail-fast 约束：
 - 缺失效果定义或 payload 类型非法：`last_invalid_battle_code = invalid_effect_definition`。
 - `rule_mod` 定义非法：`last_invalid_battle_code = invalid_rule_mod_definition`。
 - 上游（`battle_initializer / turn_loop_controller / action_executor / faint_resolver`）命中该错误码后必须立即终止战斗。
+- `required_target_effects` 不满足时，必须在 `execute_effect_event()` 的 payload 循环前整条 effect 跳过；该分支不写 invalid code。
 
 ## 5. RuleModService
 
@@ -71,7 +72,13 @@ fail-fast 约束：
 
 - `final_mod`：伤害最终倍率。
 - `mp_regen`：`turn_start` MP 回复值。
-- `skill_legality`：选择阶段技能合法性。
+- `skill_legality`：兼容期旧读取点（仅 `skill/ultimate`）。
+- `action_legality`：选择阶段与执行前复检的动作合法性（`skill/ultimate/switch`，`wait` 不受影响）。
+- `incoming_accuracy`：命中判定前目标侧命中修正（仅敌方来袭技能/奥义，且 `resolved_accuracy < 100` 才读取）。
+
+实现状态说明：
+
+- `action_legality / incoming_accuracy` 为 Gojo 扩展冻结口径；在对应代码接线完成前，主线内容资源仍按当前已实现读取点运行。
 
 ### 5.2 生命周期
 
@@ -93,3 +100,4 @@ fail-fast 约束：
 - `rule_mod` 不进入第二效果队列，不参与二次排序。
 - 持续效果实例在 `turn_start / turn_end` 触发后按 `decrement_on` 扣减，`remaining <= 0` 立即移除并写 `effect:remove_effect`。
 - 核心依赖缺失（如 `effect_instance_dispatcher`、`rule_mod_service`）不允许静默跳过，必须在启动或执行起点直接失败。
+- `action_legality` 兼容期读取必须把 `action_legality + skill_legality` 合并到同一排序链（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`），禁止分两套顺序独立求值。

@@ -123,7 +123,7 @@
 |字段|类型|说明|
 |---|---|---|
 |`instance_id`|`String`|实例 ID|
-|`mod_kind`|`String`|`final_mod / mp_regen / skill_legality`|
+|`mod_kind`|`String`|`final_mod / mp_regen / skill_legality / action_legality / incoming_accuracy`|
 |`mod_op`|`String`|`mul / add / set / allow / deny`|
 |`value`|`Variant`|运算值|
 |`scope`|`String`|生效域（如 `self / field`）|
@@ -138,6 +138,11 @@
 |`source_kind_order`|`int`|来源类型|
 |`source_order_speed_snapshot`|`int`|速度快照|
 |`priority`|`int`|读取顺序优先级|
+
+补充说明：
+
+- 兼容期内，`skill_legality` 与 `action_legality` 允许并存；读取时必须合并到同一排序链，最终按“最后命中的 rule_mod”决定合法性。
+- 在 Gojo 扩展代码接线完成前，运行态实际可见的 `mod_kind` 仍以当前实现白名单为准。
 
 ## 10. 临时状态重置点
 

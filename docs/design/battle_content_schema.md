@@ -122,6 +122,7 @@
 |`priority`|`int`|效果优先级|
 |`trigger_names`|`PackedStringArray`|允许的触发点|
 |`on_expire_effect_ids`|`PackedStringArray`|实例到期时追加执行的效果 ID|
+|`required_target_effects`|`PackedStringArray`|执行前置目标效果条件（Gojo 扩展）|
 |`payloads`|`Array[Resource]`|payload 资源数组|
 |`persists_on_switch`|`bool`|离场是否保留|
 
@@ -198,6 +199,11 @@
 |`dynamic_value_outputs`|`PackedFloat32Array`|每个阈值对应输出值|
 |`dynamic_value_default`|`float`|未命中任何阈值时的默认值|
 
+补充约束：
+
+- `mod_kind` 允许集合以 `docs/rules/06_effect_schema_and_extension.md` 为准（含 `action_legality / incoming_accuracy` 扩展冻结口径）。
+- 在 Gojo 扩展代码接线完成前，主线内容资源不得启用未接线的 `mod_kind`。
+
 实现状态说明（2026-03-25）：
 
 - `forced_replace` payload 已在本轮收口计划中落地，当前仅覆盖 1v1 单 active 槽位链路。
@@ -220,6 +226,7 @@
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
 - 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单（含 `on_matchup_changed`、`stack`）、效果优先级范围、payload 类型与跨资源引用完整性。
+- `required_target_effects` 校验覆盖：每个 effect id 非空、不得重复、且必须命中 `content_index.effects`；坏引用直接 fail-fast。
 - field 校验覆盖：`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
 - payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
 - 内容快照校验失败直接 fail-fast，不进入运行态。
