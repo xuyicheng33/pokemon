@@ -590,3 +590,9 @@
 - 茈从“伤害前倍率 + 命中后反噬”收敛为“命中后条件追加爆发 + 清双标记”，首版不接入 `last_dealt_damage`、`action_tags`、`recoil_percent_of_dealt`。
 - 无下限从“`on_before_damage` 概率改伤害”收敛为“敌方攻击五条悟时，非必中命中率 -10”；必中（`resolved_accuracy >= 100`）不受影响。
 - Gojo 首版引擎扩展冻结为 3 项：`action_legality`、`required_target_effects`、`incoming_accuracy`；`effects_pre_damage_ids`、`damage_override`、`trigger_chance`（用于无下限）明确延期。
+
+### 199. 五条悟文档严谨性补充冻结（2026-03-28）
+- `SideSetup.regular_skill_loadout_overrides` 属于赛前 setup 层，不属于 `UnitDefinition`；Gojo 文档与测试口径统一显式写 `SideSetup.` 前缀。
+- `gojo_domain_expire_seal / gojo_domain_rollback` 在文档中统一定义为“单个 effect 内含 3 个 `rule_mod` payload”，避免被误读成 3 个独立 effect 资源。
+- Gojo 方案继续保持“领域打破不做 `stat_mod(sp_attack,-1)` 回退”的设计取舍；`gojo_domain_cast_buff(+1)` 不与 field break 强绑定逆向回滚。
+- `incoming_accuracy` 的 `rule_mod` 文档口径固定为 `duration_mode=permanent + stacking=none + decrement_on 显式声明`（后者仅为满足当前 schema/validator）。

@@ -879,3 +879,21 @@
 - Gojo 文档不得再出现 `on_before_damage`、`damage_override`、`last_dealt_damage` 作为首版必做项。
 - 无下限描述必须固定为“非必中来袭命中 -10”，而不是概率改伤害。
 - 茈描述必须固定为“条件追加爆发 + 清双标记 + 不自伤”。
+
+### 五条悟设计文档严谨性补充（已完成）
+- 目标：吸收 v2 审查反馈中有效项，补齐文档语义边界，避免后续实现阶段出现字段归属与 payload 语义误解。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`。
+- 验收标准：赛前字段归属、领域封印结构、`action_legality` 语义、`incoming_accuracy` 约束、茈追加伤害语义都在文档里写成可执行口径。
+
+#### 已完成内容
+- 在 Gojo 文档中明确 `SideSetup.regular_skill_loadout_overrides` 字段归属，并同步修正测试计划用语。
+- 把 `gojo_domain_expire_seal / gojo_domain_rollback` 明确写成“单 effect + 3 rule_mod payload”结构。
+- 补充 `action_legality` 的 `mod_op=allow/deny` 共同 value 范围，明确 `all` 不影响 `wait`。
+- 补充 `resolve_hit` 目标侧读取 `incoming_accuracy` 的签名改造要求（调用侧需补传 target）。
+- 补充茈条件追加伤害里 `use_formula=true` 时 `amount` 语义与 `combat_type` 继承规则说明。
+- 冻结 `incoming_accuracy` 文档示例参数为 `stacking=none`，并注明 permanent 场景仍显式声明 `decrement_on` 是为匹配当前 validator 约束。
+
+#### 回归检查要点
+- Gojo 文档中涉及赛前换装的描述必须使用 `SideSetup.regular_skill_loadout_overrides`。
+- `gojo_domain_expire_seal / rollback` 的结构描述必须是“1 个 effect 内 3 个 payload”。
+- 文档必须明确 `resolve_hit` 读取 `incoming_accuracy` 是目标侧语义且需要目标参数。

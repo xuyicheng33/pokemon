@@ -46,7 +46,8 @@
 
 **赛前层（SideSetup）**
 
-- 本场装配通过 `regular_skill_loadout_overrides` 决定；当 `candidate_skill_ids` 非空时，允许赛前从候选池选 3 个写入运行时配招。
+- 本场装配通过 `SideSetup.regular_skill_loadout_overrides` 决定（该字段属于 `SideSetup`，不属于 `UnitDefinition`）。
+- 当 `candidate_skill_ids` 非空时，允许赛前从候选池选 3 个写入运行时配招。
 
 ### 1.4 被动
 
@@ -127,9 +128,13 @@
 
 - `required_target_effects = ["gojo_ao_mark", "gojo_aka_mark"]`
 - payload 顺序：
-1. `damage(use_formula=true, amount=32, damage_kind=special)`（条件追加一段伤害）
+1. `damage(use_formula=true, amount=32, damage_kind=special)`（条件追加一段伤害；`amount` 在 `use_formula=true` 下作为公式威力）
 2. `remove_effect(gojo_ao_mark)`
 3. `remove_effect(gojo_aka_mark)`
+
+补充说明：
+
+- 此处不额外写 `combat_type_id`：`DamagePayload.use_formula=true` 且处于技能链中时，类型继承链技能 `gojo_murasaki` 的 `combat_type_id=space`。
 
 语义：
 
@@ -202,8 +207,9 @@
 
 **领域过期与打破**
 
-- `gojo_domain_expire_seal`：3 条 `action_legality deny`（`gojo_ao` / `gojo_aka` / `gojo_murasaki`），`duration=2`, `decrement_on=turn_end`。
-- `gojo_domain_rollback`：与过期封印同链，仅区分日志来源（`on_break`）。
+- `gojo_domain_expire_seal`：**1 个 EffectDefinition，内含 3 个 `rule_mod` payload**（分别 `deny gojo_ao / gojo_aka / gojo_murasaki`），`duration=2`, `decrement_on=turn_end`。
+- `gojo_domain_rollback`：与过期封印同结构（同样是 1 个 effect 内含 3 个封印 payload），仅区分日志来源（`on_break`）。
+- 本版明确**不**添加 `stat_mod(sp_attack, -1)` 回退；`gojo_domain_cast_buff(+1)` 作为独立收益，不和 field break 绑定反向回滚。
 
 ---
 
@@ -226,9 +232,12 @@
 `gojo_mugen_incoming_accuracy_down`（EffectDefinition）：
 
 - `scope=self`
-- payload：`rule_mod(mod_kind="incoming_accuracy", mod_op="add", value=-10, scope="self", duration_mode="permanent", decrement_on="turn_end", stacking="refresh")`
+- payload：`rule_mod(mod_kind="incoming_accuracy", mod_op="add", value=-10, scope="self", duration_mode="permanent", decrement_on="turn_end", stacking="none")`
 
-说明：无下限改成稳定干扰命中，不再使用概率触发，也不再改写伤害值。
+说明：
+
+- 无下限改成稳定干扰命中，不再使用概率触发，也不再改写伤害值。
+- `decrement_on="turn_end"` 在 `duration_mode="permanent"` 下不会实际扣减，但当前 `rule_mod` schema/validator 要求该字段必须显式声明，因此保留。
 
 ---
 
@@ -236,9 +245,14 @@
 
 ### 4.1 `action_legality`（替代 `skill_legality`）
 
-`rule_mod.mod_kind` 从 `skill_legality` 迁到 `action_legality`，`value` 支持：
+`rule_mod.mod_kind` 从 `skill_legality` 迁到 `action_legality`，`mod_op` 仍为 `allow / deny`，`value` 支持：
 
 - `"all"` / `"skill"` / `"ultimate"` / `"switch"` / 具体 `skill_id`
+
+补充：
+
+- `allow` 与 `deny` 使用同一套 `value` 取值范围。
+- `value="all"` 仅作用于技能/奥义/换人，不作用于 `wait`。
 
 实现点：
 
@@ -272,6 +286,7 @@
 - `content_schema.gd`：新增 `RULE_MOD_INCOMING_ACCURACY`
 - `rule_mod_service.gd`：新增命中读取接口（建议 `resolve_incoming_accuracy(base_accuracy, target_owner_id)`）
 - `action_cast_service.gd`：`resolve_hit` 在 field 覆盖后、`roll_hit` 前读取目标侧 `incoming_accuracy`
+- `action_executor.gd`：调用 `resolve_hit` 时补传目标（建议签名改为 `resolve_hit(command, skill_definition, target, battle_state, content_index)`）
 
 约束：
 
@@ -342,7 +357,7 @@
 | 编号 | 用例 | 验证点 |
 |------|------|--------|
 | 1 | 默认配招与候选池契约 | `skill_ids=[ao,aka,murasaki]`；`candidate_skill_ids` 含 `reverse_ritual` |
-| 2 | 赛前换装 | `regular_skill_loadout_overrides` 可将 `reverse_ritual` 装入 |
+| 2 | 赛前换装 | `SideSetup.regular_skill_loadout_overrides` 可将 `reverse_ritual` 装入 |
 | 3 | 苍命中后效果 | 自身 speed +1；目标挂 `gojo_ao_mark` |
 | 4 | 赫命中后效果 | 目标 speed -1；目标挂 `gojo_aka_mark` |
 | 5 | 茈无双标记 | 只有本体伤害；标记不被误清 |
@@ -355,7 +370,7 @@
 | 12 | 领域内必中 | `creator_accuracy_override=100` 生效 |
 | 13 | 领域过期封印 | 下一回合苍/赫/茈被封印 1 回合体感 |
 | 14 | 领域打破回滚 | 与过期封印同链 |
-| 15 | 无下限非必中减命中 | 敌方 95 命中技能打五条悟按 85 判定 |
+| 15 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
 | 16 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
 
 ---
