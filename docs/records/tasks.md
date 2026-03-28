@@ -834,3 +834,26 @@
 #### 回归检查要点
 - `sukuna_kamado_stack_on_exit_path` 必须稳定通过，且中途断言为“场上有两层灶”。
 - `tests/check_architecture_constraints.sh` 不再允许 `turn_resolution_service.gd` 与 `battle_initializer.gd` 走超阈值豁免。
+
+### 五条悟设计文档实现对照审计（已完成）
+- 目标：把 `docs/design/gojo_satoru_design.md` 与当前引擎、宿傩内容资源、合法性/执行时序的真实实现重新对齐，修正所有已确认的事实性偏差。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。
+- 验收标准：五条悟文档中与宿傩迁移、领域回滚、`action_legality` / `wait` 时序、资源清单、命名一致性相关的错误全部修正；关键决策落盘。
+
+#### 已完成内容
+- 修正宿傩迁移口径：`sukuna_domain_rollback.tres` 从迁移表移除，明确只有 `sukuna_domain_expire_seal.tres` 需要从 `skill_legality` 迁到 `action_legality`。
+- 修正五条悟领域回滚口径：冻结为“与 `gojo_domain_expire_seal` 相同的 3 条封印链”，不再错误引用宿傩 `domain_rollback` 的 `stat_mod` 设计。
+- 修正文档里把 `action_lock` / `action_legality deny all` 说成“forced WAIT”的问题，改为与当前执行链一致的“两种口径”：队列中途失效按 `cancelled_pre_start` 跳过；选择阶段则保留 `wait` 为唯一合法动作。
+- 修正文档示例代码：去掉不符合当前 `Command` 对象类型的 `command.has("skill_id")` 写法，并补齐 `_command_to_action_type()` 示例。
+- 修正资源清单与命名：补充复合 effect 描述，确认 `space / psychic` 已存在且 `sample_battle_format.tres` 无需补改，并把领域文件名统一为 `gojo_unlimited_void_field.tres` 以匹配现有资源命名习惯。
+- 统一“无量空处”写法，消除 `无量空処 / 無量空処 / 无量空处` 混用。
+
+#### 最小可玩性检查清单
+- 可启动：本轮仅改文档与记录，不影响游戏启动链。
+- 可操作：本轮不改运行时代码，现有样例战斗与宿傩玩法不应受影响。
+- 无致命错误：文档口径已与当前实现对齐，后续按文档施工时不会再误迁移宿傩 rollback 或误判 `wait` / `cancelled_pre_start` 时序。
+
+#### 回归检查要点
+- 文档中的宿傩迁移表不得再把 `sukuna_domain_rollback.tres` 记成 `skill_legality -> action_legality`。
+- Gojo 文档必须明确：`action_legality deny all` 不阻断 `wait`，中途挂锁的已选指令按 `cancelled_pre_start` 跳过。
+- `space / psychic` 已存在的事实与 `sample_battle_format.tres` 已配置的事实必须在文档中写明。

@@ -580,3 +580,8 @@
 - `src/battle_core/turn/turn_resolution_service.gd` 已拆出 `turn_selection_resolver.gd` 与 `turn_field_lifecycle_service.gd`，主协调器只保留 MP 回复、effect/rule_mod 扣减与系统批次终止处理。
 - `src/battle_core/turn/battle_initializer.gd` 已清理未使用依赖，当前行数回落到常规阈值内，同时保留 `on_enter -> on_matchup_changed -> battle_init` 的启动时序。
 - 架构闸门不再对白名单豁免 `turn_resolution_service.gd` 与 `battle_initializer.gd`。
+
+### 197. 五条悟领域回滚与 `action_legality` 口径冻结（2026-03-28）
+- `gojo_domain_rollback` 语义冻结为“与 `gojo_domain_expire_seal` 相同的 3 条 `action_legality` 封印链”，不复用宿傩 `sukuna_domain_rollback` 的 `stat_mod` 惩罚设计。
+- `action_legality deny all` 只封禁技能 / 奥义 / 换人，不封禁 `wait`；若该锁在排队后中途挂到目标身上，执行到原队列项时按 `cancelled_pre_start` 跳过，不额外伪造一条 `WAIT` action。
+- Gojo 设计文档中的资源命名与迁移表必须以当前仓库现状为准：`space/psychic` 已存在，宿傩现存需要迁移的内容文件只有 `sukuna_domain_expire_seal.tres`。

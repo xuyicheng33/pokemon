@@ -172,7 +172,7 @@
 | 字段 | 值 |
 |------|-----|
 | id | `gojo_unlimited_void` |
-| display_name | `无量空処` |
+| display_name | `无量空处` |
 | damage_kind | `special` |
 | power | **60** |
 | accuracy | **100** |
@@ -190,7 +190,7 @@
 | 字段 | 值 |
 |------|-----|
 | id | `gojo_unlimited_void_field` |
-| display_name | `無量空処` |
+| display_name | `无量空处` |
 | creator_accuracy_override | **100** |
 | effect_ids | `[]` |
 | on_expire_effect_ids | `["gojo_domain_expire_seal"]` |
@@ -206,12 +206,12 @@
 
 3. `gojo_domain_action_lock`（on_hit, scope=target）：
    - **action_legality: deny, value="all"**, duration=1, decrement_on=turn_end
-   - 效果：敌方当回合的已选指令被作废，且当回合无法行动
+   - 效果：敌方当回合已选的技能/奥义/换人指令在执行前会被判为不合法，按 `cancelled_pre_start` 跳过行动；`wait` 不受该锁影响
 
 **action_lock 时序**：
 ```
 T(展开): 五条悟先手(+5) → 展开领域 → 造成伤害 → action_lock 挂到敌方
-         → 敌方行动检查 → action_legality deny all → 指令作废 → 强制 WAIT
+         → 敌方行动前 legality 复检 → action_legality deny all → 原指令作废 → 记 `cancelled_pre_start`
 T+1: 领域存在，五条悟术式必中，敌方正常行动
 T+2: 领域存在，五条悟术式必中，敌方正常行动
 T+2 turn_end: 领域过期 → on_expire 触发
@@ -224,7 +224,8 @@ T+2 turn_end: 领域过期 → on_expire 触发
 - 语义：在领域过期/打破触发时挂载，覆盖“下一回合选择 + 执行窗口”后于该回合 `turn_end` 清除（对玩家体感为封印 1 回合）
 
 **领域被打破回滚**（`gojo_domain_rollback`）：
-- 与过期封印相同的效果链（和宿傩的 domain_rollback 设计一致）
+- 与 `gojo_domain_expire_seal` 相同，都是 3 条 `action_legality` 封印链（封印苍 / 赫 / 茈）
+- 不参考宿傩 `sukuna_domain_rollback` 的 `stat_mod(attack -1, sp_attack -1)` 惩罚设计；单独保留 `gojo_domain_rollback` 这个 effect_id，仅用于区分 `on_break` 语义与日志来源
 
 ---
 
@@ -259,9 +260,9 @@ const RULE_MOD_ACTION_LEGALITY := "action_legality"
 
 `rule_mod_payload.gd` 的 `mod_kind` 新增合法值：`"action_legality"`
 - `mod_op`: `"deny"` / `"allow"`
-- `value`: `"all"` / `"skill"` / `"switch"` / `"ultimate"` / 具体 skill_id
+- `value`: `"all"` / `"skill"` / `"switch"` / `"ultimate"` / 具体 skill_id（其中 `"all"` 仅覆盖技能 / 奥义 / 换人，不阻断 `wait`）
 
-**迁移**：所有现有 `skill_legality` 的 .tres 文件和代码引用 → 重命名为 `action_legality`。语义完全兼容（`value=具体skill_id` 等价于原 skill_legality deny）。
+**迁移**：所有现有 `skill_legality` 的代码引用，以及当前唯一内容用例 `content/effects/sukuna_domain_expire_seal.tres`（内含 3 条封印 `rule_mod` payload）→ 重命名为 `action_legality`。语义完全兼容（`value=具体skill_id` 等价于原 skill_legality deny）。
 
 **代码改动**：
 
@@ -273,7 +274,7 @@ const RULE_MOD_ACTION_LEGALITY := "action_legality"
 | `content_snapshot_validator.gd` | 更新校验 |
 | `content_payload_validator.gd` | 更新校验 |
 | `docs/rules/06_effect_schema_and_extension.md` | 更新 §5.2 白名单 |
-| 宿傩 `.tres` 文件(3个封印效果) | `skill_legality` → `action_legality` |
+| `content/effects/sukuna_domain_expire_seal.tres`（内含 3 条封印 payload） | `skill_legality` → `action_legality` |
 | 宿傩测试用例 | 同步更新 |
 
 **`legal_action_service.gd` 新增逻辑**：
@@ -308,6 +309,8 @@ func is_action_allowed(battle_state, owner_id: String, action_type: String, skil
     return allowed
 
 func _does_action_legality_affect(mod_value: String, action_type: String, skill_id: String) -> bool:
+    if action_type == "wait":
+        return false
     if mod_value == "all":
         return true
     if mod_value == action_type:
@@ -328,10 +331,23 @@ func _can_start_action(actor, command, battle_state) -> bool:
     if actor == null or actor.current_hp <= 0 or actor.leave_state != LeaveStatesScript.ACTIVE:
         return false
     # 新增：action_legality deny all 检查
-    if not rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, _command_to_action_type(command), command.skill_id if command.has("skill_id") else ""):
+    if not rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, _command_to_action_type(command), command.skill_id):
         return false
     var side_state = battle_state.get_side(command.side_id)
     return side_state != null and side_state.get_active_unit() != null and side_state.get_active_unit().unit_instance_id == actor.unit_instance_id
+
+func _command_to_action_type(command) -> String:
+    match command.command_type:
+        CommandTypesScript.SKILL:
+            return "skill"
+        CommandTypesScript.ULTIMATE:
+            return "ultimate"
+        CommandTypesScript.SWITCH:
+            return "switch"
+        CommandTypesScript.WAIT:
+            return "wait"
+        _:
+            return ""
 ```
 
 ### 4.2 `effects_pre_damage_ids` —— 新增技能效果阶段
@@ -566,7 +582,7 @@ apply_direct_damage 内部:
 | `gojo_reverse_ritual.tres` | 反转术式 |
 | `gojo_unlimited_void.tres` | 无量空处 |
 
-### 5.3 content/effects/ (约 15 个)
+### 5.3 content/effects/ (约 15 个 effect 文件；其中 2 个为 3 条 `rule_mod` 的复合效果)
 
 | 文件 | 说明 |
 |------|------|
@@ -582,15 +598,15 @@ apply_direct_damage 内部:
 | `gojo_domain_cast_buff.tres` | 领域展开自身 buff |
 | `gojo_apply_domain_field.tres` | 展开领域 field |
 | `gojo_domain_action_lock.tres` | 当回合敌方 action_lock |
-| `gojo_domain_expire_seal.tres` | 领域过期封印(苍赫茈) |
-| `gojo_domain_rollback.tres` | 领域被打破封印 |
+| `gojo_domain_expire_seal.tres` | 领域过期封印(苍赫茈，3 条 `action_legality` 复合效果) |
+| `gojo_domain_rollback.tres` | 领域被打破封印（复用同一 3 条封印链的复合效果） |
 | `gojo_mugen_damage_override.tres` | 无下限：伤害覆盖为 1 |
 
 ### 5.4 content/fields/ (1 个)
 
 | 文件 | 说明 |
 |------|------|
-| `gojo_unlimited_void.tres` | 无量空处领域 |
+| `gojo_unlimited_void_field.tres` | 无量空处领域 |
 
 ### 5.5 content/passive_skills/ (1 个)
 
@@ -598,12 +614,12 @@ apply_direct_damage 内部:
 |------|------|
 | `gojo_mugen.tres` | 无下限 |
 
-### 5.6 content/combat_types/ (2 个，如果不存在)
+### 5.6 content/combat_types/ (已存在，无需创建)
 
 | 文件 | 说明 |
 |------|------|
-| `space.tres` | 空间属性（检查是否已存在） |
-| `psychic.tres` | 超能力属性（检查是否已存在） |
+| `space.tres` | 空间属性（已存在） |
+| `psychic.tres` | 超能力属性（已存在） |
 
 ---
 
@@ -640,7 +656,7 @@ apply_direct_damage 内部:
 | 文件 | 改动 |
 |------|------|
 | `content/effects/sukuna_domain_expire_seal.tres` | `skill_legality` → `action_legality` |
-| `content/effects/sukuna_domain_rollback.tres` | 同上 |
+| `content/effects/sukuna_domain_rollback.tres` | 无需迁移（当前是 `stat_mod`：`attack -1`, `sp_attack -1`） |
 | `tests/suites/sukuna_suite.gd` | 更新引用 |
 
 ### 6.4 文档更新
@@ -654,7 +670,7 @@ apply_direct_damage 内部:
 
 ### 6.5 sample_battle_format.tres 更新
 
-`combat_type_chart` 中确认 `space` 和 `psychic` 的克制关系已存在（如果缺失需补充）。
+`combat_type_chart` 中 `space` 和 `psychic` 的克制关系已存在，无需额外改动。
 
 ---
 
@@ -674,14 +690,14 @@ apply_direct_damage 内部:
 | 8 | 茈条件不满足（只有一个标记） | 基础伤害，标记保留 |
 | 9 | 反转术式回复 | heal 25% max_hp |
 | 10 | 基础 MP 回复 | regen = 16 |
-| 11 | 无量空处展开 → 当回合敌方无法行动 | action_lock 生效 |
+| 11 | 无量空处展开 → 当回合敌方已选技能/换人被取消 | `cancelled_pre_start` 生效 |
 | 12 | 无量空处领域内必中 | accuracy override |
 | 13 | 无量空处领域过期 → 封印苍赫茈 1 回合 | action_legality deny |
-| 14 | 无量空处领域被打破 → 封印回滚 | 同上 |
+| 14 | 无量空处领域被打破 → 与过期封印同链 | 同上 |
 | 15 | 无下限触发（概率固定 seed 测试） | 伤害变为 1 |
 | 16 | 无下限未触发 | 正常伤害 |
 | 17 | action_legality deny all → switch 被禁止 | 换人不可用 |
-| 18 | action_legality deny all → 所有技能被禁止 | forced WAIT |
+| 18 | action_legality deny all → 只剩 `wait` 合法 | 玩家可手动 `wait`，超时自动 `wait` |
 
 ---
 
