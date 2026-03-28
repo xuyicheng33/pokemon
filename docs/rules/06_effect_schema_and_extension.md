@@ -222,6 +222,7 @@
 2. 扣减起算点：实例创建后，遇到的第一个对应扣减节点即为首次扣减点；若本回合该节点尚未结算，则本回合就会扣减。
 3. 若未显式声明 `persists_on_switch = true`，则离场时移除。
 4. 当前不允许只写“按触发次数移除”这种口头规则；因为现行基线还没有这套持续模型。
+5. field 的持续时间不定义在 `FieldDefinition`；由触发 `apply_field` 的 `EffectDefinition.duration / decrement_on` 决定。
 
 ## 9. 防循环与安全保护
 

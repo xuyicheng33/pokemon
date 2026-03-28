@@ -19,6 +19,11 @@
 - 追加的 `on_matchup_changed` 只读取 `battle_init` 后稳定战场，不会让 `battle_init` 重复执行。
 - 这样启动阶段与常规回合阶段保持同一语义：只要稳定对位变了，就补一次对位变化钩子。
 
+### 217. 术语与 field 持续时间口径收口
+- 规则、README 与设计文档不再单独使用 `Struggle` 术语；统一写“资源型默认动作 `resource_forced_default`”。
+- field 的持续时间语义收口为：`FieldDefinition` 只描述 field 内容与行为钩子，不承载持续回合；持续时长与扣减节点由施加它的 `EffectDefinition.duration / decrement_on` 决定。
+- 本轮仅修正文档口径，不改运行时行为与测试基线。
+
 ### 210. `cause_event_id` 回归为“真实上游触发事件 ID”
 - 旧的“`cause_event_id = 当前日志自己的 chain_id:step_id`”口径作废，不再作为有效基线。
 - 直接伤害与默认动作反伤统一指向对应 `action:hit` 日志事件；effect payload 产出的 `effect:*` 继续指向内部 `effect_event_*`；`turn_start / turn_end` 的回复与到期链统一指向对应系统锚点；离场清理统一指向 `state:exit`。

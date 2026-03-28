@@ -115,7 +115,7 @@
 
 当选择阶段超时且该方尚未提交合法指令时：
 
-1. 若满足 5.1（强制 Struggle）则自动改用 `resource_forced_default`。
+1. 若满足 5.1（强制资源型默认动作 `resource_forced_default`）则自动改用 `resource_forced_default`。
 2. 否则自动改用 `wait`，并写入 `command_source = timeout_auto`。
 3. `select_timeout` 由 `command_source == timeout_auto` 判定，不依赖动作类型名。
 

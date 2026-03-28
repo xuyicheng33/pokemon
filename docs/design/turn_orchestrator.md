@@ -43,7 +43,7 @@
 |阶段|说明|
 |---|---|
 |`turn_start`|写 `system:turn_start`、执行 MP 回复、触发 `turn_start` 批次、检查 field creator 是否失效、处理 `on_matchup_changed`、按 `decrement_on=turn_start` 扣减 effect/rule_mod|
-|`selection`|解析提交指令；无提交时：若应强制 Struggle 则走 `resource_forced_default`，否则走 `wait(timeout_auto)`|
+|`selection`|解析提交指令；无提交时：若应强制资源型默认动作 `resource_forced_default` 则走 `resource_forced_default`，否则走 `wait(timeout_auto)`|
 |`queue_lock`|按 `priority -> speed -> random` 锁定行动队列|
 |`execution`|逐个执行行动；每个行动后立即处理击倒窗口，再检查 field break 与 `on_matchup_changed`|
 |`turn_end`|触发 `turn_end` 批次、field 扣减与到期移除、按 `decrement_on=turn_end` 扣减 effect/rule_mod、写 `system:turn_end`|

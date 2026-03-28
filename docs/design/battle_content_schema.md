@@ -135,6 +135,10 @@
 |`on_break_effect_ids`|`PackedStringArray`|被覆盖或 creator 离场时触发的效果 ID|
 |`creator_accuracy_override`|`int`|对 creator 生效的命中覆盖值；`-1` 表示不覆盖|
 
+补充语义：
+
+- field 的持续时间不写在 `FieldDefinition` 中；由施加该 field 的 `EffectDefinition.duration / decrement_on` 决定。
+
 ### 3.7 CombatTypeDefinition
 
 |字段|类型|说明|

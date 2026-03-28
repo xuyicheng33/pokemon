@@ -49,6 +49,7 @@
 2. 现在不做“多个 field 共存”“同组 field”“team field”这类更复杂分层。
 3. 已经存在于场上的 field，会参与本回合开始时的 MP 回复计算。
 4. 在本次 `turn_start` 里才新建、替换或移除的 field，不回头改写本次 MP 回复，只从后续节点或下一次对应节点开始生效。
+5. field 的持续时间不写在 `FieldDefinition`；持续回合与扣减节点由施加该 field 的 `EffectDefinition.duration / decrement_on` 决定。
 
 ### 2.2 field 结算与替换
 
@@ -132,7 +133,7 @@
 |候选技能池|当前不进入公开快照，也不是 AI 对外 contract 的一部分|
 |合法性职责|引擎先完成合法性判断：要么给出可选的技能 / 手动换人 / 奥义列表，要么直接替代为默认动作；AI 只从可执行结果中选一个|
 |空列表处理|若技能、手动换人、奥义都不合法：仅在“全部仅因 MP 不足”时强制 `resource_forced_default`；存在任一非 MP 阻断时允许 `wait`|
-|超时处理|AI 若在截止时间前未返回：当前应强制 Struggle 则走 `resource_forced_default`；否则走 `wait`（`command_source = timeout_auto`）|
+|超时处理|AI 若在截止时间前未返回：当前应强制资源型默认动作 `resource_forced_default` 则走 `resource_forced_default`；否则走 `wait`（`command_source = timeout_auto`）|
 
 ## 5. 战斗日志
 
