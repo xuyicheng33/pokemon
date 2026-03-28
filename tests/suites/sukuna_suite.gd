@@ -216,11 +216,13 @@ func _test_sukuna_domain_expire_chain_path(harness) -> Dictionary:
         return harness.fail_result("malevolent shrine should expire after third turn")
     if hp_before_expire - target_unit.current_hp != 10:
         return harness.fail_result("malevolent shrine expire burst should deal resisted 10 damage")
-    if int(sukuna_unit.stat_stages.get("attack", 0)) != 0 or int(sukuna_unit.stat_stages.get("sp_attack", 0)) != 0:
-        return harness.fail_result("domain expire rollback should restore sukuna offensive stages to 0")
+    if int(sukuna_unit.stat_stages.get("attack", 0)) != 1 or int(sukuna_unit.stat_stages.get("sp_attack", 0)) != 1:
+        return harness.fail_result("domain expire should keep cast buff stages when post-domain rollback is removed")
     var legal_action_set = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
-    if legal_action_set.legal_skill_ids.has("sukuna_kai") or legal_action_set.legal_skill_ids.has("sukuna_hatsu") or legal_action_set.legal_skill_ids.has("sukuna_hiraku"):
-        return harness.fail_result("domain expire seal should deny sukuna normal skills on next selection")
+    if not legal_action_set.legal_skill_ids.has("sukuna_kai") \
+    or not legal_action_set.legal_skill_ids.has("sukuna_hatsu") \
+    or not legal_action_set.legal_skill_ids.has("sukuna_hiraku"):
+        return harness.fail_result("domain expire should not seal sukuna normal skills after removing post-domain cooldown")
     var has_field_expire_log: bool = false
     for log_event in core.battle_logger.event_log:
         if log_event.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE:
@@ -276,8 +278,10 @@ func _test_sukuna_domain_break_chain_path(harness) -> Dictionary:
     for log_event in core.battle_logger.event_log:
         if log_event.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE:
             return harness.fail_result("field break should not emit natural expire log")
+        if log_event.event_type == EventTypesScript.EFFECT_STAT_MOD and log_event.trigger_name == "field_break":
+            return harness.fail_result("field break should not emit rollback stat_mod events after removing post-domain cooldown")
         if log_event.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and String(log_event.payload_summary).find("skill_legality") != -1:
-            return harness.fail_result("field break should not apply expire seal rule_mod")
+            return harness.fail_result("field break should not apply any post-domain seal rule_mod")
     return harness.pass_result()
 
 func _test_sukuna_field_accuracy_override_path(harness) -> Dictionary:
