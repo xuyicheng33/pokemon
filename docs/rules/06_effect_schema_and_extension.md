@@ -77,7 +77,8 @@
 4. `battle_init` 只用于“战斗开始时统一检查一次”的来源，不因为某个单位刚入场而重复触发。
 5. 首发入场仍然走 `on_enter`；同一份效果不能因为“首发入场”同时挂在 `on_enter` 和 `battle_init` 两边重复结算。
 6. `battle_init` 固定发生在初始 `on_enter` 与其引发的补位链完全稳定之后；不同触发点不跨批次混排。
-7. `turn_start / turn_end` 触发只对“当前在场单位”和全场 field 生效；bench 单位不参与回合节点触发。
+7. 若 `battle_init` 批次本身导致补位并形成新的稳定对位，可在进入 `selection` 前追加一次 `on_matchup_changed`；该追加批次只读取 `battle_init` 后稳定战场，不会重放 `battle_init`。
+8. `turn_start / turn_end` 触发只对“当前在场单位”和全场 field 生效；bench 单位不参与回合节点触发。
 
 ## 5. 当前基线 payload 类型
 
@@ -138,7 +139,8 @@
 
 1. `rule_mod` 必须显式声明 `decrement_on`；否则按 `invalid_battle` 处理。
 2. `skill_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段。
-3. 动态值公式当前只允许用于数值型 `rule_mod`，且运行时求值不得回写共享内容资源。
+3. 动态值公式当前只允许用于“owner 为单位”的数值型 `rule_mod`（即当前只开放 `self / target`，不开放 `field`），且运行时求值不得回写共享内容资源。
+4. 若未来需要 field 作用域的动态公式，必须先补明确定义、校验和运行时语义，不能复用当前 `matchup_bst_gap_band` 口径。
 
 ### 5.3 `RuleModInstance` 运行时模型
 

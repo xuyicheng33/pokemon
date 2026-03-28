@@ -482,6 +482,8 @@ func _validate_rule_mod_payload(rule_mod_payload) -> Array:
             errors.append("dynamic_value_formula %s" % dynamic_formula)
         if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
             errors.append("dynamic value formula is not allowed for skill_legality")
+        if rule_mod_payload.scope == "field":
+            errors.append("dynamic value formula is not allowed for field scope")
         if dynamic_thresholds.is_empty():
             errors.append("dynamic_value_thresholds must not be empty")
         if dynamic_outputs.is_empty():

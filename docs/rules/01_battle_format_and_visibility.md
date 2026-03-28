@@ -73,14 +73,16 @@
 |6|先收集并结算当前 active 产生的 `on_enter`；统一效果排序只在本次 `on_enter` 批次内生效，不与其他触发点混排|
 |7|若 `on_enter` 批次导致击倒，立即处理击倒窗口与强制补位，直到 active 稳定|
 |8|以上述稳定战场为输入，统一检查一次 `battle_init` 触发的战斗开始时被动 / 持有物 / field 效果；统一效果排序只在本次 `battle_init` 批次内生效|
-|9|若 `battle_init` 批次导致击倒，立即进入击倒窗口与强制补位|
-|10|进入第 1 回合|
+|9|若 `battle_init` 批次导致击倒，立即进入击倒窗口与强制补位，直到 active 再次稳定|
+|10|若 `battle_init` 后稳定对位相较进入该批次前发生变化，则补跑一次 `on_matchup_changed` 批次|
+|11|进入第 1 回合|
 
 补充规则：
 
 1. `battle_init` 是“战斗开始时统一检查一次”的批次，不因为后续有单位再次入场而重复触发。
 2. 若首发 `on_enter` 期间发生击倒并完成强制补位，则 `battle_init` 读取补位后稳定下来的当前战场，不读取已离场单位。
 3. `system:battle_header` 必须先于首条 `state:enter` 写入，且日志头中禁止泄露 `unit_instance_id` 等私有运行态 ID。
+4. 若 `battle_init` 批次本身导致补位并形成新的稳定对位，进入第 1 回合前必须再执行一次 `on_matchup_changed`；该补跑批次只读取 `battle_init` 后稳定下来的当前战场，不会重放 `battle_init`。
 
 ## 6. 胜负与结束条件
 

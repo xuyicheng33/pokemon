@@ -188,7 +188,7 @@
 |字段|类型|说明|
 |---|---|---|
 |`mod_kind / mod_op / value`|`Variant`|基础 rule_mod 定义；见 `docs/rules/06`|
-|`dynamic_value_formula`|`String`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`|
+|`dynamic_value_formula`|`String`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 `rule_mod` 使用|
 |`dynamic_value_thresholds`|`PackedInt32Array`|运行时区间阈值|
 |`dynamic_value_outputs`|`PackedFloat32Array`|每个阈值对应输出值|
 |`dynamic_value_default`|`float`|未命中任何阈值时的默认值|

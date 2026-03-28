@@ -9,6 +9,16 @@
 
 ## 2026-03-28
 
+### 215. `matchup_bst_gap_band` 当前只开放单位 owner 路径
+- `dynamic_value_formula = matchup_bst_gap_band` 当前语义固定为“根据单位与当前对手的面板差值求数值”。
+- 因此它只允许用于 owner 为单位的数值型 `rule_mod`；`scope = field` 的动态公式在内容校验期直接失败，不再等到运行时炸成 `invalid_state_corruption`。
+- 若未来需要 field 作用域的动态公式，必须单独定义比较对象与读取语义，不能偷复用当前公式。
+
+### 216. `battle_init` 若改变稳定对位，进入 selection 前补跑一次 `on_matchup_changed`
+- 启动时序从“`on_enter -> on_matchup_changed -> battle_init -> selection`”收紧为“`on_enter -> on_matchup_changed -> battle_init -> 击倒/补位稳定 -> on_matchup_changed(若签名变化) -> selection`”。
+- 追加的 `on_matchup_changed` 只读取 `battle_init` 后稳定战场，不会让 `battle_init` 重复执行。
+- 这样启动阶段与常规回合阶段保持同一语义：只要稳定对位变了，就补一次对位变化钩子。
+
 ### 210. `cause_event_id` 回归为“真实上游触发事件 ID”
 - 旧的“`cause_event_id = 当前日志自己的 chain_id:step_id`”口径作废，不再作为有效基线。
 - 直接伤害与默认动作反伤统一指向对应 `action:hit` 日志事件；effect payload 产出的 `effect:*` 继续指向内部 `effect_event_*`；`turn_start / turn_end` 的回复与到期链统一指向对应系统锚点；离场清理统一指向 `state:exit`。

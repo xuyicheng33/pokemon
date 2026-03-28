@@ -158,7 +158,7 @@ tests/run_with_gate.sh
 - `on_receive_effect_ids` 为禁用迁移字段，非空即失败
 - `EffectDefinition.stacking` 已开放 `stack`
 - `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
-- `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`）
+- `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 rule_mod 使用）
 - `BattleFormatConfig` 已包含 `selection_deadline_ms / max_chain_depth`
 - `UnitDefinition` 已包含 `max_mp / init_mp / regen_per_turn`
 - `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
@@ -186,9 +186,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-28）
 
-- `src/**/*.gd`：`6744` 行
-- `tests/**/*.gd`：`5072` 行
-- GDScript 合计：`11816` 行
+- `src/**/*.gd`：`6746` 行
+- `tests/**/*.gd`：`5150` 行
+- GDScript 合计：`11896` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

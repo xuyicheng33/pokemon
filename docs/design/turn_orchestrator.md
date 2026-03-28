@@ -27,7 +27,8 @@
 6. 对当前稳定对位执行一次 `on_matchup_changed`（若对位签名首次建立成功）。
 7. 执行一次 `battle_init` 批次（仅当前 active + field）。
 8. 再次处理击倒窗口；若已结束则直接终局。
-9. 进入 `selection`。
+9. 若 `battle_init` 后稳定对位发生变化，则在进入 `selection` 前补跑一次 `on_matchup_changed`。
+10. 进入 `selection`。
 
 约束：
 

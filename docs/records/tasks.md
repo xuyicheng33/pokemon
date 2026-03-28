@@ -10,6 +10,14 @@
 
 ## 2026-03-28
 
+### 启动对位补触发与动态公式边界收口（已完成）
+- 目标：修掉 `battle_init` 后补位漏跑 `on_matchup_changed` 的初始化时序缺口，并把 `dynamic_value_formula` 的可用边界从运行时假设改为内容校验期硬约束。
+- 范围：`src/battle_core/content/battle_content_index.gd`、`src/battle_core/turn/battle_initializer.gd`、`tests/suites/content_logging_suite.gd`、`tests/suites/replay_turn_suite.gd`、`README.md`、`docs/rules/*`、`docs/design/*`、`docs/records/*`。
+- 验收标准：`scope = field` 的动态公式数值 rule_mod 必须在内容校验期 fail-fast；`battle_init` 若导致补位，稳定对位会在进入 `selection` 前补跑一次 `on_matchup_changed`；`tests/run_with_gate.sh` 全绿。
+
+#### 当前验证结果（2026-03-28）
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
 ### 战斗核心强治理收口计划
 - 目标：分 3 个可独立验收的小阶段，一次性收口日志契约漂移、文档事实漂移、候选技能池/赛前配招 contract 缺口，以及仓库一致性闸门缺失问题。
 - 范围：`src/battle_core/**/*`、`src/composition/sample_battle_factory.gd`、`content/units/sukuna.tres`、`README.md`、`content/README.md`、`docs/design/*`、`docs/rules/*`、`docs/records/*`、`tests/**/*`、`tests/*.sh`；按阶段拆分提交并保持工作区干净。

@@ -49,7 +49,6 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     for side_setup in battle_setup.sides:
         var side_state = _build_side_state(side_setup, format_config, content_index)
         battle_state.sides.append(side_state)
-
     battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_HEADER, "battle_init")
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.SYSTEM_BATTLE_HEADER,
@@ -60,7 +59,6 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
             "payload_summary": "battle header",
         }
     ))
-
     var initial_active_ids: Array = _collect_active_unit_ids(battle_state)
     battle_state.chain_context = _build_system_chain("system:replace", "system_replace")
     for side_state in battle_state.sides:
@@ -90,7 +88,6 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
         return
     if _resolve_startup_victory(battle_state):
         return
-
     battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, "battle_init")
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.SYSTEM_BATTLE_INIT,
@@ -112,7 +109,10 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
         return
     if _resolve_startup_victory(battle_state):
         return
-
+    var post_battle_init_matchup_invalid_code = _execute_matchup_changed_if_needed(battle_state, content_index)
+    if post_battle_init_matchup_invalid_code != null:
+        _terminate_invalid_battle(battle_state, str(post_battle_init_matchup_invalid_code))
+        return
     battle_state.phase = BattlePhasesScript.SELECTION
 
 func _build_side_state(side_setup, format_config, content_index):

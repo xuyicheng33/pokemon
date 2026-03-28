@@ -10,6 +10,7 @@ const PassiveItemDefinitionScript := preload("res://src/battle_core/content/pass
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
+const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
@@ -25,6 +26,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("miss_path", failures, Callable(self, "_test_miss_path").bind(harness))
     runner.run_test("field_expire_path", failures, Callable(self, "_test_field_expire_path").bind(harness))
     runner.run_test("init_chain_order", failures, Callable(self, "_test_init_chain_order").bind(harness))
+    runner.run_test("battle_init_replacement_retriggers_matchup_changed", failures, Callable(self, "_test_battle_init_replacement_retriggers_matchup_changed").bind(harness))
 
 func _test_deterministic_replay(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -390,6 +392,75 @@ func _test_on_matchup_changed_dedup_path(harness) -> Dictionary:
             total_matchup_events += 1
     if total_matchup_events != 4:
         return harness.fail_result("matchup_changed should trigger exactly once after the stable switch matchup")
+    return harness.pass_result()
+
+func _test_battle_init_replacement_retriggers_matchup_changed(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+
+    var matchup_payload = ResourceModPayloadScript.new()
+    matchup_payload.payload_type = "resource_mod"
+    matchup_payload.resource_key = "mp"
+    matchup_payload.amount = 1
+    var matchup_effect = EffectDefinitionScript.new()
+    matchup_effect.id = "test_battle_init_matchup_changed_regen_effect"
+    matchup_effect.display_name = "Battle Init Matchup Changed Regen"
+    matchup_effect.scope = "self"
+    matchup_effect.trigger_names = PackedStringArray(["on_matchup_changed"])
+    matchup_effect.payloads.clear()
+    matchup_effect.payloads.append(matchup_payload)
+    content_index.register_resource(matchup_effect)
+
+    var matchup_passive = PassiveSkillDefinitionScript.new()
+    matchup_passive.id = "test_battle_init_matchup_changed_regen_passive"
+    matchup_passive.display_name = "Battle Init Matchup Changed Regen Passive"
+    matchup_passive.trigger_names = PackedStringArray(["on_matchup_changed"])
+    matchup_passive.effect_ids = PackedStringArray([matchup_effect.id])
+    content_index.register_resource(matchup_passive)
+    content_index.units["sample_pyron"].passive_skill_id = matchup_passive.id
+    content_index.units["sample_mossaur"].passive_skill_id = matchup_passive.id
+    content_index.units["sample_tidekit"].passive_skill_id = matchup_passive.id
+
+    var self_faint_payload = DamagePayloadScript.new()
+    self_faint_payload.payload_type = "damage"
+    self_faint_payload.amount = 999
+    self_faint_payload.use_formula = false
+    var self_faint_effect = EffectDefinitionScript.new()
+    self_faint_effect.id = "test_battle_init_self_faint_effect"
+    self_faint_effect.display_name = "Battle Init Self Faint"
+    self_faint_effect.scope = "self"
+    self_faint_effect.trigger_names = PackedStringArray(["battle_init"])
+    self_faint_effect.payloads.clear()
+    self_faint_effect.payloads.append(self_faint_payload)
+    content_index.register_resource(self_faint_effect)
+
+    var self_faint_item = PassiveItemDefinitionScript.new()
+    self_faint_item.id = "test_battle_init_self_faint_item"
+    self_faint_item.display_name = "Battle Init Self Faint Item"
+    self_faint_item.trigger_names = PackedStringArray(["battle_init"])
+    self_faint_item.effect_ids = PackedStringArray([self_faint_effect.id])
+    content_index.register_resource(self_faint_item)
+    content_index.units["sample_pyron"].passive_item_id = self_faint_item.id
+
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 43)
+    var active_unit = battle_state.get_side("P1").get_active_unit()
+    if active_unit == null or active_unit.public_id != "P1-B":
+        return harness.fail_result("battle_init faint window should replace P1 active with bench unit before selection")
+
+    var matchup_events: int = 0
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD \
+        and ev.trigger_name == "on_matchup_changed" \
+        and str(ev.source_instance_id).begins_with("passive_skill:"):
+            matchup_events += 1
+    if matchup_events != 4:
+        return harness.fail_result("battle_init replacement should retrigger matchup_changed for the new stable matchup")
     return harness.pass_result()
 
 func _test_miss_path(harness) -> Dictionary:
