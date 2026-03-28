@@ -585,3 +585,8 @@
 - `gojo_domain_rollback` 语义冻结为“与 `gojo_domain_expire_seal` 相同的 3 条 `action_legality` 封印链”，不复用宿傩 `sukuna_domain_rollback` 的 `stat_mod` 惩罚设计。
 - `action_legality deny all` 只封禁技能 / 奥义 / 换人，不封禁 `wait`；若该锁在排队后中途挂到目标身上，执行到原队列项时按 `cancelled_pre_start` 跳过，不额外伪造一条 `WAIT` action。
 - Gojo 设计文档中的资源命名与迁移表必须以当前仓库现状为准：`space/psychic` 已存在，宿傩现存需要迁移的内容文件只有 `sukuna_domain_expire_seal.tres`。
+
+### 198. 五条悟设计二次收敛：茈去反噬、无下限改命中干扰（2026-03-28）
+- 茈从“伤害前倍率 + 命中后反噬”收敛为“命中后条件追加爆发 + 清双标记”，首版不接入 `last_dealt_damage`、`action_tags`、`recoil_percent_of_dealt`。
+- 无下限从“`on_before_damage` 概率改伤害”收敛为“敌方攻击五条悟时，非必中命中率 -10”；必中（`resolved_accuracy >= 100`）不受影响。
+- Gojo 首版引擎扩展冻结为 3 项：`action_legality`、`required_target_effects`、`incoming_accuracy`；`effects_pre_damage_ids`、`damage_override`、`trigger_chance`（用于无下限）明确延期。

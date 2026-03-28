@@ -857,3 +857,25 @@
 - 文档中的宿傩迁移表不得再把 `sukuna_domain_rollback.tres` 记成 `skill_legality -> action_legality`。
 - Gojo 文档必须明确：`action_legality deny all` 不阻断 `wait`，中途挂锁的已选指令按 `cancelled_pre_start` 跳过。
 - `space / psychic` 已存在的事实与 `sample_battle_format.tres` 已配置的事实必须在文档中写明。
+
+### 五条悟设计文档二次收敛（已完成）
+- 目标：按最终讨论结论收敛 Gojo 方案，去掉当前阶段不必要的高成本引擎改动，确保文档直接可施工。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。
+- 验收标准：文档中不再包含“茈自伤链”和“无下限改伤害链”，并明确新的最小引擎改动范围与测试口径。
+
+#### 已完成内容
+- 重写 `gojo_satoru_design.md` 为收敛版 v2：茈改为“命中后条件追加爆发 + 清双标记”，明确不做自伤。
+- 无下限改为“敌方攻击五条悟时（除必中外）命中率 -10”，并收口为 `incoming_accuracy` 规则读取点，不再使用 `on_before_damage + damage_override`。
+- 数值同步收敛：`init_mp` 下调到 50、`regen_per_turn` 下调到 14，奥义改为 `power=48 / mp_cost=50`，茈改为 `power=64 / accuracy=90 / mp_cost=24`。
+- 引擎范围收敛为 `action_legality + required_target_effects + incoming_accuracy`，并在文档中明确列出延期项（`effects_pre_damage_ids`、`action_tags`、`last_dealt_damage` 等）。
+- 在 `decisions.md` 追加冻结决策，防止后续实现回滚到旧方案。
+
+#### 最小可玩性检查清单
+- 可启动：本轮仅改文档与记录，不影响现有运行时代码。
+- 可操作：后续实现可直接按三块引擎改动拆任务，不再被旧版大改方案阻塞。
+- 无致命错误：文档中已移除与当前目标冲突的机制路径（茈反噬、自伤、无下限改伤害）。
+
+#### 回归检查要点
+- Gojo 文档不得再出现 `on_before_damage`、`damage_override`、`last_dealt_damage` 作为首版必做项。
+- 无下限描述必须固定为“非必中来袭命中 -10”，而不是概率改伤害。
+- 茈描述必须固定为“条件追加爆发 + 清双标记 + 不自伤”。
