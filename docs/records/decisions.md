@@ -9,6 +9,12 @@
 
 ## 2026-03-28
 
+### 223. 五条悟设计审计收口到当前主线语义（2026-03-28）
+- 苍 / 赫标记当前固定是“挂在目标身上的 effect instance”，换人清除只发生在标记持有者离场，不因为五条悟自己离场而清空。
+- 在现有 runtime / effect model 下，茈的 `required_target_effects` 只检查“目标当前是否同时持有双标记”，不会校验施加者归属；因此当前方案明确收口为“标记是团队共享资源，可由后续我方五条悟接力消耗”。
+- 若后续玩法要收紧为“必须由同一施法者本人消耗自己铺的标记”，当前文档里列出的 3 个引擎扩展不够，必须新增第 4 个扩展来表达并校验标记施加者归属。
+- “领域首回合锁行动”不是硬保证，只在五条悟先于目标执行并成功命中后，才可能把本回合尚未执行的敌方技能 / 奥义 / 换人改成 `cancelled_pre_start`。
+
 ### 222. 仓库级规则文档回到“当前代码真实口径”，不再提前同步 Gojo 待实现扩展
 - `docs/rules/06_effect_schema_and_extension.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md` 只记录当前 main 已接线能力。
 - 因此当前正式口径里，`EffectDefinition` 不包含 `required_target_effects`，`rule_mod` 白名单也只包含 `final_mod / mp_regen / skill_legality`。
@@ -587,19 +593,19 @@
 - 架构闸门不再对白名单豁免 `turn_resolution_service.gd` 与 `battle_initializer.gd`。
 
 ### 197. 五条悟领域回滚与 `action_legality` 口径冻结（2026-03-28）
-- `gojo_domain_rollback` 语义冻结为“与 `gojo_domain_expire_seal` 相同的 3 条 `action_legality` 封印链”，不复用宿傩 `sukuna_domain_rollback` 的 `stat_mod` 惩罚设计。
+- Gojo 方案当前不再定义 `gojo_domain_expire_seal / gojo_domain_rollback`；领域结束或被打破后，不追加任何封印 / 回滚后摇。
 - `action_legality deny all` 只封禁技能 / 奥义 / 换人，不封禁 `wait`；若该锁在排队后中途挂到目标身上，执行到原队列项时按 `cancelled_pre_start` 跳过，不额外伪造一条 `WAIT` action。
-- Gojo 设计文档中的资源命名与迁移表必须以当前仓库现状为准：`space/psychic` 已存在，宿傩现存需要迁移的内容文件只有 `sukuna_domain_expire_seal.tres`。
+- Gojo 设计文档中的资源命名与迁移表必须以当前仓库现状为准：`space/psychic` 已存在；Gojo 本人当前没有需要落盘迁移的后摇资源。
 
 ### 198. 五条悟设计二次收敛：茈去反噬、无下限改命中干扰（2026-03-28）
 - 茈从“伤害前倍率 + 命中后反噬”收敛为“命中后条件追加爆发 + 清双标记”，首版不接入 `last_dealt_damage`、`action_tags`、`recoil_percent_of_dealt`。
 - 无下限从“`on_before_damage` 概率改伤害”收敛为“敌方攻击五条悟时，非必中命中率 -10”；必中（`resolved_accuracy >= 100`）不受影响。
-- Gojo 首版引擎扩展冻结为 3 项：`action_legality`、`required_target_effects`、`incoming_accuracy`；`effects_pre_damage_ids`、`damage_override`、`trigger_chance`（用于无下限）明确延期。
+- Gojo 文档里列出的 3 项引擎扩展只覆盖“团队共享双标记”的当前方案；若以后要限制为“同一五条悟本人消耗自己铺的标记”，必须新增第 4 个扩展表达标记施加者归属。
 
 ### 199. 五条悟文档严谨性补充冻结（2026-03-28）
 - `SideSetup.regular_skill_loadout_overrides` 属于赛前 setup 层，不属于 `UnitDefinition`；Gojo 文档与测试口径统一显式写 `SideSetup.` 前缀。
-- `gojo_domain_expire_seal / gojo_domain_rollback` 在文档中统一定义为“单个 effect 内含 3 个 `rule_mod` payload”，避免被误读成 3 个独立 effect 资源。
-- Gojo 方案继续保持“领域打破不做 `stat_mod(sp_attack,-1)` 回退”的设计取舍；`gojo_domain_cast_buff(+1)` 不与 field break 强绑定逆向回滚。
+- 苍 / 赫标记的 owner 语义固定写明为“目标持有效果实例”；`persists_on_switch=false` 的清理语义只作用于持有者离场，不额外扩展到施加者侧。
+- 当前方案明确承认双标记是团队共享资源，不把“必须同一施法者消耗”伪装成已存在语义。
 - `incoming_accuracy` 的 `rule_mod` 文档口径固定为 `duration_mode=permanent + stacking=none + decrement_on 显式声明`（后者仅为满足当前 schema/validator）。
 
 ### 200. 五条悟文档三层约束冻结（2026-03-28）
@@ -607,20 +613,20 @@
 - 无下限被动触发从 `battle_init` 改为 `on_enter`：因为 `LeaveService.leave_unit()` 会清空 `unit_state.rule_mod_instances`，仅靠 `battle_init` 无法覆盖“离场后再入场”场景。
 - `action_legality` 与 `incoming_accuracy` 接入按“兼容新增 -> 资源迁移 -> 移除旧口径”三阶段推进，避免一次性替换导致宿傩现有 `skill_legality` 资源失效。
 - `required_target_effects` 的检查目标固定为 `effect_event.chain_context.target_unit_id` 对应单位；不满足时整条 effect 跳过，不报 invalid。
+- `duration=3 + decrement_on=turn_end` 的文字语义必须写成“按 3 次 `turn_end` 节点扣减”，不能偷换成“后续完整 3 回合”。
 
 ### 201. 五条悟二审细节口径冻结（2026-03-28）
 - `action_legality` 的 stacking key 固定为 `["mod_kind","scope","owner_scope","owner_id","mod_op","value"]`；`incoming_accuracy` 固定为 `["mod_kind","scope","owner_scope","owner_id","mod_op"]`。
 - `is_action_allowed` 在兼容期必须同时读取 `action_legality` 与 `skill_legality`，并沿用统一排序链处理，禁止分两套先后顺序。
-- `gojo_domain_expire_seal` 与 `gojo_domain_rollback` 的触发在 field 生命周期里互斥，不允许同一 field 实例双触发叠加。
+- “领域首回合锁行动”只能写成时序条件成立时的结果，不能写成独立于速度竞争和命中结果的硬保证。
 - 茈的 `required_target_effects` 前置检查是 `remove_effect` 安全性的必要保障；前置检查失败时必须整条 effect 跳过，不允许部分 payload 执行。
 
 ### 202. 五条悟三审“明显错误先修”口径冻结（2026-03-28）
-- 仓库级规则文档与 Gojo 文档同步：`docs/rules/06`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_content_schema.md` 全部补齐 `action_legality / incoming_accuracy / required_target_effects` 口径，避免“两套真相”。
+- 仓库级规则文档继续只记录当前 main 已接线能力；Gojo 文档里的 `action_legality / incoming_accuracy / required_target_effects` 仍留在角色设计文档中，作为待实现扩展单独描述。
 - `action_legality` 匹配矩阵与判定顺序写死为：按动作类型命中 `value`，再按统一排序链逐条覆盖，最终 last-write-wins；`wait` 不受 `action_legality` 影响。
 - `required_target_effects` 必须在加载期做引用校验并 fail-fast；坏引用禁止留到运行期靠“整条 effect 跳过”兜底。
 - `incoming_accuracy` 读取范围写死为“敌方来袭技能/奥义 + enemy_active_slot + 目标为敌方 active 且 `resolved_accuracy < 100`”；`self/field/none` 与 `switch/wait/resource_forced_default` 一律跳过。
-- `gojo_domain_expire_seal duration=2,decrement_on=turn_end` 补了显式时间线，冻结“玩家体感封印 1 回合”成立条件，避免后续误改成 `duration=1`。
-- rollback 在 creator 离场/倒下触发 break 时是否仍处罚、后摇是否允许 `reverse_ritual` 绕开、领域强度是否继续下调，标记为待拍板项，本轮不擅自改语义。
+- 若后续要把“同一施法者消耗自己铺的标记”做成硬规则，必须先扩展 runtime / effect schema，再更新仓库级规则文档，不允许继续靠 Gojo 角色文档口头约定。
 
 ### 203. 领域后摇删除（Gojo / Sukuna 同口径，2026-03-28）
 - 领域结束后的“封印/回滚后摇”从设计口径中移除：Gojo 不再定义 `gojo_domain_expire_seal / gojo_domain_rollback`，Sukuna 现有内容也移除同类后摇。

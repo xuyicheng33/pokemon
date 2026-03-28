@@ -10,6 +10,16 @@
 
 ## 2026-03-28
 
+### 五条悟设计审计收口到当前主线语义（已完成）
+- 目标：把五条悟设计文档和记录里的剩余歧义一次收口，确保后续实现时不会再被“标记归属”“领域首回合锁行动”“扩展数量”这些口径误导。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`；不改运行时代码。
+- 验收标准：五条悟文档必须明确双标记 owner 与换人清理语义、当前方案的团队共享取舍、领域锁行动的时序前提，以及“若要限制为同一施法者消耗标记需新增第 4 个扩展”；相关记录不得再保留 `gojo_domain_expire_seal / gojo_domain_rollback` 等过时冻结口径；`tests/run_with_gate.sh` 全绿。
+- 说明：下方较早的 Gojo 任务条目仅保留历史过程；凡与本条、`docs/records/decisions.md` 第 223 条或当前 `gojo_satoru_design.md` 冲突，以本轮收口后的口径为准。
+
+#### 当前验证结果（2026-03-28）
+- `bash tests/check_repo_consistency.sh`：通过（`REPO_CONSISTENCY_PASSED`）。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
 ### Gojo 扩展口径回滚到当前代码事实（已完成）
 - 目标：把仓库级规则文档里提前写成“已实现”的 Gojo 扩展能力回滚掉，恢复为当前 main 真实支持范围，同时保留 Gojo 角色文档里的待实现设计。
 - 范围：`docs/design/battle_content_schema.md`、`docs/rules/06_effect_schema_and_extension.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/gojo_satoru_design.md`、`docs/records/*`；不改运行时代码。
