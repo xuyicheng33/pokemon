@@ -602,3 +602,9 @@
 - 无下限被动触发从 `battle_init` 改为 `on_enter`：因为 `LeaveService.leave_unit()` 会清空 `unit_state.rule_mod_instances`，仅靠 `battle_init` 无法覆盖“离场后再入场”场景。
 - `action_legality` 与 `incoming_accuracy` 接入按“兼容新增 -> 资源迁移 -> 移除旧口径”三阶段推进，避免一次性替换导致宿傩现有 `skill_legality` 资源失效。
 - `required_target_effects` 的检查目标固定为 `effect_event.chain_context.target_unit_id` 对应单位；不满足时整条 effect 跳过，不报 invalid。
+
+### 201. 五条悟二审细节口径冻结（2026-03-28）
+- `action_legality` 的 stacking key 固定为 `["mod_kind","scope","owner_scope","owner_id","mod_op","value"]`；`incoming_accuracy` 固定为 `["mod_kind","scope","owner_scope","owner_id","mod_op"]`。
+- `is_action_allowed` 在兼容期必须同时读取 `action_legality` 与 `skill_legality`，并沿用统一排序链处理，禁止分两套先后顺序。
+- `gojo_domain_expire_seal` 与 `gojo_domain_rollback` 的触发在 field 生命周期里互斥，不允许同一 field 实例双触发叠加。
+- 茈的 `required_target_effects` 前置检查是 `remove_effect` 安全性的必要保障；前置检查失败时必须整条 effect 跳过，不允许部分 payload 执行。

@@ -915,3 +915,21 @@
 - 无下限章节必须显式区分 EffectDefinition 层与 RuleModPayload 层的 `decrement_on` 约束。
 - 文档中无下限触发点必须是 `on_enter`，不能回退为 `battle_init`。
 - `action_legality / incoming_accuracy` 的改动清单必须覆盖 `content_schema + content_payload_validator + rule_mod_service + action_cast_service + action_executor + legal_action_service`。
+
+### 五条悟文档二审细节补丁（已完成）
+- 目标：吸收第二轮审查的中风险建议，补齐“实现者最容易误读”的语义边角，降低后续再审漏项概率。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`。
+- 验收标准：文档内对 stacking key、兼容期混合读取、permanent 空转字段、领域互斥触发与茈清标记边界都有显式说明。
+
+#### 已完成内容
+- 补充 `action_legality` 与 `incoming_accuracy` 的 stacking key schema 明确数组定义。
+- 补充兼容期 `is_action_allowed` 混合读取策略：`action_legality + skill_legality` 同排序链处理。
+- 补充 `permanent` RuleModPayload 的 `decrement_on` 运行时空转语义（仅为校验约束字段）。
+- 补充领域 `expire` 与 `break` 互斥触发说明，避免误判为可叠加双封印。
+- 补充苍/赫标记 `persists_on_switch=false` 的玩法含义（换人清标记）。
+- 补充茈命中后“击杀导致 remove_effect 静默跳过”的边界说明，并明确 `required_target_effects` 前置检查是 remove_effect 安全前提。
+
+#### 回归检查要点
+- Gojo 文档必须包含 `action_legality` 与 `incoming_accuracy` 的 stacking key schema 字段列表。
+- Gojo 文档必须明确兼容期 `is_action_allowed` 同时读取新旧 mod_kind 并走统一排序。
+- Gojo 文档必须写明 `permanent` RuleModPayload 的 `decrement_on` 不参与实际扣减。
