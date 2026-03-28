@@ -17,7 +17,7 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     legal_action_set.actor_public_id = actor.public_id
     var has_non_mp_blocked_option: bool = false
     var has_any_skill_or_ultimate_option: bool = false
-    for skill_id in unit_definition.skill_ids:
+    for skill_id in actor.regular_skill_ids:
         var skill_definition = content_index.skills.get(skill_id)
         if skill_definition == null:
             continue

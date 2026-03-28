@@ -27,7 +27,20 @@
 ### 209. 宿傩默认装配与候选技能池语义分离
 - 宿傩默认技能组固定为 `解 / 捌 / 开`，奥义固定为 `伏魔御厨子`，被动固定为“教会你爱的是...”。
 - `反转术式` 保留在内容包中，作为测试与未来配招系统使用的候选技能，不进入默认三技能装配。
-- 若 schema 暂不扩候选技能池字段，这层语义必须继续写死在 README 与内容说明文档里。
+
+### 211. `candidate_skill_ids` 正式进入 `UnitDefinition` schema
+- `skill_ids` 固定表示默认装配的 3 个常规技能，不再兼任候选池含义。
+- `candidate_skill_ids` 固定表示常规技能候选池；为空表示没有额外候选池，非空时必须完整包含默认 `skill_ids`，且不得混入 `ultimate_skill_id`。
+- 宿傩的 `反转术式` 不再靠 README 口头约定存在，已作为正式内容字段落在 `candidate_skill_ids` 中。
+
+### 212. 赛前常规技能覆盖按队伍槽位建模
+- `SideSetup.regular_skill_loadout_overrides` 的键固定为队伍槽位下标 `0..team_size-1`，不用 `unit_definition_id`，因为规则允许同队重复单位。
+- 值固定为该槽位单位本场实际装配的 3 个常规技能；当前只支持常规技能覆盖，不支持奥义、被动、持有物覆盖。
+- `BattleInitializer` 必须在建局时把默认装配或 override 解析进 `UnitState.regular_skill_ids`，后续运行时统一读取这份镜像。
+
+### 213. 公开层与合法性层只暴露“本场已装备技能”
+- `LegalActionSet.legal_skill_ids`、公开快照 `prebattle_public_teams[*].units[*].skill_ids`、以及后续日志展示的技能列表，统一读取 `UnitState.regular_skill_ids`。
+- `candidate_skill_ids` 当前只属于内容定义与赛前 setup 校验 contract，不进入 public snapshot，也不作为 AI 的外层可见字段。
 
 ## 2026-03-27
 

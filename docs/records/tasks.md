@@ -19,8 +19,8 @@
 
 |任务|结果|提交|
 |---|---|---|
-|阶段一：日志契约与文档事实收口|已完成|待提交|
-|阶段二：候选技能池与赛前配招 contract 落地|未开始|未提交|
+|阶段一：日志契约与文档事实收口|已完成|独立提交完成（`fix: realign log cause contracts`）|
+|阶段二：候选技能池与赛前配招 contract 落地|已完成|阶段二独立提交（本次提交）|
 |阶段三：一致性闸门与总收口|未开始|未提交|
 
 #### 阶段一最小可玩性检查清单
@@ -36,6 +36,23 @@
 
 #### 阶段一当前验证结果（2026-03-28）
 - `godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
+#### 阶段二最小可玩性检查清单
+- 可启动：`tests/run_with_gate.sh` 通过。
+- 可操作：赛前可按 `SideSetup.regular_skill_loadout_overrides` 覆盖本场常规三技能；合法动作、公开快照与运行时都只读取本场已装备技能。
+- 无致命错误：候选技能池与赛前覆盖 contract 非法输入会在加载期/建局期 fail-fast；宿傩默认装配与换入 `反转术式` 两条路径都可回归。
+
+#### 阶段二回归检查要点
+- `UnitDefinition.candidate_skill_ids` 非空时必须至少 3 个、不能重复、必须包含默认 `skill_ids`、不能混入 `ultimate_skill_id`。
+- `SideSetup.regular_skill_loadout_overrides` 必须按槽位下标建模，覆盖列表必须正好 3 个且不重复；无候选池时只能等于默认装配，有候选池时必须是候选池子集。
+- `BattleInitializer` 必须把默认装配或 override 写入 `UnitState.regular_skill_ids`；`LegalActionService`、`CommandValidator`、public snapshot 都只读取这份运行时镜像。
+- 宿傩默认装配保持 `解 / 捌 / 开`；通过 setup override 换入 `反转术式` 后，治疗链可正常执行；未换入时默认装配不变。
+- `README.md`、`content/README.md`、`docs/design/battle_content_schema.md`、`docs/design/battle_runtime_model.md`、`docs/design/command_and_legality.md`、`docs/rules/01_battle_format_and_visibility.md`、`docs/rules/05_items_field_ai_and_logging.md` 与实现一致。
+
+#### 阶段二当前验证结果（2026-03-28）
+- `godot --headless --path . --script tests/run_all.gd`：通过（内含 `setup_loadout_suite` 与宿傩专项回归）。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
 
 ## 2026-03-27
 

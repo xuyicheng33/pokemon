@@ -275,7 +275,7 @@ func _test_invalid_battle_rule_mod_definition(harness) -> Dictionary:
     content_index.register_resource(invalid_skill)
     var p1_def = content_index.units["sample_pyron"]
     if not p1_def.skill_ids.has(invalid_skill.id):
-        p1_def.skill_ids.append(invalid_skill.id)
+        p1_def.skill_ids[0] = invalid_skill.id
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 106)
     var commands: Array = [

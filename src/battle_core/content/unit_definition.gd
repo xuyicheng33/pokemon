@@ -14,6 +14,7 @@ class_name UnitDefinition
 @export var regen_per_turn: int = 10
 @export var combat_type_ids: PackedStringArray = PackedStringArray()
 @export var skill_ids: PackedStringArray = PackedStringArray()
+@export var candidate_skill_ids: PackedStringArray = PackedStringArray()
 @export var ultimate_skill_id: String = ""
 @export var passive_skill_id: String = ""
 @export var passive_item_id: String = ""

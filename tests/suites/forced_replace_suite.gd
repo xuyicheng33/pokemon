@@ -59,7 +59,7 @@ func _test_forced_replace_success_chain(harness) -> Dictionary:
     forced_skill.effects_on_cast_ids = PackedStringArray([forced_effect.id])
     content_index.register_resource(forced_skill)
     if not content_index.units["sample_pyron"].skill_ids.has(forced_skill.id):
-        content_index.units["sample_pyron"].skill_ids.append(forced_skill.id)
+        content_index.units["sample_pyron"].skill_ids[0] = forced_skill.id
 
     var switch_payload = StatModPayloadScript.new()
     switch_payload.payload_type = "stat_mod"
@@ -229,7 +229,7 @@ func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dict
     forced_skill.effects_on_cast_ids = PackedStringArray([forced_effect.id])
     content_index.register_resource(forced_skill)
     if not content_index.units["sample_pyron"].skill_ids.has(forced_skill.id):
-        content_index.units["sample_pyron"].skill_ids.append(forced_skill.id)
+        content_index.units["sample_pyron"].skill_ids[0] = forced_skill.id
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 222)
     var p1_active = battle_state.get_side("P1").get_active_unit()
@@ -336,7 +336,7 @@ func _test_forced_replace_invalid_selection(harness) -> Dictionary:
     forced_skill.effects_on_cast_ids = PackedStringArray([forced_effect.id])
     content_index.register_resource(forced_skill)
     if not content_index.units["sample_pyron"].skill_ids.has(forced_skill.id):
-        content_index.units["sample_pyron"].skill_ids.append(forced_skill.id)
+        content_index.units["sample_pyron"].skill_ids[0] = forced_skill.id
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 221)
     var p1_active = battle_state.get_side("P1").get_active_unit()

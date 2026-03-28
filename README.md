@@ -159,14 +159,18 @@ tests/run_with_gate.sh
 - `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`）
 - `BattleFormatConfig` 已包含 `selection_deadline_ms / max_chain_depth`
 - `UnitDefinition` 已包含 `max_mp / init_mp / regen_per_turn`
+- `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
 - 普通技能与奥义优先级约束分离校验
+- `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
 
-### 8.1 宿傩默认装配
+### 8.1 宿傩默认装配与赛前配招
 
 - 默认技能组：`解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`）
 - 奥义：`伏魔御厨子`
 - 被动：`教会你爱的是...`
-- 候选技能池：`反转术式` 保留在内容包中，允许测试和未来配招系统替换接入，但不属于默认三技能装配
+- 候选技能池：`candidate_skill_ids = 解 / 捌 / 开 / 反转术式`
+- 赛前覆盖：`SideSetup.regular_skill_loadout_overrides` 可把 `反转术式` 换入本场装配；未提供覆盖时，行为等价于使用默认 `skill_ids`
+- 公开快照：`prebattle_public_teams[*].units[*].skill_ids` 只公开本场实际已装备的常规技能，不公开候选池全集
 
 ## 9. 日志与回放契约
 
@@ -180,9 +184,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-28）
 
-- `src/**/*.gd`：`6668` 行
-- `tests/**/*.gd`：`4913` 行
-- GDScript 合计：`11581` 行
+- `src/**/*.gd`：`6750` 行
+- `tests/**/*.gd`：`5072` 行
+- GDScript 合计：`11822` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

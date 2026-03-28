@@ -135,7 +135,7 @@ func _test_apply_effect_lifecycle_chain(harness) -> Dictionary:
     dot_skill.effects_on_cast_ids = PackedStringArray([apply_effect.id])
     content_index.register_resource(dot_skill)
     if not content_index.units["sample_pyron"].skill_ids.has(dot_skill.id):
-        content_index.units["sample_pyron"].skill_ids.append(dot_skill.id)
+        content_index.units["sample_pyron"].skill_ids[0] = dot_skill.id
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 211)
     var p2_active = battle_state.get_side("P2").get_active_unit()

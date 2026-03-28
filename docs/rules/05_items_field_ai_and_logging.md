@@ -122,13 +122,14 @@
 |`unit_id`|只用于内容定义与队伍构筑|
 |`public_id`|玩家输入、AI 输入、合法性列表、公开快照、换人目标、回放输入的唯一外层标识|
 |`unit_instance_id`|只允许留在核心内部运行态、内部日志归因、内部排序与系统自动动作中|
-|`LegalActionSet`|对外固定暴露 `actor_public_id / legal_skill_ids / legal_switch_target_public_ids / legal_ultimate_ids / wait_allowed / forced_command_type`|
+|`LegalActionSet`|对外固定暴露 `actor_public_id / legal_skill_ids / legal_switch_target_public_ids / legal_ultimate_ids / wait_allowed / forced_command_type`；其中 `legal_skill_ids` 只表示本场实际已装备的常规技能|
 |外层 `Command`|默认只提交 `actor_public_id / target_public_id`；`actor_id / target_unit_id` 仅保留给核心内部或系统自动注入路径|
 
 |项|规则|
 |---|---|
 |AI 可读取|所有公开信息、当前战场状态、己方运行态|
 |AI 禁止读取|内部随机值、未来未发生的抽样结果、仅供调试的缓存|
+|候选技能池|当前不进入公开快照，也不是 AI 对外 contract 的一部分|
 |合法性职责|引擎先完成合法性判断：要么给出可选的技能 / 手动换人 / 奥义列表，要么直接替代为默认动作；AI 只从可执行结果中选一个|
 |空列表处理|若技能、手动换人、奥义都不合法：仅在“全部仅因 MP 不足”时强制 `resource_forced_default`；存在任一非 MP 阻断时允许 `wait`|
 |超时处理|AI 若在截止时间前未返回：当前应强制 Struggle 则走 `resource_forced_default`；否则走 `wait`（`command_source = timeout_auto`）|

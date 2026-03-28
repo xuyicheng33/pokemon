@@ -53,16 +53,19 @@
 |`init_mp`|`int`|战斗开始时 MP 初值|
 |`regen_per_turn`|`int`|每回合 MP 回复基值|
 |`combat_type_ids`|`PackedStringArray`|战斗属性列表，允许 `0..2` 个|
-|`skill_ids`|`PackedStringArray`|常规技能列表（固定 3 槽）|
+|`skill_ids`|`PackedStringArray`|默认装配的常规技能列表（固定 3 槽）|
+|`candidate_skill_ids`|`PackedStringArray`|常规技能候选池；为空表示没有额外候选池|
 |`ultimate_skill_id`|`String`|奥义技能 ID（不得出现在 `skill_ids`）|
 |`passive_skill_id`|`String`|被动技能 ID|
 |`passive_item_id`|`String`|被动持有物 ID|
 
 补充语义：
 
-- `skill_ids` 表示默认装配的常规技能，不承担“候选技能池”语义。
-- 若某个角色存在候选技能池但当前 schema 不单独编码，必须在 README 或内容说明文档里显式写明。
-- 当前仓库里的宿傩采用这条约定：默认技能组为 `解 / 捌 / 开`，`反转术式` 只是候选技能。
+- `skill_ids` 只表示默认装配的 3 个常规技能。
+- `candidate_skill_ids` 只覆盖常规技能池，不包含奥义、被动、被动持有物。
+- `candidate_skill_ids` 为空时，表示该单位没有额外候选池；赛前只能使用默认 `skill_ids`。
+- `candidate_skill_ids` 非空时，必须完整包含默认 `skill_ids`，且不得包含 `ultimate_skill_id`。
+- 当前仓库里的宿傩已按正式字段落盘：默认技能组为 `解 / 捌 / 开`，`反转术式` 作为候选常规技能保留在 `candidate_skill_ids` 中。
 
 ### 3.3 SkillDefinition
 
@@ -84,7 +87,7 @@
 |`effects_on_kill_ids`|`PackedStringArray`|击杀触发效果 ID|
 
 优先级硬约束：
-- 普通技能（出现在任意单位 `skill_ids`）只能是 `-2..+2`。
+- 普通技能（出现在任意单位 `skill_ids` 或 `candidate_skill_ids`）只能是 `-2..+2`。
 - 奥义（被任意单位 `ultimate_skill_id` 引用）只能是 `+5/-5`。
 
 ### 3.4 PassiveSkillDefinition / PassiveItemDefinition
@@ -205,6 +208,8 @@
 - 各类资源 ID / `format_id` 不能为空，且在各自类型内必须唯一；重复注册直接视为非法内容。
 - `CombatTypeDefinition.id` 必须非空且唯一；`display_name` 不得为空。
 - `UnitDefinition.combat_type_ids` 最多 2 个，不能重复、不能含空串，且必须命中已注册 `combat_type`。
+- `UnitDefinition.skill_ids` 必须固定为 3 个已注册常规技能，且不得与 `ultimate_skill_id` 重叠。
+- `UnitDefinition.candidate_skill_ids` 为空时表示没有额外候选池；非空时必须满足：长度至少 3、不能重复、不能含空串、必须命中已注册常规技能、必须完整包含默认 `skill_ids`、不得包含 `ultimate_skill_id`。
 - `SkillDefinition.combat_type_id` 可为空；非空时必须命中已注册 `combat_type`。
 - `SkillDefinition.power_bonus_source` 当前只允许空串或 `mp_diff_clamped`。
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
@@ -217,4 +222,13 @@
 ## 7. 运行前校验（BattleSetup）
 
 - 同一 side 的队伍中，被动持有物 `passive_item_id` 不可重复。
+- `SideSetup.regular_skill_loadout_overrides` 固定为 `Dictionary<int, PackedStringArray>`：
+  - 键固定为队伍槽位下标 `0..team_size-1`；因为同队允许重复单位，所以不用 `unit_definition_id` 做键。
+  - 值固定为该槽位单位本场实际装配的 3 个常规技能。
+- `regular_skill_loadout_overrides` 校验规则固定为：
+  - 槽位键必须是 `int`，且必须命中当前队伍槽位。
+  - 覆盖列表必须正好 3 个，不能重复。
+  - 若该单位 `candidate_skill_ids` 为空，覆盖值必须与默认 `skill_ids` 完全相等。
+  - 若该单位 `candidate_skill_ids` 非空，覆盖值必须是 `candidate_skill_ids` 的子集。
+  - 当前不支持通过 setup 覆盖奥义、被动或被动持有物。
 - 该校验在战斗初始化前执行；失败直接 fail-fast，不进入运行态。

@@ -74,6 +74,7 @@
 |`max_mp`|`int`|最大 MP|
 |`current_mp`|`int`|当前 MP|
 |`regen_per_turn`|`int`|每回合 MP 回复基值|
+|`regular_skill_ids`|`PackedStringArray`|本场实际已装备的 3 个常规技能；初始化时从默认装配或 setup override 解析得到|
 |`combat_type_ids`|`PackedStringArray`|运行态战斗属性镜像，初始化时从 `UnitDefinition` 复制|
 |`base_attack`|`int`|基础攻击|
 |`base_defense`|`int`|基础防御|
@@ -145,6 +146,11 @@
 |`action_window_passed`|回合结算结束后重置|
 |`selection_state`|进入新回合选择阶段前重置|
 |`pending_effect_queue`|每个触发批次结束后清空|
+
+补充说明：
+
+- `UnitDefinition.skill_ids` 不再直接承担“本场实际装配”语义；运行时、合法性、公开快照统一读取 `UnitState.regular_skill_ids`。
+- `candidate_skill_ids` 只存在于内容定义层；运行态当前不额外镜像候选池。
 
 ## 11. 禁止事项
 

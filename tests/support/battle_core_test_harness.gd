@@ -90,14 +90,18 @@ func build_loaded_content_index(sample_factory):
     content_index.load_snapshot(sample_factory.content_snapshot_paths())
     return content_index
 
-func build_initialized_battle(core, content_index, sample_factory, seed: int):
+func build_initialized_battle(core, content_index, sample_factory, seed: int, battle_setup = null):
     core.rng_service.reset(seed)
     core.id_factory.reset()
     var battle_state = BattleStateScript.new()
     battle_state.battle_id = core.id_factory.next_id("battle")
     battle_state.seed = seed
     battle_state.rng_stream_index = core.rng_service.get_stream_index()
-    core.battle_initializer.initialize_battle(battle_state, content_index, sample_factory.build_sample_setup())
+    core.battle_initializer.initialize_battle(
+        battle_state,
+        content_index,
+        battle_setup if battle_setup != null else sample_factory.build_sample_setup()
+    )
     return battle_state
 
 func find_last_event(event_log: Array, event_type: String):

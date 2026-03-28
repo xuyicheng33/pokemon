@@ -107,7 +107,7 @@ func _build_prebattle_public_teams(battle_state, content_index) -> Array:
                 "display_name": unit_definition.display_name,
                 "level": battle_state.battle_level,
                 "combat_type_ids": unit_definition.combat_type_ids,
-                "skill_ids": unit_definition.skill_ids,
+                "skill_ids": unit_state.regular_skill_ids,
                 "ultimate_skill_id": unit_definition.ultimate_skill_id,
                 "passive_skill_id": unit_definition.passive_skill_id,
                 "passive_item_id": unit_definition.passive_item_id,

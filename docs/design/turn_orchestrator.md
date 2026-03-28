@@ -33,6 +33,7 @@
 
 - `on_enter` 与 `battle_init` 不能混排到同一排序池。
 - 任一批次命中 `invalid_battle_*`，立即终止并写 `system:invalid_battle`。
+- 建局时必须先完成 `SideSetup.regular_skill_loadout_overrides` 校验，再把默认装配或覆盖结果写入 `UnitState.regular_skill_ids`；后续合法性、快照与指令执行都只认这份运行态镜像。
 
 ## 3. TurnLoopController
 

@@ -136,6 +136,7 @@ func _build_side_state(side_setup, format_config, content_index):
         unit_state.max_mp = unit_definition.max_mp
         unit_state.current_mp = unit_definition.init_mp
         unit_state.regen_per_turn = unit_definition.regen_per_turn
+        unit_state.regular_skill_ids = _resolve_regular_skill_loadout(side_setup, unit_index, unit_definition)
         unit_state.combat_type_ids = unit_definition.combat_type_ids.duplicate()
         unit_state.base_attack = unit_definition.base_attack
         unit_state.base_defense = unit_definition.base_defense
@@ -158,14 +159,16 @@ func _validate_side_setup_constraints(side_setup, format_config, content_index) 
         var unit_definition = content_index.units.get(unit_definition_id)
         assert(unit_definition != null, "Missing unit definition: %s" % unit_definition_id)
 
+func _resolve_regular_skill_loadout(side_setup, unit_index: int, unit_definition) -> PackedStringArray:
+    if side_setup.regular_skill_loadout_overrides.has(unit_index):
+        var override_loadout: PackedStringArray = side_setup.regular_skill_loadout_overrides[unit_index]
+        assert(override_loadout.size() == 3, "Invalid regular skill loadout size for side %s slot %d" % [side_setup.side_id, unit_index])
+        return override_loadout.duplicate()
+    assert(unit_definition.skill_ids.size() == 3, "UnitDefinition.skill_ids must remain 3-slot default loadout for %s" % unit_definition.id)
+    return unit_definition.skill_ids.duplicate()
+
 func _execute_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
-    return trigger_batch_runner.execute_trigger_batch(
-        trigger_name,
-        battle_state,
-        content_index,
-        owner_unit_ids,
-        battle_state.chain_context
-    )
+    return trigger_batch_runner.execute_trigger_batch(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context)
 
 func _collect_active_unit_ids(battle_state) -> Array:
     var active_ids: Array = []

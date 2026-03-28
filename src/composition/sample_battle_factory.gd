@@ -59,26 +59,28 @@ func content_snapshot_paths() -> PackedStringArray:
         "res://content/passive_skills/sukuna_teach_love.tres",
     ])
 
-func build_sample_setup():
+func build_sample_setup(side_regular_skill_overrides: Dictionary = {}):
     var battle_setup = BattleSetupScript.new()
     battle_setup.format_id = "prototype_full_open"
     var p1 = SideSetupScript.new()
     p1.side_id = "P1"
     p1.unit_definition_ids = PackedStringArray(["sample_pyron", "sample_mossaur", "sample_tidekit"])
     p1.starting_index = 0
+    p1.regular_skill_loadout_overrides = side_regular_skill_overrides.get("P1", {})
     var p2 = SideSetupScript.new()
     p2.side_id = "P2"
     p2.unit_definition_ids = PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"])
     p2.starting_index = 0
+    p2.regular_skill_loadout_overrides = side_regular_skill_overrides.get("P2", {})
     battle_setup.sides = [p1, p2]
     return battle_setup
 
-func build_demo_replay_input(command_port):
+func build_demo_replay_input(command_port, side_regular_skill_overrides: Dictionary = {}):
     assert(command_port != null and command_port.has_method("build_command"), "build_demo_replay_input requires build_command port")
     var replay_input = ReplayInputScript.new()
     replay_input.battle_seed = 17
     replay_input.content_snapshot_paths = content_snapshot_paths()
-    replay_input.battle_setup = build_sample_setup()
+    replay_input.battle_setup = build_sample_setup(side_regular_skill_overrides)
     replay_input.command_stream = [
         command_port.build_command({
             "turn_index": 1,
