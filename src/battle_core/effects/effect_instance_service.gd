@@ -21,6 +21,8 @@ func create_instance(effect_definition, owner_id: String, battle_state, source_i
         ContentSchemaScript.STACKING_REPLACE:
             if existing_instance != null:
                 owner_unit.effect_instances.erase(existing_instance)
+        ContentSchemaScript.STACKING_STACK:
+            pass
     var effect_instance = EffectInstanceScript.new()
     effect_instance.instance_id = id_factory.next_id("effect")
     effect_instance.def_id = effect_definition.id

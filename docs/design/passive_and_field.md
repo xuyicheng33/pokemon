@@ -8,7 +8,7 @@
 |---|---|
 |`passive_skill_service.gd`|按触发点收集被动技能 `EffectEvent`|
 |`passive_item_service.gd`|按触发点收集被动持有物 `EffectEvent`|
-|`field_service.gd`|收集 field `EffectEvent` 与 `turn_end` 扣减|
+|`field_service.gd`|收集 field `EffectEvent`、处理自然到期扣减与 creator 离场后的提前打断|
 
 ## 2. 接入原则
 
@@ -44,10 +44,12 @@
 
 - 若场上有 field，按触发点产出 field 事件。
 - `tick_turn_end()` 在回合末扣减剩余回合并返回是否到期。
+- `break_field_if_creator_inactive()` 在 creator 离场、倒下或被强制换下后，负责执行提前打断。
 
 说明：
 
-- field 到期后的日志与移除由 `TurnLoopController` 统一执行。
+- field 自然到期后的日志与移除由 `TurnFieldLifecycleService` 协调执行。
+- creator 离场导致的提前打断已下沉到 `FieldService`，由手动换人、强制换下、击倒窗口和 field 覆盖路径复用同一逻辑。
 - 当前同一时刻全场只允许 1 个 field；新 field 生效即覆盖旧 field。
 
 ## 6. 约束
@@ -55,3 +57,4 @@
 - `source_instance_id` 必须稳定，不能用临时文案替代。
 - 触发服务不直接修改运行态，运行态修改只能在 payload 执行阶段发生。
 - bench 不参与回合节点触发（被动技能与被动持有物都一样）。
+- field 提前打断只执行 `on_break_effect_ids`，不会补写自然到期日志，也不会执行 `on_expire_effect_ids`。

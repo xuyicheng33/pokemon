@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sukuna_reverse_ritual"
+display_name = "反转术式"
+damage_kind = "none"
+power = 0
+accuracy = 100
+mp_cost = 14
+priority = 0
+combat_type_id = ""
+power_bonus_source = ""
+targeting = "self"
+effects_on_cast_ids = PackedStringArray("sukuna_reverse_heal")

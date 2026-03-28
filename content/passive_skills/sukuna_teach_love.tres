@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PassiveSkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/passive_skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sukuna_teach_love"
+display_name = "教会你爱的是..."
+trigger_names = PackedStringArray("on_matchup_changed")
+effect_ids = PackedStringArray("sukuna_refresh_love_regen")

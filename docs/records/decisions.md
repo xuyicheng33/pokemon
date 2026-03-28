@@ -7,6 +7,23 @@
 
 - `docs/records/archive/decisions_pre_v0.6.3.md`
 
+## 2026-03-28
+
+### 207. 外层 contract 全量收口到 `public_id`
+- `unit_id` 继续只用于内容定义与队伍构筑；`public_id` 成为玩家输入、AI 输入、合法性列表、公开快照、换人目标与回放输入的唯一外层标识。
+- `LegalActionSet` 对外固定暴露 `actor_public_id / legal_switch_target_public_ids`，不再公开 bench `unit_instance_id`。
+- `actor_id / target_unit_id` 继续保留，但只允许留在核心内部与系统自动动作注入路径中。
+
+### 208. field 提前打断必须发生在补位与新单位 `on_enter` 之前
+- creator 手动换下、被强制换下、倒下或离场后，旧 field 要在 `leave` 完成后立刻执行 `field_break`。
+- 提前打断只执行 `on_break_effect_ids`，不执行 `on_expire_effect_ids`，也不写自然到期日志。
+- 新入场单位、`on_enter`、`on_matchup_changed`、`battle_init` 与回合节点，都不得读取一个按规则已被打断的旧 field。
+
+### 209. 宿傩默认装配与候选技能池语义分离
+- 宿傩默认技能组固定为 `解 / 捌 / 开`，奥义固定为 `伏魔御厨子`，被动固定为“教会你爱的是...”。
+- `反转术式` 保留在内容包中，作为测试与未来配招系统使用的候选技能，不进入默认三技能装配。
+- 若 schema 暂不扩候选技能池字段，这层语义必须继续写死在 README 与内容说明文档里。
+
 ## 2026-03-27
 
 ### 205. `docs/rules/06` 与扩展入口文档不得继续保留已退役 schema 别名
@@ -31,7 +48,7 @@
 
 ### 203. 输入层、公开层与运行时层的单位 ID 口径必须分层
 - `unit_id` 继续专指内容层 `UnitDefinition.id`，只用于队伍构筑和资源引用，不再拿来描述换人目标或补位候选。
-- 外层输入、公开快照与玩家可见目标固定使用 `public_id`；当前 `Command` 推荐由 `actor_public_id / target_public_id` 进入。
+- 外层输入、公开快照与玩家可见目标固定使用 `public_id`；当前 `Command` 默认由 `actor_public_id / target_public_id` 进入。
 - 核心内部的手动换人固化目标、合法 bench 列表和 `ReplacementSelector` 返回值一律使用运行时 `unit_instance_id`。
 
 ### 204. `DamagePayload` 公式伤害口径补齐 `damage_kind`
@@ -173,9 +190,8 @@
 - 同一个 `turn_start` 里新触发的 field / effect / rule_mod，不回头改写本次回复结果。
 
 ### 121. 超时默认动作命名统一
-- 行动类型固定写 `timeout_default`。
-- 触发来源固定写 `timeout_auto`。
-- 不再保留 `timeout_auto_action` 这类并行命名。
+- 历史口径：当时将超时默认动作命名为 `timeout_default / timeout_auto`。
+- 该口径已被决策 193 覆盖；当前现行规则为 `wait / timeout_auto` 或 `resource_forced_default / resource_auto`。
 
 ### 122. 效果系统触发点删到当前最小集
 - 当前基线只保留 `battle_init / turn_start / turn_end / on_cast / on_hit / on_miss / on_enter / on_exit / on_switch / on_faint / on_kill`。
@@ -193,7 +209,7 @@
 
 ### 125. 极简基线终检结论
 - 本轮终检确认：现行规则冲突已收口到可实现状态。
-- 仍保留旧口径的文件仅限 `docs/records/archive/*` 和 `docs/records/battle_system_rules.md`，且都属于历史追溯用途。
+- 历史追溯文件只读 `docs/records/archive/*`；现行实现与评审不再把退役总表当作权威入口。
 
 ## 2026-03-25
 
@@ -222,8 +238,8 @@
 - 因此现行文档不再保留 `action_failed_pre_start`；若以后确实需要“行动到窗口前被拦下”，必须先补明确触发点，再补扣 MP 与日志语义。
 
 ### 127. 换人、强制换下、强制补位的替补选择契约写死
-- 手动换人在选择阶段锁定 bench 目标 `unit_id`，队列锁定后不允许改选。
-- 强制换下与强制补位都不进入行动队列，但仍保留从合法 bench 列表选替补的权利；若只剩 1 名则自动锁定。
+- 历史口径：早期手动换人目标曾写作 `unit_id`。
+- 当前现行规则已被决策 203 与 207 覆盖：外层锁定目标统一使用 `public_id`；系统替补选择接口仍返回内部 `unit_instance_id`。
 
 ### 128. `HP = 0` 的中间态显式命名为 `fainted_pending_leave`
 - 单位一旦 `HP = 0`，立即失去在场资格，并等待当前击倒窗口统一处理离场。
@@ -234,7 +250,8 @@
 - 奥义只是主动技能中的一个受限分支：沿用 `mp_cost / accuracy / targeting / effects_on_cast_ids` 等通用字段，只额外限制 `priority`。
 
 ### 130. 日志空值与自动来源口径统一写死
-- `resource_forced_default` 固定搭配 `command_source = resource_auto`，`timeout_default` 固定搭配 `command_source = timeout_auto`。
+- 历史口径：`resource_forced_default` 固定搭配 `command_source = resource_auto`，`timeout_default` 固定搭配 `command_source = timeout_auto`。
+- 其中 `timeout_default` 已被决策 193 覆盖为 `wait / timeout_auto`。
 - 非适用日志字段统一写 `null`，避免 `0 / 空串 / 省略` 三套口径并存。
 
 ### 131. 首发 `on_enter` 与 `battle_init` 明确分层
@@ -272,7 +289,8 @@
 ### 139. 行动执行起点、payload 顺序与自动动作链归属写死
 - 技能、奥义、两类默认动作的执行起点固定为：`has_acted = true -> 扣 MP -> on_cast -> 命中判定 -> 后续 payload / on_hit / on_miss`。
 - `payloads` 严格按声明顺序执行，后序 payload 读取前序写回的最新运行态。
-- `resource_forced_default` 与 `timeout_default` 进入行动队列后仍属于 `action` 链，不额外发明 `timeout` 链。
+- 历史口径：`resource_forced_default` 与 `timeout_default` 都属于 `action` 链。
+- 当前现行规则已被决策 193 覆盖为：`resource_forced_default` 与 `wait` 都属于 `action` 链，不额外发明 `timeout` 链。
 
 ### 140. 回合节点触发范围统一为“仅在场单位 + field”
 - `turn_start / turn_end` 的回合节点触发只对当前在场单位和全场 field 生效。
@@ -366,7 +384,7 @@
 - 统一错误码为 `invalid_command_payload`，并写 `system:invalid_battle` 日志。
 
 ### 167. 强制换下/强制补位统一走系统替补选择接口
-- 引擎新增 `ReplacementSelector` 注入点：输入战斗态、side、合法候选、原因；输出目标 `unit_id`。
+- 引擎新增 `ReplacementSelector` 注入点：输入战斗态、side、合法候选、原因；输出目标 `unit_instance_id`。
 - 候选数 > 1 时必须调用接口；候选数 = 1 自动锁定。
 - 接口返回空值、非法目标或超时，一律 `invalid_replacement_selection` fail-fast。
 
@@ -475,6 +493,32 @@
 - 完整日志用于可复现校验、问题定位与回归比对，不再描述为“单独可驱动重放”的唯一输入。
 
 ### 191. 当前超阈值文件维持单点实现，暂不拆分（2026-03-27 复核）
-- `src/battle_core/content/battle_content_index.gd`（391 行）：当前承载内容快照加载 + schema 强校验的 fail-fast 入口，拆分时机放在内容 schema 进入稳定期后。
+- `src/battle_core/content/battle_content_index.gd`（430 行）：当前承载内容快照加载 + schema 强校验的 fail-fast 入口，拆分时机放在内容 schema 进入稳定期后。
 - `src/battle_core/effects/rule_mod_service.gd`（292 行）：当前承载实例创建、读取排序、扣减与移除日志的完整闭环，待读取点新增需求明确后再拆 `read/instance` 子服务。
 - `src/battle_core/effects/payload_executor.gd` 已完成子处理器拆分，不再属于当前超阈值文件集合。
+
+### 192. `wait + 领域生命周期 + 数值扩展` 实装期超阈值文件保留（2026-03-27）
+- `src/battle_core/turn/turn_resolution_service.gd`：本轮把 `wait/Struggle` 自动替代、effect 到期触发链、field 自然到期/提前打断顺序统一收口到单协调点，先保留集中实现，后续按“选指解析/领域生命周期/到期执行”拆分。
+- `src/battle_core/turn/battle_initializer.gd`：首发对位稳定判定与 `on_matchup_changed` 启动链路需要紧贴初始化时序，当前保留在 bootstrap coordinator 内，待启动流程稳定后再拆。
+- `src/battle_core/effects/payload_handlers/payload_numeric_handler.gd`：固定属性伤害与百分比治疗属于数值语义同域扩展，先集中在 numeric handler 保障 fail-fast 行为一致，再按 payload 家族拆分。
+
+### 193. `wait` 正式替代 `timeout_default`，默认动作按原因分流
+- 移除 `timeout_default` 行动类型，新增可手动提交的 `wait`。
+- 选指超时时统一先判“是否应强制 `resource_forced_default`”，否则自动提交 `wait` 并写 `command_source = timeout_auto`。
+- `select_timeout` 与 `selection_state.timed_out` 改为按 `command_source == timeout_auto` 判定，避免再依赖具体动作类型名。
+
+### 194. 生命周期扩展冻结：effect 到期后效 + field 自然到期/提前打断分离
+- `effect_definition.on_expire_effect_ids` 在实例到期时先执行，再写 expired 日志并移除实例。
+- field 自然到期顺序冻结为：tick -> `on_expire_effect_ids` -> `field_expire` 日志 -> 清空 `field_rule_mod_instances` 与 `field_state`。
+- field 提前打断（覆盖或 creator 离场/倒下）只执行 `on_break_effect_ids`，随后清空 field 相关运行态。
+
+### 195. 内容 schema 扩展冻结：`on_matchup_changed / stack / none-target / 百分比治疗 / 固定属性伤害`
+- 新增 `on_matchup_changed` 触发点，并以“对位签名变化后触发一次”作为运行时去重口径。
+- `stack` 进入 effect stacking 白名单；`TARGET_NONE` 进入目标白名单用于 `wait`。
+- `HealPayload` 新增 `use_percent/percent`；`DamagePayload` 新增 `combat_type_id`（仅 `use_formula=false` 参与克制）。
+- `FieldDefinition` 新增 `on_expire_effect_ids/on_break_effect_ids/creator_accuracy_override`，并在校验层收紧范围。
+
+### 196. 回合协调器按子域拆分，恢复常规尺寸约束（2026-03-28）
+- `src/battle_core/turn/turn_resolution_service.gd` 已拆出 `turn_selection_resolver.gd` 与 `turn_field_lifecycle_service.gd`，主协调器只保留 MP 回复、effect/rule_mod 扣减与系统批次终止处理。
+- `src/battle_core/turn/battle_initializer.gd` 已清理未使用依赖，当前行数回落到常规阈值内，同时保留 `on_enter -> on_matchup_changed -> battle_init` 的启动时序。
+- 架构闸门不再对白名单豁免 `turn_resolution_service.gd` 与 `battle_initializer.gd`。

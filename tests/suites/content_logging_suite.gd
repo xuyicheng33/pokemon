@@ -324,6 +324,28 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
     ultimate_duplicate_unit.ultimate_skill_id = "ultimate_bad_priority"
     content_index.register_resource(ultimate_duplicate_unit)
 
+    var invalid_dynamic_formula_payload = RuleModPayloadScript.new()
+    invalid_dynamic_formula_payload.payload_type = "rule_mod"
+    invalid_dynamic_formula_payload.mod_kind = "mp_regen"
+    invalid_dynamic_formula_payload.mod_op = "set"
+    invalid_dynamic_formula_payload.value = 0
+    invalid_dynamic_formula_payload.scope = "self"
+    invalid_dynamic_formula_payload.duration_mode = "turns"
+    invalid_dynamic_formula_payload.duration = 1
+    invalid_dynamic_formula_payload.decrement_on = "turn_start"
+    invalid_dynamic_formula_payload.stacking = "replace"
+    invalid_dynamic_formula_payload.dynamic_value_formula = ContentSchemaScript.RULE_MOD_VALUE_FORMULA_MATCHUP_BST_GAP_BAND
+    invalid_dynamic_formula_payload.dynamic_value_thresholds = PackedInt32Array([20, 10])
+    invalid_dynamic_formula_payload.dynamic_value_outputs = PackedFloat32Array([5.0])
+    var invalid_dynamic_formula_effect = EffectDefinitionScript.new()
+    invalid_dynamic_formula_effect.id = "invalid_dynamic_formula_effect"
+    invalid_dynamic_formula_effect.display_name = "Invalid Dynamic Formula Effect"
+    invalid_dynamic_formula_effect.scope = "self"
+    invalid_dynamic_formula_effect.trigger_names = PackedStringArray(["on_cast"])
+    invalid_dynamic_formula_effect.payloads.clear()
+    invalid_dynamic_formula_effect.payloads.append(invalid_dynamic_formula_payload)
+    content_index.register_resource(invalid_dynamic_formula_effect)
+
     var snapshot_errors: Array = content_index.validate_snapshot()
     if snapshot_errors.is_empty():
         return harness.fail_result("new content constraints should report validation failures")
@@ -332,6 +354,7 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
     var has_ultimate_priority_error: bool = false
     var has_slot_error: bool = false
     var has_ultimate_in_regular_error: bool = false
+    var has_dynamic_formula_error: bool = false
     for error_msg in snapshot_errors:
         var msg = str(error_msg)
         if msg.find("used in unit.skill_ids must have priority in -2..2") != -1:
@@ -342,7 +365,9 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
             has_slot_error = true
         if msg.find("used as ultimate must not appear in any unit.skill_ids") != -1:
             has_ultimate_in_regular_error = true
-    if not (has_regular_priority_error and has_ultimate_priority_error and has_slot_error and has_ultimate_in_regular_error):
+        if msg.find("dynamic_value_thresholds/dynamic_value_outputs size mismatch") != -1 or msg.find("dynamic_value_thresholds must be strictly ascending") != -1:
+            has_dynamic_formula_error = true
+    if not (has_regular_priority_error and has_ultimate_priority_error and has_slot_error and has_ultimate_in_regular_error and has_dynamic_formula_error):
         return harness.fail_result("new content validation constraints missing expected failures")
 
     var sample_factory = harness.build_sample_factory()

@@ -107,6 +107,13 @@ func resolve_faint_window(battle_state, content_index):
             return on_exit_invalid_code
         for fainted_unit in fainted_units:
             leave_service.leave_unit(battle_state, fainted_unit, "faint", content_index)
+        var field_break_invalid_code = field_service.break_field_if_creator_inactive(
+            battle_state,
+            content_index,
+            battle_state.chain_context
+        )
+        if field_break_invalid_code != null:
+            return field_break_invalid_code
         _clear_fatal_damage_records(battle_state, fainted_unit_ids)
 
     var entered_unit_ids: Array = []

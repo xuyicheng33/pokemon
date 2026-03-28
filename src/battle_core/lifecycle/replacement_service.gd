@@ -11,6 +11,7 @@ var log_event_builder
 var replacement_selector
 var leave_service
 var trigger_batch_runner
+var field_service
 
 func resolve_replacement(battle_state, side_state, reason: String) -> Dictionary:
     var legal_bench_ids := _collect_legal_bench_ids(battle_state, side_state)
@@ -85,6 +86,13 @@ func execute_forced_replace(battle_state, content_index, target_unit_id: String,
 
     side_state.bench_order.append(target_unit.unit_instance_id)
     leave_service.leave_unit(battle_state, target_unit, "forced_replace", content_index)
+    var field_break_invalid_code = field_service.break_field_if_creator_inactive(
+        battle_state,
+        content_index,
+        battle_state.chain_context
+    )
+    if field_break_invalid_code != null:
+        return {"replaced": false, "entered_unit": null, "invalid_code": field_break_invalid_code}
     var entered_unit = _enter_replacement(battle_state, side_state, active_slot_id, selected_unit_id)
     if entered_unit == null:
         return {"replaced": false, "entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_REPLACEMENT_SELECTION}

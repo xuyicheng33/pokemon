@@ -1,0 +1,18 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sukuna_fukuma_mizushi"
+display_name = "伏魔御厨子"
+damage_kind = "special"
+power = 68
+accuracy = 100
+mp_cost = 50
+priority = 5
+combat_type_id = "demon"
+power_bonus_source = ""
+targeting = "enemy_active_slot"
+effects_on_cast_ids = PackedStringArray("sukuna_domain_cast_buff")
+effects_on_hit_ids = PackedStringArray("sukuna_apply_domain_field")

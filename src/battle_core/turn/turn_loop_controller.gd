@@ -37,6 +37,10 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     turn_resolution_service.apply_turn_start_regen(battle_state)
     if turn_resolution_service.execute_system_trigger_batch("turn_start", battle_state, content_index):
         return
+    if turn_resolution_service.break_field_if_creator_inactive(battle_state, content_index):
+        return
+    if turn_resolution_service.execute_matchup_changed_if_needed(battle_state, content_index):
+        return
     turn_resolution_service.decrement_effect_instances_and_log(
         battle_state,
         content_index,
@@ -70,6 +74,10 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
         if faint_invalid_code != null:
             battle_result_service.terminate_invalid_battle(battle_state, str(faint_invalid_code))
             return
+        if turn_resolution_service.break_field_if_creator_inactive(battle_state, content_index):
+            return
+        if turn_resolution_service.execute_matchup_changed_if_needed(battle_state, content_index):
+            return
         if battle_result_service.resolve_standard_victory(battle_state):
             return
 
@@ -77,7 +85,7 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     battle_state.chain_context = battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_END)
     if turn_resolution_service.execute_system_trigger_batch("turn_end", battle_state, content_index):
         return
-    var field_change = turn_resolution_service.apply_turn_end_field_tick(battle_state)
+    var field_change = turn_resolution_service.apply_turn_end_field_tick(battle_state, content_index)
     turn_resolution_service.decrement_effect_instances_and_log(
         battle_state,
         content_index,
@@ -98,6 +106,10 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     var turn_end_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
     if turn_end_faint_invalid_code != null:
         battle_result_service.terminate_invalid_battle(battle_state, str(turn_end_faint_invalid_code))
+        return
+    if turn_resolution_service.break_field_if_creator_inactive(battle_state, content_index):
+        return
+    if turn_resolution_service.execute_matchup_changed_if_needed(battle_state, content_index):
         return
     if _validate_runtime_or_terminate(battle_state):
         return

@@ -1,0 +1,124 @@
+extends RefCounted
+class_name TurnFieldLifecycleService
+
+const EventTypesScript := preload("res://src/shared/event_types.gd")
+const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
+const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
+
+var field_service
+var trigger_batch_runner
+var battle_logger
+var log_event_builder
+var battle_result_service
+
+func resolve_missing_dependency() -> String:
+    if field_service == null:
+        return "field_service"
+    if trigger_batch_runner == null:
+        return "trigger_batch_runner"
+    if battle_logger == null:
+        return "battle_logger"
+    if log_event_builder == null:
+        return "log_event_builder"
+    if battle_result_service == null:
+        return "battle_result_service"
+    return ""
+
+func collect_active_unit_ids(battle_state) -> Array:
+    var owner_ids: Array = []
+    for side_state in battle_state.sides:
+        var active_unit = side_state.get_active_unit()
+        if active_unit != null and active_unit.current_hp > 0:
+            owner_ids.append(active_unit.unit_instance_id)
+    return owner_ids
+
+func execute_matchup_changed_if_needed(battle_state, content_index) -> bool:
+    var signature: String = field_service.build_matchup_signature(battle_state)
+    if signature.is_empty() or signature == battle_state.last_matchup_signature:
+        return false
+    var invalid_code = trigger_batch_runner.execute_trigger_batch(
+        "on_matchup_changed",
+        battle_state,
+        content_index,
+        collect_active_unit_ids(battle_state),
+        battle_state.chain_context
+    )
+    if invalid_code != null:
+        battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
+        return true
+    battle_state.last_matchup_signature = signature
+    return false
+
+func break_field_if_creator_inactive(battle_state, content_index) -> bool:
+    var invalid_code = field_service.break_field_if_creator_inactive(
+        battle_state,
+        content_index,
+        battle_state.chain_context
+    )
+    if invalid_code == null:
+        return false
+    battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
+    return true
+
+func break_active_field(battle_state, content_index, trigger_name: String) -> bool:
+    var invalid_code = field_service.break_active_field(
+        battle_state,
+        content_index,
+        trigger_name,
+        battle_state.chain_context
+    )
+    if invalid_code == null:
+        return false
+    battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
+    return true
+
+func apply_turn_end_field_tick(battle_state, content_index):
+    if battle_state.field_state == null:
+        return null
+    var current_field_state = battle_state.field_state
+    var field_definition = field_service.get_field_definition_for_state(current_field_state, content_index)
+    var field_change = FieldChangeScript.new()
+    field_change.change_kind = "tick"
+    field_change.before_field_id = current_field_state.field_def_id
+    field_change.before_remaining_turns = current_field_state.remaining_turns
+    var expired: bool = field_service.tick_turn_end(current_field_state)
+    field_change.after_field_id = current_field_state.field_def_id if not expired else null
+    field_change.after_remaining_turns = current_field_state.remaining_turns if not expired else 0
+    if not expired:
+        return field_change
+    if field_definition != null and not field_definition.on_expire_effect_ids.is_empty():
+        var expire_events: Array = field_service.collect_lifecycle_effect_events(
+            "field_expire",
+            current_field_state,
+            field_definition.on_expire_effect_ids,
+            battle_state,
+            content_index,
+            battle_state.chain_context
+        )
+        if not expire_events.is_empty():
+            var expire_invalid_code = trigger_batch_runner.execute_trigger_batch(
+                "__field_expire__",
+                battle_state,
+                content_index,
+                [],
+                battle_state.chain_context,
+                expire_events
+            )
+            if expire_invalid_code != null:
+                battle_result_service.terminate_invalid_battle(battle_state, str(expire_invalid_code))
+                return field_change
+    var log_event = log_event_builder.build_event(
+        EventTypesScript.EFFECT_FIELD_EXPIRE,
+        battle_state,
+        {
+            "source_instance_id": current_field_state.instance_id,
+            "trigger_name": "turn_end",
+            "field_change": field_change,
+            "payload_summary": "field expired",
+        }
+    )
+    log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
+    battle_logger.append_event(log_event)
+    battle_state.field_rule_mod_instances.clear()
+    battle_state.field_state = null
+    return field_change

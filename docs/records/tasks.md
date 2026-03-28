@@ -418,7 +418,7 @@
 |---|---|
 |编译健康（headless 脚本加载）|通过：`godot --headless --path . --script tests/run_all.gd`，0 个 `SCRIPT ERROR`|
 |回放确定性（同输入哈希一致）|通过：`PASS deterministic_replay`|
-|默认动作链（`timeout_default` / `resource_forced_default`）|通过：`PASS timeout_default_path` + `PASS resource_forced_default_path`|
+|默认动作链（历史回归名：`timeout_default` / `resource_forced_default`，现已被 `wait / resource_forced_default` 覆盖）|通过：`PASS timeout_default_path` + `PASS resource_forced_default_path`|
 |初始化时序（`on_enter` -> 击倒窗口 -> `battle_init`）|通过：`PASS init_chain_order`|
 |回合节点范围（仅 active + field）|通过：`PASS turn_scope_active_and_field`|
 |生命周期（倒下窗口、补位、`on_faint/on_kill/on_exit/on_enter`）|通过：`PASS lifecycle_faint_replace_chain`|
@@ -542,7 +542,7 @@
 - 补齐手动换人、强制换下、强制补位的替补选择规则，写死锁定时机、自动锁定条件与非法运行态处理。
 - 为 `HP = 0` 增加 `fainted_pending_leave` 中间态，明确它在击倒窗口前就已失去在场资格，不再接受普通 payload。
 - 把超时比较的 HP 占比公式补成唯一口径：倒下单位按 `current_hp = 0` 计入，全队 `max_hp` 总和固定作分母。
-- 补齐日志空值策略和自动来源命名：`resource_forced_default / resource_auto`、`timeout_default / timeout_auto`，非适用字段统一写 `null`。
+- 历史口径：当时补齐的自动来源命名包含 `timeout_default / timeout_auto`；该口径已在后续被 `wait / timeout_auto` 覆盖。
 - 拆清首发 `on_enter` 与 `battle_init` 的先后与职责，避免同一份效果双触发。
 - 继续收紧模块 06：移除 `scope = side` 的现行保留位，删除 `custom targeting` 的现行保留位，并限制 `rule_mod` 不能改写核心流程。
 - 同步更新 `docs/records/decisions.md`，把本轮收口原则落盘。
@@ -621,7 +621,7 @@
 #### 已完成内容
 - 把持续效果持续模型统一收紧为“按回合 / 永久”两种，移除“按触发次数”这类未落地模型口子。
 - 写死 `turn_start` MP 回复读取“本回合开始前已生效状态”，同节点新触发的 field / effect / rule_mod 不回头改写本次回复。
-- 把超时默认动作命名统一为 `command_type = timeout_default`、`command_source = timeout_auto`。
+- 历史口径：当时把超时默认动作命名统一为 `command_type = timeout_default`、`command_source = timeout_auto`；现行规则已改为 `wait / timeout_auto`。
 - 补齐 `source_instance_id` 的最小生成口径，并要求进入完整日志。
 - 明确模块 06 是“当前最小效果框架 + 扩展纪律”，不是首版一次性全做完的清单。
 
@@ -634,7 +634,7 @@
 - `duration_mode` 是否仍只允许 `turns / permanent`。
 - 模块 04 与模块 06 对持续时间描述是否一致。
 - `turn_start` MP 回复是否只读取本回合开始前已经生效的状态。
-- `timeout_default / timeout_auto` 是否已替代 `timeout_auto_action`。
+- 历史检查点：当时确认 `timeout_default / timeout_auto` 已替代 `timeout_auto_action`；现行规则继续以 `wait / timeout_auto` 为准。
 - `source_instance_id` 是否同时出现在排序口径与完整日志口径里。
 
 ### 未用触发点清理（已完成：v0.7.0 极简触发点补丁）
@@ -702,3 +702,65 @@
 - `result:battle_end` 在 `turn_start` 终局路径上必须继承 `system:turn_start / turn_start`。
 - `system:turn_limit` 与它收尾的 `result:battle_end` 必须归入 `turn_end`。
 - 内容快照若出现重复 ID、非法 `accuracy/mp_cost`、非法 `resource_key/stat_name`，必须在加载期直接失败。
+
+## 2026-03-27
+
+### 宿傩准入与核心机制扩展（已完成）
+- 目标：落地 `wait + Struggle` 分流、领域生命周期拆分、effect 到期后效、内容 schema 扩展，并接入默认装配版宿傩内容包。
+- 范围：`battle_core` 指令/合法性/执行/生命周期链路、内容定义与校验、宿傩资源、测试迁移、规则与设计文档同步。
+- 验收标准：`tests/run_with_gate.sh` 全绿；规则文档口径不再出现 `timeout_default`；宿傩回归用例可通过。
+
+#### 已完成内容
+- 指令层：新增 `wait`，移除 `timeout_default`；`wait_allowed` 接入 legal set；超时自动行为切到 `wait(timeout_auto)` 或 `resource_forced_default`。
+- 执行层：`wait` 仅产生日志 cast，不走命中/伤害/recoil/effect；默认动作专属 recoil 仅保留给 `resource_forced_default`。
+- 生命周期：effect 到期后效先执行后移除；field 自然到期与提前打断分别走 `on_expire_effect_ids` / `on_break_effect_ids`。
+- 命中与数值：领域 creator 命中覆盖、`power_bonus_source = mp_diff_clamped`、固定属性伤害克制、百分比治疗。
+- 触发扩展：新增 `on_matchup_changed` 与对位签名去重触发。
+- 内容接入：新增 `sukuna` 单位、`解/捌/开/反转术式/伏魔御厨子`、灶/领域/被动相关资源。
+- 测试迁移：新增 `timeout_wait_path / wait_allowed_non_mp_blocked_path / manual_wait_no_damage_path / sukuna_content_pack_smoke / on_matchup_changed_dedup_path` 等回归。
+
+#### 最小可玩性检查清单
+- 可启动：宿傩资源可加载，回放与会话模式可正常创建战斗。
+- 可操作：`wait` 可手动与超时自动触发；领域与灶可按生命周期结算。
+- 无致命错误：规则闸门与架构闸门均通过。
+
+#### 回归检查要点
+- `tests/run_with_gate.sh` 必须全绿。
+- 无合法动作且全 MP 不足时必须强制 `resource_forced_default`；非 MP 阻断场景超时必须自动 `wait`。
+- `select_timeout` 必须由 `command_source = timeout_auto` 驱动。
+- `damage_payload_fixed_type_resolution` 与 `heal_payload_percent_resolution` 必须通过。
+
+## 2026-03-28
+
+### 规则收口与架构对齐（已完成）
+- 目标：把外层 ID contract、field 生命周期时序、宿傩内容口径与 README / rules / design / records / tests 一次性收口。
+- 范围：`LegalActionSet` 与选择适配层改用 `public_id`、field 提前打断下沉到共享服务并接入手动换人/强制换下/击倒补位、宿傩默认装配与候选技能池文档化、records 历史口径覆盖标注。
+- 验收标准：完整闸门全绿；合法性接口与适配层不再暴露 bench `unit_instance_id`；creator 离场时 field 必须先打断再补位/入场；README 与规则文档只保留一套现行口径。
+
+#### 已完成内容
+- contract：`LegalActionSet` 已切换为 `actor_public_id / legal_switch_target_public_ids`，`BattleAIAdapter / PlayerSelectionAdapter` 已切到 `target_public_id`。
+- validator：外层默认输入继续走 `actor_public_id / target_public_id`，内部 `actor_id / target_unit_id` 仍保留给系统自动动作，并在校验时回填对应 `public_id`。
+- lifecycle：field 提前打断逻辑下沉到 `FieldService`，并接入手动换人、强制换下、击倒窗口与 field 覆盖链，保证 `field_break` 发生在 `replace / on_enter` 之前。
+- tests：新增手动换人 / 强制换下 / 击倒补位 field 提前打断回归、`public_id` facade 契约回归、适配层 `public_id` 回归、宿傩默认装配回归。
+- docs：README、`docs/rules`、`docs/design`、`content/README.md` 与 records 已同步到最终口径。
+
+#### 回归检查要点
+- `tests/run_with_gate.sh` 必须全绿。
+- creator 离场后，旧 field 不得再影响替补入场链与 `on_enter`。
+- manager/adapter 层不得再把 bench `unit_instance_id` 暴露给外层。
+- 宿傩默认装配快照必须保持 `解 / 捌 / 开`，`反转术式` 只作为候选技能保留。
+
+### 宿傩收口与回合协调器瘦身（已完成）
+- 目标：把宿傩内容包、README/规则/设计文档与当前实现重新对齐，并消掉 `turn_resolution_service / battle_initializer` 的临时超阈值豁免。
+- 范围：宿傩 `灶` 持续配置、宿傩回归、turn 子域拆分、首页与 schema 文档同步、架构闸门更新。
+- 验收标准：`tests/run_all.gd` 与 `tests/check_architecture_constraints.sh` 全绿；README 和 `docs/rules / docs/design` 不再保留旧口径。
+
+#### 已完成内容
+- 宿傩：`灶` 调整为可支撑“双层挂灶后下一回合离场同时触发”的持续时长，并补了“两层都在场”的回归断言。
+- 回合层：新增 `turn_selection_resolver.gd` 与 `turn_field_lifecycle_service.gd`，把选指分流、field 生命周期和 `on_matchup_changed` 从 `turn_resolution_service.gd` 中拆出。
+- 初始化层：`battle_initializer.gd` 清掉未使用依赖，保留清晰的启动链。
+- 文档层：更新 README、内容说明、effect/schema/turn 文档，补齐 `stack / on_matchup_changed / creator_accuracy_override / dynamic rule_mod value` 口径。
+
+#### 回归检查要点
+- `sukuna_kamado_stack_on_exit_path` 必须稳定通过，且中途断言为“场上有两层灶”。
+- `tests/check_architecture_constraints.sh` 不再允许 `turn_resolution_service.gd` 与 `battle_initializer.gd` 走超阈值豁免。

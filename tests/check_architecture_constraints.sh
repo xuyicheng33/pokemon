@@ -29,6 +29,7 @@ root = Path(".")
 allowlisted_reviews = {
     "src/battle_core/content/battle_content_index.gd": "content registry/validator remains centralized in prototype stage",
     "src/battle_core/effects/rule_mod_service.gd": "rule_mod stacking schema migration is centralized in one service",
+    "src/battle_core/effects/payload_handlers/payload_numeric_handler.gd": "numeric payload semantics (typed fixed damage + percent heal) remain consolidated for fail-fast validation",
 }
 
 decisions_text = (root / "docs/records/decisions.md").read_text(encoding="utf-8")

@@ -41,7 +41,7 @@ func _resolve_priority(command, battle_state, content_index) -> int:
     match command.command_type:
         CommandTypesScript.SWITCH:
             return 4
-        CommandTypesScript.RESOURCE_FORCED_DEFAULT, CommandTypesScript.TIMEOUT_DEFAULT:
+        CommandTypesScript.RESOURCE_FORCED_DEFAULT, CommandTypesScript.WAIT:
             return 0
         CommandTypesScript.SKILL, CommandTypesScript.ULTIMATE:
             var skill_definition = content_index.skills.get(command.skill_id)
@@ -63,7 +63,10 @@ func _build_target_snapshot(command, battle_state, content_index):
             target_snapshot.target_kind = "bench_unit"
             target_snapshot.target_unit_id = command.target_unit_id
             return target_snapshot
-        CommandTypesScript.RESOURCE_FORCED_DEFAULT, CommandTypesScript.TIMEOUT_DEFAULT:
+        CommandTypesScript.WAIT:
+            target_snapshot.target_kind = ContentSchemaScript.TARGET_NONE
+            return target_snapshot
+        CommandTypesScript.RESOURCE_FORCED_DEFAULT:
             target_snapshot.target_kind = ContentSchemaScript.TARGET_ENEMY_ACTIVE
             target_snapshot.target_slot = ContentSchemaScript.ACTIVE_SLOT_PRIMARY
         CommandTypesScript.SKILL, CommandTypesScript.ULTIMATE:

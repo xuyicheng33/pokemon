@@ -41,6 +41,7 @@
 |覆盖规则|新 field 成功生效后，直接替换旧 field|
 |持续方式|按回合计时|
 |具体效果|必须写在技能或效果描述里，不靠口头解释|
+|命中覆盖|可通过 `creator_accuracy_override` 只覆盖 field creator 的技能命中；`-1` 表示不覆盖|
 
 补充规则：
 
@@ -59,6 +60,14 @@
 |剩余回合扣减|固定在 `turn_end` 效果全部结算完成后；`remaining <= 0` 时立即移除|
 |剩余回合起算|field 生效后，遇到的第一个 `turn_end` 结算节点即为首次扣减点；若本回合 `turn_end` 尚未执行，则本回合末立即扣减|
 |field 到期|在约定节点移除，并写日志|
+|field 提前打断|creator 离场/倒下或被新 field 覆盖时立即打断；只执行 `on_break_effect_ids`，不写自然到期日志|
+
+补充规则：
+
+1. field 自然到期顺序固定为：`tick -> on_expire_effect_ids -> effect:field_expire -> 清空 field 运行态`。
+2. field 提前打断不会触发 `effect:field_expire`，也不会执行 `on_expire_effect_ids`。
+3. creator 离场、倒下、被强制换下或手动换下时，`field_break` 必须发生在补位与新单位 `on_enter` 之前。
+4. 新入场单位、`on_enter`、`on_matchup_changed`、`battle_init` 与回合节点，都不得读取一个按规则已被提前打断的旧 field。
 
 ## 3. 统一效果排序
 
@@ -106,13 +115,23 @@
 
 ## 4. AI 读取边界
 
+### 4.1 对外 ID 契约
+
+|项|规则|
+|---|---|
+|`unit_id`|只用于内容定义与队伍构筑|
+|`public_id`|玩家输入、AI 输入、合法性列表、公开快照、换人目标、回放输入的唯一外层标识|
+|`unit_instance_id`|只允许留在核心内部运行态、内部日志归因、内部排序与系统自动动作中|
+|`LegalActionSet`|对外固定暴露 `actor_public_id / legal_skill_ids / legal_switch_target_public_ids / legal_ultimate_ids / wait_allowed / forced_command_type`|
+|外层 `Command`|默认只提交 `actor_public_id / target_public_id`；`actor_id / target_unit_id` 仅保留给核心内部或系统自动注入路径|
+
 |项|规则|
 |---|---|
 |AI 可读取|所有公开信息、当前战场状态、己方运行态|
 |AI 禁止读取|内部随机值、未来未发生的抽样结果、仅供调试的缓存|
 |合法性职责|引擎先完成合法性判断：要么给出可选的技能 / 手动换人 / 奥义列表，要么直接替代为默认动作；AI 只从可执行结果中选一个|
-|空列表处理|当前不把“空合法列表”交给 AI；若技能、手动换人、奥义都不合法，引擎在选择阶段直接生成 `resource_forced_default`|
-|超时处理|AI 若在截止时间前未返回，引擎直接走 `timeout_default`|
+|空列表处理|若技能、手动换人、奥义都不合法：仅在“全部仅因 MP 不足”时强制 `resource_forced_default`；存在任一非 MP 阻断时允许 `wait`|
+|超时处理|AI 若在截止时间前未返回：当前应强制 Struggle 则走 `resource_forced_default`；否则走 `wait`（`command_source = timeout_auto`）|
 
 ## 5. 战斗日志
 
@@ -136,7 +155,7 @@
 |`action_queue_index`|当前根行动在本回合队列中的执行序位；非行动系统链为 `null`|
 |`actor_id`|当前根行动的行动者；非行动系统链为 `null`|
 |`source_instance_id`|当前触发源的稳定实例 ID；纯行动日志可与 `action_id` 相同|
-|`command_type`|当前根链的动作类型：技能 / 换人 / 奥义 / `resource_forced_default` / `timeout_default` / `system:*`（含 `system:battle_header`）|
+|`command_type`|当前根链的动作类型：技能 / 换人 / 奥义 / `wait` / `resource_forced_default` / `system:*`（含 `system:battle_header`）|
 |`command_source`|当前根链的指令来源：`manual / ai / resource_auto / timeout_auto / system`|
 |`priority`|本次行动或效果使用的优先级|
 |`target_slot`|目标位置|
@@ -162,9 +181,9 @@
 |`target_slot`|无直接目标时写 `null`|
 |`speed_tie_roll / hit_roll / effect_roll`|本事件未消费对应 RNG 时写 `null`|
 |资源型默认动作|固定写 `command_type = resource_forced_default`、`command_source = resource_auto`|
-|超时型默认动作|固定写 `command_type = timeout_default`、`command_source = timeout_auto`|
+|超时替代等待|固定写 `command_type = wait`、`command_source = timeout_auto`|
 |`command_type / command_source`|非行动系统链固定写 `system:*` 与 `system`，例如 `system:battle_header`、`system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
-|`select_timeout`|`timeout_default` 所属整条行动链都写 `true`；其他行动链写 `false`；非行动系统链写 `null`|
+|`select_timeout`|`command_source = timeout_auto` 的整条行动链写 `true`；其他行动链写 `false`；非行动系统链写 `null`|
 |`select_deadline_ms`|整条行动链都写本回合截止时间；非行动系统链写 `null`|
 |`header_snapshot`|仅 `system:battle_header` 事件写入；其余事件写 `null`；且字段内禁止出现私有实例 ID（如 `unit_instance_id`）|
 |`trigger_name / cause_event_id / killer_id`|effect 事件必须填 `trigger_name / cause_event_id`；系统锚点事件（如 `system:battle_init / system:turn_start / system:turn_end`）允许填写对应节点名作为 `trigger_name`；其他非 effect 事件 `cause_event_id` 写 `null`；`killer_id` 没有归属则写 `null`|
@@ -220,6 +239,6 @@
 3. field 始终只有 1 个生效实例，新 field 会替换旧 field。
 4. 效果排序统一走 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`。
 5. AI 不会自己死循环试指令，而是从引擎给出的合法列表里选。
-6. `resource_forced_default / resource_auto / timeout_default / timeout_auto` 命名在规则和日志里只有这一套口径。
+6. `resource_forced_default / resource_auto / wait / timeout_auto` 命名在规则和日志里只有这一套口径。
 7. 非适用日志字段一律写 `null`，不会混用 `0` 或省略。
 8. 完整日志能还原命中、同速打平、field 替换、触发源实例与每次随机消费。

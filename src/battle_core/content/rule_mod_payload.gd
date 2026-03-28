@@ -10,3 +10,7 @@ class_name RuleModPayload
 @export var decrement_on: String = ""
 @export var stacking: String = "none"
 @export var priority: int = 0
+@export var dynamic_value_formula: String = ""
+@export var dynamic_value_thresholds: PackedInt32Array = PackedInt32Array()
+@export var dynamic_value_outputs: PackedFloat32Array = PackedFloat32Array()
+@export var dynamic_value_default: float = 0.0

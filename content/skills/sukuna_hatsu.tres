@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sukuna_hatsu"
+display_name = "捌"
+damage_kind = "special"
+power = 46
+accuracy = 95
+mp_cost = 18
+priority = -1
+combat_type_id = ""
+power_bonus_source = "mp_diff_clamped"
+targeting = "enemy_active_slot"

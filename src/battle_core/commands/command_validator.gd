@@ -29,8 +29,8 @@ func validate_command(command, battle_state, content_index) -> bool:
             if command.command_source != "resource_auto":
                 return false
             return true
-        CommandTypesScript.TIMEOUT_DEFAULT:
-            return command.command_source == "timeout_auto"
+        CommandTypesScript.WAIT:
+            return command.command_source == "manual" or command.command_source == "timeout_auto"
         CommandTypesScript.SURRENDER:
             return true
         _:
@@ -42,11 +42,21 @@ func _resolve_runtime_ids(command, battle_state) -> bool:
         if actor_unit == null:
             return false
         command.actor_id = actor_unit.unit_instance_id
+    elif not command.actor_id.is_empty():
+        var runtime_actor = battle_state.get_unit(command.actor_id)
+        if runtime_actor == null:
+            return false
+        command.actor_public_id = runtime_actor.public_id
     if not command.target_public_id.is_empty():
         var target_unit = battle_state.get_unit_by_public_id(command.target_public_id)
         if target_unit == null:
             return false
         command.target_unit_id = target_unit.unit_instance_id
+    elif not command.target_unit_id.is_empty():
+        var runtime_target = battle_state.get_unit(command.target_unit_id)
+        if runtime_target == null:
+            return false
+        command.target_public_id = runtime_target.public_id
     return true
 
 func _validate_skill(command, active_unit, content_index, require_ultimate: bool) -> bool:

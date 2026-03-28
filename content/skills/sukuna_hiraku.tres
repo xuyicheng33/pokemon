@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sukuna_hiraku"
+display_name = "开"
+damage_kind = "special"
+power = 48
+accuracy = 90
+mp_cost = 22
+priority = -2
+combat_type_id = "fire"
+power_bonus_source = ""
+targeting = "enemy_active_slot"
+effects_on_hit_ids = PackedStringArray("sukuna_apply_kamado")

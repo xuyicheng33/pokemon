@@ -10,6 +10,8 @@ var battle_initializer
 var action_queue_builder
 var turn_loop_controller
 var turn_resolution_service
+var turn_selection_resolver
+var turn_field_lifecycle_service
 var battle_result_service
 var runtime_guard_service
 var action_executor
@@ -36,6 +38,7 @@ var payload_forced_replace_handler
 var effect_instance_service
 var effect_instance_dispatcher
 var rule_mod_service
+var rule_mod_value_resolver
 var passive_skill_service
 var passive_item_service
 var field_service
@@ -68,6 +71,7 @@ func dispose() -> void:
         switch_action_service.leave_service = null
         switch_action_service.action_cast_service = null
         switch_action_service.action_log_service = null
+        switch_action_service.field_service = null
     if action_log_service != null:
         action_log_service.battle_logger = null
         action_log_service.log_event_builder = null
@@ -89,6 +93,8 @@ func dispose() -> void:
         payload_state_handler.id_factory = null
         payload_state_handler.effect_instance_service = null
         payload_state_handler.rule_mod_service = null
+        payload_state_handler.rule_mod_value_resolver = null
+        payload_state_handler.field_service = null
     if payload_forced_replace_handler != null:
         payload_forced_replace_handler.replacement_service = null
     if faint_resolver != null:
@@ -109,12 +115,7 @@ func dispose() -> void:
         battle_initializer.id_factory = null
         battle_initializer.rng_service = null
         battle_initializer.faint_resolver = null
-        battle_initializer.passive_skill_service = null
-        battle_initializer.passive_item_service = null
         battle_initializer.field_service = null
-        battle_initializer.effect_instance_dispatcher = null
-        battle_initializer.effect_queue_service = null
-        battle_initializer.payload_executor = null
         battle_initializer.trigger_batch_runner = null
         battle_initializer.battle_logger = null
         battle_initializer.log_event_builder = null
@@ -130,11 +131,9 @@ func dispose() -> void:
         turn_loop_controller.battle_logger = null
         turn_loop_controller.log_event_builder = null
     if turn_resolution_service != null:
-        turn_resolution_service.legal_action_service = null
-        turn_resolution_service.command_builder = null
-        turn_resolution_service.command_validator = null
+        turn_resolution_service.selection_resolver = null
+        turn_resolution_service.field_lifecycle_service = null
         turn_resolution_service.mp_service = null
-        turn_resolution_service.field_service = null
         turn_resolution_service.trigger_batch_runner = null
         turn_resolution_service.effect_instance_dispatcher = null
         turn_resolution_service.rule_mod_service = null
@@ -142,6 +141,16 @@ func dispose() -> void:
         turn_resolution_service.battle_logger = null
         turn_resolution_service.log_event_builder = null
         turn_resolution_service.battle_result_service = null
+    if turn_selection_resolver != null:
+        turn_selection_resolver.legal_action_service = null
+        turn_selection_resolver.command_builder = null
+        turn_selection_resolver.command_validator = null
+    if turn_field_lifecycle_service != null:
+        turn_field_lifecycle_service.field_service = null
+        turn_field_lifecycle_service.trigger_batch_runner = null
+        turn_field_lifecycle_service.battle_logger = null
+        turn_field_lifecycle_service.log_event_builder = null
+        turn_field_lifecycle_service.battle_result_service = null
     if battle_result_service != null:
         battle_result_service.id_factory = null
         battle_result_service.battle_logger = null
@@ -176,12 +185,15 @@ func dispose() -> void:
         passive_item_service.trigger_dispatcher = null
     if field_service != null:
         field_service.trigger_dispatcher = null
+        field_service.trigger_batch_runner = null
     if effect_instance_service != null:
         effect_instance_service.id_factory = null
     if effect_instance_dispatcher != null:
         effect_instance_dispatcher.id_factory = null
     if rule_mod_service != null:
         rule_mod_service.id_factory = null
+    if rule_mod_value_resolver != null:
+        rule_mod_value_resolver.last_error_code = null
     if leave_service != null:
         leave_service.battle_logger = null
         leave_service.log_event_builder = null
@@ -191,6 +203,7 @@ func dispose() -> void:
         replacement_service.replacement_selector = null
         replacement_service.leave_service = null
         replacement_service.trigger_batch_runner = null
+        replacement_service.field_service = null
 
     id_factory = null
     rng_service = null
@@ -201,6 +214,8 @@ func dispose() -> void:
     action_queue_builder = null
     turn_loop_controller = null
     turn_resolution_service = null
+    turn_selection_resolver = null
+    turn_field_lifecycle_service = null
     battle_result_service = null
     runtime_guard_service = null
     action_executor = null
@@ -227,6 +242,7 @@ func dispose() -> void:
     effect_instance_service = null
     effect_instance_dispatcher = null
     rule_mod_service = null
+    rule_mod_value_resolver = null
     passive_skill_service = null
     passive_item_service = null
     field_service = null

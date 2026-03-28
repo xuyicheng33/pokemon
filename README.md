@@ -9,9 +9,10 @@
 - 阶段：概念/原型期（非发布版）
 - 核心能力：
   - 1v1、每队 3 单位、固定 Lv50
-  - 指令选择、行动排序、命中/伤害、换人、击倒补位
+  - 指令选择、`wait / resource_forced_default` 分流、行动排序、命中/伤害、换人、击倒补位
   - `combat_type` 战斗属性系统（单位 `0..2`、技能 `0..1`、显式克制表）
-  - field、被动技能、被动持有物、受限 rule_mod
+  - `on_matchup_changed`、field 生命周期（自然到期 / 提前打断）、被动技能、被动持有物、受限 rule_mod
+  - 默认装配可直接加载的宿傩原型内容包
   - deterministic 回放（同输入同结果）
   - 完整日志契约（`log_schema_version = 3`）
 - 明确不做：通用状态包、暴击、STAB、属性免疫、主动道具、多目标/双打
@@ -24,9 +25,8 @@
 - 全局基线：`docs/rules/00_rule_baseline.md`
 - 模块规则：`docs/rules/01~06_*.md`
 - 工程设计：`docs/design/*.md`
-- 过程记录：`docs/records/tasks.md`、`docs/records/decisions.md`
 
-说明：`docs/records/archive/` 与 `docs/records/battle_system_rules.md` 仅用于历史追溯，不作为现行实现依据。
+过程记录 `docs/records/tasks.md`、`docs/records/decisions.md` 只记录任务与决策背景，不作为现行规则权威入口。
 
 ## 3. 目录结构
 
@@ -71,10 +71,10 @@ tests/
 - `content`：内容 `Resource` 类型与快照加载校验
 - `contracts`：跨模块强类型契约（`Command`、`LogEvent`、`ReplayInput`...）
 - `commands`：合法性计算、指令构建与校验
-- `turn`：回合编排（`turn_start -> selection -> queue_lock -> execution -> turn_end`）
+- `turn`：回合编排与子域协调（初始化、选指解析、field/对位生命周期、`turn_start -> selection -> queue_lock -> execution -> turn_end`）
 - `actions`：单行动执行与目标解析
 - `math`：纯计算服务（命中、伤害、能力阶段、属性克制）
-- `effects`：触发收集、排序、payload 协调执行、rule_mod
+- `effects`：触发收集、排序、payload 协调执行、effect/rule_mod 实例管理
 - `lifecycle`：离场/倒下/补位链
 - `passives`：被动技能、被动持有物、field 接入
 - `logging`：日志构造、回放、确定性校验
@@ -119,7 +119,21 @@ tests/run_with_gate.sh
 
 其中 `run_replay` 使用临时容器隔离执行，不污染活跃会话池。
 
-## 7. 内容资源最小 Schema
+## 7. 外层 ID 契约
+
+- `unit_id`：只用于内容定义、队伍构筑与资源引用。
+- `public_id`：当前唯一外层输入/输出 ID。玩家输入、AI 输入、合法性列表、公开快照、换人目标、回放输入都只使用它。
+- `unit_instance_id`：只允许留在核心内部运行态、内部日志归因、内部排序和系统自动动作里，不对外暴露。
+
+当前对外稳定 contract 已收口为：
+
+- `LegalActionSet.actor_public_id`
+- `LegalActionSet.legal_switch_target_public_ids`
+- 外层 `Command` 默认提交 `actor_public_id / target_public_id`
+
+`actor_id / target_unit_id` 仍保留，但只用于核心内部与系统自动注入路径。
+
+## 8. 内容资源最小 Schema
 
 主要资源类型：
 
@@ -140,9 +154,19 @@ tests/run_with_gate.sh
 - `combat_type_chart` 使用强类型 `CombatTypeChartEntry` 资源条目，不做代码侧反向推导
 - `combat_type` 与 `damage_kind` 完全独立；缺失 pair 默认 `1.0`
 - `on_receive_effect_ids` 为禁用迁移字段，非空即失败
+- `EffectDefinition.stacking` 已开放 `stack`
+- `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
+- `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`）
 - 普通技能与奥义优先级约束分离校验
 
-## 8. 日志与回放契约
+### 8.1 宿傩默认装配
+
+- 默认技能组：`解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`）
+- 奥义：`伏魔御厨子`
+- 被动：`教会你爱的是...`
+- 候选技能池：`反转术式` 保留在内容包中，允许测试和未来配招系统替换接入，但不属于默认三技能装配
+
+## 9. 日志与回放契约
 
 - `log_schema_version` 固定为 `3`
 - 存在且仅存在 1 条 `system:battle_header`
@@ -151,15 +175,15 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 9. 当前代码规模（2026-03-27）
+## 10. 当前代码规模（2026-03-28）
 
-- `src/**/*.gd`：`6036` 行
-- `tests/**/*.gd`：`3575` 行
-- GDScript 合计：`9611` 行
+- `src/**/*.gd`：`6577` 行
+- `tests/**/*.gd`：`4357` 行
+- GDScript 合计：`10934` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 
-## 10. 后续扩展建议（进入角色设计前）
+## 11. 后续扩展建议（进入角色设计前）
 
 建议按以下顺序推进，避免基础层返工：
 

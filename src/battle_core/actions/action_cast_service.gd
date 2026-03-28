@@ -85,15 +85,20 @@ func resolve_target_instance_id(queued_action, resolved_target):
         return null
     return resolved_target.unit_instance_id
 
-func resolve_hit(command, skill_definition, battle_state) -> Dictionary:
-    if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT or command.command_type == CommandTypesScript.TIMEOUT_DEFAULT:
+func resolve_hit(command, skill_definition, battle_state, content_index) -> Dictionary:
+    if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
         return {"hit": true, "hit_roll": null}
-    var hit_info: Dictionary = hit_service.roll_hit(skill_definition.accuracy, rng_service)
+    var resolved_accuracy: int = int(skill_definition.accuracy)
+    if battle_state.field_state != null and command.actor_id == battle_state.field_state.creator:
+        var field_definition = content_index.fields.get(battle_state.field_state.field_def_id) if content_index != null else null
+        if field_definition != null and int(field_definition.creator_accuracy_override) >= 0:
+            resolved_accuracy = int(field_definition.creator_accuracy_override)
+    var hit_info: Dictionary = hit_service.roll_hit(resolved_accuracy, rng_service)
     battle_state.rng_stream_index = rng_service.get_stream_index()
     return hit_info
 
 func is_damage_action(command, skill_definition) -> bool:
-    if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT or command.command_type == CommandTypesScript.TIMEOUT_DEFAULT:
+    if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
         return true
     return skill_definition != null and skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and skill_definition.power > 0
 
@@ -104,6 +109,7 @@ func apply_direct_damage(queued_action, actor, target, skill_definition, battle_
     var damage_kind: String = ContentSchemaScript.DAMAGE_KIND_PHYSICAL
     if skill_definition != null:
         power = skill_definition.power
+        power += _resolve_power_bonus(skill_definition, actor, target)
         damage_kind = skill_definition.damage_kind
     var attack_value: int = actor.base_attack
     var defense_value: int = target.base_defense
@@ -224,3 +230,10 @@ func _resolve_unit_combat_types(target) -> PackedStringArray:
     if target == null or target.combat_type_ids == null:
         return PackedStringArray()
     return target.combat_type_ids
+
+func _resolve_power_bonus(skill_definition, actor, target) -> int:
+    if skill_definition == null or target == null:
+        return 0
+    if String(skill_definition.power_bonus_source) == "mp_diff_clamped":
+        return max(0, int(actor.current_mp) - int(target.current_mp))
+    return 0
