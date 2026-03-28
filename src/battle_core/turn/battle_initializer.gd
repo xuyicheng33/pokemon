@@ -33,8 +33,6 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     assert(battle_setup.sides.size() == 2, "Current baseline requires exactly 2 sides")
     var setup_errors: Array = content_index.validate_setup(battle_setup)
     assert(setup_errors.is_empty(), "Battle setup validation failed:\n%s" % "\n".join(setup_errors))
-    for side_setup in battle_setup.sides:
-        _validate_side_setup_constraints(side_setup, format_config, content_index)
     battle_logger.reset()
     battle_state.format_id = battle_setup.format_id
     battle_state.visibility_mode = String(format_config.visibility_mode).strip_edges()
@@ -155,13 +153,6 @@ func _build_side_state(side_setup, format_config, content_index):
         else:
             side_state.bench_order.append(unit_state.unit_instance_id)
     return side_state
-
-func _validate_side_setup_constraints(side_setup, format_config, content_index) -> void:
-    assert(side_setup.unit_definition_ids.size() == format_config.team_size, "Side %s must provide exactly %d units" % [side_setup.side_id, format_config.team_size])
-    assert(side_setup.starting_index >= 0 and side_setup.starting_index < side_setup.unit_definition_ids.size(), "Invalid starting index for %s" % side_setup.side_id)
-    for unit_definition_id in side_setup.unit_definition_ids:
-        var unit_definition = content_index.units.get(unit_definition_id)
-        assert(unit_definition != null, "Missing unit definition: %s" % unit_definition_id)
 
 func _resolve_regular_skill_loadout(side_setup, unit_index: int, unit_definition) -> PackedStringArray:
     if side_setup.regular_skill_loadout_overrides.has(unit_index):
