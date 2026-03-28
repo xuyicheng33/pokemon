@@ -33,6 +33,8 @@
 |`max_turn`|`int`|回合上限|
 |`team_size`|`int`|队伍规模|
 |`level`|`int`|固定等级|
+|`selection_deadline_ms`|`int`|每回合选指令截止时间（毫秒）|
+|`max_chain_depth`|`int`|单条触发链允许的最大深度|
 |`combat_type_chart`|`Array[Resource]`|战斗属性克制表，元素类型固定为 `CombatTypeChartEntry`|
 
 ### 3.2 UnitDefinition
@@ -47,6 +49,9 @@
 |`base_sp_attack`|`int`|基础特攻|
 |`base_sp_defense`|`int`|基础特防|
 |`base_speed`|`int`|基础速度|
+|`max_mp`|`int`|MP 上限|
+|`init_mp`|`int`|战斗开始时 MP 初值|
+|`regen_per_turn`|`int`|每回合 MP 回复基值|
 |`combat_type_ids`|`PackedStringArray`|战斗属性列表，允许 `0..2` 个|
 |`skill_ids`|`PackedStringArray`|常规技能列表（固定 3 槽）|
 |`ultimate_skill_id`|`String`|奥义技能 ID（不得出现在 `skill_ids`）|

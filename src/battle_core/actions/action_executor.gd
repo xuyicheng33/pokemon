@@ -103,7 +103,7 @@ func execute_action(queued_action, battle_state, content_index):
         result.result_type = "miss"
         return result
 
-    action_log_service.log_action_hit(
+    var action_hit_cause_event_id: String = action_log_service.log_action_hit(
         queued_action,
         battle_state,
         command,
@@ -111,9 +111,9 @@ func execute_action(queued_action, battle_state, content_index):
         hit_info["hit_roll"]
     )
     if action_cast_service.is_damage_action(command, skill_definition):
-        action_cast_service.apply_direct_damage(queued_action, actor, resolved_target, skill_definition, battle_state)
+        action_cast_service.apply_direct_damage(queued_action, actor, resolved_target, skill_definition, battle_state, action_hit_cause_event_id)
     if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
-        action_cast_service.apply_default_recoil(queued_action, actor, battle_state)
+        action_cast_service.apply_default_recoil(queued_action, actor, battle_state, action_hit_cause_event_id)
 
     action_cast_service.dispatch_skill_effects(
         skill_definition.effects_on_hit_ids if skill_definition != null else PackedStringArray(),

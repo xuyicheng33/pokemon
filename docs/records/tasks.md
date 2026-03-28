@@ -8,6 +8,35 @@
 
 当前生效规则以 `docs/rules/` 为准。
 
+## 2026-03-28
+
+### 战斗核心强治理收口计划
+- 目标：分 3 个可独立验收的小阶段，一次性收口日志契约漂移、文档事实漂移、候选技能池/赛前配招 contract 缺口，以及仓库一致性闸门缺失问题。
+- 范围：`src/battle_core/**/*`、`src/composition/sample_battle_factory.gd`、`content/units/sukuna.tres`、`README.md`、`content/README.md`、`docs/design/*`、`docs/rules/*`、`docs/records/*`、`tests/**/*`、`tests/*.sh`；按阶段拆分提交并保持工作区干净。
+- 验收标准：阶段一修回 `cause_event_id` 真实因果语义并完成文档收口；阶段二落地候选技能池与赛前常规三技能覆盖 contract；阶段三补齐仓库一致性闸门、记录新基线，并保证每阶段完成后都能提交推送。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|阶段一：日志契约与文档事实收口|已完成|待提交|
+|阶段二：候选技能池与赛前配招 contract 落地|未开始|未提交|
+|阶段三：一致性闸门与总收口|未开始|未提交|
+
+#### 阶段一最小可玩性检查清单
+- 可启动：`godot --headless --path . --script tests/run_all.gd` 通过。
+- 可操作：直接伤害、effect payload、turn_start/turn_end 到期链、离场清理都能产出真实上游 `cause_event_id`。
+- 无致命错误：日志 V3 校验已拒绝 “`cause_event_id` 指向自己” 的伪因果链。
+
+#### 阶段一回归检查要点
+- `effect:*` 日志必须带 `trigger_name / cause_event_id`，且 `cause_event_id != 当前事件 ID`。
+- 行动直接伤害/反伤指向 `action:hit`；turn_start 回复、effect/rule_mod 到期、field 自然到期分别指向对应系统锚点；离场清理指向 `state:exit`。
+- `README.md`、`docs/design/log_and_replay_contract.md`、`docs/design/battle_content_schema.md`、`docs/rules/01_battle_format_and_visibility.md`、`docs/rules/05_items_field_ai_and_logging.md` 与当前实现一致。
+- README 代码规模与命令 `find src tests -name '*.gd' | xargs wc -l` 当前输出一致。
+
+#### 阶段一当前验证结果（2026-03-28）
+- `godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+
 ## 2026-03-27
 
 ### 复查问题收口（二次文档同步 + 闸门补强）

@@ -157,6 +157,8 @@ tests/run_with_gate.sh
 - `EffectDefinition.stacking` 已开放 `stack`
 - `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
 - `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`）
+- `BattleFormatConfig` 已包含 `selection_deadline_ms / max_chain_depth`
+- `UnitDefinition` 已包含 `max_mp / init_mp / regen_per_turn`
 - 普通技能与奥义优先级约束分离校验
 
 ### 8.1 宿傩默认装配
@@ -171,15 +173,16 @@ tests/run_with_gate.sh
 - `log_schema_version` 固定为 `3`
 - 存在且仅存在 1 条 `system:battle_header`
 - effect 事件必须具备 `trigger_name / cause_event_id`
+- `cause_event_id` 固定指向真实上游触发事件：直接伤害/反伤指向 `action:hit`，effect payload 指向内部 `effect_event_*`，系统结算到期链指向对应系统锚点
 - 相同 `seed + content snapshot + command stream` 输出稳定哈希
 
 参考：`docs/design/log_and_replay_contract.md`
 
 ## 10. 当前代码规模（2026-03-28）
 
-- `src/**/*.gd`：`6577` 行
-- `tests/**/*.gd`：`4357` 行
-- GDScript 合计：`10934` 行
+- `src/**/*.gd`：`6668` 行
+- `tests/**/*.gd`：`4913` 行
+- GDScript 合计：`11581` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

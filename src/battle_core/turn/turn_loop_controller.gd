@@ -25,7 +25,7 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
 
     battle_state.phase = BattlePhasesScript.TURN_START
     battle_state.chain_context = battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_START)
-    battle_logger.append_event(log_event_builder.build_event(
+    var turn_start_event = log_event_builder.build_event(
         EventTypesScript.SYSTEM_TURN_START,
         battle_state,
         {
@@ -33,8 +33,10 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
             "trigger_name": "turn_start",
             "payload_summary": "turn start",
         }
-    ))
-    turn_resolution_service.apply_turn_start_regen(battle_state)
+    )
+    battle_logger.append_event(turn_start_event)
+    var turn_start_event_id: String = log_event_builder.resolve_event_id(turn_start_event)
+    turn_resolution_service.apply_turn_start_regen(battle_state, turn_start_event_id)
     if turn_resolution_service.execute_system_trigger_batch("turn_start", battle_state, content_index):
         return
     if turn_resolution_service.break_field_if_creator_inactive(battle_state, content_index):
@@ -45,9 +47,10 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
         battle_state,
         content_index,
         "turn_start",
-        turn_resolution_service.collect_active_unit_ids(battle_state)
+        turn_resolution_service.collect_active_unit_ids(battle_state),
+        turn_start_event_id
     )
-    turn_resolution_service.decrement_rule_mods_and_log(battle_state, "turn_start")
+    turn_resolution_service.decrement_rule_mods_and_log(battle_state, "turn_start", turn_start_event_id)
     if battle_result_service.resolve_standard_victory(battle_state):
         return
 
@@ -83,26 +86,30 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
 
     battle_state.phase = BattlePhasesScript.TURN_END
     battle_state.chain_context = battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_END)
-    if turn_resolution_service.execute_system_trigger_batch("turn_end", battle_state, content_index):
-        return
-    var field_change = turn_resolution_service.apply_turn_end_field_tick(battle_state, content_index)
-    turn_resolution_service.decrement_effect_instances_and_log(
-        battle_state,
-        content_index,
-        "turn_end",
-        turn_resolution_service.collect_active_unit_ids(battle_state)
-    )
-    turn_resolution_service.decrement_rule_mods_and_log(battle_state, "turn_end")
-    battle_logger.append_event(log_event_builder.build_event(
+    var turn_end_event = log_event_builder.build_event(
         EventTypesScript.SYSTEM_TURN_END,
         battle_state,
         {
             "source_instance_id": "system:turn_end",
             "trigger_name": "turn_end",
-            "field_change": field_change,
+            "field_change": null,
             "payload_summary": "turn end",
         }
-    ))
+    )
+    battle_logger.append_event(turn_end_event)
+    var turn_end_event_id: String = log_event_builder.resolve_event_id(turn_end_event)
+    if turn_resolution_service.execute_system_trigger_batch("turn_end", battle_state, content_index):
+        return
+    var field_change = turn_resolution_service.apply_turn_end_field_tick(battle_state, content_index, turn_end_event_id)
+    turn_resolution_service.decrement_effect_instances_and_log(
+        battle_state,
+        content_index,
+        "turn_end",
+        turn_resolution_service.collect_active_unit_ids(battle_state),
+        turn_end_event_id
+    )
+    turn_resolution_service.decrement_rule_mods_and_log(battle_state, "turn_end", turn_end_event_id)
+    turn_end_event.field_change = field_change
     var turn_end_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
     if turn_end_faint_invalid_code != null:
         battle_result_service.terminate_invalid_battle(battle_state, str(turn_end_faint_invalid_code))

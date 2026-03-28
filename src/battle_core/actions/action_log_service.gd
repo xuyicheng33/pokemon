@@ -81,8 +81,8 @@ func log_action_miss(queued_action, battle_state, command, target_instance_id: V
         }
     ))
 
-func log_action_hit(queued_action, battle_state, command, target_instance_id: Variant, hit_roll: Variant) -> void:
-    battle_logger.append_event(log_event_builder.build_event(
+func log_action_hit(queued_action, battle_state, command, target_instance_id: Variant, hit_roll: Variant) -> String:
+    var log_event = log_event_builder.build_event(
         EventTypesScript.ACTION_HIT,
         battle_state,
         {
@@ -97,12 +97,15 @@ func log_action_hit(queued_action, battle_state, command, target_instance_id: Va
             "trigger_name": "on_hit",
             "payload_summary": "%s hit" % command.command_type,
         }
-    ))
+    )
+    battle_logger.append_event(log_event)
+    return log_event_builder.resolve_event_id(log_event)
 
-func log_damage(queued_action, battle_state, actor, target, damage_amount: int, value_change, type_effectiveness: float) -> Variant:
-    var log_event = log_event_builder.build_event(
+func log_damage(queued_action, battle_state, actor, target, damage_amount: int, value_change, type_effectiveness: float, cause_event_id: String) -> Variant:
+    var log_event = log_event_builder.build_effect_event(
         EventTypesScript.EFFECT_DAMAGE,
         battle_state,
+        cause_event_id,
         {
             "source_instance_id": queued_action.action_id,
             "target_instance_id": target.unit_instance_id,
@@ -114,14 +117,14 @@ func log_damage(queued_action, battle_state, actor, target, damage_amount: int, 
             "payload_summary": "%s dealt %d damage to %s" % [actor.public_id, damage_amount, target.public_id],
         }
     )
-    log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
     battle_logger.append_event(log_event)
     return log_event
 
-func log_recoil(queued_action, battle_state, actor, recoil_amount: int, value_change) -> Variant:
-    var log_event = log_event_builder.build_event(
+func log_recoil(queued_action, battle_state, actor, recoil_amount: int, value_change, cause_event_id: String) -> Variant:
+    var log_event = log_event_builder.build_effect_event(
         EventTypesScript.EFFECT_DAMAGE,
         battle_state,
+        cause_event_id,
         {
             "source_instance_id": queued_action.action_id,
             "target_instance_id": actor.unit_instance_id,
@@ -132,7 +135,6 @@ func log_recoil(queued_action, battle_state, actor, recoil_amount: int, value_ch
             "payload_summary": "%s recoil %d" % [actor.public_id, recoil_amount],
         }
     )
-    log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
     battle_logger.append_event(log_event)
     return log_event
 

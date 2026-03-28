@@ -10,8 +10,9 @@
 |队伍规模|每队 3 名单位|
 |等级口径|战斗内固定按 `Lv = 50` 计算|
 |首发数量|每方 1 名|
-|每回合选指令限时|每方 `30s`|
+|每回合选指令限时|每方 `30s`（`BattleFormatConfig.selection_deadline_ms = 30000`）|
 |回合上限|`max_turn = 40`|
+|触发链深上限|`BattleFormatConfig.max_chain_depth = 32`|
 |投降|提供；触发后立即判该方负、对方胜|
 
 ## 2. 队伍构筑

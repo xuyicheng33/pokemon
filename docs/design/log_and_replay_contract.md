@@ -46,6 +46,13 @@
 - 其他非 effect 事件 `trigger_name / cause_event_id` 写 `null`。
 - `killer_id` 无归属时写 `null`。
 
+`cause_event_id` 的当前实现语义固定为“真实上游触发事件 ID”，不允许再指向当前日志事件自身：
+
+- 直接伤害与默认动作反伤：指向对应 `action:hit` 日志事件。
+- effect payload 产出的 `effect:*`：指向内部 `effect_event_*`。
+- `turn_start / turn_end` 上的 MP 回复、effect/rule_mod 到期、field 自然到期：指向对应系统锚点事件。
+- 离场清理产生的 `effect:remove_effect`：指向对应 `state:exit` 事件。
+
 ### 2.3 事件类型
 
 `event_type` 使用 `src/shared/event_types.gd` 的固定枚举（`system:* / action:* / effect:* / state:* / result:*`）。
@@ -81,7 +88,7 @@
 - 相同 `seed + content snapshot + command stream` 必须得到相同 `final_state_hash` 与等长日志。
 - 命令解析允许通过 `actor_public_id/target_public_id` 重新映射运行时实例 ID，避免历史 ID 污染。
 - 回放运行必须持续到战斗结束或回合上限触发（不允许半局成功返回）。
-- 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`）。
+- 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`，且 `cause_event_id` 不得等于当前日志事件自身 ID）。
 - `run_replay` 使用临时容器隔离执行，不读写活跃会话池；回放完成后释放临时容器。
 
 ## 4. 失败语义（测试口径）
@@ -93,6 +100,6 @@
 ## 5. 最小验收
 
 1. 同输入重复回放，`final_state_hash` 一致。
-2. 日志链路字段遵守“行动链继承、系统链 `null + system:*`”语义。
+2. 日志链路字段遵守“行动链继承、系统链 `null + system:*`”语义，且所有 effect 事件都指向真实上游触发事件。
 3. `system:battle_header` 先于首条 `state:enter`，且 `header_snapshot` 不含私有实例 ID。
 4. `tests/run_with_gate.sh` 返回 `GATE PASSED`。

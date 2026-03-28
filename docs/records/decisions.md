@@ -9,6 +9,11 @@
 
 ## 2026-03-28
 
+### 210. `cause_event_id` 回归为“真实上游触发事件 ID”
+- 旧的“`cause_event_id = 当前日志自己的 chain_id:step_id`”口径作废，不再作为有效基线。
+- 直接伤害与默认动作反伤统一指向对应 `action:hit` 日志事件；effect payload 产出的 `effect:*` 继续指向内部 `effect_event_*`；`turn_start / turn_end` 的回复与到期链统一指向对应系统锚点；离场清理统一指向 `state:exit`。
+- `ReplayRunner` 的 V3 校验同步收紧：effect 日志若把 `cause_event_id` 指回自己，直接判失败。
+
 ### 207. 外层 contract 全量收口到 `public_id`
 - `unit_id` 继续只用于内容定义与队伍构筑；`public_id` 成为玩家输入、AI 输入、合法性列表、公开快照、换人目标与回放输入的唯一外层标识。
 - `LegalActionSet` 对外固定暴露 `actor_public_id / legal_switch_target_public_ids`，不再公开 bench `unit_instance_id`。
@@ -319,9 +324,9 @@
 - `event_step_id`/`step_counter` 在无日志或链路被折叠时会误判重复。
 - 以 `event_id` 作为去重的一部分，可稳定对应同一事件实例。
 
-### 152. 统一 `cause_event_id = event_chain_id:event_step_id`
-- effect/system 事件不再写 `system:*` 或 `action_id` 作为归因。
-- 统一用“当前事件自身的链路坐标”作为因果归因基线，保持回放可复原。
+### 152. 历史口径：曾短暂把 `cause_event_id` 写成当前日志自己的链路坐标
+- 这条口径已被 2026-03-28 的决策 201 明确废止，只保留作历史背景记录。
+- 当前基线不再允许 effect 日志把 `cause_event_id` 指向自己。
 - 再修测试失败语义与引擎错误闸门，避免“假绿灯”掩盖实现问题。
 - 规则链补齐后再做文档收口，避免先写文档后反复返工。
 
