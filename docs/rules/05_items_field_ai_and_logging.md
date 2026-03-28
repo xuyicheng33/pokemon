@@ -122,13 +122,14 @@
 |`unit_id`|只用于内容定义与队伍构筑|
 |`public_id`|玩家输入、AI 输入、合法性列表、公开快照、换人目标、回放输入的唯一外层标识|
 |`unit_instance_id`|只允许留在核心内部运行态、内部日志归因、内部排序与系统自动动作中|
-|`LegalActionSet`|对外固定暴露 `actor_public_id / legal_skill_ids / legal_switch_target_public_ids / legal_ultimate_ids / wait_allowed / forced_command_type`|
+|`LegalActionSet`|对外固定暴露 `actor_public_id / legal_skill_ids / legal_switch_target_public_ids / legal_ultimate_ids / wait_allowed / forced_command_type`；其中 `legal_skill_ids` 只表示本场实际已装备的常规技能|
 |外层 `Command`|默认只提交 `actor_public_id / target_public_id`；`actor_id / target_unit_id` 仅保留给核心内部或系统自动注入路径|
 
 |项|规则|
 |---|---|
 |AI 可读取|所有公开信息、当前战场状态、己方运行态|
 |AI 禁止读取|内部随机值、未来未发生的抽样结果、仅供调试的缓存|
+|候选技能池|当前不进入公开快照，也不是 AI 对外 contract 的一部分|
 |合法性职责|引擎先完成合法性判断：要么给出可选的技能 / 手动换人 / 奥义列表，要么直接替代为默认动作；AI 只从可执行结果中选一个|
 |空列表处理|若技能、手动换人、奥义都不合法：仅在“全部仅因 MP 不足”时强制 `resource_forced_default`；存在任一非 MP 阻断时允许 `wait`|
 |超时处理|AI 若在截止时间前未返回：当前应强制 Struggle 则走 `resource_forced_default`；否则走 `wait`（`command_source = timeout_auto`）|
@@ -149,7 +150,7 @@
 |`header_snapshot`|仅 `system:battle_header` 事件填写；字段固定为 `visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`|
 |`chain_origin`|链路来源：`battle_init / action / turn_start / turn_end / system_replace`|
 |`trigger_name`|触发点名；仅 effect 类事件必须填写|
-|`cause_event_id`|触发源事件 ID；仅 effect 类事件必须填写|
+|`cause_event_id`|真实上游触发事件 ID；仅 effect 类事件必须填写，且不得指向当前日志事件自己|
 |`killer_id`|击杀归属的单位实例 ID；无归属则为 `null`|
 |`action_id`|当前根行动唯一 ID；同一行动链内的衍生效果事件继承该值；非行动系统链为 `null`|
 |`action_queue_index`|当前根行动在本回合队列中的执行序位；非行动系统链为 `null`|
@@ -186,9 +187,9 @@
 |`select_timeout`|`command_source = timeout_auto` 的整条行动链写 `true`；其他行动链写 `false`；非行动系统链写 `null`|
 |`select_deadline_ms`|整条行动链都写本回合截止时间；非行动系统链写 `null`|
 |`header_snapshot`|仅 `system:battle_header` 事件写入；其余事件写 `null`；且字段内禁止出现私有实例 ID（如 `unit_instance_id`）|
-|`trigger_name / cause_event_id / killer_id`|effect 事件必须填 `trigger_name / cause_event_id`；系统锚点事件（如 `system:battle_init / system:turn_start / system:turn_end`）允许填写对应节点名作为 `trigger_name`；其他非 effect 事件 `cause_event_id` 写 `null`；`killer_id` 没有归属则写 `null`|
+|`trigger_name / cause_event_id / killer_id`|effect 事件必须填 `trigger_name / cause_event_id`；其中 `cause_event_id` 固定指向真实上游触发事件：直接伤害/反伤指向 `action:hit`，effect payload 指向内部 `effect_event_*`，`turn_start / turn_end` 的回复与到期链指向对应系统锚点，离场清理指向 `state:exit`；系统锚点事件（如 `system:battle_init / system:turn_start / system:turn_end`）允许填写对应节点名作为 `trigger_name`；其他非 effect 事件 `cause_event_id` 写 `null`；`killer_id` 没有归属则写 `null`|
 
-实现状态说明（2026-03-25）：
+实现状态说明（2026-03-28）：
 
 1. 当前实现已移除 `system:orphan` 临时补链逻辑；`chain_context` 缺失直接失败，不再静默兜底。
 

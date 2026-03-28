@@ -50,7 +50,7 @@ func resolve_missing_dependency() -> String:
 func reset_turn_state(battle_state) -> void:
     selection_resolver.reset_turn_state(battle_state)
 
-func apply_turn_start_regen(battle_state) -> void:
+func apply_turn_start_regen(battle_state, cause_event_id: String) -> void:
     for side_state in battle_state.sides:
         var active_unit = side_state.get_active_unit()
         if active_unit == null or active_unit.current_hp <= 0:
@@ -66,9 +66,10 @@ func apply_turn_start_regen(battle_state) -> void:
         value_change.before_value = before_mp
         value_change.after_value = active_unit.current_mp
         value_change.delta = active_unit.current_mp - before_mp
-        var log_event = log_event_builder.build_event(
+        var log_event = log_event_builder.build_effect_event(
             EventTypesScript.EFFECT_RESOURCE_MOD,
             battle_state,
+            cause_event_id,
             {
                 "source_instance_id": "system:turn_start",
                 "target_instance_id": active_unit.unit_instance_id,
@@ -77,7 +78,6 @@ func apply_turn_start_regen(battle_state) -> void:
                 "payload_summary": "%s regenerated %d mp" % [active_unit.public_id, value_change.delta],
             }
         )
-        log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
         battle_logger.append_event(log_event)
 
 func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> Dictionary:
@@ -103,13 +103,14 @@ func execute_system_trigger_batch(trigger_name: String, battle_state, content_in
         return true
     return false
 
-func decrement_rule_mods_and_log(battle_state, trigger_name: String) -> void:
+func decrement_rule_mods_and_log(battle_state, trigger_name: String, cause_event_id: String) -> void:
     var removed_instances: Array = rule_mod_service.decrement_for_trigger(battle_state, trigger_name)
     for removed in removed_instances:
         var removed_instance = removed["instance"]
-        var log_event = log_event_builder.build_event(
+        var log_event = log_event_builder.build_effect_event(
             EventTypesScript.EFFECT_RULE_MOD_REMOVE,
             battle_state,
+            cause_event_id,
             {
                 "source_instance_id": removed_instance.instance_id,
                 "target_instance_id": removed["owner_id"],
@@ -118,10 +119,9 @@ func decrement_rule_mods_and_log(battle_state, trigger_name: String) -> void:
                 "payload_summary": "rule mod expired: %s" % removed_instance.mod_kind,
             }
         )
-        log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
         battle_logger.append_event(log_event)
 
-func decrement_effect_instances_and_log(battle_state, content_index, trigger_name: String, owner_unit_ids: Array) -> void:
+func decrement_effect_instances_and_log(battle_state, content_index, trigger_name: String, owner_unit_ids: Array, cause_event_id: String) -> void:
     var decrement_result: Dictionary = effect_instance_dispatcher.decrement_for_trigger(trigger_name, battle_state, content_index, owner_unit_ids)
     var removed_instances: Array = decrement_result.get("removed_instances", [])
     var expire_events: Array = decrement_result.get("expire_events", [])
@@ -140,9 +140,10 @@ func decrement_effect_instances_and_log(battle_state, content_index, trigger_nam
     for removed in removed_instances:
         var removed_instance = removed["instance"]
         var effect_definition = removed["definition"]
-        var log_event = log_event_builder.build_event(
+        var log_event = log_event_builder.build_effect_event(
             EventTypesScript.EFFECT_REMOVE_EFFECT,
             battle_state,
+            cause_event_id,
             {
                 "source_instance_id": removed_instance.source_instance_id,
                 "target_instance_id": removed["owner_id"],
@@ -151,11 +152,10 @@ func decrement_effect_instances_and_log(battle_state, content_index, trigger_nam
                 "payload_summary": "effect expired: %s" % effect_definition.id,
             }
         )
-        log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
         battle_logger.append_event(log_event)
 
-func apply_turn_end_field_tick(battle_state, content_index):
-    return field_lifecycle_service.apply_turn_end_field_tick(battle_state, content_index)
+func apply_turn_end_field_tick(battle_state, content_index, cause_event_id: String):
+    return field_lifecycle_service.apply_turn_end_field_tick(battle_state, content_index, cause_event_id)
 
 func clear_turn_end_state(battle_state) -> void:
     selection_resolver.clear_turn_end_state(battle_state)

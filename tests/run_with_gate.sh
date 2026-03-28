@@ -23,5 +23,6 @@ if [[ $status -ne 0 ]]; then
 fi
 
 tests/check_architecture_constraints.sh
+bash tests/check_repo_consistency.sh
 
 echo "GATE PASSED: assertions and engine logs are clean"

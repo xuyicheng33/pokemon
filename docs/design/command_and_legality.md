@@ -34,7 +34,7 @@
 |字段|类型|说明|
 |---|---|---|
 |`actor_public_id`|`String`|当前行动者的公开 ID|
-|`legal_skill_ids`|`PackedStringArray`|可用技能|
+|`legal_skill_ids`|`PackedStringArray`|当前这场战斗实际已装备且可用的常规技能|
 |`legal_switch_target_public_ids`|`PackedStringArray`|可换人列表（公开 bench ID）|
 |`legal_ultimate_ids`|`PackedStringArray`|可用奥义|
 |`wait_allowed`|`bool`|当前是否允许主动选择 `wait`|
@@ -52,6 +52,7 @@
 
 - `LegalActionService`
   - 读取运行态与内容定义。
+  - 常规技能合法性只读取 `UnitState.regular_skill_ids`，不再直接把 `UnitDefinition.skill_ids` 当成“本场已装备技能”。
   - 计算所有合法主动方案，并区分“MP 不足”与“非 MP 阻断”。
   - 当存在合法主动方案或存在非 MP 阻断时，允许 `wait`。
   - 仅在“无合法主动方案且全部仅因 MP 不足”时给出 `forced_command_type`。
@@ -70,6 +71,7 @@
 - 外层输入与回放默认只提交 `actor_public_id / target_public_id`；`CommandValidator` 在选择阶段统一映射到运行时 `actor_id / target_unit_id`。
 - `LegalActionSet` 是 manager/UI/AI 的外层契约，不再公开 bench `unit_instance_id`。
 - 若系统自动动作或内部测试直接提交 `actor_id / target_unit_id`，`CommandValidator` 仍会回填对应 `public_id`，但这不是对外推荐入口。
+- `prebattle_public_teams[*].units[*].skill_ids` 与 `LegalActionSet.legal_skill_ids` 口径保持一致，统一表示“本场实际已装备的常规技能”；当前不对外公开 `candidate_skill_ids`。
 
 ## 5. 非目标
 

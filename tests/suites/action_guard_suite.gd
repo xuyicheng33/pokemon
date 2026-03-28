@@ -59,7 +59,7 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
     kill_skill.effects_on_kill_ids = PackedStringArray([kill_effect.id])
     content_index.register_resource(kill_skill)
     if not content_index.units["sample_pyron"].skill_ids.has(kill_skill.id):
-        content_index.units["sample_pyron"].skill_ids.append(kill_skill.id)
+        content_index.units["sample_pyron"].skill_ids[0] = kill_skill.id
 
     var kill_state = harness.build_initialized_battle(core, content_index, sample_factory, 109)
     var kill_p1_active = kill_state.get_side("P1").get_active_unit()
@@ -149,7 +149,7 @@ func _test_on_cast_self_faint_keeps_action_chain(harness) -> Dictionary:
     self_faint_skill.effects_on_cast_ids = PackedStringArray([self_damage_effect.id])
     content_index.register_resource(self_faint_skill)
     if not content_index.units["sample_pyron"].skill_ids.has(self_faint_skill.id):
-        content_index.units["sample_pyron"].skill_ids.append(self_faint_skill.id)
+        content_index.units["sample_pyron"].skill_ids[0] = self_faint_skill.id
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 312)
     var p1_active = battle_state.get_side("P1").get_active_unit()
     if p1_active == null:

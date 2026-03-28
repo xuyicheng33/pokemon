@@ -84,7 +84,9 @@ func _validate_log_schema_v3(event_log: Array) -> bool:
         if String(log_event.event_type).begins_with("effect:"):
             if log_event.trigger_name == null:
                 return false
-            if log_event.cause_event_id == null:
+            if log_event.cause_event_id == null or String(log_event.cause_event_id).is_empty():
+                return false
+            if String(log_event.cause_event_id) == "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]:
                 return false
     return battle_header_count == 1
 

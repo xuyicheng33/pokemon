@@ -9,6 +9,11 @@
 
 ## 2026-03-28
 
+### 210. `cause_event_id` 回归为“真实上游触发事件 ID”
+- 旧的“`cause_event_id = 当前日志自己的 chain_id:step_id`”口径作废，不再作为有效基线。
+- 直接伤害与默认动作反伤统一指向对应 `action:hit` 日志事件；effect payload 产出的 `effect:*` 继续指向内部 `effect_event_*`；`turn_start / turn_end` 的回复与到期链统一指向对应系统锚点；离场清理统一指向 `state:exit`。
+- `ReplayRunner` 的 V3 校验同步收紧：effect 日志若把 `cause_event_id` 指回自己，直接判失败。
+
 ### 207. 外层 contract 全量收口到 `public_id`
 - `unit_id` 继续只用于内容定义与队伍构筑；`public_id` 成为玩家输入、AI 输入、合法性列表、公开快照、换人目标与回放输入的唯一外层标识。
 - `LegalActionSet` 对外固定暴露 `actor_public_id / legal_switch_target_public_ids`，不再公开 bench `unit_instance_id`。
@@ -22,7 +27,25 @@
 ### 209. 宿傩默认装配与候选技能池语义分离
 - 宿傩默认技能组固定为 `解 / 捌 / 开`，奥义固定为 `伏魔御厨子`，被动固定为“教会你爱的是...”。
 - `反转术式` 保留在内容包中，作为测试与未来配招系统使用的候选技能，不进入默认三技能装配。
-- 若 schema 暂不扩候选技能池字段，这层语义必须继续写死在 README 与内容说明文档里。
+
+### 211. `candidate_skill_ids` 正式进入 `UnitDefinition` schema
+- `skill_ids` 固定表示默认装配的 3 个常规技能，不再兼任候选池含义。
+- `candidate_skill_ids` 固定表示常规技能候选池；为空表示没有额外候选池，非空时必须完整包含默认 `skill_ids`，且不得混入 `ultimate_skill_id`。
+- 宿傩的 `反转术式` 不再靠 README 口头约定存在，已作为正式内容字段落在 `candidate_skill_ids` 中。
+
+### 212. 赛前常规技能覆盖按队伍槽位建模
+- `SideSetup.regular_skill_loadout_overrides` 的键固定为队伍槽位下标 `0..team_size-1`，不用 `unit_definition_id`，因为规则允许同队重复单位。
+- 值固定为该槽位单位本场实际装配的 3 个常规技能；当前只支持常规技能覆盖，不支持奥义、被动、持有物覆盖。
+- `BattleInitializer` 必须在建局时把默认装配或 override 解析进 `UnitState.regular_skill_ids`，后续运行时统一读取这份镜像。
+
+### 213. 公开层与合法性层只暴露“本场已装备技能”
+- `LegalActionSet.legal_skill_ids`、公开快照 `prebattle_public_teams[*].units[*].skill_ids`、以及后续日志展示的技能列表，统一读取 `UnitState.regular_skill_ids`。
+- `candidate_skill_ids` 当前只属于内容定义与赛前 setup 校验 contract，不进入 public snapshot，也不作为 AI 的外层可见字段。
+
+### 214. 仓库一致性闸门独立于架构闸门维护
+- `tests/check_architecture_constraints.sh` 继续只负责分层边界和核心文件体量，不再堆叠 README、文档命名或测试覆盖语义检查。
+- 新增 `tests/check_repo_consistency.sh` 负责第一批仓库一致性检查：README 代码规模统计、关键 `cause_event_id` 回归锚点、候选技能池/赛前配招专门回归、以及新公开 contract 名称的文档落盘。
+- `tests/run_with_gate.sh` 必须串行执行业务断言、架构闸门和仓库一致性闸门，任何一层失败都直接阻断提交。
 
 ## 2026-03-27
 
@@ -319,9 +342,9 @@
 - `event_step_id`/`step_counter` 在无日志或链路被折叠时会误判重复。
 - 以 `event_id` 作为去重的一部分，可稳定对应同一事件实例。
 
-### 152. 统一 `cause_event_id = event_chain_id:event_step_id`
-- effect/system 事件不再写 `system:*` 或 `action_id` 作为归因。
-- 统一用“当前事件自身的链路坐标”作为因果归因基线，保持回放可复原。
+### 152. 历史口径：曾短暂把 `cause_event_id` 写成当前日志自己的链路坐标
+- 这条口径已被 2026-03-28 的决策 201 明确废止，只保留作历史背景记录。
+- 当前基线不再允许 effect 日志把 `cause_event_id` 指向自己。
 - 再修测试失败语义与引擎错误闸门，避免“假绿灯”掩盖实现问题。
 - 规则链补齐后再做文档收口，避免先写文档后反复返工。
 

@@ -12,6 +12,7 @@ var current_hp: int = 0
 var max_mp: int = 0
 var current_mp: int = 0
 var regen_per_turn: int = 0
+var regular_skill_ids: PackedStringArray = PackedStringArray()
 var combat_type_ids: PackedStringArray = PackedStringArray()
 var base_attack: int = 0
 var base_defense: int = 0
@@ -54,6 +55,7 @@ func to_stable_dict() -> Dictionary:
         "max_mp": max_mp,
         "current_mp": current_mp,
         "regen_per_turn": regen_per_turn,
+        "regular_skill_ids": regular_skill_ids,
         "combat_type_ids": combat_type_ids,
         "base_attack": base_attack,
         "base_defense": base_defense,

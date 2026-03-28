@@ -72,7 +72,7 @@ func break_active_field(battle_state, content_index, trigger_name: String) -> bo
     battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
     return true
 
-func apply_turn_end_field_tick(battle_state, content_index):
+func apply_turn_end_field_tick(battle_state, content_index, cause_event_id: String):
     if battle_state.field_state == null:
         return null
     var current_field_state = battle_state.field_state
@@ -107,9 +107,10 @@ func apply_turn_end_field_tick(battle_state, content_index):
             if expire_invalid_code != null:
                 battle_result_service.terminate_invalid_battle(battle_state, str(expire_invalid_code))
                 return field_change
-    var log_event = log_event_builder.build_event(
+    var log_event = log_event_builder.build_effect_event(
         EventTypesScript.EFFECT_FIELD_EXPIRE,
         battle_state,
+        cause_event_id,
         {
             "source_instance_id": current_field_state.instance_id,
             "trigger_name": "turn_end",
@@ -117,7 +118,6 @@ func apply_turn_end_field_tick(battle_state, content_index):
             "payload_summary": "field expired",
         }
     )
-    log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
     battle_logger.append_event(log_event)
     battle_state.field_rule_mod_instances.clear()
     battle_state.field_state = null

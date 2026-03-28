@@ -38,23 +38,7 @@ func leave_unit(battle_state, unit_state, reason: String, content_index) -> void
     if reason == "faint":
         unit_state.current_hp = 0
     unit_state.leave_state = LeaveStatesScript.LEFT
-    for effect_instance in removed_effects:
-        var effect_definition = content_index.effects.get(effect_instance.def_id) if content_index != null else null
-        assert(effect_definition != null, "Missing effect definition: %s" % effect_instance.def_id)
-        var log_event = log_event_builder.build_event(
-            EventTypesScript.EFFECT_REMOVE_EFFECT,
-            battle_state,
-            {
-                "source_instance_id": effect_instance.source_instance_id,
-                "target_instance_id": unit_state.unit_instance_id,
-                "priority": effect_definition.priority,
-                "trigger_name": "on_exit",
-                "payload_summary": "effect removed on exit: %s" % effect_definition.id,
-            }
-        )
-        log_event.cause_event_id = "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
-        battle_logger.append_event(log_event)
-    battle_logger.append_event(log_event_builder.build_event(
+    var state_exit_event = log_event_builder.build_event(
         EventTypesScript.STATE_EXIT,
         battle_state,
         {
@@ -64,4 +48,22 @@ func leave_unit(battle_state, unit_state, reason: String, content_index) -> void
             "trigger_name": "on_exit",
             "payload_summary": "%s left battle" % unit_state.public_id,
         }
-    ))
+    )
+    battle_logger.append_event(state_exit_event)
+    var state_exit_event_id: String = log_event_builder.resolve_event_id(state_exit_event)
+    for effect_instance in removed_effects:
+        var effect_definition = content_index.effects.get(effect_instance.def_id) if content_index != null else null
+        assert(effect_definition != null, "Missing effect definition: %s" % effect_instance.def_id)
+        var log_event = log_event_builder.build_effect_event(
+            EventTypesScript.EFFECT_REMOVE_EFFECT,
+            battle_state,
+            state_exit_event_id,
+            {
+                "source_instance_id": effect_instance.source_instance_id,
+                "target_instance_id": unit_state.unit_instance_id,
+                "priority": effect_definition.priority,
+                "trigger_name": "on_exit",
+                "payload_summary": "effect removed on exit: %s" % effect_definition.id,
+            }
+        )
+        battle_logger.append_event(log_event)

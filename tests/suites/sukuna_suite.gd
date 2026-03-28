@@ -26,6 +26,8 @@ func _test_sukuna_default_loadout_contract(harness) -> Dictionary:
         return harness.fail_result("sukuna default loadout must stay fixed as 解/捌/开")
     if sukuna.skill_ids.has("sukuna_reverse_ritual"):
         return harness.fail_result("sukuna_reverse_ritual should stay in candidate pool, not default loadout")
+    if sukuna.candidate_skill_ids != PackedStringArray(["sukuna_kai", "sukuna_hatsu", "sukuna_hiraku", "sukuna_reverse_ritual"]):
+        return harness.fail_result("sukuna candidate skill pool should be structured as 解/捌/开/反转术式")
     if sukuna.ultimate_skill_id != "sukuna_fukuma_mizushi":
         return harness.fail_result("sukuna ultimate should stay fixed as 伏魔御厨子")
     if sukuna.passive_skill_id != "sukuna_teach_love":
@@ -77,12 +79,19 @@ func _test_sukuna_reverse_ritual_heal_path(harness) -> Dictionary:
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
     var content_index = harness.build_loaded_content_index(sample_factory)
-    content_index.units["sukuna"].skill_ids[2] = "sukuna_reverse_ritual"
-    var battle_setup = _build_sukuna_setup(sample_factory)
+    var ritual_loadout := PackedStringArray(["sukuna_kai", "sukuna_hatsu", "sukuna_reverse_ritual"])
+    var battle_setup = _build_sukuna_setup(sample_factory, {0: ritual_loadout})
     var battle_state = _build_battle_state(core, content_index, battle_setup, 702)
     var sukuna_unit = battle_state.get_side("P1").get_active_unit()
     if sukuna_unit == null:
         return harness.fail_result("missing sukuna active unit")
+    if sukuna_unit.regular_skill_ids != ritual_loadout:
+        return harness.fail_result("sukuna runtime loadout should mirror setup override")
+    var legal_action_set = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
+    if not legal_action_set.legal_skill_ids.has("sukuna_reverse_ritual"):
+        return harness.fail_result("setup override should expose 反转术式 as legal action")
+    if legal_action_set.legal_skill_ids.has("sukuna_hiraku"):
+        return harness.fail_result("setup override should remove 开 from this battle loadout")
     sukuna_unit.current_hp = max(1, int(floor(float(sukuna_unit.max_hp) * 0.5)))
     var before_hp: int = sukuna_unit.current_hp
     var expected_gain: int = min(sukuna_unit.max_hp - before_hp, max(1, int(floor(float(sukuna_unit.max_hp) * 0.25))))
@@ -309,8 +318,8 @@ func _test_sukuna_field_accuracy_override_path(harness) -> Dictionary:
         return harness.fail_result("field accuracy override should let zero-accuracy hiraku hit while domain is active")
     return harness.pass_result()
 
-func _build_sukuna_setup(sample_factory):
-    var battle_setup = sample_factory.build_sample_setup()
+func _build_sukuna_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}):
+    var battle_setup = sample_factory.build_sample_setup({"P1": p1_regular_skill_overrides})
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_pyron"])
     battle_setup.sides[0].starting_index = 0
     battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"])

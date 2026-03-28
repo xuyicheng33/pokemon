@@ -29,3 +29,14 @@ func build_event(event_type: String, battle_state, payload: Dictionary = {}):
     for key in payload.keys():
         log_event.set(key, payload[key])
     return log_event
+
+func build_effect_event(event_type: String, battle_state, cause_event_id: String, payload: Dictionary = {}):
+    assert(event_type.begins_with("effect:"), "LogEventBuilder.build_effect_event only accepts effect:* events")
+    assert(not cause_event_id.strip_edges().is_empty(), "LogEventBuilder.build_effect_event requires real cause_event_id")
+    var effect_payload := payload.duplicate()
+    effect_payload["cause_event_id"] = cause_event_id
+    return build_event(event_type, battle_state, effect_payload)
+
+func resolve_event_id(log_event) -> String:
+    assert(log_event != null, "LogEventBuilder.resolve_event_id requires log_event")
+    return "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]

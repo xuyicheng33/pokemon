@@ -62,7 +62,8 @@ tests/
   helpers/              # 预留测试辅助脚本
   replay_cases/         # 预留 deterministic 回放案例
   run_all.gd            # 测试入口
-  run_with_gate.sh      # 测试闸门（断言 + 引擎错误）
+  run_with_gate.sh      # 测试闸门（断言 + 引擎错误 + 架构 + 仓库一致性）
+  check_repo_consistency.sh # README/文档/关键回归一致性闸门
 ```
 
 ## 4. 架构分层（核心）
@@ -101,6 +102,7 @@ tests/run_with_gate.sh
 - 业务断言全部通过（`tests/run_all.gd`）
 - 无引擎级错误日志（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
 - 架构约束检查通过（`tests/check_architecture_constraints.sh`）
+- 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
 
 ## 6. 对外核心接口（Manager）
 
@@ -157,29 +159,36 @@ tests/run_with_gate.sh
 - `EffectDefinition.stacking` 已开放 `stack`
 - `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
 - `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`）
+- `BattleFormatConfig` 已包含 `selection_deadline_ms / max_chain_depth`
+- `UnitDefinition` 已包含 `max_mp / init_mp / regen_per_turn`
+- `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
 - 普通技能与奥义优先级约束分离校验
+- `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
 
-### 8.1 宿傩默认装配
+### 8.1 宿傩默认装配与赛前配招
 
 - 默认技能组：`解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`）
 - 奥义：`伏魔御厨子`
 - 被动：`教会你爱的是...`
-- 候选技能池：`反转术式` 保留在内容包中，允许测试和未来配招系统替换接入，但不属于默认三技能装配
+- 候选技能池：`candidate_skill_ids = 解 / 捌 / 开 / 反转术式`
+- 赛前覆盖：`SideSetup.regular_skill_loadout_overrides` 可把 `反转术式` 换入本场装配；未提供覆盖时，行为等价于使用默认 `skill_ids`
+- 公开快照：`prebattle_public_teams[*].units[*].skill_ids` 只公开本场实际已装备的常规技能，不公开候选池全集
 
 ## 9. 日志与回放契约
 
 - `log_schema_version` 固定为 `3`
 - 存在且仅存在 1 条 `system:battle_header`
 - effect 事件必须具备 `trigger_name / cause_event_id`
+- `cause_event_id` 固定指向真实上游触发事件：直接伤害/反伤指向 `action:hit`，effect payload 指向内部 `effect_event_*`，系统结算到期链指向对应系统锚点
 - 相同 `seed + content snapshot + command stream` 输出稳定哈希
 
 参考：`docs/design/log_and_replay_contract.md`
 
 ## 10. 当前代码规模（2026-03-28）
 
-- `src/**/*.gd`：`6577` 行
-- `tests/**/*.gd`：`4357` 行
-- GDScript 合计：`10934` 行
+- `src/**/*.gd`：`6744` 行
+- `tests/**/*.gd`：`5072` 行
+- GDScript 合计：`11816` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

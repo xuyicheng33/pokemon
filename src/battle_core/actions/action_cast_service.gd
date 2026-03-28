@@ -102,7 +102,7 @@ func is_damage_action(command, skill_definition) -> bool:
         return true
     return skill_definition != null and skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and skill_definition.power > 0
 
-func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state) -> void:
+func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, cause_event_id: String) -> void:
     if target == null:
         return
     var power: int = 50
@@ -137,7 +137,8 @@ func apply_direct_damage(queued_action, actor, target, skill_definition, battle_
         target,
         damage_amount,
         value_change,
-        type_effectiveness
+        type_effectiveness,
+        cause_event_id
     )
     _record_fatal_damage(
         battle_state,
@@ -151,12 +152,12 @@ func apply_direct_damage(queued_action, actor, target, skill_definition, battle_
         log_event.event_step_id
     )
 
-func apply_default_recoil(queued_action, actor, battle_state) -> void:
+func apply_default_recoil(queued_action, actor, battle_state, cause_event_id: String) -> void:
     var recoil_amount: int = max(1, int(floor(float(actor.max_hp) / 4.0)))
     var before_hp: int = actor.current_hp
     actor.current_hp = clamp(actor.current_hp - recoil_amount, 0, actor.max_hp)
     var value_change = action_log_service.build_value_change(actor.unit_instance_id, "hp", before_hp, actor.current_hp)
-    var log_event = action_log_service.log_recoil(queued_action, battle_state, actor, recoil_amount, value_change)
+    var log_event = action_log_service.log_recoil(queued_action, battle_state, actor, recoil_amount, value_change, cause_event_id)
     _record_fatal_damage(
         battle_state,
         actor.unit_instance_id,

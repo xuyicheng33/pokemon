@@ -8,6 +8,68 @@
 
 当前生效规则以 `docs/rules/` 为准。
 
+## 2026-03-28
+
+### 战斗核心强治理收口计划
+- 目标：分 3 个可独立验收的小阶段，一次性收口日志契约漂移、文档事实漂移、候选技能池/赛前配招 contract 缺口，以及仓库一致性闸门缺失问题。
+- 范围：`src/battle_core/**/*`、`src/composition/sample_battle_factory.gd`、`content/units/sukuna.tres`、`README.md`、`content/README.md`、`docs/design/*`、`docs/rules/*`、`docs/records/*`、`tests/**/*`、`tests/*.sh`；按阶段拆分提交并保持工作区干净。
+- 验收标准：阶段一修回 `cause_event_id` 真实因果语义并完成文档收口；阶段二落地候选技能池与赛前常规三技能覆盖 contract；阶段三补齐仓库一致性闸门、记录新基线，并保证每阶段完成后都能提交推送。
+
+#### 执行与提交
+
+|任务|结果|提交|
+|---|---|---|
+|阶段一：日志契约与文档事实收口|已完成|独立提交完成（`fix: realign log cause contracts`）|
+|阶段二：候选技能池与赛前配招 contract 落地|已完成|独立提交完成（`add: prebattle regular skill loadouts`）|
+|阶段三：一致性闸门与总收口|已完成|阶段三独立提交（本次提交）|
+
+#### 阶段一最小可玩性检查清单
+- 可启动：`godot --headless --path . --script tests/run_all.gd` 通过。
+- 可操作：直接伤害、effect payload、turn_start/turn_end 到期链、离场清理都能产出真实上游 `cause_event_id`。
+- 无致命错误：日志 V3 校验已拒绝 “`cause_event_id` 指向自己” 的伪因果链。
+
+#### 阶段一回归检查要点
+- `effect:*` 日志必须带 `trigger_name / cause_event_id`，且 `cause_event_id != 当前事件 ID`。
+- 行动直接伤害/反伤指向 `action:hit`；turn_start 回复、effect/rule_mod 到期、field 自然到期分别指向对应系统锚点；离场清理指向 `state:exit`。
+- `README.md`、`docs/design/log_and_replay_contract.md`、`docs/design/battle_content_schema.md`、`docs/rules/01_battle_format_and_visibility.md`、`docs/rules/05_items_field_ai_and_logging.md` 与当前实现一致。
+- README 代码规模与命令 `find src tests -name '*.gd' | xargs wc -l` 当前输出一致。
+
+#### 阶段一当前验证结果（2026-03-28）
+- `godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
+#### 阶段二最小可玩性检查清单
+- 可启动：`tests/run_with_gate.sh` 通过。
+- 可操作：赛前可按 `SideSetup.regular_skill_loadout_overrides` 覆盖本场常规三技能；合法动作、公开快照与运行时都只读取本场已装备技能。
+- 无致命错误：候选技能池与赛前覆盖 contract 非法输入会在加载期/建局期 fail-fast；宿傩默认装配与换入 `反转术式` 两条路径都可回归。
+
+#### 阶段二回归检查要点
+- `UnitDefinition.candidate_skill_ids` 非空时必须至少 3 个、不能重复、必须包含默认 `skill_ids`、不能混入 `ultimate_skill_id`。
+- `SideSetup.regular_skill_loadout_overrides` 必须按槽位下标建模，覆盖列表必须正好 3 个且不重复；无候选池时只能等于默认装配，有候选池时必须是候选池子集。
+- `BattleInitializer` 必须把默认装配或 override 写入 `UnitState.regular_skill_ids`；`LegalActionService`、`CommandValidator`、public snapshot 都只读取这份运行时镜像。
+- 宿傩默认装配保持 `解 / 捌 / 开`；通过 setup override 换入 `反转术式` 后，治疗链可正常执行；未换入时默认装配不变。
+- `README.md`、`content/README.md`、`docs/design/battle_content_schema.md`、`docs/design/battle_runtime_model.md`、`docs/design/command_and_legality.md`、`docs/rules/01_battle_format_and_visibility.md`、`docs/rules/05_items_field_ai_and_logging.md` 与实现一致。
+
+#### 阶段二当前验证结果（2026-03-28）
+- `godot --headless --path . --script tests/run_all.gd`：通过（内含 `setup_loadout_suite` 与宿傩专项回归）。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
+#### 阶段三最小可玩性检查清单
+- 可启动：`tests/run_with_gate.sh` 通过，且新增 `tests/check_repo_consistency.sh` 已挂入统一闸门。
+- 可操作：README 代码规模、关键日志契约回归、候选技能池/赛前配招专门回归、文档 contract 名称都能自动校验。
+- 无致命错误：仓库一致性检查和架构约束检查职责分离，任何一层失败都会阻断提交。
+
+#### 阶段三回归检查要点
+- `tests/check_repo_consistency.sh` 必须校验 README 代码规模与实测一致。
+- `tests/check_repo_consistency.sh` 必须校验关键 `cause_event_id` 回归锚点仍在 `content_logging_suite.gd` 中。
+- `tests/check_repo_consistency.sh` 必须校验 `setup_loadout_suite.gd` 已注册并覆盖候选技能池、setup override、运行时装配 contract。
+- `tests/check_repo_consistency.sh` 必须校验 `candidate_skill_ids / regular_skill_loadout_overrides / regular_skill_ids` 已按正式名称落盘到 README / docs / rules，不再容忍旧漂移口径。
+- `tests/check_architecture_constraints.sh` 继续只负责分层和文件体量，不混入文档一致性职责。
+
+#### 阶段三当前验证结果（2026-03-28）
+- `bash tests/check_repo_consistency.sh`：通过（`REPO_CONSISTENCY_PASSED`）。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
 ## 2026-03-27
 
 ### 复查问题收口（二次文档同步 + 闸门补强）
