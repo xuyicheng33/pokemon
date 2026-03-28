@@ -126,6 +126,7 @@
 
 `gojo_murasaki_conditional_burst`（单 effect 完成条件爆发 + 清标记）：
 
+- EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=[]`
 - `required_target_effects = ["gojo_ao_mark", "gojo_aka_mark"]`
 - payload 顺序：
 1. `damage(use_formula=true, amount=32, damage_kind=special)`（条件追加一段伤害；`amount` 在 `use_formula=true` 下作为公式威力）
@@ -141,6 +142,18 @@
 - 条件满足：追加爆发并消耗双标记。
 - 条件不满足：只结算茈本体伤害，不做额外动作。
 - **不做任何反噬/自伤**。
+
+### 2.6 标记 Effect 明细（避免实现歧义）
+
+`gojo_ao_mark_apply` / `gojo_aka_mark_apply`（施加标记）：
+
+- EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=[]`
+- payload：`apply_effect(gojo_ao_mark)` 或 `apply_effect(gojo_aka_mark)`
+
+`gojo_ao_mark` / `gojo_aka_mark`（纯标记本体）：
+
+- EffectDefinition：`scope=self`, `duration_mode=turns`, `duration=3`, `decrement_on=turn_end`, `stacking=refresh`, `trigger_names=[]`, `payloads=[]`, `persists_on_switch=false`
+- 说明：纯标记 effect 无 payload，不直接产生数值结算；仅用于条件判定。
 
 ### 2.4 反转术式（Reverse Ritual）
 
@@ -207,8 +220,18 @@
 
 **领域过期与打破**
 
-- `gojo_domain_expire_seal`：**1 个 EffectDefinition，内含 3 个 `rule_mod` payload**（分别 `deny gojo_ao / gojo_aka / gojo_murasaki`），`duration=2`, `decrement_on=turn_end`。
-- `gojo_domain_rollback`：与过期封印同结构（同样是 1 个 effect 内含 3 个封印 payload），仅区分日志来源（`on_break`）。
+- `gojo_domain_action_lock` 资源口径：
+1. EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`
+2. payload：`rule_mod(mod_kind=action_legality, mod_op=deny, value=all, scope=target, duration_mode=turns, duration=1, decrement_on=turn_end, stacking=replace)`
+
+- `gojo_domain_expire_seal` 资源口径：
+1. EffectDefinition：`scope=self`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`
+2. payload（3 条）：`rule_mod(mod_kind=action_legality, mod_op=deny, value=gojo_ao/gojo_aka/gojo_murasaki, scope=self, duration_mode=turns, duration=2, decrement_on=turn_end, stacking=replace)`
+
+- `gojo_domain_rollback` 资源口径：
+1. EffectDefinition：`scope=self`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`
+2. payload（3 条）：与 `gojo_domain_expire_seal` 相同，仅事件来源为 `on_break`
+
 - 本版明确**不**添加 `stat_mod(sp_attack, -1)` 回退；`gojo_domain_cast_buff(+1)` 作为独立收益，不和 field break 绑定反向回滚。
 
 ---
@@ -226,18 +249,19 @@
 
 `gojo_mugen`（PassiveSkillDefinition）：
 
-- `trigger_names = ["battle_init"]`
+- `trigger_names = ["on_enter"]`
 - `effect_ids = ["gojo_mugen_incoming_accuracy_down"]`
 
 `gojo_mugen_incoming_accuracy_down`（EffectDefinition）：
 
-- `scope=self`
+- EffectDefinition：`scope=self`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=[]`
 - payload：`rule_mod(mod_kind="incoming_accuracy", mod_op="add", value=-10, scope="self", duration_mode="permanent", decrement_on="turn_end", stacking="none")`
 
 说明：
 
 - 无下限改成稳定干扰命中，不再使用概率触发，也不再改写伤害值。
-- `decrement_on="turn_end"` 在 `duration_mode="permanent"` 下不会实际扣减，但当前 `rule_mod` schema/validator 要求该字段必须显式声明，因此保留。
+- 字段约束是**双层**的：EffectDefinition 层（permanent）要求 `decrement_on=""`；RuleModPayload 层仍要求显式 `turn_start/turn_end`，因此 payload 内保留 `decrement_on="turn_end"`。
+- `LeaveService` 会在单位离场时清空 `rule_mod_instances`，所以无下限必须挂在 `on_enter`，确保每次入场都重新施加。
 
 ---
 
@@ -254,11 +278,23 @@
 - `allow` 与 `deny` 使用同一套 `value` 取值范围。
 - `value="all"` 仅作用于技能/奥义/换人，不作用于 `wait`。
 
-实现点：
+迁移策略（避免一次性硬切导致旧内容失效）：
 
-- `rule_mod_service.gd`：`is_skill_allowed()` 收敛为 `is_action_allowed(action_type, skill_id)`
-- `legal_action_service.gd`：技能、奥义、换人都要读 `action_legality`
-- `action_executor.gd`：`_can_start_action()` 执行前复检 `action_legality`
+1. **阶段 A（兼容期）**：新增 `action_legality` 并保留 `skill_legality` 兼容读取；
+2. **阶段 B（迁移期）**：迁移 `content/effects/sukuna_domain_expire_seal.tres` 和相关测试；
+3. **阶段 C（收口期）**：移除 `skill_legality` 常量、校验与读取路径。
+
+实现清单（阶段 A 起步）：
+
+- `content_schema.gd`：新增 `RULE_MOD_ACTION_LEGALITY`
+- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 新增 `action_legality` 白名单与 `mod_op` 校验
+- `rule_mod_service.gd`：
+1. `STACKING_KEY_SCHEMA_BY_KIND` 增加 `RULE_MOD_ACTION_LEGALITY`
+2. `_validate_rule_mod_payload()` 增加 `action_legality`
+3. 新增 `is_action_allowed(battle_state, owner_id, action_type, skill_id="")`
+- `legal_action_service.gd`：技能、奥义、换人都改读 `is_action_allowed`
+- `action_executor.gd`：`_can_start_action()` 执行前复检 `is_action_allowed`，覆盖排队后中途上锁场景
+- `content/effects/sukuna_domain_expire_seal.tres` 与相关测试：迁移为 `action_legality`
 
 ### 4.2 `required_target_effects`
 
@@ -270,7 +306,8 @@
 
 执行规则：
 
-- `PayloadExecutor` 在执行 effect 前检查目标是否同时具备所有 required effect（按 `def_id`）。
+- `PayloadExecutor.execute_effect_event()` 在 payload 循环前做 effect 级前置检查。
+- 目标固定取 `effect_event.chain_context.target_unit_id` 对应单位；若为空、单位不存在、或缺少任一 required effect，则整条 effect 跳过。
 - 不满足则跳过该 effect，不报错。
 
 该能力仅用于茈的条件追加爆发，不引入 `action_tags`。
@@ -284,7 +321,11 @@
 实现点：
 
 - `content_schema.gd`：新增 `RULE_MOD_INCOMING_ACCURACY`
-- `rule_mod_service.gd`：新增命中读取接口（建议 `resolve_incoming_accuracy(base_accuracy, target_owner_id)`）
+- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 增加 `incoming_accuracy` 白名单与 `mod_op=add/set` 约束
+- `rule_mod_service.gd`：
+1. `STACKING_KEY_SCHEMA_BY_KIND` 增加 `RULE_MOD_INCOMING_ACCURACY`
+2. `_validate_rule_mod_payload()` 增加 `incoming_accuracy`
+3. 新增 `resolve_incoming_accuracy(battle_state, target_owner_id, base_accuracy)`
 - `action_cast_service.gd`：`resolve_hit` 在 field 覆盖后、`roll_hit` 前读取目标侧 `incoming_accuracy`
 - `action_executor.gd`：调用 `resolve_hit` 时补传目标（建议签名改为 `resolve_hit(command, skill_definition, target, battle_state, content_index)`）
 
@@ -292,6 +333,7 @@
 
 - 只在 `resolved_accuracy < 100` 时读取（必中不受影响）。
 - 最终命中率 clamp 到 `0~99`。
+- `0~99` 是刻意设计：`incoming_accuracy` 不得把命中改成“硬必中”；`100` 只由技能本体或 field 覆盖产生。
 
 ### 4.4 本版明确不纳入实现
 
@@ -365,13 +407,14 @@
 | 7 | 茈触发后无自伤 | 施法者 HP 不因反噬扣减 |
 | 8 | 反转术式 | 回复 25% max_hp |
 | 9 | MP 回复 | 每回合回复 14 |
-| 10 | 无量空处 action_lock | 当回合敌方已排队技能/换人被 `cancelled_pre_start` |
-| 11 | action_legality + wait | `deny all` 时 `wait` 仍可选 |
-| 12 | 领域内必中 | `creator_accuracy_override=100` 生效 |
-| 13 | 领域过期封印 | 下一回合苍/赫/茈被封印 1 回合体感 |
-| 14 | 领域打破回滚 | 与过期封印同链 |
-| 15 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
-| 16 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
+| 10 | 无下限重入场 | 五条悟离场再入场后，`incoming_accuracy -10` 仍生效 |
+| 11 | 无量空处 action_lock | 当回合敌方已排队技能/换人被 `cancelled_pre_start` |
+| 12 | action_legality + wait | `deny all` 时 `wait` 仍可选 |
+| 13 | 领域内必中 | `creator_accuracy_override=100` 生效 |
+| 14 | 领域过期封印 | 下一回合苍/赫/茈被封印 1 回合体感 |
+| 15 | 领域打破回滚 | 与过期封印同链 |
+| 16 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
+| 17 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
 
 ---
 
