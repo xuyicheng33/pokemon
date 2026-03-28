@@ -30,6 +30,13 @@ func build_system_chain(command_type: String):
     return chain_context
 
 func terminate_invalid_battle(battle_state, invalid_code: String) -> void:
+    _report_invalid_termination(
+        "BattleResultService terminate_invalid_battle: battle_id=%s phase=%s invalid_code=%s" % [
+            str(battle_state.battle_id),
+            str(battle_state.phase),
+            invalid_code,
+        ]
+    )
     battle_state.battle_result.finished = true
     battle_state.battle_result.winner_side_id = null
     battle_state.battle_result.result_type = "no_winner"
@@ -47,6 +54,14 @@ func terminate_invalid_battle(battle_state, invalid_code: String) -> void:
     ))
 
 func hard_terminate_invalid_state(battle_state, invalid_code: String, missing_dependency: String) -> void:
+    _report_invalid_termination(
+        "BattleResultService hard_terminate_invalid_state: battle_id=%s phase=%s invalid_code=%s missing_dependency=%s" % [
+            str(battle_state.battle_id),
+            str(battle_state.phase),
+            invalid_code,
+            missing_dependency,
+        ]
+    )
     if battle_state.battle_result == null:
         return
     battle_state.battle_result.finished = true
@@ -214,3 +229,6 @@ func _resolve_chain_origin(command_type: String) -> String:
             return "turn_end"
         _:
             return "system_replace"
+
+func _report_invalid_termination(message: String) -> void:
+    push_error(message)

@@ -39,6 +39,11 @@
 - 内部职责拆分为 `BattleContentRegistry`（加载与注册）、`ContentSnapshotValidator`（schema 校验）、`BattleSetupValidator`（setup/override 校验）。
 - `load_snapshot()` 固定执行“清理 -> 加载 -> 注册 -> schema 校验”；`validate_setup()` 固定委托给 setup 校验器；本轮不改任何现有校验规则语义。
 
+### 221. 非法终止前统一上报运行期错误日志
+- `BattleResultService.terminate_invalid_battle()` 与 `hard_terminate_invalid_state()` 在写入终止结果前都先调用统一错误上报入口，默认落到 `push_error()`。
+- 上报内容固定包含 `battle_id / phase / invalid_code`，`hard_terminate_invalid_state` 额外包含 `missing_dependency`，用于桌面运行与非 headless 调试时快速检索。
+- 该层只增强运行期可追踪性，不改变 `invalid_battle` 与 `hard_terminate` 的结果语义和日志契约。
+
 ### 210. `cause_event_id` 回归为“真实上游触发事件 ID”
 - 旧的“`cause_event_id = 当前日志自己的 chain_id:step_id`”口径作废，不再作为有效基线。
 - 直接伤害与默认动作反伤统一指向对应 `action:hit` 日志事件；effect payload 产出的 `effect:*` 继续指向内部 `effect_event_*`；`turn_start / turn_end` 的回复与到期链统一指向对应系统锚点；离场清理统一指向 `state:exit`。
