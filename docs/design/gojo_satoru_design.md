@@ -39,6 +39,10 @@
 | init_mp | **50** | 首回合可规划一轮爆发，但不再过宽 |
 | regen_per_turn | **14** | 从旧稿 16 下调，压缩连续压制 |
 
+补充语义：
+
+- 按当前 main 的固定回合时序，`turn_start` MP 回复发生在第 1 回合选指前；因此五条悟首个可操作回合的实战可用 MP 是 `64`，不是 `50`。
+
 ### 1.3 技能组与赛前装配
 
 **内容层（UnitDefinition）**
@@ -109,6 +113,11 @@
 - `gojo_aka_slow_down`：`scope=target`，`stat_mod(speed, -1)`
 - `gojo_aka_mark_apply`：`scope=target`，`apply_effect(gojo_aka_mark)`
 
+顺序约束：
+
+- 苍 / 赫的两个 `effects_on_hit_ids` 当前不依赖声明顺序；在现有效果队列模型下，同批次同来源 effect 若排序键完全一致，默认会进入随机打平。
+- 因此本设计不允许“先加速后上标记”或“先减速后上标记”这种先后差异影响玩法正确性；若未来要引入跨 effect 先后依赖，必须显式拉开 `priority`。
+
 ### 2.3 苍 / 赫标记 Effect 明细
 
 `gojo_ao_mark_apply` / `gojo_aka_mark_apply`（施加标记）：
@@ -168,6 +177,7 @@
 
 - 若茈本体伤害已经把目标打到 `hp <= 0`，则 `on_hit` 追加 effect 在当前执行模型里会因为目标已无效而整条跳过，不会再打追加段，也不会清标记。
 - 若追加伤害把目标打到 `hp <= 0`，后续 `remove_effect` 会因目标不再满足 `ACTIVE && hp > 0` 被静默跳过，不会报错；这属于当前 payload 有效性模型下的预期行为。
+- 若目标在五条悟行动前通过换人离开 active 槽位，则 `enemy_active_slot` 的茈会命中当时站在该槽位的新 active；而原目标作为标记持有者离场时会按 `persists_on_switch=false` 清掉双标记，因此这类“被换下后由替补吃到茈”的场景默认不会触发追加段。
 
 ### 2.5 反转术式（Reverse Ritual）
 
@@ -225,6 +235,11 @@
 1. `gojo_domain_cast_buff`：`stat_mod(sp_attack, +1)`（self）
 2. `gojo_apply_domain_field`：`apply_field(gojo_unlimited_void_field, duration=3, decrement_on=turn_end)`（field）
 3. `gojo_domain_action_lock`：`action_legality deny all, duration=1, decrement_on=turn_end`（target）
+
+顺序约束：
+
+- `gojo_apply_domain_field` 与 `gojo_domain_action_lock` 同属 `effects_on_hit_ids` 同批次 effect；当前设计不依赖它们的相对先后。
+- 原因是领域的 `creator_accuracy_override=100` 只影响后续技能命中，不参与本次奥义命中后的 `action_lock` 成立条件；若未来要让两个 effect 之间出现硬顺序依赖，必须显式拉开 `priority`。
 
 `action_legality deny all` 的口径：
 
@@ -295,6 +310,8 @@
 
 - `allow` 与 `deny` 使用同一套 `value` 取值范围。
 - `value="all"` 仅作用于技能 / 奥义 / 换人，不作用于 `wait`。
+- `action_legality.value` 必须在加载期 fail-fast 校验为：`all / skill / ultimate / switch / 已注册 skill_id` 之一；空串、拼写错误或未知 `skill_id` 都不得留到运行期。
+- `dynamic_value_formula` 对 `action_legality` 明确禁止；该读取点只接受静态 `value`。
 
 迁移策略（避免一次性硬切导致旧内容失效）：
 
@@ -305,14 +322,21 @@
 实现清单（阶段 A 起步）：
 
 - `content_schema.gd`：新增 `RULE_MOD_ACTION_LEGALITY`
-- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 新增 `action_legality` 白名单与 `mod_op` 校验
+- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 新增 `action_legality` 白名单、`mod_op` 校验、`value` 白名单校验，并明确禁止 `dynamic_value_formula`
 - `rule_mod_service.gd`：
 1. `STACKING_KEY_SCHEMA_BY_KIND` 增加 `RULE_MOD_ACTION_LEGALITY`
 2. `_validate_rule_mod_payload()` 增加 `action_legality`
 3. 新增 `is_action_allowed(battle_state, owner_id, action_type, skill_id="")`
-- `legal_action_service.gd`：技能、奥义、换人都改读 `is_action_allowed`
-- `command_validator.gd`：提交通道仍只能提交 legal set 内动作；不得只改 UI/AI 列表、不改提交校验
-- `action_executor.gd`：`_can_start_action()` 执行前复检 `is_action_allowed`，覆盖排队后中途上锁场景
+- `legal_action_service.gd`：技能、奥义、换人都改读 `is_action_allowed`；`wait_allowed / forced_command_type` 也必须把“换人被 rule_mod 封禁”视为**非 MP 阻断**
+- `turn_selection_resolver.gd`：提交通道继续只认 legal set；不得把“是否在 legal set 内”这层语义偷偷下沉到 `command_validator.gd`
+- `command_validator.gd`：继续负责结构、运行时 ID 回填、奥义入口、MP 等硬非法；不要复制一套独立的 `action_legality` 语义
+- `action_executor.gd`：执行前新增 `is_action_allowed` 复检（可保留在 `action_executor.gd`，也可抽 helper），覆盖排队后中途上锁场景
+
+真正接线时的文档同步清单（必须补齐）：
+
+- `docs/design/command_and_legality.md`
+- `docs/rules/02_turn_flow_and_action_resolution.md`
+- `docs/records/decisions.md`
 
 兼容期读取策略（必须写死）：
 
@@ -374,7 +398,7 @@
 实现点：
 
 - `content_schema.gd`：新增 `RULE_MOD_INCOMING_ACCURACY`
-- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 增加 `incoming_accuracy` 白名单与 `mod_op=add/set` 约束
+- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 增加 `incoming_accuracy` 白名单、`mod_op=add/set` 约束、数值 `value` 校验，并明确禁止 `dynamic_value_formula`
 - `rule_mod_service.gd`：
 1. `STACKING_KEY_SCHEMA_BY_KIND` 增加 `RULE_MOD_INCOMING_ACCURACY`
 2. `_validate_rule_mod_payload()` 增加 `incoming_accuracy`
@@ -387,6 +411,7 @@
 - 只在 `resolved_accuracy < 100` 时读取（必中不受影响）
 - 最终命中率 clamp 到 `0~99`
 - `0~99` 是刻意设计：`incoming_accuracy` 不得把命中改成“硬必中”；`100` 只由技能本体或 field 覆盖产生
+- `incoming_accuracy.value` 必须是数值；非数值或 NaN 口径在内容加载期直接失败
 - 读取范围必须收紧为“敌方来袭技能 / 奥义”：
 1. 仅当 `command_type in {skill, ultimate}` 且技能 `targeting=enemy_active_slot` 时才可读取
 2. 仅当 `target` 为敌方 active 单位时读取；`self/field/none` 与无目标动作一律跳过
@@ -396,6 +421,15 @@
 
 - `["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"]`
 - 说明：不按 `value` 分键，沿用 `final_mod/mp_regen` 的同类 schema
+
+真正接线时的文档同步清单（必须补齐）：
+
+- `docs/rules/03_stats_resources_and_damage.md`
+- `docs/design/effect_engine.md`
+- `docs/design/battle_runtime_model.md`
+- `docs/design/battle_content_schema.md`
+- `docs/design/battle_core_architecture_constraints.md`
+- `docs/records/decisions.md`
 
 ### 4.4 可选第 4 块扩展（仅当要限制为“同一施法者本人消耗标记”时）
 
@@ -475,23 +509,26 @@
 | 7 | 茈触发后无自伤 | 施法者 HP 不因反噬扣减 |
 | 8 | 反转术式 | 回复 25% max_hp |
 | 9 | MP 回复 | 每回合回复 14 |
-| 10 | 无下限重入场 | 五条悟离场再入场后，`incoming_accuracy -10` 仍生效 |
-| 11 | 无量空处 action_lock 生效时机 | 仅当 Gojo 先于目标行动并命中、且目标当回合尚未开始时，目标已排队技能 / 换人会被 `cancelled_pre_start` |
-| 12 | action_legality + wait | `deny all` 时 `wait` 仍可选 |
-| 13 | 领域内必中 | `creator_accuracy_override=100` 生效 |
-| 14 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
-| 15 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
-| 16 | 标记持有者离场清除 | 目标换下后 `gojo_ao_mark/gojo_aka_mark` 被移除（`persists_on_switch=false`） |
-| 17 | 五条悟离场不清目标标记 | 五条悟自己换下时，敌方身上的苍 / 赫标记仍保留 |
-| 18 | 同队重复 Gojo 的共享标记语义 | A 五条悟铺双标记后，B 五条悟使用茈可以触发追加段并清标记 |
-| 19 | 茈追加击杀边界 | 追加段把目标打到 `hp<=0` 时，后续 `remove_effect` 静默跳过且不产生 `invalid_battle` |
-| 20 | 茈本体先击杀边界 | 若茈本体伤害已击杀目标，则 `gojo_murasaki_conditional_burst` 整条跳过，不再打追加段 |
-| 21 | required_target_effects 坏引用 | `required_target_effects` 指向不存在 effect 时内容加载期直接失败 |
-| 22 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
-| 23 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
-| 24 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
-| 25 | 双 `+5` 先后手竞争 | 对手也使用 `+5` 奥义时，若对手先动，则 Gojo 本回合不得被文档误写成“仍然锁到对方” |
-| 26 | 标记 / 领域时间线 | `duration=3 + decrement_on=turn_end` 必须按“施放当回合起连续 3 次 `turn_end` 扣减”验证 |
+| 10 | 首回合可操作 MP | 按当前 `turn_start -> selection` 时序，Gojo 第 1 回合进入选指时 `current_mp = 64` |
+| 11 | 无下限重入场 | 五条悟离场再入场后，`incoming_accuracy -10` 仍生效 |
+| 12 | 无量空处 action_lock 生效时机 | 仅当 Gojo 先于目标行动并命中、且目标当回合尚未开始时，目标已排队技能 / 换人会被 `cancelled_pre_start` |
+| 13 | action_legality + wait | `deny all` 时 `wait` 仍可选 |
+| 14 | action_legality 阻断换人也算非 MP 阻断 | 当技能 / 奥义仅因 MP 不足不可用、换人被 `deny switch/all` 封禁时，legal set 只保留 `wait`，不得回落到 `resource_forced_default` |
+| 15 | 领域内必中 | `creator_accuracy_override=100` 生效 |
+| 16 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
+| 17 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
+| 18 | 标记持有者离场清除 | 目标换下后 `gojo_ao_mark/gojo_aka_mark` 被移除（`persists_on_switch=false`） |
+| 19 | 五条悟离场不清目标标记 | 五条悟自己换下时，敌方身上的苍 / 赫标记仍保留 |
+| 20 | 同队重复 Gojo 的共享标记语义 | A 五条悟铺双标记后，B 五条悟使用茈可以触发追加段并清标记 |
+| 21 | 茈追加击杀边界 | 追加段把目标打到 `hp<=0` 时，后续 `remove_effect` 静默跳过且不产生 `invalid_battle` |
+| 22 | 茈本体先击杀边界 | 若茈本体伤害已击杀目标，则 `gojo_murasaki_conditional_burst` 整条跳过，不再打追加段 |
+| 23 | 茈对位槽位重定向边界 | 目标在 Gojo 行动前换下时，`enemy_active_slot` 茈命中新 active；若新 active 不持双标记，则不触发追加段 |
+| 24 | required_target_effects 坏引用 | `required_target_effects` 指向不存在 effect 时内容加载期直接失败 |
+| 25 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
+| 26 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
+| 27 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
+| 28 | 双 `+5` 先后手竞争 | 对手也使用 `+5` 奥义时，若对手先动，则 Gojo 本回合不得被文档误写成“仍然锁到对方” |
+| 29 | 标记 / 领域时间线 | `duration=3 + decrement_on=turn_end` 必须按“施放当回合起连续 3 次 `turn_end` 扣减”验证 |
 
 ---
 
@@ -502,9 +539,12 @@
 | 爆发 | 中高 | 茈双标记连段在当前公式下可打出明显高于单发技能的爆发 |
 | 控场 | 很高 | 领域命中后能锁未开始行动的对手，并让 creator 技能必中；但不是所有先手竞争场景都能保证首回合锁到人 |
 | 生存 | 中高 | 反转术式 + 稳定命中干扰，让它比“纯高速脆皮法师”更难处理 |
-| 资源节奏 | 中高 | `init_mp=50`、`regen=14` 让它在对局前中期就能持续施压，只是还没到“无脑连开奥义”的程度 |
+| 资源节奏 | 中高 | 按当前主线时序首个可操作回合实战可用 MP 为 `64`，配合 `regen=14` 能较早形成压制，但还没到“无脑连开奥义”的程度 |
 
-按当前 main 的 50 级简化公式与现有宿傩基线粗看，这版五条悟更接近“偏强压制型角色”，不是单纯的“中性强度高速术师”。
+补充说明：
+
+- 按当前 main 的 50 级简化公式与现有时序，五条悟更接近“偏强压制型角色”，不是单纯的“中性强度高速术师”。
+- 但“宿傩基线”不是严格中性参照：当前样例属性表里 `psychic -> demon = 0.5`、`demon -> psychic = 2.0`，因此 Gojo 对宿傩的实战表现不能直接代表它在中性对位下的最终强度。
 
 本版目标不是最终平衡值，而是先落地“可施工、可验收、可迭代”的玩法闭环；最终强度仍需等 Gojo 落地后再用实战数据回调。
 

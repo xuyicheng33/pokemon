@@ -632,3 +632,10 @@
 - 领域结束后的“封印/回滚后摇”从设计口径中移除：Gojo 不再定义 `gojo_domain_expire_seal / gojo_domain_rollback`，Sukuna 现有内容也移除同类后摇。
 - Sukuna `sukuna_malevolent_shrine` 调整为：自然到期仅保留 `sukuna_domain_expire_burst`，`on_break_effect_ids` 置空；不再施加 `skill_legality` 封印与 stat rollback。
 - 领域强度本轮不下调，后续按实战与回归数据再做平衡收敛。
+
+### 204. 五条悟文档四审职责与边界补丁（2026-03-29）
+- `action_legality` 的选择阶段职责继续由 `LegalActionService + TurnSelectionResolver` 承担；`CommandValidator` 只保留结构、ID 回填、奥义入口与 MP 等硬非法校验，不复制 legal set 语义。
+- `action_legality` 覆盖换人后，`LegalActionService.wait_allowed / forced_command_type` 必须把“换人被 rule_mod 封禁”视为非 MP 阻断；当技能/奥义仅因 MP 不足不可用、换人又被封时，只保留 `wait`，不得错误回落到 `resource_forced_default`。
+- Gojo 文档不得把同批次 `effects_on_hit_ids` 写成默认有稳定声明顺序；若玩法依赖 `apply_field`、`action_lock`、上标记、加速/减速之间的先后，必须显式拉开 `priority`，否则按当前 effect queue 语义可能进入随机打平。
+- Gojo 平衡描述需显式承认当前主线是“`turn_start` 回 MP 在 selection 前”，因此五条悟首个可操作回合的实战可用 MP 为 `64`；同时宿傩不是严格中性参照，因为当前样例属性表里 `psychic < demon`、`demon > psychic`。
+- `enemy_active_slot` 的目标模型固定是“锁槽位不锁旧实例”；因此若对手先换人，排队中的茈会命中新 active，而原目标作为标记持有者离场时会清标记，这类场景默认不会触发双标记追加段。

@@ -988,3 +988,23 @@
 - `sukuna_domain_expire_chain_path` 必须验证“终爆仍生效，但无封印、无 rollback”。
 - `sukuna_domain_break_chain_path` 必须验证“打破无终爆、无封印、无 rollback”。
 - Gojo 文档不得再出现 `gojo_domain_expire_seal / gojo_domain_rollback` 的可施工定义。
+
+### 五条悟文档四审职责与边界修复（已完成）
+- 目标：把上一轮口头审查里会直接误导后续实现的硬问题全部修掉，确保 Gojo 文档可作为后续施工蓝图使用。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。
+- 验收标准：文档不再误指 `CommandValidator` 承担 legal set 语义；`switch` 被封禁时的 `wait/forced default` 分支写清；同批次 effect 顺序、首回合 MP 时点、换人打断茈连段与宿傩非中性参照都显式落盘。
+
+#### 已完成内容
+- 修正 `action_legality` 实现清单，明确选择阶段职责仍在 `LegalActionService + TurnSelectionResolver`，`CommandValidator` 只保留硬非法校验。
+- 补充 `action_legality` 对换人的影响：当换人被封禁时，也要计入非 MP 阻断，保证 `wait` 仍是唯一合法动作，而不是错误转成 `resource_forced_default`。
+- 补充 `action_legality.value` 与 `incoming_accuracy.value` 的加载期 fail-fast 约束，并明确两者都禁止 `dynamic_value_formula`。
+- 补充苍/赫与领域 `effects_on_hit_ids` 的顺序约束：当前设计不得依赖同批次 effect 的默认声明顺序；若未来需要先后依赖，必须显式拉开 `priority`。
+- 补充茈的槽位重定向边界：目标先换下时，茈命中新 active，且因旧目标离场清标记而默认不会触发追加段。
+- 修正平衡口径：写明 Gojo 首个可操作回合实战可用 MP 为 `64`，并注明宿傩不是严格中性参照。
+- Gojo 测试计划新增首回合 MP、换人被封禁后的 `wait`、茈槽位重定向等边界用例。
+
+#### 回归检查要点
+- Gojo 文档中的 `action_legality` 实现清单不能再把“legal set 提交通道”错误挂到 `command_validator.gd`。
+- Gojo 文档必须明确“换人被 `action_legality` 封禁”会影响 `wait_allowed / forced_command_type` 的分支。
+- Gojo 文档必须明确：同批次 `effects_on_hit_ids` 默认不保证声明顺序。
+- Gojo 文档必须明确：首回合选指前先回 MP，Gojo 的首个可操作回合实战可用 MP 是 `64`。
