@@ -142,6 +142,7 @@
 - 条件满足：追加爆发并消耗双标记。
 - 条件不满足：只结算茈本体伤害，不做额外动作。
 - **不做任何反噬/自伤**。
+- 边界：若追加伤害把目标直接打到 `hp<=0`，后续 `remove_effect` 会因目标不再满足 `ACTIVE && hp>0` 被静默跳过，不会报错；这属于预期行为。
 
 ### 2.6 标记 Effect 明细（避免实现歧义）
 
@@ -154,6 +155,7 @@
 
 - EffectDefinition：`scope=self`, `duration_mode=turns`, `duration=3`, `decrement_on=turn_end`, `stacking=refresh`, `trigger_names=[]`, `payloads=[]`, `persists_on_switch=false`
 - 说明：纯标记 effect 无 payload，不直接产生数值结算；仅用于条件判定。
+- 玩法语义：`persists_on_switch=false` 代表“换人会清标记”，不能通过换手跨单位保留苍/赫铺垫。
 
 ### 2.4 反转术式（Reverse Ritual）
 
@@ -233,6 +235,7 @@
 2. payload（3 条）：与 `gojo_domain_expire_seal` 相同，仅事件来源为 `on_break`
 
 - 本版明确**不**添加 `stat_mod(sp_attack, -1)` 回退；`gojo_domain_cast_buff(+1)` 作为独立收益，不和 field break 绑定反向回滚。
+- 过期与打破在当前 field 生命周期实现中互斥，不会同一实例同时触发两条链。
 
 ---
 
@@ -262,6 +265,7 @@
 - 无下限改成稳定干扰命中，不再使用概率触发，也不再改写伤害值。
 - 字段约束是**双层**的：EffectDefinition 层（permanent）要求 `decrement_on=""`；RuleModPayload 层仍要求显式 `turn_start/turn_end`，因此 payload 内保留 `decrement_on="turn_end"`。
 - `LeaveService` 会在单位离场时清空 `rule_mod_instances`，所以无下限必须挂在 `on_enter`，确保每次入场都重新施加。
+- 运行时语义补充：对 `duration_mode=permanent` 的 RuleModPayload，`decrement_on` 不参与扣减（`remaining=-1` 不会递减）；该字段仅用于满足 payload 校验约束。
 
 ---
 
@@ -296,6 +300,16 @@
 - `action_executor.gd`：`_can_start_action()` 执行前复检 `is_action_allowed`，覆盖排队后中途上锁场景
 - `content/effects/sukuna_domain_expire_seal.tres` 与相关测试：迁移为 `action_legality`
 
+兼容期读取策略（必须写死）：
+
+- `is_action_allowed` 在阶段 A 同时读取两类实例：`action_legality` 与旧 `skill_legality`。
+- 混合实例统一按现有 rule_mod 排序链处理（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`），避免新旧规则并存时顺序漂移。
+
+`action_legality` stacking key schema：
+
+- `["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"]`
+- 说明：`value=all`、`value=switch`、`value=具体skill_id` 必须是不同 key，避免互相覆盖。
+
 ### 4.2 `required_target_effects`
 
 `effect_definition.gd` 新增：
@@ -309,6 +323,7 @@
 - `PayloadExecutor.execute_effect_event()` 在 payload 循环前做 effect 级前置检查。
 - 目标固定取 `effect_event.chain_context.target_unit_id` 对应单位；若为空、单位不存在、或缺少任一 required effect，则整条 effect 跳过。
 - 不满足则跳过该 effect，不报错。
+- 安全前提：只要前置检查实现正确，`remove_effect` 不会走到“目标标记不存在”分支，自然不会触发 `INVALID_EFFECT_REMOVE_AMBIGUOUS`。
 
 该能力仅用于茈的条件追加爆发，不引入 `action_tags`。
 
@@ -334,6 +349,11 @@
 - 只在 `resolved_accuracy < 100` 时读取（必中不受影响）。
 - 最终命中率 clamp 到 `0~99`。
 - `0~99` 是刻意设计：`incoming_accuracy` 不得把命中改成“硬必中”；`100` 只由技能本体或 field 覆盖产生。
+
+`incoming_accuracy` stacking key schema：
+
+- `["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"]`
+- 说明：不按 `value` 分键，沿用 `final_mod/mp_regen` 的同类 schema。
 
 ### 4.4 本版明确不纳入实现
 
