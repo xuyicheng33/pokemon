@@ -20,8 +20,8 @@
 |任务|结果|提交|
 |---|---|---|
 |阶段一：日志契约与文档事实收口|已完成|独立提交完成（`fix: realign log cause contracts`）|
-|阶段二：候选技能池与赛前配招 contract 落地|已完成|阶段二独立提交（本次提交）|
-|阶段三：一致性闸门与总收口|未开始|未提交|
+|阶段二：候选技能池与赛前配招 contract 落地|已完成|独立提交完成（`add: prebattle regular skill loadouts`）|
+|阶段三：一致性闸门与总收口|已完成|阶段三独立提交（本次提交）|
 
 #### 阶段一最小可玩性检查清单
 - 可启动：`godot --headless --path . --script tests/run_all.gd` 通过。
@@ -53,6 +53,22 @@
 #### 阶段二当前验证结果（2026-03-28）
 - `godot --headless --path . --script tests/run_all.gd`：通过（内含 `setup_loadout_suite` 与宿傩专项回归）。
 - `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `GATE PASSED`）。
+
+#### 阶段三最小可玩性检查清单
+- 可启动：`tests/run_with_gate.sh` 通过，且新增 `tests/check_repo_consistency.sh` 已挂入统一闸门。
+- 可操作：README 代码规模、关键日志契约回归、候选技能池/赛前配招专门回归、文档 contract 名称都能自动校验。
+- 无致命错误：仓库一致性检查和架构约束检查职责分离，任何一层失败都会阻断提交。
+
+#### 阶段三回归检查要点
+- `tests/check_repo_consistency.sh` 必须校验 README 代码规模与实测一致。
+- `tests/check_repo_consistency.sh` 必须校验关键 `cause_event_id` 回归锚点仍在 `content_logging_suite.gd` 中。
+- `tests/check_repo_consistency.sh` 必须校验 `setup_loadout_suite.gd` 已注册并覆盖候选技能池、setup override、运行时装配 contract。
+- `tests/check_repo_consistency.sh` 必须校验 `candidate_skill_ids / regular_skill_loadout_overrides / regular_skill_ids` 已按正式名称落盘到 README / docs / rules，不再容忍旧漂移口径。
+- `tests/check_architecture_constraints.sh` 继续只负责分层和文件体量，不混入文档一致性职责。
+
+#### 阶段三当前验证结果（2026-03-28）
+- `bash tests/check_repo_consistency.sh`：通过（`REPO_CONSISTENCY_PASSED`）。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
 
 ## 2026-03-27
 

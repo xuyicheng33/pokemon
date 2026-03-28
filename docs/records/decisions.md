@@ -42,6 +42,11 @@
 - `LegalActionSet.legal_skill_ids`、公开快照 `prebattle_public_teams[*].units[*].skill_ids`、以及后续日志展示的技能列表，统一读取 `UnitState.regular_skill_ids`。
 - `candidate_skill_ids` 当前只属于内容定义与赛前 setup 校验 contract，不进入 public snapshot，也不作为 AI 的外层可见字段。
 
+### 214. 仓库一致性闸门独立于架构闸门维护
+- `tests/check_architecture_constraints.sh` 继续只负责分层边界和核心文件体量，不再堆叠 README、文档命名或测试覆盖语义检查。
+- 新增 `tests/check_repo_consistency.sh` 负责第一批仓库一致性检查：README 代码规模统计、关键 `cause_event_id` 回归锚点、候选技能池/赛前配招专门回归、以及新公开 contract 名称的文档落盘。
+- `tests/run_with_gate.sh` 必须串行执行业务断言、架构闸门和仓库一致性闸门，任何一层失败都直接阻断提交。
+
 ## 2026-03-27
 
 ### 205. `docs/rules/06` 与扩展入口文档不得继续保留已退役 schema 别名
