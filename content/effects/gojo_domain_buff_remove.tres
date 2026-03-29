@@ -16,4 +16,5 @@ display_name = "无量空处领域增幅移除"
 scope = "self"
 duration_mode = "permanent"
 stacking = "none"
+trigger_names = PackedStringArray("field_break", "field_expire")
 payloads = Array[Resource]([SubResource("1")])

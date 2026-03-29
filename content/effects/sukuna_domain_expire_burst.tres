@@ -17,4 +17,5 @@ display_name = "领域终爆"
 scope = "target"
 duration_mode = "permanent"
 stacking = "none"
+trigger_names = PackedStringArray("field_expire")
 payloads = Array[Resource]([SubResource("1")])

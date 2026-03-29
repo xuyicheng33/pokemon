@@ -10,6 +10,10 @@ func collect_events(trigger_name: String, _battle_state, content_index, effect_i
     for effect_id in effect_ids:
         var effect_definition = content_index.effects.get(effect_id)
         assert(effect_definition != null, "Missing effect definition: %s" % effect_id)
+        assert(
+            effect_definition.trigger_names.has(trigger_name),
+            "Effect %s missing trigger_names entry for dispatched trigger: %s" % [effect_id, trigger_name]
+        )
         var effect_event = EffectEventScript.new()
         effect_event.event_id = id_factory.next_id("effect_event")
         effect_event.trigger_name = trigger_name

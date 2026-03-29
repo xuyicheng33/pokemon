@@ -17,4 +17,5 @@ display_name = "灶爆炸"
 scope = "self"
 duration_mode = "permanent"
 stacking = "none"
+trigger_names = PackedStringArray("on_expire")
 payloads = Array[Resource]([SubResource("1")])

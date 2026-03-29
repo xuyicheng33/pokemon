@@ -22,5 +22,5 @@ display_name = "无量空处行动封锁"
 scope = "target"
 duration_mode = "permanent"
 stacking = "none"
-trigger_names = PackedStringArray("on_hit")
+trigger_names = PackedStringArray("field_apply_success")
 payloads = Array[Resource]([SubResource("1")])

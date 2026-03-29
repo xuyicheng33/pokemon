@@ -66,6 +66,20 @@ func get_public_snapshot(session_id: String) -> Dictionary:
     var session = _get_session_or_fail(session_id)
     return public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index)
 
+func get_event_log_snapshot(session_id: String, from_index: int = 0) -> Dictionary:
+    _assert_core_dependencies()
+    assert(from_index >= 0, "BattleCoreManager.get_event_log_snapshot requires from_index >= 0")
+    var session = _get_session_or_fail(session_id)
+    var event_log: Array = session.container.battle_logger.snapshot()
+    var start_index: int = min(from_index, event_log.size())
+    var event_snapshots: Array = []
+    for event_index in range(start_index, event_log.size()):
+        event_snapshots.append(_build_event_snapshot(event_log[event_index], session.battle_state))
+    return {
+        "events": event_snapshots,
+        "total_size": event_log.size(),
+    }
+
 func close_session(session_id: String) -> void:
     _assert_core_dependencies()
     assert(not session_id.is_empty(), "BattleCoreManager.close_session requires non-empty session_id")
@@ -78,8 +92,9 @@ func run_replay(replay_input) -> Dictionary:
     _assert_core_dependencies()
     var temp_container = _compose_container_or_fail()
     var replay_result: Dictionary = temp_container.replay_runner.run_replay_with_context(replay_input)
-    var replay_output = replay_result["replay_output"]
-    var public_snapshot = public_snapshot_builder.build_public_snapshot(replay_output.final_battle_state, replay_result["content_index"])
+    var internal_replay_output = replay_result["replay_output"]
+    var public_snapshot = public_snapshot_builder.build_public_snapshot(internal_replay_output.final_battle_state, replay_result["content_index"])
+    var replay_output = internal_replay_output.clone_without_runtime_state()
     temp_container.dispose()
     return {
         "replay_output": replay_output,
@@ -131,3 +146,31 @@ func _compose_container_or_fail():
 func _next_session_id() -> String:
     _session_seq += 1
     return "session_%d" % _session_seq
+
+func _build_event_snapshot(log_event, battle_state) -> Dictionary:
+    if log_event == null:
+        return {}
+    var event_snapshot: Dictionary = log_event.to_stable_dict()
+    event_snapshot["actor_public_id"] = _resolve_public_id(battle_state, log_event.actor_id)
+    event_snapshot["actor_definition_id"] = _resolve_definition_id(battle_state, log_event.actor_id)
+    event_snapshot["target_public_id"] = _resolve_public_id(battle_state, log_event.target_instance_id)
+    event_snapshot["target_definition_id"] = _resolve_definition_id(battle_state, log_event.target_instance_id)
+    return event_snapshot
+
+func _resolve_public_id(battle_state, runtime_unit_id) -> Variant:
+    var normalized_id := str(runtime_unit_id)
+    if normalized_id.is_empty():
+        return null
+    var unit_state = battle_state.get_unit(normalized_id)
+    if unit_state == null:
+        return null
+    return unit_state.public_id
+
+func _resolve_definition_id(battle_state, runtime_unit_id) -> Variant:
+    var normalized_id := str(runtime_unit_id)
+    if normalized_id.is_empty():
+        return null
+    var unit_state = battle_state.get_unit(normalized_id)
+    if unit_state == null:
+        return null
+    return unit_state.definition_id

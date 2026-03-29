@@ -23,7 +23,7 @@ func get_legal_actions(battle_state, side_id: String, content_index):
         var skill_definition = content_index.skills.get(skill_id)
         if skill_definition == null:
             continue
-        var blocked_by_side_domain: bool = side_domain_recast_blocked and bool(skill_definition.is_domain_skill)
+        var blocked_by_side_domain: bool = side_domain_recast_blocked and content_index.is_domain_skill(skill_id)
         var can_pay_mp: bool = actor.current_mp >= skill_definition.mp_cost
         var allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
             battle_state,
@@ -40,7 +40,7 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     if not unit_definition.ultimate_skill_id.is_empty():
         var ultimate_definition = content_index.skills.get(unit_definition.ultimate_skill_id)
         if ultimate_definition != null:
-            var blocked_ultimate_by_side_domain: bool = side_domain_recast_blocked and bool(ultimate_definition.is_domain_skill)
+            var blocked_ultimate_by_side_domain: bool = side_domain_recast_blocked and content_index.is_domain_skill(unit_definition.ultimate_skill_id)
             var can_pay_ultimate_mp: bool = actor.current_mp >= ultimate_definition.mp_cost
             var has_ultimate_points: bool = actor.ultimate_points >= actor.ultimate_points_required
             var ultimate_allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(

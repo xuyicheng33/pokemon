@@ -23,6 +23,8 @@ const STACKING_STACK := "stack"
 const FIELD_KIND_NORMAL := "normal"
 const FIELD_KIND_DOMAIN := "domain"
 
+const TRIGGER_FIELD_APPLY_SUCCESS := "field_apply_success"
+
 const RULE_MOD_FINAL_MOD := "final_mod"
 const RULE_MOD_MP_REGEN := "mp_regen"
 const RULE_MOD_SKILL_LEGALITY := "skill_legality"

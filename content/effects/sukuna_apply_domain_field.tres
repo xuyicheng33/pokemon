@@ -6,7 +6,7 @@
 [sub_resource type="Resource" id="1"]
 script = ExtResource("2")
 payload_type = "apply_field"
-field_definition_id = "sukuna_malevolent_shrine"
+field_definition_id = "sukuna_malevolent_shrine_field"
 
 [resource]
 script = ExtResource("1")

@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1")
-id = "sukuna_malevolent_shrine"
+id = "sukuna_malevolent_shrine_field"
 display_name = "伏魔御厨子·领域"
 field_kind = "domain"
 effect_ids = PackedStringArray("sukuna_domain_cast_buff")

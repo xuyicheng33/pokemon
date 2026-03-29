@@ -107,7 +107,7 @@ func _mark_domain_clash_protection(queued_actions: Array, content_index) -> void
         if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
             continue
         var skill_definition = content_index.skills.get(command.skill_id)
-        if skill_definition == null or not bool(skill_definition.is_domain_skill):
+        if skill_definition == null or not content_index.is_domain_skill(command.skill_id):
             continue
         if not first_domain_action_by_side.has(command.side_id):
             first_domain_action_by_side[command.side_id] = queued_action
