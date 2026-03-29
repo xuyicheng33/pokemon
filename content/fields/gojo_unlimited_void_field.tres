@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="FieldDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/field_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "gojo_unlimited_void_field"
+display_name = "无量空处"
+effect_ids = PackedStringArray()
+on_expire_effect_ids = PackedStringArray()
+on_break_effect_ids = PackedStringArray()
+creator_accuracy_override = 100

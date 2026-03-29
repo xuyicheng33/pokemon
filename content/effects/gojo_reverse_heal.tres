@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/heal_payload.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "heal"
+use_percent = true
+percent = 25
+
+[resource]
+script = ExtResource("1")
+id = "gojo_reverse_heal"
+display_name = "反转术式回复"
+scope = "self"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_cast")
+payloads = Array[Resource]([SubResource("1")])

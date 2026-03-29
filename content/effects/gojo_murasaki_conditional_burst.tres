@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/damage_payload.gd" id="2"]
+[ext_resource type="Script" path="res://src/battle_core/content/remove_effect_payload.gd" id="3"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "damage"
+amount = 32
+use_formula = true
+damage_kind = "special"
+
+[sub_resource type="Resource" id="2"]
+script = ExtResource("3")
+payload_type = "remove_effect"
+effect_definition_id = "gojo_ao_mark"
+
+[sub_resource type="Resource" id="3"]
+script = ExtResource("3")
+payload_type = "remove_effect"
+effect_definition_id = "gojo_aka_mark"
+
+[resource]
+script = ExtResource("1")
+id = "gojo_murasaki_conditional_burst"
+display_name = "茈·双标记爆发"
+scope = "target"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_hit")
+required_target_effects = PackedStringArray("gojo_ao_mark", "gojo_aka_mark")
+payloads = Array[Resource]([SubResource("1"), SubResource("2"), SubResource("3")])

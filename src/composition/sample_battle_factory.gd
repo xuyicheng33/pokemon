@@ -30,6 +30,7 @@ func content_snapshot_paths() -> PackedStringArray:
         "res://content/units/sample_mossaur.tres",
         "res://content/units/sample_tidekit.tres",
         "res://content/units/sukuna.tres",
+        "res://content/units/gojo_satoru.tres",
         "res://content/skills/sample_strike.tres",
         "res://content/skills/sample_quick_jab.tres",
         "res://content/skills/sample_field_call.tres",
@@ -43,6 +44,11 @@ func content_snapshot_paths() -> PackedStringArray:
         "res://content/skills/sukuna_hiraku.tres",
         "res://content/skills/sukuna_reverse_ritual.tres",
         "res://content/skills/sukuna_fukuma_mizushi.tres",
+        "res://content/skills/gojo_ao.tres",
+        "res://content/skills/gojo_aka.tres",
+        "res://content/skills/gojo_murasaki.tres",
+        "res://content/skills/gojo_reverse_ritual.tres",
+        "res://content/skills/gojo_unlimited_void.tres",
         "res://content/effects/sample_apply_focus_field.tres",
         "res://content/effects/sukuna_apply_kamado.tres",
         "res://content/effects/sukuna_kamado_mark.tres",
@@ -52,9 +58,23 @@ func content_snapshot_paths() -> PackedStringArray:
         "res://content/effects/sukuna_domain_cast_buff.tres",
         "res://content/effects/sukuna_domain_expire_burst.tres",
         "res://content/effects/sukuna_refresh_love_regen.tres",
+        "res://content/effects/gojo_ao_speed_up.tres",
+        "res://content/effects/gojo_ao_mark_apply.tres",
+        "res://content/effects/gojo_ao_mark.tres",
+        "res://content/effects/gojo_aka_slow_down.tres",
+        "res://content/effects/gojo_aka_mark_apply.tres",
+        "res://content/effects/gojo_aka_mark.tres",
+        "res://content/effects/gojo_murasaki_conditional_burst.tres",
+        "res://content/effects/gojo_reverse_heal.tres",
+        "res://content/effects/gojo_domain_cast_buff.tres",
+        "res://content/effects/gojo_apply_domain_field.tres",
+        "res://content/effects/gojo_domain_action_lock.tres",
+        "res://content/effects/gojo_mugen_incoming_accuracy_down.tres",
         "res://content/fields/sample_focus_field.tres",
         "res://content/fields/sukuna_malevolent_shrine.tres",
+        "res://content/fields/gojo_unlimited_void_field.tres",
         "res://content/passive_skills/sukuna_teach_love.tres",
+        "res://content/passive_skills/gojo_mugen.tres",
     ])
 
 func build_sample_setup(side_regular_skill_overrides: Dictionary = {}):
@@ -71,6 +91,22 @@ func build_sample_setup(side_regular_skill_overrides: Dictionary = {}):
     p2.starting_index = 0
     p2.regular_skill_loadout_overrides = side_regular_skill_overrides.get("P2", {})
     battle_setup.sides = [p1, p2]
+    return battle_setup
+
+func build_gojo_vs_sukuna_setup(side_regular_skill_overrides: Dictionary = {}):
+    var battle_setup = build_sample_setup(side_regular_skill_overrides)
+    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_pyron"])
+    battle_setup.sides[0].starting_index = 0
+    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"])
+    battle_setup.sides[1].starting_index = 0
+    return battle_setup
+
+func build_gojo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
+    var battle_setup = build_sample_setup(side_regular_skill_overrides)
+    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
+    battle_setup.sides[0].starting_index = 0
+    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
+    battle_setup.sides[1].starting_index = 0
     return battle_setup
 
 func build_demo_replay_input(command_port, side_regular_skill_overrides: Dictionary = {}):

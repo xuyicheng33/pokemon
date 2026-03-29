@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "gojo_ao"
+display_name = "苍"
+damage_kind = "special"
+power = 44
+accuracy = 95
+mp_cost = 14
+priority = 0
+combat_type_id = "space"
+power_bonus_source = ""
+targeting = "enemy_active_slot"
+effects_on_cast_ids = PackedStringArray()
+effects_on_hit_ids = PackedStringArray("gojo_ao_speed_up", "gojo_ao_mark_apply")
+effects_on_miss_ids = PackedStringArray()
+effects_on_kill_ids = PackedStringArray()

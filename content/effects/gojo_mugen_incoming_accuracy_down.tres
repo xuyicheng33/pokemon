@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/rule_mod_payload.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "rule_mod"
+mod_kind = "incoming_accuracy"
+mod_op = "add"
+value = -10
+scope = "self"
+duration_mode = "permanent"
+decrement_on = "turn_end"
+stacking = "none"
+
+[resource]
+script = ExtResource("1")
+id = "gojo_mugen_incoming_accuracy_down"
+display_name = "无下限·来袭命中降低"
+scope = "self"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_enter")
+payloads = Array[Resource]([SubResource("1")])

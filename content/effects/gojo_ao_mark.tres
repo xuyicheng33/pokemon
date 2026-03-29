@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "gojo_ao_mark"
+display_name = "苍标记"
+scope = "self"
+duration_mode = "turns"
+duration = 3
+decrement_on = "turn_end"
+stacking = "refresh"
+trigger_names = PackedStringArray()
+payloads = Array[Resource]([])
+persists_on_switch = false

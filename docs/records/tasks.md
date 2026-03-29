@@ -10,6 +10,14 @@
 
 ## 2026-03-29
 
+### Gojo 一期阶段1：资源落地与样例接线（已完成）
+- 目标：按 `docs/design/gojo_satoru_design.md` 冻结口径落地 Gojo 全套内容资源，并接入统一内容快照与样例对局构造入口。
+- 范围：`content/units/gojo_satoru.tres`、`content/skills/gojo_*.tres`、`content/effects/gojo_*.tres`、`content/fields/gojo_unlimited_void_field.tres`、`content/passive_skills/gojo_mugen.tres`、`src/composition/sample_battle_factory.gd`。
+- 验收标准：Gojo 资源可加载；`SampleBattleFactory` 可直接构造 `Gojo vs Sukuna` 与 `Gojo vs 样例单位`；不新增对外 manager API。
+
+#### 当前验证结果（2026-03-29）
+- `godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+
 ### Gojo 审查发现的运行时缺口补齐（已完成）
 - 目标：把上一轮 Gojo 审查里确认属实、且已经会直接影响后续角色内容实现的两处运行时缺口补齐：同队重复角色禁用真正落到建局校验；`remove_effect` 的歧义处理真正落到运行时。
 - 范围：`src/battle_core/content/battle_setup_validator.gd`、`src/battle_core/effects/effect_instance_service.gd`、`tests/suites/setup_loadout_suite.gd`、`tests/suites/extension_contract_suite.gd`、`tests/check_repo_consistency.sh`、`docs/records/tasks.md`、`docs/records/decisions.md`；不创建 Gojo 资源。

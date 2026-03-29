@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/rule_mod_payload.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "rule_mod"
+mod_kind = "action_legality"
+mod_op = "deny"
+value = "all"
+scope = "target"
+duration_mode = "turns"
+duration = 1
+decrement_on = "turn_end"
+stacking = "replace"
+
+[resource]
+script = ExtResource("1")
+id = "gojo_domain_action_lock"
+display_name = "无量空处行动封锁"
+scope = "target"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_hit")
+payloads = Array[Resource]([SubResource("1")])

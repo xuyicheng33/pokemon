@@ -9,6 +9,11 @@
 
 ## 2026-03-29
 
+### 229. Gojo 一期阶段1采用“资源全量落地 + SampleFactory 双样例入口”模板
+- Gojo 本轮按 `UnitDefinition / SkillDefinition / EffectDefinition / FieldDefinition / PassiveSkillDefinition` 五类资源一次性落盘，不拆“先技能后被动”的半成品提交。
+- `SampleBattleFactory.content_snapshot_paths()` 从本条起正式收录 Gojo 全资源，统一测试入口无需额外拼接局部快照。
+- 样例对局接线固定新增两个构造函数：`build_gojo_vs_sukuna_setup()` 与 `build_gojo_vs_sample_setup()`，后续新角色按同样模式扩展，不再在 suite 内重复手写对局拼装。
+
 ### 228. Gojo 审查发现的两处 runtime 缺口立即补齐
 - `BattleSetupValidator` 从本条起正式禁止“同一 side 重复 `unit_definition_id`”；文档层 227 条里的“代码后补”状态已结束，当前主线实现与正式规则重新对齐。
 - `tests/suites/setup_loadout_suite.gd` 的回归口径同步翻转为 `same_side_duplicate_unit_forbidden`，仓库一致性闸门也一并改读新测试名，不再保留“同队重复角色合法”的旧回归。

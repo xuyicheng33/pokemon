@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="UnitDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/unit_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "gojo_satoru"
+display_name = "五条悟"
+base_hp = 124
+base_attack = 56
+base_defense = 60
+base_sp_attack = 88
+base_sp_defense = 68
+base_speed = 86
+max_mp = 100
+init_mp = 50
+regen_per_turn = 14
+combat_type_ids = PackedStringArray("space", "psychic")
+skill_ids = PackedStringArray("gojo_ao", "gojo_aka", "gojo_murasaki")
+candidate_skill_ids = PackedStringArray("gojo_ao", "gojo_aka", "gojo_murasaki", "gojo_reverse_ritual")
+ultimate_skill_id = "gojo_unlimited_void"
+passive_skill_id = "gojo_mugen"
+passive_item_id = ""

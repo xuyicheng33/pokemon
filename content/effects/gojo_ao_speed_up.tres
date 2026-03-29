@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/stat_mod_payload.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "stat_mod"
+stat_name = "speed"
+stage_delta = 1
+
+[resource]
+script = ExtResource("1")
+id = "gojo_ao_speed_up"
+display_name = "苍·加速"
+scope = "self"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_hit")
+payloads = Array[Resource]([SubResource("1")])
