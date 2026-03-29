@@ -1,6 +1,6 @@
 # 两面宿傩（Sukuna）设计方案（审计收口版 v1.0）
 
-## 0. 审计后冻结结论（2026-03-29）
+## 0. 审计后冻结结论（2026-03-30）
 
 | 项目 | 结论 |
 |------|------|
@@ -10,7 +10,7 @@
 | 奥义点 | `required=3 / cap=3 / regular_skill_cast +1` |
 | 领域终局语义 | **领域自然到期终爆保留**；被打断时**无终爆** |
 | 领域增幅归属 | `attack +1 / sp_attack +1` 改为 field 绑定效果；成功立场时生效，领域结束或打断时移除 |
-| 平衡结论 | 本轮接受“3 点奥义点体系下，宿傩开大更慢”的结果，不额外补数值 |
+| 平衡结论 | `3` 点奥义点体系下，默认装配与反转术式装配都已能稳定进入奥义窗口；但在 Gojo 对位里，宿傩领域对拼仍长期立不住 |
 
 ---
 
@@ -50,7 +50,7 @@
 补充语义：
 
 - 按当前主线固定时序，`turn_start` MP 回复发生在第 1 回合选指前，因此宿傩首个可操作回合的实战可用 MP 是 `57`。
-- 被动“教会你爱的是...”会额外改写 `mp_regen`；上表的 `12` 是基础值，不是最终每回合固定回复值。
+- 被动“教会你爱的是...”会按对位差值把 `mp_regen` 覆盖到动态档位；上表的 `12` 是基础值，不是最终每回合固定回复值。
 
 ### 1.4 技能组与赛前装配
 
@@ -59,6 +59,7 @@
 - 默认配招（`skill_ids`，3 个）：`sukuna_kai`、`sukuna_hatsu`、`sukuna_hiraku`
 - 奥义（`ultimate_skill_id`）：`sukuna_fukuma_mizushi`
 - 候选技能池（`candidate_skill_ids`，4 个）：`sukuna_kai`、`sukuna_hatsu`、`sukuna_hiraku`、`sukuna_reverse_ritual`
+- 奥义点配置：`ultimate_points_required = 3`、`ultimate_points_cap = 3`、`ultimate_point_gain_on_regular_skill_cast = 1`
 
 **赛前层（SideSetup）**
 
@@ -193,11 +194,11 @@
 | effects_on_cast_ids | `[]` |
 | effects_on_hit_ids | `["sukuna_apply_domain_field"]` |
 
-**FieldDefinition: `sukuna_malevolent_shrine`**
+**FieldDefinition: `sukuna_malevolent_shrine_field`**
 
 | 字段 | 值 |
 |------|-----|
-| id | `sukuna_malevolent_shrine` |
+| id | `sukuna_malevolent_shrine_field` |
 | display_name | `伏魔御厨子·领域` |
 | creator_accuracy_override | **100** |
 | effect_ids | `["sukuna_domain_cast_buff"]` |
@@ -206,16 +207,16 @@
 
 **展开效果链**
 
-1. `sukuna_apply_domain_field`：`apply_field(sukuna_malevolent_shrine, duration=3, decrement_on=turn_end)`
-2. `sukuna_malevolent_shrine.effect_ids`：通过 `field_apply` 给宿傩 `attack +1` 与 `sp_attack +1`
-3. `sukuna_malevolent_shrine.on_break_effect_ids`：领域被打断时移除两层增幅
-4. `sukuna_malevolent_shrine.on_expire_effect_ids`：领域自然到期时先移除两层增幅，再触发 `sukuna_domain_expire_burst`
+1. `sukuna_apply_domain_field`：`apply_field(sukuna_malevolent_shrine_field, duration=3, decrement_on=turn_end)`
+2. `sukuna_malevolent_shrine_field.effect_ids`：通过 `field_apply` 给宿傩 `attack +1` 与 `sp_attack +1`
+3. `sukuna_malevolent_shrine_field.on_break_effect_ids`：领域被打断时移除两层增幅
+4. `sukuna_malevolent_shrine_field.on_expire_effect_ids`：领域自然到期时先移除两层增幅，再触发 `sukuna_domain_expire_burst`
 
 - 玩家说明：高优先级大招，展开后提升自己双攻，并让后续技能必中；领域结束时还会补一段终爆。
 - 机制说明：
   - 宿傩当前奥义点配置固定为 `required=3 / cap=3 / regular_skill_cast +1`。
   - 奥义合法性必须同时满足 `current_mp >= 50` 与 `ultimate_points >= 3`；开始施放奥义时奥义点立即清零；换下后点数保留。
-  - 若场上已有 field，则进入领域对拼：比较双方扣费后的当前 MP；高者留场；平 MP 随机决定胜者，并把随机值写入 `effect:field_clash.effect_roll`。
+  - 若场上已有领域，则进入领域对拼：比较双方扣费后的当前 MP；高者留场；平 MP 随机决定胜者，并把随机值写入 `effect:field_clash.effect_roll`。
   - 宿傩若在领域对拼中失败，则本次领域不落地；`attack +1 / sp_attack +1` 与自然到期终爆都不会成立。
   - `creator_accuracy_override=100` 只在领域成功立住后生效。
   - **领域自然到期终爆保留**：`sukuna_domain_expire_burst` 造成 20 点火属性固定伤害。
@@ -252,13 +253,13 @@
 
 动态值口径：
 
-| 总面板差距 `gap` | 额外回蓝值 |
+| 总面板差距 `gap` | 最终回蓝值 |
 |---|---|
-| `gap <= 20` | `5` |
-| `gap <= 40` | `4` |
-| `gap <= 70` | `3` |
-| `gap <= 110` | `2` |
-| `gap <= 160` | `1` |
+| `gap <= 20` | `9` |
+| `gap <= 40` | `8` |
+| `gap <= 70` | `7` |
+| `gap <= 110` | `6` |
+| `gap <= 160` | `5` |
 | `gap > 160` | `0` |
 
 补充说明：
@@ -293,13 +294,14 @@
 |------|--------------|------|
 | 即时爆发 | 中高 | `解 / 捌 / 开` 都能稳压，但不靠单回合秒杀 |
 | 持续压制 | 很高 | 灶、动态回蓝、领域终爆会逼迫对手处理时间轴 |
-| 领域收益 | 高 | 领域立住后有必中与双攻增幅，自然结束还有终爆 |
-| 资源节奏 | 中 | 在 3 点奥义点体系下，宿傩开大更慢，但这是本轮接受的平衡结果 |
+| 领域收益 | 高，但当前兑现率不稳 | 领域立住后有必中与双攻增幅，自然结束还有终爆；但对 Gojo 对位里当前仍常输领域对拼 |
+| 资源节奏 | 中高 | 动态回蓝表与领域优先级修正后，两套常见装配都能稳定进入奥义窗口，但 clash 资源轴还要继续看 |
 
 补充说明：
 
-- “3 点奥义点体系下，宿傩开大更慢”是本轮显式接受的平衡口径，不作为遗漏处理。
-- 若后续要继续调强宿傩，应优先在数值、灶伤害或基础回蓝上动手，不先破坏当前奥义点/领域 contract。
+- `3 点奥义点体系下`，当前对称 `200` 场启发式批跑结果是：默认装配 Gojo `120` / 宿傩 `80`，反转术式装配 Gojo `89` / 宿傩 `111`；两套装配都已经能稳定看到奥义释放。
+- 但同一批 Gojo 对位样本里，宿傩的 `domain_successes` 仍是 `0`，说明当前主线修好的是“能不能开大”，不是“领域能不能真正立住”。
+- 若后续还要继续调强或回调宿傩，应优先结合 probe 观察领域对拼的资源轴，再决定是动伤害、回蓝表、奥义 MP 成本还是奥义点窗口。
 
 ## 6. 当前冻结
 
@@ -308,5 +310,5 @@
 | 奥义点 | `required=3 / cap=3 / regular_skill_cast +1` |
 | 灶 | 保留多层独立结算；离场触发与自然到期触发并存 |
 | 领域终局 | 自然到期有终爆；被打断无终爆 |
-| 领域增幅归属 | `attack +1 / sp_attack +1` 跟 `sukuna_malevolent_shrine` 生命周期走 |
-| 平衡结论 | 3 点体系下奥义更慢，当前接受，不额外补数值 |
+| 领域增幅归属 | `attack +1 / sp_attack +1` 跟 `sukuna_malevolent_shrine_field` 生命周期走 |
+| 平衡结论 | `3` 点奥义点体系下，两套常见装配都能稳定进入奥义窗口；若还要继续调强，应优先处理领域对拼兑现率，而不是回退到 `2` 点体系 |

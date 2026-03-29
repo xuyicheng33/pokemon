@@ -8,7 +8,7 @@
 |---|---|
 |`passive_skill_service.gd`|按触发点收集被动技能 `EffectEvent`|
 |`passive_item_service.gd`|按触发点收集被动持有物 `EffectEvent`|
-|`field_apply_service.gd`|field 落地主路径：领域对拼、成功后附带效果、`field_apply` 触发|
+|`field_apply_service.gd`|field 落地主路径：领域对拼、成功后附带效果（`field_apply_success`）、`field_apply` 触发|
 |`field_service.gd`|收集 field `EffectEvent`、处理自然到期扣减与 creator 离场后的提前打断|
 
 ## 2. 接入原则
@@ -48,7 +48,7 @@
 
 - 处理 `apply_field` payload 的唯一主路径。
 - 根据 `field_kind` 决定是直接覆盖、领域对拼，还是阻断生效。
-- field 真正落地后再执行 `field_apply` 触发与 `on_success_effect_ids`。
+- field 真正落地后再执行 `field_apply` 触发，并以 `field_apply_success` 派发 `on_success_effect_ids`。
 
 规则：
 

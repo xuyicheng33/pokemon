@@ -8,10 +8,10 @@
 
 - 改了什么：
   - 五条悟加入 `ultimate_points_required = 3`、`ultimate_points_cap = 3`、`ultimate_point_gain_on_regular_skill_cast = 1`
-  - `gojo_domain_action_lock` 从技能平级 `effects_on_hit_ids` 挪到 `gojo_apply_domain_field.payload.on_success_effect_ids`
+  - `gojo_domain_action_lock` 从技能平级 `effects_on_hit_ids` 挪到 `gojo_apply_domain_field.payload.on_success_effect_ids`，并改为 `field_apply_success` 触发
   - `gojo_domain_cast_buff` 改成 `gojo_unlimited_void_field.effect_ids` 的 `field_apply` 增幅
   - 新增 `gojo_domain_buff_remove`，在领域自然结束或提前打断时回收 `sp_attack +1`
-  - 场上已有 field 时改成进入领域对拼，不再直接覆盖
+  - 场上已有领域且本次也是领域时改成进入领域对拼；普通 field 仍按 `field_kind` 冲突矩阵处理
 - 为什么改：
   - 旧实现无法表达“领域对拼失败时不锁人”
   - 旧设计会留下“领域消失但 buff 还残留”的脏状态

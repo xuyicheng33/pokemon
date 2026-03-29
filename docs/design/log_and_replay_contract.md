@@ -40,7 +40,8 @@
 - `invalid_battle_code` 仅在 `event_type = system:invalid_battle` 时填写，其余事件写 `null`。
 - 未消费随机的字段（`speed_tie_roll / hit_roll / effect_roll`）写 `null`。
 - effect 事件必须填写 `trigger_name / cause_event_id`。
-- `effect:field_clash` 在平 MP 时必须把随机 tie-break 结果写入 `effect_roll`。
+- `effect:field_clash` 只用于 `domain vs domain`；平 MP 时必须把随机 tie-break 结果写入 `effect_roll`。
+- `effect:field_blocked` 只用于“普通 field 被在场领域阻断”；该事件 `effect_roll` 固定为 `null`。
 - `header_snapshot` 仅在 `event_type = system:battle_header` 时填写，其余事件写 `null`。
 - `header_snapshot` 必填字段固定为 `visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`，且禁止出现 `unit_instance_id` 等私有运行态 ID。
 - 系统锚点事件（`system:battle_init / system:turn_start / system:turn_end`）允许保留对应节点名到 `trigger_name`，便于日志排查；其 `cause_event_id` 仍写 `null`。
@@ -72,7 +73,7 @@
 |`battle_setup`|战斗初始化配置|
 |`command_stream`|按回合分发的指令流|
 
-### 3.2 ReplayOutput
+### 3.2 ReplayOutput（内部：ReplayRunner）
 
 |字段|说明|
 |---|---|
@@ -80,13 +81,22 @@
 |`final_state_hash`|`BattleState.to_stable_dict()` 的 SHA-256|
 |`succeeded`|完整执行成功 + 日志 V3 校验通过 + 终局结果有效|
 |`battle_result`|终局结果对象|
-|`final_battle_state`|最终运行态对象|
+|`final_battle_state`|最终运行态对象（仅核心内部可见）|
 
-### 3.3 deterministic 约束
+### 3.3 `BattleCoreManager.run_replay` 对外返回
+
+`run_replay` 对外 contract 固定为：
+
+- 返回 `{ replay_output, public_snapshot }`。
+- 其中 `replay_output` 来自 `ReplayOutput.clone_without_runtime_state()`，`final_battle_state` 必须为 `null`。
+- `public_snapshot` 由回放结束后的最终运行态即时构建，但运行态对象本身不得越过 manager 边界。
+
+### 3.4 deterministic 约束
 
 - `ReplayRunner.run_replay()` 每次执行前必须 `id_factory.reset()`。
 - 每次回放都按输入 `battle_seed` 调用 `rng_service.reset(seed)`。
 - 相同 `seed + content snapshot + command stream` 必须得到相同 `final_state_hash` 与等长日志。
+- `final_state_hash` 仍基于内部 `final_battle_state.to_stable_dict()` 计算；对外隐藏运行态对象不影响哈希稳定性。
 - 命令解析允许通过 `actor_public_id/target_public_id` 重新映射运行时实例 ID，避免历史 ID 污染。
 - 回放运行必须持续到战斗结束或回合上限触发（不允许半局成功返回）。
 - 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`，且 `cause_event_id` 不得等于当前日志事件自身 ID）。

@@ -74,10 +74,14 @@
 ### 4.2 强预警阈值
 
 - 核心服务文件 > `250` 行：必须触发职责复核。
+- `src/composition/*.gd` 同样纳入 > `250` 行复核范围（组合根虽然不在 `battle_core` 子目录，但属于核心装配边界）。
 - orchestrator / coordinator > `350` 行：默认拆分。
 - 单测试文件 > `600` 行：默认按子域拆分。
 
-若超阈值仍不拆，必须在 `docs/records/decisions.md` 写明“为何仍合理 + 预计何时拆分”。
+若超阈值仍不拆，必须同时满足：
+
+- 在 `docs/records/decisions.md` 写明“为何仍合理 + 预计何时拆分”。
+- 在架构闸门 allowlist 里写明该文件的临时 `max_lines` 上限，超限直接 gate fail。
 
 ## 5. Facade 与对外契约
 
@@ -107,4 +111,5 @@
 
 - 外围层（`src/adapters`、`src/composition`、`scenes`）不得 import `src/battle_core/runtime/*`。
 - `src/adapters` 与 `scenes` 不得 import `battle_core` 内部服务实现；允许范围固定为 `facades/*`、`contracts/*` 与 `commands/command_types.gd`。
-- 若出现超阈值文件，必须有拆分或记录解释。
+- `src/adapters` 与 `scenes` 若 import `battle_core/commands/*`，只允许 `commands/command_types.gd`，其他命令实现一律禁止。
+- 大文件闸门必须覆盖 `src/battle_core` 与 `src/composition`；若出现超阈值文件，必须同时有 allowlist 临时上限与决策记录。

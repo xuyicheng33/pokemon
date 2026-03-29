@@ -71,7 +71,9 @@
 |换人|`on_enter`, `on_exit`, `on_switch`|
 |对位变化|`on_matchup_changed`|
 |倒下|`on_faint`, `on_kill`|
-|field 成功立住后|`field_apply`|
+|field 生命周期|`field_apply`, `field_break`, `field_expire`|
+|field 成功后附带链|`field_apply_success`|
+|effect 实例生命周期|`on_expire`|
 
 补充规则：
 
@@ -83,6 +85,9 @@
 6. `battle_init` 固定发生在初始 `on_enter` 与其引发的补位链完全稳定之后；不同触发点不跨批次混排。
 7. 若 `battle_init` 批次本身导致补位并形成新的稳定对位，可在进入 `selection` 前追加一次 `on_matchup_changed`；该追加批次只读取 `battle_init` 后稳定战场，不会重放 `battle_init`。
 8. `turn_start / turn_end` 触发只对“当前在场单位”和全场 field 生效；bench 单位不参与回合节点触发。
+9. `field_break` 只用于 field 被提前打断链；`field_expire` 只用于 field 自然到期链。
+10. `field_apply_success` 只用于 `ApplyFieldPayload.on_success_effect_ids` 的 follow-up 派发。
+11. `on_expire` 只用于 `EffectDefinition.on_expire_effect_ids` 派发，语义与 `field_expire` 严格分离，不混用。
 
 ## 5. 当前基线 payload 类型
 
@@ -106,7 +111,7 @@
 4. 每个 payload 单独适用模块 02 的目标有效性与模块 04 的生命周期规则；若前序 payload 已让目标进入 `fainted_pending_leave`，后续直接作用该目标的普通 payload 按目标无效处理。
 5. 若 `on_cast` 链上的前序 payload（含默认动作反伤）让施法者 HP 归 0，本次行动链不提前终止；仍按模块 02 的“行动开始后不回滚”语义继续本次剩余步骤，并在行动结束后进入击倒窗口。
 6. 当前基线的 `remove_effect` 只允许按目标 owner 上的精确 `def_id` 移除单个效果实例；若出现文档未允许的歧义匹配，按 `invalid_battle` 处理。
-7. `apply_field` payload 允许额外声明 `on_success_effect_ids`；这些 effect 只在 field 真正立住后执行，field 对拼失败时整组跳过。
+7. `apply_field` payload 允许额外声明 `on_success_effect_ids`；这些 effect 只在 field 真正立住后以 `field_apply_success` 触发执行，field 对拼失败时整组跳过。
 8. `apply_field` 的冲突判定必须读取 `FieldDefinition.field_kind`：只有 `domain vs domain` 进入对拼；`normal vs domain` 不得覆盖在场领域；`domain vs normal` 可直接替换普通场地。
 9. 若当前在场领域由本方创建，则本方 `is_domain_skill=true` 的技能在合法性阶段必须被禁用。
 10. 上述领域禁用仅作用于选指与提交校验，不回溯取消同回合已入队的对手领域动作。
@@ -277,6 +282,16 @@
 补充规则：
 
 1. `forced_replace` payload 当前已落地最小执行链（候选校验、系统选择、生命周期触发顺序），且只覆盖 1v1 单 active 槽位。
+
+### 10.4 直接分发触发器一致性（加载期硬校验）
+
+以下引用关系必须声明对应 `trigger_names`，否则内容加载期直接失败：
+
+1. `SkillDefinition.effects_on_cast_ids / effects_on_hit_ids / effects_on_miss_ids / effects_on_kill_ids` 必须分别声明 `on_cast / on_hit / on_miss / on_kill`。
+2. `PassiveSkillDefinition.effect_ids` 与 `PassiveItemDefinition.effect_ids` 必须覆盖各自被动声明的 `trigger_names`。
+3. `FieldDefinition.effect_ids / on_break_effect_ids / on_expire_effect_ids` 必须分别声明 `field_apply / field_break / field_expire`。
+4. `EffectDefinition.on_expire_effect_ids` 必须声明 `on_expire`。
+5. `ApplyFieldPayload.on_success_effect_ids` 必须声明 `field_apply_success`。
 
 ## 11. 扩展纪律
 

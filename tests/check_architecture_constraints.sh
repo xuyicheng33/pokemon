@@ -20,33 +20,58 @@ if rg -n "res://src/battle_core/(actions|content|effects|lifecycle|logging|math|
 fi
 rm -f /tmp/outer_internal_imports.out
 
+if rg -n "res://src/battle_core/commands/" src/adapters scenes >/tmp/outer_command_imports.out 2>/dev/null; then
+  if rg -v "res://src/battle_core/commands/command_types.gd" /tmp/outer_command_imports.out >/tmp/outer_command_imports_filtered.out 2>/dev/null; then
+    echo "ARCH_GATE_FAILED: adapters/scenes must not import battle_core commands except command_types.gd" >&2
+    cat /tmp/outer_command_imports_filtered.out
+    rm -f /tmp/outer_command_imports.out /tmp/outer_command_imports_filtered.out
+    exit 1
+  fi
+fi
+rm -f /tmp/outer_command_imports.out /tmp/outer_command_imports_filtered.out
+
 python3 - <<'PY'
 from pathlib import Path
 import sys
 
 root = Path(".")
 
-allowlisted_reviews = {
-    "src/battle_core/content/battle_content_index.gd": "content registry/validator remains centralized in prototype stage",
-    "src/battle_core/content/content_snapshot_validator.gd": "cross-resource schema constraints (including domain-field consistency) stay centralized until post-expansion validator split",
-    "src/battle_core/effects/rule_mod_service.gd": "rule_mod stacking schema migration is centralized in one service",
-    "src/battle_core/effects/payload_handlers/payload_numeric_handler.gd": "numeric payload semantics (typed fixed damage + percent heal) remain consolidated for fail-fast validation",
-    "src/battle_core/passives/field_apply_service.gd": "field conflict matrix + apply success-chain semantics are intentionally centralized before domain expansion baseline stabilizes",
-    "src/battle_core/turn/battle_initializer.gd": "startup sequencing now also pre-applies first-turn regen; keep centralized until the next bootstrap refactor after Gojo v1 lands",
+size_review_rules = {
+    "src/battle_core/content/battle_content_index.gd": {
+        "reason": "content registry/validator remains centralized in prototype stage",
+        "max_lines": 320,
+    },
+    "src/battle_core/content/content_snapshot_validator.gd": {
+        "reason": "cross-resource schema constraints (including domain-field consistency) stay centralized until post-expansion validator split",
+        "max_lines": 320,
+    },
+    "src/battle_core/effects/payload_handlers/payload_numeric_handler.gd": {
+        "reason": "numeric payload semantics remain consolidated until stat/resource helper split lands",
+        "max_lines": 320,
+    },
+    "src/battle_core/turn/battle_initializer.gd": {
+        "reason": "startup sequencing now also pre-applies first-turn regen; keep centralized until the next bootstrap refactor after replay/field fixes land",
+        "max_lines": 320,
+    },
+    "src/composition/battle_core_composer.gd": {
+        "reason": "composition root keeps declarative preload/service/wiring tables together until container spec extraction lands",
+        "max_lines": 340,
+    },
 }
 
 decisions_text = (root / "docs/records/decisions.md").read_text(encoding="utf-8")
 
 review_required = []
-for path in (root / "src/battle_core").rglob("*.gd"):
-    rel = str(path.relative_to(root))
-    line_count = len(path.read_text(encoding="utf-8").splitlines())
-    if line_count > 250:
-        review_required.append((rel, line_count))
+for source_root in [root / "src/battle_core", root / "src/composition"]:
+    for path in source_root.rglob("*.gd"):
+        rel = str(path.relative_to(root))
+        line_count = len(path.read_text(encoding="utf-8").splitlines())
+        if line_count > 250:
+            review_required.append((rel, line_count))
 
 missing_review_allowlist = []
 for rel, line_count in review_required:
-    if rel not in allowlisted_reviews:
+    if rel not in size_review_rules:
         missing_review_allowlist.append((rel, line_count))
 
 if missing_review_allowlist:
@@ -55,8 +80,20 @@ if missing_review_allowlist:
         print(f"  - {rel} ({line_count} lines)", file=sys.stderr)
     sys.exit(1)
 
+allowlist_overflow = []
+for rel, line_count in review_required:
+    max_lines = int(size_review_rules[rel]["max_lines"])
+    if line_count > max_lines:
+        allowlist_overflow.append((rel, line_count, max_lines))
+
+if allowlist_overflow:
+    print("ARCH_GATE_FAILED: allowlisted files exceeded temporary max_lines cap:", file=sys.stderr)
+    for rel, line_count, max_lines in allowlist_overflow:
+        print(f"  - {rel} ({line_count} lines > {max_lines})", file=sys.stderr)
+    sys.exit(1)
+
 missing_decision_notes = []
-for rel in allowlisted_reviews:
+for rel, _line_count in review_required:
     if rel not in decisions_text:
         missing_decision_notes.append(rel)
 

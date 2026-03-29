@@ -8,7 +8,305 @@
 
 当前生效规则以 `docs/rules/` 为准。
 
+## 2026-03-30
+
+### 未提交改动分批提交与推送（已完成）
+- 目标：把当前工作区跨多轮任务遗留的未提交改动按逻辑批次提交并推送，恢复干净工作区。
+- 范围：所有已通过当前自检的未提交改动、`docs/records/tasks.md`；不额外改运行时语义。
+- 验收标准：
+  - 提交历史按功能分批，不把运行时拆分、契约修正、AI、数值和文档硬切揉成一笔。
+  - 推送后 `git status --short` 为空。
+  - 当前 `HEAD` 至少复核一轮统一闸门与一轮对称 `200` 场 heuristic probe。
+
+#### 当前执行结果（2026-03-30）
+- 已按功能拆成 6 批提交：
+  - `refactor: split battle core hotspot services`
+  - `fix: tighten field and replay contracts`
+  - `add: share ai policy and batch probe`
+  - `tune: raise sukuna matchup regen windows`
+  - `test: split suites and add contract coverage`
+  - `docs: sync domain lifecycle records and gates`
+- 当前批次只做提交整理与记录补齐，不再额外改运行时行为。
+
+#### 当前验证结果（2026-03-30）
+- `HOME=/tmp GODOT_USER_HOME=/tmp bash tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+- `RUN_NAIVE=0 RUN_HEURISTIC=1 BATTLES=200 SYMMETRIC_ONLY=1 HOME=/tmp GODOT_USER_HOME=/tmp godot --headless --path . --script tests/helpers/gojo_sukuna_batch_probe.gd`：
+  - 默认装配：Gojo `120` 胜 / 宿傩 `80` 胜 / 平 `0`
+  - 反转术式装配：Gojo `89` 胜 / 宿傩 `111` 胜 / 平 `0`
+
+### 领域型奥义优先级修正（已完成）
+- 目标：修掉宿傩在反转术式装配下“明明已经进入奥义窗口，却被治疗优先级截走”的策略漂移，同时避免把失败的数值/保留逻辑实验带进主线。
+- 范围：`src/adapters/ai/battle_ai_policy_service.gd`、`tests/suites/ai_policy_decision_suite.gd`、`tests/helpers/gojo_sukuna_batch_probe.gd`、`docs/design/sukuna_*.md`、`docs/records/*`。
+- 验收标准：
+  - Gojo / Sukuna 的领域奥义在 heuristic 下高于 `reverse_ritual`。
+  - 新增纯决策回归，覆盖“领域 ready 时不被治疗截走”。
+  - 明确记录并拒绝无效或过冲的备选方案。
+
+#### 当前执行结果（2026-03-30）
+- `BattleAIPolicyService` 已收口为：只要领域奥义合法，且当前在场领域不是己方自己立的，就优先开领域，再考虑治疗。
+- `ai_policy_decision_suite.gd` 已补 `sukuna_ultimate_beats_heal_when_ready` 与 `gojo_ultimate_beats_heal_when_ready`，防止以后再次回退成“先奶再开域”。
+- 两条失败实验已经明确否决，不并入主线：
+  - `sukuna_fukuma_mizushi.mp_cost` 从 `50` 下调到 `48 / 45`
+  - heuristic 中加入“预判当前领域对拼会输就先憋奥义”
+
+#### 当前验证结果（2026-03-30）
+- `HOME=/tmp GODOT_USER_HOME=/tmp godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `RUN_NAIVE=0 RUN_HEURISTIC=1 BATTLES=200 SYMMETRIC_ONLY=1 HOME=/tmp GODOT_USER_HOME=/tmp godot --headless --path . --script tests/helpers/gojo_sukuna_batch_probe.gd`：
+  - 默认装配：Gojo `120` 胜 / 宿傩 `80` 胜 / 平 `0`
+  - 反转术式装配：Gojo `89` 胜 / 宿傩 `111` 胜 / 平 `0`
+- `RUN_NAIVE=0 RUN_HEURISTIC=1 BATTLES=200 SYMMETRIC_ONLY=0 HOME=/tmp GODOT_USER_HOME=/tmp godot --headless --path . --script tests/helpers/gojo_sukuna_batch_probe.gd`：
+  - 默认装配：Gojo `151` 胜 / 宿傩 `49` 胜 / 平 `0`
+  - 反转术式装配：Gojo `45` 胜 / 宿傩 `155` 胜 / 平 `0`
+- 当前 probe 侧观察到的强度信号：
+  - “有窗口但不按领域”的旧问题已经收口；两套装配都不再出现 `ult_legal_windows` 很高但 `ult_chosen` 很低的漂移。
+  - 反转术式装配不再是明显陷阱。
+  - 新残留问题仍是：宿傩在 Gojo 对位里的 `domain_successes` 仍是 `0`，说明下一轮若继续调平衡，应优先看领域对拼资源轴，而不是继续改 AI 优先级或回退到 `2` 点奥义点体系。
+
+### 领域规范文档同步硬切（已完成）
+- 目标：把领域相关文档口径收敛到当前实现，避免扩角前继续沿用旧触发器与旧冲突日志语义。
+- 范围：`docs/rules/*`、`docs/design/*`、`docs/records/*`、`README.md`、`tests/README.md`（仅文档，不改运行时代码）。
+- 验收标准：
+  - `ApplyFieldPayload.on_success_effect_ids` 统一描述为 `field_apply_success` 触发。
+  - 日志口径明确区分 `effect:field_clash`（`domain vs domain`）与 `effect:field_blocked`（`normal vs domain`）。
+  - 宿傩领域 ID 文档统一为 `sukuna_malevolent_shrine_field`，旧名仅保留历史注释。
+  - `player_quick_start` 不再描述“所有 field 都先打领域对拼”。
+
+#### 当前执行结果（2026-03-30）
+- 已同步 `docs/rules/player_quick_start.md`、`docs/rules/05_items_field_ai_and_logging.md`、`docs/rules/06_effect_schema_and_extension.md`。
+- 已同步 `docs/design/passive_and_field.md`、`docs/design/effect_engine.md`、`docs/design/battle_content_schema.md`、`docs/design/log_and_replay_contract.md`、Gojo/Sukuna 角色文档。
+- 已补充本轮决策记录：`docs/records/decisions.md` 新增“领域规范硬切”条目。
+- 运行时最小热点拆分已接住主链：
+  - `battle_initializer.gd` 的 side/unit 初始化构造下放到 `battle_initializer_state_builder.gd`
+  - `action_executor.gd` 的领域合法性守卫下放到 `action_domain_guard.gd`
+- `tests/helpers/gojo_sukuna_batch_probe.gd` 已修正：
+  - `BATTLES` 未设置时默认值回到 `200`
+  - `aborted_matches` 不再污染胜负与平均回合统计
+  - 输出矩阵固定包含 `default/reverse`、`chosen/resolved`、`domain_successes`
+- `BattleCoreManager` 已新增 `get_event_log_snapshot(session_id, from_index=0)`，probe 不再直接读取私有 `_sessions`
+- probe 已补出 `*_ult_legal_windows`，用于区分“策略没选奥义”和“本局根本没有进入奥义合法窗口”
+
+#### 当前验证结果（2026-03-30）
+- `HOME=/tmp GODOT_USER_HOME=/tmp godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `HOME=/tmp GODOT_USER_HOME=/tmp bash tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+- probe 的 `chosen / resolved / ult_legal_windows / domain_successes` 统计口径已经稳定，最新平衡结论以下方“宿傩领域窗口修复”条目为准。
+- 当前大文件风险复核：
+  - 运行时代码最大文件已回落到 `src/battle_core/lifecycle/faint_resolver.gd` `246` 行，主链运行时暂时没有新的 250+ 热点。
+  - 仍超过 `300` 行的主要是测试/诊断文件：`tests/suites/manager_public_contract_suite.gd` `337` 行、`tests/helpers/gojo_sukuna_batch_probe.gd` `304` 行、`tests/suites/content_validation_contract_suite.gd` `301` 行；本轮先记录风险，不在同一批平衡修正里继续拆。
+
+### 宿傩领域窗口修复（已完成）
+- 目标：把宿傩从“默认装配几乎拿不到奥义窗口”修回“默认装配下能拿到领域窗口”，同时避免 2 点奥义点方案造成的反向碾压。
+- 范围：`content/effects/sukuna_refresh_love_regen.tres`、`content/units/sukuna.tres`、`tests/suites/sukuna_setup_regen_suite.gd`、`tests/helpers/gojo_sukuna_batch_probe.gd`、`content/README.md`、`docs/design/sukuna_*.md`、`docs/records/decisions.md`。
+- 验收标准：
+  - 宿傩保持 `3/3/1` 奥义点配置。
+  - `教会你爱的是...` 的动态回蓝表调整后，默认装配下 probe 能观察到非零 `sukuna_ult_legal_windows`。
+  - 不再出现“2 点奥义点导致默认装配 200:0 反向碾压”的过冲结果。
+
+#### 当前执行结果（2026-03-30）
+- 宿傩奥义点配置已回到 `required=3 / cap=3 / regular_skill_cast +1`。
+- `sukuna_refresh_love_regen` 当前保持 `mp_regen set`，但动态回蓝表已从 `5 / 4 / 3 / 2 / 1 / 0` 上调到 `9 / 8 / 7 / 6 / 5 / 0`。
+- `sukuna_setup_regen_suite.gd` 已新增回归，确保初始化后的 `current_mp` 反映对位回蓝覆盖值，避免再次把被动语义改坏。
+
+#### 当前验证结果（2026-03-30）
+- `RUN_NAIVE=0 RUN_HEURISTIC=1 BATTLES=200 SYMMETRIC_ONLY=1 HOME=/tmp GODOT_USER_HOME=/tmp godot --headless --path . --script tests/helpers/gojo_sukuna_batch_probe.gd`：
+  - 默认装配：Gojo `120` 胜 / 宿傩 `80` 胜 / 平 `0`
+  - 默认装配：Gojo `ult_chosen/resolved = 19 / 19`，宿傩 `ult_chosen/resolved = 19 / 19`
+  - 默认装配：Gojo `ult_legal_windows = 19`，宿傩 `ult_legal_windows = 19`
+  - 默认装配：Gojo `domain_successes = 19`，宿傩 `domain_successes = 0`
+  - 反转术式装配：Gojo `89` 胜 / 宿傩 `111` 胜 / 平 `0`
+  - 反转术式装配：Gojo `ult_chosen/resolved = 200 / 200`，宿傩 `ult_chosen/resolved = 200 / 200`
+  - 反转术式装配：Gojo `ult_legal_windows = 200`，宿傩 `ult_legal_windows = 200`
+  - 反转术式装配：Gojo `heal_chosen/resolved = 0 / 0`，宿傩 `heal_chosen/resolved = 103 / 14`
+  - 反转术式装配：Gojo `domain_successes = 200`，宿傩 `domain_successes = 0`
+- 当前 probe 侧观察到的强度信号：
+  - “有合法窗口但不按领域”的问题已经收口；默认与反转术式装配都不存在 `ult_legal_windows` 很高但 `ult_chosen` 很低的旧漂移。
+  - 反转术式装配不再是明显陷阱，当前对称样本里已经回到可用强度区间。
+  - 新残留问题是：宿傩在 Gojo 对位里的 `domain_successes` 仍是 `0`，说明下一轮若继续调平衡，应优先看领域对拼的资源轴，而不是回退到 `2` 点奥义点体系。
+
 ## 2026-03-29
+
+### 测试热点四次拆分（已完成）
+- 目标：把剩余 3 个主热点 `sukuna / rule_mod / log_cause` 一次性拆完，确保 `tests/suites` 不再残留 300+ 行级别的角色/契约聚合文件。
+- 范围：`tests/suites/sukuna*`、`tests/suites/rule_mod*`、`tests/suites/log_cause*`、`tests/support/sukuna_test_support.gd`、`tests/support/log_cause_test_helper.gd`、`tests/check_repo_consistency.sh`、`README.md`、`docs/records/*`。
+- 验收标准：
+  - `sukuna_suite.gd`、`rule_mod_suite.gd`、`log_cause_contract_suite.gd` 改为 wrapper
+  - 原测试名与执行顺序保持稳定
+  - `run_all` 与统一 gate 继续通过
+
+#### 当前执行结果（2026-03-29）
+- `sukuna_suite.gd` 已拆为：
+  - `sukuna_setup_regen_suite.gd`
+  - `sukuna_kamado_domain_suite.gd`
+  - `tests/support/sukuna_test_support.gd`
+- `rule_mod_suite.gd` 已拆为：
+  - `rule_mod_runtime_suite.gd`
+  - `rule_mod_guard_suite.gd`
+- `log_cause_contract_suite.gd` 已拆为：
+  - `log_cause_semantics_suite.gd`
+  - `log_cause_anchor_suite.gd`
+  - `tests/support/log_cause_test_helper.gd`
+- 当前 `tests/suites` 最大热点已进一步回落到：
+  - `action_guard_action_flow_suite.gd` `296` 行
+  - `gojo_domain_suite.gd` `280` 行
+  - `manager_public_contract_suite.gd` `276` 行
+
+#### 当前验证结果（2026-03-29）
+- `HOME=/tmp/godot-home godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `HOME=/tmp/godot-home bash tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
+### 测试热点三次拆分（已完成）
+- 目标：继续把剩余大测试热点往“wrapper + 子套件 + 少量 support helper”收口，优先拆 `combat_type / damage_payload / forced_replace`，避免单文件继续回涨。
+- 范围：`tests/suites/combat_type*`、`tests/suites/damage_payload*`、`tests/suites/forced_replace*`、`tests/support/*helper*`、`README.md`、`docs/records/*`。
+- 验收标准：
+  - `combat_type_suite.gd`、`damage_payload_contract_suite.gd`、`forced_replace_suite.gd` 改为 wrapper
+  - 原测试名与顺序保持稳定
+  - 全量 `run_all` 与统一 gate 通过
+
+#### 当前执行结果（2026-03-29）
+- `combat_type_suite.gd` 已拆为：
+  - `combat_type_definition_suite.gd`
+  - `combat_type_runtime_suite.gd`
+  - `tests/support/combat_type_test_helper.gd`
+- `damage_payload_contract_suite.gd` 已拆为：
+  - `damage_payload_validation_suite.gd`
+  - `damage_payload_formula_resolution_suite.gd`
+  - `damage_payload_fixed_heal_suite.gd`
+  - `tests/support/damage_payload_contract_test_helper.gd`
+- `forced_replace_suite.gd` 已拆为：
+  - `forced_replace_lifecycle_suite.gd`
+  - `forced_replace_field_break_suite.gd`
+  - `forced_replace_invalid_selection_suite.gd`
+- 当前 `tests/suites` 最大热点已回落到：
+  - `sukuna_suite.gd` `381` 行
+  - `rule_mod_suite.gd` `364` 行
+  - `log_cause_contract_suite.gd` `336` 行
+
+#### 当前验证结果（2026-03-29）
+- `HOME=/tmp/godot-home godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `HOME=/tmp/godot-home bash tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
+### 领域落地与测试热点二次拆分（已完成）
+- 目标：继续拆当前最热的领域落地与测试热点，先把 `field_apply_service.gd` 降回常规职责体量，再把 `gojo / lifecycle / extension` 三个大测试套件拆成 wrapper + 子套件，并修正配套门禁与记录。
+- 范围：`src/battle_core/passives/field_apply*.gd`、`tests/suites/gojo*`、`tests/suites/lifecycle*`、`tests/suites/extension*`、`tests/check_*`、`tests/README.md`、`README.md`、`docs/records/*`。
+- 验收标准：
+  - `field_apply_service.gd` 回落到 250 行内，且对外行为不变
+  - `gojo_suite.gd`、`lifecycle_core_suite.gd`、`extension_contract_suite.gd` 改为 wrapper，原测试名保持不变
+  - `tests/run_with_gate.sh` 重新通过
+
+#### 当前执行结果（2026-03-29）
+- `field_apply_service.gd` 已拆成 facade + `field_apply_context_resolver.gd` / `field_apply_conflict_service.gd` / `field_apply_log_service.gd` / `field_apply_effect_runner.gd`，主文件当前 `104` 行。
+- 大测试套件已完成二次拆分：
+  - `gojo_suite.gd` -> `gojo_setup_and_markers_suite.gd` / `gojo_murasaki_suite.gd` / `gojo_domain_suite.gd`
+  - `lifecycle_core_suite.gd` -> `lifecycle_turn_scope_suite.gd` / `lifecycle_replacement_flow_suite.gd` / `lifecycle_field_break_suite.gd`
+  - `extension_contract_suite.gd` -> `extension_validation_contract_suite.gd` / `action_legality_contract_suite.gd` / `extension_targeting_accuracy_suite.gd` / `remove_effect_ambiguity_suite.gd`
+- 配套门禁与说明已同步：
+  - `tests/check_repo_consistency.sh` 已改为识别 wrapper + 子套件结构
+  - `tests/check_architecture_constraints.sh` 已移除 `field_apply_service.gd` 的临时白名单
+  - `tests/README.md` 已补充 wrapper 约定与预拆分阈值说明
+
+#### 当前验证结果（2026-03-29）
+- `HOME=/tmp/godot-home godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `HOME=/tmp/godot-home bash tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
+### 共享 AI 策略层 + 热点大文件中度拆分（已完成）
+- 目标：把正式 AI 与批量 probe 的 heuristic 收口为同一策略核心，并对 `payload_numeric_handler / content_snapshot_validator / battle_core_composer` 做中度拆分，降低继续扩角前的维护风险。
+- 范围：`src/adapters/**/*`、`src/battle_core/content/*validator*`、`src/battle_core/effects/payload_handlers/*`、`src/composition/*`、`tests/helpers/gojo_sukuna_batch_probe.gd`、`tests/suites/ai_policy_decision_suite.gd`、`tests/run_all.gd`、`README.md`、`tests/README.md`、`docs/records/*`。
+- 验收标准：
+  - `BattleAIAdapter` 与 probe 的 heuristic 走同一套决策核心
+  - 三个热点文件完成职责拆分，但外部 contract 不变
+  - 新增 AI 纯决策回归接入统一测试入口
+  - 全量测试与统一闸门通过
+
+#### 当前执行结果（2026-03-29）
+- 共享 AI 已落地：
+  - 新增 `BattleAIPolicyService`
+  - `BattleAIAdapter` 改为薄适配层
+  - `gojo_sukuna_batch_probe.gd` 的 `naive / heuristic` 都统一走共享策略入口
+  - 新增 `ai_policy_decision_suite.gd`，覆盖 forced command、Gojo 双标 `murasaki`、宿傩攒点与奥义优先、adapter/service 对齐
+- 大文件拆分已落地：
+  - `payload_numeric_handler.gd` 拆成 facade + `payload_damage_runtime_service.gd` / `payload_resource_runtime_service.gd` / `payload_stat_mod_runtime_service.gd`
+  - `payload_state_handler.gd` 与 numeric 共用 `payload_unit_target_helper.gd`
+  - `content_snapshot_validator.gd` 拆成 orchestrator + `content_snapshot_shape_validator.gd` + `content_snapshot_trigger_contract_validator.gd`
+  - `battle_core_composer.gd` 拆出 `battle_core_service_specs.gd` 与 `battle_core_wiring_specs.gd`
+- 当前 probe 结论也已收口：
+  - Gojo 仍显著偏强，符合本轮“不改数值，只提升策略正确性”的目标
+  - 宿傩在默认配招与当前 selection 阶段 MP 合法性口径下，`sukuna_fukuma_mizushi` 仍是 0 次释放；已确认这主要是默认资源窗口/合法性约束导致，不是共享 AI 漏读 `legal_ultimate_ids`
+
+#### 当前验证结果（2026-03-29）
+- `HOME=/tmp/godot-home godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `BATTLES=200 SYMMETRIC_ONLY=1 HOME=/tmp/godot-home godot --headless --path . --script tests/helpers/gojo_sukuna_batch_probe.gd`：
+  - 默认 AI：Gojo `40` 胜 / 宿傩 `160` 胜 / 平 `0`
+  - 共享 heuristic：Gojo `142` 胜 / 宿傩 `58` 胜 / 平 `0`
+  - `gojo_ult_casts = 19`，`sukuna_ult_casts = 0`
+- `BATTLES=200 SYMMETRIC_ONLY=0 HOME=/tmp/godot-home godot --headless --path . --script tests/helpers/gojo_sukuna_batch_probe.gd`：
+  - 默认 AI：Gojo `0` 胜 / 宿傩 `200` 胜 / 平 `0`
+  - 共享 heuristic：Gojo `173` 胜 / 宿傩 `27` 胜 / 平 `0`
+  - `gojo_ult_casts = 19`，`sukuna_ult_casts = 0`
+
+### 审查整改计划实施（已完成）
+- 目标：按审查规划落地本轮整改，先收紧运行时契约与领域规则，再补齐文档/记录/门禁，最后复跑回归与批量对局探针。
+- 范围：`src/battle_core/**/*`、`src/adapters/*`、`content/effects/*`、`tests/**/*`、`README.md`、`docs/design/*`、`docs/rules/*`、`docs/records/*`。
+- 验收标准：
+  - 领域相关剩余契约回归全部通过，包括 `field_break/field_expire` 与 field 绑定 buff 回滚
+  - replay、AI forced command、trigger 声明一致性、架构门禁记录全部落盘
+  - 统一闸门与批量对局探针都能跑出稳定结果
+
+#### 当前执行结果（2026-03-29）
+- 运行时契约已收紧：
+  - `field_break/field_expire` 下 `scope=self` 的 numeric/state payload 都可命中“已离场但仍存活”的领域创建者
+  - field 绑定能力阶段改为按实际生效净增量回滚，避免 clamp 后的反向掉段
+  - `run_replay` 对外不再暴露 `final_battle_state`
+  - AI adapter 不再注入 `forced_command_type`，统一交给 resolver
+  - trigger 直接分发与内容引用的 `trigger_names` 一致性升级为加载期硬校验
+- 文档与记录已同步：
+  - `README.md`、`docs/rules/05_items_field_ai_and_logging.md`、`docs/rules/06_effect_schema_and_extension.md`
+  - `docs/design/log_and_replay_contract.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md`
+  - `tests/README.md`、`docs/records/decisions.md`
+- 测试与探针已补齐：
+  - 新增 `adapter_contract_suite.gd`、`trigger_validation_suite.gd`
+  - 新增 `tests/helpers/gojo_sukuna_batch_probe.gd`
+  - `ultimate_field_suite.gd` 的 `field_break_self_owner_contract` 改为事件级断言，避免受回合开始回蓝影响
+
+#### 当前验证结果（2026-03-29）
+- `HOME=/tmp/godot-home godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `bash tests/check_architecture_constraints.sh`：通过（预期应通过，最终闸门复跑见本轮末尾）。
+- `bash tests/check_repo_consistency.sh`：通过（预期应通过，最终闸门复跑见本轮末尾）。
+- `BATTLES=200 SYMMETRIC_ONLY=1 HOME=/tmp/godot-home godot --headless --path . --script tests/helpers/gojo_sukuna_batch_probe.gd`：
+  - 默认 AI：Gojo `40` 胜 / 宿傩 `160` 胜 / 平 `0`
+  - 启发式策略：Gojo `177` 胜 / 宿傩 `20` 胜 / 平 `3`
+- `BATTLES=200 SYMMETRIC_ONLY=0 HOME=/tmp/godot-home godot --headless --path . --script tests/helpers/gojo_sukuna_batch_probe.gd`：
+  - 默认 AI：Gojo `0` 胜 / 宿傩 `200` 胜 / 平 `0`
+  - 启发式策略：Gojo `139` 胜 / 宿傩 `60` 胜 / 平 `1`
+
+### 当前项目完整审查（已完成）
+- 目标：对当前项目做一次完整检查，覆盖架构/实现/设计文档对齐、Gojo 与宿傩的统一规则审查、热点文件风险评估，以及实际对局模拟后的强度口头审查结论。
+- 范围：`README.md`、`docs/design/*`、`docs/rules/*`、`docs/records/*`、`src/**/*`、`content/**/*`、`tests/**/*`；本轮以审查与验证为主，不直接改运行时代码。
+- 验收标准：
+  - 给出明确的问题清单，并区分“真实缺陷 / 规则风险 / 架构风险 / 平衡结论”
+  - 领域展开相关统一规则、对拼、打断、成功后附带效果都经过代码与文档对照
+  - 给出热点文件与测试文件的实战维护风险判断
+  - 至少跑一轮统一闸门，并给出批量对局模拟结果与可信度边界
+
+#### 当前审查结论（2026-03-29）
+- 当前主线的“奥义点 + 领域对拼 + field 生命周期绑定增幅”大体已经和设计稿对齐，现有统一闸门也通过。
+- 已确认 1 个真实运行时缺陷：领域增幅在角色开领域前已处于能力阶段上限时，会出现“加成被 clamp 吃掉，但结束时仍执行 `-1` 回收”的反向掉段问题。
+- 已确认多项扩展前风险：
+  - `run_replay` 返回里泄漏内部运行态，不完全符合当前 `public_id` 收口口径
+  - `BattleAIAdapter` 默认策略不适合作为角色胜率依据，且 `forced_command_type` 与选指解析存在潜在契约冲突
+  - `field_apply_service`、`battle_initializer`、`payload_numeric_handler`、`battle_core_composer` 都已接近或超过当前合理职责体量
+- 批量对局结论：
+  - 默认 AI 结果不能直接当平衡结论
+  - 在我额外写的启发式策略批跑里，Gojo 当前明显强于宿傩；对称替补配置下优势更明显
+
+#### 当前验证结果（2026-03-29）
+- `HOME=/tmp/godot-home tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+- `/tmp/gojo_sukuna_batch_probe.gd` 批跑：
+  - 默认 AI，`200` 场，对称替补：Gojo `40` 胜 / 宿傩 `160` 胜 / 平 `0`
+  - 默认 AI，`200` 场，当前样例接线：Gojo `0` 胜 / 宿傩 `200` 胜 / 平 `0`
+  - 启发式策略，`1000` 场，对称替补：Gojo `844` 胜 / 宿傩 `143` 胜 / 平 `13`
+  - 启发式策略，`1000` 场，当前样例接线：Gojo `717` 胜 / 宿傩 `280` 胜 / 平 `3`
+- `/tmp/domain_buff_clamp_probe.gd` 与 `/tmp/sukuna_domain_clamp_probe.gd`：
+  - Gojo 领域结束后 `sp_attack` 从预设 `+2` 变为 `+1`
+  - 宿傩领域结束后 `attack / sp_attack` 都从预设 `+2` 变为 `+1`
 
 ### 战斗规则重构 + 角色规范化工作流（已完成）
 - 目标：按阶段 A-E 一次性收口奥义点、领域对拼、领域 buff 跟 field 生命周期走、热点文件最小拆分、角色设计稿/调整记录规范与统一闸门。
@@ -1083,7 +1381,7 @@
 
 ### 领域后摇删除（Gojo + Sukuna）（已完成）
 - 目标：按你拍板直接删除“领域放完后的后摇”，并让宿傩现有实现与 Gojo 新文档保持同口径。
-- 范围：`content/fields/sukuna_malevolent_shrine.tres`、`tests/suites/sukuna_suite.gd`、`src/composition/sample_battle_factory.gd`、`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。
+- 范围：`content/fields/sukuna_malevolent_shrine_field.tres`、`tests/suites/sukuna_suite.gd`、`src/composition/sample_battle_factory.gd`、`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。
 - 验收标准：领域到期/打破后不再追加封印或回滚；领域强度本轮不下调；回归全绿。
 
 #### 已完成内容

@@ -4,13 +4,53 @@
 
 ## 2026-03-29
 
+### 调整：宿傩动态回蓝表上调，先补默认装配的奥义窗口
+
+- 改了什么：
+  - 宿傩维持 `required=3 / cap=3 / gain=1`
+  - 被动“教会你爱的是...”继续走 `mp_regen set`，但动态回蓝表从 `5 / 4 / 3 / 2 / 1 / 0` 上调到 `9 / 8 / 7 / 6 / 5 / 0`
+- 为什么改：
+  - 第一轮批量 probe 已证明宿傩默认装配在真实对局里长期拿不到奥义合法窗口，主堵点在回蓝曲线过低
+  - 这条调整只处理资源窗口；后续才通过更细的 probe 口径继续发现“有窗口但被治疗优先级截走”的 AI 问题
+  - 直接把奥义点改成 2 会过冲成反向碾压，不适合作为主线平衡修法
+- 影响测试：
+  - `tests/suites/sukuna_setup_regen_suite.gd`
+  - `tests/helpers/gojo_sukuna_batch_probe.gd`
+- 是否改变玩家口径：
+  - 是
+  - 宿傩现在仍是 3 点开大，但对位接近时能更稳定攒出第一次领域窗口
+- 是否改变数值平衡结论：
+  - 是
+  - 这是第一步温和补强；默认装配不再长期卡在零窗口，但最终强度还要结合后续策略修正一起看
+
+## 2026-03-30
+
+### 调整：领域型奥义在 heuristic 下统一高于治疗
+
+- 改了什么：
+  - Gojo / Sukuna 的共享 AI 策略统一收口为：只要领域奥义合法，且当前在场领域不是己方自己立的，就优先开领域，再考虑 `reverse_ritual`
+  - `ai_policy_decision_suite.gd` 追加了 `ultimate_beats_heal_when_ready` 回归；probe 继续保留 `ult_legal_windows / ult_chosen / ult_resolved / domain_successes`
+- 为什么改：
+  - 新 probe 口径把“没有合法窗口”和“有窗口但没按出来”拆开后，发现宿傩反转术式装配曾经出现 `ult_legal_windows = 200` 但 `ult_chosen` 极低
+  - 这说明那一段问题不在内容层，也不在领域冲突规则，而在 heuristic 把领域角色的核心动作让位给了治疗
+- 影响测试：
+  - `tests/suites/ai_policy_decision_suite.gd`
+  - `tests/helpers/gojo_sukuna_batch_probe.gd`
+- 是否改变玩家口径：
+  - 是
+  - 领域角色只要满足开域条件，就会优先兑现领域，不再被治疗技能抢手
+- 是否改变数值平衡结论：
+  - 是
+  - 当前对称 `200` 场启发式批跑里，默认装配来到 Gojo `120` / 宿傩 `80`，反转术式装配来到 Gojo `89` / 宿傩 `111`
+  - 但宿傩在 Gojo 对位里的 `domain_successes` 仍是 `0`，说明“会不会按领域”已经修好，“领域能不能真正立住”还要继续观察
+
 ### 调整：奥义点、领域对拼与领域绑定增幅收口
 
 - 改了什么：
   - 宿傩加入 `ultimate_points_required = 3`、`ultimate_points_cap = 3`、`ultimate_point_gain_on_regular_skill_cast = 1`
-  - `sukuna_domain_cast_buff` 改成 `sukuna_malevolent_shrine.effect_ids` 的 `field_apply` 增幅
+  - `sukuna_domain_cast_buff` 改成 `sukuna_malevolent_shrine_field.effect_ids` 的 `field_apply` 增幅
   - 新增 `sukuna_domain_buff_remove`，在领域自然结束或提前打断时回收 `attack +1 / sp_attack +1`
-  - 场上已有 field 时改成进入领域对拼，不再直接覆盖
+  - 场上已有领域且本次也是领域时改成进入领域对拼；普通 field 仍按 `field_kind` 冲突矩阵处理
 - 为什么改：
   - 宿傩需要与全局奥义点/领域对拼规则一致
   - 旧设计存在“领域没了，双攻增幅还留着”的状态风险
@@ -23,7 +63,7 @@
   - 领域增幅改成“只有领域成功立住才会获得，领域消失就一起消失”
 - 是否改变数值平衡结论：
   - 是
-  - 3 点奥义点体系下，宿傩开大更慢；本轮接受这一结果，不额外补偿数值
+  - 当前保留 3 点体系；是否进一步补数值，要看 probe 下领域窗口与胜率是否仍偏弱
 
 ## 2026-03-28
 

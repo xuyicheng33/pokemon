@@ -22,6 +22,13 @@ def require_contains(rel_path: str, needle: str, label: str) -> None:
         failures.append(f"{rel_path} missing {label}: {needle}")
 
 
+def require_contains_any(rel_paths: list[str], needle: str, label: str) -> None:
+    for rel_path in rel_paths:
+        if needle in read_text(rel_path):
+            return
+    failures.append(f"{', '.join(rel_paths)} missing {label}: {needle}")
+
+
 def require_absent(rel_path: str, needle: str, label: str) -> None:
     if needle in read_text(rel_path):
         failures.append(f"{rel_path} still contains stale {label}: {needle}")
@@ -52,23 +59,39 @@ require_readme_count("src", r"`src/\*\*/\*\.gd`：`(\d+)` 行", src_count)
 require_readme_count("tests", r"`tests/\*\*/\*\.gd`：`(\d+)` 行", tests_count)
 require_readme_count("total", r"GDScript 合计：`(\d+)` 行", total_count)
 
-require_contains(
-    "tests/suites/content_logging_suite.gd",
+require_contains_any(
+    [
+        "tests/suites/content_logging_suite.gd",
+        "tests/suites/log_cause_semantics_suite.gd",
+        "tests/suites/log_cause_anchor_suite.gd",
+    ],
     "direct damage cause_event_id should point to the real action:hit event",
     "direct damage real cause_event_id regression",
 )
-require_contains(
-    "tests/suites/content_logging_suite.gd",
+require_contains_any(
+    [
+        "tests/suites/content_logging_suite.gd",
+        "tests/suites/log_cause_semantics_suite.gd",
+        "tests/suites/log_cause_anchor_suite.gd",
+    ],
     "effect event cause_event_id must not point to itself",
     "self-referential cause_event_id regression",
 )
-require_contains(
-    "tests/suites/content_logging_suite.gd",
+require_contains_any(
+    [
+        "tests/suites/content_logging_suite.gd",
+        "tests/suites/log_cause_semantics_suite.gd",
+        "tests/suites/log_cause_anchor_suite.gd",
+    ],
     "turn_start regen cause_event_id should point to the real system:turn_start anchor",
     "turn_start anchor cause_event_id regression",
 )
-require_contains(
-    "tests/suites/content_logging_suite.gd",
+require_contains_any(
+    [
+        "tests/suites/content_logging_suite.gd",
+        "tests/suites/log_cause_semantics_suite.gd",
+        "tests/suites/log_cause_anchor_suite.gd",
+    ],
     "field expire cause_event_id should point to the real system:turn_end anchor",
     "field expire anchor cause_event_id regression",
 )
@@ -87,13 +110,13 @@ require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("candid
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("setup_loadout_override_validation"', "setup override dedicated regression")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("runtime_regular_skill_loadout_contract"', "runtime loadout dedicated regression")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("same_side_duplicate_unit_forbidden"', "same-side duplicate unit regression")
-require_contains("tests/suites/gojo_suite.gd", 'runner.run_test("gojo_murasaki_double_mark_burst_contract"', "gojo burst regression")
-require_contains("tests/suites/gojo_suite.gd", 'runner.run_test("gojo_mugen_incoming_accuracy_contract"', "gojo mugen regression")
-require_contains("tests/suites/gojo_suite.gd", 'runner.run_test("gojo_unlimited_void_runtime_contract"', "gojo domain regression")
-require_contains("tests/suites/sukuna_suite.gd", 'runner.run_test("sukuna_domain_expire_chain_path"', "sukuna domain expire regression")
-require_contains("tests/suites/sukuna_suite.gd", 'runner.run_test("sukuna_domain_break_chain_path"', "sukuna domain break regression")
-require_contains("tests/suites/ultimate_field_suite.gd", 'runner.run_test("ultimate_points_regular_skill_gain_contract"', "ultimate point gain regression")
-require_contains("tests/suites/ultimate_field_suite.gd", 'runner.run_test("field_clash_tie_replay_contract"', "field clash replay regression")
+require_contains("tests/suites/gojo_murasaki_suite.gd", 'runner.run_test("gojo_murasaki_double_mark_burst_contract"', "gojo burst regression")
+require_contains("tests/suites/gojo_domain_suite.gd", 'runner.run_test("gojo_mugen_incoming_accuracy_contract"', "gojo mugen regression")
+require_contains("tests/suites/gojo_domain_suite.gd", 'runner.run_test("gojo_unlimited_void_runtime_contract"', "gojo domain regression")
+require_contains("tests/suites/sukuna_kamado_domain_suite.gd", 'runner.run_test("sukuna_domain_expire_chain_path"', "sukuna domain expire regression")
+require_contains("tests/suites/sukuna_kamado_domain_suite.gd", 'runner.run_test("sukuna_domain_break_chain_path"', "sukuna domain break regression")
+require_contains("tests/suites/ultimate_points_contract_suite.gd", 'runner.run_test("ultimate_points_regular_skill_gain_contract"', "ultimate point gain regression")
+require_contains("tests/suites/domain_clash_contract_suite.gd", 'runner.run_test("field_clash_tie_replay_contract"', "field clash replay regression")
 
 for rel_path in [
     "docs/design/gojo_satoru_design.md",

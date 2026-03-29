@@ -7,7 +7,7 @@
 | 茈 | 保留“苍+赫双标记”条件爆发，**不做自伤** |
 | 无下限 | 改为“敌方技能或奥义攻击五条悟时，若该次不是必中，则命中率 -10” |
 | 奥义点 | `required=3 / cap=3 / regular_skill_cast +1` |
-| 无量空处锁人条件 | 只有领域**成功立住**时，才通过 `on_success_effect_ids` 施加 `gojo_domain_action_lock` |
+| 无量空处锁人条件 | 只有领域**成功立住**时，才通过 `on_success_effect_ids -> field_apply_success` 施加 `gojo_domain_action_lock` |
 | 领域增幅归属 | `sp_attack +1` 改为 field 绑定效果；成功立场时生效，领域自然结束/提前打断时移除，对拼失败时不成立 |
 | 领域后摇 | **删除**（不再追加封印/回滚） |
 | 施工顺序 | **第 4 节扩展、第 5 节资源、第 6 节 `gojo_suite` 均已落地；本轮新增奥义点 / 领域对拼 / field 绑定增幅专项回归** |
@@ -246,8 +246,8 @@
 
 - 五条悟当前奥义点配置固定为：`ultimate_points_required = 3`、`ultimate_points_cap = 3`、`ultimate_point_gain_on_regular_skill_cast = 1`。
 - 奥义合法性必须同时满足：`current_mp >= 50` 且 `ultimate_points >= 3`；开始施放无量空处时，奥义点立即清零；换下后点数保留。
-- 若场上已有 field，`gojo_apply_domain_field` 进入领域对拼：比较双方**扣费后的当前 MP**；MP 高者留场；平 MP 随机决定胜者，并把随机值写入 `effect:field_clash.effect_roll`，保证 replay 可复现。
-- 若五条悟在领域对拼中失败，则无量空处**不落地、不加 `sp_attack +1`、也不锁人**；只有领域真正成功立住后，才会继续跑 `field_apply` 增幅和 `on_success_effect_ids` 锁人。
+- 若场上已有领域，`gojo_apply_domain_field` 进入领域对拼：比较双方**扣费后的当前 MP**；MP 高者留场；平 MP 随机决定胜者，并把随机值写入 `effect:field_clash.effect_roll`，保证 replay 可复现。
+- 若五条悟在领域对拼中失败，则无量空处**不落地、不加 `sp_attack +1`、也不锁人**；只有领域真正成功立住后，才会继续跑 `field_apply` 增幅和 `on_success_effect_ids`（`field_apply_success`）锁人。
 - 由于 `gojo_domain_cast_buff` 已改成 field 绑定效果，所以不会再出现“领域已经没了，但 `sp_attack +1` 还残留在五条悟身上”的状态。
 
 顺序约束：
@@ -264,7 +264,7 @@
 
 `gojo_domain_action_lock` 资源口径：
 
-1. EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=["on_hit"]`
+1. EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=["field_apply_success"]`
 2. payload：`rule_mod(mod_kind=action_legality, mod_op=deny, value=all, scope=target, duration_mode=turns, duration=1, decrement_on=turn_end, stacking=replace)`
 
 时间语义：
@@ -538,7 +538,7 @@
 | 9 | MP 回复 | 每回合回复 14 |
 | 10 | 首回合可操作 MP | 按当前 `turn_start -> selection` 时序，Gojo 第 1 回合进入选指时 `current_mp = 64` |
 | 11 | 无下限重入场 | 五条悟离场再入场后，`incoming_accuracy -10` 仍生效 |
-| 12 | 无量空处 action_lock 生效时机 | 只有 `gojo_apply_domain_field` 成功落地后，才会通过 `on_success_effect_ids` 施加 `gojo_domain_action_lock`；若 Gojo 先于目标行动且对手尚未开始，本回合已排队技能 / 换人会被 `cancelled_pre_start` |
+| 12 | 无量空处 action_lock 生效时机 | 只有 `gojo_apply_domain_field` 成功落地后，才会通过 `on_success_effect_ids -> field_apply_success` 施加 `gojo_domain_action_lock`；若 Gojo 先于目标行动且对手尚未开始，本回合已排队技能 / 换人会被 `cancelled_pre_start` |
 | 13 | action_legality + wait | `deny all` 时 `wait` 仍可选 |
 | 14 | action_legality 阻断换人也算非 MP 阻断 | 当技能 / 奥义仅因 MP 不足不可用、换人被 `deny switch/all` 封禁时，legal set 只保留 `wait`，不得回落到 `resource_forced_default` |
 | 15 | 领域内必中 | `creator_accuracy_override=100` 只在无量空处领域成功立住后生效 |

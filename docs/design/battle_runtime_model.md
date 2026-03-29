@@ -107,6 +107,12 @@
 |`source_instance_id`|`String`|触发源实例|
 |`source_kind_order`|`int`|来源类型枚举值|
 |`source_order_speed_snapshot`|`int`|速度快照|
+|`reversible_stat_mod_totals`|`Dictionary`|按 `owner_id|stat_name` 记录 field 期间实际生效的能力阶段净变化|
+
+补充说明：
+
+- `reversible_stat_mod_totals` 用于 field 生命周期回滚：`field_apply` 时记录实际写入增量，`field_break / field_expire` 时只消费已记录增量，避免 clamp/外部改动导致过量回滚。
+- `FieldState.to_stable_dict()` 必须包含 `reversible_stat_mod_totals`，保证 replay 与 `final_state_hash` 在该语义下仍可稳定复现。
 
 ## 8. EffectInstance
 

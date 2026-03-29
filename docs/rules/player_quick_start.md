@@ -61,7 +61,7 @@ final_damage = max(1, floor(base_damage * final_mod))
 |系统|当前规则|
 |---|---|
 |持有物|只有被动持有物，战前装备，不是行动指令|
-|field|全场同一时刻最多 1 个；场上已有 field 时，新 field 先打领域对拼，不直接覆盖|
+|field|全场同一时刻最多 1 个；冲突按 `field_kind` 矩阵：仅 `domain vs domain` 对拼，`normal` 不得覆盖在场 `domain`|
 |field 效果来源|必须写在技能或效果描述里，按描述生效|
 
 ## 6. 当前还没有的机制

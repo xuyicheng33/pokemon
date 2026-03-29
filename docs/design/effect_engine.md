@@ -105,8 +105,8 @@ effect 级前置约束：
 ## 6. Field apply 主路径
 
 - `apply_field` 的唯一主入口是 `field_apply_service.gd`，不能把领域对拼散在 payload、角色资源和 lifecycle 分支里各写一份。
-- 场上已有 field 时，新 field 先进入领域对拼：比较双方扣费后的当前 MP；高者留场；平 MP 走 RNG，并把 tie-break 写入 `effect:field_clash.effect_roll`。
-- 只有 field 真正落地成功后，才允许继续执行 `field_apply` 触发和 `ApplyFieldPayload.on_success_effect_ids`。
+- 场上已有 field 时，按 `field_kind` 冲突矩阵处理：`domain vs domain` 进入对拼并写 `effect:field_clash`；`normal vs domain` 被阻断并写 `effect:field_blocked`；`domain vs normal` 直接替换。
+- 只有 field 真正落地成功后，才允许继续执行 `field_apply` 触发，并以 `field_apply_success` 派发 `ApplyFieldPayload.on_success_effect_ids`。
 - 因此“领域成功才成立的附带效果”与“领域 buff 跟着 field 生命周期走”都收口在同一条 apply 路径里。
 
 ## 7. 约束

@@ -59,8 +59,8 @@
 |场上没有 field|新 field 直接生效|
 |场上已有普通 field，新普通 field 生效|直接替换旧普通 field|
 |场上已有普通 field，新领域生效|新领域直接替换旧普通 field，不进入对拼|
-|场上已有领域，新普通 field 生效|新普通 field 不生效，旧领域保留|
-|场上已有领域，新领域生效|进入领域对拼|
+|场上已有领域，新普通 field 生效|新普通 field 不生效，写 `effect:field_blocked`，旧领域保留|
+|场上已有领域，新领域生效|进入领域对拼，并写 `effect:field_clash`|
 |领域对拼比较值|比较双方在各自动作扣费后的当前 MP|
 |领域对拼胜负|MP 更高者保留领域；若 MP 相等，按 RNG 随机决定|
 |领域对拼失败方|field 不落地，且“只有领域成功立住后才成立”的附带效果一律不生效|
@@ -80,6 +80,8 @@
 7. 己方领域在场时，己方不能再次施放领域技能；该限制不作用于对手，也不作用于普通 field 技能。
 8. 领域创建者离场会立即打断领域；非创建者离场不打断领域。
 9. 同回合双方都已排队施放领域时，后手领域动作不得被中途合法性锁回溯取消，必须进入 `domain vs domain` 对拼。
+10. `field_break / field_expire` 链上，`scope=self` 的 effect 允许命中“已离场但仍存活”的领域创建者运行态（用于离场打断与到期清理）。
+11. field 绑定的能力阶段回滚必须按“field 生效期间实际写入的净增量”执行；若期间被其他效果抵消或触发 clamp，只回滚已记录部分，禁止过量回滚。
 
 ## 3. 统一效果排序
 
@@ -143,6 +145,7 @@
 |AI 禁止读取|内部随机值、未来未发生的抽样结果、仅供调试的缓存|
 |候选技能池|当前不进入公开快照，也不是 AI 对外 contract 的一部分|
 |合法性职责|引擎先完成合法性判断：要么给出可选的技能 / 手动换人 / 奥义列表，要么直接替代为默认动作；AI 只从可执行结果中选一个|
+|强制动作注入职责|`forced_command_type` 只由合法性层给出，`TurnSelectionResolver` 统一注入 `resource_forced_default`；AI adapter 在“无可选动作且 `wait_allowed=false`”时返回空命令，不再自行拼强制动作|
 |空列表处理|若技能、手动换人、奥义都不合法：仅在“全部仅因 MP 不足”时强制 `resource_forced_default`；存在任一非 MP 阻断时允许 `wait`|
 |超时处理|AI 若在截止时间前未返回：当前应强制资源型默认动作 `resource_forced_default` 则走 `resource_forced_default`；否则走 `wait`（`command_source = timeout_auto`）|
 
@@ -235,7 +238,8 @@
 |`effect:apply_effect`|施加持续效果实例|
 |`effect:remove_effect`|移除持续效果实例|
 |`effect:apply_field`|创建或替换 field|
-|`effect:field_clash`|field 对拼结果|
+|`effect:field_clash`|`domain vs domain` 对拼结果（含平 MP tie-break）|
+|`effect:field_blocked`|普通 field 被在场领域阻断|
 |`effect:field_expire`|field 到期移除|
 |`effect:rule_mod_apply`|规则修正生效|
 |`effect:rule_mod_remove`|规则修正移除|
@@ -250,7 +254,7 @@
 
 1. 标准模式下不存在主动道具指令入口。
 2. 被动持有物会在战前随完整队伍信息正确公开。
-3. field 始终只有 1 个生效实例，新 field 会替换旧 field。
+3. field 始终只有 1 个生效实例；冲突按 `field_kind` 矩阵处理（`domain` 可替换 `normal`，`normal` 不得覆盖 `domain`）。
 4. 效果排序统一走 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`。
 5. AI 不会自己死循环试指令，而是从引擎给出的合法列表里选。
 6. `resource_forced_default / resource_auto / wait / timeout_auto` 命名在规则和日志里只有这一套口径。

@@ -7,7 +7,95 @@
 
 - `docs/records/archive/decisions_pre_v0.6.3.md`
 
+## 2026-03-30
+
+### 252. 拒绝把“降奥义耗蓝”或“预判必输先憋领域”并入主线
+- `sukuna_fukuma_mizushi.mp_cost` 试过 `48` 与 `45` 两档；对称 `200` 场 probe 都证明它没有改善宿傩的 `domain_successes = 0`，却会把反转术式装配过冲到 Gojo `7` / 宿傩 `193`。
+- heuristic 也试过“若当前领域对拼必输就先憋奥义”；实测会把宿傩重新打回“`ult_legal_windows` 很高但 `ult_chosen = 0`”的旧问题，默认与反转术式装配都明显变差。
+- 因此当前主线只保留“领域型奥义优先级高于治疗”的修正，不把上述两条失败实验并入正式规则。
+
+### 251. 领域型奥义的 heuristic 优先级统一高于治疗
+- Gojo / Sukuna 作为当前两名领域角色，只要 `legal_ultimate_ids` 里存在自己的领域奥义，且当前在场领域不是己方自己立的，就必须优先开领域，再考虑 `reverse_ritual`。
+- AI 层删除了“如果预判当前 clash 会输，就先憋着不放领域”的隐藏分支；这类博弈型保留逻辑若未来要做，必须单独成文，不再偷偷夹在当前基线里。
+- probe 已经把 `ult_legal_windows` 与 `ult_chosen` 分开统计；反转术式装配曾经出现过“窗口是 `200`，但几乎不按奥义”的漂移，这说明问题在策略优先级，不在内容层。
+- 这条修正只解决“会不会按领域”，不改领域对拼判定；宿傩对 Gojo 的 `domain_successes` 仍需单独按 clash 资源轴继续观察。
+
+### 250. 宿傩回蓝表上调到 `9 / 8 / 7 / 6 / 5 / 0`，先补默认装配的奥义窗口
+- 宿傩继续保留 `required=3 / cap=3 / regular_skill_cast +1`，不走 2 点奥义点特化。
+- 第一轮 probe 已确认：宿傩默认装配原来长期 `ult_legal_windows = 0`，主堵点在 `mp_regen` 动态表太低。
+- 当前修法是维持 `mp_regen set` 语义，把动态回蓝表上调到 `9 / 8 / 7 / 6 / 5 / 0`；这样先把默认装配拉回非零领域窗口，再由 #251 继续处理策略优先级问题。
+
+### 249. probe 不再读取 manager 私有 `_sessions`，统一改走只读事件日志接口
+- `BattleCoreManager` 从本条起新增 `get_event_log_snapshot(session_id, from_index=0)`，返回 `{ events, total_size }` 的只读日志快照。
+- 事件快照在原 `LogEvent.to_stable_dict()` 基础上补出 `actor_public_id / actor_definition_id / target_public_id / target_definition_id`，供 probe 与 contract test 做只读诊断，不再要求外层直接穿透 runtime session。
+- 继续保持边界：公开快照仍不暴露 `unit_instance_id`；日志接口是调试/回放诊断口，不参与玩家输入输出 contract。
+
+### 248. 领域规范硬切：成功后附带链与冲突日志口径统一
+- `ApplyFieldPayload.on_success_effect_ids` 的调度触发点统一为 `field_apply_success`，不再复用父 effect 的触发点。
+- field 冲突日志口径拆分为两类：`effect:field_clash` 只记录 `domain vs domain` 对拼；`effect:field_blocked` 只记录“普通 field 被在场领域阻断”。
+- 文档与资源命名统一到 `sukuna_malevolent_shrine_field`；旧名 `sukuna_malevolent_shrine` 仅作为历史别名，不再用于现行规范描述。
+
 ## 2026-03-29
+
+### 247. `sukuna / rule_mod / log_cause` 三组测试热点继续按子域拆分
+- `sukuna_suite.gd`、`rule_mod_suite.gd`、`log_cause_contract_suite.gd` 从本条起只保留 wrapper；原测试顺序保持不变，避免回归定位锚点漂移。
+- `sukuna` 的对局构造与对位差值 helper 下放到 `tests/support/sukuna_test_support.gd`；`log_cause` 的事件检索 helper 下放到 `tests/support/log_cause_test_helper.gd`。
+- `tests/check_repo_consistency.sh` 必须继续指向真实断言所在子套件，不能把 Sukuna / log cause 的关键回归继续绑在 wrapper 文件上。
+
+### 246. `combat_type / damage_payload / forced_replace` 测试套件继续收口为 wrapper + 子套件
+- `combat_type_suite.gd`、`damage_payload_contract_suite.gd`、`forced_replace_suite.gd` 从本条起都只保留顶层 `register_tests(...)` 聚合，不再继续堆共享 helper 与具体断言。
+- `combat_type` 与 `damage_payload` 的共享构局/断言 helper 下放到 `tests/support/combat_type_test_helper.gd` 与 `tests/support/damage_payload_contract_test_helper.gd`，避免同类公式/日志辅助在多个子套件里复制。
+- `forced_replace` 当前按 `success lifecycle / field break / invalid selection` 三个子域拆开；原测试名与执行顺序保持不变，保证 `run_all.gd` 与回归定位口径稳定。
+
+### 245. 大测试套件收口为 wrapper + 子套件，`run_all` 只认顶层入口
+- `gojo_suite.gd`、`lifecycle_core_suite.gd`、`extension_contract_suite.gd` 从本条起收口为顶层 wrapper，只负责 `register_tests(...)` 聚合。
+- 真实断言按单一子域拆到子套件文件，保留原测试名不变，避免 `run_all.gd`、回归锚点和门禁脚本一起漂移。
+- `tests/check_repo_consistency.sh` 必须识别“wrapper + 子套件”结构，不再把关键回归锚点硬绑到单一大文件。
+
+### 244. `field_apply_service.gd` 已回落到常规阈值内，退出超阈值白名单
+- `field_apply_service.gd` 本轮已拆成 facade + `context_resolver / conflict_service / log_service / effect_runner` 四个子服务，主文件只保留领域落地编排。
+- 架构闸门不再对白名单豁免 `src/battle_core/passives/field_apply_service.gd`；后续新增领域逻辑不得再直接堆回主编排文件。
+- 下一轮若继续细拆，优先处理依赖同步 `_sync_runtime_services` 与领域对拼里的 RNG 决策回写职责。
+
+### 243. BattleAIAdapter 收口为共享策略薄适配层
+- 从本条起，`BattleAIAdapter` 不再维护独立 heuristic 分支，只委托 `BattleAIPolicyService` 进行决策。
+- `tests/helpers/gojo_sukuna_batch_probe.gd` 的 `heuristic` 模式必须复用同一策略服务，避免“正式 AI 很弱、probe 另起一套”的漂移。
+- `forced_command_type` 契约保持不变：策略层仍只返回空命令，由 `TurnSelectionResolver` 统一注入强制动作。
+
+### 242. 三个热点文件完成中度拆分，但不改外部 contract
+- `payload_numeric_handler.gd` 从本条起收口为 facade，数值执行拆到 damage/resource/stat 子服务，并把 target 解析/离场放行逻辑抽成共享 helper。
+- `content_snapshot_validator.gd` 从本条起只做编排，shape/static 校验与 trigger contract 校验拆成独立 validator 文件。
+- `battle_core_composer.gd` 从本条起只保留组装流程，`SERVICE_SPECS / WIRING_SPECS / RESET_SPECS` 拆到独立规格文件。
+- 上述拆分都不允许改变 manager API、container slot 名称、错误文案与既有规则语义。
+
+### 241. 回放边界收紧：`run_replay` 对外不再暴露最终运行态对象
+- 从本条起，`BattleCoreManager.run_replay()` 对外返回固定为 `{ replay_output, public_snapshot }`。
+- 对外 `replay_output` 必须是去运行态版本：`final_battle_state = null`。
+- 内部 `ReplayRunner` 仍可保留 `final_battle_state` 用于哈希计算与排查，但不得透传到 manager 边界外。
+
+### 240. AI 强制动作契约收紧：adapter 不再注入 forced command
+- `forced_command_type` 保持为合法性层输出信号，不再由 AI adapter 主动构造或回填。
+- 当技能/奥义/手动换人都不可选且 `wait_allowed = false` 时，AI adapter 返回空命令，由 `TurnSelectionResolver` 统一注入 `resource_forced_default`。
+- 该收口用于避免“多入口拼强制动作”导致的边界漂移。
+
+### 239. 触发器一致性升级为加载期硬约束
+- 从本条起，直接分发的 effect 引用必须声明对应 `trigger_names`，包含：
+  - `skill.effects_on_*`
+  - `passive_skill / passive_item` 的 effect 引用
+  - `field.effect_ids / on_break_effect_ids / on_expire_effect_ids`
+  - `effect.on_expire_effect_ids`
+  - `apply_field.on_success_effect_ids`
+- 新增触发点口径一并收口：`field_break / field_expire / on_expire` 进入当前基线白名单。
+
+### 238. field 绑定能力阶段回滚改为“按实际生效增量消费”
+- 领域或 field 在 `field_apply` 阶段写入能力阶段时，运行态按 `owner_id + stat_name` 记录实际生效净增量。
+- `field_break / field_expire` 回滚时只消费已记录增量，不再按声明值强行回滚，避免 clamp 或外部改写后的过量恢复。
+- 该记录进入 `FieldState.to_stable_dict()`，确保 replay 哈希在新语义下稳定。
+
+### 237. 组合根超阈值白名单记录：`src/composition/battle_core_composer.gd`
+- `src/composition/battle_core_composer.gd` 当前纳入 >250 行复核白名单，原因是组合根仍集中维护 preload / service 注册 / 依赖注入 / dispose 解绑四张对照表。
+- 阶段性上限由架构闸门 `max_lines` 保护；超上限直接 fail-fast，不允许继续无记录膨胀。
+- 预计拆分窗口：下一轮容器规格抽离时，把“声明式注册表”和“注入规则”拆为独立规格文件，composer 仅保留组装入口。
 
 ### 236. 领域收口期超阈值文件治理：先显式白名单复核，再进入下一轮拆分
 - 本轮实现新增了领域冲突矩阵与技能/field 一致性校验后，以下核心文件超过 250 行阈值，先进入架构门禁白名单并记录复核原因：
@@ -25,11 +113,11 @@
 
 ### 234. 奥义点、领域对拼与 field 绑定增幅成为当前正式规则
 - 从本条起，奥义点规则固定为：只有常规技能开始施放时加点；`wait / switch / ultimate / resource_forced_default / surrender` 不加点；奥义合法性必须同时检查 MP 与奥义点；奥义开始施放即清零；换下保留；公开快照与日志都必须可见。
-- Gojo 与 Sukuna 当前统一采用 `required=3 / cap=3 / regular_skill_cast +1` 的首版配置；若未来要做角色特化攒点，只能在此基础上扩 schema，不回退当前通用 contract。
-- 场上已有 field 时，新 field 不再直接覆盖，而是先进入领域对拼：比较双方扣费后的当前 MP；MP 高者留场；平 MP 用 RNG 决定胜者，并把随机值写入 `effect:field_clash.effect_roll`，保证 replay 可复现。
+- Gojo 与宿傩当前都保持 `required=3 / cap=3 / regular_skill_cast +1`；宿傩的修正点改为 #250 的动态回蓝表上调，而不是奥义点特化。
+- 场上已有 field 且新旧都为领域时，按领域对拼处理：比较双方扣费后的当前 MP；MP 高者留场；平 MP 用 RNG 决定胜者，并把随机值写入 `effect:field_clash.effect_roll`，保证 replay 可复现。
 - field 成功后才成立的附带效果必须通过 field apply 主路径统一表达；Gojo 的 `gojo_domain_action_lock` 只允许在无量空处成功立住后生效。
 - Gojo / Sukuna 的领域增幅从普通持久 `stat_stage` 改成 field 绑定效果：成功立场时生效，自然结束与提前打断时移除，对拼失败时不成立。
-- 平衡结论同步冻结：Gojo 保留苍 / 赫 / 茈与无下限原机制，奥义改为 3 点可开；宿傩保留“教会你爱的是...”、灶与领域自然到期终爆，并接受“3 点体系下开大更慢”的结果。
+- 平衡结论同步冻结：Gojo 保留苍 / 赫 / 茈与无下限原机制，奥义维持 3 点可开；宿傩保留“教会你爱的是...”、灶与领域自然到期终爆，通过上调动态回蓝表补强默认装配窗口，并由 #251 补齐领域优先级。
 - 本条中的“场上已有 field 先对拼”旧表述已由 #235 的 `field_kind` 冲突矩阵覆盖。
 
 ### 233. 热点文件本轮采用“最小拆分 + 新逻辑不再回堆旧热点”策略
@@ -717,7 +805,7 @@
 
 ### 203. 领域后摇删除（Gojo / Sukuna 同口径，2026-03-28）
 - 领域结束后的“封印/回滚后摇”从设计口径中移除：Gojo 不再定义 `gojo_domain_expire_seal / gojo_domain_rollback`，Sukuna 现有内容也移除同类后摇。
-- Sukuna `sukuna_malevolent_shrine` 调整为：自然到期仅保留 `sukuna_domain_expire_burst`，`on_break_effect_ids` 置空；不再施加 `skill_legality` 封印与 stat rollback。
+- Sukuna `sukuna_malevolent_shrine_field`（旧名 `sukuna_malevolent_shrine`）调整为：自然到期先移除双攻增幅，再触发 `sukuna_domain_expire_burst`；被打断时只移除双攻增幅；不再施加 `skill_legality` 封印与 stat rollback。
 - 领域强度本轮不下调，后续按实战与回归数据再做平衡收敛。
 
 ### 204. 五条悟文档四审职责与边界补丁（2026-03-29）

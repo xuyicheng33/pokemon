@@ -12,7 +12,7 @@
   - 指令选择、`wait / resource_forced_default` 分流、行动排序、命中/伤害、换人、击倒补位
   - `combat_type` 战斗属性系统（单位 `0..2`、技能 `0..1`、显式克制表）
   - `ultimate_points` 奥义点资源、公开快照与合法性校验
-  - `on_matchup_changed`、field 生命周期（自然到期 / 提前打断 / 领域对拼 / 成功后附带效果）、被动技能、被动持有物、受限 rule_mod
+  - `on_matchup_changed`、field 生命周期（自然到期 / 提前打断 / 领域对拼 / 普通 field 阻断 / 成功后附带效果）、被动技能、被动持有物、受限 rule_mod
   - 默认装配可直接加载的 Gojo / Sukuna 正式角色原型内容包
   - deterministic 回放（同输入同结果）
   - 完整日志契约（`log_schema_version = 3`）
@@ -58,9 +58,15 @@ tests/
   suites/               # 回归测试套件
     lifecycle_core_suite.gd
     forced_replace_suite.gd
+    gojo_suite.gd
+    sukuna_suite.gd
+    ultimate_field_suite.gd
+    adapter_contract_suite.gd
+    ai_policy_decision_suite.gd
+    trigger_validation_suite.gd
   support/              # 测试 harness 与公共构造器
   fixtures/             # 预留样例输入与内容快照
-  helpers/              # 预留测试辅助脚本
+  helpers/              # 测试辅助与批量探针脚本
   replay_cases/         # 预留 deterministic 回放案例
   run_all.gd            # 测试入口
   run_with_gate.sh      # 测试闸门（断言 + 引擎错误 + 架构 + 仓库一致性）
@@ -114,6 +120,7 @@ tests/run_with_gate.sh
 - `build_command(input_payload)`
 - `run_turn(session_id, commands)`
 - `get_public_snapshot(session_id)`
+- `get_event_log_snapshot(session_id, from_index = 0)`（返回 `{ events, total_size }`；供 probe / 调试读取只读日志增量快照）
 - `close_session(session_id)`
 - `run_replay(replay_input)`
 - `active_session_count()`（返回当前活跃会话数量）
@@ -121,6 +128,8 @@ tests/run_with_gate.sh
 - `resolve_missing_dependency()`（返回缺失依赖名；为空表示依赖完整）
 
 其中 `run_replay` 使用临时容器隔离执行，不污染活跃会话池。
+对外返回结构固定为 `{ replay_output, public_snapshot }`，其中 `replay_output.final_battle_state` 必须为 `null`，运行态对象不得越过 manager 边界。
+内部 `ReplayRunner` 仍保留 `final_battle_state`，用于计算 `final_state_hash` 与回放诊断，不对外透传。
 
 ## 7. 外层 ID 契约
 
@@ -135,6 +144,7 @@ tests/run_with_gate.sh
 - 外层 `Command` 默认提交 `actor_public_id / target_public_id`
 
 `actor_id / target_unit_id` 仍保留，但只用于核心内部与系统自动注入路径。
+`forced_command_type` 只作为合法性结果的引擎侧信号；AI adapter 不主动回填该字段，自动注入统一由 `TurnSelectionResolver` 执行。
 
 ## 8. 内容资源最小 Schema
 
@@ -159,6 +169,7 @@ tests/run_with_gate.sh
 - `on_receive_effect_ids` 为禁用迁移字段，非空即失败
 - `EffectDefinition.stacking` 已开放 `stack`
 - `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
+- 触发点当前包含 `field_apply / field_break / field_expire / on_expire`，并要求引用关系与触发器声明一致
 - field 持续时间不写在 `FieldDefinition`；由施加它的 `EffectDefinition.duration / decrement_on` 决定
 - `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 rule_mod 使用）
 - `BattleFormatConfig` 已包含 `visibility_mode / selection_deadline_ms / max_chain_depth`
@@ -197,11 +208,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-03-29）
+## 10. 当前代码规模（2026-03-30）
 
-- `src/**/*.gd`：`7454` 行
-- `tests/**/*.gd`：`7150` 行
-- GDScript 合计：`14604` 行
+- `src/**/*.gd`：`8201` 行
+- `tests/**/*.gd`：`8508` 行
+- GDScript 合计：`16709` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 
