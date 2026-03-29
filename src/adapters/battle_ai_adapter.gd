@@ -1,15 +1,9 @@
 extends RefCounted
 class_name BattleAIAdapter
 
-const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const BattleAIPolicyServiceScript := preload("res://src/adapters/ai/battle_ai_policy_service.gd")
 
-func choose_command(legal_action_set) -> Dictionary:
-    if not legal_action_set.legal_skill_ids.is_empty():
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": legal_action_set.legal_skill_ids[0]}
-    if not legal_action_set.legal_ultimate_ids.is_empty():
-        return {"command_type": CommandTypesScript.ULTIMATE, "skill_id": legal_action_set.legal_ultimate_ids[0]}
-    if not legal_action_set.legal_switch_target_public_ids.is_empty():
-        return {"command_type": CommandTypesScript.SWITCH, "target_public_id": legal_action_set.legal_switch_target_public_ids[0]}
-    if legal_action_set.wait_allowed:
-        return {"command_type": CommandTypesScript.WAIT}
-    return {"command_type": legal_action_set.forced_command_type}
+var _policy_service = BattleAIPolicyServiceScript.new()
+
+func choose_command(legal_action_set, public_snapshot: Dictionary = {}, side_id: String = "", policy: String = "heuristic") -> Dictionary:
+    return _policy_service.choose_command(legal_action_set, public_snapshot, side_id, policy)
