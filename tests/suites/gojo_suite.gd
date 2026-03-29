@@ -326,15 +326,18 @@ func _test_gojo_unlimited_void_cancelled_pre_start_contract(harness) -> Dictiona
         {
             "name": "skill",
             "command": func(core): return _build_skill_command(core, 1, "P2", "P2-A", "sample_strike"),
+            "expect_cancelled": true,
         },
         {
             "name": "ultimate",
             "command": func(core): return _build_ultimate_command(core, 1, "P2", "P2-A", "sukuna_fukuma_mizushi"),
             "opponent": "sukuna",
+            "expect_cancelled": false,
         },
         {
             "name": "switch",
             "command": func(core): return _build_switch_command(core, 1, "P2", "P2-A", "P2-B"),
+            "expect_cancelled": true,
         },
     ]
     for i in range(cases.size()):
@@ -360,14 +363,24 @@ func _test_gojo_unlimited_void_cancelled_pre_start_contract(harness) -> Dictiona
         var opponent = _find_unit_on_side(battle_state, "P2", "sukuna" if use_sukuna else "sample_pyron")
         if opponent == null:
             return harness.fail_result("missing opponent unit for unlimited void cancel test")
+        if bool(cases[i]["expect_cancelled"]):
+            if not _has_event(core.battle_logger.event_log, func(ev):
+                return ev.event_type == EventTypesScript.ACTION_CANCELLED_PRE_START and ev.target_instance_id == opponent.unit_instance_id
+            ):
+                return harness.fail_result("无量空处先手命中后应把对方未开始的 %s 动作标记为 cancelled_pre_start" % cases[i]["name"])
+            if _has_event(core.battle_logger.event_log, func(ev):
+                return ev.event_type == EventTypesScript.ACTION_CAST and ev.actor_id == opponent.unit_instance_id
+            ):
+                return harness.fail_result("被无量空处锁住的 %s 动作不应走到 ACTION_CAST" % cases[i]["name"])
+            continue
         if not _has_event(core.battle_logger.event_log, func(ev):
-            return ev.event_type == EventTypesScript.ACTION_CANCELLED_PRE_START and ev.target_instance_id == opponent.unit_instance_id
-        ):
-            return harness.fail_result("无量空处先手命中后应把对方未开始的 %s 动作标记为 cancelled_pre_start" % cases[i]["name"])
-        if _has_event(core.battle_logger.event_log, func(ev):
             return ev.event_type == EventTypesScript.ACTION_CAST and ev.actor_id == opponent.unit_instance_id
         ):
-            return harness.fail_result("被无量空处锁住的 %s 动作不应走到 ACTION_CAST" % cases[i]["name"])
+            return harness.fail_result("双方同回合开领域时，对手 %s 动作不应被 action_lock 抢先取消" % cases[i]["name"])
+        if not _has_event(core.battle_logger.event_log, func(ev):
+            return ev.event_type == EventTypesScript.EFFECT_FIELD_CLASH
+        ):
+            return harness.fail_result("双方同回合开领域时必须写出领域对拼日志")
     return harness.pass_result()
 func _test_gojo_reverse_ritual_heal_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()

@@ -3,6 +3,7 @@ class_name LegalActionService
 
 const LegalActionSetScript := preload("res://src/battle_core/contracts/legal_action_set.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
 var rule_mod_service
 
@@ -17,10 +18,12 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     legal_action_set.actor_public_id = actor.public_id
     var has_non_mp_blocked_option: bool = false
     var has_any_skill_or_ultimate_option: bool = false
+    var side_domain_recast_blocked: bool = _is_side_domain_recast_blocked(battle_state, side_id, content_index)
     for skill_id in actor.regular_skill_ids:
         var skill_definition = content_index.skills.get(skill_id)
         if skill_definition == null:
             continue
+        var blocked_by_side_domain: bool = side_domain_recast_blocked and bool(skill_definition.is_domain_skill)
         var can_pay_mp: bool = actor.current_mp >= skill_definition.mp_cost
         var allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
             battle_state,
@@ -28,15 +31,16 @@ func get_legal_actions(battle_state, side_id: String, content_index):
             CommandTypesScript.SKILL,
             skill_id
         )
-        if can_pay_mp and allowed_by_rule_mod:
+        if can_pay_mp and allowed_by_rule_mod and not blocked_by_side_domain:
             legal_action_set.legal_skill_ids.append(skill_id)
             has_any_skill_or_ultimate_option = true
             continue
-        if not allowed_by_rule_mod:
+        if blocked_by_side_domain or not allowed_by_rule_mod:
             has_non_mp_blocked_option = true
     if not unit_definition.ultimate_skill_id.is_empty():
         var ultimate_definition = content_index.skills.get(unit_definition.ultimate_skill_id)
         if ultimate_definition != null:
+            var blocked_ultimate_by_side_domain: bool = side_domain_recast_blocked and bool(ultimate_definition.is_domain_skill)
             var can_pay_ultimate_mp: bool = actor.current_mp >= ultimate_definition.mp_cost
             var has_ultimate_points: bool = actor.ultimate_points >= actor.ultimate_points_required
             var ultimate_allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
@@ -45,10 +49,10 @@ func get_legal_actions(battle_state, side_id: String, content_index):
                 CommandTypesScript.ULTIMATE,
                 unit_definition.ultimate_skill_id
             )
-            if can_pay_ultimate_mp and has_ultimate_points and ultimate_allowed_by_rule_mod:
+            if can_pay_ultimate_mp and has_ultimate_points and ultimate_allowed_by_rule_mod and not blocked_ultimate_by_side_domain:
                 has_any_skill_or_ultimate_option = true
                 legal_action_set.legal_ultimate_ids.append(unit_definition.ultimate_skill_id)
-            elif not ultimate_allowed_by_rule_mod:
+            elif blocked_ultimate_by_side_domain or not ultimate_allowed_by_rule_mod:
                 has_non_mp_blocked_option = true
     var switch_allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
         battle_state,
@@ -75,3 +79,16 @@ func get_legal_actions(battle_state, side_id: String, content_index):
 func _is_action_legal_with_rule_mod(battle_state, actor_id: String, action_type: String, skill_id: String = "") -> bool:
     assert(rule_mod_service != null, "LegalActionService.rule_mod_service is required")
     return rule_mod_service.is_action_allowed(battle_state, actor_id, action_type, skill_id)
+
+func _is_side_domain_recast_blocked(battle_state, side_id: String, content_index) -> bool:
+    if battle_state == null or battle_state.field_state == null:
+        return false
+    var active_field_definition = content_index.fields.get(battle_state.field_state.field_def_id)
+    if active_field_definition == null:
+        return false
+    if String(active_field_definition.field_kind) != ContentSchemaScript.FIELD_KIND_DOMAIN:
+        return false
+    var creator_side = battle_state.get_side_for_unit(String(battle_state.field_state.creator))
+    if creator_side == null:
+        return false
+    return creator_side.side_id == side_id

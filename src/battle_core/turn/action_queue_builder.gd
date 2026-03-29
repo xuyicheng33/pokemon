@@ -35,6 +35,7 @@ func build_queue(commands: Array, battle_state, content_index) -> Array:
     queued_actions.sort_custom(_sort_queued_actions)
     for queue_index in range(queued_actions.size()):
         queued_actions[queue_index].queue_index = queue_index
+    _mark_domain_clash_protection(queued_actions, content_index)
     return queued_actions
 
 func _resolve_priority(command, battle_state, content_index) -> int:
@@ -96,3 +97,21 @@ func _sort_queued_actions(left, right) -> bool:
     if left.speed_tie_roll != null and right.speed_tie_roll != null and left.speed_tie_roll != right.speed_tie_roll:
         return left.speed_tie_roll < right.speed_tie_roll
     return left.action_id < right.action_id
+
+func _mark_domain_clash_protection(queued_actions: Array, content_index) -> void:
+    var first_domain_action_by_side: Dictionary = {}
+    for queued_action in queued_actions:
+        var command = queued_action.command
+        if command == null:
+            continue
+        if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
+            continue
+        var skill_definition = content_index.skills.get(command.skill_id)
+        if skill_definition == null or not bool(skill_definition.is_domain_skill):
+            continue
+        if not first_domain_action_by_side.has(command.side_id):
+            first_domain_action_by_side[command.side_id] = queued_action
+    if first_domain_action_by_side.size() < 2:
+        return
+    for domain_action in first_domain_action_by_side.values():
+        domain_action.domain_clash_protected = true

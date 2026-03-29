@@ -14,6 +14,7 @@ priority = 5
 combat_type_id = "space"
 power_bonus_source = ""
 targeting = "enemy_active_slot"
+is_domain_skill = true
 effects_on_cast_ids = PackedStringArray()
 effects_on_hit_ids = PackedStringArray("gojo_apply_domain_field")
 effects_on_miss_ids = PackedStringArray()

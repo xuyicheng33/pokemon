@@ -2,6 +2,7 @@ extends RefCounted
 class_name FieldApplyService
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
 
@@ -38,12 +39,20 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
     assert(effect_definition != null, "FieldApplyService.apply_field requires effect_definition")
     assert(payload != null, "FieldApplyService.apply_field requires payload")
     assert(effect_event != null, "FieldApplyService.apply_field requires effect_event")
+    var challenger_field_definition = content_index.fields.get(payload.field_definition_id)
+    var challenger_field_kind: String = _resolve_field_kind(challenger_field_definition)
     var before_field = battle_state.field_state
     if before_field != null:
-        var clash_result := _resolve_field_clash(before_field, effect_event, battle_state)
-        _log_field_clash(clash_result, before_field, payload, effect_event, battle_state)
-        if not bool(clash_result.get("challenger_won", false)):
+        var incumbent_field_definition = field_service.get_field_definition_for_state(before_field, content_index)
+        var incumbent_field_kind: String = _resolve_field_kind(incumbent_field_definition)
+        if _is_normal_field_blocked_by_domain(challenger_field_kind, incumbent_field_kind):
+            _log_field_blocked_by_active_domain(before_field, payload, effect_event, battle_state)
             return null
+        if _should_resolve_domain_clash(challenger_field_kind, incumbent_field_kind):
+            var clash_result := _resolve_field_clash(before_field, effect_event, battle_state)
+            _log_field_clash(clash_result, before_field, payload, effect_event, battle_state)
+            if not bool(clash_result.get("challenger_won", false)):
+                return null
         var break_invalid_code = field_service.break_active_field(
             battle_state,
             content_index,
@@ -246,3 +255,39 @@ func _resolve_public_id_or_system(battle_state, source_id: String) -> String:
     if source_unit != null:
         return source_unit.public_id
     return source_id
+
+func _resolve_field_kind(field_definition) -> String:
+    if field_definition == null:
+        return ContentSchemaScript.FIELD_KIND_NORMAL
+    var normalized_kind := String(field_definition.field_kind).strip_edges()
+    if normalized_kind.is_empty():
+        return ContentSchemaScript.FIELD_KIND_NORMAL
+    return normalized_kind
+
+func _should_resolve_domain_clash(challenger_field_kind: String, incumbent_field_kind: String) -> bool:
+    return challenger_field_kind == ContentSchemaScript.FIELD_KIND_DOMAIN \
+    and incumbent_field_kind == ContentSchemaScript.FIELD_KIND_DOMAIN
+
+func _is_normal_field_blocked_by_domain(challenger_field_kind: String, incumbent_field_kind: String) -> bool:
+    return challenger_field_kind == ContentSchemaScript.FIELD_KIND_NORMAL \
+    and incumbent_field_kind == ContentSchemaScript.FIELD_KIND_DOMAIN
+
+func _log_field_blocked_by_active_domain(before_field, payload, effect_event, battle_state) -> void:
+    var active_creator_public_id := _resolve_public_id_or_system(battle_state, String(before_field.creator))
+    battle_logger.append_event(log_event_builder.build_effect_event(
+        EventTypesScript.EFFECT_FIELD_CLASH,
+        battle_state,
+        effect_event.event_id,
+        {
+            "source_instance_id": effect_event.source_instance_id,
+            "target_instance_id": before_field.instance_id,
+            "priority": effect_event.priority,
+            "trigger_name": effect_event.trigger_name,
+            "effect_roll": null,
+            "payload_summary": "active domain %s by %s blocked field %s" % [
+                before_field.field_def_id,
+                active_creator_public_id,
+                payload.field_definition_id,
+            ],
+        }
+    ))

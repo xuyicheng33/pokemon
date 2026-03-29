@@ -11,6 +11,7 @@ class_name SkillDefinition
 @export var combat_type_id: String = ""
 @export var power_bonus_source: String = ""
 @export var targeting: String = "enemy_active_slot"
+@export var is_domain_skill: bool = false
 @export var effects_on_cast_ids: PackedStringArray = PackedStringArray()
 @export var effects_on_hit_ids: PackedStringArray = PackedStringArray()
 @export var effects_on_miss_ids: PackedStringArray = PackedStringArray()

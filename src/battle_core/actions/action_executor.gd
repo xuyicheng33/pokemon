@@ -37,32 +37,29 @@ func execute_action(queued_action, battle_state, content_index):
     result.action_id = queued_action.action_id
     var command = queued_action.command
     var actor = battle_state.get_unit(command.actor_id)
+    var skill_definition = null
+    if command.command_type == CommandTypesScript.SKILL or command.command_type == CommandTypesScript.ULTIMATE:
+        skill_definition = content_index.skills.get(command.skill_id)
+        assert(skill_definition != null, "Missing skill definition: %s" % command.skill_id)
     battle_state.chain_context = _build_chain_context(queued_action, battle_state)
     if not _can_start_action(actor, command, battle_state):
         action_log_service.log_action_cancelled_pre_start(queued_action, battle_state, command)
         result.result_type = "cancelled_pre_start"
         return result
-    if not _is_action_still_allowed(command, actor, battle_state):
+    if not _is_action_still_allowed(queued_action, command, actor, battle_state, content_index):
         action_log_service.log_action_cancelled_pre_start(queued_action, battle_state, command)
         result.result_type = "cancelled_pre_start"
         return result
-
     actor.action_window_passed = true
     actor.has_acted = true
-    var skill_definition = null
-    if command.command_type == CommandTypesScript.SKILL or command.command_type == CommandTypesScript.ULTIMATE:
-        skill_definition = content_index.skills.get(command.skill_id)
-        assert(skill_definition != null, "Missing skill definition: %s" % command.skill_id)
     var consumed_mp: int = action_cast_service.resolve_mp_cost(command, skill_definition)
     var mp_changes: Array = action_cast_service.consume_mp(actor, consumed_mp)
     var action_cast_event_id: String = action_log_service.log_action_cast(queued_action, battle_state, command, mp_changes)
     _apply_action_start_resource_changes(queued_action, battle_state, actor, command, action_cast_event_id)
     result.consumed_mp = consumed_mp
-
     if command.command_type == CommandTypesScript.WAIT:
         result.result_type = "resolved"
         return result
-
     action_cast_service.dispatch_skill_effects(
         skill_definition.effects_on_cast_ids if skill_definition != null else PackedStringArray(),
         "on_cast",
@@ -74,12 +71,10 @@ func execute_action(queued_action, battle_state, content_index):
     )
     if result.invalid_battle_code != null:
         return result
-
     if command.command_type == CommandTypesScript.SWITCH:
         var switch_result = switch_action_service.execute_switch_action(queued_action, battle_state, content_index)
         switch_result.action_id = queued_action.action_id
         return switch_result
-
     var resolved_target = action_cast_service.resolve_target(queued_action, battle_state)
     if resolved_target != null and queued_action.target_snapshot.target_kind != ContentSchemaScript.TARGET_FIELD:
         battle_state.chain_context.target_unit_id = resolved_target.unit_instance_id
@@ -87,7 +82,6 @@ func execute_action(queued_action, battle_state, content_index):
         action_log_service.log_action_failed_post_start(queued_action, battle_state, command)
         result.result_type = "action_failed_post_start"
         return result
-
     var hit_info: Dictionary = action_cast_service.resolve_hit(command, skill_definition, resolved_target, battle_state, content_index)
     if not hit_info["hit"]:
         action_log_service.log_action_miss(
@@ -110,7 +104,6 @@ func execute_action(queued_action, battle_state, content_index):
             return result
         result.result_type = "miss"
         return result
-
     var action_hit_cause_event_id: String = action_log_service.log_action_hit(
         queued_action,
         battle_state,
@@ -122,7 +115,6 @@ func execute_action(queued_action, battle_state, content_index):
         action_cast_service.apply_direct_damage(queued_action, actor, resolved_target, skill_definition, battle_state, action_hit_cause_event_id)
     if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
         action_cast_service.apply_default_recoil(queued_action, actor, battle_state, action_hit_cause_event_id)
-
     action_cast_service.dispatch_skill_effects(
         skill_definition.effects_on_hit_ids if skill_definition != null else PackedStringArray(),
         "on_hit",
@@ -159,18 +151,61 @@ func _can_start_action(actor, command, battle_state) -> bool:
     var side_state = battle_state.get_side(command.side_id)
     return side_state != null and side_state.get_active_unit() != null and side_state.get_active_unit().unit_instance_id == actor.unit_instance_id
 
-func _is_action_still_allowed(command, actor, battle_state) -> bool:
+func _is_action_still_allowed(queued_action, command, actor, battle_state, content_index) -> bool:
     if actor == null:
+        return false
+    if _is_blocked_by_active_side_domain(command, battle_state, content_index):
         return false
     match command.command_type:
         CommandTypesScript.SKILL:
+            if _can_bypass_legality_for_domain_clash(queued_action, command, battle_state, content_index):
+                return true
             return rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, CommandTypesScript.SKILL, command.skill_id)
         CommandTypesScript.ULTIMATE:
+            if _can_bypass_legality_for_domain_clash(queued_action, command, battle_state, content_index):
+                return true
             return rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, CommandTypesScript.ULTIMATE, command.skill_id)
         CommandTypesScript.SWITCH:
             return rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, CommandTypesScript.SWITCH)
         _:
             return true
+
+func _is_blocked_by_active_side_domain(command, battle_state, content_index) -> bool:
+    if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
+        return false
+    if not _is_domain_skill(command.skill_id, content_index):
+        return false
+    var creator_side_id := _get_active_domain_creator_side_id(battle_state, content_index)
+    if creator_side_id.is_empty():
+        return false
+    return creator_side_id == String(command.side_id)
+
+func _is_domain_skill(skill_id: String, content_index) -> bool:
+    var skill_definition = content_index.skills.get(skill_id)
+    if skill_definition == null:
+        return false
+    return bool(skill_definition.is_domain_skill)
+
+func _can_bypass_legality_for_domain_clash(queued_action, command, battle_state, content_index) -> bool:
+    if not bool(queued_action.domain_clash_protected):
+        return false
+    if not _is_domain_skill(command.skill_id, content_index):
+        return false
+    var creator_side_id := _get_active_domain_creator_side_id(battle_state, content_index)
+    if creator_side_id.is_empty():
+        return false
+    return creator_side_id != String(command.side_id)
+
+func _get_active_domain_creator_side_id(battle_state, content_index) -> String:
+    if battle_state.field_state == null:
+        return ""
+    var active_field_definition = content_index.fields.get(battle_state.field_state.field_def_id)
+    if active_field_definition == null or String(active_field_definition.field_kind) != ContentSchemaScript.FIELD_KIND_DOMAIN:
+        return ""
+    var creator_side = battle_state.get_side_for_unit(String(battle_state.field_state.creator))
+    if creator_side == null:
+        return ""
+    return String(creator_side.side_id)
 
 func _apply_action_start_resource_changes(queued_action, battle_state, actor, command, cause_event_id: String) -> void:
     if actor == null:

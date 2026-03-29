@@ -4,6 +4,7 @@ class_name ContentSnapshotValidator
 const CombatTypeChartEntryScript := preload("res://src/battle_core/content/combat_type_chart_entry.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ContentPayloadValidatorScript := preload("res://src/battle_core/content/content_payload_validator.gd")
+const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 
 var _content_index = null
 var _payload_validator = ContentPayloadValidatorScript.new()
@@ -16,6 +17,7 @@ func validate(content_index) -> Array:
     var allowed_scopes: PackedStringArray = PackedStringArray(["self", "target", "field"])
     var allowed_triggers := PackedStringArray(["battle_init", "turn_start", "turn_end", "on_cast", "on_hit", "on_miss", "on_enter", "on_exit", "on_switch", "on_faint", "on_kill", "on_matchup_changed", "field_apply"])
     var allowed_power_bonus_sources: PackedStringArray = PackedStringArray(["", "mp_diff_clamped"])
+    var allowed_field_kinds: PackedStringArray = PackedStringArray([ContentSchemaScript.FIELD_KIND_NORMAL, ContentSchemaScript.FIELD_KIND_DOMAIN])
     var allowed_chart_multipliers: Array[float] = [2.0, 1.0, 0.5]
     var regular_skill_refs: Dictionary = {}
     var ultimate_skill_refs: Dictionary = {}
@@ -145,6 +147,11 @@ func validate(content_index) -> Array:
         _payload_validator.validate_effect_refs(errors, "skill[%s].effects_on_hit_ids" % skill_id, skill_definition.effects_on_hit_ids, _content_index.effects)
         _payload_validator.validate_effect_refs(errors, "skill[%s].effects_on_miss_ids" % skill_id, skill_definition.effects_on_miss_ids, _content_index.effects)
         _payload_validator.validate_effect_refs(errors, "skill[%s].effects_on_kill_ids" % skill_id, skill_definition.effects_on_kill_ids, _content_index.effects)
+        var has_domain_apply_field := _skill_has_domain_apply_field(skill_definition)
+        if bool(skill_definition.is_domain_skill) and not has_domain_apply_field:
+            errors.append("skill[%s].is_domain_skill requires apply_field payload to domain field" % skill_id)
+        if has_domain_apply_field and not bool(skill_definition.is_domain_skill):
+            errors.append("skill[%s] applies domain field and must set is_domain_skill=true" % skill_id)
 
     for skill_id in regular_skill_refs.keys():
         if not _content_index.skills.has(skill_id):
@@ -182,6 +189,8 @@ func validate(content_index) -> Array:
 
     for field_id in _content_index.fields.keys():
         var field_definition = _content_index.fields[field_id]
+        if not allowed_field_kinds.has(String(field_definition.field_kind)):
+            errors.append("field[%s].field_kind invalid: %s" % [field_id, String(field_definition.field_kind)])
         _payload_validator.validate_effect_refs(errors, "field[%s].effect_ids" % field_id, field_definition.effect_ids, _content_index.effects)
         _payload_validator.validate_effect_refs(errors, "field[%s].on_expire_effect_ids" % field_id, field_definition.on_expire_effect_ids, _content_index.effects)
         _payload_validator.validate_effect_refs(errors, "field[%s].on_break_effect_ids" % field_id, field_definition.on_break_effect_ids, _content_index.effects)
@@ -235,3 +244,23 @@ func _validate_required_target_effects(errors: Array, effect_id: String, effect_
         seen_required_effects[normalized_effect_id] = true
         if not _content_index.effects.has(normalized_effect_id):
             errors.append("effect[%s].required_target_effects missing effect: %s" % [effect_id, normalized_effect_id])
+
+func _skill_has_domain_apply_field(skill_definition) -> bool:
+    var skill_effect_ids: PackedStringArray = PackedStringArray()
+    skill_effect_ids.append_array(skill_definition.effects_on_cast_ids)
+    skill_effect_ids.append_array(skill_definition.effects_on_hit_ids)
+    skill_effect_ids.append_array(skill_definition.effects_on_miss_ids)
+    skill_effect_ids.append_array(skill_definition.effects_on_kill_ids)
+    for effect_id in skill_effect_ids:
+        var effect_definition = _content_index.effects.get(effect_id)
+        if effect_definition == null:
+            continue
+        for payload in effect_definition.payloads:
+            if not payload is ApplyFieldPayloadScript:
+                continue
+            var field_definition = _content_index.fields.get(String(payload.field_definition_id))
+            if field_definition == null:
+                continue
+            if String(field_definition.field_kind) == ContentSchemaScript.FIELD_KIND_DOMAIN:
+                return true
+    return false
