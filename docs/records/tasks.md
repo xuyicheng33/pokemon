@@ -10,10 +10,18 @@
 
 ## 2026-03-29
 
+### 同队重复角色口径收紧为禁止（已完成）
+- 目标：把仓库中的正式文档口径统一改成“同一 side 禁止重复 `unit_definition_id`”，同时修正 Gojo 文档里依赖“双五条悟”假设的内容；本轮不改运行时代码。
+- 范围：`docs/rules/01_battle_format_and_visibility.md`、`docs/design/battle_content_schema.md`、`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。
+- 验收标准：正式规则层与设计层不再出现“同队允许重复角色”的当前口径；Gojo 文档不再把“双五条悟共享标记”列为正式玩法验收项；记录文件明确说明“本轮先改文档，代码校验后补”。
+
+#### 当前验证结果（2026-03-29）
+- 文档检索已确认活跃规则/设计/记录层不再把“同队允许重复角色”写成当前生效口径。
+
 ### Gojo 扩展接线与仓库级 contract 同步（已完成）
 - 目标：把当前工作区里已经落地的 `action_legality / required_target_effects / incoming_accuracy` 收口为正式主线能力，同时修掉会误导后续 Gojo 实现的测试、记录与规则漂移。
 - 范围：`src/battle_core/**/*`、`src/composition/*`、`tests/**/*`、`docs/design/*`、`docs/rules/*`、`docs/records/*`；不创建 Gojo 内容资源。
-- 验收标准：扩展契约测试全绿；manager 首回合预回蓝合同成立；仓库级文档不再把三块扩展写成“待实现”；同队重复单位仍保持合法；`tests/run_with_gate.sh` 全绿。
+- 验收标准：扩展契约测试全绿；manager 首回合预回蓝合同成立；仓库级文档不再把三块扩展写成“待实现”；`tests/run_with_gate.sh` 全绿。
 
 #### 当前验证结果（2026-03-29）
 - `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。

@@ -9,11 +9,17 @@
 
 ## 2026-03-29
 
+### 227. 同队重复角色正式禁止，先收口文档后补代码
+- 从本条起，正式规则改为“同一 side 禁止重复 `unit_definition_id`”；“同队允许重复角色”的旧口径废止。
+- 这轮先改 `docs/rules/*`、`docs/design/*` 与 `docs/records/*`，不改运行时代码；因此当前仓库会短暂存在“文档新口径先行、校验器待后续实现补齐”的状态。
+- `SideSetup.regular_skill_loadout_overrides` 继续按槽位下标建模，但理由不再是“为了兼容重复角色”，而是因为覆盖目标天然就是队伍槽位。
+- Gojo 文档里的“双五条悟共享标记”不再是正式玩法验收项；当前正式规则下，同队不存在第二名五条悟。
+
 ### 225. Gojo 扩展正式进入当前主线 contract
 - `action_legality / required_target_effects / incoming_accuracy` 已接线完成，并已同步进 `docs/rules/06_effect_schema_and_extension.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md` 与 `docs/design/battle_core_architecture_constraints.md`。
 - 这代表 2026-03-28 的“先把仓库级文档回滚到旧口径”只是一条阶段性历史记录；从本条起，仓库级正式文档必须把这三块能力视为当前主线事实。
 - `skill_legality` 继续保留为兼容读取口径，只参与 `skill / ultimate`；`action_legality` 是覆盖技能 / 奥义 / 换人的正式口径，`wait` 不受其影响。
-- 赛前 setup 继续允许同队重复 `unit_definition_id`；`SideSetup.regular_skill_loadout_overrides` 仍按槽位下标建模，不允许把“重复单位非法”偷偷写回校验器。
+- 赛前 setup 的 `regular_skill_loadout_overrides` 继续按槽位下标建模；该键语义绑定队伍槽位，而不是 `unit_definition_id`。
 
 ### 226. 当前超阈值文件复核（Gojo 扩展接线后）
 - `src/battle_core/turn/battle_initializer.gd`：当前超出 250 行是因为启动时序还同时承载 `on_enter -> on_matchup_changed -> battle_init -> 首回合预回蓝` 的收口逻辑；在 Gojo v1 资源落地后的下一轮 bootstrap 重构里优先拆分。
@@ -25,13 +31,13 @@
 - `incoming_accuracy` 的多实例合成顺序固定复用现有 `RuleModService` 读取链：按统一排序读取，`add` 叠加、`set` 覆盖，读完整轮后统一 clamp 到 `0~99`。
 - `action_legality` 当前沿用现有 rule_mod stacking 模型：同 key 旧实例若被 `replace` 覆盖，后实例到期后旧实例不会“复活”；若未来玩法要支持多来源恢复语义，必须另改实例模型或 stacking key。
 - `gojo_domain_cast_buff` 继续明确为 `effects_on_cast_ids` 语义：无量空处即使 miss，五条悟仍拿到 `sp_attack +1`；若以后想改成“命中才给 buff”，必须移动到 `effects_on_hit_ids`，不能口头解释。
-- 当前冻结的“团队共享标记”方案仍不读取标记来源；但若团队预期未来大概率改成“本人专属消耗”，推荐在 v1 就把来源单位标识预埋到 `EffectInstance.meta`，先写不读。
+- 当前正式规则下不需要标记来源绑定；若未来重新开放同队重复角色，并要改成“本人专属消耗”，必须先补来源写入扩展，不能把 `EffectInstance.meta` 当成已经接好的现成入口。
 
 ## 2026-03-28
 
 ### 223. 五条悟设计审计收口到当前主线语义（2026-03-28）
 - 苍 / 赫标记当前固定是“挂在目标身上的 effect instance”，换人清除只发生在标记持有者离场，不因为五条悟自己离场而清空。
-- 在现有 runtime / effect model 下，茈的 `required_target_effects` 只检查“目标当前是否同时持有双标记”，不会校验施加者归属；因此当前方案明确收口为“标记是团队共享资源，可由后续我方五条悟接力消耗”。
+- 在现有 runtime / effect model 下，茈的 `required_target_effects` 只检查“目标当前是否同时持有双标记”，不会校验施加者归属；但在“同队重复角色禁止”的正式规则下，这不会形成双五条悟接力消耗的对局场景。
 - 若后续玩法要收紧为“必须由同一施法者本人消耗自己铺的标记”，当前文档里列出的 3 个引擎扩展不够，必须新增第 4 个扩展来表达并校验标记施加者归属。
 - “领域首回合锁行动”不是硬保证，只在五条悟先于目标执行并成功命中后，才可能把本回合尚未执行的敌方技能 / 奥义 / 换人改成 `cancelled_pre_start`。
 
@@ -100,7 +106,7 @@
 - 宿傩的 `反转术式` 不再靠 README 口头约定存在，已作为正式内容字段落在 `candidate_skill_ids` 中。
 
 ### 212. 赛前常规技能覆盖按队伍槽位建模
-- `SideSetup.regular_skill_loadout_overrides` 的键固定为队伍槽位下标 `0..team_size-1`，不用 `unit_definition_id`，因为规则允许同队重复单位。
+- `SideSetup.regular_skill_loadout_overrides` 的键固定为队伍槽位下标 `0..team_size-1`，不用 `unit_definition_id`；因为覆盖目标天然就是“队伍槽位上的本场装配”，不是共享内容模板。
 - 值固定为该槽位单位本场实际装配的 3 个常规技能；当前只支持常规技能覆盖，不支持奥义、被动、持有物覆盖。
 - `BattleInitializer` 必须在建局时把默认装配或 override 解析进 `UnitState.regular_skill_ids`，后续运行时统一读取这份镜像。
 
