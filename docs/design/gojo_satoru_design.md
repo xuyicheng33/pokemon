@@ -5,11 +5,11 @@
 | 项目 | 结论 |
 |------|------|
 | 茈 | 保留“苍+赫双标记”条件爆发，**不做自伤** |
-| 无下限 | 改为“敌方技能攻击五条悟时，若该次不是必中，则命中率 -10” |
+| 无下限 | 改为“敌方技能或奥义攻击五条悟时，若该次不是必中，则命中率 -10” |
 | 领域后摇 | **删除**（不再追加封印/回滚） |
 | 施工顺序 | **第 4 节扩展已接线并同步仓库级 contract 文档；下一步可创建第 5 节 Gojo 资源** |
 | 苍/赫标记归属 | 标记挂在**目标**身上；换人清除只发生在**标记持有者**离场时 |
-| 苍/赫标记消耗语义 | 当前冻结为**团队共享资源**：只检查目标是否同时持有双标记，不校验由哪一个五条悟施加 |
+| 苍/赫标记消耗语义 | 引擎层当前只检查目标是否同时持有双标记，不校验施加者；但**同队重复角色已禁止**，正式玩法不包含“双五条悟接力消耗”场景 |
 | 已接线引擎扩展 | `action_legality`、`required_target_effects`、`incoming_accuracy` 已进入当前主线；若要收紧为“必须同一施法者本人消耗标记”，仍需**第 4 块扩展** |
 | 明确不做 | `effects_pre_damage_ids`、`on_before_damage`、`damage_override`、`action_tags`、`last_dealt_damage`、反噬链路 |
 
@@ -132,7 +132,7 @@
 - 说明：纯标记 effect 无 payload，不直接产生数值结算；仅用于条件判定。
 - owner 语义：标记实例挂在**目标本人**身上，不挂在五条悟身上。
 - 换人语义：`persists_on_switch=false` 代表“**标记持有者**离场会清标记”；若五条悟自己离场，目标身上的标记不会因此自动消失。
-- 团队共享语义：当前冻结为“只要目标身上同时存在 `gojo_ao_mark + gojo_aka_mark`，任意同侧五条悟都可以接 `gojo_murasaki` 消耗它们”；这不是运行时偶然行为，而是当前设计的显式取舍。
+- 当前正式玩法语义：只要目标身上同时存在 `gojo_ao_mark + gojo_aka_mark`，当前出战的这名五条悟就能触发 `gojo_murasaki` 追加段；由于队伍构筑规则已禁止同队重复角色，正式对局里不会出现“双五条悟接力消耗同一目标标记”的验收场景。
 - 时间语义：`duration=3 + decrement_on=turn_end` 按当前引擎表示“从施加当回合开始，连续经过 3 次 `turn_end` 节点后到期”。例如第 1 回合中途施加，则会在第 1/2/3 回合的 `turn_end` 各扣 1 次，并在第 3 次后移除。
 
 ### 2.4 茈（Murasaki）—— 条件追加爆发（无自伤）
@@ -165,7 +165,7 @@
 补充说明：
 
 - 此处不额外写 `combat_type_id`：`DamagePayload.use_formula=true` 且处于技能链中时，类型继承链技能 `gojo_murasaki` 的 `combat_type_id=space`。
-- `required_target_effects` 当前只检查“目标身上是否同时存在双标记”，**不检查标记施加者是谁**。因此它与上面的“团队共享标记”设计是配套的。
+- `required_target_effects` 当前只检查“目标身上是否同时存在双标记”，**不检查标记施加者是谁**。在“同队重复角色禁止”的当前规则下，这已经足够支撑 Gojo 的正式玩法闭环。
 - `required_target_effects` 的设计目标是“effect 级前置守卫”，不是 payload 级条件分支；前置不满足时，整条 effect 直接退出，payload 循环不会开始，因此也不会写出任何由该 effect 产生的 payload 日志。
 - 若未来要改成“只有同一个五条悟本人打上的双标记，才允许该五条悟自己触发茈追加段”，则仅靠 `required_target_effects` 不够，必须新增第 4 块扩展能力来校验标记来源。
 
@@ -304,7 +304,7 @@
 
 - `docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 当前已与这三块扩展同步。
 - 本节记录 Gojo 方案依赖的当前正式 contract，以及若玩法继续收紧时还需要追加的后续扩展。
-- 按本文当前冻结的“团队共享标记”方案，`action_legality / required_target_effects / incoming_accuracy` 已可直接用于 Gojo 资源。
+- 按本文当前冻结的“单角色正式玩法”方案，`action_legality / required_target_effects / incoming_accuracy` 已可直接用于 Gojo 资源。
 
 ### 4.1 `action_legality`（新增并逐步替代 `skill_legality`）
 
@@ -441,14 +441,14 @@
 - `docs/design/battle_core_architecture_constraints.md`
 - `docs/records/decisions.md`
 
-### 4.4 可选第 4 块扩展（仅当要限制为“同一施法者本人消耗标记”时）
+### 4.4 可选第 4 块扩展（仅当未来重新开放同队重复角色，且要限制为“同一施法者本人消耗标记”时）
 
-当前冻结的“团队共享标记”方案**不需要**这一块；但若未来要把语义收紧为“只有打出苍/赫的那一名五条悟本人，才能用茈吃掉自己铺的双标记”，则必须补一个来源绑定能力，最小要求至少包括：
+当前“同队重复角色禁止”的正式规则**不需要**这一块；但若未来重新开放同队重复角色，并且要把语义收紧为“只有打出苍/赫的那一名五条悟本人，才能用茈吃掉自己铺的双标记”，则必须补一个来源绑定能力，最小要求至少包括：
 
 - 标记实例需要记录可校验的施加者身份（不能只看 `def_id`）
 - 茈的前置检查必须能同时检查“目标持有双标记 + 标记来源匹配当前施法者”
 - 该能力需要明确是扩在 `EffectInstance.meta`、新 schema 字段，还是新增专用条件机制；在拍板前，不得把它伪装成现有 `required_target_effects` 已能解决的问题
-- 若团队已经预判后续大概率会走“本人专属消耗”路线，推荐在 v1 施加标记时就把 `source_unit_id` 之类的来源标识预埋进 `EffectInstance.meta`；当前冻结方案下可以**只写不读**，但不要等到要改玩法时才发现旧链路完全没留下可校验来源。
+- 若未来真要走“本人专属消耗”路线，推荐补一个明确的来源写入扩展，再把 `source_unit_id` 之类的标识落进 `EffectInstance.meta`；**当前仓库还没有这条写入链路**，不能把它当成已经可直接使用的现成能力。
 
 ### 4.5 本版明确不纳入实现
 
@@ -466,6 +466,11 @@
 ## 5. 资源文件清单
 
 以下清单是 **Gojo 目标态资源面**。截至 2026-03-29，底层扩展与仓库级 contract 已接线完成，当前可以开始真正创建这些资源；只是本仓库此刻仍未落盘 Gojo 内容。
+
+补充施工边界：
+
+- 本文当前只定义资源目标态，不代表这些资源已经被 `SampleBattleFactory` 自动加载。
+- Gojo 资源真正落地时，除了新建 `.tres`，还需要把资源接入 `SampleBattleFactory.content_snapshot_paths()`，并新增/注册 `gojo_suite`，否则统一闸门不会覆盖 Gojo 回归。
 
 ### 5.1 `content/units/`
 
@@ -532,7 +537,7 @@
 | 17 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
 | 18 | 标记持有者离场清除 | 目标换下后 `gojo_ao_mark/gojo_aka_mark` 被移除（`persists_on_switch=false`） |
 | 19 | 五条悟离场不清目标标记 | 五条悟自己换下时，敌方身上的苍 / 赫标记仍保留 |
-| 20 | 同队重复 Gojo 的共享标记语义 | A 五条悟铺双标记后，B 五条悟使用茈可以触发追加段并清标记 |
+| 20 | 同队重复角色禁止 | 同一 side 若出现两个 `gojo_satoru`，BattleSetup 校验应直接失败 |
 | 21 | 茈追加击杀边界 | 追加段把目标打到 `hp<=0` 时，后续 `remove_effect` 静默跳过且不产生 `invalid_battle` |
 | 22 | 茈本体先击杀边界 | 若茈本体伤害已击杀目标，则 `gojo_murasaki_conditional_burst` 整条跳过，不再打追加段 |
 | 23 | 茈对位槽位重定向边界 | 目标在 Gojo 行动前换下时，`enemy_active_slot` 茈命中新 active；若新 active 不持双标记，则不触发追加段 |
@@ -546,6 +551,7 @@
 | 31 | required_target_effects 跳过无日志 | 前置条件不满足时，`gojo_murasaki_conditional_burst` 不执行 payload，也不得写出该 effect 产生的 payload 日志 |
 | 32 | incoming_accuracy 多实例顺序 | `add/set` 混用时，必须按统一 rule_mod 读取顺序求值，再统一 clamp 到 `0~99` |
 | 33 | action_legality 同 key 覆盖语义 | 同 key `replace` 覆盖后，后实例到期不得把旧实例“复活”；若要支持恢复，必须另扩实例模型 |
+| 34 | 标记 refresh 续时语义 | `gojo_ao_mark / gojo_aka_mark` 再次命中施加时，应刷新持续时间，不得额外并行出第二层同名标记 |
 
 ---
 

@@ -240,11 +240,12 @@
 ## 7. 运行前校验（BattleSetup）
 
 - 同一 side 的队伍中，被动持有物 `passive_item_id` 不可重复。
-- 同队允许重复 `unit_definition_id`；赛前覆盖 contract 继续按槽位下标建模，不因重复单位失效。
+- 同一 side 的队伍中，`unit_definition_id` 不可重复；若同队出现重复角色，建局前直接 fail-fast。
 - `SideSetup.regular_skill_loadout_overrides` 固定为 `Dictionary<int, PackedStringArray>`：
-  - 键固定为队伍槽位下标 `0..team_size-1`；因为同队允许重复单位，所以不用 `unit_definition_id` 做键。
+  - 键固定为队伍槽位下标 `0..team_size-1`；覆盖语义绑定的是“队伍槽位”，不是 `unit_definition_id`。
   - 值固定为该槽位单位本场实际装配的 3 个常规技能。
 - `regular_skill_loadout_overrides` 校验规则固定为：
+  - 同一 side 的 `unit_definition_ids` 不能重复。
   - 槽位键必须是 `int`，且必须命中当前队伍槽位。
   - 覆盖列表必须正好 3 个，不能重复。
   - 若该单位 `candidate_skill_ids` 为空，覆盖值必须与默认 `skill_ids` 完全相等。
