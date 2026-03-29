@@ -185,11 +185,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-03-28）
+## 10. 当前代码规模（2026-03-29）
 
-- `src/**/*.gd`：`7036` 行
-- `tests/**/*.gd`：`5887` 行
-- GDScript 合计：`12923` 行
+- `src/**/*.gd`：`7053` 行
+- `tests/**/*.gd`：`6016` 行
+- GDScript 合计：`13069` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

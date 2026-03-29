@@ -9,6 +9,12 @@
 
 ## 2026-03-29
 
+### 228. Gojo 审查发现的两处 runtime 缺口立即补齐
+- `BattleSetupValidator` 从本条起正式禁止“同一 side 重复 `unit_definition_id`”；文档层 227 条里的“代码后补”状态已结束，当前主线实现与正式规则重新对齐。
+- `tests/suites/setup_loadout_suite.gd` 的回归口径同步翻转为 `same_side_duplicate_unit_forbidden`，仓库一致性闸门也一并改读新测试名，不再保留“同队重复角色合法”的旧回归。
+- `EffectInstanceService.remove_instance()` 从本条起只允许“按 `def_id` 精确命中单个实例”时成功；若命中 0 个或多个同名实例，统一返回歧义，由 payload 层上报 `invalid_effect_remove_ambiguous`。
+- 这条变更会把文档里原本只停留在口头/规则层的 `remove_effect` 安全前提真正落到运行时；Gojo 当前苍/赫标记仍写死为 `stacking=refresh`，因此不会撞上这条歧义终止路径。
+
 ### 227. 同队重复角色正式禁止，先收口文档后补代码
 - 从本条起，正式规则改为“同一 side 禁止重复 `unit_definition_id`”；“同队允许重复角色”的旧口径废止。
 - 这轮先改 `docs/rules/*`、`docs/design/*` 与 `docs/records/*`，不改运行时代码；因此当前仓库会短暂存在“文档新口径先行、校验器待后续实现补齐”的状态。

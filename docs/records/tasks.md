@@ -10,6 +10,30 @@
 
 ## 2026-03-29
 
+### Gojo 审查发现的运行时缺口补齐（已完成）
+- 目标：把上一轮 Gojo 审查里确认属实、且已经会直接影响后续角色内容实现的两处运行时缺口补齐：同队重复角色禁用真正落到建局校验；`remove_effect` 的歧义处理真正落到运行时。
+- 范围：`src/battle_core/content/battle_setup_validator.gd`、`src/battle_core/effects/effect_instance_service.gd`、`tests/suites/setup_loadout_suite.gd`、`tests/suites/extension_contract_suite.gd`、`tests/check_repo_consistency.sh`、`docs/records/tasks.md`、`docs/records/decisions.md`；不创建 Gojo 资源。
+- 验收标准：同一 side 若重复提交 `unit_definition_id`，建局前必须 fail-fast；`remove_effect` 若命中 0 个或多个同名实例，必须走 `invalid_effect_remove_ambiguous`；统一闸门全绿。
+
+#### 当前验证结果（2026-03-29）
+- `godot --headless --path . --script tests/run_all.gd`：通过，新增 `same_side_duplicate_unit_forbidden` 与 `remove_effect_ambiguity_contract` 均已通过。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
+### 五条悟设计文档与当前实现对照审查（已完成）
+- 目标：逐条审查 `docs/design/gojo_satoru_design.md` 与当前主线实现、架构文档、扩展 contract 是否一致，找出会误导后续 Gojo 落资源与测试的风险点，并判断是否已经可以进入角色内容实现阶段。
+- 范围：`docs/design/gojo_satoru_design.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/rules/*`、`src/battle_core/**/*`、`src/composition/sample_battle_factory.gd`、`tests/**/*`、`docs/records/tasks.md`；不改运行时代码与 Gojo 资源。
+- 验收标准：必须明确区分“文档已冻结”与“代码已硬约束”的边界；指出所有会直接影响 Gojo 技能落地的实现风险；给出是否可进入内容实现的结论与前置条件。
+
+#### 当前审查结论（2026-03-29）
+- 可以进入 **Gojo 资源与 gojo_suite 编写阶段**，因为 `action_legality / required_target_effects / incoming_accuracy` 三块扩展已真实接线，相关 contract 测试已覆盖。
+- 审查发现的两处硬缺口已经补齐：同队重复角色现在会在 `BattleSetup` 校验阶段直接 fail-fast；`remove_effect` 现在只允许精确命中单个同名实例，歧义会按 `invalid_effect_remove_ambiguous` 终止。
+- 因此 Gojo 文档在“重复角色前提”和“标记清除安全前提”这两处，已经重新与当前主线实现对齐。
+- 当前剩余的非阻断项只在内容接线层：Gojo 资源还未创建、未接入 `SampleBattleFactory.content_snapshot_paths()`，`gojo_suite` 也还未注册到统一闸门。
+
+#### 当前验证结果（2026-03-29）
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+- 审查后续补齐阶段已确认：`same_side_duplicate_unit_forbidden` 与 `remove_effect_ambiguity_contract` 已接入并通过，说明上述两处 contract 已进入当前运行时。
+
 ### 同队重复角色口径收紧为禁止（已完成）
 - 目标：把仓库中的正式文档口径统一改成“同一 side 禁止重复 `unit_definition_id`”，同时修正 Gojo 文档里依赖“双五条悟”假设的内容；本轮不改运行时代码。
 - 范围：`docs/rules/01_battle_format_and_visibility.md`、`docs/design/battle_content_schema.md`、`docs/design/gojo_satoru_design.md`、`docs/records/decisions.md`、`docs/records/tasks.md`。

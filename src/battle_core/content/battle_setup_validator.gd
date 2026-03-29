@@ -15,8 +15,16 @@ func validate(content_index, battle_setup) -> Array:
         errors.append("battle_setup.format_id missing battle format: %s" % String(battle_setup.format_id))
     for side_setup in battle_setup.sides:
         var side_id: String = str(side_setup.side_id)
+        var seen_unit_definition_ids: Dictionary = {}
         var seen_passive_items: Dictionary = {}
-        for unit_definition_id in side_setup.unit_definition_ids:
+        for raw_unit_definition_id in side_setup.unit_definition_ids:
+            var unit_definition_id := str(raw_unit_definition_id).strip_edges()
+            if unit_definition_id.is_empty():
+                continue
+            if seen_unit_definition_ids.has(unit_definition_id):
+                errors.append("battle_setup.side[%s] duplicated unit_definition_id: %s" % [side_id, unit_definition_id])
+                continue
+            seen_unit_definition_ids[unit_definition_id] = true
             if not _content_index.units.has(unit_definition_id):
                 continue
             var unit_definition = _content_index.units[unit_definition_id]

@@ -7,7 +7,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("candidate_skill_pool_validation", failures, Callable(self, "_test_candidate_skill_pool_validation").bind(harness))
     runner.run_test("setup_loadout_override_validation", failures, Callable(self, "_test_setup_loadout_override_validation").bind(harness))
     runner.run_test("runtime_regular_skill_loadout_contract", failures, Callable(self, "_test_runtime_regular_skill_loadout_contract").bind(harness))
-    runner.run_test("same_side_duplicate_unit_allowed", failures, Callable(self, "_test_same_side_duplicate_unit_allowed").bind(harness))
+    runner.run_test("same_side_duplicate_unit_forbidden", failures, Callable(self, "_test_same_side_duplicate_unit_forbidden").bind(harness))
 
 func _test_candidate_skill_pool_validation(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
@@ -137,7 +137,7 @@ func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
         return harness.fail_result("swapped-in skill should remain executable at runtime")
     return harness.pass_result()
 
-func _test_same_side_duplicate_unit_allowed(harness) -> Dictionary:
+func _test_same_side_duplicate_unit_forbidden(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
@@ -145,8 +145,8 @@ func _test_same_side_duplicate_unit_allowed(harness) -> Dictionary:
     var battle_setup = sample_factory.build_sample_setup()
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_pyron", "sample_tidekit"])
     var errors: Array = content_index.validate_setup(battle_setup)
-    if _has_error(errors, "duplicated unit_definition_id"):
-        return harness.fail_result("same-side duplicate units should remain legal; setup validation must not reject repeated unit_definition_ids")
+    if not _has_error(errors, "duplicated unit_definition_id: sample_pyron"):
+        return harness.fail_result("same-side duplicate units should fail fast once duplicate-role ban is live")
     return harness.pass_result()
 
 func _has_error(errors: Array, needle: String) -> bool:

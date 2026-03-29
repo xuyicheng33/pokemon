@@ -80,7 +80,7 @@ require_contains("tests/run_all.gd", "ExtensionContractSuiteScript.new()", "exte
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("candidate_skill_pool_validation"', "candidate skill pool dedicated regression")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("setup_loadout_override_validation"', "setup override dedicated regression")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("runtime_regular_skill_loadout_contract"', "runtime loadout dedicated regression")
-require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("same_side_duplicate_unit_allowed"', "same-side duplicate unit regression")
+require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("same_side_duplicate_unit_forbidden"', "same-side duplicate unit regression")
 
 require_contains("README.md", "candidate_skill_ids", "README candidate skill pool contract")
 require_contains("README.md", "regular_skill_loadout_overrides", "README setup override contract")
