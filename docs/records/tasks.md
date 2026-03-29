@@ -10,6 +10,14 @@
 
 ## 2026-03-29
 
+### Gojo 一期阶段2：专项回归与统一闸门接线（已完成）
+- 目标：把 `docs/design/gojo_satoru_design.md` 第 6 节里与 Gojo 正式玩法直接相关的关键行为落成 `gojo_suite`，并接入 `tests/run_all.gd` 与统一仓库闸门。
+- 范围：`tests/suites/gojo_suite.gd`、`tests/run_all.gd`、`tests/check_repo_consistency.sh`、`docs/design/gojo_satoru_design.md`、`docs/records/tasks.md`、`docs/records/decisions.md`；不改对外 manager API 与内容 schema。
+- 验收标准：Gojo 的默认配招/换装、苍/赫/茈、无下限、无量空处、反转术式、标记换人与 refresh、`+5` 竞争等关键行为均有自动化回归；统一测试入口真实执行 `gojo_suite`。
+
+#### 当前验证结果（2026-03-29）
+- `godot --headless --path . --script tests/run_all.gd`：通过，`gojo_suite` 已接入并覆盖 Gojo 核心玩法回归。
+
 ### Gojo 一期阶段1：资源落地与样例接线（已完成）
 - 目标：按 `docs/design/gojo_satoru_design.md` 冻结口径落地 Gojo 全套内容资源，并接入统一内容快照与样例对局构造入口。
 - 范围：`content/units/gojo_satoru.tres`、`content/skills/gojo_*.tres`、`content/effects/gojo_*.tres`、`content/fields/gojo_unlimited_void_field.tres`、`content/passive_skills/gojo_mugen.tres`、`src/composition/sample_battle_factory.gd`。

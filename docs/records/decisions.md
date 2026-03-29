@@ -9,6 +9,11 @@
 
 ## 2026-03-29
 
+### 230. `gojo_suite` 成为首个正式角色接入模板
+- 从本条起，Gojo 不再只有“资源已落盘”的半成品状态，而是以 `content + SampleBattleFactory + gojo_suite + run_all` 的完整模板进入主线。
+- `gojo_suite` 当前固定覆盖：默认配招与换装、苍/赫命中后效果、茈单段/双段/击杀/重定向边界、无下限命中干扰与重入场、无量空处领域/封锁/`+5` 竞争、反转术式治疗，以及标记换人与 refresh 语义。
+- 后续新角色接入默认复用同一模板：先把资源接进 `SampleBattleFactory`，再新增独立角色 suite 接到 `tests/run_all.gd`，不再只依赖通用 contract suite 兜回归。
+
 ### 229. Gojo 一期阶段1采用“资源全量落地 + SampleFactory 双样例入口”模板
 - Gojo 本轮按 `UnitDefinition / SkillDefinition / EffectDefinition / FieldDefinition / PassiveSkillDefinition` 五类资源一次性落盘，不拆“先技能后被动”的半成品提交。
 - `SampleBattleFactory.content_snapshot_paths()` 从本条起正式收录 Gojo 全资源，统一测试入口无需额外拼接局部快照。

@@ -16,6 +16,7 @@ const PublicIdAllocatorSuiteScript := preload("res://tests/suites/public_id_allo
 const ManagerContractSuiteScript := preload("res://tests/suites/manager_contract_suite.gd")
 const CombatTypeSuiteScript := preload("res://tests/suites/combat_type_suite.gd")
 const DamagePayloadContractSuiteScript := preload("res://tests/suites/damage_payload_contract_suite.gd")
+const GojoSuiteScript := preload("res://tests/suites/gojo_suite.gd")
 
 var _harness
 
@@ -38,6 +39,7 @@ func _init() -> void:
         ManagerContractSuiteScript.new(),
         CombatTypeSuiteScript.new(),
         DamagePayloadContractSuiteScript.new(),
+        GojoSuiteScript.new(),
     ]
     for suite in suites:
         suite.register_tests(self, failures, _harness)
