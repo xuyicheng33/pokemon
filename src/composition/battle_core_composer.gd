@@ -44,191 +44,214 @@ const RuleModValueResolverScript := preload("res://src/battle_core/effects/rule_
 const PassiveSkillServiceScript := preload("res://src/battle_core/passives/passive_skill_service.gd")
 const PassiveItemServiceScript := preload("res://src/battle_core/passives/passive_item_service.gd")
 const FieldServiceScript := preload("res://src/battle_core/passives/field_service.gd")
+const FieldApplyServiceScript := preload("res://src/battle_core/passives/field_apply_service.gd")
 const BattleLoggerScript := preload("res://src/battle_core/logging/battle_logger.gd")
 const LogEventBuilderScript := preload("res://src/battle_core/logging/log_event_builder.gd")
 const ReplayRunnerScript := preload("res://src/battle_core/logging/replay_runner.gd")
 const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_core_manager.gd")
 const PublicSnapshotBuilderScript := preload("res://src/battle_core/facades/public_snapshot_builder.gd")
 
+const SERVICE_SPECS := [
+    {"slot": "id_factory", "script": IdFactoryScript},
+    {"slot": "rng_service", "script": RngServiceScript},
+    {"slot": "legal_action_service", "script": LegalActionServiceScript},
+    {"slot": "command_builder", "script": CommandBuilderScript},
+    {"slot": "command_validator", "script": CommandValidatorScript},
+    {"slot": "battle_initializer", "script": BattleInitializerScript},
+    {"slot": "action_queue_builder", "script": ActionQueueBuilderScript},
+    {"slot": "turn_loop_controller", "script": TurnLoopControllerScript},
+    {"slot": "turn_resolution_service", "script": TurnResolutionServiceScript},
+    {"slot": "turn_selection_resolver", "script": TurnSelectionResolverScript},
+    {"slot": "turn_field_lifecycle_service", "script": TurnFieldLifecycleServiceScript},
+    {"slot": "battle_result_service", "script": BattleResultServiceScript},
+    {"slot": "runtime_guard_service", "script": RuntimeGuardServiceScript},
+    {"slot": "action_executor", "script": ActionExecutorScript},
+    {"slot": "action_cast_service", "script": ActionCastServiceScript},
+    {"slot": "action_hit_resolution_service", "script": ActionHitResolutionServiceScript},
+    {"slot": "switch_action_service", "script": SwitchActionServiceScript},
+    {"slot": "action_log_service", "script": ActionLogServiceScript},
+    {"slot": "target_resolver", "script": TargetResolverScript},
+    {"slot": "stat_calculator", "script": StatCalculatorScript},
+    {"slot": "mp_service", "script": MpServiceScript},
+    {"slot": "hit_service", "script": HitServiceScript},
+    {"slot": "damage_service", "script": DamageServiceScript},
+    {"slot": "combat_type_service", "script": CombatTypeServiceScript},
+    {"slot": "leave_service", "script": LeaveServiceScript},
+    {"slot": "faint_resolver", "script": FaintResolverScript},
+    {"slot": "replacement_selector", "script": DefaultReplacementSelectorScript},
+    {"slot": "replacement_service", "script": ReplacementServiceScript},
+    {"slot": "trigger_dispatcher", "script": TriggerDispatcherScript},
+    {"slot": "trigger_batch_runner", "script": TriggerBatchRunnerScript},
+    {"slot": "effect_queue_service", "script": EffectQueueServiceScript},
+    {"slot": "payload_executor", "script": PayloadExecutorScript},
+    {"slot": "payload_numeric_handler", "script": PayloadNumericHandlerScript},
+    {"slot": "payload_state_handler", "script": PayloadStateHandlerScript},
+    {"slot": "payload_forced_replace_handler", "script": PayloadForcedReplaceHandlerScript},
+    {"slot": "effect_instance_service", "script": EffectInstanceServiceScript},
+    {"slot": "effect_instance_dispatcher", "script": EffectInstanceDispatcherScript},
+    {"slot": "rule_mod_service", "script": RuleModServiceScript},
+    {"slot": "rule_mod_value_resolver", "script": RuleModValueResolverScript},
+    {"slot": "passive_skill_service", "script": PassiveSkillServiceScript},
+    {"slot": "passive_item_service", "script": PassiveItemServiceScript},
+    {"slot": "field_service", "script": FieldServiceScript},
+    {"slot": "field_apply_service", "script": FieldApplyServiceScript},
+    {"slot": "battle_logger", "script": BattleLoggerScript},
+    {"slot": "log_event_builder", "script": LogEventBuilderScript},
+    {"slot": "public_snapshot_builder", "script": PublicSnapshotBuilderScript},
+    {"slot": "replay_runner", "script": ReplayRunnerScript},
+]
+
+const WIRING_SPECS := [
+    {"owner": "command_builder", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "legal_action_service", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "battle_initializer", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "battle_initializer", "dependency": "rng_service", "source": "rng_service"},
+    {"owner": "battle_initializer", "dependency": "faint_resolver", "source": "faint_resolver"},
+    {"owner": "battle_initializer", "dependency": "field_service", "source": "field_service"},
+    {"owner": "battle_initializer", "dependency": "trigger_batch_runner", "source": "trigger_batch_runner"},
+    {"owner": "battle_initializer", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "battle_initializer", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "battle_initializer", "dependency": "public_snapshot_builder", "source": "public_snapshot_builder"},
+    {"owner": "battle_initializer", "dependency": "combat_type_service", "source": "combat_type_service"},
+    {"owner": "battle_initializer", "dependency": "mp_service", "source": "mp_service"},
+    {"owner": "battle_initializer", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "action_queue_builder", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "action_queue_builder", "dependency": "rng_service", "source": "rng_service"},
+    {"owner": "action_queue_builder", "dependency": "stat_calculator", "source": "stat_calculator"},
+    {"owner": "leave_service", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "leave_service", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "replacement_service", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "replacement_service", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "replacement_service", "dependency": "replacement_selector", "source": "replacement_selector"},
+    {"owner": "replacement_service", "dependency": "leave_service", "source": "leave_service"},
+    {"owner": "replacement_service", "dependency": "trigger_batch_runner", "source": "trigger_batch_runner"},
+    {"owner": "replacement_service", "dependency": "field_service", "source": "field_service"},
+    {"owner": "faint_resolver", "dependency": "leave_service", "source": "leave_service"},
+    {"owner": "faint_resolver", "dependency": "replacement_service", "source": "replacement_service"},
+    {"owner": "faint_resolver", "dependency": "passive_skill_service", "source": "passive_skill_service"},
+    {"owner": "faint_resolver", "dependency": "passive_item_service", "source": "passive_item_service"},
+    {"owner": "faint_resolver", "dependency": "field_service", "source": "field_service"},
+    {"owner": "faint_resolver", "dependency": "trigger_dispatcher", "source": "trigger_dispatcher"},
+    {"owner": "faint_resolver", "dependency": "effect_instance_dispatcher", "source": "effect_instance_dispatcher"},
+    {"owner": "faint_resolver", "dependency": "effect_queue_service", "source": "effect_queue_service"},
+    {"owner": "faint_resolver", "dependency": "payload_executor", "source": "payload_executor"},
+    {"owner": "faint_resolver", "dependency": "trigger_batch_runner", "source": "trigger_batch_runner"},
+    {"owner": "faint_resolver", "dependency": "rng_service", "source": "rng_service"},
+    {"owner": "faint_resolver", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "faint_resolver", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "trigger_dispatcher", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "passive_skill_service", "dependency": "trigger_dispatcher", "source": "trigger_dispatcher"},
+    {"owner": "passive_item_service", "dependency": "trigger_dispatcher", "source": "trigger_dispatcher"},
+    {"owner": "field_service", "dependency": "trigger_dispatcher", "source": "trigger_dispatcher"},
+    {"owner": "field_service", "dependency": "trigger_batch_runner", "source": "trigger_batch_runner"},
+    {"owner": "field_apply_service", "dependency": "field_service", "source": "field_service"},
+    {"owner": "field_apply_service", "dependency": "trigger_dispatcher", "source": "trigger_dispatcher"},
+    {"owner": "field_apply_service", "dependency": "trigger_batch_runner", "source": "trigger_batch_runner"},
+    {"owner": "field_apply_service", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "field_apply_service", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "field_apply_service", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "field_apply_service", "dependency": "rng_service", "source": "rng_service"},
+    {"owner": "trigger_batch_runner", "dependency": "passive_skill_service", "source": "passive_skill_service"},
+    {"owner": "trigger_batch_runner", "dependency": "passive_item_service", "source": "passive_item_service"},
+    {"owner": "trigger_batch_runner", "dependency": "field_service", "source": "field_service"},
+    {"owner": "trigger_batch_runner", "dependency": "effect_instance_dispatcher", "source": "effect_instance_dispatcher"},
+    {"owner": "trigger_batch_runner", "dependency": "effect_queue_service", "source": "effect_queue_service"},
+    {"owner": "trigger_batch_runner", "dependency": "payload_executor", "source": "payload_executor"},
+    {"owner": "trigger_batch_runner", "dependency": "rng_service", "source": "rng_service"},
+    {"owner": "effect_instance_service", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "effect_instance_dispatcher", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "rule_mod_service", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "payload_numeric_handler", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "payload_numeric_handler", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "payload_numeric_handler", "dependency": "damage_service", "source": "damage_service"},
+    {"owner": "payload_numeric_handler", "dependency": "combat_type_service", "source": "combat_type_service"},
+    {"owner": "payload_numeric_handler", "dependency": "stat_calculator", "source": "stat_calculator"},
+    {"owner": "payload_numeric_handler", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "payload_numeric_handler", "dependency": "faint_resolver", "source": "faint_resolver"},
+    {"owner": "payload_state_handler", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "payload_state_handler", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "payload_state_handler", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "payload_state_handler", "dependency": "effect_instance_service", "source": "effect_instance_service"},
+    {"owner": "payload_state_handler", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "payload_state_handler", "dependency": "rule_mod_value_resolver", "source": "rule_mod_value_resolver"},
+    {"owner": "payload_state_handler", "dependency": "field_service", "source": "field_service"},
+    {"owner": "payload_state_handler", "dependency": "field_apply_service", "source": "field_apply_service"},
+    {"owner": "payload_forced_replace_handler", "dependency": "replacement_service", "source": "replacement_service"},
+    {"owner": "payload_executor", "dependency": "numeric_payload_handler", "source": "payload_numeric_handler"},
+    {"owner": "payload_executor", "dependency": "state_payload_handler", "source": "payload_state_handler"},
+    {"owner": "payload_executor", "dependency": "forced_replace_payload_handler", "source": "payload_forced_replace_handler"},
+    {"owner": "action_log_service", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "action_log_service", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "action_hit_resolution_service", "dependency": "hit_service", "source": "hit_service"},
+    {"owner": "action_hit_resolution_service", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "action_hit_resolution_service", "dependency": "rng_service", "source": "rng_service"},
+    {"owner": "action_cast_service", "dependency": "mp_service", "source": "mp_service"},
+    {"owner": "action_cast_service", "dependency": "damage_service", "source": "damage_service"},
+    {"owner": "action_cast_service", "dependency": "combat_type_service", "source": "combat_type_service"},
+    {"owner": "action_cast_service", "dependency": "stat_calculator", "source": "stat_calculator"},
+    {"owner": "action_cast_service", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "action_cast_service", "dependency": "action_hit_resolution_service", "source": "action_hit_resolution_service"},
+    {"owner": "action_cast_service", "dependency": "target_resolver", "source": "target_resolver"},
+    {"owner": "action_cast_service", "dependency": "trigger_dispatcher", "source": "trigger_dispatcher"},
+    {"owner": "action_cast_service", "dependency": "effect_queue_service", "source": "effect_queue_service"},
+    {"owner": "action_cast_service", "dependency": "payload_executor", "source": "payload_executor"},
+    {"owner": "action_cast_service", "dependency": "faint_resolver", "source": "faint_resolver"},
+    {"owner": "action_cast_service", "dependency": "trigger_batch_runner", "source": "trigger_batch_runner"},
+    {"owner": "action_cast_service", "dependency": "rng_service", "source": "rng_service"},
+    {"owner": "action_cast_service", "dependency": "action_log_service", "source": "action_log_service"},
+    {"owner": "switch_action_service", "dependency": "leave_service", "source": "leave_service"},
+    {"owner": "switch_action_service", "dependency": "action_cast_service", "source": "action_cast_service"},
+    {"owner": "switch_action_service", "dependency": "action_log_service", "source": "action_log_service"},
+    {"owner": "switch_action_service", "dependency": "field_service", "source": "field_service"},
+    {"owner": "action_executor", "dependency": "action_cast_service", "source": "action_cast_service"},
+    {"owner": "action_executor", "dependency": "switch_action_service", "source": "switch_action_service"},
+    {"owner": "action_executor", "dependency": "action_log_service", "source": "action_log_service"},
+    {"owner": "action_executor", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "turn_selection_resolver", "dependency": "legal_action_service", "source": "legal_action_service"},
+    {"owner": "turn_selection_resolver", "dependency": "command_builder", "source": "command_builder"},
+    {"owner": "turn_selection_resolver", "dependency": "command_validator", "source": "command_validator"},
+    {"owner": "turn_field_lifecycle_service", "dependency": "field_service", "source": "field_service"},
+    {"owner": "turn_field_lifecycle_service", "dependency": "trigger_batch_runner", "source": "trigger_batch_runner"},
+    {"owner": "turn_field_lifecycle_service", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "turn_field_lifecycle_service", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "turn_field_lifecycle_service", "dependency": "battle_result_service", "source": "battle_result_service"},
+    {"owner": "turn_resolution_service", "dependency": "selection_resolver", "source": "turn_selection_resolver"},
+    {"owner": "turn_resolution_service", "dependency": "field_lifecycle_service", "source": "turn_field_lifecycle_service"},
+    {"owner": "turn_resolution_service", "dependency": "mp_service", "source": "mp_service"},
+    {"owner": "turn_resolution_service", "dependency": "trigger_batch_runner", "source": "trigger_batch_runner"},
+    {"owner": "turn_resolution_service", "dependency": "effect_instance_dispatcher", "source": "effect_instance_dispatcher"},
+    {"owner": "turn_resolution_service", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "turn_resolution_service", "dependency": "faint_resolver", "source": "faint_resolver"},
+    {"owner": "turn_resolution_service", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "turn_resolution_service", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "turn_resolution_service", "dependency": "battle_result_service", "source": "battle_result_service"},
+    {"owner": "battle_result_service", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "battle_result_service", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "battle_result_service", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "turn_loop_controller", "dependency": "action_queue_builder", "source": "action_queue_builder"},
+    {"owner": "turn_loop_controller", "dependency": "action_executor", "source": "action_executor"},
+    {"owner": "turn_loop_controller", "dependency": "faint_resolver", "source": "faint_resolver"},
+    {"owner": "turn_loop_controller", "dependency": "turn_resolution_service", "source": "turn_resolution_service"},
+    {"owner": "turn_loop_controller", "dependency": "battle_result_service", "source": "battle_result_service"},
+    {"owner": "turn_loop_controller", "dependency": "runtime_guard_service", "source": "runtime_guard_service"},
+    {"owner": "turn_loop_controller", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "turn_loop_controller", "dependency": "log_event_builder", "source": "log_event_builder"},
+    {"owner": "replay_runner", "dependency": "battle_initializer", "source": "battle_initializer"},
+    {"owner": "replay_runner", "dependency": "turn_loop_controller", "source": "turn_loop_controller"},
+    {"owner": "replay_runner", "dependency": "battle_logger", "source": "battle_logger"},
+    {"owner": "replay_runner", "dependency": "id_factory", "source": "id_factory"},
+    {"owner": "replay_runner", "dependency": "rng_service", "source": "rng_service"},
+]
+
+const RESET_SPECS := [
+    {"owner": "rule_mod_value_resolver", "field": "last_error_code", "value": null},
+]
+
 func compose():
     var container = BattleCoreContainerScript.new()
-    container.id_factory = IdFactoryScript.new()
-    container.rng_service = RngServiceScript.new()
-    container.legal_action_service = LegalActionServiceScript.new()
-    container.command_builder = CommandBuilderScript.new()
-    container.command_validator = CommandValidatorScript.new()
-    container.battle_initializer = BattleInitializerScript.new()
-    container.action_queue_builder = ActionQueueBuilderScript.new()
-    container.turn_loop_controller = TurnLoopControllerScript.new()
-    container.turn_resolution_service = TurnResolutionServiceScript.new()
-    container.turn_selection_resolver = TurnSelectionResolverScript.new()
-    container.turn_field_lifecycle_service = TurnFieldLifecycleServiceScript.new()
-    container.battle_result_service = BattleResultServiceScript.new()
-    container.runtime_guard_service = RuntimeGuardServiceScript.new()
-    container.action_executor = ActionExecutorScript.new()
-    container.action_cast_service = ActionCastServiceScript.new()
-    container.action_hit_resolution_service = ActionHitResolutionServiceScript.new()
-    container.switch_action_service = SwitchActionServiceScript.new()
-    container.action_log_service = ActionLogServiceScript.new()
-    container.target_resolver = TargetResolverScript.new()
-    container.stat_calculator = StatCalculatorScript.new()
-    container.mp_service = MpServiceScript.new()
-    container.hit_service = HitServiceScript.new()
-    container.damage_service = DamageServiceScript.new()
-    container.combat_type_service = CombatTypeServiceScript.new()
-    container.leave_service = LeaveServiceScript.new()
-    container.faint_resolver = FaintResolverScript.new()
-    container.replacement_selector = DefaultReplacementSelectorScript.new()
-    container.replacement_service = ReplacementServiceScript.new()
-    container.trigger_dispatcher = TriggerDispatcherScript.new()
-    container.trigger_batch_runner = TriggerBatchRunnerScript.new()
-    container.effect_queue_service = EffectQueueServiceScript.new()
-    container.payload_executor = PayloadExecutorScript.new()
-    container.payload_numeric_handler = PayloadNumericHandlerScript.new()
-    container.payload_state_handler = PayloadStateHandlerScript.new()
-    container.payload_forced_replace_handler = PayloadForcedReplaceHandlerScript.new()
-    container.effect_instance_service = EffectInstanceServiceScript.new()
-    container.effect_instance_dispatcher = EffectInstanceDispatcherScript.new()
-    container.rule_mod_service = RuleModServiceScript.new()
-    container.rule_mod_value_resolver = RuleModValueResolverScript.new()
-    container.passive_skill_service = PassiveSkillServiceScript.new()
-    container.passive_item_service = PassiveItemServiceScript.new()
-    container.field_service = FieldServiceScript.new()
-    container.battle_logger = BattleLoggerScript.new()
-    container.log_event_builder = LogEventBuilderScript.new()
-    container.public_snapshot_builder = PublicSnapshotBuilderScript.new()
-    container.replay_runner = ReplayRunnerScript.new()
-    container.command_builder.id_factory = container.id_factory
-    container.legal_action_service.rule_mod_service = container.rule_mod_service
-    container.battle_initializer.id_factory = container.id_factory
-    container.battle_initializer.rng_service = container.rng_service
-    container.battle_initializer.faint_resolver = container.faint_resolver
-    container.battle_initializer.field_service = container.field_service
-    container.battle_initializer.trigger_batch_runner = container.trigger_batch_runner
-    container.battle_initializer.battle_logger = container.battle_logger
-    container.battle_initializer.log_event_builder = container.log_event_builder
-    container.battle_initializer.public_snapshot_builder = container.public_snapshot_builder
-    container.battle_initializer.combat_type_service = container.combat_type_service
-    container.battle_initializer.mp_service = container.mp_service
-    container.battle_initializer.rule_mod_service = container.rule_mod_service
-    container.action_queue_builder.id_factory = container.id_factory
-    container.action_queue_builder.rng_service = container.rng_service
-    container.action_queue_builder.stat_calculator = container.stat_calculator
-    container.leave_service.battle_logger = container.battle_logger
-    container.leave_service.log_event_builder = container.log_event_builder
-    container.replacement_service.battle_logger = container.battle_logger
-    container.replacement_service.log_event_builder = container.log_event_builder
-    container.replacement_service.replacement_selector = container.replacement_selector
-    container.replacement_service.leave_service = container.leave_service
-    container.replacement_service.trigger_batch_runner = container.trigger_batch_runner
-    container.faint_resolver.leave_service = container.leave_service
-    container.faint_resolver.replacement_service = container.replacement_service
-    container.faint_resolver.passive_skill_service = container.passive_skill_service
-    container.faint_resolver.passive_item_service = container.passive_item_service
-    container.faint_resolver.field_service = container.field_service
-    container.faint_resolver.trigger_dispatcher = container.trigger_dispatcher
-    container.faint_resolver.effect_instance_dispatcher = container.effect_instance_dispatcher
-    container.faint_resolver.effect_queue_service = container.effect_queue_service
-    container.faint_resolver.payload_executor = container.payload_executor
-    container.faint_resolver.trigger_batch_runner = container.trigger_batch_runner
-    container.faint_resolver.rng_service = container.rng_service
-    container.faint_resolver.battle_logger = container.battle_logger
-    container.faint_resolver.log_event_builder = container.log_event_builder
-    container.trigger_dispatcher.id_factory = container.id_factory
-    container.passive_skill_service.trigger_dispatcher = container.trigger_dispatcher
-    container.passive_item_service.trigger_dispatcher = container.trigger_dispatcher
-    container.field_service.trigger_dispatcher = container.trigger_dispatcher
-    container.field_service.trigger_batch_runner = container.trigger_batch_runner
-    container.trigger_batch_runner.passive_skill_service = container.passive_skill_service
-    container.trigger_batch_runner.passive_item_service = container.passive_item_service
-    container.trigger_batch_runner.field_service = container.field_service
-    container.trigger_batch_runner.effect_instance_dispatcher = container.effect_instance_dispatcher
-    container.trigger_batch_runner.effect_queue_service = container.effect_queue_service
-    container.trigger_batch_runner.payload_executor = container.payload_executor
-    container.trigger_batch_runner.rng_service = container.rng_service
-    container.effect_instance_service.id_factory = container.id_factory
-    container.effect_instance_dispatcher.id_factory = container.id_factory
-    container.rule_mod_service.id_factory = container.id_factory
-    container.payload_numeric_handler.battle_logger = container.battle_logger
-    container.payload_numeric_handler.log_event_builder = container.log_event_builder
-    container.payload_numeric_handler.damage_service = container.damage_service
-    container.payload_numeric_handler.combat_type_service = container.combat_type_service
-    container.payload_numeric_handler.stat_calculator = container.stat_calculator
-    container.payload_numeric_handler.rule_mod_service = container.rule_mod_service
-    container.payload_numeric_handler.faint_resolver = container.faint_resolver
-    container.payload_state_handler.battle_logger = container.battle_logger
-    container.payload_state_handler.log_event_builder = container.log_event_builder
-    container.payload_state_handler.id_factory = container.id_factory
-    container.payload_state_handler.effect_instance_service = container.effect_instance_service
-    container.payload_state_handler.rule_mod_service = container.rule_mod_service
-    container.payload_state_handler.rule_mod_value_resolver = container.rule_mod_value_resolver
-    container.payload_state_handler.field_service = container.field_service
-    container.payload_forced_replace_handler.replacement_service = container.replacement_service
-    container.payload_executor.numeric_payload_handler = container.payload_numeric_handler
-    container.payload_executor.state_payload_handler = container.payload_state_handler
-    container.payload_executor.forced_replace_payload_handler = container.payload_forced_replace_handler
-    container.action_log_service.battle_logger = container.battle_logger
-    container.action_log_service.log_event_builder = container.log_event_builder
-    container.action_hit_resolution_service.hit_service = container.hit_service
-    container.action_hit_resolution_service.rule_mod_service = container.rule_mod_service
-    container.action_hit_resolution_service.rng_service = container.rng_service
-    container.action_cast_service.mp_service = container.mp_service
-    container.action_cast_service.damage_service = container.damage_service
-    container.action_cast_service.combat_type_service = container.combat_type_service
-    container.action_cast_service.stat_calculator = container.stat_calculator
-    container.action_cast_service.rule_mod_service = container.rule_mod_service
-    container.action_cast_service.action_hit_resolution_service = container.action_hit_resolution_service
-    container.action_cast_service.target_resolver = container.target_resolver
-    container.action_cast_service.trigger_dispatcher = container.trigger_dispatcher
-    container.action_cast_service.effect_queue_service = container.effect_queue_service
-    container.action_cast_service.payload_executor = container.payload_executor
-    container.action_cast_service.faint_resolver = container.faint_resolver
-    container.action_cast_service.trigger_batch_runner = container.trigger_batch_runner
-    container.action_cast_service.rng_service = container.rng_service
-    container.action_cast_service.action_log_service = container.action_log_service
-    container.switch_action_service.leave_service = container.leave_service
-    container.switch_action_service.action_cast_service = container.action_cast_service
-    container.switch_action_service.action_log_service = container.action_log_service
-    container.switch_action_service.field_service = container.field_service
-    container.action_executor.action_cast_service = container.action_cast_service
-    container.action_executor.switch_action_service = container.switch_action_service
-    container.action_executor.action_log_service = container.action_log_service
-    container.action_executor.rule_mod_service = container.rule_mod_service
-    container.turn_selection_resolver.legal_action_service = container.legal_action_service
-    container.turn_selection_resolver.command_builder = container.command_builder
-    container.turn_selection_resolver.command_validator = container.command_validator
-    container.turn_field_lifecycle_service.field_service = container.field_service
-    container.turn_field_lifecycle_service.trigger_batch_runner = container.trigger_batch_runner
-    container.turn_field_lifecycle_service.battle_logger = container.battle_logger
-    container.turn_field_lifecycle_service.log_event_builder = container.log_event_builder
-    container.turn_field_lifecycle_service.battle_result_service = container.battle_result_service
-    container.turn_resolution_service.selection_resolver = container.turn_selection_resolver
-    container.turn_resolution_service.field_lifecycle_service = container.turn_field_lifecycle_service
-    container.turn_resolution_service.mp_service = container.mp_service
-    container.turn_resolution_service.trigger_batch_runner = container.trigger_batch_runner
-    container.turn_resolution_service.effect_instance_dispatcher = container.effect_instance_dispatcher
-    container.turn_resolution_service.rule_mod_service = container.rule_mod_service
-    container.turn_resolution_service.faint_resolver = container.faint_resolver
-    container.turn_resolution_service.battle_logger = container.battle_logger
-    container.turn_resolution_service.log_event_builder = container.log_event_builder
-    container.turn_resolution_service.battle_result_service = container.battle_result_service
-    container.battle_result_service.id_factory = container.id_factory
-    container.battle_result_service.battle_logger = container.battle_logger
-    container.battle_result_service.log_event_builder = container.log_event_builder
-    container.turn_loop_controller.action_queue_builder = container.action_queue_builder
-    container.turn_loop_controller.action_executor = container.action_executor
-    container.turn_loop_controller.faint_resolver = container.faint_resolver
-    container.turn_loop_controller.turn_resolution_service = container.turn_resolution_service
-    container.turn_loop_controller.battle_result_service = container.battle_result_service
-    container.turn_loop_controller.runtime_guard_service = container.runtime_guard_service
-    container.turn_loop_controller.battle_logger = container.battle_logger
-    container.turn_loop_controller.log_event_builder = container.log_event_builder
-    container.replacement_service.field_service = container.field_service
-    container.replay_runner.battle_initializer = container.battle_initializer
-    container.replay_runner.turn_loop_controller = container.turn_loop_controller
-    container.replay_runner.battle_logger = container.battle_logger
-    container.replay_runner.id_factory = container.id_factory
-    container.replay_runner.rng_service = container.rng_service
+    _instantiate_services(container)
+    _wire_dependencies(container)
+    container.configure_dispose_specs(_resolve_service_slots(), WIRING_SPECS, RESET_SPECS)
     _assert_container_dependencies(container)
     return container
 
@@ -243,59 +266,35 @@ func compose_manager():
     return manager
 
 func _assert_container_dependencies(container) -> void:
-    _assert_dependency(container.legal_action_service, "legal_action_service", "rule_mod_service")
-    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "passive_skill_service")
-    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "passive_item_service")
-    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "field_service")
-    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "effect_instance_dispatcher")
-    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "effect_queue_service")
-    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "payload_executor")
-    _assert_dependency(container.trigger_batch_runner, "trigger_batch_runner", "rng_service")
-    _assert_dependency(container.field_service, "field_service", "trigger_dispatcher")
-    _assert_dependency(container.field_service, "field_service", "trigger_batch_runner")
-    _assert_dependency(container.battle_initializer, "battle_initializer", "public_snapshot_builder")
-    _assert_dependency(container.battle_initializer, "battle_initializer", "mp_service")
-    _assert_dependency(container.battle_initializer, "battle_initializer", "rule_mod_service")
-    _assert_dependency(container.turn_selection_resolver, "turn_selection_resolver", "legal_action_service")
-    _assert_dependency(container.turn_selection_resolver, "turn_selection_resolver", "command_builder")
-    _assert_dependency(container.turn_selection_resolver, "turn_selection_resolver", "command_validator")
-    _assert_dependency(container.turn_field_lifecycle_service, "turn_field_lifecycle_service", "field_service")
-    _assert_dependency(container.turn_field_lifecycle_service, "turn_field_lifecycle_service", "trigger_batch_runner")
-    _assert_dependency(container.turn_resolution_service, "turn_resolution_service", "trigger_batch_runner")
-    _assert_dependency(container.turn_resolution_service, "turn_resolution_service", "effect_instance_dispatcher")
-    _assert_dependency(container.turn_resolution_service, "turn_resolution_service", "rule_mod_service")
-    _assert_dependency(container.battle_result_service, "battle_result_service", "id_factory")
-    _assert_dependency(container.battle_result_service, "battle_result_service", "battle_logger")
-    _assert_dependency(container.battle_result_service, "battle_result_service", "log_event_builder")
-    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "turn_resolution_service")
-    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "battle_result_service")
-    _assert_dependency(container.turn_loop_controller, "turn_loop_controller", "runtime_guard_service")
-    _assert_dependency(container.battle_initializer, "battle_initializer", "trigger_batch_runner")
-    _assert_dependency(container.battle_initializer, "battle_initializer", "combat_type_service")
-    _assert_dependency(container.action_cast_service, "action_cast_service", "trigger_batch_runner")
-    _assert_dependency(container.action_cast_service, "action_cast_service", "effect_queue_service")
-    _assert_dependency(container.action_cast_service, "action_cast_service", "payload_executor")
-    _assert_dependency(container.action_cast_service, "action_cast_service", "target_resolver")
-    _assert_dependency(container.action_cast_service, "action_cast_service", "combat_type_service")
-    _assert_dependency(container.action_cast_service, "action_cast_service", "action_hit_resolution_service")
-    _assert_dependency(container.action_hit_resolution_service, "action_hit_resolution_service", "hit_service")
-    _assert_dependency(container.action_hit_resolution_service, "action_hit_resolution_service", "rule_mod_service")
-    _assert_dependency(container.action_hit_resolution_service, "action_hit_resolution_service", "rng_service")
-    _assert_dependency(container.switch_action_service, "switch_action_service", "leave_service")
-    _assert_dependency(container.switch_action_service, "switch_action_service", "field_service")
-    _assert_dependency(container.action_executor, "action_executor", "action_cast_service")
-    _assert_dependency(container.action_executor, "action_executor", "switch_action_service")
-    _assert_dependency(container.action_executor, "action_executor", "action_log_service")
-    _assert_dependency(container.action_executor, "action_executor", "rule_mod_service")
-    _assert_dependency(container.faint_resolver, "faint_resolver", "trigger_batch_runner")
-    _assert_dependency(container.faint_resolver, "faint_resolver", "effect_instance_dispatcher")
-    _assert_dependency(container.replacement_service, "replacement_service", "trigger_batch_runner")
-    _assert_dependency(container.replacement_service, "replacement_service", "field_service")
-    _assert_dependency(container.payload_executor, "payload_executor", "numeric_payload_handler")
-    _assert_dependency(container.payload_executor, "payload_executor", "state_payload_handler")
-    _assert_dependency(container.payload_executor, "payload_executor", "forced_replace_payload_handler")
-    _assert_dependency(container.payload_numeric_handler, "payload_numeric_handler", "stat_calculator")
+    for wiring_spec in WIRING_SPECS:
+        _assert_dependency(
+            container,
+            str(wiring_spec["owner"]),
+            str(wiring_spec["dependency"])
+        )
 
-func _assert_dependency(owner, owner_name: String, dependency_name: String) -> void:
+func _instantiate_services(container) -> void:
+    for service_spec in SERVICE_SPECS:
+        var slot_name := str(service_spec["slot"])
+        var script_ref = service_spec["script"]
+        container.set(slot_name, script_ref.new())
+
+func _wire_dependencies(container) -> void:
+    for wiring_spec in WIRING_SPECS:
+        var owner_name := str(wiring_spec["owner"])
+        var dependency_name := str(wiring_spec["dependency"])
+        var source_name := str(wiring_spec["source"])
+        var owner = container.get(owner_name)
+        assert(owner != null, "Composer missing owner: %s" % owner_name)
+        owner.set(dependency_name, container.get(source_name))
+
+func _resolve_service_slots() -> PackedStringArray:
+    var service_slots := PackedStringArray()
+    for service_spec in SERVICE_SPECS:
+        service_slots.append(str(service_spec["slot"]))
+    return service_slots
+
+func _assert_dependency(container, owner_name: String, dependency_name: String) -> void:
+    var owner = container.get(owner_name)
     assert(owner != null, "Composer missing owner: %s" % owner_name)
     assert(owner.get(dependency_name) != null, "%s missing dependency: %s" % [owner_name, dependency_name])

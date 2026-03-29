@@ -11,8 +11,9 @@
   - 1v1、每队 3 单位、固定 Lv50
   - 指令选择、`wait / resource_forced_default` 分流、行动排序、命中/伤害、换人、击倒补位
   - `combat_type` 战斗属性系统（单位 `0..2`、技能 `0..1`、显式克制表）
-  - `on_matchup_changed`、field 生命周期（自然到期 / 提前打断）、被动技能、被动持有物、受限 rule_mod
-  - 默认装配可直接加载的宿傩原型内容包
+  - `ultimate_points` 奥义点资源、公开快照与合法性校验
+  - `on_matchup_changed`、field 生命周期（自然到期 / 提前打断 / 领域对拼 / 成功后附带效果）、被动技能、被动持有物、受限 rule_mod
+  - 默认装配可直接加载的 Gojo / Sukuna 正式角色原型内容包
   - deterministic 回放（同输入同结果）
   - 完整日志契约（`log_schema_version = 3`）
 - 明确不做：通用状态包、暴击、STAB、属性免疫、主动道具、多目标/双打
@@ -75,9 +76,9 @@ tests/
 - `turn`：回合编排与子域协调（初始化、选指解析、field/对位生命周期、`turn_start -> selection -> queue_lock -> execution -> turn_end`）
 - `actions`：单行动执行与目标解析
 - `math`：纯计算服务（命中、伤害、能力阶段、属性克制）
-- `effects`：触发收集、排序、payload 协调执行、effect/rule_mod 实例管理
+- `effects`：触发收集、排序、payload 协调执行、effect 实例管理、`rule_mod` 读写拆分
 - `lifecycle`：离场/倒下/补位链
-- `passives`：被动技能、被动持有物、field 接入
+- `passives`：被动技能、被动持有物、field 落地/对拼/生命周期
 - `logging`：日志构造、回放、确定性校验
 - `facades`：对外稳定接口（Manager + Session）
 
@@ -161,19 +162,30 @@ tests/run_with_gate.sh
 - field 持续时间不写在 `FieldDefinition`；由施加它的 `EffectDefinition.duration / decrement_on` 决定
 - `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 rule_mod 使用）
 - `BattleFormatConfig` 已包含 `visibility_mode / selection_deadline_ms / max_chain_depth`
-- `UnitDefinition` 已包含 `max_mp / init_mp / regen_per_turn`
+- `UnitDefinition` 已包含 `max_mp / init_mp / regen_per_turn / ultimate_points_required / ultimate_points_cap / ultimate_point_gain_on_regular_skill_cast`
 - `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
 - 普通技能与奥义优先级约束分离校验
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
+- `SampleBattleFactory.content_snapshot_paths()` 统一从 `content/combat_types / units / skills / effects / fields / passive_skills / samples` 自动收集 `.tres`，并做稳定排序，避免角色接线漏资源与回放漂移
 
-### 8.1 宿傩默认装配与赛前配招
+### 8.1 Gojo / 宿傩角色资源
 
-- 默认技能组：`解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`）
-- 奥义：`伏魔御厨子`
-- 被动：`教会你爱的是...`
-- 候选技能池：`candidate_skill_ids = 解 / 捌 / 开 / 反转术式`
-- 赛前覆盖：`SideSetup.regular_skill_loadout_overrides` 可把 `反转术式` 换入本场装配；未提供覆盖时，行为等价于使用默认 `skill_ids`
+- `Gojo`：默认技能组 `苍 / 赫 / 茈`（`gojo_ao / gojo_aka / gojo_murasaki`），奥义 `无量空处`，被动 `无下限`，奥义点 `required=3 / cap=3 / regular skill cast +1`
+- `宿傩`：默认技能组 `解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`），奥义 `伏魔御厨子`，被动 `教会你爱的是...`，候选技能池 `candidate_skill_ids = 解 / 捌 / 开 / 反转术式`，奥义点 `required=3 / cap=3 / regular skill cast +1`
+- 赛前覆盖：`SideSetup.regular_skill_loadout_overrides` 可把候选常规技能换入本场装配；未提供覆盖时，行为等价于使用默认 `skill_ids`
 - 公开快照：`prebattle_public_teams[*].units[*].skill_ids` 只公开本场实际已装备的常规技能，不公开候选池全集
+
+### 8.2 角色接入工作流
+
+正式角色接入当前固定走同一套资产流程：
+
+- 设计稿：`docs/design/<character>_design.md`
+- 调整记录：`docs/design/<character>_adjustments.md`
+- 内容资源：`content/units|skills|effects|fields|passive_skills`
+- 样例接线：`SampleBattleFactory`
+- 专项回归：`tests/suites/<character>_suite.gd` + `tests/run_all.gd`
+
+当前 Gojo 与 Sukuna 都必须满足这套交付面，后续新角色默认沿用。
 
 ## 9. 日志与回放契约
 
@@ -187,9 +199,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-29）
 
-- `src/**/*.gd`：`7165` 行
-- `tests/**/*.gd`：`6693` 行
-- GDScript 合计：`13858` 行
+- `src/**/*.gd`：`7300` 行
+- `tests/**/*.gd`：`6986` 行
+- GDScript 合计：`14286` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 
@@ -199,5 +211,6 @@ tests/run_with_gate.sh
 
 1. 继续保持“规则先行”：新增机制先改 `docs/rules`，再改实现。
 2. 角色设计优先复用现有 payload 与触发点，不先扩流程控制口。
-3. 新角色/技能接入必须附带回归用例（至少覆盖命中、伤害、生命周期、日志字段）。
-4. 每个小任务都走 `tests/run_with_gate.sh`，再进入下一步扩展。
+3. 正式角色接入必须同时落 `设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite`。
+4. 新角色/技能回归至少覆盖命中、伤害、生命周期、日志字段与公开快照。
+5. 每个小任务都走 `tests/run_with_gate.sh`，再进入下一步扩展。

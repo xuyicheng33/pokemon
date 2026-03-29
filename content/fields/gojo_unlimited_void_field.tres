@@ -6,7 +6,7 @@
 script = ExtResource("1")
 id = "gojo_unlimited_void_field"
 display_name = "无量空处"
-effect_ids = PackedStringArray()
-on_expire_effect_ids = PackedStringArray()
-on_break_effect_ids = PackedStringArray()
+effect_ids = PackedStringArray("gojo_domain_cast_buff")
+on_expire_effect_ids = PackedStringArray("gojo_domain_buff_remove")
+on_break_effect_ids = PackedStringArray("gojo_domain_buff_remove")
 creator_accuracy_override = 100

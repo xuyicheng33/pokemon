@@ -37,6 +37,10 @@ func validate_runtime_state(battle_state):
                 return ErrorCodesScript.INVALID_STATE_CORRUPTION
             if unit_state.current_mp < 0 or unit_state.current_mp > unit_state.max_mp:
                 return ErrorCodesScript.INVALID_STATE_CORRUPTION
+            if unit_state.ultimate_points_cap < 0 or unit_state.ultimate_points_required < 0:
+                return ErrorCodesScript.INVALID_STATE_CORRUPTION
+            if unit_state.ultimate_points < 0 or unit_state.ultimate_points > unit_state.ultimate_points_cap:
+                return ErrorCodesScript.INVALID_STATE_CORRUPTION
         for slot_id in side_state.active_slots.keys():
             var active_unit_id: String = str(side_state.active_slots[slot_id])
             if active_unit_id.is_empty() or side_state.find_unit(active_unit_id) == null:

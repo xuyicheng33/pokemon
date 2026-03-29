@@ -18,9 +18,9 @@ stage_delta = 1
 [resource]
 script = ExtResource("1")
 id = "sukuna_domain_cast_buff"
-display_name = "伏魔御厨子增幅"
+display_name = "伏魔御厨子领域增幅"
 scope = "self"
 duration_mode = "permanent"
 stacking = "none"
-trigger_names = PackedStringArray("on_cast")
+trigger_names = PackedStringArray("field_apply")
 payloads = Array[Resource]([SubResource("1"), SubResource("2")])

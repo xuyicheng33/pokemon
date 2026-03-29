@@ -38,13 +38,14 @@ func get_legal_actions(battle_state, side_id: String, content_index):
         var ultimate_definition = content_index.skills.get(unit_definition.ultimate_skill_id)
         if ultimate_definition != null:
             var can_pay_ultimate_mp: bool = actor.current_mp >= ultimate_definition.mp_cost
+            var has_ultimate_points: bool = actor.ultimate_points >= actor.ultimate_points_required
             var ultimate_allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
                 battle_state,
                 actor.unit_instance_id,
                 CommandTypesScript.ULTIMATE,
                 unit_definition.ultimate_skill_id
             )
-            if can_pay_ultimate_mp and ultimate_allowed_by_rule_mod:
+            if can_pay_ultimate_mp and has_ultimate_points and ultimate_allowed_by_rule_mod:
                 has_any_skill_or_ultimate_option = true
                 legal_action_set.legal_ultimate_ids.append(unit_definition.ultimate_skill_id)
             elif not ultimate_allowed_by_rule_mod:

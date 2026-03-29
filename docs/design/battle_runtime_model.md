@@ -76,6 +76,10 @@
 |`max_mp`|`int`|最大 MP|
 |`current_mp`|`int`|当前 MP|
 |`regen_per_turn`|`int`|每回合 MP 回复基值|
+|`ultimate_points`|`int`|当前奥义点|
+|`ultimate_points_cap`|`int`|奥义点上限|
+|`ultimate_points_required`|`int`|施放奥义所需点数|
+|`ultimate_point_gain_on_regular_skill_cast`|`int`|每次开始施放常规技能时获得的奥义点|
 |`regular_skill_ids`|`PackedStringArray`|本场实际已装备的 3 个常规技能；初始化时从默认装配或 setup override 解析得到|
 |`combat_type_ids`|`PackedStringArray`|运行态战斗属性镜像，初始化时从 `UnitDefinition` 复制|
 |`base_attack`|`int`|基础攻击|

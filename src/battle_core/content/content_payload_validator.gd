@@ -59,6 +59,7 @@ func validate_payload(errors: Array, effect_id: String, payload, content_index) 
     if payload is ApplyFieldPayloadScript:
         if String(payload.field_definition_id).is_empty() or not content_index.fields.has(payload.field_definition_id):
             errors.append("effect[%s].apply_field missing field: %s" % [effect_id, payload.field_definition_id])
+        validate_effect_refs(errors, "effect[%s].apply_field.on_success_effect_ids" % effect_id, payload.on_success_effect_ids, content_index.effects)
         return
     if payload is ApplyEffectPayloadScript:
         if String(payload.effect_definition_id).is_empty() or not content_index.effects.has(payload.effect_definition_id):

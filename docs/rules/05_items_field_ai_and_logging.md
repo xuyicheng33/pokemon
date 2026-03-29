@@ -38,7 +38,7 @@
 |作用域|全场唯一 `field`|
 |同一时刻生效数量|最多 1 个|
 |典型来源|技能、奥义、被动持有物、被动技能|
-|覆盖规则|新 field 成功生效后，直接替换旧 field|
+|覆盖规则|场上已有 field 时，新 field 先进入领域对拼；只有对拼胜者才能最终留下|
 |持续方式|按回合计时|
 |具体效果|必须写在技能或效果描述里，不靠口头解释|
 |命中覆盖|可通过 `creator_accuracy_override` 只覆盖 field creator 的技能命中；`-1` 表示不覆盖|
@@ -56,8 +56,10 @@
 |场景|规则|
 |---|---|
 |场上没有 field|新 field 直接生效|
-|场上已有 field，新的后结算|旧 field 被替换|
-|同一窗口里多个 field 同时待生效|先进入统一效果队列，后结算完成的那个最终留下|
+|场上已有 field，新的准备生效|先进入领域对拼，不直接覆盖|
+|领域对拼比较值|比较双方在各自动作扣费后的当前 MP|
+|领域对拼胜负|MP 更高者保留领域；若 MP 相等，按 RNG 随机决定|
+|领域对拼失败方|field 不落地，且“只有领域成功立住后才成立”的附带效果一律不生效|
 |剩余回合扣减|固定在 `turn_end` 效果全部结算完成后；`remaining <= 0` 时立即移除|
 |剩余回合起算|field 生效后，遇到的第一个 `turn_end` 结算节点即为首次扣减点；若本回合 `turn_end` 尚未执行，则本回合末立即扣减|
 |field 到期|在约定节点移除，并写日志|
@@ -69,6 +71,8 @@
 2. field 提前打断不会触发 `effect:field_expire`，也不会执行 `on_expire_effect_ids`。
 3. creator 离场、倒下、被强制换下或手动换下时，`field_break` 必须发生在补位与新单位 `on_enter` 之前。
 4. 新入场单位、`on_enter`、`on_matchup_changed`、`battle_init` 与回合节点，都不得读取一个按规则已被提前打断的旧 field。
+5. 领域对拼的随机结果必须写入日志，保证同 seed 回放可复现。
+6. field 绑定 buff 必须跟 field 生命周期一起成立与消失，不允许出现“field 没了但 buff 还残留”的状态。
 
 ## 3. 统一效果排序
 
@@ -224,6 +228,7 @@
 |`effect:apply_effect`|施加持续效果实例|
 |`effect:remove_effect`|移除持续效果实例|
 |`effect:apply_field`|创建或替换 field|
+|`effect:field_clash`|field 对拼结果|
 |`effect:field_expire`|field 到期移除|
 |`effect:rule_mod_apply`|规则修正生效|
 |`effect:rule_mod_remove`|规则修正移除|

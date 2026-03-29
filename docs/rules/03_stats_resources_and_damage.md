@@ -28,7 +28,7 @@
 1. 当前能力阶段只作用于 `攻击 / 防御 / 特攻 / 特防 / 速度`。
 2. 若未来要让技能直接改命中或闪避，需要先补规则，不得直接实现。
 
-## 3. 资源系统（MP）
+## 3. 资源系统（MP / 奥义点）
 
 ### 3.1 字段
 
@@ -56,6 +56,24 @@
 3. 对技能、奥义和两类默认动作，执行起点固定顺序为：`has_acted = true -> 扣 MP -> 触发 on_cast / effects_on_cast_ids -> 命中判定 -> 后续 payload / on_hit / on_miss`。
 4. 当前 manager 建局后会按同一 `turn_start` 规则为第 1 回合选指预先应用一次 MP 回复；首个 `run_turn` 不得重复回这一次蓝。
 
+### 3.3 奥义点
+
+|字段|说明|
+|---|---|
+|`ultimate_points`|当前奥义点|
+|`ultimate_points_required`|该角色施放奥义所需点数|
+|`ultimate_points_cap`|该角色奥义点上限|
+|`ultimate_point_gain_on_regular_skill_cast`|每次开始施放常规技能时获得的点数|
+
+规则冻结：
+
+1. 只有常规技能开始施放时才加奥义点；命中与 miss 都加。
+2. `wait / switch / ultimate / resource_forced_default / surrender` 都不加奥义点。
+3. 奥义合法性必须同时满足：`current_mp >= mp_cost` 且 `ultimate_points >= ultimate_points_required`。
+4. 奥义开始施放时立即清空奥义点；后续无论命中、miss 还是 post-start 失败，都不返还。
+5. 奥义点属于单位运行态，换下后保留。
+6. 奥义点必须进入公开快照与日志；至少要能看到加点、清零和变化后的当前点数。
+
 ## 4. 技能系统
 
 ### 4.1 技能分类
@@ -71,7 +89,7 @@
 
 1. 奥义不另立第二套资源或命中体系；继续使用 `mp_cost / accuracy / targeting / effects_on_cast_ids` 等通用技能字段。
 2. 奥义可承载当前基线已允许的 payload 类型；不得绕开模块 06 另写专用 payload。
-3. 当前没有单独的奥义资源槽；奥义能否使用只看 MP、指令合法性与技能定义本身。
+3. 奥义的基础资源体系仍复用技能通用字段，但额外受角色级奥义点约束。
 
 ### 4.2 技能基础字段
 

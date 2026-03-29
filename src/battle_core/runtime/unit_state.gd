@@ -12,6 +12,10 @@ var current_hp: int = 0
 var max_mp: int = 0
 var current_mp: int = 0
 var regen_per_turn: int = 0
+var ultimate_points: int = 0
+var ultimate_points_cap: int = 0
+var ultimate_points_required: int = 0
+var ultimate_point_gain_on_regular_skill_cast: int = 0
 var regular_skill_ids: PackedStringArray = PackedStringArray()
 var combat_type_ids: PackedStringArray = PackedStringArray()
 var base_attack: int = 0
@@ -55,6 +59,10 @@ func to_stable_dict() -> Dictionary:
         "max_mp": max_mp,
         "current_mp": current_mp,
         "regen_per_turn": regen_per_turn,
+        "ultimate_points": ultimate_points,
+        "ultimate_points_cap": ultimate_points_cap,
+        "ultimate_points_required": ultimate_points_required,
+        "ultimate_point_gain_on_regular_skill_cast": ultimate_point_gain_on_regular_skill_cast,
         "regular_skill_ids": regular_skill_ids,
         "combat_type_ids": combat_type_ids,
         "base_attack": base_attack,

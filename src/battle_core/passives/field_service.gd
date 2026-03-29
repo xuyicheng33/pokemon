@@ -8,6 +8,13 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 var trigger_dispatcher
 var trigger_batch_runner
 
+func resolve_missing_dependency() -> String:
+    if trigger_dispatcher == null:
+        return "trigger_dispatcher"
+    if trigger_batch_runner == null:
+        return "trigger_batch_runner"
+    return ""
+
 func collect_trigger_events(trigger_name: String, battle_state, content_index, chain_context) -> Array:
     if battle_state.field_state == null:
         return []

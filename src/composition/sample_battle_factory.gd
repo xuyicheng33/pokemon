@@ -7,75 +7,38 @@ const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
 func content_snapshot_paths() -> PackedStringArray:
-    return PackedStringArray([
-        "res://content/samples/sample_battle_format.tres",
-        "res://content/combat_types/fire.tres",
-        "res://content/combat_types/water.tres",
-        "res://content/combat_types/wind.tres",
-        "res://content/combat_types/thunder.tres",
-        "res://content/combat_types/ice.tres",
-        "res://content/combat_types/earth.tres",
-        "res://content/combat_types/wood.tres",
-        "res://content/combat_types/steel.tres",
-        "res://content/combat_types/light.tres",
-        "res://content/combat_types/dark.tres",
-        "res://content/combat_types/space.tres",
-        "res://content/combat_types/demon.tres",
-        "res://content/combat_types/psychic.tres",
-        "res://content/combat_types/spirit.tres",
-        "res://content/combat_types/fighting.tres",
-        "res://content/combat_types/holy.tres",
-        "res://content/combat_types/dragon.tres",
-        "res://content/units/sample_pyron.tres",
-        "res://content/units/sample_mossaur.tres",
-        "res://content/units/sample_tidekit.tres",
-        "res://content/units/sukuna.tres",
-        "res://content/units/gojo_satoru.tres",
-        "res://content/skills/sample_strike.tres",
-        "res://content/skills/sample_quick_jab.tres",
-        "res://content/skills/sample_field_call.tres",
-        "res://content/skills/sample_pyro_blast.tres",
-        "res://content/skills/sample_tide_surge.tres",
-        "res://content/skills/sample_vine_slash.tres",
-        "res://content/skills/sample_whiff.tres",
-        "res://content/skills/sample_ultimate_burst.tres",
-        "res://content/skills/sukuna_kai.tres",
-        "res://content/skills/sukuna_hatsu.tres",
-        "res://content/skills/sukuna_hiraku.tres",
-        "res://content/skills/sukuna_reverse_ritual.tres",
-        "res://content/skills/sukuna_fukuma_mizushi.tres",
-        "res://content/skills/gojo_ao.tres",
-        "res://content/skills/gojo_aka.tres",
-        "res://content/skills/gojo_murasaki.tres",
-        "res://content/skills/gojo_reverse_ritual.tres",
-        "res://content/skills/gojo_unlimited_void.tres",
-        "res://content/effects/sample_apply_focus_field.tres",
-        "res://content/effects/sukuna_apply_kamado.tres",
-        "res://content/effects/sukuna_kamado_mark.tres",
-        "res://content/effects/sukuna_kamado_explode.tres",
-        "res://content/effects/sukuna_reverse_heal.tres",
-        "res://content/effects/sukuna_apply_domain_field.tres",
-        "res://content/effects/sukuna_domain_cast_buff.tres",
-        "res://content/effects/sukuna_domain_expire_burst.tres",
-        "res://content/effects/sukuna_refresh_love_regen.tres",
-        "res://content/effects/gojo_ao_speed_up.tres",
-        "res://content/effects/gojo_ao_mark_apply.tres",
-        "res://content/effects/gojo_ao_mark.tres",
-        "res://content/effects/gojo_aka_slow_down.tres",
-        "res://content/effects/gojo_aka_mark_apply.tres",
-        "res://content/effects/gojo_aka_mark.tres",
-        "res://content/effects/gojo_murasaki_conditional_burst.tres",
-        "res://content/effects/gojo_reverse_heal.tres",
-        "res://content/effects/gojo_domain_cast_buff.tres",
-        "res://content/effects/gojo_apply_domain_field.tres",
-        "res://content/effects/gojo_domain_action_lock.tres",
-        "res://content/effects/gojo_mugen_incoming_accuracy_down.tres",
-        "res://content/fields/sample_focus_field.tres",
-        "res://content/fields/sukuna_malevolent_shrine.tres",
-        "res://content/fields/gojo_unlimited_void_field.tres",
-        "res://content/passive_skills/sukuna_teach_love.tres",
-        "res://content/passive_skills/gojo_mugen.tres",
+    var collect_dirs := PackedStringArray([
+        "res://content/combat_types",
+        "res://content/units",
+        "res://content/skills",
+        "res://content/effects",
+        "res://content/fields",
+        "res://content/passive_skills",
+        "res://content/samples",
     ])
+    var paths: Array[String] = []
+    var seen: Dictionary = {}
+    for raw_dir_path in collect_dirs:
+        var dir_path := String(raw_dir_path)
+        for file_path in _collect_tres_paths_in_dir(dir_path):
+            if seen.has(file_path):
+                continue
+            seen[file_path] = true
+            paths.append(file_path)
+    paths.sort()
+    return PackedStringArray(paths)
+
+func _collect_tres_paths_in_dir(dir_path: String) -> Array[String]:
+    var dir_access := DirAccess.open(dir_path)
+    assert(dir_access != null, "SampleBattleFactory missing content directory: %s" % dir_path)
+    var paths: Array[String] = []
+    for raw_file_name in dir_access.get_files():
+        var file_name := String(raw_file_name)
+        if file_name.get_extension() != "tres":
+            continue
+        paths.append("%s/%s" % [dir_path, file_name])
+    paths.sort()
+    return paths
 
 func build_sample_setup(side_regular_skill_overrides: Dictionary = {}):
     var battle_setup = BattleSetupScript.new()

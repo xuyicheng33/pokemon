@@ -6,7 +6,7 @@
 script = ExtResource("1")
 id = "sukuna_malevolent_shrine"
 display_name = "伏魔御厨子·领域"
-effect_ids = PackedStringArray()
-on_expire_effect_ids = PackedStringArray("sukuna_domain_expire_burst")
-on_break_effect_ids = PackedStringArray()
+effect_ids = PackedStringArray("sukuna_domain_cast_buff")
+on_expire_effect_ids = PackedStringArray("sukuna_domain_buff_remove", "sukuna_domain_expire_burst")
+on_break_effect_ids = PackedStringArray("sukuna_domain_buff_remove")
 creator_accuracy_override = 100

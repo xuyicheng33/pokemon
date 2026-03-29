@@ -71,6 +71,7 @@
 |换人|`on_enter`, `on_exit`, `on_switch`|
 |对位变化|`on_matchup_changed`|
 |倒下|`on_faint`, `on_kill`|
+|field 成功立住后|`field_apply`|
 
 补充规则：
 
@@ -105,6 +106,7 @@
 4. 每个 payload 单独适用模块 02 的目标有效性与模块 04 的生命周期规则；若前序 payload 已让目标进入 `fainted_pending_leave`，后续直接作用该目标的普通 payload 按目标无效处理。
 5. 若 `on_cast` 链上的前序 payload（含默认动作反伤）让施法者 HP 归 0，本次行动链不提前终止；仍按模块 02 的“行动开始后不回滚”语义继续本次剩余步骤，并在行动结束后进入击倒窗口。
 6. 当前基线的 `remove_effect` 只允许按目标 owner 上的精确 `def_id` 移除单个效果实例；若出现文档未允许的歧义匹配，按 `invalid_battle` 处理。
+7. `apply_field` payload 允许额外声明 `on_success_effect_ids`；这些 effect 只在 field 真正立住后执行，field 对拼失败时整组跳过。
 
 ### 5.1 damage payload 与 `combat_type` 接口
 

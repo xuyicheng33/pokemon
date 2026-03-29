@@ -7,7 +7,7 @@
 - 内容层只描述静态定义，不保存运行时 HP/MP。
 - 所有内容资源类都放在 `src/battle_core/content/`。
 - 所有内容资源文件都放在 `content/`，不放进 `assets/`。
-- 当前仓库已同时承载最小样例资源和宿傩原型内容包；内容 schema 需要能直接描述正式原型角色与技能。
+- 当前仓库已同时承载最小样例资源，以及 Gojo / Sukuna 两个正式角色内容包；内容 schema 需要能直接描述正式原型角色与技能。
 
 ## 2. 文件与目录映射
 
@@ -53,6 +53,9 @@
 |`max_mp`|`int`|MP 上限|
 |`init_mp`|`int`|战斗开始时 MP 初值|
 |`regen_per_turn`|`int`|每回合 MP 回复基值|
+|`ultimate_points_required`|`int`|施放奥义所需点数|
+|`ultimate_points_cap`|`int`|奥义点上限|
+|`ultimate_point_gain_on_regular_skill_cast`|`int`|每次开始施放常规技能时获得的奥义点|
 |`combat_type_ids`|`PackedStringArray`|战斗属性列表，允许 `0..2` 个|
 |`skill_ids`|`PackedStringArray`|默认装配的常规技能列表（固定 3 槽）|
 |`candidate_skill_ids`|`PackedStringArray`|常规技能候选池；为空表示没有额外候选池|
@@ -66,7 +69,9 @@
 - `candidate_skill_ids` 只覆盖常规技能池，不包含奥义、被动、被动持有物。
 - `candidate_skill_ids` 为空时，表示该单位没有额外候选池；赛前只能使用默认 `skill_ids`。
 - `candidate_skill_ids` 非空时，必须完整包含默认 `skill_ids`，且不得包含 `ultimate_skill_id`。
+- `ultimate_points_required / ultimate_points_cap / ultimate_point_gain_on_regular_skill_cast` 属于角色级奥义点 contract；若单位没有 `ultimate_skill_id`，这三项必须保持 `0`。
 - 当前仓库里的宿傩已按正式字段落盘：默认技能组为 `解 / 捌 / 开`，`反转术式` 作为候选常规技能保留在 `candidate_skill_ids` 中。
+- 当前仓库里的 Gojo 也已按正式字段落盘：默认技能组为 `苍 / 赫 / 茈`，奥义点 contract 为 `3 / 3 / 1`。
 
 ### 3.3 SkillDefinition
 
@@ -177,6 +182,13 @@
 
 当前这些 payload 已接入运行时结算链；内容层负责声明，运行时负责统一调度与执行。
 
+### 4.4 ApplyFieldPayload
+
+|字段|类型|说明|
+|---|---|---|
+|`field_definition_id`|`String`|要尝试施加的 field 定义 ID|
+|`on_success_effect_ids`|`PackedStringArray`|只有 field 成功立住后才追加执行的 effect ID|
+
 ### 4.1 DamagePayload
 
 |字段|类型|说明|
@@ -227,11 +239,13 @@
 - `UnitDefinition.combat_type_ids` 最多 2 个，不能重复、不能含空串，且必须命中已注册 `combat_type`。
 - `UnitDefinition.skill_ids` 必须固定为 3 个已注册常规技能，且不得与 `ultimate_skill_id` 重叠。
 - `UnitDefinition.candidate_skill_ids` 为空时表示没有额外候选池；非空时必须满足：长度至少 3、不能重复、不能含空串、必须命中已注册常规技能、必须完整包含默认 `skill_ids`、不得包含 `ultimate_skill_id`。
+- `UnitDefinition.ultimate_points_required / ultimate_points_cap / ultimate_point_gain_on_regular_skill_cast` 必须 `>= 0`，且 `ultimate_points_cap >= ultimate_points_required`；没有 `ultimate_skill_id` 的单位不得声明非零奥义点配置。
 - `SkillDefinition.combat_type_id` 可为空；非空时必须命中已注册 `combat_type`。
 - `SkillDefinition.power_bonus_source` 当前只允许空串或 `mp_diff_clamped`。
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
 - 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单（含 `on_matchup_changed`、`stack`）、效果优先级范围、payload 类型与跨资源引用完整性。
+- `ApplyFieldPayload.on_success_effect_ids` 的引用必须全部存在。
 - `required_target_effects` 的加载期校验固定包含：非空项、去重、引用存在性、以及 `scope=target` 约束。
 - field 校验覆盖：`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
 - payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。

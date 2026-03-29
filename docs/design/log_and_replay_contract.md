@@ -40,6 +40,7 @@
 - `invalid_battle_code` 仅在 `event_type = system:invalid_battle` 时填写，其余事件写 `null`。
 - 未消费随机的字段（`speed_tie_roll / hit_roll / effect_roll`）写 `null`。
 - effect 事件必须填写 `trigger_name / cause_event_id`。
+- `effect:field_clash` 在平 MP 时必须把随机 tie-break 结果写入 `effect_roll`。
 - `header_snapshot` 仅在 `event_type = system:battle_header` 时填写，其余事件写 `null`。
 - `header_snapshot` 必填字段固定为 `visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`，且禁止出现 `unit_instance_id` 等私有运行态 ID。
 - 系统锚点事件（`system:battle_init / system:turn_start / system:turn_end`）允许保留对应节点名到 `trigger_name`，便于日志排查；其 `cause_event_id` 仍写 `null`。

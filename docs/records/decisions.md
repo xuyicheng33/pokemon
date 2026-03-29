@@ -9,6 +9,31 @@
 
 ## 2026-03-29
 
+### 234. 奥义点、领域对拼与 field 绑定增幅成为当前正式规则
+- 从本条起，奥义点规则固定为：只有常规技能开始施放时加点；`wait / switch / ultimate / resource_forced_default / surrender` 不加点；奥义合法性必须同时检查 MP 与奥义点；奥义开始施放即清零；换下保留；公开快照与日志都必须可见。
+- Gojo 与 Sukuna 当前统一采用 `required=3 / cap=3 / regular_skill_cast +1` 的首版配置；若未来要做角色特化攒点，只能在此基础上扩 schema，不回退当前通用 contract。
+- 场上已有 field 时，新 field 不再直接覆盖，而是先进入领域对拼：比较双方扣费后的当前 MP；MP 高者留场；平 MP 用 RNG 决定胜者，并把随机值写入 `effect:field_clash.effect_roll`，保证 replay 可复现。
+- field 成功后才成立的附带效果必须通过 field apply 主路径统一表达；Gojo 的 `gojo_domain_action_lock` 只允许在无量空处成功立住后生效。
+- Gojo / Sukuna 的领域增幅从普通持久 `stat_stage` 改成 field 绑定效果：成功立场时生效，自然结束与提前打断时移除，对拼失败时不成立。
+- 平衡结论同步冻结：Gojo 保留苍 / 赫 / 茈与无下限原机制，奥义改为 3 点可开；宿傩保留“教会你爱的是...”、灶与领域自然到期终爆，并接受“3 点体系下开大更慢”的结果。
+
+### 233. 热点文件本轮采用“最小拆分 + 新逻辑不再回堆旧热点”策略
+- `BattleCoreComposer` 与 `BattleCoreContainer` 从本条起改为声明式注册表驱动装配；新增依赖必须从同一来源同时生成实例化、注入、依赖断言与 dispose 解绑，不再手工四处同步。
+- `RuleModService` 从本条起收口为 facade；写路径拆到 `rule_mod_write_service.gd`，读路径拆到 `rule_mod_read_service.gd`。后续新增合法性/命中/最终倍率/回蓝读取逻辑，不再直接堆回旧大文件。
+- field apply 职责正式集中到 `field_apply_service.gd`：领域对拼、成功后附带效果、`field_apply` 生命周期入口都只走这一条主路径；`field_service.gd` 继续保留 field 生命周期、扣减、到期与打断。
+- `SampleBattleFactory.content_snapshot_paths()` 从本条起固定按目录自动收集 `content/combat_types / units / skills / effects / fields / passive_skills / samples`，并做稳定排序，避免角色接入漏资源与 deterministic replay 漂移。
+
+### 232. 正式角色资产固定升级为“设计稿 + 调整记录 + 内容资源 + SampleFactory + 角色 suite”
+- 从本条起，每个正式角色都必须同时具备：
+  - `docs/design/<character>_design.md`
+  - `docs/design/<character>_adjustments.md`
+  - 对应内容资源
+  - `SampleBattleFactory` 接线
+  - 独立 `tests/suites/<character>_suite.gd`
+- 角色设计稿必须同时服务玩家与开发/测试：每个技能至少同时写出玩家说明、机制说明、边界行为与验收点。
+- 调整记录必须单独存放，至少记录“改了什么 / 为什么改 / 影响测试 / 是否改变玩家口径 / 是否改变平衡结论”。
+- 仓库一致性闸门从本条起把 Gojo / Sukuna 的设计稿与调整记录都视为正式交付面；后续新角色接入时，不再允许只靠 `.tres` 和测试反推设计。
+
 ### 231. 命中解析从 `action_cast_service` 拆到 `ActionHitResolutionService`
 - 从本条起，`resolve_hit` 的四段职责固定分层为：基础命中值、field `creator_accuracy_override` 覆盖、`incoming_accuracy` 读取、最终 `roll_hit` 与随机流回写。
 - `ActionCastService.resolve_hit()` 继续保留原签名，对外仍是 action 子域入口；但内部只做委托，不再自己承载整条命中解析实现。

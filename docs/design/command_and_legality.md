@@ -53,6 +53,7 @@
 - `LegalActionService`
   - 读取运行态与内容定义。
   - 常规技能合法性只读取 `UnitState.regular_skill_ids`，不再直接把 `UnitDefinition.skill_ids` 当成“本场已装备技能”。
+  - 奥义合法性必须同时检查 `current_mp` 与 `ultimate_points` 是否满足角色配置。
   - 计算所有合法主动方案，并区分“MP 不足”与“非 MP 阻断”。
   - 当存在合法主动方案或存在非 MP 阻断时，允许 `wait`。
   - 仅在“无合法主动方案且全部仅因 MP 不足”时给出 `forced_command_type`。
@@ -64,7 +65,7 @@
 
 ## 4. 校验规则
 
-- MP 不足、目标不合法、奥义入口非法、提交内容不在 legal 集：选择阶段按 `invalid_command_payload` 直接 `invalid_battle`。
+- MP 不足、奥义点不足、目标不合法、奥义入口非法、提交内容不在 legal 集：选择阶段按 `invalid_command_payload` 直接 `invalid_battle`。
 - `wait` 允许手动提交；超时自动替代时固定 `command_source = timeout_auto`。
 - `resource_forced_default` 只能由合法性服务产出，不接受外部伪造。
 - `surrender` 立即结束，不进入行动队列。

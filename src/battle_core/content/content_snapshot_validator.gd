@@ -11,32 +11,10 @@ var _payload_validator = ContentPayloadValidatorScript.new()
 func validate(content_index) -> Array:
     _content_index = content_index
     var errors: Array = _content_index.duplicate_registration_errors.duplicate()
-    var allowed_targets: PackedStringArray = PackedStringArray([
-        ContentSchemaScript.TARGET_ENEMY_ACTIVE,
-        ContentSchemaScript.TARGET_SELF,
-        ContentSchemaScript.TARGET_FIELD,
-        ContentSchemaScript.TARGET_NONE,
-    ])
-    var allowed_damage_kinds: PackedStringArray = PackedStringArray([
-        ContentSchemaScript.DAMAGE_KIND_PHYSICAL,
-        ContentSchemaScript.DAMAGE_KIND_SPECIAL,
-        ContentSchemaScript.DAMAGE_KIND_NONE,
-    ])
+    var allowed_targets := PackedStringArray([ContentSchemaScript.TARGET_ENEMY_ACTIVE, ContentSchemaScript.TARGET_SELF, ContentSchemaScript.TARGET_FIELD, ContentSchemaScript.TARGET_NONE])
+    var allowed_damage_kinds := PackedStringArray([ContentSchemaScript.DAMAGE_KIND_PHYSICAL, ContentSchemaScript.DAMAGE_KIND_SPECIAL, ContentSchemaScript.DAMAGE_KIND_NONE])
     var allowed_scopes: PackedStringArray = PackedStringArray(["self", "target", "field"])
-    var allowed_triggers: PackedStringArray = PackedStringArray([
-        "battle_init",
-        "turn_start",
-        "turn_end",
-        "on_cast",
-        "on_hit",
-        "on_miss",
-        "on_enter",
-        "on_exit",
-        "on_switch",
-        "on_faint",
-        "on_kill",
-        "on_matchup_changed",
-    ])
+    var allowed_triggers := PackedStringArray(["battle_init", "turn_start", "turn_end", "on_cast", "on_hit", "on_miss", "on_enter", "on_exit", "on_switch", "on_faint", "on_kill", "on_matchup_changed", "field_apply"])
     var allowed_power_bonus_sources: PackedStringArray = PackedStringArray(["", "mp_diff_clamped"])
     var allowed_chart_multipliers: Array[float] = [2.0, 1.0, 0.5]
     var regular_skill_refs: Dictionary = {}
@@ -81,6 +59,14 @@ func validate(content_index) -> Array:
 
     for unit_id in _content_index.units.keys():
         var unit_definition = _content_index.units[unit_id]
+        if int(unit_definition.ultimate_points_required) < 0:
+            errors.append("unit[%s].ultimate_points_required must be >= 0, got %d" % [unit_id, int(unit_definition.ultimate_points_required)])
+        if int(unit_definition.ultimate_points_cap) < 0:
+            errors.append("unit[%s].ultimate_points_cap must be >= 0, got %d" % [unit_id, int(unit_definition.ultimate_points_cap)])
+        if int(unit_definition.ultimate_point_gain_on_regular_skill_cast) < 0:
+            errors.append("unit[%s].ultimate_point_gain_on_regular_skill_cast must be >= 0, got %d" % [unit_id, int(unit_definition.ultimate_point_gain_on_regular_skill_cast)])
+        if int(unit_definition.ultimate_points_cap) < int(unit_definition.ultimate_points_required):
+            errors.append("unit[%s].ultimate_points_cap must be >= ultimate_points_required" % unit_id)
         if unit_definition.combat_type_ids.size() > 2:
             errors.append("unit[%s].combat_type_ids must contain at most 2 entries, got %d" % [unit_id, unit_definition.combat_type_ids.size()])
         var seen_unit_types: Dictionary = {}
@@ -128,6 +114,10 @@ func validate(content_index) -> Array:
                 errors.append("unit[%s].ultimate_skill_id missing skill: %s" % [unit_id, unit_definition.ultimate_skill_id])
             if unit_definition.skill_ids.has(unit_definition.ultimate_skill_id):
                 errors.append("unit[%s].ultimate_skill_id duplicated in skill_ids: %s" % [unit_id, unit_definition.ultimate_skill_id])
+        elif int(unit_definition.ultimate_points_required) != 0 \
+        or int(unit_definition.ultimate_points_cap) != 0 \
+        or int(unit_definition.ultimate_point_gain_on_regular_skill_cast) != 0:
+            errors.append("unit[%s].ultimate point config requires ultimate_skill_id" % unit_id)
         if not unit_definition.passive_skill_id.is_empty() and not _content_index.passive_skills.has(unit_definition.passive_skill_id):
             errors.append("unit[%s].passive_skill_id missing passive skill: %s" % [unit_id, unit_definition.passive_skill_id])
         if not unit_definition.passive_item_id.is_empty() and not _content_index.passive_items.has(unit_definition.passive_item_id):

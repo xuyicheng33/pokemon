@@ -289,6 +289,7 @@ func _test_gojo_unlimited_void_runtime_contract(harness) -> Dictionary:
     var gojo_unit = battle_state.get_side("P1").get_active_unit()
     var target_unit = battle_state.get_side("P2").get_active_unit()
     gojo_unit.current_mp = gojo_unit.max_mp
+    gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
     core.battle_logger.reset()
     core.turn_loop_controller.run_turn(battle_state, content_index, [
         _build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
@@ -297,7 +298,7 @@ func _test_gojo_unlimited_void_runtime_contract(harness) -> Dictionary:
     if battle_state.field_state == null or battle_state.field_state.field_def_id != "gojo_unlimited_void_field":
         return harness.fail_result("无量空处命中后应施加无量空处领域")
     if int(gojo_unit.stat_stages.get("sp_attack", 0)) != 1:
-        return harness.fail_result("无量空处应在 on_cast 阶段给自己 sp_attack +1")
+        return harness.fail_result("无量空处领域成功立住时应给自己 sp_attack +1")
     if not _has_event(core.battle_logger.event_log, func(ev):
         return ev.event_type == EventTypesScript.EFFECT_APPLY_FIELD \
             and ev.field_change != null \
@@ -346,6 +347,11 @@ func _test_gojo_unlimited_void_cancelled_pre_start_contract(harness) -> Dictiona
         var battle_state = state_payload["battle_state"]
         var gojo_unit = battle_state.get_side("P1").get_active_unit()
         gojo_unit.current_mp = gojo_unit.max_mp
+        gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
+        if use_sukuna:
+            var sukuna_unit = battle_state.get_side("P2").get_active_unit()
+            sukuna_unit.current_mp = sukuna_unit.max_mp
+            sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
         core.battle_logger.reset()
         core.turn_loop_controller.run_turn(battle_state, content_index, [
             _build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
@@ -399,7 +405,9 @@ func _test_gojo_plus5_competition_contract(harness) -> Dictionary:
     var gojo_unit = battle_state.get_side("P1").get_active_unit()
     var sukuna_unit = battle_state.get_side("P2").get_active_unit()
     gojo_unit.current_mp = gojo_unit.max_mp
+    gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
     sukuna_unit.current_mp = sukuna_unit.max_mp
+    sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
     sukuna_unit.base_speed = 999
     core.battle_logger.reset()
     core.turn_loop_controller.run_turn(battle_state, content_index, [

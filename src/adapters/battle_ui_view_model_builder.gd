@@ -10,6 +10,9 @@ func build_view_model(public_snapshot: Dictionary) -> Dictionary:
             "active_public_id": side_snapshot.get("active_public_id", null),
             "active_hp": side_snapshot.get("active_hp", null),
             "active_mp": side_snapshot.get("active_mp", null),
+            "active_ultimate_points": side_snapshot.get("active_ultimate_points", null),
+            "active_ultimate_points_cap": side_snapshot.get("active_ultimate_points_cap", null),
+            "active_ultimate_points_required": side_snapshot.get("active_ultimate_points_required", null),
             "bench_public_ids": side_snapshot.get("bench_public_ids", []),
         })
     return {

@@ -7,14 +7,13 @@
 script = ExtResource("2")
 payload_type = "stat_mod"
 stat_name = "sp_attack"
-stage_delta = 1
+stage_delta = -1
 
 [resource]
 script = ExtResource("1")
-id = "gojo_domain_cast_buff"
-display_name = "无量空处领域增幅"
+id = "gojo_domain_buff_remove"
+display_name = "无量空处领域增幅移除"
 scope = "self"
 duration_mode = "permanent"
 stacking = "none"
-trigger_names = PackedStringArray("field_apply")
 payloads = Array[Resource]([SubResource("1")])

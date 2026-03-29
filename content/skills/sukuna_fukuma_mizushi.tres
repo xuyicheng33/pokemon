@@ -14,5 +14,5 @@ priority = 5
 combat_type_id = "demon"
 power_bonus_source = ""
 targeting = "enemy_active_slot"
-effects_on_cast_ids = PackedStringArray("sukuna_domain_cast_buff")
+effects_on_cast_ids = PackedStringArray()
 effects_on_hit_ids = PackedStringArray("sukuna_apply_domain_field")

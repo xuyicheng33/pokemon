@@ -12,11 +12,14 @@
 |`effect_queue_service.gd`|对同批次 `EffectEvent` 排序|
 |`payload_executor.gd`|执行 payload 并写日志|
 |`effect_instance_service.gd`|管理持续效果实例|
-|`rule_mod_service.gd`|管理 `RuleModInstance` 与读取接口|
+|`rule_mod_service.gd`|`rule_mod` facade，对外维持单入口|
+|`rule_mod_read_service.gd`|`rule_mod` 读取查询（合法性、命中、最终倍率、回蓝）|
+|`rule_mod_write_service.gd`|`rule_mod` 写路径（create / stacking / decrement / remove）|
 |`rule_mod_value_resolver.gd`|对动态 `rule_mod` 值做运行时求值，不回写共享内容资源|
 |`passive_skill_service.gd`|按触发点收集被动技能事件|
 |`passive_item_service.gd`|按触发点收集被动持有物事件|
-|`field_service.gd`|按触发点收集 field 事件 + `turn_end` 扣减|
+|`field_apply_service.gd`|field 落地主路径：领域对拼、成功后附带效果、`field_apply` 触发|
+|`field_service.gd`|field 生命周期：按触发点收集事件、`turn_end` 扣减、自然到期与提前打断|
 
 ## 2. EffectEvent 契约
 
@@ -71,9 +74,15 @@ effect 级前置约束：
 - 该前置只允许挂在 `scope=target` 的 effect 上；目标固定读取 `chain_context.target_unit_id`。
 - 前置不满足时整条 effect 直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 
-## 5. RuleModService
+## 5. RuleMod 子域
 
-### 5.1 读取点
+### 5.1 结构
+
+- `RuleModService` 现在只保留 facade 职责，对外继续暴露稳定入口。
+- `RuleModReadService` 固定承接读路径，避免新查询再继续堆回旧热点。
+- `RuleModWriteService` 固定承接写路径，负责实例创建、stacking 语义与回合节点扣减。
+
+### 5.2 读取点
 
 - `final_mod`：伤害最终倍率。
 - `mp_regen`：`turn_start` MP 回复值。
@@ -81,19 +90,26 @@ effect 级前置约束：
 - `action_legality`：技能 / 奥义 / 换人合法性正式读取点；`wait` 不受影响。
 - `incoming_accuracy`：目标侧命中干扰读取点；在 field 覆盖后、命中 roll 前参与计算。
 
-### 5.2 生命周期
+### 5.3 生命周期
 
-- `RuleModService.create_instance()` 支持 `none / refresh / replace`。
+- `RuleModWriteService.create_instance()` 支持 `none / refresh / replace`。
 - `decrement_for_trigger()` 只在 `turn_start` 或 `turn_end` 扣减。
 - 过期实例必须移除并写 `effect:rule_mod_remove` 日志。
 
-### 5.3 排序
+### 5.4 排序
 
 读取顺序固定：
 
 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`
 
-## 6. 约束
+## 6. Field apply 主路径
+
+- `apply_field` 的唯一主入口是 `field_apply_service.gd`，不能把领域对拼散在 payload、角色资源和 lifecycle 分支里各写一份。
+- 场上已有 field 时，新 field 先进入领域对拼：比较双方扣费后的当前 MP；高者留场；平 MP 走 RNG，并把 tie-break 写入 `effect:field_clash.effect_roll`。
+- 只有 field 真正落地成功后，才允许继续执行 `field_apply` 触发和 `ApplyFieldPayload.on_success_effect_ids`。
+- 因此“领域成功才成立的附带效果”与“领域 buff 跟着 field 生命周期走”都收口在同一条 apply 路径里。
+
+## 7. 约束
 
 - `rule_mod` 只允许改写已开放读取点，不可绕开核心流程。
 - `EffectInstanceService.create_instance()` 支持 `stack`，每层 effect instance 独立扣减 `remaining`。

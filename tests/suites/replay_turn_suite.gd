@@ -296,6 +296,7 @@ func _test_sukuna_content_pack_smoke(harness) -> Dictionary:
     if p1_active == null:
         return harness.fail_result("missing P1 active unit for sukuna smoke")
     p1_active.current_mp = p1_active.max_mp
+    p1_active.ultimate_points = p1_active.ultimate_points_cap
     core.battle_logger.reset()
     core.turn_loop_controller.run_turn(battle_state, content_index, [
         core.command_builder.build_command({

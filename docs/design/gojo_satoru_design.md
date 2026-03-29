@@ -1,4 +1,4 @@
-# 五条悟（Gojo Satoru）设计方案（审计收口版 v4.1）
+# 五条悟（Gojo Satoru）设计方案（审计收口版 v4.2）
 
 ## 0. 审计后冻结结论（2026-03-29）
 
@@ -6,8 +6,11 @@
 |------|------|
 | 茈 | 保留“苍+赫双标记”条件爆发，**不做自伤** |
 | 无下限 | 改为“敌方技能或奥义攻击五条悟时，若该次不是必中，则命中率 -10” |
+| 奥义点 | `required=3 / cap=3 / regular_skill_cast +1` |
+| 无量空处锁人条件 | 只有领域**成功立住**时，才通过 `on_success_effect_ids` 施加 `gojo_domain_action_lock` |
+| 领域增幅归属 | `sp_attack +1` 改为 field 绑定效果；成功立场时生效，领域自然结束/提前打断时移除，对拼失败时不成立 |
 | 领域后摇 | **删除**（不再追加封印/回滚） |
-| 施工顺序 | **第 4 节扩展、第 5 节资源、第 6 节 `gojo_suite` 均已落地；后续只做平衡回调或模板复用** |
+| 施工顺序 | **第 4 节扩展、第 5 节资源、第 6 节 `gojo_suite` 均已落地；本轮新增奥义点 / 领域对拼 / field 绑定增幅专项回归** |
 | 苍/赫标记归属 | 标记挂在**目标**身上；换人清除只发生在**标记持有者**离场时 |
 | 苍/赫标记消耗语义 | 引擎层当前只检查目标是否同时持有双标记，不校验施加者；但**同队重复角色已禁止**，正式玩法不包含“双五条悟接力消耗”场景 |
 | 已接线引擎扩展 | `action_legality`、`required_target_effects`、`incoming_accuracy` 已进入当前主线；若要收紧为“必须同一施法者本人消耗标记”，仍需**第 4 块扩展** |
@@ -216,8 +219,8 @@
 | priority | **+5** |
 | combat_type_id | `space` |
 | targeting | `enemy_active_slot` |
-| effects_on_cast_ids | `["gojo_domain_cast_buff"]` |
-| effects_on_hit_ids | `["gojo_apply_domain_field", "gojo_domain_action_lock"]` |
+| effects_on_cast_ids | `[]` |
+| effects_on_hit_ids | `["gojo_apply_domain_field"]` |
 | effects_on_miss_ids | `[]` |
 | effects_on_kill_ids | `[]` |
 
@@ -228,24 +231,29 @@
 | id | `gojo_unlimited_void_field` |
 | display_name | `无量空处` |
 | creator_accuracy_override | **100** |
-| effect_ids | `[]` |
-| on_expire_effect_ids | `[]` |
-| on_break_effect_ids | `[]` |
+| effect_ids | `["gojo_domain_cast_buff"]` |
+| on_expire_effect_ids | `["gojo_domain_buff_remove"]` |
+| on_break_effect_ids | `["gojo_domain_buff_remove"]` |
 
 **展开效果链**
 
-1. `gojo_domain_cast_buff`：`stat_mod(sp_attack, +1)`（self）
-2. `gojo_apply_domain_field`：`apply_field(gojo_unlimited_void_field, duration=3, decrement_on=turn_end)`（field）
-3. `gojo_domain_action_lock`：`action_legality deny all, duration=1, decrement_on=turn_end`（target）
+1. `gojo_apply_domain_field`：`apply_field(gojo_unlimited_void_field, duration=3, decrement_on=turn_end, on_success_effect_ids=["gojo_domain_action_lock"])`
+2. `gojo_unlimited_void_field.effect_ids`：`gojo_domain_cast_buff` 在 `field_apply` 触发点给五条悟 `sp_attack +1`
+3. `gojo_unlimited_void_field.on_expire_effect_ids / on_break_effect_ids`：`gojo_domain_buff_remove` 在领域结束或打断时回收增幅
+4. `gojo_domain_action_lock`：只有在 `gojo_apply_domain_field` 成功落地后，才作为 follow-up 生效
 
 补充语义：
 
-- `gojo_domain_cast_buff` 挂在 `effects_on_cast_ids`，因此按当前主线固定时序，它会在“扣 MP 后、命中判定前”生效；这代表**无量空处即使 miss，五条悟也仍会拿到 `sp_attack +1`**。若以后想把这条 buff 改成“只有命中才给”，必须把它移到 `effects_on_hit_ids`，不能靠口头理解。
+- 五条悟当前奥义点配置固定为：`ultimate_points_required = 3`、`ultimate_points_cap = 3`、`ultimate_point_gain_on_regular_skill_cast = 1`。
+- 奥义合法性必须同时满足：`current_mp >= 50` 且 `ultimate_points >= 3`；开始施放无量空处时，奥义点立即清零；换下后点数保留。
+- 若场上已有 field，`gojo_apply_domain_field` 进入领域对拼：比较双方**扣费后的当前 MP**；MP 高者留场；平 MP 随机决定胜者，并把随机值写入 `effect:field_clash.effect_roll`，保证 replay 可复现。
+- 若五条悟在领域对拼中失败，则无量空处**不落地、不加 `sp_attack +1`、也不锁人**；只有领域真正成功立住后，才会继续跑 `field_apply` 增幅和 `on_success_effect_ids` 锁人。
+- 由于 `gojo_domain_cast_buff` 已改成 field 绑定效果，所以不会再出现“领域已经没了，但 `sp_attack +1` 还残留在五条悟身上”的状态。
 
 顺序约束：
 
-- `gojo_apply_domain_field` 与 `gojo_domain_action_lock` 同属 `effects_on_hit_ids` 同批次 effect；当前设计不依赖它们的相对先后。
-- 原因是领域的 `creator_accuracy_override=100` 只影响后续技能命中，不参与本次奥义命中后的 `action_lock` 成立条件；若未来要让两个 effect 之间出现硬顺序依赖，必须显式拉开 `priority`。
+- `gojo_domain_action_lock` 不再和 `gojo_apply_domain_field` 平级并排挂在 `effects_on_hit_ids`；它固定通过 `ApplyFieldPayload.on_success_effect_ids` 触发，语义就是“领域成功后才锁人”。
+- `gojo_domain_cast_buff` 固定挂在 field 的 `effect_ids` 上，通过 `field_apply` 触发；后续若要改动这条增幅语义，只允许在 field 生命周期内调整，不能再改回独立常驻 `stat_stage`。
 
 `action_legality deny all` 的口径：
 
@@ -329,10 +337,10 @@
 
 - `content_schema.gd`：新增 `RULE_MOD_ACTION_LEGALITY`
 - `content_payload_validator.gd`：`_validate_rule_mod_payload()` 新增 `action_legality` 白名单、`mod_op` 校验、`value` 白名单校验，并明确禁止 `dynamic_value_formula`
-- `rule_mod_service.gd`：
+- `rule_mod_service.gd + rule_mod_read_service.gd + rule_mod_write_service.gd`：
 1. `STACKING_KEY_SCHEMA_BY_KIND` 增加 `RULE_MOD_ACTION_LEGALITY`
-2. `_validate_rule_mod_payload()` 增加 `action_legality`
-3. 新增 `is_action_allowed(battle_state, owner_id, action_type, skill_id="")`
+2. 写路径负责 `create / replace / decrement`
+3. 读路径负责 `is_action_allowed(battle_state, owner_id, action_type, skill_id="")`
 - `legal_action_service.gd`：技能、奥义、换人都改读 `is_action_allowed`；`wait_allowed / forced_command_type` 也必须把“换人被 rule_mod 封禁”视为**非 MP 阻断**
 - `turn_selection_resolver.gd`：提交通道继续只认 legal set；不得把“是否在 legal set 内”这层语义偷偷下沉到 `command_validator.gd`
 - `command_validator.gd`：继续负责结构、运行时 ID 回填、奥义入口、MP 等硬非法；不要复制一套独立的 `action_legality` 语义
@@ -408,10 +416,10 @@
 
 - `content_schema.gd`：新增 `RULE_MOD_INCOMING_ACCURACY`
 - `content_payload_validator.gd`：`_validate_rule_mod_payload()` 增加 `incoming_accuracy` 白名单、`mod_op=add/set` 约束、数值 `value` 校验，并明确禁止 `dynamic_value_formula`
-- `rule_mod_service.gd`：
+- `rule_mod_service.gd + rule_mod_read_service.gd + rule_mod_write_service.gd`：
 1. `STACKING_KEY_SCHEMA_BY_KIND` 增加 `RULE_MOD_INCOMING_ACCURACY`
-2. `_validate_rule_mod_payload()` 增加 `incoming_accuracy`
-3. 新增 `resolve_incoming_accuracy(battle_state, target_owner_id, base_accuracy)`
+2. 写路径继续负责实例创建与扣减
+3. 读路径新增 `resolve_incoming_accuracy(battle_state, target_owner_id, base_accuracy)`
 - `action_cast_service.gd`：`resolve_hit` 在 field 覆盖后、`roll_hit` 前读取目标侧 `incoming_accuracy`
 - `action_executor.gd`：调用 `resolve_hit` 时补传目标（建议签名改为 `resolve_hit(command, skill_definition, target, battle_state, content_index)`）
 
@@ -495,6 +503,7 @@
 - `gojo_murasaki_conditional_burst.tres`
 - `gojo_reverse_heal.tres`
 - `gojo_domain_cast_buff.tres`
+- `gojo_domain_buff_remove.tres`
 - `gojo_apply_domain_field.tres`
 - `gojo_domain_action_lock.tres`
 - `gojo_mugen_incoming_accuracy_down.tres`
@@ -529,10 +538,10 @@
 | 9 | MP 回复 | 每回合回复 14 |
 | 10 | 首回合可操作 MP | 按当前 `turn_start -> selection` 时序，Gojo 第 1 回合进入选指时 `current_mp = 64` |
 | 11 | 无下限重入场 | 五条悟离场再入场后，`incoming_accuracy -10` 仍生效 |
-| 12 | 无量空处 action_lock 生效时机 | 仅当 Gojo 先于目标行动并命中、且目标当回合尚未开始时，目标已排队技能 / 换人会被 `cancelled_pre_start` |
+| 12 | 无量空处 action_lock 生效时机 | 只有 `gojo_apply_domain_field` 成功落地后，才会通过 `on_success_effect_ids` 施加 `gojo_domain_action_lock`；若 Gojo 先于目标行动且对手尚未开始，本回合已排队技能 / 换人会被 `cancelled_pre_start` |
 | 13 | action_legality + wait | `deny all` 时 `wait` 仍可选 |
 | 14 | action_legality 阻断换人也算非 MP 阻断 | 当技能 / 奥义仅因 MP 不足不可用、换人被 `deny switch/all` 封禁时，legal set 只保留 `wait`，不得回落到 `resource_forced_default` |
-| 15 | 领域内必中 | `creator_accuracy_override=100` 生效 |
+| 15 | 领域内必中 | `creator_accuracy_override=100` 只在无量空处领域成功立住后生效 |
 | 16 | 无下限非必中减命中 | 仅当 `resolved_accuracy < 100` 时生效；敌方 95 命中技能打五条悟按 85 判定 |
 | 17 | 无下限不影响必中 | 敌方 100 命中技能（或领域覆盖必中）不降命中 |
 | 18 | 标记持有者离场清除 | 目标换下后 `gojo_ao_mark/gojo_aka_mark` 被移除（`persists_on_switch=false`） |
@@ -547,11 +556,13 @@
 | 27 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
 | 28 | 双 `+5` 先后手竞争 | 对手也使用 `+5` 奥义时，若对手先动，则 Gojo 本回合不得被文档误写成“仍然锁到对方” |
 | 29 | 标记 / 领域时间线 | `duration=3 + decrement_on=turn_end` 必须按“施放当回合起连续 3 次 `turn_end` 扣减”验证 |
-| 30 | 无量空处 miss 仍得自 buff | `gojo_domain_cast_buff` 挂在 `effects_on_cast_ids` 时，即使奥义 miss，`sp_attack +1` 仍必须成立 |
+| 30 | 领域对拼失败边界 | 五条悟在领域对拼中输掉时，不落领域、不加 `sp_attack +1`、也不锁人 |
 | 31 | required_target_effects 跳过无日志 | 前置条件不满足时，`gojo_murasaki_conditional_burst` 不执行 payload，也不得写出该 effect 产生的 payload 日志 |
 | 32 | incoming_accuracy 多实例顺序 | `add/set` 混用时，必须按统一 rule_mod 读取顺序求值，再统一 clamp 到 `0~99` |
 | 33 | action_legality 同 key 覆盖语义 | 同 key `replace` 覆盖后，后实例到期不得把旧实例“复活”；若要支持恢复，必须另扩实例模型 |
 | 34 | 标记 refresh 续时语义 | `gojo_ao_mark / gojo_aka_mark` 再次命中施加时，应刷新持续时间，不得额外并行出第二层同名标记 |
+| 35 | 奥义点 3/3/1 contract | 常规技能开始施放即 +1，miss 也加；上限 3；奥义开始施放清零；换下保留 |
+| 36 | 领域 buff 生命周期 | `gojo_domain_cast_buff` 只在 `field_apply` 成立时生效；自然到期与提前打断都必须通过 `gojo_domain_buff_remove` 回收 |
 
 ---
 
@@ -576,5 +587,9 @@
 | 项目 | 说明 |
 |---|---|
 | 标记来源校验 | 当前不做；双标记默认是团队共享资源 |
+| 奥义点 | `required=3 / cap=3 / regular_skill_cast +1` |
+| 锁人条件 | 只有领域成功立住才锁人 |
+| 领域增幅归属 | `sp_attack +1` 跟 `gojo_unlimited_void_field` 生命周期走 |
 | 领域后摇 | 已删除（Gojo / Sukuna 同口径） |
+| 平衡结论 | 保留苍 / 赫 / 茈现有机制、保留无下限现有机制；奥义改为 3 点可开 |
 | 领域强度 | 暂不下调，后续按实战数据再调 |

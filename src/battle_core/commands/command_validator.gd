@@ -69,6 +69,8 @@ func _validate_skill(command, active_unit, content_index, require_ultimate: bool
     if require_ultimate:
         if unit_definition.ultimate_skill_id != command.skill_id:
             return false
+        if active_unit.ultimate_points < active_unit.ultimate_points_required:
+            return false
     elif not active_unit.regular_skill_ids.has(command.skill_id):
         return false
     return active_unit.current_mp >= skill_definition.mp_cost

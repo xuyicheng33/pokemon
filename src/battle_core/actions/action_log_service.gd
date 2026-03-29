@@ -29,8 +29,8 @@ func log_action_cancelled_pre_start(queued_action, battle_state, command) -> voi
         }
     ))
 
-func log_action_cast(queued_action, battle_state, command, mp_changes: Array) -> void:
-    battle_logger.append_event(log_event_builder.build_event(
+func log_action_cast(queued_action, battle_state, command, mp_changes: Array) -> String:
+    var log_event = log_event_builder.build_event(
         EventTypesScript.ACTION_CAST,
         battle_state,
         {
@@ -45,7 +45,9 @@ func log_action_cast(queued_action, battle_state, command, mp_changes: Array) ->
             "value_changes": mp_changes,
             "payload_summary": "%s cast" % command.command_type,
         }
-    ))
+    )
+    battle_logger.append_event(log_event)
+    return log_event_builder.resolve_event_id(log_event)
 
 func log_action_failed_post_start(queued_action, battle_state, command) -> void:
     battle_logger.append_event(log_event_builder.build_event(
@@ -174,3 +176,22 @@ func build_value_change(entity_id: String, resource_name: String, before_value: 
     value_change.after_value = after_value
     value_change.delta = after_value - before_value
     return value_change
+
+func log_action_resource_change(queued_action, battle_state, actor, resource_name: String, before_value: int, after_value: int, cause_event_id: String, payload_summary: String) -> void:
+    if before_value == after_value:
+        return
+    var value_change = build_value_change(actor.unit_instance_id, resource_name, before_value, after_value)
+    battle_logger.append_event(log_event_builder.build_effect_event(
+        EventTypesScript.EFFECT_RESOURCE_MOD,
+        battle_state,
+        cause_event_id,
+        {
+            "source_instance_id": queued_action.action_id,
+            "target_instance_id": actor.unit_instance_id,
+            "priority": queued_action.priority,
+            "target_slot": queued_action.target_snapshot.target_slot,
+            "trigger_name": "on_cast",
+            "value_changes": [value_change],
+            "payload_summary": payload_summary,
+        }
+    ))

@@ -7,6 +7,7 @@
 script = ExtResource("2")
 payload_type = "apply_field"
 field_definition_id = "gojo_unlimited_void_field"
+on_success_effect_ids = PackedStringArray("gojo_domain_action_lock")
 
 [resource]
 script = ExtResource("1")

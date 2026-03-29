@@ -10,6 +10,40 @@
 
 ## 2026-03-29
 
+### 战斗规则重构 + 角色规范化工作流（已完成）
+- 目标：按阶段 A-E 一次性收口奥义点、领域对拼、领域 buff 跟 field 生命周期走、热点文件最小拆分、角色设计稿/调整记录规范与统一闸门。
+- 范围：`src/battle_core/**/*`、`src/composition/*`、`content/**/*`、`docs/design/*`、`docs/rules/*`、`docs/records/*`、`README.md`、`content/README.md`、`tests/**/*`；按“规则/实现/文档/闸门”四层同步，不留单边漂移。
+- 验收标准：
+  - 奥义点、领域对拼、Gojo 锁人成功条件、field 绑定增幅都已落代码并有专项回归
+  - `BattleCoreComposer / BattleCoreContainer`、`RuleModService`、field apply 主路径、`SampleBattleFactory.content_snapshot_paths()` 完成最小收口
+  - Gojo / Sukuna 都具备设计稿与调整记录
+  - `README / rules / design / tests` 不互相打架
+  - `tests/run_with_gate.sh` 通过
+
+#### 当前执行结果（2026-03-29）
+- 机制接线已完成：
+  - `ultimate_points` 已接入运行态、合法性、公开快照与日志
+  - 领域对拼已接入 `field_apply` 主路径，平 MP 随机结果写入日志并可回放复现
+  - Gojo 锁人改为只有无量空处成功立住才成立
+  - Gojo / Sukuna 领域增幅都改成 field 生命周期绑定
+- 热点收口已完成：
+  - `BattleCoreComposer` / `BattleCoreContainer` 改为声明式注册表驱动装配
+  - `RuleModService` 拆成 facade + `rule_mod_read_service.gd` + `rule_mod_write_service.gd`
+  - `field_apply_service.gd` 承接领域落地/对拼/成功后附带效果
+  - `SampleBattleFactory.content_snapshot_paths()` 改成目录自动收集 + 稳定排序
+- 角色资产已补齐：
+  - 校正 `docs/design/gojo_satoru_design.md`
+  - 新增 `docs/design/sukuna_design.md`
+  - 新增 `docs/design/gojo_satoru_adjustments.md`
+  - 新增 `docs/design/sukuna_adjustments.md`
+- 统一闸门已完成，结果见下。
+
+#### 当前验证结果（2026-03-29）
+- `HOME=/tmp/godot-home godot --headless --path . --script tests/run_all.gd`：通过（`ALL TESTS PASSED`）。
+- `bash tests/check_architecture_constraints.sh`：通过（`ARCH_GATE_PASSED`）。
+- `bash tests/check_repo_consistency.sh`：通过（`REPO_CONSISTENCY_PASSED`）。
+- `bash tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
 ### Gojo 一期阶段3：命中链 helper 拆分与测试样板抽取（已完成）
 - 目标：把 `action_cast_service` 里与命中解析直接相关的职责拆到独立 helper，并把 Gojo suite 里重复的构局/命令辅助收进专用 support，给后续新角色接入留出更稳的模板。
 - 范围：`src/battle_core/actions/action_cast_service.gd`、`src/battle_core/actions/action_hit_resolution_service.gd`、`src/composition/battle_core_composer.gd`、`src/composition/battle_core_container.gd`、`tests/support/gojo_test_support.gd`、`README.md`、`tests/check_architecture_constraints.sh`、`docs/records/tasks.md`、`docs/records/decisions.md`；不改对外 manager API。

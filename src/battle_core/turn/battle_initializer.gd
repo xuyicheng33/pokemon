@@ -142,6 +142,10 @@ func _build_side_state(side_setup, format_config, content_index):
         unit_state.max_mp = unit_definition.max_mp
         unit_state.current_mp = unit_definition.init_mp
         unit_state.regen_per_turn = unit_definition.regen_per_turn
+        unit_state.ultimate_points = 0
+        unit_state.ultimate_points_cap = unit_definition.ultimate_points_cap
+        unit_state.ultimate_points_required = unit_definition.ultimate_points_required
+        unit_state.ultimate_point_gain_on_regular_skill_cast = unit_definition.ultimate_point_gain_on_regular_skill_cast
         unit_state.regular_skill_ids = _resolve_regular_skill_loadout(side_setup, unit_index, unit_definition)
         unit_state.combat_type_ids = unit_definition.combat_type_ids.duplicate()
         unit_state.base_attack = unit_definition.base_attack

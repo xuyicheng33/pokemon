@@ -192,6 +192,7 @@ func _test_sukuna_domain_expire_chain_path(harness) -> Dictionary:
     if sukuna_unit == null or target_unit == null:
         return harness.fail_result("missing active units for domain expire test")
     sukuna_unit.current_mp = sukuna_unit.max_mp
+    sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
     core.turn_loop_controller.run_turn(battle_state, content_index, [
         core.command_builder.build_command({
             "turn_index": 1,
@@ -216,8 +217,8 @@ func _test_sukuna_domain_expire_chain_path(harness) -> Dictionary:
         return harness.fail_result("malevolent shrine should expire after third turn")
     if hp_before_expire - target_unit.current_hp != 10:
         return harness.fail_result("malevolent shrine expire burst should deal resisted 10 damage")
-    if int(sukuna_unit.stat_stages.get("attack", 0)) != 1 or int(sukuna_unit.stat_stages.get("sp_attack", 0)) != 1:
-        return harness.fail_result("domain expire should keep cast buff stages when post-domain rollback is removed")
+    if int(sukuna_unit.stat_stages.get("attack", 0)) != 0 or int(sukuna_unit.stat_stages.get("sp_attack", 0)) != 0:
+        return harness.fail_result("malevolent shrine 自然到期后应移除领域绑定增幅")
     var legal_action_set = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
     if not legal_action_set.legal_skill_ids.has("sukuna_kai") \
     or not legal_action_set.legal_skill_ids.has("sukuna_hatsu") \
@@ -248,6 +249,7 @@ func _test_sukuna_domain_break_chain_path(harness) -> Dictionary:
     if sukuna_unit == null or target_unit == null:
         return harness.fail_result("missing active units for domain break test")
     sukuna_unit.current_mp = sukuna_unit.max_mp
+    sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
     core.turn_loop_controller.run_turn(battle_state, content_index, [
         core.command_builder.build_command({
             "turn_index": 1,
@@ -275,11 +277,11 @@ func _test_sukuna_domain_break_chain_path(harness) -> Dictionary:
         return harness.fail_result("malevolent shrine should break when creator leaves active slot")
     if target_unit.current_hp != hp_before_break:
         return harness.fail_result("field break should not trigger expire burst damage")
+    if int(sukuna_unit.stat_stages.get("attack", 0)) != 0 or int(sukuna_unit.stat_stages.get("sp_attack", 0)) != 0:
+        return harness.fail_result("malevolent shrine 打断后领域绑定增幅必须消失")
     for log_event in core.battle_logger.event_log:
         if log_event.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE:
             return harness.fail_result("field break should not emit natural expire log")
-        if log_event.event_type == EventTypesScript.EFFECT_STAT_MOD and log_event.trigger_name == "field_break":
-            return harness.fail_result("field break should not emit rollback stat_mod events after removing post-domain cooldown")
         if log_event.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and String(log_event.payload_summary).find("skill_legality") != -1:
             return harness.fail_result("field break should not apply any post-domain seal rule_mod")
     return harness.pass_result()
@@ -301,6 +303,7 @@ func _test_sukuna_field_accuracy_override_path(harness) -> Dictionary:
     if sukuna_unit == null or target_unit == null:
         return harness.fail_result("missing active units for field accuracy override test")
     sukuna_unit.current_mp = sukuna_unit.max_mp
+    sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
     core.turn_loop_controller.run_turn(battle_state, content_index, [
         core.command_builder.build_command({
             "turn_index": 1,

@@ -7,8 +7,6 @@ const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_fi
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
-const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
-const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_logger
@@ -18,6 +16,7 @@ var effect_instance_service
 var rule_mod_service
 var rule_mod_value_resolver
 var field_service
+var field_apply_service
 
 var last_invalid_battle_code: Variant = null
 
@@ -36,6 +35,16 @@ func resolve_missing_dependency() -> String:
         return "rule_mod_value_resolver"
     if field_service == null:
         return "field_service"
+    if field_service.has_method("resolve_missing_dependency"):
+        var field_missing := str(field_service.resolve_missing_dependency())
+        if not field_missing.is_empty():
+            return "field_service.%s" % field_missing
+    if field_apply_service == null:
+        return "field_apply_service"
+    if field_apply_service.has_method("resolve_missing_dependency"):
+        var field_apply_missing := str(field_apply_service.resolve_missing_dependency())
+        if not field_apply_missing.is_empty():
+            return "field_apply_service.%s" % field_apply_missing
     return ""
 
 func execute(payload, effect_definition, effect_event, battle_state, content_index) -> bool:
@@ -55,45 +64,10 @@ func execute(payload, effect_definition, effect_event, battle_state, content_ind
     return false
 
 func _apply_field_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
-    var before_field = battle_state.field_state
-    if before_field != null:
-        var break_invalid_code = field_service.break_active_field(
-            battle_state,
-            content_index,
-            "field_break",
-            effect_event.chain_context
-        )
-        if break_invalid_code != null:
-            last_invalid_battle_code = break_invalid_code
-            return
-    var field_state = FieldStateScript.new()
-    field_state.field_def_id = payload.field_definition_id
-    field_state.instance_id = id_factory.next_id("field")
-    field_state.creator = _resolve_field_creator(effect_event)
-    field_state.remaining_turns = effect_definition.duration
-    field_state.source_instance_id = effect_event.source_instance_id
-    field_state.source_kind_order = effect_event.source_kind_order
-    field_state.source_order_speed_snapshot = effect_event.source_order_speed_snapshot
-    battle_state.field_state = field_state
-    var field_change = FieldChangeScript.new()
-    field_change.change_kind = "apply"
-    field_change.before_field_id = before_field.field_def_id if before_field != null else null
-    field_change.after_field_id = field_state.field_def_id
-    field_change.before_remaining_turns = before_field.remaining_turns if before_field != null else null
-    field_change.after_remaining_turns = field_state.remaining_turns
-    battle_logger.append_event(log_event_builder.build_event(
-        EventTypesScript.EFFECT_APPLY_FIELD,
-        battle_state,
-        {
-            "source_instance_id": effect_event.source_instance_id,
-            "priority": effect_event.priority,
-            "trigger_name": effect_event.trigger_name,
-            "cause_event_id": effect_event.event_id,
-            "effect_roll": _resolve_effect_roll(effect_event),
-            "field_change": field_change,
-            "payload_summary": "field -> %s" % field_state.field_def_id,
-        }
-    ))
+    var invalid_code = field_apply_service.apply_field(effect_definition, payload, effect_event, battle_state, content_index)
+    if invalid_code != null:
+        last_invalid_battle_code = invalid_code
+        return
 
 func _apply_effect_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
     var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
@@ -180,17 +154,6 @@ func _apply_rule_mod_payload(payload, effect_event, battle_state) -> void:
             "payload_summary": "rule mod %s (%s)" % [created_instance.mod_kind, created_instance.instance_id],
         }
     ))
-
-func _resolve_field_creator(effect_event) -> String:
-    if effect_event != null and effect_event.owner_id != null:
-        var owner_id := str(effect_event.owner_id)
-        if not owner_id.is_empty():
-            return owner_id
-    if effect_event != null and effect_event.chain_context != null and effect_event.chain_context.actor_id != null:
-        var actor_id := str(effect_event.chain_context.actor_id)
-        if not actor_id.is_empty():
-            return actor_id
-    return ""
 
 func _resolve_rule_mod_owner(payload, effect_event, battle_state):
     match payload.scope:

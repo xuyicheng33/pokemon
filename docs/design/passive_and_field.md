@@ -8,11 +8,13 @@
 |---|---|
 |`passive_skill_service.gd`|按触发点收集被动技能 `EffectEvent`|
 |`passive_item_service.gd`|按触发点收集被动持有物 `EffectEvent`|
+|`field_apply_service.gd`|field 落地主路径：领域对拼、成功后附带效果、`field_apply` 触发|
 |`field_service.gd`|收集 field `EffectEvent`、处理自然到期扣减与 creator 离场后的提前打断|
 
 ## 2. 接入原则
 
-- 三者都只负责产出 `EffectEvent`，不负责最终排序。
+- 被动收集服务只负责产出 `EffectEvent`，不负责最终排序。
+- `field_apply_service.gd` 是少数会直接修改 field 运行态的主路径；它不负责回合节点遍历，只负责“这次 apply 能不能成立”。
 - 同批次排序统一交给 `EffectQueueService`。
 - 回合节点（`turn_start / turn_end`）的 owner 范围固定为当前 active；bench 不触发。
 
@@ -38,7 +40,23 @@
 - `battle_init / on_enter` 可读取 `always_on_effect_ids`。
 - `on_receive_effect_ids` 当前为禁用迁移字段：内容层允许保留该字段，但只要非空就必须在加载期 fail-fast。
 
-## 5. FieldService
+## 5. Field 子域
+
+### 5.1 FieldApplyService
+
+职责：
+
+- 处理 `apply_field` payload 的唯一主路径。
+- 场上已有 field 时，先做领域对拼；禁止直接覆盖。
+- field 真正落地后再执行 `field_apply` 触发与 `on_success_effect_ids`。
+
+规则：
+
+- 领域对拼比较双方扣费后的当前 MP。
+- MP 高者留场；平 MP 随机决定胜者，并把随机值写入日志，保证 replay 可复现。
+- 对拼失败的一方：field 不落地，只有成功后才成立的附带效果也不生效。
+
+### 5.2 FieldService
 
 职责：
 
@@ -50,7 +68,8 @@
 
 - field 自然到期后的日志与移除由 `TurnFieldLifecycleService` 协调执行。
 - creator 离场导致的提前打断已下沉到 `FieldService`，由手动换人、强制换下、击倒窗口和 field 覆盖路径复用同一逻辑。
-- 当前同一时刻全场只允许 1 个 field；新 field 生效即覆盖旧 field。
+- 当前同一时刻全场只允许 1 个 field；若尝试展开新 field，必须先走 `FieldApplyService` 的对拼判定。
+- field buff 必须绑定 field 生命周期：`field_apply` 生效、自然到期移除、提前打断移除；不再允许靠角色离场时顺手清 stat_stage 兜底。
 
 ## 6. 约束
 
