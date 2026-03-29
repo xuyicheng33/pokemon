@@ -16,6 +16,7 @@ var battle_result_service
 var runtime_guard_service
 var action_executor
 var action_cast_service
+var action_hit_resolution_service
 var switch_action_service
 var action_log_service
 var target_resolver
@@ -55,11 +56,11 @@ func dispose() -> void:
         action_executor.rule_mod_service = null
     if action_cast_service != null:
         action_cast_service.mp_service = null
-        action_cast_service.hit_service = null
         action_cast_service.damage_service = null
         action_cast_service.combat_type_service = null
         action_cast_service.stat_calculator = null
         action_cast_service.rule_mod_service = null
+        action_cast_service.action_hit_resolution_service = null
         action_cast_service.target_resolver = null
         action_cast_service.trigger_dispatcher = null
         action_cast_service.effect_queue_service = null
@@ -68,6 +69,10 @@ func dispose() -> void:
         action_cast_service.trigger_batch_runner = null
         action_cast_service.rng_service = null
         action_cast_service.action_log_service = null
+    if action_hit_resolution_service != null:
+        action_hit_resolution_service.hit_service = null
+        action_hit_resolution_service.rule_mod_service = null
+        action_hit_resolution_service.rng_service = null
     if switch_action_service != null:
         switch_action_service.leave_service = null
         switch_action_service.action_cast_service = null
@@ -223,6 +228,7 @@ func dispose() -> void:
     runtime_guard_service = null
     action_executor = null
     action_cast_service = null
+    action_hit_resolution_service = null
     switch_action_service = null
     action_log_service = null
     target_resolver = null

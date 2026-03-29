@@ -17,6 +17,7 @@ const BattleResultServiceScript := preload("res://src/battle_core/turn/battle_re
 const RuntimeGuardServiceScript := preload("res://src/battle_core/turn/runtime_guard_service.gd")
 const ActionExecutorScript := preload("res://src/battle_core/actions/action_executor.gd")
 const ActionCastServiceScript := preload("res://src/battle_core/actions/action_cast_service.gd")
+const ActionHitResolutionServiceScript := preload("res://src/battle_core/actions/action_hit_resolution_service.gd")
 const SwitchActionServiceScript := preload("res://src/battle_core/actions/switch_action_service.gd")
 const ActionLogServiceScript := preload("res://src/battle_core/actions/action_log_service.gd")
 const TargetResolverScript := preload("res://src/battle_core/actions/target_resolver.gd")
@@ -66,6 +67,7 @@ func compose():
     container.runtime_guard_service = RuntimeGuardServiceScript.new()
     container.action_executor = ActionExecutorScript.new()
     container.action_cast_service = ActionCastServiceScript.new()
+    container.action_hit_resolution_service = ActionHitResolutionServiceScript.new()
     container.switch_action_service = SwitchActionServiceScript.new()
     container.action_log_service = ActionLogServiceScript.new()
     container.target_resolver = TargetResolverScript.new()
@@ -167,12 +169,15 @@ func compose():
     container.payload_executor.forced_replace_payload_handler = container.payload_forced_replace_handler
     container.action_log_service.battle_logger = container.battle_logger
     container.action_log_service.log_event_builder = container.log_event_builder
+    container.action_hit_resolution_service.hit_service = container.hit_service
+    container.action_hit_resolution_service.rule_mod_service = container.rule_mod_service
+    container.action_hit_resolution_service.rng_service = container.rng_service
     container.action_cast_service.mp_service = container.mp_service
-    container.action_cast_service.hit_service = container.hit_service
     container.action_cast_service.damage_service = container.damage_service
     container.action_cast_service.combat_type_service = container.combat_type_service
     container.action_cast_service.stat_calculator = container.stat_calculator
     container.action_cast_service.rule_mod_service = container.rule_mod_service
+    container.action_cast_service.action_hit_resolution_service = container.action_hit_resolution_service
     container.action_cast_service.target_resolver = container.target_resolver
     container.action_cast_service.trigger_dispatcher = container.trigger_dispatcher
     container.action_cast_service.effect_queue_service = container.effect_queue_service
@@ -272,6 +277,10 @@ func _assert_container_dependencies(container) -> void:
     _assert_dependency(container.action_cast_service, "action_cast_service", "payload_executor")
     _assert_dependency(container.action_cast_service, "action_cast_service", "target_resolver")
     _assert_dependency(container.action_cast_service, "action_cast_service", "combat_type_service")
+    _assert_dependency(container.action_cast_service, "action_cast_service", "action_hit_resolution_service")
+    _assert_dependency(container.action_hit_resolution_service, "action_hit_resolution_service", "hit_service")
+    _assert_dependency(container.action_hit_resolution_service, "action_hit_resolution_service", "rule_mod_service")
+    _assert_dependency(container.action_hit_resolution_service, "action_hit_resolution_service", "rng_service")
     _assert_dependency(container.switch_action_service, "switch_action_service", "leave_service")
     _assert_dependency(container.switch_action_service, "switch_action_service", "field_service")
     _assert_dependency(container.action_executor, "action_executor", "action_cast_service")

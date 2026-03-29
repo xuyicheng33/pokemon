@@ -10,6 +10,15 @@
 
 ## 2026-03-29
 
+### Gojo 一期阶段3：命中链 helper 拆分与测试样板抽取（已完成）
+- 目标：把 `action_cast_service` 里与命中解析直接相关的职责拆到独立 helper，并把 Gojo suite 里重复的构局/命令辅助收进专用 support，给后续新角色接入留出更稳的模板。
+- 范围：`src/battle_core/actions/action_cast_service.gd`、`src/battle_core/actions/action_hit_resolution_service.gd`、`src/composition/battle_core_composer.gd`、`src/composition/battle_core_container.gd`、`tests/support/gojo_test_support.gd`、`README.md`、`tests/check_architecture_constraints.sh`、`docs/records/tasks.md`、`docs/records/decisions.md`；不改对外 manager API。
+- 验收标准：命中链至少拆开“基础命中值 / field 覆盖 / incoming_accuracy / roll”四段职责，`action_cast_service` 回到阈值内；`gojo_suite` 的共用构局与命令辅助不再内嵌成大段重复代码；完整闸门全绿。
+
+#### 当前验证结果（2026-03-29）
+- `godot --headless --path . --script tests/run_all.gd`：通过。
+- `tests/run_with_gate.sh`：通过（`ALL TESTS PASSED` + `ARCH_GATE_PASSED` + `REPO_CONSISTENCY_PASSED` + `GATE PASSED`）。
+
 ### Gojo 一期阶段2：专项回归与统一闸门接线（已完成）
 - 目标：把 `docs/design/gojo_satoru_design.md` 第 6 节里与 Gojo 正式玩法直接相关的关键行为落成 `gojo_suite`，并接入 `tests/run_all.gd` 与统一仓库闸门。
 - 范围：`tests/suites/gojo_suite.gd`、`tests/run_all.gd`、`tests/check_repo_consistency.sh`、`docs/design/gojo_satoru_design.md`、`docs/records/tasks.md`、`docs/records/decisions.md`；不改对外 manager API 与内容 schema。

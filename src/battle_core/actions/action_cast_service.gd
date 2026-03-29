@@ -8,11 +8,11 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 
 var mp_service
-var hit_service
 var damage_service
 var combat_type_service
 var stat_calculator
 var rule_mod_service
+var action_hit_resolution_service
 var target_resolver
 var trigger_dispatcher
 var effect_queue_service
@@ -25,8 +25,6 @@ var action_log_service
 func resolve_missing_dependency() -> String:
     if mp_service == null:
         return "mp_service"
-    if hit_service == null:
-        return "hit_service"
     if damage_service == null:
         return "damage_service"
     if combat_type_service == null:
@@ -35,6 +33,11 @@ func resolve_missing_dependency() -> String:
         return "stat_calculator"
     if rule_mod_service == null:
         return "rule_mod_service"
+    if action_hit_resolution_service == null:
+        return "action_hit_resolution_service"
+    var hit_missing := str(action_hit_resolution_service.resolve_missing_dependency())
+    if not hit_missing.is_empty():
+        return "action_hit_resolution_service.%s" % hit_missing
     if target_resolver == null:
         return "target_resolver"
     if trigger_dispatcher == null:
@@ -86,22 +89,13 @@ func resolve_target_instance_id(queued_action, resolved_target):
     return resolved_target.unit_instance_id
 
 func resolve_hit(command, skill_definition, resolved_target, battle_state, content_index) -> Dictionary:
-    if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
-        return {"hit": true, "hit_roll": null}
-    var resolved_accuracy: int = int(skill_definition.accuracy)
-    if battle_state.field_state != null and command.actor_id == battle_state.field_state.creator:
-        var field_definition = content_index.fields.get(battle_state.field_state.field_def_id) if content_index != null else null
-        if field_definition != null and int(field_definition.creator_accuracy_override) >= 0:
-            resolved_accuracy = int(field_definition.creator_accuracy_override)
-    if resolved_accuracy < 100 and _should_read_incoming_accuracy(command, skill_definition, resolved_target, battle_state):
-        resolved_accuracy = rule_mod_service.resolve_incoming_accuracy(
-            battle_state,
-            resolved_target.unit_instance_id,
-            resolved_accuracy
-        )
-    var hit_info: Dictionary = hit_service.roll_hit(resolved_accuracy, rng_service)
-    battle_state.rng_stream_index = rng_service.get_stream_index()
-    return hit_info
+    return action_hit_resolution_service.resolve_hit(
+        command,
+        skill_definition,
+        resolved_target,
+        battle_state,
+        content_index
+    )
 
 func is_damage_action(command, skill_definition) -> bool:
     if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
@@ -244,14 +238,3 @@ func _resolve_power_bonus(skill_definition, actor, target) -> int:
     if String(skill_definition.power_bonus_source) == "mp_diff_clamped":
         return max(0, int(actor.current_mp) - int(target.current_mp))
     return 0
-
-func _should_read_incoming_accuracy(command, skill_definition, resolved_target, battle_state) -> bool:
-    if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
-        return false
-    if skill_definition == null or String(skill_definition.targeting) != ContentSchemaScript.TARGET_ENEMY_ACTIVE:
-        return false
-    if resolved_target == null or resolved_target.leave_state != LeaveStatesScript.ACTIVE or resolved_target.current_hp <= 0:
-        return false
-    var actor_side = battle_state.get_side_for_unit(command.actor_id)
-    var target_side = battle_state.get_side_for_unit(resolved_target.unit_instance_id)
-    return actor_side != null and target_side != null and actor_side.side_id != target_side.side_id

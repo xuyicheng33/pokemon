@@ -478,125 +478,52 @@ func _test_gojo_marker_refresh_contract(harness) -> Dictionary:
         return harness.fail_result("苍标记 refresh 后应重置持续时间，而不是继续沿用旧剩余回合")
     return harness.pass_result()
 func _build_gojo_vs_sample_state(harness, seed: int) -> Dictionary:
-    return _build_gojo_battle_state(harness, seed, false, true)
+    return _support.build_gojo_vs_sample_state(harness, seed)
+
 func _build_sample_vs_gojo_state(harness, seed: int, use_sukuna: bool) -> Dictionary:
-    return _build_gojo_battle_state(harness, seed, use_sukuna, false)
+    return _support.build_sample_vs_gojo_state(harness, seed, use_sukuna)
+
 func _build_gojo_battle_state(harness, seed: int, use_sukuna: bool, gojo_on_p1: bool) -> Dictionary:
-    var core_payload = harness.build_core()
-    if core_payload.has("error"):
-        return {"error": str(core_payload["error"])}
-    var core = core_payload["core"]
-    var sample_factory = harness.build_sample_factory()
-    if sample_factory == null:
-        return {"error": "SampleBattleFactory init failed"}
-    var content_index = harness.build_loaded_content_index(sample_factory)
-    var battle_setup = sample_factory.build_sample_setup()
-    if use_sukuna:
-        battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_pyron"]) if gojo_on_p1 else PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"])
-        battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"]) if gojo_on_p1 else PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
-    else:
-        battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"]) if gojo_on_p1 else PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
-        battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"]) if gojo_on_p1 else PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
-    battle_setup.sides[0].starting_index = 0
-    battle_setup.sides[1].starting_index = 0
-    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, seed, battle_setup)
-    return {
-        "core": core,
-        "content_index": content_index,
-        "battle_state": battle_state,
-    }
+    return _support.build_gojo_battle_state(harness, seed, use_sukuna, gojo_on_p1)
+
 func _build_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-    return core.command_builder.build_command({
-        "turn_index": turn_index,
-        "command_type": CommandTypesScript.SKILL,
-        "command_source": "manual",
-        "side_id": side_id,
-        "actor_public_id": actor_public_id,
-        "skill_id": skill_id,
-    })
+    return _support.build_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
+
 func _build_ultimate_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-    return core.command_builder.build_command({
-        "turn_index": turn_index,
-        "command_type": CommandTypesScript.ULTIMATE,
-        "command_source": "manual",
-        "side_id": side_id,
-        "actor_public_id": actor_public_id,
-        "skill_id": skill_id,
-    })
+    return _support.build_ultimate_command(core, turn_index, side_id, actor_public_id, skill_id)
+
 func _build_wait_command(core, turn_index: int, side_id: String, actor_public_id: String):
-    return core.command_builder.build_command({
-        "turn_index": turn_index,
-        "command_type": CommandTypesScript.WAIT,
-        "command_source": "manual",
-        "side_id": side_id,
-        "actor_public_id": actor_public_id,
-    })
+    return _support.build_wait_command(core, turn_index, side_id, actor_public_id)
+
 func _build_switch_command(core, turn_index: int, side_id: String, actor_public_id: String, target_public_id: String):
-    return core.command_builder.build_command({
-        "turn_index": turn_index,
-        "command_type": CommandTypesScript.SWITCH,
-        "command_source": "manual",
-        "side_id": side_id,
-        "actor_public_id": actor_public_id,
-        "target_public_id": target_public_id,
-    })
+    return _support.build_switch_command(core, turn_index, side_id, actor_public_id, target_public_id)
+
 func _build_resolved_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, actor_id: String, skill_id: String):
-    var command = _build_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
-    command.actor_id = actor_id
-    return command
+    return _support.build_resolved_skill_command(core, turn_index, side_id, actor_public_id, actor_id, skill_id)
+
 func _build_accuracy_skill(skill_id: String, accuracy: int):
-    var skill = SkillDefinitionScript.new()
-    skill.id = skill_id
-    skill.display_name = skill_id
-    skill.damage_kind = "none"
-    skill.power = 0
-    skill.accuracy = accuracy
-    skill.mp_cost = 0
-    skill.priority = 0
-    skill.targeting = "enemy_active_slot"
-    return skill
+    return _support.build_accuracy_skill(skill_id, accuracy)
+
 func _apply_gojo_double_marks(core, content_index, battle_state, target_unit, source_instance_id: String, source_speed: int) -> void:
-    core.effect_instance_service.create_instance(content_index.effects["gojo_ao_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed)
-    core.effect_instance_service.create_instance(content_index.effects["gojo_aka_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed)
+    _support.apply_gojo_double_marks(core, content_index, battle_state, target_unit, source_instance_id, source_speed)
+
 func _set_field_state(battle_state, field_id: String, creator_id: String) -> void:
-    var field_state = FieldStateScript.new()
-    field_state.field_def_id = field_id
-    field_state.instance_id = "test_field_%s" % field_id
-    field_state.creator = creator_id
-    battle_state.field_state = field_state
+    _support.set_field_state(battle_state, field_id, creator_id)
+
 func _find_unit_on_side(battle_state, side_id: String, definition_id: String):
-    var side_state = battle_state.get_side(side_id)
-    if side_state == null:
-        return null
-    for unit_state in side_state.team_units:
-        if unit_state.definition_id == definition_id:
-            return unit_state
-    return null
+    return _support.find_unit_on_side(battle_state, side_id, definition_id)
+
 func _find_effect_instance(unit_state, effect_id: String):
-    for effect_instance in unit_state.effect_instances:
-        if effect_instance.def_id == effect_id:
-            return effect_instance
-    return null
+    return _support.find_effect_instance(unit_state, effect_id)
+
 func _count_effect_instances(unit_state, effect_id: String) -> int:
-    var count: int = 0
-    for effect_instance in unit_state.effect_instances:
-        if effect_instance.def_id == effect_id:
-            count += 1
-    return count
+    return _support.count_effect_instances(unit_state, effect_id)
+
 func _count_rule_mod_instances(unit_state, mod_kind: String) -> int:
-    var count: int = 0
-    for rule_mod_instance in unit_state.rule_mod_instances:
-        if rule_mod_instance.mod_kind == mod_kind:
-            count += 1
-    return count
+    return _support.count_rule_mod_instances(unit_state, mod_kind)
+
 func _count_target_damage_events(event_log: Array, target_unit_id: String) -> int:
-    var count: int = 0
-    for ev in event_log:
-        if ev.event_type == EventTypesScript.EFFECT_DAMAGE and ev.target_instance_id == target_unit_id:
-            count += 1
-    return count
+    return _support.count_target_damage_events(event_log, EventTypesScript.EFFECT_DAMAGE, target_unit_id)
+
 func _has_event(event_log: Array, predicate: Callable) -> bool:
-    for ev in event_log:
-        if bool(predicate.call(ev)):
-            return true
-    return false
+    return _support.has_event(event_log, predicate)

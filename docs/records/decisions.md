@@ -9,6 +9,11 @@
 
 ## 2026-03-29
 
+### 231. 命中解析从 `action_cast_service` 拆到 `ActionHitResolutionService`
+- 从本条起，`resolve_hit` 的四段职责固定分层为：基础命中值、field `creator_accuracy_override` 覆盖、`incoming_accuracy` 读取、最终 `roll_hit` 与随机流回写。
+- `ActionCastService.resolve_hit()` 继续保留原签名，对外仍是 action 子域入口；但内部只做委托，不再自己承载整条命中解析实现。
+- 与 Gojo suite 同轮抽出的 `tests/support/gojo_test_support.gd` 也正式成为角色测试模板的一部分：后续新角色若需要样例构局、命令构造或标记辅助，应优先下放到 support，而不是继续把 suite 堆成超大文件。
+
 ### 230. `gojo_suite` 成为首个正式角色接入模板
 - 从本条起，Gojo 不再只有“资源已落盘”的半成品状态，而是以 `content + SampleBattleFactory + gojo_suite + run_all` 的完整模板进入主线。
 - `gojo_suite` 当前固定覆盖：默认配招与换装、苍/赫命中后效果、茈单段/双段/击杀/重定向边界、无下限命中干扰与重入场、无量空处领域/封锁/`+5` 竞争、反转术式治疗，以及标记换人与 refresh 语义。
