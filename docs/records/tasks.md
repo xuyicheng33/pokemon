@@ -1131,7 +1131,7 @@
 - 阶段 A（规则与记录）：已完成（`rules/design/decisions` 已同步 `field_kind`、冲突矩阵与合法性约束）。
 - 阶段 B（核心实现）：已完成（`LegalActionService`、`ActionExecutor`、`FieldApplyService`、`ActionQueueBuilder` 与内容 schema 已落地）。
 - 阶段 C（测试与平衡基线）：已完成（新增/更新领域相关 contract，用例覆盖同侧重开禁用、双领域同回合对拼与普通 field 阻断）。
-- 阶段 D（主干收尾）：进行中（待完成阶段提交/推送与最终主干回归确认）。
+- 阶段 D（主干收尾）：已完成（阶段提交已拆分并推送到 `origin/main`，主干 gate 复跑通过）。
 
 #### 计划回归检查要点
 - 普通 field 不得覆盖在场领域；领域可覆盖普通 field。
