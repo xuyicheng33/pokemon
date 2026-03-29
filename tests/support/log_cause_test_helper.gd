@@ -1,0 +1,17 @@
+extends RefCounted
+class_name LogCauseTestHelper
+func _event_id(log_event) -> String:
+    return "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
+
+func _find_event(event_log: Array, predicate: Callable):
+    for ev in event_log:
+        if predicate.call(ev):
+            return ev
+    return null
+
+func _find_events(event_log: Array, predicate: Callable) -> Array:
+    var matched: Array = []
+    for ev in event_log:
+        if predicate.call(ev):
+            matched.append(ev)
+    return matched

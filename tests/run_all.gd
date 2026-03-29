@@ -18,6 +18,9 @@ const CombatTypeSuiteScript := preload("res://tests/suites/combat_type_suite.gd"
 const DamagePayloadContractSuiteScript := preload("res://tests/suites/damage_payload_contract_suite.gd")
 const GojoSuiteScript := preload("res://tests/suites/gojo_suite.gd")
 const UltimateFieldSuiteScript := preload("res://tests/suites/ultimate_field_suite.gd")
+const AdapterContractSuiteScript := preload("res://tests/suites/adapter_contract_suite.gd")
+const AIPolicyDecisionSuiteScript := preload("res://tests/suites/ai_policy_decision_suite.gd")
+const TriggerValidationSuiteScript := preload("res://tests/suites/trigger_validation_suite.gd")
 
 var _harness
 
@@ -42,6 +45,9 @@ func _init() -> void:
         DamagePayloadContractSuiteScript.new(),
         GojoSuiteScript.new(),
         UltimateFieldSuiteScript.new(),
+        AdapterContractSuiteScript.new(),
+        AIPolicyDecisionSuiteScript.new(),
+        TriggerValidationSuiteScript.new(),
     ]
     for suite in suites:
         suite.register_tests(self, failures, _harness)
