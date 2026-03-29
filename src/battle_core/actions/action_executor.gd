@@ -6,11 +6,13 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const ActionResultScript := preload("res://src/battle_core/contracts/action_result.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
+const ActionDomainGuardScript := preload("res://src/battle_core/actions/action_domain_guard.gd")
 
 var action_cast_service
 var switch_action_service
 var action_log_service
 var rule_mod_service
+var _domain_guard = ActionDomainGuardScript.new()
 
 func resolve_missing_dependency() -> String:
     if action_cast_service == null:
@@ -30,6 +32,10 @@ func resolve_missing_dependency() -> String:
         return "action_log_service.%s" % log_missing
     if rule_mod_service == null:
         return "rule_mod_service"
+    _domain_guard.rule_mod_service = rule_mod_service
+    var domain_missing := _domain_guard.resolve_missing_dependency()
+    if not domain_missing.is_empty():
+        return "domain_guard.%s" % domain_missing
     return ""
 
 func execute_action(queued_action, battle_state, content_index):
@@ -46,7 +52,8 @@ func execute_action(queued_action, battle_state, content_index):
         action_log_service.log_action_cancelled_pre_start(queued_action, battle_state, command)
         result.result_type = "cancelled_pre_start"
         return result
-    if not _is_action_still_allowed(queued_action, command, actor, battle_state, content_index):
+    _domain_guard.rule_mod_service = rule_mod_service
+    if not _domain_guard.is_action_still_allowed(queued_action, command, actor, battle_state, content_index):
         action_log_service.log_action_cancelled_pre_start(queued_action, battle_state, command)
         result.result_type = "cancelled_pre_start"
         return result
@@ -150,62 +157,6 @@ func _can_start_action(actor, command, battle_state) -> bool:
         return false
     var side_state = battle_state.get_side(command.side_id)
     return side_state != null and side_state.get_active_unit() != null and side_state.get_active_unit().unit_instance_id == actor.unit_instance_id
-
-func _is_action_still_allowed(queued_action, command, actor, battle_state, content_index) -> bool:
-    if actor == null:
-        return false
-    if _is_blocked_by_active_side_domain(command, battle_state, content_index):
-        return false
-    match command.command_type:
-        CommandTypesScript.SKILL:
-            if _can_bypass_legality_for_domain_clash(queued_action, command, battle_state, content_index):
-                return true
-            return rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, CommandTypesScript.SKILL, command.skill_id)
-        CommandTypesScript.ULTIMATE:
-            if _can_bypass_legality_for_domain_clash(queued_action, command, battle_state, content_index):
-                return true
-            return rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, CommandTypesScript.ULTIMATE, command.skill_id)
-        CommandTypesScript.SWITCH:
-            return rule_mod_service.is_action_allowed(battle_state, actor.unit_instance_id, CommandTypesScript.SWITCH)
-        _:
-            return true
-
-func _is_blocked_by_active_side_domain(command, battle_state, content_index) -> bool:
-    if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
-        return false
-    if not _is_domain_skill(command.skill_id, content_index):
-        return false
-    var creator_side_id := _get_active_domain_creator_side_id(battle_state, content_index)
-    if creator_side_id.is_empty():
-        return false
-    return creator_side_id == String(command.side_id)
-
-func _is_domain_skill(skill_id: String, content_index) -> bool:
-    var skill_definition = content_index.skills.get(skill_id)
-    if skill_definition == null:
-        return false
-    return bool(skill_definition.is_domain_skill)
-
-func _can_bypass_legality_for_domain_clash(queued_action, command, battle_state, content_index) -> bool:
-    if not bool(queued_action.domain_clash_protected):
-        return false
-    if not _is_domain_skill(command.skill_id, content_index):
-        return false
-    var creator_side_id := _get_active_domain_creator_side_id(battle_state, content_index)
-    if creator_side_id.is_empty():
-        return false
-    return creator_side_id != String(command.side_id)
-
-func _get_active_domain_creator_side_id(battle_state, content_index) -> String:
-    if battle_state.field_state == null:
-        return ""
-    var active_field_definition = content_index.fields.get(battle_state.field_state.field_def_id)
-    if active_field_definition == null or String(active_field_definition.field_kind) != ContentSchemaScript.FIELD_KIND_DOMAIN:
-        return ""
-    var creator_side = battle_state.get_side_for_unit(String(battle_state.field_state.creator))
-    if creator_side == null:
-        return ""
-    return String(creator_side.side_id)
 
 func _apply_action_start_resource_changes(queued_action, battle_state, actor, command, cause_event_id: String) -> void:
     if actor == null:

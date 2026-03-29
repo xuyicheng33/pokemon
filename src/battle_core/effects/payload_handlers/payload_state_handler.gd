@@ -2,12 +2,12 @@ extends RefCounted
 class_name PayloadStateHandler
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
-const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const PayloadUnitTargetHelperScript := preload("res://src/battle_core/effects/payload_handlers/payload_unit_target_helper.gd")
 
 var battle_logger
 var log_event_builder
@@ -19,6 +19,7 @@ var field_service
 var field_apply_service
 
 var last_invalid_battle_code: Variant = null
+var _target_helper = PayloadUnitTargetHelperScript.new()
 
 func resolve_missing_dependency() -> String:
     if battle_logger == null:
@@ -70,8 +71,8 @@ func _apply_field_payload(payload, effect_definition, effect_event, battle_state
         return
 
 func _apply_effect_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
-    var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
-    if not _is_effect_target_valid(target_unit):
+    var target_unit = _target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
+    if not _target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
         return
     var target_definition = content_index.effects.get(payload.effect_definition_id)
     if target_definition == null:
@@ -100,8 +101,8 @@ func _apply_effect_payload(payload, effect_definition, effect_event, battle_stat
     ))
 
 func _remove_effect_payload(payload, effect_definition, effect_event, battle_state) -> void:
-    var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
-    if not _is_effect_target_valid(target_unit):
+    var target_unit = _target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
+    if not _target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
         return
     var removed_instance = effect_instance_service.remove_instance(target_unit.unit_instance_id, payload.effect_definition_id, battle_state)
     if removed_instance == null:
@@ -159,14 +160,14 @@ func _resolve_rule_mod_owner(payload, effect_event, battle_state):
     match payload.scope:
         "self":
             var owner_unit = battle_state.get_unit(effect_event.owner_id)
-            if not _is_effect_target_valid(owner_unit):
+            if not _target_helper.is_effect_target_valid(owner_unit, payload.scope, effect_event):
                 return null
             return {"scope": "unit", "id": owner_unit.unit_instance_id}
         "target":
             if effect_event.chain_context == null or effect_event.chain_context.target_unit_id == null:
                 return null
             var target_unit = battle_state.get_unit(str(effect_event.chain_context.target_unit_id))
-            if not _is_effect_target_valid(target_unit):
+            if not _target_helper.is_effect_target_valid(target_unit, payload.scope, effect_event):
                 return null
             return {"scope": "unit", "id": target_unit.unit_instance_id}
         "field":
@@ -174,20 +175,6 @@ func _resolve_rule_mod_owner(payload, effect_event, battle_state):
         _:
             last_invalid_battle_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
             return null
-
-func _resolve_target_unit(scope: String, effect_event, battle_state):
-    match scope:
-        "self":
-            return battle_state.get_unit(effect_event.owner_id)
-        "target":
-            if effect_event.chain_context == null or effect_event.chain_context.target_unit_id == null:
-                return null
-            return battle_state.get_unit(str(effect_event.chain_context.target_unit_id))
-        _:
-            return null
-
-func _is_effect_target_valid(target_unit) -> bool:
-    return target_unit != null and target_unit.leave_state == LeaveStatesScript.ACTIVE and target_unit.current_hp > 0
 
 func _resolve_effect_roll(effect_event) -> Variant:
     if effect_event == null:

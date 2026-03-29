@@ -1,14 +1,14 @@
 extends RefCounted
 class_name PayloadNumericHandler
 
-const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
-const EventTypesScript := preload("res://src/shared/event_types.gd")
-const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const HealPayloadScript := preload("res://src/battle_core/content/heal_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
-const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
+const PayloadUnitTargetHelperScript := preload("res://src/battle_core/effects/payload_handlers/payload_unit_target_helper.gd")
+const PayloadDamageRuntimeServiceScript := preload("res://src/battle_core/effects/payload_handlers/payload_damage_runtime_service.gd")
+const PayloadResourceRuntimeServiceScript := preload("res://src/battle_core/effects/payload_handlers/payload_resource_runtime_service.gd")
+const PayloadStatModRuntimeServiceScript := preload("res://src/battle_core/effects/payload_handlers/payload_stat_mod_runtime_service.gd")
 
 var battle_logger
 var log_event_builder
@@ -19,6 +19,11 @@ var rule_mod_service
 var faint_resolver
 
 var last_invalid_battle_code: Variant = null
+
+var _target_helper = PayloadUnitTargetHelperScript.new()
+var _damage_runtime_service = PayloadDamageRuntimeServiceScript.new()
+var _resource_runtime_service = PayloadResourceRuntimeServiceScript.new()
+var _stat_mod_runtime_service = PayloadStatModRuntimeServiceScript.new()
 
 func resolve_missing_dependency() -> String:
     if battle_logger == null:
@@ -33,227 +38,49 @@ func resolve_missing_dependency() -> String:
         return "stat_calculator"
     if rule_mod_service == null:
         return "rule_mod_service"
+    _sync_runtime_services()
+    var damage_missing := _damage_runtime_service.resolve_missing_dependency()
+    if not damage_missing.is_empty():
+        return "damage_runtime_service.%s" % damage_missing
+    var resource_missing := _resource_runtime_service.resolve_missing_dependency()
+    if not resource_missing.is_empty():
+        return "resource_runtime_service.%s" % resource_missing
+    var stat_missing := _stat_mod_runtime_service.resolve_missing_dependency()
+    if not stat_missing.is_empty():
+        return "stat_mod_runtime_service.%s" % stat_missing
     return ""
 
 func execute(payload, effect_definition, effect_event, battle_state, content_index) -> bool:
     last_invalid_battle_code = null
+    _sync_runtime_services()
     if payload is DamagePayloadScript:
-        _apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index)
+        _damage_runtime_service.apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index)
         return true
     if payload is HealPayloadScript:
-        _apply_heal_payload(payload, effect_definition, effect_event, battle_state)
+        _resource_runtime_service.apply_heal_payload(payload, effect_definition, effect_event, battle_state)
         return true
     if payload is ResourceModPayloadScript:
-        _apply_resource_mod_payload(payload, effect_definition, effect_event, battle_state)
+        _resource_runtime_service.apply_resource_mod_payload(payload, effect_definition, effect_event, battle_state)
         return true
     if payload is StatModPayloadScript:
-        _apply_stat_mod_payload(payload, effect_definition, effect_event, battle_state)
+        _stat_mod_runtime_service.apply_stat_mod_payload(payload, effect_definition, effect_event, battle_state)
         return true
     return false
 
-func _apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
-    var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
-    if not _is_effect_target_valid(target_unit):
-        return
-    var amount: int = payload.amount
-    var type_effectiveness: float = 1.0
-    if payload.use_formula:
-        var actor_unit = battle_state.get_unit(effect_event.owner_id)
-        if actor_unit == null:
-            return
-        var formula_skill_definition = _resolve_chain_skill_definition(effect_event, content_index)
-        var damage_kind := _resolve_formula_damage_kind(payload, formula_skill_definition)
-        var attack_stat_name := "attack"
-        var defense_stat_name := "defense"
-        var attack_value: int = actor_unit.base_attack
-        var defense_value: int = target_unit.base_defense
-        if damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
-            attack_stat_name = "sp_attack"
-            defense_stat_name = "sp_defense"
-            attack_value = actor_unit.base_sp_attack
-            defense_value = target_unit.base_sp_defense
-        attack_value = stat_calculator.calc_effective_stat(attack_value, int(actor_unit.stat_stages.get(attack_stat_name, 0)))
-        defense_value = stat_calculator.calc_effective_stat(defense_value, int(target_unit.stat_stages.get(defense_stat_name, 0)))
-        type_effectiveness = combat_type_service.calc_effectiveness(
-            _resolve_skill_combat_type_id(formula_skill_definition),
-            _resolve_unit_combat_types(target_unit)
-        )
-        amount = damage_service.apply_final_mod(
-            damage_service.calc_base_damage(
-                battle_state.battle_level,
-                max(1, amount),
-                attack_value,
-                defense_value
-            ),
-            rule_mod_service.get_final_multiplier(battle_state, effect_event.owner_id) * type_effectiveness
-        )
-    elif not String(payload.combat_type_id).is_empty():
-        type_effectiveness = combat_type_service.calc_effectiveness(
-            String(payload.combat_type_id),
-            _resolve_unit_combat_types(target_unit)
-        )
-        amount = damage_service.apply_final_mod(max(1, amount), type_effectiveness)
-    _apply_hp_change(
-        battle_state,
-        effect_event,
-        target_unit,
-        -max(1, amount),
-        EventTypesScript.EFFECT_DAMAGE,
-        payload.payload_type if not payload.payload_type.is_empty() else "damage",
-        type_effectiveness
-    )
+func _sync_runtime_services() -> void:
+    _damage_runtime_service.battle_logger = battle_logger
+    _damage_runtime_service.log_event_builder = log_event_builder
+    _damage_runtime_service.damage_service = damage_service
+    _damage_runtime_service.combat_type_service = combat_type_service
+    _damage_runtime_service.stat_calculator = stat_calculator
+    _damage_runtime_service.rule_mod_service = rule_mod_service
+    _damage_runtime_service.faint_resolver = faint_resolver
+    _damage_runtime_service.target_helper = _target_helper
 
-func _apply_heal_payload(payload, effect_definition, effect_event, battle_state) -> void:
-    var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
-    if not _is_effect_target_valid(target_unit):
-        return
-    var resolved_amount: int = int(payload.amount)
-    if bool(payload.use_percent):
-        resolved_amount = max(1, int(floor(float(target_unit.max_hp) * float(payload.percent) / 100.0)))
-    _apply_hp_change(battle_state, effect_event, target_unit, resolved_amount, EventTypesScript.EFFECT_HEAL, "heal")
+    _resource_runtime_service.battle_logger = battle_logger
+    _resource_runtime_service.log_event_builder = log_event_builder
+    _resource_runtime_service.target_helper = _target_helper
 
-func _apply_resource_mod_payload(payload, effect_definition, effect_event, battle_state) -> void:
-    var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
-    if not _is_effect_target_valid(target_unit):
-        return
-    var before_value: int = target_unit.current_mp
-    target_unit.current_mp = clamp(target_unit.current_mp + payload.amount, 0, target_unit.max_mp)
-    if before_value == target_unit.current_mp:
-        return
-    var value_change = _build_value_change(target_unit.unit_instance_id, payload.resource_key, before_value, target_unit.current_mp)
-    battle_logger.append_event(log_event_builder.build_event(
-        EventTypesScript.EFFECT_RESOURCE_MOD,
-        battle_state,
-        {
-            "source_instance_id": effect_event.source_instance_id,
-            "target_instance_id": target_unit.unit_instance_id,
-            "priority": effect_event.priority,
-            "trigger_name": effect_event.trigger_name,
-            "cause_event_id": effect_event.event_id,
-            "effect_roll": _resolve_effect_roll(effect_event),
-            "value_changes": [value_change],
-            "payload_summary": "%s mp %+d" % [target_unit.public_id, value_change.delta],
-        }
-    ))
-
-func _apply_stat_mod_payload(payload, effect_definition, effect_event, battle_state) -> void:
-    var target_unit = _resolve_target_unit(effect_definition.scope, effect_event, battle_state)
-    if not _is_effect_target_valid(target_unit):
-        return
-    var before_value: int = int(target_unit.stat_stages.get(payload.stat_name, 0))
-    var after_value: int = clamp(before_value + payload.stage_delta, -2, 2)
-    if before_value == after_value:
-        return
-    target_unit.stat_stages[payload.stat_name] = after_value
-    var value_change = _build_value_change(target_unit.unit_instance_id, payload.stat_name, before_value, after_value)
-    battle_logger.append_event(log_event_builder.build_event(
-        EventTypesScript.EFFECT_STAT_MOD,
-        battle_state,
-        {
-            "source_instance_id": effect_event.source_instance_id,
-            "target_instance_id": target_unit.unit_instance_id,
-            "priority": effect_event.priority,
-            "trigger_name": effect_event.trigger_name,
-            "cause_event_id": effect_event.event_id,
-            "effect_roll": _resolve_effect_roll(effect_event),
-            "value_changes": [value_change],
-            "payload_summary": "%s %s %+d" % [target_unit.public_id, payload.stat_name, value_change.delta],
-        }
-    ))
-
-func _resolve_target_unit(scope: String, effect_event, battle_state):
-    match scope:
-        "self":
-            return battle_state.get_unit(effect_event.owner_id)
-        "target":
-            if effect_event.chain_context == null or effect_event.chain_context.target_unit_id == null:
-                return null
-            return battle_state.get_unit(str(effect_event.chain_context.target_unit_id))
-        _:
-            return null
-
-func _is_effect_target_valid(target_unit) -> bool:
-    return target_unit != null and target_unit.leave_state == LeaveStatesScript.ACTIVE and target_unit.current_hp > 0
-
-func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event_type: String, summary_tag: String, type_effectiveness: Variant = null) -> void:
-    var is_damage_event := event_type == EventTypesScript.EFFECT_DAMAGE
-    assert(
-        (is_damage_event and type_effectiveness != null) or (not is_damage_event and type_effectiveness == null),
-        "type_effectiveness contract mismatch for event_type=%s" % event_type
-    )
-    assert(
-        type_effectiveness == null or typeof(type_effectiveness) == TYPE_FLOAT,
-        "type_effectiveness must be float or null, got %s" % typeof(type_effectiveness)
-    )
-    var before_value: int = target_unit.current_hp
-    target_unit.current_hp = clamp(target_unit.current_hp + delta, 0, target_unit.max_hp)
-    if before_value == target_unit.current_hp:
-        return
-    var value_change = _build_value_change(target_unit.unit_instance_id, "hp", before_value, target_unit.current_hp)
-    var log_event = log_event_builder.build_event(
-        event_type,
-        battle_state,
-        {
-            "source_instance_id": effect_event.source_instance_id,
-            "target_instance_id": target_unit.unit_instance_id,
-            "priority": effect_event.priority,
-            "trigger_name": effect_event.trigger_name,
-            "cause_event_id": effect_event.event_id,
-            "effect_roll": _resolve_effect_roll(effect_event),
-            "type_effectiveness": type_effectiveness if is_damage_event else null,
-            "value_changes": [value_change],
-            "payload_summary": "%s %s %+d" % [target_unit.public_id, summary_tag, value_change.delta],
-        }
-    )
-    battle_logger.append_event(log_event)
-    if is_damage_event and faint_resolver != null:
-        faint_resolver.record_fatal_damage(
-            battle_state,
-            target_unit.unit_instance_id,
-            before_value,
-            target_unit.current_hp,
-            effect_event.owner_id,
-            effect_event.source_instance_id,
-            effect_event.source_kind_order,
-            effect_event.source_order_speed_snapshot,
-            effect_event.priority,
-            log_event.event_step_id
-        )
-
-func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int):
-    var value_change = ValueChangeScript.new()
-    value_change.entity_id = entity_id
-    value_change.resource_name = resource_name
-    value_change.before_value = before_value
-    value_change.after_value = after_value
-    value_change.delta = after_value - before_value
-    return value_change
-
-func _resolve_effect_roll(effect_event) -> Variant:
-    return null if effect_event == null else effect_event.sort_random_roll
-
-func _resolve_chain_skill_definition(effect_event, content_index):
-    if effect_event == null or effect_event.chain_context == null:
-        return null
-    var raw_skill_id = effect_event.chain_context.skill_id
-    if raw_skill_id == null or content_index == null:
-        return null
-    var skill_id := str(raw_skill_id)
-    if skill_id.is_empty():
-        return null
-    return content_index.skills.get(skill_id, null)
-
-func _resolve_skill_combat_type_id(skill_definition) -> String:
-    return "" if skill_definition == null or skill_definition.combat_type_id == null else str(skill_definition.combat_type_id)
-
-func _resolve_formula_damage_kind(payload, skill_definition) -> String:
-    if skill_definition != null:
-        var skill_damage_kind := str(skill_definition.damage_kind)
-        if skill_damage_kind == ContentSchemaScript.DAMAGE_KIND_PHYSICAL or skill_damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
-            return skill_damage_kind
-    return ContentSchemaScript.DAMAGE_KIND_SPECIAL if str(payload.damage_kind) == ContentSchemaScript.DAMAGE_KIND_SPECIAL else ContentSchemaScript.DAMAGE_KIND_PHYSICAL
-
-func _resolve_unit_combat_types(target_unit) -> PackedStringArray:
-    if target_unit == null or target_unit.combat_type_ids == null:
-        return PackedStringArray()
-    return target_unit.combat_type_ids
+    _stat_mod_runtime_service.battle_logger = battle_logger
+    _stat_mod_runtime_service.log_event_builder = log_event_builder
+    _stat_mod_runtime_service.target_helper = _target_helper

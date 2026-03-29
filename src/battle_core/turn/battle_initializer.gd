@@ -5,11 +5,9 @@ const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const BattleResultScript := preload("res://src/battle_core/contracts/battle_result.gd")
-const SideStateScript := preload("res://src/battle_core/runtime/side_state.gd")
-const SelectionStateScript := preload("res://src/battle_core/contracts/selection_state.gd")
-const UnitStateScript := preload("res://src/battle_core/runtime/unit_state.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const PublicIdAllocatorScript := preload("res://src/battle_core/turn/public_id_allocator.gd")
+const BattleInitializerStateBuilderScript := preload("res://src/battle_core/turn/battle_initializer_state_builder.gd")
 
 var id_factory
 var rng_service
@@ -23,6 +21,7 @@ var combat_type_service
 var mp_service
 var rule_mod_service
 var public_id_allocator = PublicIdAllocatorScript.new()
+var _state_builder = BattleInitializerStateBuilderScript.new()
 
 func initialize_battle(battle_state, content_index, battle_setup) -> void:
     assert(battle_setup != null, "Battle setup is required")
@@ -53,7 +52,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     battle_state.last_matchup_signature = ""
     battle_state.pre_applied_turn_start_regen_turn_index = 0
     for side_setup in battle_setup.sides:
-        var side_state = _build_side_state(side_setup, format_config, content_index)
+        var side_state = _state_builder.build_side_state(side_setup, format_config, content_index, id_factory, public_id_allocator)
         battle_state.sides.append(side_state)
     battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_HEADER, "battle_init")
     battle_logger.append_event(log_event_builder.build_event(
@@ -121,54 +120,6 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
         return
     _apply_initial_turn_start_regen(battle_state)
     battle_state.phase = BattlePhasesScript.SELECTION
-
-func _build_side_state(side_setup, format_config, content_index):
-    assert(side_setup.unit_definition_ids.size() == format_config.team_size, "Side %s must provide exactly %d units" % [side_setup.side_id, format_config.team_size])
-    assert(side_setup.starting_index >= 0 and side_setup.starting_index < side_setup.unit_definition_ids.size(), "Invalid starting index for %s" % side_setup.side_id)
-    var side_state = SideStateScript.new()
-    side_state.side_id = side_setup.side_id
-    side_state.selection_state = SelectionStateScript.new()
-    for unit_index in range(side_setup.unit_definition_ids.size()):
-        var unit_definition_id = side_setup.unit_definition_ids[unit_index]
-        var unit_definition = content_index.units.get(unit_definition_id)
-        assert(unit_definition != null, "Missing unit definition: %s" % unit_definition_id)
-        var unit_state = UnitStateScript.new()
-        unit_state.unit_instance_id = id_factory.next_id("unit")
-        unit_state.public_id = public_id_allocator.build_public_id(side_setup.side_id, unit_index)
-        unit_state.definition_id = unit_definition.id
-        unit_state.display_name = unit_definition.display_name
-        unit_state.max_hp = unit_definition.base_hp
-        unit_state.current_hp = unit_definition.base_hp
-        unit_state.max_mp = unit_definition.max_mp
-        unit_state.current_mp = unit_definition.init_mp
-        unit_state.regen_per_turn = unit_definition.regen_per_turn
-        unit_state.ultimate_points = 0
-        unit_state.ultimate_points_cap = unit_definition.ultimate_points_cap
-        unit_state.ultimate_points_required = unit_definition.ultimate_points_required
-        unit_state.ultimate_point_gain_on_regular_skill_cast = unit_definition.ultimate_point_gain_on_regular_skill_cast
-        unit_state.regular_skill_ids = _resolve_regular_skill_loadout(side_setup, unit_index, unit_definition)
-        unit_state.combat_type_ids = unit_definition.combat_type_ids.duplicate()
-        unit_state.base_attack = unit_definition.base_attack
-        unit_state.base_defense = unit_definition.base_defense
-        unit_state.base_sp_attack = unit_definition.base_sp_attack
-        unit_state.base_sp_defense = unit_definition.base_sp_defense
-        unit_state.base_speed = unit_definition.base_speed
-        unit_state.last_effective_speed = unit_definition.base_speed
-        side_state.public_labels[unit_state.unit_instance_id] = unit_state.public_id
-        side_state.team_units.append(unit_state)
-        if unit_index == side_setup.starting_index:
-            side_state.set_active_unit(ContentSchemaScript.ACTIVE_SLOT_PRIMARY, unit_state.unit_instance_id)
-        else:
-            side_state.bench_order.append(unit_state.unit_instance_id)
-    return side_state
-
-func _resolve_regular_skill_loadout(side_setup, unit_index: int, unit_definition) -> PackedStringArray:
-    if side_setup.regular_skill_loadout_overrides.has(unit_index):
-        var override_loadout: PackedStringArray = side_setup.regular_skill_loadout_overrides[unit_index]
-        assert(override_loadout.size() == 3, "Invalid regular skill loadout size for side %s slot %d" % [side_setup.side_id, unit_index])
-        return override_loadout.duplicate()
-    assert(unit_definition.skill_ids.size() == 3, "UnitDefinition.skill_ids must remain 3-slot default loadout for %s" % unit_definition.id)
-    return unit_definition.skill_ids.duplicate()
 
 func _execute_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
     return trigger_batch_runner.execute_trigger_batch(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context)
