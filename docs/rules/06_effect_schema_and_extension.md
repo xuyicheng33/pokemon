@@ -107,6 +107,9 @@
 5. 若 `on_cast` 链上的前序 payload（含默认动作反伤）让施法者 HP 归 0，本次行动链不提前终止；仍按模块 02 的“行动开始后不回滚”语义继续本次剩余步骤，并在行动结束后进入击倒窗口。
 6. 当前基线的 `remove_effect` 只允许按目标 owner 上的精确 `def_id` 移除单个效果实例；若出现文档未允许的歧义匹配，按 `invalid_battle` 处理。
 7. `apply_field` payload 允许额外声明 `on_success_effect_ids`；这些 effect 只在 field 真正立住后执行，field 对拼失败时整组跳过。
+8. `apply_field` 的冲突判定必须读取 `FieldDefinition.field_kind`：只有 `domain vs domain` 进入对拼；`normal vs domain` 不得覆盖在场领域；`domain vs normal` 可直接替换普通场地。
+9. 若当前在场领域由本方创建，则本方 `is_domain_skill=true` 的技能在合法性阶段必须被禁用。
+10. 上述领域禁用仅作用于选指与提交校验，不回溯取消同回合已入队的对手领域动作。
 
 ### 5.1 damage payload 与 `combat_type` 接口
 

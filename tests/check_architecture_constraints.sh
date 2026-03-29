@@ -28,8 +28,10 @@ root = Path(".")
 
 allowlisted_reviews = {
     "src/battle_core/content/battle_content_index.gd": "content registry/validator remains centralized in prototype stage",
+    "src/battle_core/content/content_snapshot_validator.gd": "cross-resource schema constraints (including domain-field consistency) stay centralized until post-expansion validator split",
     "src/battle_core/effects/rule_mod_service.gd": "rule_mod stacking schema migration is centralized in one service",
     "src/battle_core/effects/payload_handlers/payload_numeric_handler.gd": "numeric payload semantics (typed fixed damage + percent heal) remain consolidated for fail-fast validation",
+    "src/battle_core/passives/field_apply_service.gd": "field conflict matrix + apply success-chain semantics are intentionally centralized before domain expansion baseline stabilizes",
     "src/battle_core/turn/battle_initializer.gd": "startup sequencing now also pre-applies first-turn regen; keep centralized until the next bootstrap refactor after Gojo v1 lands",
 }
 

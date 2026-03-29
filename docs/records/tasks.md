@@ -1117,3 +1117,39 @@
 - Gojo 文档必须明确“换人被 `action_legality` 封禁”会影响 `wait_allowed / forced_command_type` 的分支。
 - Gojo 文档必须明确：同批次 `effects_on_hit_ids` 默认不保证声明顺序。
 - Gojo 文档必须明确：首回合选指前先回 MP，Gojo 的首个可操作回合实战可用 MP 是 `64`。
+
+### 领域机制收口与扩角前整合（进行中）
+- 目标：在扩新角色前收口领域规则，避免普通 field/领域冲突语义继续扩散。
+- 范围：`docs/rules/*`、`docs/design/*`、`src/battle_core/*`（领域与合法性链路）、`tests/suites/ultimate_field_suite.gd`。
+- 验收标准：
+  - 规则层明确 `field_kind` 与冲突矩阵。
+  - 运行时落实“己方领域在场时，己方不能再开领域”。
+  - 同回合双领域施放能进入对拼语义。
+  - 领域创建者离场断领域、非创建者离场不断领域口径保持稳定。
+
+#### 当前阶段进度
+- 阶段 A（规则与记录）：已完成（`rules/design/decisions` 已同步 `field_kind`、冲突矩阵与合法性约束）。
+- 阶段 B（核心实现）：已完成（`LegalActionService`、`ActionExecutor`、`FieldApplyService`、`ActionQueueBuilder` 与内容 schema 已落地）。
+- 阶段 C（测试与平衡基线）：已完成（新增/更新领域相关 contract，用例覆盖同侧重开禁用、双领域同回合对拼与普通 field 阻断）。
+- 阶段 D（主干收尾）：进行中（待完成阶段提交/推送与最终主干回归确认）。
+
+#### 计划回归检查要点
+- 普通 field 不得覆盖在场领域；领域可覆盖普通 field。
+- `domain vs domain` 对拼仍按扣费后 MP 与平 MP RNG。
+- 己方领域在场时，己方领域技能不可选且手动提交 fail-fast。
+- 对手侧领域技能在同场景下仍可尝试施放。
+- 同回合双方都开领域时，后手领域不得被中途合法性锁取消，必须产生领域对拼日志。
+- 创建者离场断领域、非创建者离场不断领域，且断领域发生在补位和新单位 `on_enter` 之前。
+
+#### 交付与主干策略
+- 分支策略：在 `main` 线按阶段提交，提交后立即推送；每个阶段结束前必须 `git status` 干净。
+- 提交策略：至少两次提交（核心实现一提交，规则与记录一提交），提交信息使用动词前缀。
+- 主干回归策略：所有阶段提交完成后，在 `main` 复跑 `tests/run_with_gate.sh`，通过后才进入下一轮扩角任务。
+
+#### 命令级验收门槛
+- 必跑：`HOME=/tmp GODOT_USER_HOME=/tmp bash tests/run_with_gate.sh`。
+- 通过标准：`ALL TESTS PASSED`、`ARCH_GATE_PASSED`、`REPO_CONSISTENCY_PASSED`、`GATE PASSED` 全部出现。
+
+#### 本轮已完成验证
+- `tests/run_all.gd`：全量 suite 通过（包含新增领域相关 contract）。
+- `tests/run_with_gate.sh`：已通过（含架构门禁与仓库一致性门禁）。

@@ -47,14 +47,19 @@
 职责：
 
 - 处理 `apply_field` payload 的唯一主路径。
-- 场上已有 field 时，先做领域对拼；禁止直接覆盖。
+- 根据 `field_kind` 决定是直接覆盖、领域对拼，还是阻断生效。
 - field 真正落地后再执行 `field_apply` 触发与 `on_success_effect_ids`。
 
 规则：
 
+- 只有 `domain` 对 `domain` 才进入领域对拼。
+- `domain` 对 `normal`：新领域直接替换旧普通 field。
+- `normal` 对 `domain`：新普通 field 被阻断，旧领域保留。
 - 领域对拼比较双方扣费后的当前 MP。
 - MP 高者留场；平 MP 随机决定胜者，并把随机值写入日志，保证 replay 可复现。
 - 对拼失败的一方：field 不落地，只有成功后才成立的附带效果也不生效。
+- 若当前领域由本方创建，则本方领域技能在合法性阶段直接禁用，禁止“自己续开自己领域”。
+- 同回合双方都已排队领域时，后手领域不得被中途合法性锁回溯取消，必须进入对拼。
 
 ### 5.2 FieldService
 
@@ -68,6 +73,7 @@
 
 - field 自然到期后的日志与移除由 `TurnFieldLifecycleService` 协调执行。
 - creator 离场导致的提前打断已下沉到 `FieldService`，由手动换人、强制换下、击倒窗口和 field 覆盖路径复用同一逻辑。
+- 非 creator 离场不会触发领域提前打断。
 - 当前同一时刻全场只允许 1 个 field；若尝试展开新 field，必须先走 `FieldApplyService` 的对拼判定。
 - field buff 必须绑定 field 生命周期：`field_apply` 生效、自然到期移除、提前打断移除；不再允许靠角色离场时顺手清 stat_stage 兜底。
 

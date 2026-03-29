@@ -9,6 +9,20 @@
 
 ## 2026-03-29
 
+### 236. 领域收口期超阈值文件治理：先显式白名单复核，再进入下一轮拆分
+- 本轮实现新增了领域冲突矩阵与技能/field 一致性校验后，以下核心文件超过 250 行阈值，先进入架构门禁白名单并记录复核原因：
+  - `src/battle_core/passives/field_apply_service.gd`：当前集中承载 `field_kind` 冲突矩阵、领域对拼与 apply 成功后附带效果链，先保持单点避免语义分叉。
+  - `src/battle_core/content/content_snapshot_validator.gd`：当前集中承载跨资源一致性校验（含 `is_domain_skill` 与 `field_kind` 约束），先保持 fail-fast 单入口。
+- 该白名单是阶段性措施，不代表长期豁免；扩角稳定后优先拆分为“领域冲突子服务”和“技能-field 一致性校验子服务”。
+- 继续执行既有规则：超阈值文件必须可追溯记录，且每轮需求优先避免继续向同一热点文件堆职责。
+
+### 235. 领域规则二次收口：领域与普通 field 分离 + 己方领域重开禁用
+- 从本条起，`FieldDefinition` 必须区分 `field_kind`（`normal / domain`）；普通 field 不参与领域对拼。
+- 冲突矩阵冻结为：`domain vs domain` 才进入对拼；`domain vs normal` 直接替换；`normal vs domain` 不生效。
+- 若当前在场领域由本方创建，则本方领域技能在合法性阶段必须被禁用；该限制不作用于对手，也不作用于普通 field 技能。
+- 创建者离场导致领域提前打断的现有口径保持不变：创建者离场立刻 `field_break`，非创建者离场不打断。
+- 同回合双方都成功施放领域时，必须走领域对拼语义，不允许因为中途合法性锁而把“已排队的对手领域”直接吞掉。
+
 ### 234. 奥义点、领域对拼与 field 绑定增幅成为当前正式规则
 - 从本条起，奥义点规则固定为：只有常规技能开始施放时加点；`wait / switch / ultimate / resource_forced_default / surrender` 不加点；奥义合法性必须同时检查 MP 与奥义点；奥义开始施放即清零；换下保留；公开快照与日志都必须可见。
 - Gojo 与 Sukuna 当前统一采用 `required=3 / cap=3 / regular_skill_cast +1` 的首版配置；若未来要做角色特化攒点，只能在此基础上扩 schema，不回退当前通用 contract。
@@ -16,6 +30,7 @@
 - field 成功后才成立的附带效果必须通过 field apply 主路径统一表达；Gojo 的 `gojo_domain_action_lock` 只允许在无量空处成功立住后生效。
 - Gojo / Sukuna 的领域增幅从普通持久 `stat_stage` 改成 field 绑定效果：成功立场时生效，自然结束与提前打断时移除，对拼失败时不成立。
 - 平衡结论同步冻结：Gojo 保留苍 / 赫 / 茈与无下限原机制，奥义改为 3 点可开；宿傩保留“教会你爱的是...”、灶与领域自然到期终爆，并接受“3 点体系下开大更慢”的结果。
+- 本条中的“场上已有 field 先对拼”旧表述已由 #235 的 `field_kind` 冲突矩阵覆盖。
 
 ### 233. 热点文件本轮采用“最小拆分 + 新逻辑不再回堆旧热点”策略
 - `BattleCoreComposer` 与 `BattleCoreContainer` 从本条起改为声明式注册表驱动装配；新增依赖必须从同一来源同时生成实例化、注入、依赖断言与 dispose 解绑，不再手工四处同步。
