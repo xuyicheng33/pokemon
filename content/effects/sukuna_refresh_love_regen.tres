@@ -16,7 +16,7 @@ decrement_on = "turn_start"
 stacking = "replace"
 dynamic_value_formula = "matchup_bst_gap_band"
 dynamic_value_thresholds = PackedInt32Array(20, 40, 70, 110, 160)
-dynamic_value_outputs = PackedFloat32Array(5, 4, 3, 2, 1)
+dynamic_value_outputs = PackedFloat32Array(9, 8, 7, 6, 5)
 dynamic_value_default = 0.0
 
 [resource]
