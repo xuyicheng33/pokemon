@@ -11,29 +11,11 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 func validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:
-    return _validate_with_sample_mutation(harness, sample_factory, mutate)
-
-func run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
-    return _run_formula_skill_inherited_kind_case(core, sample_factory)
-
-func run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
-    return _run_non_skill_formula_damage_kind_case(core, sample_factory)
-
-func build_initialized_battle(core, content_index, battle_setup, seed: int):
-    return _build_initialized_battle(core, content_index, battle_setup, seed)
-
-func find_effect_damage_event(event_log: Array):
-    return _find_effect_damage_event(event_log)
-
-func errors_contain(errors: Array, expected_fragment: String) -> bool:
-    return _errors_contain(errors, expected_fragment)
-
-func _validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:
     var content_index = harness.build_loaded_content_index(sample_factory)
     mutate.call(content_index)
     return content_index.validate_snapshot()
 
-func _run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
+func run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
     var content_index = BattleContentIndexScript.new()
     content_index.load_snapshot(sample_factory.content_snapshot_paths())
 
@@ -81,7 +63,7 @@ func _run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
 
     var battle_setup = sample_factory.build_sample_setup()
     battle_setup.sides[1].starting_index = 2
-    var battle_state = _build_initialized_battle(core, content_index, battle_setup, 571)
+    var battle_state = build_initialized_battle(core, content_index, battle_setup, 571)
     var actor = battle_state.get_side("P1").get_active_unit()
     var target = battle_state.get_side("P2").get_active_unit()
     _configure_special_formula_bias(actor, target)
@@ -107,7 +89,7 @@ func _run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
     ]
     core.battle_logger.reset()
     core.turn_loop_controller.run_turn(battle_state, content_index, commands)
-    var effect_damage_event = _find_effect_damage_event(core.battle_logger.event_log)
+    var effect_damage_event = find_effect_damage_event(core.battle_logger.event_log)
     if effect_damage_event == null or effect_damage_event.value_changes.is_empty():
         return {"error": "missing inherited formula damage event"}
     return {
@@ -116,7 +98,7 @@ func _run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
         "type_effectiveness": effect_damage_event.type_effectiveness,
     }
 
-func _run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
+func run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
     var content_index = BattleContentIndexScript.new()
     content_index.load_snapshot(sample_factory.content_snapshot_paths())
 
@@ -145,14 +127,14 @@ func _run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary
     content_index.units["sample_pyron"].passive_skill_id = passive.id
 
     var battle_setup = sample_factory.build_sample_setup()
-    var battle_state = _build_initialized_battle(core, content_index, battle_setup, 601)
+    var battle_state = build_initialized_battle(core, content_index, battle_setup, 601)
     var actor = battle_state.get_side("P1").get_active_unit()
     _configure_self_special_formula_bias(actor)
     var expected_damage: int = min(actor.current_hp, _calc_expected_formula_damage(core, battle_state, actor, actor, payload.amount, "special", 1.0))
 
     core.battle_logger.reset()
     core.turn_loop_controller.run_turn(battle_state, content_index, [])
-    var effect_damage_event = _find_effect_damage_event(core.battle_logger.event_log)
+    var effect_damage_event = find_effect_damage_event(core.battle_logger.event_log)
     if effect_damage_event == null or effect_damage_event.value_changes.is_empty():
         return {"error": "missing non-skill formula damage event"}
     return {
@@ -161,7 +143,7 @@ func _run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary
         "type_effectiveness": effect_damage_event.type_effectiveness,
     }
 
-func _build_initialized_battle(core, content_index, battle_setup, seed: int):
+func build_initialized_battle(core, content_index, battle_setup, seed: int):
     core.rng_service.reset(seed)
     core.id_factory.reset()
     var battle_state = BattleStateScript.new()
@@ -171,11 +153,35 @@ func _build_initialized_battle(core, content_index, battle_setup, seed: int):
     core.battle_initializer.initialize_battle(battle_state, content_index, battle_setup)
     return battle_state
 
-func _find_effect_damage_event(event_log: Array):
+func find_effect_damage_event(event_log: Array):
     for ev in event_log:
         if ev.event_type == EventTypesScript.EFFECT_DAMAGE and String(ev.payload_summary).find("dealt") == -1 and String(ev.payload_summary).find("recoil") == -1:
             return ev
     return null
+
+func errors_contain(errors: Array, expected_fragment: String) -> bool:
+    for error_msg in errors:
+        if String(error_msg).find(expected_fragment) != -1:
+            return true
+    return false
+
+func _validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:
+    return validate_with_sample_mutation(harness, sample_factory, mutate)
+
+func _run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
+    return run_formula_skill_inherited_kind_case(core, sample_factory)
+
+func _run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
+    return run_non_skill_formula_damage_kind_case(core, sample_factory)
+
+func _build_initialized_battle(core, content_index, battle_setup, seed: int):
+    return build_initialized_battle(core, content_index, battle_setup, seed)
+
+func _find_effect_damage_event(event_log: Array):
+    return find_effect_damage_event(event_log)
+
+func _errors_contain(errors: Array, expected_fragment: String) -> bool:
+    return errors_contain(errors, expected_fragment)
 
 func _configure_special_formula_bias(actor, target) -> void:
     actor.base_attack = 24
@@ -213,9 +219,3 @@ func _calc_expected_formula_damage(core, battle_state, actor, target, amount: in
         core.damage_service.calc_base_damage(battle_state.battle_level, max(1, amount), attack_value, defense_value),
         type_effectiveness
     )
-
-func _errors_contain(errors: Array, expected_fragment: String) -> bool:
-    for error_msg in errors:
-        if String(error_msg).find(expected_fragment) != -1:
-            return true
-    return false

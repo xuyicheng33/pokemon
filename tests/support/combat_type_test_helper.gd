@@ -11,35 +11,11 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 func validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:
-    return _validate_with_sample_mutation(harness, sample_factory, mutate)
-
-func run_direct_damage_case(harness, core, sample_factory, skill_type_id: String, final_mod: Variant) -> Dictionary:
-    return _run_direct_damage_case(harness, core, sample_factory, skill_type_id, final_mod)
-
-func run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
-    return _run_formula_skill_case(harness, core, sample_factory)
-
-func run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
-    return _run_non_skill_formula_case(harness, core, sample_factory)
-
-func build_initialized_battle(core, content_index, battle_setup, seed: int):
-    return _build_initialized_battle(core, content_index, battle_setup, seed)
-
-func find_actor_damage_event(event_log: Array, actor_public_id: String):
-    return _find_actor_damage_event(event_log, actor_public_id)
-
-func find_effect_damage_event(event_log: Array):
-    return _find_effect_damage_event(event_log)
-
-func errors_contain(errors: Array, expected_fragment: String) -> bool:
-    return _errors_contain(errors, expected_fragment)
-
-func _validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:
     var content_index = harness.build_loaded_content_index(sample_factory)
     mutate.call(content_index)
     return content_index.validate_snapshot()
 
-func _run_direct_damage_case(harness, core, sample_factory, skill_type_id: String, final_mod: Variant) -> Dictionary:
+func run_direct_damage_case(harness, core, sample_factory, skill_type_id: String, final_mod: Variant) -> Dictionary:
     var content_index = harness.build_loaded_content_index(sample_factory)
     var skill_id = "test_fire_direct_skill" if skill_type_id == "fire" else "test_neutral_direct_skill"
     var direct_skill = SkillDefinitionScript.new()
@@ -57,7 +33,7 @@ func _run_direct_damage_case(harness, core, sample_factory, skill_type_id: Strin
 
     var battle_setup = sample_factory.build_sample_setup()
     battle_setup.sides[1].starting_index = 2
-    var battle_state = _build_initialized_battle(core, content_index, battle_setup, 501)
+    var battle_state = build_initialized_battle(core, content_index, battle_setup, 501)
 
     if final_mod != null:
         var final_mod_payload = RuleModPayloadScript.new()
@@ -96,7 +72,7 @@ func _run_direct_damage_case(harness, core, sample_factory, skill_type_id: Strin
 
     core.battle_logger.reset()
     core.turn_loop_controller.run_turn(battle_state, content_index, commands)
-    var damage_event = _find_actor_damage_event(core.battle_logger.event_log, "P1-A")
+    var damage_event = find_actor_damage_event(core.battle_logger.event_log, "P1-A")
     if damage_event == null or damage_event.value_changes.is_empty():
         return {"error": "missing direct damage event"}
     return {
@@ -104,7 +80,7 @@ func _run_direct_damage_case(harness, core, sample_factory, skill_type_id: Strin
         "type_effectiveness": damage_event.type_effectiveness,
     }
 
-func _run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
+func run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
     var content_index = harness.build_loaded_content_index(sample_factory)
 
     var payload = DamagePayloadScript.new()
@@ -151,7 +127,7 @@ func _run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
 
     var battle_setup = sample_factory.build_sample_setup()
     battle_setup.sides[1].starting_index = 2
-    var battle_state = _build_initialized_battle(core, content_index, battle_setup, 551)
+    var battle_state = build_initialized_battle(core, content_index, battle_setup, 551)
     var commands: Array = [
         core.command_builder.build_command({
             "turn_index": 1,
@@ -172,12 +148,12 @@ func _run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
     ]
     core.battle_logger.reset()
     core.turn_loop_controller.run_turn(battle_state, content_index, commands)
-    var effect_damage_event = _find_effect_damage_event(core.battle_logger.event_log)
+    var effect_damage_event = find_effect_damage_event(core.battle_logger.event_log)
     if effect_damage_event == null:
         return {"error": "missing formula damage event"}
     return {"type_effectiveness": effect_damage_event.type_effectiveness}
 
-func _run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
+func run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
     var content_index = harness.build_loaded_content_index(sample_factory)
 
     var payload = DamagePayloadScript.new()
@@ -205,15 +181,15 @@ func _run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
     content_index.units["sample_pyron"].passive_skill_id = passive.id
 
     var battle_setup = sample_factory.build_sample_setup()
-    var battle_state = _build_initialized_battle(core, content_index, battle_setup, 601)
-    var effect_damage_event = _find_effect_damage_event(core.battle_logger.event_log)
+    var battle_state = build_initialized_battle(core, content_index, battle_setup, 601)
+    var effect_damage_event = find_effect_damage_event(core.battle_logger.event_log)
     if effect_damage_event == null:
         return {"error": "missing non-skill formula damage event"}
     if battle_state.battle_result != null and battle_state.battle_result.finished:
         return {"error": "non-skill formula damage should not invalidate initialization"}
     return {"type_effectiveness": effect_damage_event.type_effectiveness}
 
-func _build_initialized_battle(core, content_index, battle_setup, seed: int):
+func build_initialized_battle(core, content_index, battle_setup, seed: int):
     core.rng_service.reset(seed)
     core.id_factory.reset()
     var battle_state = BattleStateScript.new()
@@ -223,20 +199,44 @@ func _build_initialized_battle(core, content_index, battle_setup, seed: int):
     core.battle_initializer.initialize_battle(battle_state, content_index, battle_setup)
     return battle_state
 
-func _find_actor_damage_event(event_log: Array, actor_public_id: String):
+func find_actor_damage_event(event_log: Array, actor_public_id: String):
     for ev in event_log:
         if ev.event_type == EventTypesScript.EFFECT_DAMAGE and String(ev.payload_summary).begins_with("%s dealt " % actor_public_id):
             return ev
     return null
 
-func _find_effect_damage_event(event_log: Array):
+func find_effect_damage_event(event_log: Array):
     for ev in event_log:
         if ev.event_type == EventTypesScript.EFFECT_DAMAGE and String(ev.payload_summary).find("dealt") == -1 and String(ev.payload_summary).find("recoil") == -1:
             return ev
     return null
 
-func _errors_contain(errors: Array, expected_fragment: String) -> bool:
+func errors_contain(errors: Array, expected_fragment: String) -> bool:
     for error_msg in errors:
         if String(error_msg).find(expected_fragment) != -1:
             return true
     return false
+
+func _validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:
+    return validate_with_sample_mutation(harness, sample_factory, mutate)
+
+func _run_direct_damage_case(harness, core, sample_factory, skill_type_id: String, final_mod: Variant) -> Dictionary:
+    return run_direct_damage_case(harness, core, sample_factory, skill_type_id, final_mod)
+
+func _run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
+    return run_formula_skill_case(harness, core, sample_factory)
+
+func _run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
+    return run_non_skill_formula_case(harness, core, sample_factory)
+
+func _build_initialized_battle(core, content_index, battle_setup, seed: int):
+    return build_initialized_battle(core, content_index, battle_setup, seed)
+
+func _find_actor_damage_event(event_log: Array, actor_public_id: String):
+    return find_actor_damage_event(event_log, actor_public_id)
+
+func _find_effect_damage_event(event_log: Array):
+    return find_effect_damage_event(event_log)
+
+func _errors_contain(errors: Array, expected_fragment: String) -> bool:
+    return errors_contain(errors, expected_fragment)
