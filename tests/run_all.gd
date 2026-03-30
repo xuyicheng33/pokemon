@@ -7,7 +7,6 @@ const ForcedReplaceSuiteScript := preload("res://tests/suites/forced_replace_sui
 const ActionGuardSuiteScript := preload("res://tests/suites/action_guard_suite.gd")
 const RuleModSuiteScript := preload("res://tests/suites/rule_mod_suite.gd")
 const BattleResultServiceSuiteScript := preload("res://tests/suites/battle_result_service_suite.gd")
-const SukunaSuiteScript := preload("res://tests/suites/sukuna_suite.gd")
 const ContentLoggingSuiteScript := preload("res://tests/suites/content_logging_suite.gd")
 const ContentIndexSplitSuiteScript := preload("res://tests/suites/content_index_split_suite.gd")
 const SetupLoadoutSuiteScript := preload("res://tests/suites/setup_loadout_suite.gd")
@@ -16,10 +15,10 @@ const PublicIdAllocatorSuiteScript := preload("res://tests/suites/public_id_allo
 const ManagerContractSuiteScript := preload("res://tests/suites/manager_contract_suite.gd")
 const CombatTypeSuiteScript := preload("res://tests/suites/combat_type_suite.gd")
 const DamagePayloadContractSuiteScript := preload("res://tests/suites/damage_payload_contract_suite.gd")
-const GojoSuiteScript := preload("res://tests/suites/gojo_suite.gd")
 const UltimateFieldSuiteScript := preload("res://tests/suites/ultimate_field_suite.gd")
 const AdapterContractSuiteScript := preload("res://tests/suites/adapter_contract_suite.gd")
 const TriggerValidationSuiteScript := preload("res://tests/suites/trigger_validation_suite.gd")
+const FormalCharacterRegistryScript := preload("res://tests/support/formal_character_registry.gd")
 
 var _harness
 
@@ -33,7 +32,6 @@ func _init() -> void:
         ActionGuardSuiteScript.new(),
         RuleModSuiteScript.new(),
         BattleResultServiceSuiteScript.new(),
-        SukunaSuiteScript.new(),
         ContentLoggingSuiteScript.new(),
         ContentIndexSplitSuiteScript.new(),
         SetupLoadoutSuiteScript.new(),
@@ -42,11 +40,11 @@ func _init() -> void:
         ManagerContractSuiteScript.new(),
         CombatTypeSuiteScript.new(),
         DamagePayloadContractSuiteScript.new(),
-        GojoSuiteScript.new(),
         UltimateFieldSuiteScript.new(),
         AdapterContractSuiteScript.new(),
         TriggerValidationSuiteScript.new(),
     ]
+    suites.append_array(FormalCharacterRegistryScript.new().build_suite_instances())
     for suite in suites:
         suite.register_tests(self, failures, _harness)
     _harness.dispose_core_pool()

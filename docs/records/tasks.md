@@ -11,11 +11,11 @@
 
 ## 当前阶段
 
-- 阶段目标：先泛化角色接入与内容快照门禁，再进入新角色接入。
+- 阶段目标：扩角前治理闸门已收口；下一步可按统一注册表进入新角色接入。
 - 当前不做：新角色扩充、Gojo / Sukuna 数值平衡调整、宿傩对 Gojo 的领域兑现率修正。
 - 当前优先级：
-  - 泛化角色接入与内容快照门禁，避免继续绑死 Gojo / Sukuna
-  - 让正式角色接入门禁从“点名角色”收口为“统一交付面”
+  - 若继续扩角，先补 `formal_character_registry.json` 资产登记，再补内容与 suite
+  - 保持正式角色接入门禁走统一交付面，不再回到手写角色特例
   - 保持无自动选指前提下的主线文档、测试与接入模板一致
 
 ## 2026-03-30
@@ -79,6 +79,41 @@
 
 - `bash tests/run_with_gate.sh` 通过
 
+### 正式角色注册表与内容快照门禁泛化（已完成）
+
+- 目标：
+  - 把正式角色接入从手写 Gojo / Sukuna 特例收口为统一注册表
+  - 让 `SampleBattleFactory.content_snapshot_paths()` 支持递归目录，避免子目录漏扫
+  - 同步 README / 测试说明 / 一致性门禁口径
+- 范围：
+  - `src/composition/sample_battle_factory.gd`
+  - `tests/run_all.gd`
+  - `tests/check_repo_consistency.sh`
+  - `tests/support/formal_character_registry.gd`
+  - `docs/records/formal_character_registry.json`
+  - `tests/suites/content_index_split_suite.gd`
+  - `tests/fixtures/content_snapshot/**/*`
+  - `README.md`
+  - `tests/README.md`
+  - `docs/records/*`
+- 验收标准：
+  - 正式角色 suite 由注册表驱动接入 `tests/run_all.gd`
+  - consistency gate 统一按注册表校验角色交付面
+  - `SampleBattleFactory.content_snapshot_paths()` 对嵌套 `.tres` 生效
+  - `tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 新增 `docs/records/formal_character_registry.json`，Gojo / 宿傩交付面已落单一真相
+  - `tests/run_all.gd` 已改为通过注册表动态装配正式角色 wrapper
+  - `tests/check_repo_consistency.sh` 已改为统一校验注册表、内容资源与 `SampleBattleFactory` 接线
+  - `content_snapshot_recursive_contract` 已守住嵌套 `.tres` 收集
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### 扩角前规范整合（已完成）
 
 - 目标：
@@ -126,8 +161,8 @@
 
 ## 下一步建议
 
-1. 先把 `SampleBattleFactory.content_snapshot_paths()` 改成递归收集内容资源，堵住子目录漏扫。
-2. 再把角色接入门禁从手写 Gojo / Sukuna 特例抽成统一注册表或统一交付面校验。
+1. 若继续扩新角色，先补 `docs/records/formal_character_registry.json`、设计稿、调整记录、suite 与 `SampleBattleFactory` 接线。
+2. 若转去做平衡整理，再单开“宿傩对 Gojo 的领域兑现率修正”任务，不与当前治理规范混做。
 
 ### 领域规范整合与扩角前收口（已完成）
 

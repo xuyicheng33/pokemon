@@ -185,7 +185,7 @@ tests/run_with_gate.sh
 - `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
 - 普通技能与奥义优先级约束分离校验
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
-- `SampleBattleFactory.content_snapshot_paths()` 统一从 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 自动收集 `.tres`，并做稳定排序，避免角色接线漏资源与回放漂移
+- `SampleBattleFactory.content_snapshot_paths()` 统一从 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 递归自动收集 `.tres`，并做稳定排序，避免角色接线漏资源与回放漂移
 
 ### 8.1 Gojo / 宿傩角色资源
 
@@ -202,7 +202,8 @@ tests/run_with_gate.sh
 - 调整记录：`docs/design/<character>_adjustments.md`
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
-- 专项回归：`tests/suites/<character>_suite.gd` + `tests/run_all.gd`
+- 角色注册：`docs/records/formal_character_registry.json`
+- 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 
 当前 Gojo 与 Sukuna 都必须满足这套交付面，后续新角色默认沿用。
@@ -219,9 +220,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-30）
 
-- `src/**/*.gd`：`8326` 行
-- `tests/**/*.gd`：`8558` 行
-- GDScript 合计：`16884` 行
+- `src/**/*.gd`：`8329` 行
+- `tests/**/*.gd`：`8600` 行
+- GDScript 合计：`16929` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

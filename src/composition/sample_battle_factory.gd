@@ -22,7 +22,7 @@ func content_snapshot_paths() -> PackedStringArray:
     var seen: Dictionary = {}
     for raw_dir_path in collect_dirs:
         var dir_path := String(raw_dir_path)
-        for file_path in _collect_tres_paths_in_dir(dir_path):
+        for file_path in collect_tres_paths_recursive(dir_path):
             if seen.has(file_path):
                 continue
             seen[file_path] = true
@@ -30,10 +30,13 @@ func content_snapshot_paths() -> PackedStringArray:
     paths.sort()
     return PackedStringArray(paths)
 
-func _collect_tres_paths_in_dir(dir_path: String) -> Array[String]:
+func collect_tres_paths_recursive(dir_path: String) -> Array[String]:
     var dir_access := DirAccess.open(dir_path)
     assert(dir_access != null, "SampleBattleFactory missing content directory: %s" % dir_path)
     var paths: Array[String] = []
+    for raw_subdir_name in dir_access.get_directories():
+        var subdir_name := String(raw_subdir_name)
+        paths.append_array(collect_tres_paths_recursive("%s/%s" % [dir_path, subdir_name]))
     for raw_file_name in dir_access.get_files():
         var file_name := String(raw_file_name)
         if file_name.get_extension() != "tres":

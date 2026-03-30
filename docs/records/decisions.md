@@ -140,3 +140,12 @@
 - 原因：
   - `TriggerDispatcher` / `EffectInstanceDispatcher` 每次重新收集 effect event 都会生成新的 `event_id`，继续依赖它只能拦住“同一个事件对象重复执行”，挡不住递归重新派发出来的新事件。
   - 同时保留 `target_unit_id` 维度，避免把 battle_init 换位后重新形成的新稳定对位错误拦成递归。
+
+### 17. 正式角色接入与内容快照门禁改用统一注册表（2026-03-30）
+
+- 新增 `docs/records/formal_character_registry.json` 作为正式角色交付面的单一真相：
+  - 至少登记 `unit_definition_id / design_doc / adjustment_doc / suite_path / required_content_paths`
+- `tests/run_all.gd` 不再手写正式角色 wrapper 列表，统一按注册表动态装配。
+- `tests/check_repo_consistency.sh` 不再点名 Gojo / 宿傩的交付面路径，统一按注册表校验正式角色文档、suite、内容资源与 `SampleBattleFactory` 接线。
+- `SampleBattleFactory.content_snapshot_paths()` 改为递归收集 `.tres`：
+  - 避免后续把角色资源拆进子目录后，内容快照与回放输入静默漏资源。

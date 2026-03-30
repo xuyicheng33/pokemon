@@ -20,5 +20,6 @@
 当前约定：
 
 - `run_all.gd` 只注册顶层 wrapper，不直接注册子套件，避免重复执行。
+- 正式角色 wrapper 统一登记在 `docs/records/formal_character_registry.json`，由 `tests/run_all.gd` 自动加载。
 - 当单测试文件接近 `500` 行时，先做预拆分评估；超过 `600` 行前必须完成按子域拆分。
 - 若 wrapper 内部的执行顺序带语义依赖，必须在 wrapper 文件头注明“顺序不可调换”的原因。

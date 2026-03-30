@@ -6,6 +6,7 @@ cd "$ROOT_DIR"
 
 python3 - <<'PY'
 from pathlib import Path
+import json
 import re
 import sys
 
@@ -34,6 +35,11 @@ def require_absent(rel_path: str, needle: str, label: str) -> None:
         failures.append(f"{rel_path} still contains stale {label}: {needle}")
 
 
+def require_exists(rel_path: str, label: str) -> None:
+    if not (root / rel_path).exists():
+        failures.append(f"missing {label}: {rel_path}")
+
+
 def gd_line_count(top_level_dir: str) -> int:
     total = 0
     for path in sorted((root / top_level_dir).rglob("*.gd")):
@@ -52,9 +58,28 @@ def require_readme_count(label: str, pattern: str, actual: int) -> None:
         failures.append(f"README.md {label} count mismatch: documented={documented}, actual={actual}")
 
 
+def load_json_array(rel_path: str, label: str) -> list[dict]:
+    try:
+        payload = json.loads(read_text(rel_path))
+    except Exception as exc:  # pragma: no cover - gate error path
+        failures.append(f"{rel_path} invalid {label}: {exc}")
+        return []
+    if not isinstance(payload, list):
+        failures.append(f"{rel_path} invalid {label}: expected top-level array")
+        return []
+    result: list[dict] = []
+    for idx, raw_entry in enumerate(payload):
+        if not isinstance(raw_entry, dict):
+            failures.append(f"{rel_path} invalid {label}[{idx}]: expected object")
+            continue
+        result.append(raw_entry)
+    return result
+
+
 src_count = gd_line_count("src")
 tests_count = gd_line_count("tests")
 total_count = src_count + tests_count
+formal_character_registry = load_json_array("docs/records/formal_character_registry.json", "formal character registry")
 require_readme_count("src", r"`src/\*\*/\*\.gd`：`(\d+)` 行", src_count)
 require_readme_count("tests", r"`tests/\*\*/\*\.gd`：`(\d+)` 行", tests_count)
 require_readme_count("total", r"GDScript 合计：`(\d+)` 行", total_count)
@@ -100,12 +125,12 @@ require_contains("tests/run_all.gd", 'const SetupLoadoutSuiteScript := preload("
 require_contains("tests/run_all.gd", "SetupLoadoutSuiteScript.new()", "setup loadout suite execution")
 require_contains("tests/run_all.gd", 'const ExtensionContractSuiteScript := preload("res://tests/suites/extension_contract_suite.gd")', "extension suite registration")
 require_contains("tests/run_all.gd", "ExtensionContractSuiteScript.new()", "extension suite execution")
-require_contains("tests/run_all.gd", 'const GojoSuiteScript := preload("res://tests/suites/gojo_suite.gd")', "gojo suite registration")
-require_contains("tests/run_all.gd", "GojoSuiteScript.new()", "gojo suite execution")
-require_contains("tests/run_all.gd", 'const SukunaSuiteScript := preload("res://tests/suites/sukuna_suite.gd")', "sukuna suite registration")
-require_contains("tests/run_all.gd", "SukunaSuiteScript.new()", "sukuna suite execution")
 require_contains("tests/run_all.gd", 'const UltimateFieldSuiteScript := preload("res://tests/suites/ultimate_field_suite.gd")', "ultimate field suite registration")
 require_contains("tests/run_all.gd", "UltimateFieldSuiteScript.new()", "ultimate field suite execution")
+require_contains("tests/run_all.gd", 'const FormalCharacterRegistryScript := preload("res://tests/support/formal_character_registry.gd")', "formal character registry loader")
+require_contains("tests/run_all.gd", "FormalCharacterRegistryScript.new().build_suite_instances()", "formal character suite expansion")
+require_contains("tests/support/formal_character_registry.gd", 'const REGISTRY_PATH := "res://docs/records/formal_character_registry.json"', "formal character registry path")
+require_contains("tests/support/formal_character_registry.gd", 'load("res://%s" % suite_path)', "formal character suite dynamic load")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("candidate_skill_pool_validation"', "candidate skill pool dedicated regression")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("setup_loadout_override_validation"', "setup override dedicated regression")
 require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("runtime_regular_skill_loadout_contract"', "runtime loadout dedicated regression")
@@ -117,22 +142,66 @@ require_contains("tests/suites/sukuna_kamado_domain_suite.gd", 'runner.run_test(
 require_contains("tests/suites/sukuna_kamado_domain_suite.gd", 'runner.run_test("sukuna_domain_break_chain_path"', "sukuna domain break regression")
 require_contains("tests/suites/ultimate_points_contract_suite.gd", 'runner.run_test("ultimate_points_regular_skill_gain_contract"', "ultimate point gain regression")
 require_contains("tests/suites/domain_clash_contract_suite.gd", 'runner.run_test("field_clash_tie_replay_contract"', "field clash replay regression")
+require_contains("tests/suites/content_index_split_suite.gd", 'runner.run_test("content_snapshot_recursive_contract"', "recursive snapshot contract regression")
 
 for rel_path in [
-    "docs/design/gojo_satoru_design.md",
-    "docs/design/sukuna_design.md",
-    "docs/design/gojo_satoru_adjustments.md",
-    "docs/design/sukuna_adjustments.md",
     "docs/design/domain_field_template.md",
     "tests/replay_cases/domain_cases.md",
     "tests/helpers/domain_case_runner.gd",
 ]:
-    if not (root / rel_path).exists():
-        failures.append(f"missing required character asset doc: {rel_path}")
+    require_exists(rel_path, "shared character asset doc")
+
+if not formal_character_registry:
+    failures.append("docs/records/formal_character_registry.json must list at least one formal character")
+sample_factory_text = read_text("src/composition/sample_battle_factory.gd")
+for entry in formal_character_registry:
+    character_id = str(entry.get("character_id", ""))
+    unit_definition_id = str(entry.get("unit_definition_id", ""))
+    design_doc = str(entry.get("design_doc", ""))
+    adjustment_doc = str(entry.get("adjustment_doc", ""))
+    suite_path = str(entry.get("suite_path", ""))
+    required_content_paths = entry.get("required_content_paths", [])
+    design_needles = entry.get("design_needles", [])
+    adjustment_needles = entry.get("adjustment_needles", [])
+    if character_id == "":
+        failures.append("formal character registry entry missing character_id")
+        continue
+    if unit_definition_id == "":
+        failures.append(f"formal character registry[{character_id}] missing unit_definition_id")
+    if design_doc == "":
+        failures.append(f"formal character registry[{character_id}] missing design_doc")
+    else:
+        require_exists(design_doc, f"{character_id} design doc")
+    if adjustment_doc == "":
+        failures.append(f"formal character registry[{character_id}] missing adjustment_doc")
+    else:
+        require_exists(adjustment_doc, f"{character_id} adjustment doc")
+    if suite_path == "":
+        failures.append(f"formal character registry[{character_id}] missing suite_path")
+    else:
+        require_exists(suite_path, f"{character_id} suite")
+    if not isinstance(required_content_paths, list) or not required_content_paths:
+        failures.append(f"formal character registry[{character_id}] missing required_content_paths")
+    else:
+        for rel_path in required_content_paths:
+            require_exists(str(rel_path), f"{character_id} content asset")
+    if not isinstance(design_needles, list) or not design_needles:
+        failures.append(f"formal character registry[{character_id}] missing design_needles")
+    elif design_doc != "":
+        for needle in design_needles:
+            require_contains(design_doc, str(needle), f"{character_id} design anchor")
+    if not isinstance(adjustment_needles, list) or not adjustment_needles:
+        failures.append(f"formal character registry[{character_id}] missing adjustment_needles")
+    elif adjustment_doc != "":
+        for needle in adjustment_needles:
+            require_contains(adjustment_doc, str(needle), f"{character_id} adjustment anchor")
+    if unit_definition_id != "" and unit_definition_id not in sample_factory_text:
+        failures.append(f"src/composition/sample_battle_factory.gd missing formal character wiring: {unit_definition_id}")
 
 require_contains("README.md", "candidate_skill_ids", "README candidate skill pool contract")
 require_contains("README.md", "regular_skill_loadout_overrides", "README setup override contract")
 require_contains("README.md", "设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite", "README character delivery workflow")
+require_contains("README.md", "docs/records/formal_character_registry.json", "README formal character registry")
 require_contains("README.md", "content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples", "README content snapshot path coverage")
 require_absent("README.md", "policy_decision_suite.gd", "removed auto-selection regression workflow")
 require_absent("README.md", "gojo_sukuna_batch_probe.gd", "removed batch simulation workflow")
@@ -152,17 +221,10 @@ require_contains("docs/rules/06_effect_schema_and_extension.md", "required_targe
 require_contains("docs/rules/06_effect_schema_and_extension.md", "action_legality", "rules action legality contract")
 require_contains("docs/rules/06_effect_schema_and_extension.md", "incoming_accuracy", "rules incoming accuracy contract")
 require_contains("docs/rules/03_stats_resources_and_damage.md", "incoming_accuracy", "rules incoming accuracy read-path")
-require_contains("docs/design/gojo_satoru_design.md", "on_success_effect_ids", "gojo design domain success-only lock contract")
-require_contains("docs/design/gojo_satoru_design.md", "对拼失败", "gojo design field clash failure contract")
-require_contains("docs/design/gojo_satoru_design.md", "不在角色稿重复定义", "gojo design domain template reference contract")
-require_contains("docs/design/sukuna_design.md", "领域自然到期终爆保留", "sukuna design expire burst contract")
-require_contains("docs/design/sukuna_design.md", "3 点奥义点体系下", "sukuna design balance record")
-require_contains("docs/design/sukuna_design.md", "不在角色稿重复定义", "sukuna design domain template reference contract")
 require_contains("docs/design/domain_field_template.md", "field_apply_success", "domain template success trigger contract")
 require_contains("docs/design/domain_field_template.md", "同回合双方都已排队施放领域时", "domain template dual-domain contract")
-require_contains("docs/design/gojo_satoru_adjustments.md", "影响测试", "gojo adjustment impact fields")
-require_contains("docs/design/sukuna_adjustments.md", "影响测试", "sukuna adjustment impact fields")
 require_contains("tests/README.md", "domain_case_runner.gd", "tests fixed domain case runner doc")
+require_contains("tests/README.md", "formal_character_registry.json", "tests formal character registry doc")
 require_contains("tests/replay_cases/domain_cases.md", "CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd", "domain case runner command")
 require_absent("tests/README.md", "policy_decision_suite.gd", "removed auto-selection suite doc")
 require_absent("tests/README.md", "gojo_sukuna_batch_probe.gd", "removed batch simulation doc")
