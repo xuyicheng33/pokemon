@@ -153,7 +153,7 @@
 补充规则：
 
 1. 若未来恢复自动选指，必须先补规则与设计文档，再单开接线任务，不得直接把实验性策略塞回主线。
-2. 当前正式角色交付面不再包含 AI policy、AI regression 或 batch probe。
+2. 当前正式角色交付面不再包含自动选指策略、自动选指回归或批量模拟案例。
 
 ## 5. 战斗日志
 
@@ -178,7 +178,7 @@
 |`actor_id`|当前根行动的行动者；非行动系统链为 `null`|
 |`source_instance_id`|当前触发源的稳定实例 ID；纯行动日志可与 `action_id` 相同|
 |`command_type`|当前根链的动作类型：技能 / 换人 / 奥义 / `wait` / `resource_forced_default` / `system:*`（含 `system:battle_header`）|
-|`command_source`|当前根链的指令来源：`manual / ai / resource_auto / timeout_auto / system`|
+|`command_source`|当前根链的指令来源：`manual / resource_auto / timeout_auto / system`|
 |`priority`|本次行动或效果使用的优先级|
 |`target_slot`|目标位置|
 |`action_window_passed`|行动机会是否已过去|
