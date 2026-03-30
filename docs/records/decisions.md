@@ -82,3 +82,21 @@
 - 外围输入/公开快照/AI 输入继续只使用 `public_id`。
 - `BattleCoreManager` 仍是外围稳定入口。
 - probe 与调试读取若需要更多信息，只允许走显式的只读快照/日志接口，不再直穿内部 session/runtime。
+
+### 11. 复杂度预拆阶段的大文件过渡上限（2026-03-30）
+
+- `src/battle_core/lifecycle/faint_resolver.gd`
+  - 本轮已把击倒窗口主流程拆成 `collect/resolve/replacement` 子函数，先降职责密度，再做下一步子服务外提。
+  - 过渡期允许行数上限 `290`，后续继续拆出独立 faint pipeline 服务。
+- `src/battle_core/actions/action_cast_service.gd`
+  - 本轮已把直接伤害上下文计算拆到独立 helper，先降低单段结算复杂度。
+  - 过渡期允许行数上限 `280`，后续继续拆分 cast/hit/effect pipeline。
+
+### 12. 领域合法性与 AI 领域优先口径统一（2026-03-30）
+
+- 新增 `domain_legality_service` 作为领域重开判定的单一真相：
+  - 选指阶段（`LegalActionService`）与执行阶段（`ActionDomainGuard`）统一复用同一判定。
+- `public_snapshot.field` 扩展 `field_kind / creator_side_id`：
+  - AI 在“领域优先”判定时只把“己方 active domain”视作重开阻断，不再把己方普通 field 误判为己方领域。
+- AI 策略从角色硬编码分支改为代码内策略表驱动：
+  - 后续新增角色默认走“加策略配置 + 测试”的接入路径，不再继续堆叠 `if actor_def_id == ...` 分支。

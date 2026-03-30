@@ -105,26 +105,19 @@ func is_damage_action(command, skill_definition) -> bool:
 func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, cause_event_id: String) -> void:
     if target == null:
         return
-    var power: int = 50
-    var damage_kind: String = ContentSchemaScript.DAMAGE_KIND_PHYSICAL
-    if skill_definition != null:
-        power = skill_definition.power
-        power += _resolve_power_bonus(skill_definition, actor, target)
-        damage_kind = skill_definition.damage_kind
-    var attack_value: int = actor.base_attack
-    var defense_value: int = target.base_defense
-    if damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
-        attack_value = actor.base_sp_attack
-        defense_value = target.base_sp_defense
-    attack_value = stat_calculator.calc_effective_stat(attack_value, int(actor.stat_stages.get("attack" if damage_kind == ContentSchemaScript.DAMAGE_KIND_PHYSICAL else "sp_attack", 0)))
-    defense_value = stat_calculator.calc_effective_stat(defense_value, int(target.stat_stages.get("defense" if damage_kind == ContentSchemaScript.DAMAGE_KIND_PHYSICAL else "sp_defense", 0)))
+    var damage_context := _build_direct_damage_context(actor, target, skill_definition)
     var final_multiplier: float = rule_mod_service.get_final_multiplier(battle_state, actor.unit_instance_id)
     var type_effectiveness: float = combat_type_service.calc_effectiveness(
         _resolve_skill_combat_type_id(skill_definition),
         _resolve_unit_combat_types(target)
     )
     var damage_amount: int = damage_service.apply_final_mod(
-        damage_service.calc_base_damage(battle_state.battle_level, power, attack_value, defense_value),
+        damage_service.calc_base_damage(
+            battle_state.battle_level,
+            int(damage_context.power),
+            int(damage_context.attack_value),
+            int(damage_context.defense_value)
+        ),
         final_multiplier * type_effectiveness
     )
     var before_hp: int = target.current_hp
@@ -238,3 +231,26 @@ func _resolve_power_bonus(skill_definition, actor, target) -> int:
     if String(skill_definition.power_bonus_source) == "mp_diff_clamped":
         return max(0, int(actor.current_mp) - int(target.current_mp))
     return 0
+
+func _build_direct_damage_context(actor, target, skill_definition) -> Dictionary:
+    var power: int = 50
+    var damage_kind: String = ContentSchemaScript.DAMAGE_KIND_PHYSICAL
+    if skill_definition != null:
+        power = skill_definition.power
+        power += _resolve_power_bonus(skill_definition, actor, target)
+        damage_kind = skill_definition.damage_kind
+    return {
+        "power": power,
+        "attack_value": _resolve_effective_attack_value(actor, damage_kind),
+        "defense_value": _resolve_effective_defense_value(target, damage_kind),
+    }
+
+func _resolve_effective_attack_value(actor, damage_kind: String) -> int:
+    if damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
+        return stat_calculator.calc_effective_stat(actor.base_sp_attack, int(actor.stat_stages.get("sp_attack", 0)))
+    return stat_calculator.calc_effective_stat(actor.base_attack, int(actor.stat_stages.get("attack", 0)))
+
+func _resolve_effective_defense_value(target, damage_kind: String) -> int:
+    if damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
+        return stat_calculator.calc_effective_stat(target.base_sp_defense, int(target.stat_stages.get("sp_defense", 0)))
+    return stat_calculator.calc_effective_stat(target.base_defense, int(target.stat_stages.get("defense", 0)))

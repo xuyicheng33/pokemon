@@ -57,6 +57,14 @@ size_review_rules = {
         "reason": "composition root keeps declarative preload/service/wiring tables together until container spec extraction lands",
         "max_lines": 340,
     },
+    "src/battle_core/lifecycle/faint_resolver.gd": {
+        "reason": "faint chain was function-split in-place; keep transitional coordinator shape until faint pipeline extraction lands",
+        "max_lines": 290,
+    },
+    "src/battle_core/actions/action_cast_service.gd": {
+        "reason": "damage phase now delegates to helper context builders; keep transitional entrypoint before cast pipeline split",
+        "max_lines": 280,
+    },
 }
 
 decisions_text = (root / "docs/records/decisions.md").read_text(encoding="utf-8")

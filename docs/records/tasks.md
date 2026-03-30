@@ -76,3 +76,27 @@
 1. 先完成领域模板文档与 replay case 收口。
 2. 再复跑统一闸门与对称 probe。
 3. 确认规范层稳定后，再开启“新角色接入”或“宿傩领域兑现率修正”。
+
+### 领域规范整合与扩角前收口（已完成）
+
+- 目标：
+  - 修复 AI 领域优先误判（普通 field 不再误判为己方领域）
+  - 把领域模板关键规则下沉为加载期硬校验
+  - 统一领域重开合法性判定路径（选指/执行共用）
+  - 把 Gojo/Sukuna AI 从硬编码分支改为策略表驱动
+  - 对齐 README/架构总览/角色稿与一致性门禁
+  - 抽公共 DomainRoleTestSupport，去除 suite 对私有方法依赖
+  - 对热点服务做函数级预拆并更新架构闸门过渡上限
+- 实现摘要：
+  - 新增 `domain_legality_service`，LegalActionService 与 ActionDomainGuard 共用
+  - `public_snapshot.field` 新增 `field_kind / creator_side_id`
+  - 新增 `domain_field_contract_validation` 回归，强约束 domain field 清理链
+  - 新增 AI 回归：`ai_policy_domain_not_blocked_by_owned_normal_field` 与 `ai_policy_domain_blocked_by_owned_domain_field`
+  - README 代码行统计、快照目录口径、facade 接口文档与 consistency 脚本同步
+  - `sukuna_*_suite` 不再调用 `_support._*` 私有 helper
+- 验证结果：
+  - `bash tests/run_with_gate.sh` 通过
+  - `CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd` 通过
+  - `HOME=/tmp GODOT_USER_HOME=/tmp RUN_NAIVE=0 RUN_HEURISTIC=1 BATTLES=200 SYMMETRIC_ONLY=1 godot --headless --path . --script tests/helpers/gojo_sukuna_batch_probe.gd` 完成
+- 本轮遗留（非本任务范围）：
+  - 宿傩在 Gojo 对位中的 `domain_successes` 仍为 `0`，属于后续平衡与角色资源轴问题，不影响本轮规范收口目标。

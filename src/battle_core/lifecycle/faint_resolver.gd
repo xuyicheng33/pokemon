@@ -54,6 +54,27 @@ func record_fatal_damage(
     battle_state.fatal_damage_records_by_target[target_unit_id].append(fatal_record)
 
 func resolve_faint_window(battle_state, content_index):
+    var fainted_units: Array = _collect_pending_fainted_units(battle_state)
+
+    if not fainted_units.is_empty():
+        var faint_invalid_code = _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units)
+        if faint_invalid_code != null:
+            return faint_invalid_code
+
+    var replacement_resolution: Dictionary = _resolve_faint_replacements(battle_state)
+    var replacement_invalid_code = replacement_resolution.get("invalid_code", null)
+    if replacement_invalid_code != null:
+        return replacement_invalid_code
+    var entered_unit_ids: Array = replacement_resolution.get("entered_unit_ids", [])
+    if not entered_unit_ids.is_empty():
+        var on_enter_invalid_code = _execute_unit_trigger_batch("on_enter", battle_state, content_index, entered_unit_ids)
+        if on_enter_invalid_code != null:
+            return on_enter_invalid_code
+    if _has_pending_faint_active(battle_state):
+        return resolve_faint_window(battle_state, content_index)
+    return null
+
+func _collect_pending_fainted_units(battle_state) -> Array:
     var fainted_units: Array = []
     for side_state in battle_state.sides:
         var active_unit = side_state.get_active_unit()
@@ -63,76 +84,74 @@ func resolve_faint_window(battle_state, content_index):
             active_unit.leave_state = LeaveStatesScript.FAINTED_PENDING_LEAVE
             active_unit.leave_reason = "faint"
             fainted_units.append(active_unit)
+    return fainted_units
 
-    if not fainted_units.is_empty():
-        var fainted_unit_ids: Array = []
-        for fainted_unit in fainted_units:
-            fainted_unit_ids.append(fainted_unit.unit_instance_id)
-        var killer_by_target: Dictionary = {}
-        for fainted_unit_id in fainted_unit_ids:
-            killer_by_target[fainted_unit_id] = _resolve_killer_for_target(battle_state, fainted_unit_id)
-        for fainted_unit in fainted_units:
-            battle_logger.append_event(log_event_builder.build_event(
-                EventTypesScript.STATE_FAINT,
-                battle_state,
-                {
-                    "source_instance_id": fainted_unit.unit_instance_id,
-                    "target_instance_id": fainted_unit.unit_instance_id,
-                    "leave_reason": "faint",
-                    "killer_id": killer_by_target.get(fainted_unit.unit_instance_id, null),
-                    "trigger_name": "on_faint",
-                    "payload_summary": "%s fainted" % fainted_unit.public_id,
-                }
-            ))
-        var on_faint_invalid_code = _execute_unit_trigger_batch("on_faint", battle_state, content_index, fainted_unit_ids)
-        if on_faint_invalid_code != null:
-            return on_faint_invalid_code
-        var killer_resolution: Dictionary = _resolve_killer_units(battle_state, fainted_unit_ids)
-        var killer_unit_ids: Array = killer_resolution["killer_unit_ids"]
-        if not killer_unit_ids.is_empty():
-            var action_on_kill_events_result: Dictionary = _collect_action_on_kill_events(battle_state, content_index, killer_unit_ids)
-            if action_on_kill_events_result["invalid_code"] != null:
-                return action_on_kill_events_result["invalid_code"]
-            var on_kill_invalid_code = _execute_unit_trigger_batch(
-                "on_kill",
-                battle_state,
-                content_index,
-                killer_unit_ids,
-                action_on_kill_events_result["events"]
-            )
-            if on_kill_invalid_code != null:
-                return on_kill_invalid_code
-        var on_exit_invalid_code = _execute_unit_trigger_batch("on_exit", battle_state, content_index, fainted_unit_ids)
-        if on_exit_invalid_code != null:
-            return on_exit_invalid_code
-        for fainted_unit in fainted_units:
-            leave_service.leave_unit(battle_state, fainted_unit, "faint", content_index)
-        var field_break_invalid_code = field_service.break_field_if_creator_inactive(
+func _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units: Array) -> Variant:
+    var fainted_unit_ids: Array = []
+    for fainted_unit in fainted_units:
+        fainted_unit_ids.append(fainted_unit.unit_instance_id)
+    var killer_by_target: Dictionary = {}
+    for fainted_unit_id in fainted_unit_ids:
+        killer_by_target[fainted_unit_id] = _resolve_killer_for_target(battle_state, fainted_unit_id)
+    for fainted_unit in fainted_units:
+        battle_logger.append_event(log_event_builder.build_event(
+            EventTypesScript.STATE_FAINT,
+            battle_state,
+            {
+                "source_instance_id": fainted_unit.unit_instance_id,
+                "target_instance_id": fainted_unit.unit_instance_id,
+                "leave_reason": "faint",
+                "killer_id": killer_by_target.get(fainted_unit.unit_instance_id, null),
+                "trigger_name": "on_faint",
+                "payload_summary": "%s fainted" % fainted_unit.public_id,
+            }
+        ))
+    var on_faint_invalid_code = _execute_unit_trigger_batch("on_faint", battle_state, content_index, fainted_unit_ids)
+    if on_faint_invalid_code != null:
+        return on_faint_invalid_code
+    var killer_resolution: Dictionary = _resolve_killer_units(battle_state, fainted_unit_ids)
+    var killer_unit_ids: Array = killer_resolution["killer_unit_ids"]
+    if not killer_unit_ids.is_empty():
+        var action_on_kill_events_result: Dictionary = _collect_action_on_kill_events(battle_state, content_index, killer_unit_ids)
+        if action_on_kill_events_result["invalid_code"] != null:
+            return action_on_kill_events_result["invalid_code"]
+        var on_kill_invalid_code = _execute_unit_trigger_batch(
+            "on_kill",
             battle_state,
             content_index,
-            battle_state.chain_context
+            killer_unit_ids,
+            action_on_kill_events_result["events"]
         )
-        if field_break_invalid_code != null:
-            return field_break_invalid_code
-        _clear_fatal_damage_records(battle_state, fainted_unit_ids)
+        if on_kill_invalid_code != null:
+            return on_kill_invalid_code
+    var on_exit_invalid_code = _execute_unit_trigger_batch("on_exit", battle_state, content_index, fainted_unit_ids)
+    if on_exit_invalid_code != null:
+        return on_exit_invalid_code
+    for fainted_unit in fainted_units:
+        leave_service.leave_unit(battle_state, fainted_unit, "faint", content_index)
+    var field_break_invalid_code = field_service.break_field_if_creator_inactive(
+        battle_state,
+        content_index,
+        battle_state.chain_context
+    )
+    if field_break_invalid_code != null:
+        return field_break_invalid_code
+    _clear_fatal_damage_records(battle_state, fainted_unit_ids)
+    return null
 
+func _resolve_faint_replacements(battle_state) -> Dictionary:
     var entered_unit_ids: Array = []
     for side_state in battle_state.sides:
-        if side_state.get_active_unit() == null:
-            var replacement_result: Dictionary = replacement_service.resolve_replacement(battle_state, side_state, "faint")
-            var replacement_invalid_code = replacement_result.get("invalid_code", null)
-            if replacement_invalid_code != null:
-                return replacement_invalid_code
-            var entered_unit = replacement_result.get("entered_unit", null)
-            if entered_unit != null:
-                entered_unit_ids.append(entered_unit.unit_instance_id)
-    if not entered_unit_ids.is_empty():
-        var on_enter_invalid_code = _execute_unit_trigger_batch("on_enter", battle_state, content_index, entered_unit_ids)
-        if on_enter_invalid_code != null:
-            return on_enter_invalid_code
-    if _has_pending_faint_active(battle_state):
-        return resolve_faint_window(battle_state, content_index)
-    return null
+        if side_state.get_active_unit() != null:
+            continue
+        var replacement_result: Dictionary = replacement_service.resolve_replacement(battle_state, side_state, "faint")
+        var replacement_invalid_code = replacement_result.get("invalid_code", null)
+        if replacement_invalid_code != null:
+            return {"entered_unit_ids": [], "invalid_code": replacement_invalid_code}
+        var entered_unit = replacement_result.get("entered_unit", null)
+        if entered_unit != null:
+            entered_unit_ids.append(entered_unit.unit_instance_id)
+    return {"entered_unit_ids": entered_unit_ids, "invalid_code": null}
 
 func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array, extra_effect_events: Array = []):
     return trigger_batch_runner.execute_trigger_batch(
