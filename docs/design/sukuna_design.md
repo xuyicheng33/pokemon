@@ -77,6 +77,8 @@
 
 ## 2. 技能详细设计
 
+> 领域公共模板见 `docs/design/domain_field_template.md`。本稿只写宿傩在该模板下的角色差异。
+
 ### 2.1 解（Kai）
 
 | 字段 | 值 |
@@ -145,7 +147,7 @@
 | `sukuna_kamado_explode` | 灶的自然到期爆炸，本体为 20 点火属性固定伤害 |
 
 - 玩家说明：慢速火术式；命中后会把“灶”挂在对手身上，逼对手换人或吃到后续爆炸。
-- 机制说明：
+- 机制说明（领域公共规则仍以 `docs/design/domain_field_template.md` 为准）：
   - `开` 命中后只负责施加 `sukuna_kamado_mark`。
   - 灶层数独立存在，`stacking=stack`，多层会各自扣减、各自结算。
   - `persists_on_switch=false` 表示标记持有者离场时会把灶实例带走；但在离场链上的 `on_exit` 会先结算 20 点火属性固定伤害。

@@ -71,6 +71,8 @@
 
 ## 2. 技能详细设计
 
+> 领域公共模板见 `docs/design/domain_field_template.md`。本稿只写五条悟在该模板下的角色差异。
+
 ### 2.1 苍（Ao）
 
 | 字段 | 值 |
@@ -242,7 +244,7 @@
 3. `gojo_unlimited_void_field.on_expire_effect_ids / on_break_effect_ids`：`gojo_domain_buff_remove` 在领域结束或打断时回收增幅
 4. `gojo_domain_action_lock`：只有在 `gojo_apply_domain_field` 成功落地后，才作为 follow-up 生效
 
-补充语义：
+补充语义（领域公共规则仍以 `docs/design/domain_field_template.md` 为准）：
 
 - 五条悟当前奥义点配置固定为：`ultimate_points_required = 3`、`ultimate_points_cap = 3`、`ultimate_point_gain_on_regular_skill_cast = 1`。
 - 奥义合法性必须同时满足：`current_mp >= 50` 且 `ultimate_points >= 3`；开始施放无量空处时，奥义点立即清零；换下后点数保留。

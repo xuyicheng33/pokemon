@@ -2,6 +2,8 @@
 
 本文件只记录增量调整，不重复抄写当前冻结设计稿。当前生效方案以 `docs/design/gojo_satoru_design.md` 为准。
 
+领域公共规则另见 `docs/design/domain_field_template.md`。
+
 ## 2026-03-29
 
 ### 调整：奥义点、领域对拼与领域绑定增幅收口
