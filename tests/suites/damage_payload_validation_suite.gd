@@ -61,7 +61,7 @@ func _test_fixed_type_validation(harness) -> Dictionary:
 
 
 func _validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:
-    return _helper._validate_with_sample_mutation(harness, sample_factory, mutate)
+    return _helper.validate_with_sample_mutation(harness, sample_factory, mutate)
 
 func _errors_contain(errors: Array, expected_fragment: String) -> bool:
-    return _helper._errors_contain(errors, expected_fragment)
+    return _helper.errors_contain(errors, expected_fragment)

@@ -175,7 +175,7 @@ func _test_heal_percent_resolution(harness) -> Dictionary:
 
 
 func _build_initialized_battle(core, content_index, battle_setup, seed: int):
-    return _helper._build_initialized_battle(core, content_index, battle_setup, seed)
+    return _helper.build_initialized_battle(core, content_index, battle_setup, seed)
 
 func _find_effect_damage_event(event_log: Array):
-    return _helper._find_effect_damage_event(event_log)
+    return _helper.find_effect_damage_event(event_log)

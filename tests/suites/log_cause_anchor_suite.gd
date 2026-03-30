@@ -159,10 +159,10 @@ func _test_apply_field_creator_non_action_chain(harness) -> Dictionary:
     return harness.pass_result()
 
 func _event_id(log_event) -> String:
-    return _helper._event_id(log_event)
+    return _helper.event_id(log_event)
 
 func _find_event(event_log: Array, predicate: Callable):
-    return _helper._find_event(event_log, predicate)
+    return _helper.find_event(event_log, predicate)
 
 func _find_events(event_log: Array, predicate: Callable) -> Array:
-    return _helper._find_events(event_log, predicate)
+    return _helper.find_events(event_log, predicate)

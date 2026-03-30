@@ -2,6 +2,7 @@ extends RefCounted
 class_name DomainClashContractSuite
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const UltimateFieldTestHelperScript := preload("res://tests/support/ultimate_field_test_helper.gd")
 
 var _helper = UltimateFieldTestHelperScript.new()
@@ -14,6 +15,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("same_turn_dual_domain_not_cancelled_by_action_lock_contract", failures, Callable(self, "_test_same_turn_dual_domain_not_cancelled_by_action_lock_contract").bind(harness))
 	runner.run_test("normal_field_cannot_replace_active_domain_contract", failures, Callable(self, "_test_normal_field_cannot_replace_active_domain_contract").bind(harness))
 	runner.run_test("domain_replaces_normal_field_contract", failures, Callable(self, "_test_domain_replaces_normal_field_contract").bind(harness))
+	runner.run_test("active_domain_missing_creator_fails_fast_contract", failures, Callable(self, "_test_active_domain_missing_creator_fails_fast_contract").bind(harness))
 
 func _test_field_clash_high_mp_and_success_only_followup_contract(harness) -> Dictionary:
 	var lose_payload = _helper.build_gojo_vs_sukuna_state(harness, 2205)
@@ -255,4 +257,25 @@ func _test_domain_replaces_normal_field_contract(harness) -> Dictionary:
 		return harness.fail_result("领域替换普通 field 时不应写出领域对拼日志")
 	if _helper.has_domain_block_log(core.battle_logger.event_log, "sample_focus_field"):
 		return harness.fail_result("领域替换普通 field 时不应写出普通 field 被阻断日志")
+	return harness.pass_result()
+
+func _test_active_domain_missing_creator_fails_fast_contract(harness) -> Dictionary:
+	var state_payload = _helper.build_gojo_vs_sukuna_state(harness, 2213)
+	if state_payload.has("error"):
+		return harness.fail_result(str(state_payload["error"]))
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var invalid_field = FieldStateScript.new()
+	invalid_field.field_def_id = "gojo_unlimited_void_field"
+	invalid_field.instance_id = "test_invalid_domain_field"
+	invalid_field.creator = "missing_creator"
+	invalid_field.remaining_turns = 2
+	battle_state.field_state = invalid_field
+	core.turn_loop_controller.run_turn(battle_state, content_index, [
+		_helper.build_wait_command(core, 1, "P1", "P1-A"),
+		_helper.build_wait_command(core, 1, "P2", "P2-A"),
+	])
+	if not battle_state.battle_result.finished or battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+		return harness.fail_result("active domain 缺失 creator 时必须 fail-fast 为 invalid_state_corruption")
 	return harness.pass_result()

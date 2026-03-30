@@ -2,6 +2,7 @@ extends RefCounted
 class_name FieldApplyConflictService
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var rng_service
 var context_resolver
@@ -35,8 +36,12 @@ func is_normal_field_blocked_by_domain(challenger_field_definition, incumbent_fi
 func resolve_field_clash(before_field, effect_event, battle_state) -> Dictionary:
 	var challenger_creator: String = context_resolver.resolve_field_creator(effect_event)
 	var incumbent_creator: String = String(before_field.creator)
+	if challenger_creator.is_empty() or incumbent_creator.is_empty():
+		return {"invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
 	var challenger_mp: int = _resolve_creator_mp(battle_state, challenger_creator)
 	var incumbent_mp: int = _resolve_creator_mp(battle_state, incumbent_creator)
+	if challenger_mp < 0 or incumbent_mp < 0:
+		return {"invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
 	if incumbent_creator == challenger_creator:
 		return _build_clash_result(true, true, challenger_creator, incumbent_creator, challenger_mp, incumbent_mp, null)
 	if challenger_mp > incumbent_mp:

@@ -116,13 +116,13 @@ func _test_combat_type_default_and_recoil_paths(harness) -> Dictionary:
     return harness.pass_result()
 
 func _run_direct_damage_case(harness, core, sample_factory, skill_type_id: String, final_mod: Variant) -> Dictionary:
-    return _helper._run_direct_damage_case(harness, core, sample_factory, skill_type_id, final_mod)
+    return _helper.run_direct_damage_case(harness, core, sample_factory, skill_type_id, final_mod)
 
 func _run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
-    return _helper._run_formula_skill_case(harness, core, sample_factory)
+    return _helper.run_formula_skill_case(harness, core, sample_factory)
 
 func _run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
-    return _helper._run_non_skill_formula_case(harness, core, sample_factory)
+    return _helper.run_non_skill_formula_case(harness, core, sample_factory)
 
 func _build_initialized_battle(core, content_index, battle_setup, seed: int):
-    return _helper._build_initialized_battle(core, content_index, battle_setup, seed)
+    return _helper.build_initialized_battle(core, content_index, battle_setup, seed)

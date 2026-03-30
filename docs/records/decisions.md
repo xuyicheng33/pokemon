@@ -100,3 +100,14 @@
   - AI 在“领域优先”判定时只把“己方 active domain”视作重开阻断，不再把己方普通 field 误判为己方领域。
 - AI 策略从角色硬编码分支改为代码内策略表驱动：
   - 后续新增角色默认走“加策略配置 + 测试”的接入路径，不再继续堆叠 `if actor_def_id == ...` 分支。
+
+### 13. Active Field 的 creator 视为运行态硬约束（2026-03-30）
+
+- 只要 `battle_state.field_state != null`，就必须满足：
+  - `field_state.creator` 非空
+  - `field_state.creator` 能解析到当前运行态中的单位
+- 原因：
+  - 领域对拼与 field 生命周期日志都依赖 creator 归因；继续用缺失 creator 的脏状态往下跑，只会把坏状态伪装成正常对拼结果。
+- 当前处理：
+  - `RuntimeGuardService` 在每回合入口统一拦截这类坏状态，直接返回 `invalid_state_corruption`
+  - `FieldApplyConflictService` 额外保留本地防御，不再把缺失 creator 降级成 `-1 MP` 继续参与领域对拼

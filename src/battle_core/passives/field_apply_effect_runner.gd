@@ -28,6 +28,7 @@ func create_field_state(effect_definition, payload, effect_event):
 	field_state.field_def_id = payload.field_definition_id
 	field_state.instance_id = id_factory.next_id("field")
 	field_state.creator = context_resolver.resolve_field_creator(effect_event)
+	assert(not field_state.creator.is_empty(), "FieldApplyEffectRunner.create_field_state requires non-empty creator for %s" % field_state.field_def_id)
 	field_state.remaining_turns = effect_definition.duration
 	field_state.source_instance_id = effect_event.source_instance_id
 	field_state.source_kind_order = effect_event.source_kind_order

@@ -45,6 +45,11 @@ func validate_runtime_state(battle_state):
             var active_unit_id: String = str(side_state.active_slots[slot_id])
             if active_unit_id.is_empty() or side_state.find_unit(active_unit_id) == null:
                 return ErrorCodesScript.INVALID_STATE_CORRUPTION
-    if battle_state.field_state != null and battle_state.field_state.remaining_turns < 0:
-        return ErrorCodesScript.INVALID_STATE_CORRUPTION
+    if battle_state.field_state != null:
+        if battle_state.field_state.remaining_turns < 0:
+            return ErrorCodesScript.INVALID_STATE_CORRUPTION
+        if String(battle_state.field_state.creator).is_empty():
+            return ErrorCodesScript.INVALID_STATE_CORRUPTION
+        if battle_state.get_unit(String(battle_state.field_state.creator)) == null:
+            return ErrorCodesScript.INVALID_STATE_CORRUPTION
     return null

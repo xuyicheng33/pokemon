@@ -35,7 +35,7 @@ func _test_formula_damage_kind_resolution(harness) -> Dictionary:
     return harness.pass_result()
 
 func _run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
-    return _helper._run_formula_skill_inherited_kind_case(core, sample_factory)
+    return _helper.run_formula_skill_inherited_kind_case(core, sample_factory)
 
 func _run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
-    return _helper._run_non_skill_formula_damage_kind_case(core, sample_factory)
+    return _helper.run_non_skill_formula_damage_kind_case(core, sample_factory)

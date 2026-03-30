@@ -51,6 +51,7 @@
   - `sample_battle_format.tres` 已迁到 `content/battle_formats/`
   - `README` / `content/README.md` / `docs/design/*` / `tests/README.md` 已开始同步新目录与门禁口径
   - 本文件与 `docs/records/decisions.md` 已从大正文模式切回精简索引模式
+  - 最终自查补充：active field 缺失 creator 改为统一 `invalid_state_corruption` fail-fast，不再让领域对拼用 `-1` MP 静默继续算
 
 #### 当前验证结果
 

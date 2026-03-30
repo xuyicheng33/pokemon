@@ -101,6 +101,8 @@ func _build_public_field_snapshot(battle_state, content_index = null) -> Diction
             field_kind = String(field_definition.field_kind)
     var creator_side_id: Variant = null
     var creator_side = battle_state.get_side_for_unit(String(battle_state.field_state.creator))
+    if field_kind == "domain":
+        assert(creator_side != null, "BattleCorePublicSnapshotBuilder requires creator side for active domain field %s" % String(battle_state.field_state.field_def_id))
     if creator_side != null:
         creator_side_id = String(creator_side.side_id)
     return {

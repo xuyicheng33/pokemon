@@ -64,6 +64,8 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 			return null
 		if _conflict_service.should_resolve_domain_clash(challenger_field_definition, incumbent_field_definition):
 			var clash_result := _conflict_service.resolve_field_clash(before_field, effect_event, battle_state)
+			if clash_result.has("invalid_code"):
+				return clash_result["invalid_code"]
 			_log_service.log_field_clash(clash_result, before_field, payload, effect_event, battle_state)
 			if not bool(clash_result.get("challenger_won", false)):
 				return null

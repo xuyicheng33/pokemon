@@ -2,36 +2,7 @@ extends RefCounted
 class_name BattleAIPolicyService
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
-
-const ROLE_POLICY_CONFIG := {
-    "gojo_satoru": {
-        "mode": "double_mark_combo",
-        "domain_ultimate_id": "gojo_unlimited_void",
-        "heal_skill_id": "gojo_reverse_ritual",
-        "heal_threshold": 0.35,
-        "combo_skill_id": "gojo_murasaki",
-        "combo_marks": ["gojo_ao_mark", "gojo_aka_mark"],
-        "mark_build_order": ["gojo_ao", "gojo_aka"],
-        "low_hp_finish_skill_id": "gojo_murasaki",
-        "low_hp_finish_threshold": 0.45,
-        "fallback_skill_order": ["gojo_aka", "gojo_ao"],
-    },
-    "sukuna": {
-        "mode": "kamado_cycle",
-        "domain_ultimate_id": "sukuna_fukuma_mizushi",
-        "heal_skill_id": "sukuna_reverse_ritual",
-        "heal_threshold": 0.40,
-        "point_rush_skill_order": ["sukuna_kai", "sukuna_hatsu", "sukuna_hiraku"],
-        "kamado_mark_id": "sukuna_kamado_mark",
-        "kamado_skill_id": "sukuna_hiraku",
-        "kamado_prefer_max_stacks": 2,
-        "kamado_target_hp_min": 0.25,
-        "kamado_self_hp_min": 0.45,
-        "mp_adv_skill_id": "sukuna_hatsu",
-        "mp_adv_margin": 8,
-        "fallback_skill_order": ["sukuna_kai", "sukuna_hatsu", "sukuna_hiraku"],
-    },
-}
+const BattleAIRolePolicyCatalogScript := preload("res://src/adapters/ai/battle_ai_role_policy_catalog.gd")
 
 func choose_command(legal_action_set, public_snapshot: Dictionary = {}, side_id: String = "", policy: String = "heuristic") -> Dictionary:
     if legal_action_set == null:
@@ -67,7 +38,7 @@ func _choose_heuristic(legal_action_set, public_snapshot: Dictionary, side_id: S
     if actor.is_empty():
         return _choose_naive(legal_action_set, public_snapshot, side_id)
     var actor_def_id := str(actor.get("definition_id", ""))
-    var role_policy: Dictionary = ROLE_POLICY_CONFIG.get(actor_def_id, {})
+    var role_policy: Dictionary = BattleAIRolePolicyCatalogScript.get_policy(actor_def_id)
     if role_policy.is_empty():
         return _choose_naive(legal_action_set, public_snapshot, side_id)
     var opponent_side_id := "P2" if side_id == "P1" else "P1"
