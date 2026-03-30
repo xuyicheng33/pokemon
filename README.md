@@ -106,6 +106,7 @@ tests/run_with_gate.sh
 闸门通过条件：
 
 - 业务断言全部通过（`tests/run_all.gd`）
+- suite 可达性检查通过（`tests/check_suite_reachability.sh`）
 - 无引擎级错误（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
 - 架构约束检查通过（`tests/check_architecture_constraints.sh`）
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
@@ -203,6 +204,7 @@ tests/run_with_gate.sh
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
 - 角色注册：`docs/records/formal_character_registry.json`
+- 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `required_suite_paths / required_test_names`
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 
@@ -220,9 +222,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-30）
 
-- `src/**/*.gd`：`8329` 行
-- `tests/**/*.gd`：`8600` 行
-- GDScript 合计：`16929` 行
+- `src/**/*.gd`：`8433` 行
+- `tests/**/*.gd`：`9105` 行
+- GDScript 合计：`17538` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

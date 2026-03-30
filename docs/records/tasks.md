@@ -11,7 +11,7 @@
 
 ## 当前阶段
 
-- 阶段目标：扩角前治理闸门已收口；下一步可按统一注册表进入新角色接入。
+- 阶段目标：扩角前治理闸门、角色回归锚点与运行态 fail-fast 已收口；下一步可按统一注册表进入新角色接入。
 - 当前不做：新角色扩充、Gojo / Sukuna 数值平衡调整、宿傩对 Gojo 的领域兑现率修正。
 - 当前优先级：
   - 若继续扩角，先补 `formal_character_registry.json` 资产登记，再补内容与 suite
@@ -150,6 +150,74 @@
 
 - 待本轮全部收口后统一复跑：
   - `bash tests/run_with_gate.sh`
+
+### 扩角前整治第二阶段收口（已完成）
+
+- 目标：
+  - 把本轮 runtime 修补和扩角前 gate 收口成统一主线
+  - 让正式角色注册表覆盖 effect 资源、子 suite 与关键回归名
+  - 补齐 suite 可达性门禁与 battle_core 内部分层静态约束
+  - 把宿傩首次奥义窗口写成文档硬锚点，避免“测试变了但文档还算对”
+- 范围：
+  - `src/battle_core/**/*`
+  - `tests/**/*`
+  - `docs/design/*`
+  - `docs/records/*`
+  - `README.md`
+- 验收标准：
+  - `bash tests/run_with_gate.sh` 通过
+  - `CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd` 通过
+  - 正式角色注册表包含 `required_content_paths / required_suite_paths / required_test_names`
+  - 宿傩设计稿与调整记录明确冻结首次奥义窗口回合
+
+#### 当前执行结果
+
+- 已完成：
+  - effect 链去重键加入 `effect_instance_id`，同源叠层 effect 不再被误吞
+  - field 生命周期旧实例清理改成按实例范围回收，`field_break / field_expire` 链里新接上的后继 field 不会被旧清理误删
+  - turn end field/effect 生命周期 helper 统一回传终局信号，turn loop 会在 invalid / terminal 路径立刻停机
+  - `runtime_guard_service` 与 `turn_selection_resolver` 都已补“仍有存活单位但 active 槽为空”的本地 fail-fast
+  - `tests/run_with_gate.sh` 已串上 suite reachability gate，`tests/check_architecture_constraints.sh` 已补 L1/L2 静态约束
+  - `formal_character_registry.json` 已补 Gojo / 宿傩 effect 资产、子 suite 路径与关键测试名锚点
+  - `docs/design/sukuna_design.md` / `docs/design/sukuna_adjustments.md` 已冻结默认装配第 6 回合、反转装配第 7 回合的首次奥义窗口
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- 待本节文件更新后统一复跑：
+  - `bash tests/run_with_gate.sh`
+  - `CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd`
+
+### 扩角前整治补完与扩角门禁收口（已完成）
+
+- 目标：
+  - 修补多层 effect、field 交接链与运行态守卫中的剩余坏状态路径
+  - 把正式角色注册表从“wrapper + 文档 + 资源”升级为“资源 + suite 子树 + 关键回归锚点”的单一真相
+  - 给总闸门补上 suite 可达性与 `battle_core` 内部分层静态约束，降低下轮复审再冒出一批基础漂移的问题
+- 范围：
+  - `src/battle_core/**/*`
+  - `tests/**/*`
+  - `docs/design/*`
+  - `docs/records/*`
+  - `README.md`
+- 验收标准：
+  - stacked effect、field 继任链、active slot / active field 坏状态都由 fail-fast contract 或专项回归守住
+  - `formal_character_registry.json` 已登记正式角色 effect 资源、`required_suite_paths` 与 `required_test_names`
+  - `bash tests/run_with_gate.sh` 与固定领域案例 runner 全部通过
+
+#### 当前执行结果
+
+- 已完成：
+  - effect dedupe 现在按 `effect_instance_id` 区分合法堆叠实例，不再把 distinct stacked instances 当成递归噪音吞掉
+  - 旧 field 在 `field_break / field_expire` 链里创建 successor field 时，旧清理逻辑不会再误删新 field 与其派生状态
+  - `turn_start / selection / turn_end` 的运行态坏状态已补本地守卫与 fail-fast 回归，缺失 active slot / active field creator 不再静默滑过去
+  - `tests/run_with_gate.sh` 已接入 `check_suite_reachability.sh`；架构闸门新增 `battle_core` L1/L2 纯度约束并清掉历史大文件 allowlist
+  - Gojo / Sukuna 注册表已补 effect 资产、suite 子树与关键回归锚点；宿傩设计稿与调整记录已补首个奥义窗口基线
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+- `CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd` 通过
 
 ## 当前未解决问题
 

@@ -10,6 +10,7 @@
 - `support/`: 测试 harness、公共构造器与 suite 级共享 helper
 - `run_all.gd`: Godot 原生测试入口（业务断言）
 - `run_with_gate.sh`: 闸门脚本（业务断言 + 引擎级错误检查 + 架构约束 + 仓库一致性）
+- `check_suite_reachability.sh`: suite 可达性闸门；确保 `tests/suites/*.gd` 都能从 `run_all.gd` 或正式角色 wrapper 子树走到
 - `check_architecture_constraints.sh`: 分层与大文件架构闸门
 - `check_repo_consistency.sh`: README/文档/关键回归一致性闸门
 - `fixtures/`: 预留的样例输入与内容快照目录
@@ -21,5 +22,7 @@
 
 - `run_all.gd` 只注册顶层 wrapper，不直接注册子套件，避免重复执行。
 - 正式角色 wrapper 统一登记在 `docs/records/formal_character_registry.json`，由 `tests/run_all.gd` 自动加载。
+- 正式角色注册表除 `suite_path` 外，还要显式登记 `required_suite_paths` 与 `required_test_names`，把角色 suite 子树与关键回归锚点一并固定下来。
+- `check_suite_reachability.sh` 只把 `run_all.gd` 和注册表里的 wrapper 当作入口；`required_suite_paths` 必须真的能从这些入口沿 `preload(...)` 子树走到，不能靠注册表直接兜底。
 - 当单测试文件接近 `500` 行时，先做预拆分评估；超过 `600` 行前必须完成按子域拆分。
 - 若 wrapper 内部的执行顺序带语义依赖，必须在 wrapper 文件头注明“顺序不可调换”的原因。

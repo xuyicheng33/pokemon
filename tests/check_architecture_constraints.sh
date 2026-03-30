@@ -20,6 +20,30 @@ if rg -n "res://src/battle_core/(actions|content|effects|lifecycle|logging|math|
 fi
 rm -f /tmp/outer_internal_imports.out
 
+if rg -n "res://src/battle_core/(actions|commands|effects|lifecycle|logging|math|passives|turn|facades)/" src/battle_core/content src/battle_core/contracts src/battle_core/runtime >/tmp/core_l1_purity.out 2>/dev/null; then
+  echo "ARCH_GATE_FAILED: battle_core L1 modules (content/contracts/runtime) must not import upper-layer services" >&2
+  cat /tmp/core_l1_purity.out
+  rm -f /tmp/core_l1_purity.out
+  exit 1
+fi
+rm -f /tmp/core_l1_purity.out
+
+if rg -n "res://src/battle_core/(actions|effects|lifecycle|passives|turn|facades|runtime)/" src/battle_core/math src/battle_core/commands >/tmp/core_l2_purity.out 2>/dev/null; then
+  echo "ARCH_GATE_FAILED: battle_core commands/math layer must remain L2-pure and must not import runtime/coordinators/orchestrators/facades" >&2
+  cat /tmp/core_l2_purity.out
+  rm -f /tmp/core_l2_purity.out
+  exit 1
+fi
+rm -f /tmp/core_l2_purity.out
+
+if rg -n "res://src/battle_core/facades/" src/battle_core/actions src/battle_core/commands src/battle_core/content src/battle_core/contracts src/battle_core/effects src/battle_core/lifecycle src/battle_core/logging src/battle_core/math src/battle_core/passives src/battle_core/runtime src/battle_core/turn >/tmp/core_facade_leaks.out 2>/dev/null; then
+  echo "ARCH_GATE_FAILED: inner battle_core modules must not import facades" >&2
+  cat /tmp/core_facade_leaks.out
+  rm -f /tmp/core_facade_leaks.out
+  exit 1
+fi
+rm -f /tmp/core_facade_leaks.out
+
 if rg -n "res://src/battle_core/commands/" src/adapters scenes >/tmp/outer_command_imports.out 2>/dev/null; then
   if rg -v "res://src/battle_core/commands/command_types.gd" /tmp/outer_command_imports.out >/tmp/outer_command_imports_filtered.out 2>/dev/null; then
     echo "ARCH_GATE_FAILED: adapters/scenes must not import battle_core commands except command_types.gd" >&2
@@ -36,36 +60,7 @@ import sys
 
 root = Path(".")
 
-size_review_rules = {
-    "src/battle_core/content/battle_content_index.gd": {
-        "reason": "content registry/validator remains centralized in prototype stage",
-        "max_lines": 320,
-    },
-    "src/battle_core/content/content_snapshot_validator.gd": {
-        "reason": "cross-resource schema constraints (including domain-field consistency) stay centralized until post-expansion validator split",
-        "max_lines": 320,
-    },
-    "src/battle_core/effects/payload_handlers/payload_numeric_handler.gd": {
-        "reason": "numeric payload semantics remain consolidated until stat/resource helper split lands",
-        "max_lines": 320,
-    },
-    "src/battle_core/turn/battle_initializer.gd": {
-        "reason": "startup sequencing now also pre-applies first-turn regen; keep centralized until the next bootstrap refactor after replay/field fixes land",
-        "max_lines": 320,
-    },
-    "src/composition/battle_core_composer.gd": {
-        "reason": "composition root keeps declarative preload/service/wiring tables together until container spec extraction lands",
-        "max_lines": 340,
-    },
-    "src/battle_core/lifecycle/faint_resolver.gd": {
-        "reason": "faint chain was function-split in-place; keep transitional coordinator shape until faint pipeline extraction lands",
-        "max_lines": 290,
-    },
-    "src/battle_core/actions/action_cast_service.gd": {
-        "reason": "damage phase now delegates to helper context builders; keep transitional entrypoint before cast pipeline split",
-        "max_lines": 280,
-    },
-}
+size_review_rules = {}
 
 decisions_text = (root / "docs/records/decisions.md").read_text(encoding="utf-8")
 
@@ -83,9 +78,16 @@ for rel, line_count in review_required:
         missing_review_allowlist.append((rel, line_count))
 
 if missing_review_allowlist:
-    print("ARCH_GATE_FAILED: core files >250 lines without review allowlist:", file=sys.stderr)
+    print("ARCH_GATE_FAILED: core files >250 lines require fresh split or explicit temporary allowlist:", file=sys.stderr)
     for rel, line_count in missing_review_allowlist:
         print(f"  - {rel} ({line_count} lines)", file=sys.stderr)
+    sys.exit(1)
+
+stale_allowlist = sorted(set(size_review_rules.keys()) - {rel for rel, _line_count in review_required})
+if stale_allowlist:
+    print("ARCH_GATE_FAILED: remove stale large-file allowlist entries that no longer exceed 250 lines:", file=sys.stderr)
+    for rel in stale_allowlist:
+        print(f"  - {rel}", file=sys.stderr)
     sys.exit(1)
 
 allowlist_overflow = []
@@ -118,5 +120,5 @@ for path in (root / "tests").rglob("*.gd"):
         print(f"ARCH_GATE_FAILED: test file exceeds 600 lines: {rel} ({line_count})", file=sys.stderr)
         sys.exit(1)
 
-print("ARCH_GATE_PASSED: layer/runtime boundary and size constraints are satisfied")
+print("ARCH_GATE_PASSED: outer/internal layering and size constraints are satisfied")
 PY

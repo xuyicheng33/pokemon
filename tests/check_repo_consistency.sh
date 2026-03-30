@@ -161,8 +161,11 @@ for entry in formal_character_registry:
     adjustment_doc = str(entry.get("adjustment_doc", ""))
     suite_path = str(entry.get("suite_path", ""))
     required_content_paths = entry.get("required_content_paths", [])
+    required_suite_paths = entry.get("required_suite_paths", [])
+    required_test_names = entry.get("required_test_names", [])
     design_needles = entry.get("design_needles", [])
     adjustment_needles = entry.get("adjustment_needles", [])
+    suite_scope_paths: list[str] = []
     if character_id == "":
         failures.append("formal character registry entry missing character_id")
         continue
@@ -180,6 +183,22 @@ for entry in formal_character_registry:
         failures.append(f"formal character registry[{character_id}] missing suite_path")
     else:
         require_exists(suite_path, f"{character_id} suite")
+        suite_scope_paths.append(suite_path)
+    if not isinstance(required_suite_paths, list) or not required_suite_paths:
+        failures.append(f"formal character registry[{character_id}] missing required_suite_paths")
+    else:
+        for rel_path in required_suite_paths:
+            require_exists(str(rel_path), f"{character_id} required suite")
+            suite_scope_paths.append(str(rel_path))
+    if not isinstance(required_test_names, list) or not required_test_names:
+        failures.append(f"formal character registry[{character_id}] missing required_test_names")
+    else:
+        for test_name in required_test_names:
+            require_contains_any(
+                suite_scope_paths,
+                'runner.run_test("%s"' % str(test_name),
+                f"{character_id} regression anchor",
+            )
     if not isinstance(required_content_paths, list) or not required_content_paths:
         failures.append(f"formal character registry[{character_id}] missing required_content_paths")
     else:
@@ -225,13 +244,22 @@ require_contains("docs/design/domain_field_template.md", "field_apply_success", 
 require_contains("docs/design/domain_field_template.md", "同回合双方都已排队施放领域时", "domain template dual-domain contract")
 require_contains("tests/README.md", "domain_case_runner.gd", "tests fixed domain case runner doc")
 require_contains("tests/README.md", "formal_character_registry.json", "tests formal character registry doc")
+require_contains("tests/README.md", "check_suite_reachability.sh", "tests suite reachability gate doc")
+require_contains("tests/README.md", "required_suite_paths", "tests registry suite anchor doc")
+require_contains("tests/README.md", "required_test_names", "tests registry test anchor doc")
 require_contains("tests/replay_cases/domain_cases.md", "CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd", "domain case runner command")
 require_absent("tests/README.md", "policy_decision_suite.gd", "removed auto-selection suite doc")
 require_absent("tests/README.md", "gojo_sukuna_batch_probe.gd", "removed batch simulation doc")
+require_contains("tests/run_with_gate.sh", "check_suite_reachability.sh", "suite reachability gate wiring")
 require_contains("docs/rules/05_items_field_input_and_logging.md", "当前正式角色交付面不再包含自动选指策略、自动选指回归或批量模拟案例。", "auto-selection removal rule wording")
 require_contains("docs/records/decisions.md", "固定可复查案例作为角色与规则复查入口", "fixed-case decision wording")
 require_contains("docs/records/decisions.md", "外层输入与公开快照继续只使用 `public_id`。", "public input decision wording")
 require_contains("docs/records/decisions.md", "若未来恢复自动选指，必须重新补齐规则、设计文档与接线任务，不得直接回填历史实现。", "future auto-selection recovery gate")
+require_contains("docs/records/decisions.md", "effect dedupe key 必须包含 effect_instance_id", "effect-instance dedupe decision wording")
+require_contains("docs/records/decisions.md", "field_break / field_expire 链上创建的 successor field 必须保留", "field successor cleanup decision wording")
+require_contains("docs/records/decisions.md", "正式角色注册表当前必须登记角色 effect 资源、wrapper 下属 suite 与关键回归测试名", "formal registry expansion decision wording")
+require_contains("docs/records/decisions.md", "suite 可达性闸门", "suite reachability decision wording")
+require_contains("README.md", "check_suite_reachability.sh", "README suite reachability gate")
 
 stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",

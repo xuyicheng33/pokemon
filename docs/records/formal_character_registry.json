@@ -6,6 +6,32 @@
     "design_doc": "docs/design/gojo_satoru_design.md",
     "adjustment_doc": "docs/design/gojo_satoru_adjustments.md",
     "suite_path": "tests/suites/gojo_suite.gd",
+    "required_suite_paths": [
+      "tests/suites/gojo_setup_and_markers_suite.gd",
+      "tests/suites/gojo_murasaki_suite.gd",
+      "tests/suites/gojo_domain_suite.gd"
+    ],
+    "required_test_names": [
+      "gojo_content_and_setup_contract",
+      "gojo_first_turn_mp_contract",
+      "gojo_ao_hit_contract",
+      "gojo_ao_miss_contract",
+      "gojo_aka_hit_contract",
+      "gojo_aka_miss_contract",
+      "gojo_marker_switch_lifecycle_contract",
+      "gojo_marker_refresh_contract",
+      "gojo_murasaki_no_marks_contract",
+      "gojo_murasaki_double_mark_burst_contract",
+      "gojo_murasaki_base_kill_contract",
+      "gojo_murasaki_burst_kill_contract",
+      "gojo_murasaki_retargeted_switch_contract",
+      "gojo_mugen_incoming_accuracy_contract",
+      "gojo_mugen_reentry_contract",
+      "gojo_unlimited_void_runtime_contract",
+      "gojo_unlimited_void_cancelled_pre_start_contract",
+      "gojo_reverse_ritual_heal_contract",
+      "gojo_plus5_competition_contract"
+    ],
     "required_content_paths": [
       "content/units/gojo_satoru.tres",
       "content/skills/gojo_ao.tres",
@@ -13,6 +39,19 @@
       "content/skills/gojo_murasaki.tres",
       "content/skills/gojo_reverse_ritual.tres",
       "content/skills/gojo_unlimited_void.tres",
+      "content/effects/gojo_ao_speed_up.tres",
+      "content/effects/gojo_ao_mark_apply.tres",
+      "content/effects/gojo_ao_mark.tres",
+      "content/effects/gojo_aka_slow_down.tres",
+      "content/effects/gojo_aka_mark_apply.tres",
+      "content/effects/gojo_aka_mark.tres",
+      "content/effects/gojo_murasaki_conditional_burst.tres",
+      "content/effects/gojo_reverse_heal.tres",
+      "content/effects/gojo_apply_domain_field.tres",
+      "content/effects/gojo_domain_action_lock.tres",
+      "content/effects/gojo_domain_cast_buff.tres",
+      "content/effects/gojo_domain_buff_remove.tres",
+      "content/effects/gojo_mugen_incoming_accuracy_down.tres",
       "content/passive_skills/gojo_mugen.tres",
       "content/fields/gojo_unlimited_void_field.tres"
     ],
@@ -22,6 +61,8 @@
       "不在角色稿重复定义"
     ],
     "adjustment_needles": [
+      "gojo_domain_action_lock",
+      "gojo_domain_cast_buff",
       "影响测试"
     ]
   },
@@ -32,6 +73,23 @@
     "design_doc": "docs/design/sukuna_design.md",
     "adjustment_doc": "docs/design/sukuna_adjustments.md",
     "suite_path": "tests/suites/sukuna_suite.gd",
+    "required_suite_paths": [
+      "tests/suites/sukuna_setup_regen_suite.gd",
+      "tests/suites/sukuna_kamado_domain_suite.gd"
+    ],
+    "required_test_names": [
+      "sukuna_default_loadout_contract",
+      "sukuna_matchup_regen_runtime_path",
+      "sukuna_reverse_ritual_heal_path",
+      "sukuna_kai_priority_damage_contract",
+      "sukuna_hatsu_mp_diff_contract",
+      "sukuna_default_loadout_first_ultimate_window_contract",
+      "sukuna_ritual_loadout_first_ultimate_window_contract",
+      "sukuna_kamado_stack_on_exit_path",
+      "sukuna_domain_expire_chain_path",
+      "sukuna_domain_break_chain_path",
+      "sukuna_field_accuracy_override_path"
+    ],
     "required_content_paths": [
       "content/units/sukuna.tres",
       "content/skills/sukuna_kai.tres",
@@ -39,15 +97,28 @@
       "content/skills/sukuna_hiraku.tres",
       "content/skills/sukuna_reverse_ritual.tres",
       "content/skills/sukuna_fukuma_mizushi.tres",
+      "content/effects/sukuna_apply_kamado.tres",
+      "content/effects/sukuna_kamado_mark.tres",
+      "content/effects/sukuna_kamado_explode.tres",
+      "content/effects/sukuna_reverse_heal.tres",
+      "content/effects/sukuna_apply_domain_field.tres",
+      "content/effects/sukuna_domain_cast_buff.tres",
+      "content/effects/sukuna_domain_buff_remove.tres",
+      "content/effects/sukuna_domain_expire_burst.tres",
+      "content/effects/sukuna_refresh_love_regen.tres",
       "content/passive_skills/sukuna_teach_love.tres",
       "content/fields/sukuna_malevolent_shrine_field.tres"
     ],
     "design_needles": [
       "领域自然到期终爆保留",
       "3 点奥义点体系下",
+      "默认装配的第一次奥义合法窗口固定落在第 6 回合",
+      "反转术式装配的第一次奥义合法窗口固定落在第 7 回合",
       "不在角色稿重复定义"
     ],
     "adjustment_needles": [
+      "默认装配的第一次奥义合法窗口落在第 6 回合",
+      "反转术式装配落在第 7 回合",
       "影响测试"
     ]
   }
