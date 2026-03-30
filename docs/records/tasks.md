@@ -16,14 +16,14 @@
 - 当前优先级：
   - 修补 effect 链递归重新派发时的去重失效
   - 泛化角色接入与内容快照门禁，避免继续绑死 Gojo / Sukuna
-  - 保持无 AI 前提下的主线文档、测试与接入模板一致
+  - 保持无自动选指前提下的主线文档、测试与接入模板一致
 
 ## 2026-03-30
 
-### 去 AI 化整合（已完成）
+### 去自动选指化整合（已完成）
 
 - 目标：
-  - 从主线移除 AI 选指、heuristic policy、角色 mode handler 与 batch probe
+  - 从主线移除自动选指、heuristic policy、角色 mode handler 与 batch probe
   - 保持核心战斗、手动输入、回放与固定案例复查链路可用
   - 同步收口 README / rules / design / records / tests 口径
 - 范围：
@@ -33,15 +33,15 @@
   - `docs/**/*`
   - `README.md`
 - 验收标准：
-  - 仓库不再保留 AI adapter、AI policy、AI decision suite、batch probe
+  - 仓库不再保留自动选指 adapter、自动选指策略、自动选指决策回归、batch probe
   - `tests/run_with_gate.sh` 通过
-  - 活跃文档不再把 AI policy / regression / probe 作为当前主线交付面
+  - 活跃文档不再把自动选指策略 / 自动选指回归 / probe 作为当前主线交付面
 
 #### 当前执行结果
 
 - 已完成：
-  - `src/adapters/` 下 AI adapter、policy service、角色 mode handler 已从主线移除
-  - `tests/run_all.gd`、adapter / manager contract suites 与 consistency gate 已同步删除 AI / probe 交付面
+  - `src/adapters/` 下自动选指 adapter、policy service、角色 mode handler 已从主线移除
+  - `tests/run_all.gd`、adapter / manager contract suites 与 consistency gate 已同步删除自动选指 / probe 交付面
   - README、rules、design、records、tests 文档口径已统一为“玩家输入 + 系统自动注入 + 回放 + 固定案例”
 
 #### 当前验证结果
