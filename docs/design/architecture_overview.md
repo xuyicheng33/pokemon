@@ -104,6 +104,7 @@
 - `build_command`
 - `run_turn`
 - `get_public_snapshot`
+- `get_event_log_snapshot`
 - `close_session`
 - `run_replay`
 

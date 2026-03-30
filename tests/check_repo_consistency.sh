@@ -133,6 +133,8 @@ for rel_path in [
 require_contains("README.md", "candidate_skill_ids", "README candidate skill pool contract")
 require_contains("README.md", "regular_skill_loadout_overrides", "README setup override contract")
 require_contains("README.md", "设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite", "README character delivery workflow")
+require_contains("README.md", "content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples", "README content snapshot path coverage")
+require_contains("docs/design/architecture_overview.md", "get_event_log_snapshot", "architecture facade event log snapshot contract")
 require_contains("docs/design/battle_content_schema.md", "candidate_skill_ids", "schema candidate skill pool contract")
 require_contains("docs/design/battle_content_schema.md", "regular_skill_loadout_overrides", "schema setup override contract")
 require_contains("docs/design/battle_content_schema.md", "required_target_effects", "schema effect precondition contract")
@@ -150,8 +152,10 @@ require_contains("docs/rules/06_effect_schema_and_extension.md", "incoming_accur
 require_contains("docs/rules/03_stats_resources_and_damage.md", "incoming_accuracy", "rules incoming accuracy read-path")
 require_contains("docs/design/gojo_satoru_design.md", "on_success_effect_ids", "gojo design domain success-only lock contract")
 require_contains("docs/design/gojo_satoru_design.md", "对拼失败", "gojo design field clash failure contract")
+require_contains("docs/design/gojo_satoru_design.md", "不在角色稿重复定义", "gojo design domain template reference contract")
 require_contains("docs/design/sukuna_design.md", "领域自然到期终爆保留", "sukuna design expire burst contract")
 require_contains("docs/design/sukuna_design.md", "3 点奥义点体系下", "sukuna design balance record")
+require_contains("docs/design/sukuna_design.md", "不在角色稿重复定义", "sukuna design domain template reference contract")
 require_contains("docs/design/domain_field_template.md", "field_apply_success", "domain template success trigger contract")
 require_contains("docs/design/domain_field_template.md", "同回合双方都已排队施放领域时", "domain template dual-domain contract")
 require_contains("docs/design/gojo_satoru_adjustments.md", "影响测试", "gojo adjustment impact fields")
@@ -172,6 +176,17 @@ for rel_path in [
 ]:
     for needle in stale_candidate_wording:
         require_absent(rel_path, needle, "candidate skill pool drift wording")
+
+domain_matrix_redundant_wording = [
+    "比较双方**扣费后的当前 MP**；MP 高者留场；平 MP 随机决定胜者",
+    "比较双方扣费后的当前 MP；高者留场；平 MP 随机决定胜者",
+]
+for rel_path in [
+    "docs/design/gojo_satoru_design.md",
+    "docs/design/sukuna_design.md",
+]:
+    for needle in domain_matrix_redundant_wording:
+        require_absent(rel_path, needle, "role design duplicated public domain matrix wording")
 
 if failures:
     print("REPO_CONSISTENCY_FAILED: repository contracts are drifting", file=sys.stderr)

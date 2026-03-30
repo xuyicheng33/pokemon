@@ -248,7 +248,7 @@
 
 - 五条悟当前奥义点配置固定为：`ultimate_points_required = 3`、`ultimate_points_cap = 3`、`ultimate_point_gain_on_regular_skill_cast = 1`。
 - 奥义合法性必须同时满足：`current_mp >= 50` 且 `ultimate_points >= 3`；开始施放无量空处时，奥义点立即清零；换下后点数保留。
-- 若场上已有领域，`gojo_apply_domain_field` 进入领域对拼：比较双方**扣费后的当前 MP**；MP 高者留场；平 MP 随机决定胜者，并把随机值写入 `effect:field_clash.effect_roll`，保证 replay 可复现。
+- 若场上已有领域，领域冲突判定、对拼胜负与日志语义统一沿用 `docs/design/domain_field_template.md` 与 `docs/rules/05_items_field_ai_and_logging.md`，不在角色稿重复定义。
 - 若五条悟在领域对拼中失败，则无量空处**不落地、不加 `sp_attack +1`、也不锁人**；只有领域真正成功立住后，才会继续跑 `field_apply` 增幅和 `on_success_effect_ids`（`field_apply_success`）锁人。
 - 由于 `gojo_domain_cast_buff` 已改成 field 绑定效果，所以不会再出现“领域已经没了，但 `sp_attack +1` 还残留在五条悟身上”的状态。
 

@@ -177,7 +177,7 @@ tests/run_with_gate.sh
 - `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
 - 普通技能与奥义优先级约束分离校验
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
-- `SampleBattleFactory.content_snapshot_paths()` 统一从 `content/combat_types / units / skills / effects / fields / passive_skills / samples` 自动收集 `.tres`，并做稳定排序，避免角色接线漏资源与回放漂移
+- `SampleBattleFactory.content_snapshot_paths()` 统一从 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 自动收集 `.tres`，并做稳定排序，避免角色接线漏资源与回放漂移
 
 ### 8.1 Gojo / 宿傩角色资源
 
@@ -210,9 +210,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-30）
 
-- `src/**/*.gd`：`8203` 行
-- `tests/**/*.gd`：`8695` 行
-- GDScript 合计：`16898` 行
+- `src/**/*.gd`：`8364` 行
+- `tests/**/*.gd`：`8808` 行
+- GDScript 合计：`17172` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

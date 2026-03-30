@@ -218,7 +218,7 @@
 - 机制说明：
   - 宿傩当前奥义点配置固定为 `required=3 / cap=3 / regular_skill_cast +1`。
   - 奥义合法性必须同时满足 `current_mp >= 50` 与 `ultimate_points >= 3`；开始施放奥义时奥义点立即清零；换下后点数保留。
-  - 若场上已有领域，则进入领域对拼：比较双方扣费后的当前 MP；高者留场；平 MP 随机决定胜者，并把随机值写入 `effect:field_clash.effect_roll`。
+  - 若场上已有领域，领域冲突判定、对拼胜负与日志语义统一沿用 `docs/design/domain_field_template.md` 与 `docs/rules/05_items_field_ai_and_logging.md`，不在角色稿重复定义。
   - 宿傩若在领域对拼中失败，则本次领域不落地；`attack +1 / sp_attack +1` 与自然到期终爆都不会成立。
   - `creator_accuracy_override=100` 只在领域成功立住后生效。
   - **领域自然到期终爆保留**：`sukuna_domain_expire_burst` 造成 20 点火属性固定伤害。
