@@ -62,3 +62,16 @@ func contains_private_instance_id_key(value) -> bool:
 			if contains_private_instance_id_key(element):
 				return true
 	return false
+
+func contains_any_key_recursive(value, keys: PackedStringArray) -> bool:
+	if typeof(value) == TYPE_DICTIONARY:
+		for key in value.keys():
+			if keys.has(str(key)):
+				return true
+			if contains_any_key_recursive(value[key], keys):
+				return true
+	elif typeof(value) == TYPE_ARRAY:
+		for element in value:
+			if contains_any_key_recursive(element, keys):
+				return true
+	return false

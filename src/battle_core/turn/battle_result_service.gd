@@ -83,6 +83,12 @@ func hard_terminate_invalid_state(battle_state, invalid_code: String, missing_de
         }
     ))
 
+func resolve_initialization_victory(battle_state) -> bool:
+    return _resolve_victory(
+        battle_state,
+        "battle finished during initialization"
+    )
+
 func resolve_surrender(battle_state, commands: Array) -> bool:
     var surrendering_sides: Array = []
     for command in commands:
@@ -113,6 +119,12 @@ func resolve_surrender(battle_state, commands: Array) -> bool:
     return true
 
 func resolve_standard_victory(battle_state) -> bool:
+    return _resolve_victory(
+        battle_state,
+        "battle finished by elimination"
+    )
+
+func _resolve_victory(battle_state, payload_summary: String) -> bool:
     var alive_side_ids: Array = []
     for side_state in battle_state.sides:
         if _side_has_available_unit(side_state):
@@ -136,7 +148,7 @@ func resolve_standard_victory(battle_state) -> bool:
         battle_state,
         {
             "source_instance_id": "system:battle_end",
-            "payload_summary": "battle finished by elimination",
+            "payload_summary": payload_summary,
         }
     ))
     return true

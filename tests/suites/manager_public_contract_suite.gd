@@ -190,6 +190,13 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
 	var legal_actions = manager.get_legal_actions(session_id, "P1")
 	if legal_actions.legal_ultimate_ids != expected_legal_actions.legal_ultimate_ids:
 		return harness.fail_result("first-turn legal set should match the core initializer after pre-applied regen")
+	var initial_log_snapshot: Dictionary = manager.get_event_log_snapshot(session_id)
+	for event_snapshot in initial_log_snapshot.get("events", []):
+		if String(event_snapshot.get("event_type", "")) == EventTypesScript.EFFECT_RESOURCE_MOD:
+			var value_changes: Array = event_snapshot.get("value_changes", [])
+			for value_change in value_changes:
+				if str(value_change.get("resource_name", "")) == "mp":
+					return harness.fail_result("create_session initial event_log should not retroactively append the pre-applied turn_start regen event")
 
 	var after_turn = manager.run_turn(session_id, [
 		manager.build_command({
@@ -323,16 +330,35 @@ func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 	if delta_events.is_empty():
 		return harness.fail_result("event log delta should include turn events after run_turn")
 	var action_cast_event_found := false
+	var public_value_change_shape_checked := false
 	for event_snapshot in delta_events:
 		if typeof(event_snapshot) != TYPE_DICTIONARY:
 			return harness.fail_result("event log snapshot entries must be Dictionary")
-		if String(event_snapshot.get("event_type", "")) != EventTypesScript.ACTION_CAST:
-			continue
-		if str(event_snapshot.get("actor_public_id", "")) == "P1-A" and str(event_snapshot.get("actor_definition_id", "")) == "gojo_satoru":
+		if _helper.contains_any_key_recursive(event_snapshot, PackedStringArray([
+			"actor_id",
+			"source_instance_id",
+			"target_instance_id",
+			"killer_id",
+			"entity_id",
+		])):
+			return harness.fail_result("public event log snapshot must not leak runtime ids")
+		if event_snapshot.has("actor_public_id") and event_snapshot.has("actor_definition_id") and event_snapshot.has("target_public_id") and event_snapshot.has("target_definition_id") and event_snapshot.has("killer_public_id") and event_snapshot.has("killer_definition_id"):
+			if typeof(event_snapshot.get("value_changes", null)) != TYPE_ARRAY:
+				return harness.fail_result("public event log snapshot should keep value_changes as Array")
+			for value_change in event_snapshot.get("value_changes", []):
+				if typeof(value_change) != TYPE_DICTIONARY:
+					return harness.fail_result("public event value_change must be Dictionary")
+				if not value_change.has("entity_public_id") or not value_change.has("entity_definition_id"):
+					return harness.fail_result("public event value_changes should expose only public-safe entity ids")
+			public_value_change_shape_checked = true
+		if String(event_snapshot.get("event_type", "")) == EventTypesScript.ACTION_CAST \
+		and str(event_snapshot.get("actor_public_id", "")) == "P1-A" \
+		and str(event_snapshot.get("actor_definition_id", "")) == "gojo_satoru":
 			action_cast_event_found = true
-			break
 	if not action_cast_event_found:
 		return harness.fail_result("event log snapshot should expose derived actor_public_id and actor_definition_id")
+	if not public_value_change_shape_checked:
+		return harness.fail_result("event log snapshot should expose public-safe value_change entity identifiers")
 	var empty_delta: Dictionary = manager.get_event_log_snapshot(session_id, int(delta_snapshot.get("total_size", 0)))
 	if not empty_delta.get("events", []).is_empty():
 		return harness.fail_result("event log snapshot tail query should return empty delta")

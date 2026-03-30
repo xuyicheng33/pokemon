@@ -10,7 +10,9 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("gojo_content_and_setup_contract", failures, Callable(self, "_test_gojo_content_and_setup_contract").bind(harness))
     runner.run_test("gojo_first_turn_mp_contract", failures, Callable(self, "_test_gojo_first_turn_mp_contract").bind(harness))
     runner.run_test("gojo_ao_hit_contract", failures, Callable(self, "_test_gojo_ao_hit_contract").bind(harness))
+    runner.run_test("gojo_ao_miss_contract", failures, Callable(self, "_test_gojo_ao_miss_contract").bind(harness))
     runner.run_test("gojo_aka_hit_contract", failures, Callable(self, "_test_gojo_aka_hit_contract").bind(harness))
+    runner.run_test("gojo_aka_miss_contract", failures, Callable(self, "_test_gojo_aka_miss_contract").bind(harness))
     runner.run_test("gojo_marker_switch_lifecycle_contract", failures, Callable(self, "_test_gojo_marker_switch_lifecycle_contract").bind(harness))
     runner.run_test("gojo_marker_refresh_contract", failures, Callable(self, "_test_gojo_marker_refresh_contract").bind(harness))
 func _test_gojo_content_and_setup_contract(harness) -> Dictionary:
@@ -84,6 +86,31 @@ func _test_gojo_ao_hit_contract(harness) -> Dictionary:
     if _count_effect_instances(target_unit, "gojo_ao_mark") != 1:
         return harness.fail_result("苍命中后应给目标挂上苍标记")
     return harness.pass_result()
+
+func _test_gojo_ao_miss_contract(harness) -> Dictionary:
+    var state_payload = _build_gojo_vs_sample_state(harness, 1221)
+    if state_payload.has("error"):
+        return harness.fail_result(str(state_payload["error"]))
+    var core = state_payload["core"]
+    var content_index = state_payload["content_index"]
+    var battle_state = state_payload["battle_state"]
+    content_index.skills["gojo_ao"].accuracy = 0
+    var gojo_unit = battle_state.get_side("P1").get_active_unit()
+    var target_unit = battle_state.get_side("P2").get_active_unit()
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        _build_skill_command(core, 1, "P1", "P1-A", "gojo_ao"),
+        _build_wait_command(core, 1, "P2", "P2-A"),
+    ])
+    if int(gojo_unit.stat_stages.get("speed", 0)) != 0:
+        return harness.fail_result("苍 miss 时不应给自己 speed +1")
+    if _count_effect_instances(target_unit, "gojo_ao_mark") != 0:
+        return harness.fail_result("苍 miss 时不应给目标挂上苍标记")
+    if not _has_event(core.battle_logger.event_log, func(ev):
+        return ev.event_type == EventTypesScript.ACTION_MISS and ev.target_instance_id == target_unit.unit_instance_id
+    ):
+        return harness.fail_result("苍 miss 时应写出 ACTION_MISS")
+    return harness.pass_result()
 func _test_gojo_aka_hit_contract(harness) -> Dictionary:
     var state_payload = _build_gojo_vs_sample_state(harness, 1204)
     if state_payload.has("error"):
@@ -102,6 +129,30 @@ func _test_gojo_aka_hit_contract(harness) -> Dictionary:
         return harness.fail_result("赫命中后应给目标 speed -1")
     if _count_effect_instances(target_unit, "gojo_aka_mark") != 1:
         return harness.fail_result("赫命中后应给目标挂上赫标记")
+    return harness.pass_result()
+
+func _test_gojo_aka_miss_contract(harness) -> Dictionary:
+    var state_payload = _build_gojo_vs_sample_state(harness, 1222)
+    if state_payload.has("error"):
+        return harness.fail_result(str(state_payload["error"]))
+    var core = state_payload["core"]
+    var content_index = state_payload["content_index"]
+    var battle_state = state_payload["battle_state"]
+    content_index.skills["gojo_aka"].accuracy = 0
+    var target_unit = battle_state.get_side("P2").get_active_unit()
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        _build_skill_command(core, 1, "P1", "P1-A", "gojo_aka"),
+        _build_wait_command(core, 1, "P2", "P2-A"),
+    ])
+    if int(target_unit.stat_stages.get("speed", 0)) != 0:
+        return harness.fail_result("赫 miss 时不应给目标 speed -1")
+    if _count_effect_instances(target_unit, "gojo_aka_mark") != 0:
+        return harness.fail_result("赫 miss 时不应给目标挂上赫标记")
+    if not _has_event(core.battle_logger.event_log, func(ev):
+        return ev.event_type == EventTypesScript.ACTION_MISS and ev.target_instance_id == target_unit.unit_instance_id
+    ):
+        return harness.fail_result("赫 miss 时应写出 ACTION_MISS")
     return harness.pass_result()
 
 func _test_gojo_marker_switch_lifecycle_contract(harness) -> Dictionary:

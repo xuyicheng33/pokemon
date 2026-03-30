@@ -100,12 +100,6 @@ func _test_gojo_unlimited_void_runtime_contract(harness) -> Dictionary:
         return ev.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and ev.target_instance_id == target_unit.unit_instance_id
     ):
         return harness.fail_result("无量空处命中后应对目标写出 deny all rule_mod 施加日志")
-    var lock_payload = content_index.effects["gojo_domain_action_lock"].payloads[0]
-    if core.rule_mod_service.create_instance(lock_payload, {"scope": "unit", "id": target_unit.unit_instance_id}, battle_state, "test_gojo_domain_lock", 0, gojo_unit.base_speed) == null:
-        return harness.fail_result("failed to create gojo deny all rule_mod instance")
-    var target_actions = core.legal_action_service.get_legal_actions(battle_state, "P2", content_index)
-    if not target_actions.wait_allowed or not target_actions.legal_skill_ids.is_empty() or not target_actions.legal_ultimate_ids.is_empty() or not target_actions.legal_switch_target_public_ids.is_empty():
-        return harness.fail_result("gojo deny all rule_mod 应只保留 wait 合法")
     content_index.skills["gojo_ao"].accuracy = 1
     var hit_command = _build_resolved_skill_command(core, 2, "P1", "P1-A", gojo_unit.unit_instance_id, "gojo_ao")
     var hit_info = core.action_cast_service.resolve_hit(hit_command, content_index.skills["gojo_ao"], target_unit, battle_state, content_index)

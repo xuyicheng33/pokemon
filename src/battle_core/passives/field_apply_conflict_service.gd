@@ -43,7 +43,7 @@ func resolve_field_clash(before_field, effect_event, battle_state) -> Dictionary
 	if challenger_mp < 0 or incumbent_mp < 0:
 		return {"invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
 	if incumbent_creator == challenger_creator:
-		return _build_clash_result(true, true, challenger_creator, incumbent_creator, challenger_mp, incumbent_mp, null)
+		return {"invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
 	if challenger_mp > incumbent_mp:
 		return _build_clash_result(true, false, challenger_creator, incumbent_creator, challenger_mp, incumbent_mp, null)
 	if challenger_mp < incumbent_mp:

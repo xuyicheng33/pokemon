@@ -4,6 +4,8 @@ class_name ActionCastService
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
+const ActionCastDirectDamagePipelineScript := preload("res://src/battle_core/actions/action_cast_direct_damage_pipeline.gd")
+const ActionCastSkillEffectDispatchPipelineScript := preload("res://src/battle_core/actions/action_cast_skill_effect_dispatch_pipeline.gd")
 
 const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 
@@ -21,6 +23,8 @@ var faint_resolver
 var trigger_batch_runner
 var rng_service
 var action_log_service
+var _direct_damage_pipeline = ActionCastDirectDamagePipelineScript.new()
+var _skill_effect_dispatch_pipeline = ActionCastSkillEffectDispatchPipelineScript.new()
 
 func resolve_missing_dependency() -> String:
     if mp_service == null:
@@ -54,6 +58,13 @@ func resolve_missing_dependency() -> String:
         return "rng_service"
     if action_log_service == null:
         return "action_log_service"
+    _sync_pipeline_dependencies()
+    var direct_pipeline_missing := str(_direct_damage_pipeline.resolve_missing_dependency())
+    if not direct_pipeline_missing.is_empty():
+        return "direct_damage_pipeline.%s" % direct_pipeline_missing
+    var dispatch_pipeline_missing := str(_skill_effect_dispatch_pipeline.resolve_missing_dependency())
+    if not dispatch_pipeline_missing.is_empty():
+        return "skill_effect_dispatch_pipeline.%s" % dispatch_pipeline_missing
     return ""
 
 func resolve_mp_cost(command, skill_definition) -> int:
@@ -103,92 +114,39 @@ func is_damage_action(command, skill_definition) -> bool:
     return skill_definition != null and skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and skill_definition.power > 0
 
 func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, cause_event_id: String) -> void:
-    if target == null:
-        return
-    var damage_context := _build_direct_damage_context(actor, target, skill_definition)
-    var final_multiplier: float = rule_mod_service.get_final_multiplier(battle_state, actor.unit_instance_id)
-    var type_effectiveness: float = combat_type_service.calc_effectiveness(
-        _resolve_skill_combat_type_id(skill_definition),
-        _resolve_unit_combat_types(target)
-    )
-    var damage_amount: int = damage_service.apply_final_mod(
-        damage_service.calc_base_damage(
-            battle_state.battle_level,
-            int(damage_context.power),
-            int(damage_context.attack_value),
-            int(damage_context.defense_value)
-        ),
-        final_multiplier * type_effectiveness
-    )
-    var before_hp: int = target.current_hp
-    target.current_hp = clamp(target.current_hp - damage_amount, 0, target.max_hp)
-    var value_change = action_log_service.build_value_change(target.unit_instance_id, "hp", before_hp, target.current_hp)
-    var log_event = action_log_service.log_damage(
+    _sync_pipeline_dependencies()
+    _direct_damage_pipeline.apply_direct_damage(
         queued_action,
-        battle_state,
         actor,
         target,
-        damage_amount,
-        value_change,
-        type_effectiveness,
-        cause_event_id
-    )
-    _record_fatal_damage(
+        skill_definition,
         battle_state,
-        target.unit_instance_id,
-        before_hp,
-        target.current_hp,
-        actor.unit_instance_id,
-        queued_action.action_id,
-        queued_action.priority,
-        queued_action.speed_snapshot,
-        log_event.event_step_id
+        cause_event_id,
+        SOURCE_KIND_ORDER_ACTIVE_SKILL
     )
 
 func apply_default_recoil(queued_action, actor, battle_state, cause_event_id: String) -> void:
-    var recoil_amount: int = max(1, int(floor(float(actor.max_hp) / 4.0)))
-    var before_hp: int = actor.current_hp
-    actor.current_hp = clamp(actor.current_hp - recoil_amount, 0, actor.max_hp)
-    var value_change = action_log_service.build_value_change(actor.unit_instance_id, "hp", before_hp, actor.current_hp)
-    var log_event = action_log_service.log_recoil(queued_action, battle_state, actor, recoil_amount, value_change, cause_event_id)
-    _record_fatal_damage(
+    _sync_pipeline_dependencies()
+    _direct_damage_pipeline.apply_default_recoil(
+        queued_action,
+        actor,
         battle_state,
-        actor.unit_instance_id,
-        before_hp,
-        actor.current_hp,
-        actor.unit_instance_id,
-        queued_action.action_id,
-        queued_action.priority,
-        queued_action.speed_snapshot,
-        log_event.event_step_id
+        cause_event_id,
+        SOURCE_KIND_ORDER_ACTIVE_SKILL
     )
 
 func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String, queued_action, actor, battle_state, content_index, result) -> void:
-    if effect_ids.is_empty():
-        return
-    var effect_events = trigger_dispatcher.collect_events(
+    _sync_pipeline_dependencies()
+    _skill_effect_dispatch_pipeline.dispatch_skill_effects(
+        effect_ids,
         trigger_name,
+        queued_action,
+        actor,
         battle_state,
         content_index,
-        effect_ids,
-        actor.unit_instance_id,
-        queued_action.action_id,
-        SOURCE_KIND_ORDER_ACTIVE_SKILL,
-        queued_action.speed_snapshot,
-        battle_state.chain_context
+        result,
+        SOURCE_KIND_ORDER_ACTIVE_SKILL
     )
-    if effect_events.is_empty():
-        return
-    battle_state.pending_effect_queue = effect_events
-    var sorted_events = effect_queue_service.sort_events(effect_events, rng_service)
-    battle_state.rng_stream_index = rng_service.get_stream_index()
-    for effect_event in sorted_events:
-        payload_executor.execute_effect_event(effect_event, battle_state, content_index)
-        if payload_executor.last_invalid_battle_code != null:
-            result.invalid_battle_code = payload_executor.last_invalid_battle_code
-            break
-        result.generated_effects.append(effect_event)
-    battle_state.pending_effect_queue.clear()
 
 func execute_lifecycle_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
     return trigger_batch_runner.execute_trigger_batch(
@@ -199,58 +157,14 @@ func execute_lifecycle_trigger_batch(trigger_name: String, battle_state, content
         battle_state.chain_context
     )
 
-func _record_fatal_damage(battle_state, target_unit_id: String, before_hp: int, after_hp: int, killer_unit_id: Variant, source_instance_id: String, priority: int, source_order_speed_snapshot: int, cause_event_step_id: int) -> void:
-    if faint_resolver == null:
-        return
-    faint_resolver.record_fatal_damage(
-        battle_state,
-        target_unit_id,
-        before_hp,
-        after_hp,
-        killer_unit_id,
-        source_instance_id,
-        SOURCE_KIND_ORDER_ACTIVE_SKILL,
-        source_order_speed_snapshot,
-        priority,
-        cause_event_step_id
-    )
-
-func _resolve_skill_combat_type_id(skill_definition) -> String:
-    if skill_definition == null or skill_definition.combat_type_id == null:
-        return ""
-    return str(skill_definition.combat_type_id)
-
-func _resolve_unit_combat_types(target) -> PackedStringArray:
-    if target == null or target.combat_type_ids == null:
-        return PackedStringArray()
-    return target.combat_type_ids
-
-func _resolve_power_bonus(skill_definition, actor, target) -> int:
-    if skill_definition == null or target == null:
-        return 0
-    if String(skill_definition.power_bonus_source) == "mp_diff_clamped":
-        return max(0, int(actor.current_mp) - int(target.current_mp))
-    return 0
-
-func _build_direct_damage_context(actor, target, skill_definition) -> Dictionary:
-    var power: int = 50
-    var damage_kind: String = ContentSchemaScript.DAMAGE_KIND_PHYSICAL
-    if skill_definition != null:
-        power = skill_definition.power
-        power += _resolve_power_bonus(skill_definition, actor, target)
-        damage_kind = skill_definition.damage_kind
-    return {
-        "power": power,
-        "attack_value": _resolve_effective_attack_value(actor, damage_kind),
-        "defense_value": _resolve_effective_defense_value(target, damage_kind),
-    }
-
-func _resolve_effective_attack_value(actor, damage_kind: String) -> int:
-    if damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
-        return stat_calculator.calc_effective_stat(actor.base_sp_attack, int(actor.stat_stages.get("sp_attack", 0)))
-    return stat_calculator.calc_effective_stat(actor.base_attack, int(actor.stat_stages.get("attack", 0)))
-
-func _resolve_effective_defense_value(target, damage_kind: String) -> int:
-    if damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
-        return stat_calculator.calc_effective_stat(target.base_sp_defense, int(target.stat_stages.get("sp_defense", 0)))
-    return stat_calculator.calc_effective_stat(target.base_defense, int(target.stat_stages.get("defense", 0)))
+func _sync_pipeline_dependencies() -> void:
+    _direct_damage_pipeline.damage_service = damage_service
+    _direct_damage_pipeline.combat_type_service = combat_type_service
+    _direct_damage_pipeline.stat_calculator = stat_calculator
+    _direct_damage_pipeline.rule_mod_service = rule_mod_service
+    _direct_damage_pipeline.faint_resolver = faint_resolver
+    _direct_damage_pipeline.action_log_service = action_log_service
+    _skill_effect_dispatch_pipeline.trigger_dispatcher = trigger_dispatcher
+    _skill_effect_dispatch_pipeline.effect_queue_service = effect_queue_service
+    _skill_effect_dispatch_pipeline.payload_executor = payload_executor
+    _skill_effect_dispatch_pipeline.rng_service = rng_service

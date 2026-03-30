@@ -4,6 +4,7 @@ class_name BattleCoreManager
 const BattleCoreSessionScript := preload("res://src/battle_core/facades/battle_core_session.gd")
 const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
+const EventLogPublicSnapshotBuilderScript := preload("res://src/battle_core/facades/event_log_public_snapshot_builder.gd")
 
 var composer
 var command_builder
@@ -12,6 +13,7 @@ var public_snapshot_builder
 
 var _sessions: Dictionary = {}
 var _session_seq: int = 0
+var _event_log_public_snapshot_builder = EventLogPublicSnapshotBuilderScript.new()
 
 func create_session(init_payload: Dictionary) -> Dictionary:
     assert(init_payload != null, "BattleCoreManager.create_session requires input payload")
@@ -74,7 +76,7 @@ func get_event_log_snapshot(session_id: String, from_index: int = 0) -> Dictiona
     var start_index: int = min(from_index, event_log.size())
     var event_snapshots: Array = []
     for event_index in range(start_index, event_log.size()):
-        event_snapshots.append(_build_event_snapshot(event_log[event_index], session.battle_state))
+        event_snapshots.append(_event_log_public_snapshot_builder.build_public_snapshot(event_log[event_index], session.battle_state))
     return {
         "events": event_snapshots,
         "total_size": event_log.size(),
@@ -115,6 +117,7 @@ func dispose() -> void:
     command_builder = null
     command_id_factory = null
     public_snapshot_builder = null
+    _event_log_public_snapshot_builder = null
 
 func resolve_missing_dependency() -> String:
     if composer == null:
@@ -146,31 +149,3 @@ func _compose_container_or_fail():
 func _next_session_id() -> String:
     _session_seq += 1
     return "session_%d" % _session_seq
-
-func _build_event_snapshot(log_event, battle_state) -> Dictionary:
-    if log_event == null:
-        return {}
-    var event_snapshot: Dictionary = log_event.to_stable_dict()
-    event_snapshot["actor_public_id"] = _resolve_public_id(battle_state, log_event.actor_id)
-    event_snapshot["actor_definition_id"] = _resolve_definition_id(battle_state, log_event.actor_id)
-    event_snapshot["target_public_id"] = _resolve_public_id(battle_state, log_event.target_instance_id)
-    event_snapshot["target_definition_id"] = _resolve_definition_id(battle_state, log_event.target_instance_id)
-    return event_snapshot
-
-func _resolve_public_id(battle_state, runtime_unit_id) -> Variant:
-    var normalized_id := str(runtime_unit_id)
-    if normalized_id.is_empty():
-        return null
-    var unit_state = battle_state.get_unit(normalized_id)
-    if unit_state == null:
-        return null
-    return unit_state.public_id
-
-func _resolve_definition_id(battle_state, runtime_unit_id) -> Variant:
-    var normalized_id := str(runtime_unit_id)
-    if normalized_id.is_empty():
-        return null
-    var unit_state = battle_state.get_unit(normalized_id)
-    if unit_state == null:
-        return null
-    return unit_state.definition_id
