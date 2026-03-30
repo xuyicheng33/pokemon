@@ -113,5 +113,8 @@ func _mark_domain_clash_protection(queued_actions: Array, content_index) -> void
             first_domain_action_by_side[command.side_id] = queued_action
     if first_domain_action_by_side.size() < 2:
         return
-    for domain_action in first_domain_action_by_side.values():
+    var protected_domain_actions: Array = first_domain_action_by_side.values()
+    for domain_action in protected_domain_actions:
         domain_action.domain_clash_protected = true
+    protected_domain_actions.sort_custom(func(left, right): return left.queue_index < right.queue_index)
+    protected_domain_actions[0].defer_domain_success_effects = true

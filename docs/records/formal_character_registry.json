@@ -29,6 +29,7 @@
       "gojo_mugen_reentry_contract",
       "gojo_unlimited_void_runtime_contract",
       "gojo_unlimited_void_cancelled_pre_start_contract",
+      "gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract",
       "gojo_reverse_ritual_heal_contract",
       "gojo_plus5_competition_contract"
     ],

@@ -9,6 +9,11 @@ var source_instance_id: String = ""
 var source_kind_order: int = 0
 var source_order_speed_snapshot: int = 0
 var reversible_stat_mod_totals: Dictionary = {}
+var pending_success_effect_ids: PackedStringArray = PackedStringArray()
+var pending_success_source_instance_id: String = ""
+var pending_success_source_kind_order: int = 0
+var pending_success_source_order_speed_snapshot: int = 0
+var pending_success_chain_context = null
 
 func ensure_reversible_stat_mod_slot(owner_id: String, stat_name: String) -> void:
     if owner_id.is_empty() or stat_name.is_empty():

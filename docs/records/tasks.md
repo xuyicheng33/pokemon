@@ -18,6 +18,42 @@
   - 保持正式角色接入门禁走统一交付面，不再回到手写角色特例
   - 保持无自动选指前提下的主线文档、测试与接入模板一致
 
+## 2026-03-31
+
+### Gojo 领域失败锁人修补（已完成）
+
+- 目标：
+  - 补上 Gojo 先手开域但领域对拼最终失败时，不得残留 `action_lock` 的时序回归
+  - 把同回合双开领域时，先手方的 `field_apply_success` 附带效果延后到对拼结论后再兑现
+  - 同步收口相关 runtime / suite / registry / design / rules / records 口径
+- 范围：
+  - `src/battle_core/passives/**/*`
+  - `src/battle_core/contracts/**/*`
+  - `src/battle_core/runtime/**/*`
+  - `src/battle_core/actions/action_executor.gd`
+  - `src/battle_core/turn/action_queue_builder.gd`
+  - `tests/suites/gojo_domain_suite.gd`
+  - `docs/design/battle_runtime_model.md`
+  - `docs/design/gojo_satoru_design.md`
+  - `docs/rules/05_items_field_input_and_logging.md`
+  - `docs/records/*`
+- 验收标准：
+  - Gojo 若先手展开领域、但同回合被后手领域翻盘，不得先挂出并残留 `gojo_domain_action_lock`
+  - 先手领域若最终对拼失败，不得提前兑现只属于成功立场的 success 附带效果
+  - `gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract` 纳入正式角色回归锚点
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 同回合双开领域时，先手方的 `field_apply_success` 已改为等待对拼窗口关闭后再兑现
+  - Gojo 先手但对拼失败时，不再残留 `action_lock`
+  - `gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract` 已加入正式角色回归锚点
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ## 2026-03-30
 
 ### 去自动选指化整合（已完成）

@@ -1,6 +1,7 @@
 extends RefCounted
 class_name FieldApplyService
 
+const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const FieldApplyContextResolverScript := preload("res://src/battle_core/passives/field_apply_context_resolver.gd")
 const FieldApplyConflictServiceScript := preload("res://src/battle_core/passives/field_apply_conflict_service.gd")
 const FieldApplyLogServiceScript := preload("res://src/battle_core/passives/field_apply_log_service.gd")
@@ -69,6 +70,9 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 				return clash_result["invalid_code"]
 			_log_service.log_field_clash(clash_result, before_field, payload, effect_event, battle_state)
 			if not bool(clash_result.get("challenger_won", false)):
+				var release_invalid_code = _effect_runner.execute_pending_success_effects(before_field, battle_state, content_index)
+				if release_invalid_code != null:
+					return release_invalid_code
 				return null
 		var break_invalid_code = field_service.break_active_field(
 			battle_state,
@@ -90,7 +94,19 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 	)
 	if field_apply_invalid_code != null:
 		return field_apply_invalid_code
+	if _should_defer_success_effects(challenger_field_definition, payload, effect_event):
+		_effect_runner.defer_success_effects(field_state, payload.on_success_effect_ids, effect_event)
+		return null
 	return _effect_runner.execute_success_effects(payload.on_success_effect_ids, effect_event, battle_state, content_index)
+
+func _should_defer_success_effects(field_definition, payload, effect_event) -> bool:
+	if field_definition == null or payload == null or effect_event == null or effect_event.chain_context == null:
+		return false
+	if payload.on_success_effect_ids.is_empty():
+		return false
+	if String(field_definition.field_kind) != ContentSchemaScript.FIELD_KIND_DOMAIN:
+		return false
+	return bool(effect_event.chain_context.defer_field_apply_success)
 
 func _is_replacing_current_field_from_its_lifecycle(effect_event, current_field_state) -> bool:
 	if effect_event == null or current_field_state == null:

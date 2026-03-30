@@ -82,3 +82,47 @@ func execute_success_effects(effect_ids: PackedStringArray, effect_event, battle
 		battle_state.chain_context,
 		success_events
 	)
+
+func defer_success_effects(field_state, effect_ids: PackedStringArray, effect_event) -> void:
+	if field_state == null or effect_ids.is_empty() or effect_event == null:
+		return
+	field_state.pending_success_effect_ids = effect_ids.duplicate()
+	field_state.pending_success_source_instance_id = String(effect_event.source_instance_id)
+	field_state.pending_success_source_kind_order = int(effect_event.source_kind_order)
+	field_state.pending_success_source_order_speed_snapshot = int(effect_event.source_order_speed_snapshot)
+	field_state.pending_success_chain_context = effect_event.chain_context.copy_shallow() if effect_event.chain_context != null else null
+
+func execute_pending_success_effects(field_state, battle_state, content_index) -> Variant:
+	if field_state == null or field_state.pending_success_effect_ids.is_empty():
+		return null
+	var success_events = trigger_dispatcher.collect_events(
+		ContentSchemaScript.TRIGGER_FIELD_APPLY_SUCCESS,
+		battle_state,
+		content_index,
+		field_state.pending_success_effect_ids,
+		String(field_state.creator),
+		field_state.pending_success_source_instance_id,
+		field_state.pending_success_source_kind_order,
+		field_state.pending_success_source_order_speed_snapshot,
+		field_state.pending_success_chain_context
+	)
+	clear_pending_success_effects(field_state)
+	if success_events.is_empty():
+		return null
+	return trigger_batch_runner.execute_trigger_batch(
+		"__field_apply_success__",
+		battle_state,
+		content_index,
+		[],
+		battle_state.chain_context,
+		success_events
+	)
+
+func clear_pending_success_effects(field_state) -> void:
+	if field_state == null:
+		return
+	field_state.pending_success_effect_ids = PackedStringArray()
+	field_state.pending_success_source_instance_id = ""
+	field_state.pending_success_source_kind_order = 0
+	field_state.pending_success_source_order_speed_snapshot = 0
+	field_state.pending_success_chain_context = null

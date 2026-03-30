@@ -164,6 +164,7 @@ func _build_chain_context(queued_action, battle_state):
     chain_context.select_deadline_ms = battle_state.selection_deadline_ms
     chain_context.target_unit_id = queued_action.target_snapshot.target_unit_id
     chain_context.target_slot = queued_action.target_snapshot.target_slot
+    chain_context.defer_field_apply_success = queued_action.defer_domain_success_effects
     return chain_context
 
 func _can_start_action(actor, command, battle_state) -> bool:

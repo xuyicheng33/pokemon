@@ -52,6 +52,28 @@
 |`last_matchup_signature`|`String`|最近一次已结算 `on_matchup_changed` 的对位签名，用于去重|
 |`pre_applied_turn_start_regen_turn_index`|`int`|建局后为首回合选指预先应用过 `turn_start` 回蓝时写入对应回合号；首个 `run_turn` 用它避免重复回蓝|
 
+### 4.1 ChainContext
+
+|字段|类型|说明|
+|---|---|---|
+|`event_chain_id`|`String`|当前链唯一 ID|
+|`root_action_id`|`Variant`|根动作 ID；系统链可为空|
+|`action_queue_index`|`Variant`|当前动作在本回合队列里的顺序快照|
+|`actor_id`|`Variant`|当前链 actor 的运行时实例 ID|
+|`command_type`|`Variant`|根动作类型|
+|`command_source`|`Variant`|根动作来源（如手动、系统注入、超时）|
+|`skill_id`|`Variant`|若当前链由技能或奥义触发，则记录对应 skill id|
+|`target_unit_id`|`Variant`|当前链锁定的目标单位实例 ID|
+|`target_slot`|`Variant`|当前链目标槽位|
+|`chain_depth`|`int`|当前 effect 递归深度；超过 `max_chain_depth` 必须 fail-fast|
+|`effect_dedupe_keys`|`Dictionary`|同链 effect 递归防抖键集合；当前按稳定语义键去重，避免递归重派发死循环|
+|`defer_field_apply_success`|`bool`|同回合双开领域时，先手领域若仍需等待对拼结果，则先延后 `field_apply_success` 附带效果|
+
+补充说明：
+
+- `effect_dedupe_keys` 当前用于拦截“同链、同语义”的 effect 重复派发；它不等于全局去重，不得跨链复用。
+- `copy_shallow()` 必须复制 `effect_dedupe_keys` 与当前链关键定位字段，保证派生链不会共享同一个可变字典实例。
+
 ## 5. SideState
 
 |字段|类型|说明|

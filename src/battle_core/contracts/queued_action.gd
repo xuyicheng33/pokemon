@@ -10,6 +10,7 @@ var priority: int = 0
 var speed_snapshot: int = 0
 var speed_tie_roll: Variant = null
 var domain_clash_protected: bool = false
+var defer_domain_success_effects: bool = false
 
 func to_stable_dict() -> Dictionary:
     return {
@@ -22,4 +23,5 @@ func to_stable_dict() -> Dictionary:
         "speed_snapshot": speed_snapshot,
         "speed_tie_roll": speed_tie_roll,
         "domain_clash_protected": domain_clash_protected,
+        "defer_domain_success_effects": defer_domain_success_effects,
     }

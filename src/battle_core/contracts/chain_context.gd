@@ -16,6 +16,7 @@ var target_unit_id: Variant = null
 var target_slot: Variant = null
 var chain_depth: int = 0
 var effect_dedupe_keys: Dictionary = {}
+var defer_field_apply_success: bool = false
 
 func copy_shallow():
     var clone = self.get_script().new()
@@ -34,4 +35,5 @@ func copy_shallow():
     clone.target_slot = target_slot
     clone.chain_depth = chain_depth
     clone.effect_dedupe_keys = effect_dedupe_keys.duplicate()
+    clone.defer_field_apply_success = defer_field_apply_success
     return clone

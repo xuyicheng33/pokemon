@@ -181,3 +181,11 @@
   - `content / contracts / runtime` 保持 L1 纯度，不得反向 import 上层服务
   - `commands / math` 保持 L2 纯度，不得 import runtime / orchestrator / coordinator / facade
   - `battle_core` 内层模块不得反向 import `facades/*`
+
+### 22. 同回合双开领域时，先手 success 链延后到对拼结论后兑现（2026-03-31）
+
+- 同回合双方都已入队施放领域时：
+  - 先手领域若仍处于对拼窗口内，`field_apply_success` 链必须延后到对拼结果明确后再兑现
+  - 若先手方最终被后手领域翻盘，则视为“未成功立住”，不得残留 `action_lock` 之类只应在成功立场后成立的附带效果
+- 原因：
+  - 旧时序会让先手领域先兑现 success 附带效果，再在后手领域翻盘时留下本不该成立的运行态残留。

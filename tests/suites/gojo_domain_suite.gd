@@ -11,6 +11,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("gojo_mugen_reentry_contract", failures, Callable(self, "_test_gojo_mugen_reentry_contract").bind(harness))
     runner.run_test("gojo_unlimited_void_runtime_contract", failures, Callable(self, "_test_gojo_unlimited_void_runtime_contract").bind(harness))
     runner.run_test("gojo_unlimited_void_cancelled_pre_start_contract", failures, Callable(self, "_test_gojo_unlimited_void_cancelled_pre_start_contract").bind(harness))
+    runner.run_test("gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract", failures, Callable(self, "_test_gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract").bind(harness))
     runner.run_test("gojo_reverse_ritual_heal_contract", failures, Callable(self, "_test_gojo_reverse_ritual_heal_contract").bind(harness))
     runner.run_test("gojo_plus5_competition_contract", failures, Callable(self, "_test_gojo_plus5_competition_contract").bind(harness))
 func _test_gojo_mugen_incoming_accuracy_contract(harness) -> Dictionary:
@@ -166,6 +167,45 @@ func _test_gojo_unlimited_void_cancelled_pre_start_contract(harness) -> Dictiona
             return ev.event_type == EventTypesScript.EFFECT_FIELD_CLASH
         ):
             return harness.fail_result("双方同回合开领域时必须写出领域对拼日志")
+    return harness.pass_result()
+
+func _test_gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract(harness) -> Dictionary:
+    var state_payload = _build_gojo_battle_state(harness, 1216, true, true)
+    if state_payload.has("error"):
+        return harness.fail_result(str(state_payload["error"]))
+    var core = state_payload["core"]
+    var content_index = state_payload["content_index"]
+    var battle_state = state_payload["battle_state"]
+    var gojo_unit = battle_state.get_side("P1").get_active_unit()
+    var sukuna_unit = battle_state.get_side("P2").get_active_unit()
+    gojo_unit.current_mp = 80
+    gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
+    gojo_unit.base_speed = 999
+    sukuna_unit.current_mp = sukuna_unit.max_mp
+    sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        _build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
+        _build_ultimate_command(core, 1, "P2", "P2-A", "sukuna_fukuma_mizushi"),
+    ])
+    if battle_state.field_state == null or battle_state.field_state.field_def_id != "sukuna_malevolent_shrine_field":
+        return harness.fail_result("Gojo 对拼失败时，最终立场的应是宿傩领域")
+    if not _has_event(core.battle_logger.event_log, func(ev):
+        return ev.event_type == EventTypesScript.EFFECT_FIELD_CLASH
+    ):
+        return harness.fail_result("Gojo 对拼失败时仍必须写出领域对拼日志")
+    if _has_event(core.battle_logger.event_log, func(ev):
+        return ev.event_type == EventTypesScript.ACTION_CANCELLED_PRE_START and ev.target_instance_id == sukuna_unit.unit_instance_id
+    ):
+        return harness.fail_result("Gojo 对拼失败后，不应把宿傩本回合已入队的领域动作误写成 cancelled_pre_start")
+    if _has_event(core.battle_logger.event_log, func(ev):
+        return ev.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and ev.target_instance_id == sukuna_unit.unit_instance_id
+    ):
+        return harness.fail_result("Gojo 对拼失败后，不应残留或复活无量空处的 action_lock")
+    if not _has_event(core.battle_logger.event_log, func(ev):
+        return ev.event_type == EventTypesScript.ACTION_CAST and ev.actor_id == sukuna_unit.unit_instance_id
+    ):
+        return harness.fail_result("Gojo 对拼失败后，宿傩原本已入队的领域动作应继续正常执行")
     return harness.pass_result()
 func _test_gojo_reverse_ritual_heal_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
