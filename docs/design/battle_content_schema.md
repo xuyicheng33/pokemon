@@ -21,7 +21,7 @@
 |`content/passive_items/`|`PassiveItemDefinition`|
 |`content/effects/`|`EffectDefinition`|
 |`content/fields/`|`FieldDefinition`|
-|`content/samples/`|最小样例资源|
+|`content/samples/`|最小样例资源与样例对局资源|
 
 ## 3. 资源类字段
 

@@ -5,11 +5,12 @@
 - 正式格式：Godot `Resource` / `.tres`
 - 资源类型定义：`src/battle_core/content/`
 - 当前同时包含：
+  - `content/battle_formats/` 下的正式战斗格式资源
   - `content/samples/` 下的最小样例资源
   - `gojo` 正式角色内容包（单位、技能、被动、effect、field）
   - `sukuna` 正式角色内容包（单位、技能、被动、effect、field）
 - 内容资源以规则文档和加载期校验为准；非法定义会在 `BattleContentIndex` 加载时直接 fail-fast
-- `SampleBattleFactory.content_snapshot_paths()` 会自动从 `combat_types / units / skills / effects / fields / passive_skills / samples` 收集 `.tres`，并做稳定排序
+- `SampleBattleFactory.content_snapshot_paths()` 会自动从 `battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 收集 `.tres`，并做稳定排序
 
 当前正式角色资产约束：
 

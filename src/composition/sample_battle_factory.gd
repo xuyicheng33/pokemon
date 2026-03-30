@@ -8,9 +8,11 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 
 func content_snapshot_paths() -> PackedStringArray:
     var collect_dirs := PackedStringArray([
+        "res://content/battle_formats",
         "res://content/combat_types",
         "res://content/units",
         "res://content/skills",
+        "res://content/passive_items",
         "res://content/effects",
         "res://content/fields",
         "res://content/passive_skills",

@@ -106,6 +106,7 @@
 
 - 业务断言失败：`tests/run_all.gd` 返回非 0。
 - 引擎错误失败：输出命中 `SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`。
+- 预期的 `invalid_battle / hard_terminate_invalid_state` 诊断输出使用普通文本告警，不再伪装成引擎级 `ERROR:`。
 - 严格通过条件：业务断言全绿且引擎错误日志为 0。
 
 ## 5. 最小验收

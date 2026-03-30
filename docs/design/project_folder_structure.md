@@ -8,6 +8,7 @@
 /
   content/
     battle_formats/
+    samples/
     combat_types/
     units/
     skills/
@@ -15,7 +16,6 @@
     passive_items/
     effects/
     fields/
-    samples/
   docs/
     design/
     rules/
@@ -53,6 +53,8 @@
 |目录|职责|
 |---|---|
 |`content/`|战斗规则资源定义与最小样例|
+|`content/battle_formats`|战斗格式定义资源|
+|`content/samples`|最小样例资源与样例对局资源|
 |`content/combat_types`|战斗属性定义资源|
 |`docs/design/`|工程实现方案文档|
 |`docs/rules/`|规则权威文档|

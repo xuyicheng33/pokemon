@@ -231,4 +231,4 @@ func _resolve_chain_origin(command_type: String) -> String:
             return "system_replace"
 
 func _report_invalid_termination(message: String) -> void:
-    push_error(message)
+    printerr("INVALID_TERMINATION: %s" % message)

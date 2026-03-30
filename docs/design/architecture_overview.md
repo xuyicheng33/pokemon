@@ -29,6 +29,7 @@
 
 补充约束：
 
+- `BattleFormatConfig` 的正式目录是 `content/battle_formats/`；`content/samples/` 只承载样例资源与样例对局资源。
 - 外围层（`composition/adapters/scenes`）不得直接依赖 `battle_core/runtime/*`。
 - `adapters/scenes` 只能依赖 facade、公开 contract，或输入枚举常量 `commands/command_types.gd`；不得直接连 `actions/effects/lifecycle/logging/math/passives/turn/content` 等内部服务实现。
 - 外围只能通过 facade 与公开 contract 调核心。
