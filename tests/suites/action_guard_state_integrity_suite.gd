@@ -3,7 +3,10 @@ class_name ActionGuardStateIntegritySuite
 
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
+const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
+const FieldDefinitionScript := preload("res://src/battle_core/content/field_definition.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
+const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
@@ -11,7 +14,11 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("invalid_chain_depth_max_guard", failures, Callable(self, "_test_invalid_chain_depth_max_guard").bind(harness))
 	runner.run_test("invalid_chain_depth_dedupe_guard", failures, Callable(self, "_test_invalid_chain_depth_dedupe_guard").bind(harness))
+	runner.run_test("stacked_effect_instances_same_source_contract", failures, Callable(self, "_test_stacked_effect_instances_same_source_contract").bind(harness))
 	runner.run_test("invalid_state_corruption_guard", failures, Callable(self, "_test_invalid_state_corruption_guard").bind(harness))
+	runner.run_test("missing_active_slot_with_available_unit_guard", failures, Callable(self, "_test_missing_active_slot_with_available_unit_guard").bind(harness))
+	runner.run_test("effect_expire_invalid_terminates_turn_immediately", failures, Callable(self, "_test_effect_expire_invalid_terminates_turn_immediately").bind(harness))
+	runner.run_test("field_expire_invalid_terminates_turn_immediately", failures, Callable(self, "_test_field_expire_invalid_terminates_turn_immediately").bind(harness))
 	runner.run_test("missing_chain_context_hard_fail", failures, Callable(self, "_test_missing_chain_context_hard_fail").bind(harness))
 	runner.run_test("missing_core_dependency_hard_fail", failures, Callable(self, "_test_missing_core_dependency_hard_fail").bind(harness))
 
@@ -133,6 +140,45 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 		return harness.fail_result("expected invalid_chain_depth on dedupe guard, got %s" % str(core.payload_executor.last_invalid_battle_code))
 	return harness.pass_result()
 
+func _test_stacked_effect_instances_same_source_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1191)
+	var stack_effect = EffectDefinitionScript.new()
+	stack_effect.id = "test_same_source_stack_effect"
+	stack_effect.display_name = "Same Source Stack Effect"
+	stack_effect.scope = "self"
+	stack_effect.stacking = "stack"
+	stack_effect.trigger_names = PackedStringArray(["on_cast"])
+	content_index.register_resource(stack_effect)
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var target = battle_state.get_side("P2").get_active_unit()
+	core.effect_instance_service.create_instance(stack_effect, actor.unit_instance_id, battle_state, "same_stack_source", 1, actor.base_speed)
+	core.effect_instance_service.create_instance(stack_effect, actor.unit_instance_id, battle_state, "same_stack_source", 1, actor.base_speed)
+	battle_state.chain_context = _build_chain_context("test_same_source_stack_chain", actor.unit_instance_id, target.unit_instance_id)
+	var effect_events = core.effect_instance_dispatcher.collect_trigger_events(
+		"on_cast",
+		battle_state,
+		content_index,
+		[actor.unit_instance_id],
+		battle_state.chain_context
+	)
+	if effect_events.size() != 2:
+		return harness.fail_result("expected two stacked effect events for same-source stack coverage")
+	core.payload_executor.execute_effect_event(effect_events[0], battle_state, content_index)
+	if core.payload_executor.last_invalid_battle_code != null:
+		return harness.fail_result("first stacked effect event should pass, got %s" % str(core.payload_executor.last_invalid_battle_code))
+	core.payload_executor.execute_effect_event(effect_events[1], battle_state, content_index)
+	if core.payload_executor.last_invalid_battle_code != null:
+		return harness.fail_result("second same-source stacked effect should not hit dedupe guard, got %s" % str(core.payload_executor.last_invalid_battle_code))
+	return harness.pass_result()
+
 func _test_invalid_state_corruption_guard(harness) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
@@ -150,6 +196,89 @@ func _test_invalid_state_corruption_guard(harness) -> Dictionary:
 		return harness.fail_result("state corruption should fail-fast")
 	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
 		return harness.fail_result("expected invalid_state_corruption, got %s" % str(battle_state.battle_result.reason))
+	return harness.pass_result()
+
+func _test_missing_active_slot_with_available_unit_guard(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1201)
+	battle_state.get_side("P1").clear_active_unit()
+	core.turn_loop_controller.run_turn(battle_state, content_index, [])
+	if not battle_state.battle_result.finished:
+		return harness.fail_result("missing active slot with living units should fail-fast")
+	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+		return harness.fail_result("missing active slot should map to invalid_state_corruption")
+	return harness.pass_result()
+
+func _test_effect_expire_invalid_terminates_turn_immediately(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1202)
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var target = battle_state.get_side("P2").get_active_unit()
+	_register_ambiguous_remove_content(content_index, "test_effect_expire_invalid", "on_expire")
+	core.effect_instance_service.create_instance(content_index.effects["test_effect_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_marker_source", 1, target.base_speed)
+	core.effect_instance_service.create_instance(content_index.effects["test_effect_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_marker_source", 1, target.base_speed)
+	core.effect_instance_service.create_instance(content_index.effects["test_effect_expire_invalid_parent"], actor.unit_instance_id, battle_state, "test_parent_source", 1, actor.base_speed)
+	core.turn_loop_controller.run_turn(battle_state, content_index, [])
+	if not battle_state.battle_result.finished:
+		return harness.fail_result("invalid effect expire path should terminate battle immediately")
+	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_EFFECT_REMOVE_AMBIGUOUS:
+		return harness.fail_result("invalid effect expire should preserve remove_effect ambiguity code")
+	if battle_state.turn_index != 1:
+		return harness.fail_result("effect expire invalid path must not advance turn index")
+	if core.battle_logger.event_log.is_empty() or core.battle_logger.event_log[-1].event_type != EventTypesScript.SYSTEM_INVALID_BATTLE:
+		return harness.fail_result("invalid effect expire should stop with system:invalid_battle as the last event")
+	for log_event in core.battle_logger.event_log:
+		if log_event.event_type == EventTypesScript.ACTION_CAST:
+			return harness.fail_result("invalid effect expire at turn_start must stop before action selection/execution")
+	return harness.pass_result()
+
+func _test_field_expire_invalid_terminates_turn_immediately(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1203)
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var target = battle_state.get_side("P2").get_active_unit()
+	_register_ambiguous_remove_content(content_index, "test_field_expire_invalid", "field_expire")
+	var invalid_field = FieldStateScript.new()
+	invalid_field.field_def_id = "test_field_expire_invalid_field"
+	invalid_field.instance_id = "test_field_expire_invalid_instance"
+	invalid_field.creator = actor.unit_instance_id
+	invalid_field.remaining_turns = 1
+	battle_state.field_state = invalid_field
+	core.effect_instance_service.create_instance(content_index.effects["test_field_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_field_marker_source", 1, target.base_speed)
+	core.effect_instance_service.create_instance(content_index.effects["test_field_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_field_marker_source", 1, target.base_speed)
+	core.turn_loop_controller.run_turn(battle_state, content_index, [])
+	if not battle_state.battle_result.finished:
+		return harness.fail_result("invalid field expire path should terminate battle immediately")
+	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_EFFECT_REMOVE_AMBIGUOUS:
+		return harness.fail_result("invalid field expire should preserve remove_effect ambiguity code")
+	if battle_state.turn_index != 1:
+		return harness.fail_result("invalid field expire path must not advance turn index")
+	if core.battle_logger.event_log.is_empty() or core.battle_logger.event_log[-1].event_type != EventTypesScript.SYSTEM_INVALID_BATTLE:
+		return harness.fail_result("invalid field expire should stop with system:invalid_battle as the last event")
+	for log_event in core.battle_logger.event_log:
+		if log_event.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE:
+			return harness.fail_result("invalid field expire should stop before writing EFFECT_FIELD_EXPIRE")
 	return harness.pass_result()
 
 func _test_missing_chain_context_hard_fail(harness) -> Dictionary:
@@ -198,3 +327,51 @@ func _test_missing_core_dependency_hard_fail(harness) -> Dictionary:
 		if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_STATE_CORRUPTION:
 			return harness.pass_result()
 	return harness.fail_result("missing invalid_battle log for dependency hard-fail")
+
+func _build_chain_context(chain_id: String, actor_id: String, target_id: String):
+	var chain_context = ChainContextScript.new()
+	chain_context.event_chain_id = chain_id
+	chain_context.chain_origin = "action"
+	chain_context.command_type = CommandTypesScript.SKILL
+	chain_context.command_source = "manual"
+	chain_context.actor_id = actor_id
+	chain_context.target_unit_id = target_id
+	return chain_context
+
+func _register_ambiguous_remove_content(content_index, prefix: String, trigger_name: String) -> void:
+	var marker_effect = EffectDefinitionScript.new()
+	marker_effect.id = "%s_marker" % prefix
+	marker_effect.display_name = "%s Marker" % prefix
+	marker_effect.scope = "self"
+	marker_effect.stacking = "stack"
+	content_index.register_resource(marker_effect)
+
+	var remove_payload = RemoveEffectPayloadScript.new()
+	remove_payload.payload_type = "remove_effect"
+	remove_payload.effect_definition_id = marker_effect.id
+	var invalid_remove_effect = EffectDefinitionScript.new()
+	invalid_remove_effect.id = "%s_remove" % prefix
+	invalid_remove_effect.display_name = "%s Remove" % prefix
+	invalid_remove_effect.scope = "target"
+	invalid_remove_effect.trigger_names = PackedStringArray([trigger_name])
+	invalid_remove_effect.payloads.clear()
+	invalid_remove_effect.payloads.append(remove_payload)
+	content_index.register_resource(invalid_remove_effect)
+
+	if trigger_name == "on_expire":
+		var parent_effect = EffectDefinitionScript.new()
+		parent_effect.id = "%s_parent" % prefix
+		parent_effect.display_name = "%s Parent" % prefix
+		parent_effect.scope = "self"
+		parent_effect.duration_mode = "turns"
+		parent_effect.duration = 1
+		parent_effect.decrement_on = "turn_start"
+		parent_effect.on_expire_effect_ids = PackedStringArray([invalid_remove_effect.id])
+		content_index.register_resource(parent_effect)
+		return
+
+	var invalid_field = FieldDefinitionScript.new()
+	invalid_field.id = "%s_field" % prefix
+	invalid_field.display_name = "%s Field" % prefix
+	invalid_field.on_expire_effect_ids = PackedStringArray([invalid_remove_effect.id])
+	content_index.register_resource(invalid_field)

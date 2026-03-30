@@ -17,6 +17,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("normal_field_cannot_replace_active_domain_contract", failures, Callable(self, "_test_normal_field_cannot_replace_active_domain_contract").bind(harness))
 	runner.run_test("domain_replaces_normal_field_contract", failures, Callable(self, "_test_domain_replaces_normal_field_contract").bind(harness))
 	runner.run_test("active_domain_missing_creator_fails_fast_contract", failures, Callable(self, "_test_active_domain_missing_creator_fails_fast_contract").bind(harness))
+	runner.run_test("active_field_missing_creator_local_guard_contract", failures, Callable(self, "_test_active_field_missing_creator_local_guard_contract").bind(harness))
 	runner.run_test("same_side_domain_recast_main_path_fails_fast_contract", failures, Callable(self, "_test_same_side_domain_recast_main_path_fails_fast_contract").bind(harness))
 
 func _test_field_clash_high_mp_and_success_only_followup_contract(harness) -> Dictionary:
@@ -280,6 +281,28 @@ func _test_active_domain_missing_creator_fails_fast_contract(harness) -> Diction
 	])
 	if not battle_state.battle_result.finished or battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
 		return harness.fail_result("active domain 缺失 creator 时必须 fail-fast 为 invalid_state_corruption")
+	return harness.pass_result()
+
+func _test_active_field_missing_creator_local_guard_contract(harness) -> Dictionary:
+	var state_payload = _helper.build_gojo_vs_sample_state(harness, 22131)
+	if state_payload.has("error"):
+		return harness.fail_result(str(state_payload["error"]))
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var invalid_field = FieldStateScript.new()
+	invalid_field.field_def_id = "sample_focus_field"
+	invalid_field.instance_id = "test_invalid_local_field"
+	invalid_field.creator = ""
+	invalid_field.remaining_turns = 2
+	battle_state.field_state = invalid_field
+	var invalid_code = core.field_service.break_field_if_creator_inactive(
+		battle_state,
+		content_index,
+		battle_state.chain_context
+	)
+	if invalid_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+		return harness.fail_result("field_service local path should fail-fast when creator is empty")
 	return harness.pass_result()
 
 func _test_same_side_domain_recast_main_path_fails_fast_contract(harness) -> Dictionary:

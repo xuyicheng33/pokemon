@@ -11,6 +11,10 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("sukuna_default_loadout_contract", failures, Callable(self, "_test_sukuna_default_loadout_contract").bind(harness))
     runner.run_test("sukuna_matchup_regen_runtime_path", failures, Callable(self, "_test_sukuna_matchup_regen_runtime_path").bind(harness))
     runner.run_test("sukuna_reverse_ritual_heal_path", failures, Callable(self, "_test_sukuna_reverse_ritual_heal_path").bind(harness))
+    runner.run_test("sukuna_kai_priority_damage_contract", failures, Callable(self, "_test_sukuna_kai_priority_damage_contract").bind(harness))
+    runner.run_test("sukuna_hatsu_mp_diff_contract", failures, Callable(self, "_test_sukuna_hatsu_mp_diff_contract").bind(harness))
+    runner.run_test("sukuna_default_loadout_first_ultimate_window_contract", failures, Callable(self, "_test_sukuna_default_loadout_first_ultimate_window_contract").bind(harness))
+    runner.run_test("sukuna_ritual_loadout_first_ultimate_window_contract", failures, Callable(self, "_test_sukuna_ritual_loadout_first_ultimate_window_contract").bind(harness))
 func _test_sukuna_default_loadout_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
@@ -123,6 +127,113 @@ func _test_sukuna_reverse_ritual_heal_path(harness) -> Dictionary:
             return harness.pass_result()
     return harness.fail_result("reverse ritual heal log missing")
 
+func _test_sukuna_kai_priority_damage_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_setup = _build_sukuna_setup(sample_factory)
+    var battle_state = _build_battle_state(core, content_index, battle_setup, 707)
+    var sukuna_unit = battle_state.get_side("P1").get_active_unit()
+    var target_unit = battle_state.get_side("P2").get_active_unit()
+    if sukuna_unit == null or target_unit == null:
+        return harness.fail_result("missing active units for sukuna kai contract")
+    target_unit.base_speed = 999
+    var skill_definition = content_index.skills["sukuna_kai"]
+    var expected_damage = _calc_expected_damage(core, battle_state, sukuna_unit, target_unit, skill_definition, sukuna_unit.current_mp - skill_definition.mp_cost, target_unit.current_mp)
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        _build_manual_skill_command(core, 1, "P1", "P1-A", "sukuna_kai"),
+        _build_manual_skill_command(core, 1, "P2", "P2-A", "sample_strike"),
+    ])
+    var first_cast_actor_id := ""
+    for log_event in core.battle_logger.event_log:
+        if log_event.event_type == EventTypesScript.ACTION_CAST:
+            first_cast_actor_id = String(log_event.actor_id)
+            break
+    if first_cast_actor_id != sukuna_unit.unit_instance_id:
+        return harness.fail_result("解应凭 priority=1 在更慢时仍先于普通技能行动")
+    if target_unit.max_hp - target_unit.current_hp != expected_damage:
+        return harness.fail_result("解的基础伤害口径漂移：expected=%d actual=%d" % [expected_damage, target_unit.max_hp - target_unit.current_hp])
+    return harness.pass_result()
+
+func _test_sukuna_hatsu_mp_diff_contract(harness) -> Dictionary:
+    var low_result = _run_sukuna_hatsu_damage_case(harness, 708, 40, 40)
+    if low_result.has("error"):
+        return harness.fail_result(str(low_result["error"]))
+    if int(low_result["damage"]) != int(low_result["expected_damage"]):
+        return harness.fail_result("低 mp 差的 捌 伤害口径漂移：expected=%d actual=%d" % [int(low_result["expected_damage"]), int(low_result["damage"])])
+    if int(low_result["power_bonus"]) != 0:
+        return harness.fail_result("低 mp 差场景下，捌不应获得额外 power bonus")
+    var high_result = _run_sukuna_hatsu_damage_case(harness, 709, 90, 20)
+    if high_result.has("error"):
+        return harness.fail_result(str(high_result["error"]))
+    if int(high_result["damage"]) != int(high_result["expected_damage"]):
+        return harness.fail_result("高 mp 差的 捌 伤害口径漂移：expected=%d actual=%d" % [int(high_result["expected_damage"]), int(high_result["damage"])])
+    if int(high_result["power_bonus"]) <= 0:
+        return harness.fail_result("高 mp 差场景下，捌应获得正的 power bonus")
+    if int(high_result["damage"]) <= int(low_result["damage"]):
+        return harness.fail_result("更高的 mp 差应让 捌 造成更高伤害")
+    return harness.pass_result()
+
+func _test_sukuna_default_loadout_first_ultimate_window_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_state = _build_battle_state(core, content_index, _build_sukuna_setup(sample_factory), 710)
+    var window_turn = _simulate_until_ultimate_window(
+        core,
+        content_index,
+        battle_state,
+        func(turn_index: int):
+            if turn_index <= 3:
+                return _build_manual_skill_command(core, turn_index, "P1", "P1-A", "sukuna_kai")
+            return _build_manual_wait_command(core, turn_index, "P1", "P1-A")
+    )
+    if window_turn != 6:
+        return harness.fail_result("默认装配当前基准线的首次奥义窗口应固定在 turn 6，actual=%d" % window_turn)
+    return harness.pass_result()
+
+func _test_sukuna_ritual_loadout_first_ultimate_window_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var ritual_loadout := {0: PackedStringArray(["sukuna_kai", "sukuna_hatsu", "sukuna_reverse_ritual"])}
+    var battle_state = _build_battle_state(core, content_index, _build_sukuna_setup(sample_factory, ritual_loadout), 711)
+    var window_turn = _simulate_until_ultimate_window(
+        core,
+        content_index,
+        battle_state,
+        func(turn_index: int):
+            if turn_index <= 3:
+                return core.command_builder.build_command({
+                    "turn_index": turn_index,
+                    "command_type": CommandTypesScript.SKILL,
+                    "command_source": "manual",
+                    "side_id": "P1",
+                    "actor_public_id": "P1-A",
+                    "skill_id": "sukuna_reverse_ritual",
+                })
+            return _build_manual_wait_command(core, turn_index, "P1", "P1-A")
+    )
+    if window_turn != 7:
+        return harness.fail_result("反转术式装配当前基准线的首次奥义窗口应固定在 turn 7，actual=%d" % window_turn)
+    return harness.pass_result()
+
 
 func _build_sukuna_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}):
     return _support.build_sukuna_setup(sample_factory, p1_regular_skill_overrides)
@@ -135,3 +246,70 @@ func _resolve_matchup_gap_value(owner_total: int, opponent_total: int, threshold
 
 func _sum_unit_bst(unit_state) -> int:
     return _support.sum_unit_bst(unit_state)
+
+func _run_sukuna_hatsu_damage_case(harness, seed: int, actor_mp_before_cast: int, target_mp_before_cast: int) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return {"error": str(core_payload["error"])}
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return {"error": "SampleBattleFactory init failed"}
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    content_index.skills["sukuna_hatsu"].accuracy = 100
+    var battle_state = _build_battle_state(core, content_index, _build_sukuna_setup(sample_factory), seed)
+    var sukuna_unit = battle_state.get_side("P1").get_active_unit()
+    var target_unit = battle_state.get_side("P2").get_active_unit()
+    sukuna_unit.current_mp = actor_mp_before_cast
+    target_unit.current_mp = target_mp_before_cast
+    var skill_definition = content_index.skills["sukuna_hatsu"]
+    var actor_mp_after_cost: int = actor_mp_before_cast - skill_definition.mp_cost
+    var power_bonus: int = max(0, actor_mp_after_cost - target_mp_before_cast)
+    var expected_damage = _calc_expected_damage(core, battle_state, sukuna_unit, target_unit, skill_definition, actor_mp_after_cost, target_mp_before_cast)
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        _build_manual_skill_command(core, 1, "P1", "P1-A", "sukuna_hatsu"),
+        _build_manual_wait_command(core, 1, "P2", "P2-A"),
+    ])
+    return {
+        "damage": target_unit.max_hp - target_unit.current_hp,
+        "expected_damage": expected_damage,
+        "power_bonus": power_bonus,
+    }
+
+func _calc_expected_damage(core, battle_state, actor, target, skill_definition, actor_mp_after_cost: int, target_mp_before_cast: int) -> int:
+    var power_bonus := 0
+    if String(skill_definition.power_bonus_source) == "mp_diff_clamped":
+        power_bonus = max(0, actor_mp_after_cost - target_mp_before_cast)
+    var power: int = int(skill_definition.power) + power_bonus
+    var attack_value: int = core.stat_calculator.calc_effective_stat(actor.base_sp_attack, int(actor.stat_stages.get("sp_attack", 0))) if String(skill_definition.damage_kind) == "special" else core.stat_calculator.calc_effective_stat(actor.base_attack, int(actor.stat_stages.get("attack", 0)))
+    var defense_value: int = core.stat_calculator.calc_effective_stat(target.base_sp_defense, int(target.stat_stages.get("sp_defense", 0))) if String(skill_definition.damage_kind) == "special" else core.stat_calculator.calc_effective_stat(target.base_defense, int(target.stat_stages.get("defense", 0)))
+    var type_effectiveness: float = core.combat_type_service.calc_effectiveness(String(skill_definition.combat_type_id), target.combat_type_ids)
+    var final_multiplier: float = core.rule_mod_service.get_final_multiplier(battle_state, actor.unit_instance_id)
+    return core.damage_service.apply_final_mod(
+        core.damage_service.calc_base_damage(
+            battle_state.battle_level,
+            power,
+            attack_value,
+            defense_value
+        ),
+        final_multiplier * type_effectiveness
+    )
+
+func _simulate_until_ultimate_window(core, content_index, battle_state, command_factory: Callable) -> int:
+    for turn_index in range(1, 10):
+        var legal_action_set = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
+        if legal_action_set.legal_ultimate_ids.has("sukuna_fukuma_mizushi"):
+            return turn_index
+        core.turn_loop_controller.run_turn(battle_state, content_index, [
+            command_factory.call(turn_index),
+            _build_manual_wait_command(core, turn_index, "P2", "P2-A"),
+        ])
+        if battle_state.battle_result.finished:
+            return -1
+    return -1
+
+func _build_manual_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
+    return _support.build_manual_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
+
+func _build_manual_wait_command(core, turn_index: int, side_id: String, actor_public_id: String):
+    return _support.build_manual_wait_command(core, turn_index, side_id, actor_public_id)
