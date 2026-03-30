@@ -9,12 +9,17 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("ai_policy_forced_command_contract", failures, Callable(self, "_test_forced_command_contract").bind(harness))
     runner.run_test("ai_policy_gojo_double_mark_prefers_murasaki", failures, Callable(self, "_test_gojo_double_mark_prefers_murasaki").bind(harness))
+    runner.run_test("ai_policy_gojo_mark_build_order", failures, Callable(self, "_test_gojo_mark_build_order").bind(harness))
+    runner.run_test("ai_policy_gojo_low_hp_finish_branch", failures, Callable(self, "_test_gojo_low_hp_finish_branch").bind(harness))
     runner.run_test("ai_policy_sukuna_points_rush_prefers_kai", failures, Callable(self, "_test_sukuna_points_rush_prefers_kai").bind(harness))
+    runner.run_test("ai_policy_sukuna_kamado_prefer_branch", failures, Callable(self, "_test_sukuna_kamado_prefer_branch").bind(harness))
+    runner.run_test("ai_policy_sukuna_mp_advantage_branch", failures, Callable(self, "_test_sukuna_mp_advantage_branch").bind(harness))
     runner.run_test("ai_policy_sukuna_ultimate_when_ready", failures, Callable(self, "_test_sukuna_ultimate_when_ready").bind(harness))
     runner.run_test("ai_policy_sukuna_ultimate_beats_heal_when_ready", failures, Callable(self, "_test_sukuna_ultimate_beats_heal_when_ready").bind(harness))
     runner.run_test("ai_policy_gojo_ultimate_beats_heal_when_ready", failures, Callable(self, "_test_gojo_ultimate_beats_heal_when_ready").bind(harness))
     runner.run_test("ai_policy_domain_not_blocked_by_owned_normal_field", failures, Callable(self, "_test_domain_not_blocked_by_owned_normal_field").bind(harness))
     runner.run_test("ai_policy_domain_blocked_by_owned_domain_field", failures, Callable(self, "_test_domain_blocked_by_owned_domain_field").bind(harness))
+    runner.run_test("ai_policy_missing_role_policy_falls_back_to_naive", failures, Callable(self, "_test_missing_role_policy_falls_back_to_naive").bind(harness))
     runner.run_test("ai_policy_adapter_service_alignment", failures, Callable(self, "_test_adapter_service_alignment").bind(harness))
 
 func _test_forced_command_contract(harness) -> Dictionary:
@@ -40,6 +45,31 @@ func _test_gojo_double_mark_prefers_murasaki(harness) -> Dictionary:
         return _fail(harness, "Gojo 双标记时应优先使用 gojo_murasaki")
     return _pass(harness)
 
+func _test_gojo_mark_build_order(harness) -> Dictionary:
+    var legal_actions = _build_legal_action_set()
+    legal_actions.legal_skill_ids = PackedStringArray(["gojo_ao", "gojo_aka"])
+    var snapshot := _build_snapshot("gojo_satoru", "sukuna")
+    var choice_first_mark: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
+    if str(choice_first_mark.get("skill_id", "")) != "gojo_ao":
+        return _fail(harness, "Gojo 无标记时应先补 gojo_ao")
+
+    snapshot["sides"][1]["team_units"][0]["effect_instances"] = [{"effect_definition_id": "gojo_ao_mark"}]
+    var choice_second_mark: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
+    if str(choice_second_mark.get("skill_id", "")) != "gojo_aka":
+        return _fail(harness, "Gojo 已有 ao 标记时应继续补 gojo_aka")
+    return _pass(harness)
+
+func _test_gojo_low_hp_finish_branch(harness) -> Dictionary:
+    var legal_actions = _build_legal_action_set()
+    legal_actions.legal_skill_ids = PackedStringArray(["gojo_murasaki"])
+    var snapshot := _build_snapshot("gojo_satoru", "sukuna")
+    snapshot["sides"][1]["team_units"][0]["current_hp"] = 40
+    snapshot["sides"][1]["team_units"][0]["max_hp"] = 100
+    var choice: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
+    if str(choice.get("skill_id", "")) != "gojo_murasaki":
+        return _fail(harness, "Gojo 低血斩杀分支应命中 gojo_murasaki")
+    return _pass(harness)
+
 func _test_sukuna_points_rush_prefers_kai(harness) -> Dictionary:
     var legal_actions = _build_legal_action_set()
     legal_actions.legal_skill_ids = PackedStringArray(["sukuna_hatsu", "sukuna_hiraku", "sukuna_kai"])
@@ -49,6 +79,36 @@ func _test_sukuna_points_rush_prefers_kai(harness) -> Dictionary:
     var choice: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
     if str(choice.get("skill_id", "")) != "sukuna_kai":
         return _fail(harness, "宿傩点数未满时应优先用 sukuna_kai 稳定攒点")
+    return _pass(harness)
+
+func _test_sukuna_kamado_prefer_branch(harness) -> Dictionary:
+    var legal_actions = _build_legal_action_set()
+    legal_actions.legal_skill_ids = PackedStringArray(["sukuna_hiraku", "sukuna_hatsu", "sukuna_kai"])
+    var snapshot := _build_snapshot("sukuna", "gojo_satoru")
+    snapshot["sides"][0]["team_units"][0]["ultimate_points"] = 3
+    snapshot["sides"][0]["team_units"][0]["ultimate_points_required"] = 3
+    snapshot["sides"][0]["team_units"][0]["current_hp"] = 90
+    snapshot["sides"][1]["team_units"][0]["current_hp"] = 90
+    var choice: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
+    if str(choice.get("skill_id", "")) != "sukuna_hiraku":
+        return _fail(harness, "宿傩满足条件时应优先灶开叠层")
+    return _pass(harness)
+
+func _test_sukuna_mp_advantage_branch(harness) -> Dictionary:
+    var legal_actions = _build_legal_action_set()
+    legal_actions.legal_skill_ids = PackedStringArray(["sukuna_hatsu", "sukuna_kai"])
+    var snapshot := _build_snapshot("sukuna", "gojo_satoru")
+    snapshot["sides"][0]["team_units"][0]["ultimate_points"] = 3
+    snapshot["sides"][0]["team_units"][0]["ultimate_points_required"] = 3
+    snapshot["sides"][0]["team_units"][0]["current_mp"] = 80
+    snapshot["sides"][1]["team_units"][0]["current_mp"] = 60
+    snapshot["sides"][1]["team_units"][0]["effect_instances"] = [
+        {"effect_definition_id": "sukuna_kamado_mark"},
+        {"effect_definition_id": "sukuna_kamado_mark"},
+    ]
+    var choice: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
+    if str(choice.get("skill_id", "")) != "sukuna_hatsu":
+        return _fail(harness, "宿傩在灶不优先时应命中 MP advantage 分支")
     return _pass(harness)
 
 func _test_sukuna_ultimate_when_ready(harness) -> Dictionary:
@@ -121,6 +181,15 @@ func _test_domain_blocked_by_owned_domain_field(harness) -> Dictionary:
     var choice: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
     if str(choice.get("skill_id", "")) == "gojo_unlimited_void":
         return _fail(harness, "己方领域在场时不应重复选择己方领域奥义")
+    return _pass(harness)
+
+func _test_missing_role_policy_falls_back_to_naive(harness) -> Dictionary:
+    var legal_actions = _build_legal_action_set()
+    legal_actions.legal_skill_ids = PackedStringArray(["sample_skill_a", "sample_skill_b"])
+    var snapshot := _build_snapshot("sample_mossaur", "sukuna")
+    var choice: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
+    if str(choice.get("skill_id", "")) != "sample_skill_a":
+        return _fail(harness, "缺少 policy 配置的角色应显式退回 naive 首技能")
     return _pass(harness)
 
 func _test_adapter_service_alignment(harness) -> Dictionary:
