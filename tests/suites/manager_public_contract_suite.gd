@@ -1,9 +1,7 @@
 extends RefCounted
 class_name ManagerPublicContractSuite
 
-const LegalActionSetScript := preload("res://src/battle_core/contracts/legal_action_set.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
-const BattleAIAdapterScript := preload("res://src/adapters/battle_ai_adapter.gd")
 const PlayerSelectionAdapterScript := preload("res://src/adapters/player_selection_adapter.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
@@ -240,14 +238,6 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
 	return harness.pass_result()
 
 func _test_selection_adapters_public_id_contract(_harness) -> Dictionary:
-	var legal_actions = LegalActionSetScript.new()
-	legal_actions.actor_public_id = "P1-A"
-	legal_actions.legal_switch_target_public_ids = PackedStringArray(["P1-B"])
-	var ai_choice = BattleAIAdapterScript.new().choose_command(legal_actions)
-	if ai_choice.get("target_public_id", "") != "P1-B":
-		return {"ok": false, "error": "BattleAIAdapter should emit target_public_id for switch commands"}
-	if ai_choice.has("target_unit_id"):
-		return {"ok": false, "error": "BattleAIAdapter should not emit target_unit_id in external payload"}
 	var player_payload = PlayerSelectionAdapterScript.new().build_player_payload({
 		"command_type": CommandTypesScript.SWITCH,
 		"target_public_id": "P1-B",

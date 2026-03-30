@@ -1,6 +1,6 @@
 # 固定领域案例
 
-本目录不再只是占位。当前保留一组固定领域案例，用于在 batch probe 统计异常时快速复查具体局面。
+本目录不再只是占位。当前保留一组固定领域案例，用于在门禁异常或契约漂移时快速复查具体局面。
 
 运行方式：
 
@@ -23,4 +23,4 @@ CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd
 - `field_clash` / `field_blocked` 是否写出
 - 同回合同步开领域时，对手领域动作是否被误取消
 
-这些案例是固定诊断入口，不替代 `tests/suites/*` 的正式断言，也不替代 batch probe 的胜率统计。
+这些案例是固定诊断入口，不替代 `tests/suites/*` 的正式断言。

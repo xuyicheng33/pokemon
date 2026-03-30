@@ -52,7 +52,7 @@ scenes/
 src/
   battle_core/          # 核心引擎
   composition/          # 依赖装配
-  adapters/             # UI/AI 适配
+  adapters/             # UI/输入适配
   shared/               # 通用常量与工具
 tests/
   suites/               # 回归测试套件
@@ -62,7 +62,6 @@ tests/
     sukuna_suite.gd
     ultimate_field_suite.gd
     adapter_contract_suite.gd
-    ai_policy_decision_suite.gd
     trigger_validation_suite.gd
   support/              # 测试 harness 与公共构造器
   fixtures/             # 预留样例输入与内容快照
@@ -120,7 +119,7 @@ tests/run_with_gate.sh
 - `build_command(input_payload)`
 - `run_turn(session_id, commands)`
 - `get_public_snapshot(session_id)`
-- `get_event_log_snapshot(session_id, from_index = 0)`（返回 `{ events, total_size }`；供 probe / 调试读取只读日志增量快照，且只暴露公开安全字段）
+- `get_event_log_snapshot(session_id, from_index = 0)`（返回 `{ events, total_size }`；供调试与固定案例复查读取只读日志增量快照，且只暴露公开安全字段）
 - `close_session(session_id)`
 - `run_replay(replay_input)`
 - `active_session_count()`（返回当前活跃会话数量）
@@ -143,7 +142,7 @@ tests/run_with_gate.sh
 ## 7. 外层 ID 契约
 
 - `unit_id`：只用于内容定义、队伍构筑与资源引用。
-- `public_id`：当前唯一外层输入/输出 ID。玩家输入、AI 输入、合法性列表、公开快照、换人目标、回放输入都只使用它。
+- `public_id`：当前唯一外层输入/输出 ID。玩家输入、合法性列表、公开快照、换人目标、回放输入都只使用它。
 - `unit_instance_id`：只允许留在核心内部运行态、内部日志归因、内部排序和系统自动动作里，不对外暴露。
 
 当前对外稳定 contract 已收口为：
@@ -153,7 +152,7 @@ tests/run_with_gate.sh
 - 外层 `Command` 默认提交 `actor_public_id / target_public_id`
 
 `actor_id / target_unit_id` 仍保留，但只用于核心内部与系统自动注入路径。
-`forced_command_type` 只作为合法性结果的引擎侧信号；AI adapter 不主动回填该字段，自动注入统一由 `TurnSelectionResolver` 执行。
+`forced_command_type` 只作为合法性结果的引擎侧信号，自动注入统一由 `TurnSelectionResolver` 执行。
 
 ## 8. 内容资源最小 Schema
 
@@ -190,7 +189,7 @@ tests/run_with_gate.sh
 
 ### 8.1 Gojo / 宿傩角色资源
 
-- `Gojo`：默认技能组 `苍 / 赫 / 茈`（`gojo_ao / gojo_aka / gojo_murasaki`），奥义 `无量空处`，被动 `无下限`，奥义点 `required=3 / cap=3 / regular skill cast +1`
+- `Gojo`：默认技能组 `苍 / 赫 / 茈`（`gojo_ao / gojo_aka / gojo_murasaki`），候选技能池 `candidate_skill_ids = 苍 / 赫 / 茈 / 反转术式`，奥义 `无量空处`，被动 `无下限`，奥义点 `required=3 / cap=3 / regular skill cast +1`
 - `宿傩`：默认技能组 `解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`），奥义 `伏魔御厨子`，被动 `教会你爱的是...`，候选技能池 `candidate_skill_ids = 解 / 捌 / 开 / 反转术式`，奥义点 `required=3 / cap=3 / regular skill cast +1`
 - 赛前覆盖：`SideSetup.regular_skill_loadout_overrides` 可把候选常规技能换入本场装配；未提供覆盖时，行为等价于使用默认 `skill_ids`
 - 公开快照：`prebattle_public_teams[*].units[*].skill_ids` 只公开本场实际已装备的常规技能，不公开候选池全集
@@ -204,9 +203,7 @@ tests/run_with_gate.sh
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
 - 专项回归：`tests/suites/<character>_suite.gd` + `tests/run_all.gd`
-- AI 接线：`BattleAIRolePolicyCatalog` policy / mode handler 注册
-- AI 决策回归：`tests/suites/ai_policy_decision_suite.gd`
-- probe 交付：`tests/helpers/gojo_sukuna_batch_probe.gd` 或对应 fixture / baseline
+- 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 
 当前 Gojo 与 Sukuna 都必须满足这套交付面，后续新角色默认沿用。
 
@@ -222,9 +219,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-30）
 
-- `src/**/*.gd`：`8603` 行
-- `tests/**/*.gd`：`9165` 行
-- GDScript 合计：`17768` 行
+- `src/**/*.gd`：`8311` 行
+- `tests/**/*.gd`：`8541` 行
+- GDScript 合计：`16852` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 
@@ -234,6 +231,6 @@ tests/run_with_gate.sh
 
 1. 继续保持“规则先行”：新增机制先改 `docs/rules`，再改实现。
 2. 角色设计优先复用现有 payload 与触发点，不先扩流程控制口。
-3. 正式角色接入必须同时落 `设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite`，并补 `AI policy catalog 接线 + AI decision regression + probe fixture / baseline`。
+3. 正式角色接入必须同时落 `设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite`，必要时再补固定案例与复查入口。
 4. 新角色/技能回归至少覆盖命中、伤害、生命周期、日志字段与公开快照。
 5. 每个小任务都走 `tests/run_with_gate.sh`，再进入下一步扩展。

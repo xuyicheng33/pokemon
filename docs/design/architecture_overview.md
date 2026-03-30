@@ -22,9 +22,9 @@
 |内容类型层|`src/battle_core/content`|定义 `Resource` 类|不写运行态逻辑|
 |运行时层|`src/battle_core/runtime`|保存唯一运行态真相|不直接读场景树|
 |契约层|`src/battle_core/contracts`|定义跨模块 I/O 契约|不持有全局状态|
-|领域服务层|`src/battle_core/*`|实现各模块职责边界|不直接依赖 UI/AI|
+|领域服务层|`src/battle_core/*`|实现各模块职责边界|不直接依赖 UI/外层输入|
 |组合装配层|`src/composition`|组装核心服务依赖图|不承载业务规则|
-|适配层|`src/adapters`|向 UI/AI/测试暴露接口|不直接改内部状态|
+|适配层|`src/adapters`|向 UI/输入/测试暴露接口|不直接改内部状态|
 |场景入口层|`scenes/`|Godot 入口与 sandbox 组装|不承载核心战斗规则|
 
 补充约束：

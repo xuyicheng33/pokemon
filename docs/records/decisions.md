@@ -62,10 +62,11 @@
 - 同回合双方已入队的领域动作不得被 action lock 回溯取消。
 - 己方领域在场时，己方不得重开己方领域；该限制不影响对手领域，也不影响普通 field。
 
-### 8. replay / probe 诊断拆成“聚合统计 + 固定案例”
+### 8. 固定案例诊断口径（已被第 15 条进一步收口）
 
-- batch probe 继续用于观察趋势，不再承担唯一诊断入口。
-- `tests/replay_cases/` 必须保留固定可复查案例，至少覆盖领域成功、领域失败、平 MP tie-break、普通 field 阻断、同回合双开域。
+- 当前主线只保留 `tests/replay_cases/` 固定可复查案例作为角色与规则复查入口。
+- 历史上的 batch probe 拆分方案已随第 15 条一起退出主线，不再作为现行要求。
+- 固定案例至少覆盖领域成功、领域失败、平 MP tie-break、普通 field 阻断、同回合双开域。
 
 ### 9. 正式角色资产交付面继续保持不变
 
@@ -79,9 +80,9 @@
 
 ### 10. 对外 contract 继续收口到公开层接口
 
-- 外围输入/公开快照/AI 输入继续只使用 `public_id`。
+- 外层输入与公开快照继续只使用 `public_id`。
 - `BattleCoreManager` 仍是外围稳定入口。
-- probe 与调试读取若需要更多信息，只允许走显式的只读快照/日志接口，不再直穿内部 session/runtime。
+- 调试读取若需要更多信息，只允许走显式的只读快照/日志接口，不再直穿内部 session/runtime。
 
 ### 11. 复杂度预拆阶段的大文件过渡上限（2026-03-30）
 
@@ -92,14 +93,14 @@
   - 本轮已把直接伤害上下文计算拆到独立 helper，先降低单段结算复杂度。
   - 过渡期允许行数上限 `280`，后续继续拆分 cast/hit/effect pipeline。
 
-### 12. 领域合法性与 AI 领域优先口径统一（2026-03-30）
+### 12. 领域合法性统一（原 AI 口径已被第 15 条废止，2026-03-30）
 
 - 新增 `domain_legality_service` 作为领域重开判定的单一真相：
   - 选指阶段（`LegalActionService`）与执行阶段（`ActionDomainGuard`）统一复用同一判定。
 - `public_snapshot.field` 扩展 `field_kind / creator_side_id`：
-  - AI 在“领域优先”判定时只把“己方 active domain”视作重开阻断，不再把己方普通 field 误判为己方领域。
-- AI 策略从角色硬编码分支改为代码内策略表驱动：
-  - 后续新增角色默认走“加策略配置 + 测试”的接入路径，不再继续堆叠 `if actor_def_id == ...` 分支。
+  - 供外层输入、公开快照与规则复查统一读取当前 field 类型与归属侧。
+- 当时引入的 AI 领域优先与策略表驱动实现，已随第 15 条退出主线：
+  - 后续若恢复自动选指，必须重新补齐规则、设计文档与接线任务，不得直接回填历史实现。
 
 ### 13. Active Field 的 creator 视为运行态硬约束（2026-03-30）
 
@@ -119,5 +120,14 @@
   - 移除 `actor_id / source_instance_id / target_instance_id / killer_id / value_changes[].entity_id`
 - `create_session()` 的对外 contract 正式定义为“已预回首回合 MP 后的初始公开快照”，且初始 `event_log` 不补这条预回蓝。
 - 初始化阶段的 `invalid_battle` 与 startup victory 统一归 `BattleResultService` 落盘，`BattleInitializer` 只保留编排 owner。
-- 角色 heuristic AI 正式改为“通用调度 + policy catalog + mode handler”模式；无 policy 的角色显式退回 naive。
 - `ActionCastService` 与 `FaintResolver` 已完成一轮职责预拆；后续扩角优先继续沿子域 helper 扩展，不再把复杂度继续堆回主类。
+
+### 15. 主线移除 AI 选指与批量模拟层（2026-03-30）
+
+- 当前主线不再保留 `BattleAIAdapter`、heuristic policy、角色 mode handler、batch probe 与对应回归。
+- 原因：
+  - 现阶段优先收口核心战斗 contract、角色资源与扩角前治理，不再维护实验性自动选指层。
+  - 继续保留 AI 模拟层会把角色行为问题与核心规则问题混在一起，增加扩角前整合成本。
+- 当前处理：
+  - 正式角色交付面回退为 `设计稿 / 调整记录 / 内容资源 / SampleBattleFactory 接线 / 角色 suite / 必要固定案例`。
+  - 若未来恢复自动选指，必须先补规则与设计文档，再单开接线任务，不得直接回填历史实现。

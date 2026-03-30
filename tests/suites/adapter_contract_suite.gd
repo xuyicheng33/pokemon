@@ -1,25 +1,8 @@
 extends RefCounted
 class_name AdapterContractSuite
 
-const BattleAIAdapterScript := preload("res://src/adapters/battle_ai_adapter.gd")
-const LegalActionSetScript := preload("res://src/battle_core/contracts/legal_action_set.gd")
-
 func register_tests(runner, failures: Array[String], harness) -> void:
-    runner.run_test("ai_adapter_forced_command_contract", failures, Callable(self, "_test_ai_adapter_forced_command_contract"))
     runner.run_test("manager_replay_output_runtime_boundary", failures, Callable(self, "_test_manager_replay_output_runtime_boundary").bind(harness))
-
-func _test_ai_adapter_forced_command_contract() -> Dictionary:
-    var legal_action_set = LegalActionSetScript.new()
-    legal_action_set.actor_public_id = "P1-A"
-    legal_action_set.wait_allowed = false
-    legal_action_set.forced_command_type = "resource_forced_default"
-    var ai_choice: Dictionary = BattleAIAdapterScript.new().choose_command(legal_action_set)
-    if not ai_choice.is_empty():
-        return {
-            "ok": false,
-            "error": "BattleAIAdapter must leave forced command injection to turn_selection_resolver",
-        }
-    return {"ok": true}
 
 func _test_manager_replay_output_runtime_boundary(harness) -> Dictionary:
     var manager_payload = harness.build_manager()

@@ -134,6 +134,8 @@ require_contains("README.md", "candidate_skill_ids", "README candidate skill poo
 require_contains("README.md", "regular_skill_loadout_overrides", "README setup override contract")
 require_contains("README.md", "设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite", "README character delivery workflow")
 require_contains("README.md", "content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples", "README content snapshot path coverage")
+require_absent("README.md", "ai_policy_decision_suite.gd", "removed AI regression workflow")
+require_absent("README.md", "gojo_sukuna_batch_probe.gd", "removed AI probe workflow")
 require_contains("docs/design/architecture_overview.md", "get_event_log_snapshot", "architecture facade event log snapshot contract")
 require_contains("docs/design/battle_content_schema.md", "candidate_skill_ids", "schema candidate skill pool contract")
 require_contains("docs/design/battle_content_schema.md", "regular_skill_loadout_overrides", "schema setup override contract")
@@ -162,6 +164,12 @@ require_contains("docs/design/gojo_satoru_adjustments.md", "影响测试", "gojo
 require_contains("docs/design/sukuna_adjustments.md", "影响测试", "sukuna adjustment impact fields")
 require_contains("tests/README.md", "domain_case_runner.gd", "tests fixed domain case runner doc")
 require_contains("tests/replay_cases/domain_cases.md", "CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd", "domain case runner command")
+require_absent("tests/README.md", "ai_policy_decision_suite.gd", "removed AI suite doc")
+require_absent("tests/README.md", "gojo_sukuna_batch_probe.gd", "removed AI probe doc")
+require_absent("docs/rules/05_items_field_ai_and_logging.md", "BattleAIPolicyService", "removed AI policy rule wording")
+require_absent("docs/records/decisions.md", "batch probe 继续用于观察趋势", "removed probe-first decision wording")
+require_absent("docs/records/decisions.md", "外围输入/公开快照/AI 输入继续只使用 `public_id`", "removed AI input decision wording")
+require_absent("docs/records/decisions.md", "AI 在“领域优先”判定时", "removed AI domain priority decision wording")
 
 stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",

@@ -20,7 +20,7 @@
 |`02_turn_flow_and_action_resolution.md`|回合流程、行动排序、失败语义、击倒窗口、胜负判定|
 |`03_stats_resources_and_damage.md`|数值、MP、技能、命中与简化伤害公式|
 |`04_status_switch_and_lifecycle.md`|当前无内置状态时的生命周期口径、换人、离场与补位|
-|`05_items_field_ai_and_logging.md`|被动持有物、field、AI 边界、统一效果排序、日志规范|
+|`05_items_field_ai_and_logging.md`|被动持有物、field、统一效果排序、日志规范|
 |`06_effect_schema_and_extension.md`|效果系统数据模型、触发点、payload、扩展纪律|
 |`player_quick_start.md`|玩家一页速览（非权威文档，用于快速理解玩法）|
 

@@ -1,6 +1,6 @@
 # Command & Legality（指令与合法性）
 
-本文件定义选择阶段 contract，目标是让玩家输入、AI 输入和引擎默认动作共用同一套结构。
+本文件定义选择阶段 contract，目标是让玩家输入、回放输入和引擎默认动作共用同一套结构。
 
 ## 1. 文件清单
 
@@ -20,12 +20,12 @@
 |`command_id`|`String`|唯一 ID|
 |`turn_index`|`int`|该指令所属回合号|
 |`command_type`|`String`|`skill / switch / ultimate / wait / resource_forced_default / surrender`|
-|`command_source`|`String`|`manual / ai / resource_auto / timeout_auto`|
+|`command_source`|`String`|`manual / resource_auto / timeout_auto`|
 |`side_id`|`String`|下达指令的 side|
-|`actor_public_id`|`String`|行动者公开 ID；玩家输入、AI 输入、回放输入默认都使用它|
+|`actor_public_id`|`String`|行动者公开 ID；玩家输入、回放输入默认都使用它|
 |`actor_id`|`String`|行动者运行时 `unit_instance_id`；仅核心内部与系统自动动作保留|
 |`skill_id`|`String`|技能或奥义 ID，非适用为 `""`|
-|`target_public_id`|`String`|目标公开 ID；手动换人、AI 输入、回放输入默认都使用它|
+|`target_public_id`|`String`|目标公开 ID；手动换人、回放输入默认都使用它|
 |`target_unit_id`|`String`|换人目标的运行时 `unit_instance_id`；仅核心内部与系统自动动作保留|
 |`target_slot`|`String`|目标槽位，非适用为 `""`|
 
@@ -70,7 +70,7 @@
 - `resource_forced_default` 只能由合法性服务产出，不接受外部伪造。
 - `surrender` 立即结束，不进入行动队列。
 - 外层输入与回放默认只提交 `actor_public_id / target_public_id`；`CommandValidator` 在选择阶段统一映射到运行时 `actor_id / target_unit_id`。
-- `LegalActionSet` 是 manager/UI/AI 的外层契约，不再公开 bench `unit_instance_id`。
+- `LegalActionSet` 是 manager/UI/测试 的外层契约，不再公开 bench `unit_instance_id`。
 - 若系统自动动作或内部测试直接提交 `actor_id / target_unit_id`，`CommandValidator` 仍会回填对应 `public_id`，但这不是对外推荐入口。
 - `prebattle_public_teams[*].units[*].skill_ids` 与 `LegalActionSet.legal_skill_ids` 口径保持一致，统一表示“本场实际已装备的常规技能”；当前不对外公开 `candidate_skill_ids`。
 

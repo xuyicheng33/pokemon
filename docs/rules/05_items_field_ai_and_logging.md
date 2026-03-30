@@ -1,6 +1,6 @@
-# 模块 05：持有物、field、AI、统一触发排序与日志
+# 模块 05：持有物、field、统一触发排序与日志
 
-本文件定义“被动持有物怎么工作、field 怎么落地、效果怎么排序、AI 能看什么、日志要记什么”。
+本文件定义“被动持有物怎么工作、field 怎么落地、效果怎么排序、日志要记什么”。
 
 ## 1. 标准模式道具口径
 
@@ -129,32 +129,31 @@
 |field 来源|取创建该 field 的来源速度；若无来源则取 `0`|
 |纯系统来源|固定 `0`|
 
-## 4. AI 读取边界
+## 4. 外层输入边界
 
 ### 4.1 对外 ID 契约
 
 |项|规则|
 |---|---|
 |`unit_id`|只用于内容定义与队伍构筑|
-|`public_id`|玩家输入、AI 输入、合法性列表、公开快照、换人目标、回放输入的唯一外层标识|
+|`public_id`|玩家输入、合法性列表、公开快照、换人目标、回放输入的唯一外层标识|
 |`unit_instance_id`|只允许留在核心内部运行态、内部日志归因、内部排序与系统自动动作中|
 |`LegalActionSet`|对外固定暴露 `actor_public_id / legal_skill_ids / legal_switch_target_public_ids / legal_ultimate_ids / wait_allowed / forced_command_type`；其中 `legal_skill_ids` 只表示本场实际已装备的常规技能|
 |外层 `Command`|默认只提交 `actor_public_id / target_public_id`；`actor_id / target_unit_id` 仅保留给核心内部或系统自动注入路径|
 
 |项|规则|
 |---|---|
-|AI 可读取|所有公开信息、当前战场状态、己方运行态|
-|AI 禁止读取|内部随机值、未来未发生的抽样结果、仅供调试的缓存|
-|候选技能池|当前不进入公开快照，也不是 AI 对外 contract 的一部分|
-|合法性职责|引擎先完成合法性判断：要么给出可选的技能 / 手动换人 / 奥义列表，要么直接替代为默认动作；AI 只从可执行结果中选一个|
-|强制动作注入职责|`forced_command_type` 只由合法性层给出，`TurnSelectionResolver` 统一注入 `resource_forced_default`；AI adapter 在“无可选动作且 `wait_allowed=false`”时返回空命令，不再自行拼强制动作|
+|当前主线|不包含自动选指或批量模拟层；仓库只保留玩家输入、系统自动注入与回放输入|
+|候选技能池|当前不进入公开快照|
+|合法性职责|引擎先完成合法性判断：要么给出可选的技能 / 手动换人 / 奥义列表，要么直接替代为默认动作|
+|强制动作注入职责|`forced_command_type` 只由合法性层给出，`TurnSelectionResolver` 统一注入 `resource_forced_default`|
 |空列表处理|若技能、手动换人、奥义都不合法：仅在“全部仅因 MP 不足”时强制 `resource_forced_default`；存在任一非 MP 阻断时允许 `wait`|
-|超时处理|AI 若在截止时间前未返回：当前应强制资源型默认动作 `resource_forced_default` 则走 `resource_forced_default`；否则走 `wait`（`command_source = timeout_auto`）|
+|超时处理|当前只保留 `timeout_auto -> wait` 与引擎侧 `resource_forced_default` 注入语义|
 
 补充规则：
 
-1. `BattleAIPolicyService` 只保留共通调度，不再长期承载角色专用分支。
-2. 正式角色若接入 heuristic AI，必须显式补 `policy catalog` 配置与 `AI decision regression`；未配置的角色固定退回 `naive`，不允许半接入。
+1. 若未来恢复自动选指，必须先补规则与设计文档，再单开接线任务，不得直接把实验性策略塞回主线。
+2. 当前正式角色交付面不再包含 AI policy、AI regression 或 batch probe。
 
 ## 5. 战斗日志
 
@@ -270,7 +269,7 @@
 2. 被动持有物会在战前随完整队伍信息正确公开。
 3. field 始终只有 1 个生效实例；冲突按 `field_kind` 矩阵处理（`domain` 可替换 `normal`，`normal` 不得覆盖 `domain`）。
 4. 效果排序统一走 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`。
-5. AI 不会自己死循环试指令，而是从引擎给出的合法列表里选。
+5. 当前主线不包含自动试指令层；所有外层输入都必须先过合法性服务与选择阶段校验。
 6. `resource_forced_default / resource_auto / wait / timeout_auto` 命名在规则和日志里只有这一套口径。
 7. `create_session()` 返回的是“已预回首回合 MP 后的初始公开快照”；这次预回蓝不补写进初始 `event_log`，属于正式 contract，不是缺日志。
 7. 非适用日志字段一律写 `null`，不会混用 `0` 或省略。
