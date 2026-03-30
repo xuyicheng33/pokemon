@@ -111,3 +111,13 @@
 - 当前处理：
   - `RuntimeGuardService` 在每回合入口统一拦截这类坏状态，直接返回 `invalid_state_corruption`
   - `FieldApplyConflictService` 额外保留本地防御，不再把缺失 creator 降级成 `-1 MP` 继续参与领域对拼
+
+### 14. 扩角前规范整合口径正式收紧（2026-03-30）
+
+- manager 对外事件日志改为白名单公开快照：
+  - 保留公开归因字段 `actor_public_id / actor_definition_id / target_public_id / target_definition_id / killer_public_id / killer_definition_id`
+  - 移除 `actor_id / source_instance_id / target_instance_id / killer_id / value_changes[].entity_id`
+- `create_session()` 的对外 contract 正式定义为“已预回首回合 MP 后的初始公开快照”，且初始 `event_log` 不补这条预回蓝。
+- 初始化阶段的 `invalid_battle` 与 startup victory 统一归 `BattleResultService` 落盘，`BattleInitializer` 只保留编排 owner。
+- 角色 heuristic AI 正式改为“通用调度 + policy catalog + mode handler”模式；无 policy 的角色显式退回 naive。
+- `ActionCastService` 与 `FaintResolver` 已完成一轮职责预拆；后续扩角优先继续沿子域 helper 扩展，不再把复杂度继续堆回主类。

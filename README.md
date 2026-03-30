@@ -115,12 +115,12 @@ tests/run_with_gate.sh
 
 `BattleCoreManager` 当前稳定入口：
 
-- `create_session(init_payload)`
+- `create_session(init_payload)`（返回“已预回首回合 MP 后”的初始公开快照；这次预回蓝不补写进初始 `event_log`）
 - `get_legal_actions(session_id, side_id)`
 - `build_command(input_payload)`
 - `run_turn(session_id, commands)`
 - `get_public_snapshot(session_id)`
-- `get_event_log_snapshot(session_id, from_index = 0)`（返回 `{ events, total_size }`；供 probe / 调试读取只读日志增量快照）
+- `get_event_log_snapshot(session_id, from_index = 0)`（返回 `{ events, total_size }`；供 probe / 调试读取只读日志增量快照，且只暴露公开安全字段）
 - `close_session(session_id)`
 - `run_replay(replay_input)`
 - `active_session_count()`（返回当前活跃会话数量）
@@ -130,6 +130,15 @@ tests/run_with_gate.sh
 其中 `run_replay` 使用临时容器隔离执行，不污染活跃会话池。
 对外返回结构固定为 `{ replay_output, public_snapshot }`，其中 `replay_output.final_battle_state` 必须为 `null`，运行态对象不得越过 manager 边界。
 内部 `ReplayRunner` 仍保留 `final_battle_state`，用于计算 `final_state_hash` 与回放诊断，不对外透传。
+
+`get_event_log_snapshot()` 对外固定补公开归因字段：
+
+- `actor_public_id / actor_definition_id`
+- `target_public_id / target_definition_id`
+- `killer_public_id / killer_definition_id`
+- `value_changes[].entity_public_id / entity_definition_id`
+
+同时明确不再暴露 `actor_id / source_instance_id / target_instance_id / killer_id / value_changes[].entity_id`。
 
 ## 7. 外层 ID 契约
 
@@ -195,6 +204,9 @@ tests/run_with_gate.sh
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
 - 专项回归：`tests/suites/<character>_suite.gd` + `tests/run_all.gd`
+- AI 接线：`BattleAIRolePolicyCatalog` policy / mode handler 注册
+- AI 决策回归：`tests/suites/ai_policy_decision_suite.gd`
+- probe 交付：`tests/helpers/gojo_sukuna_batch_probe.gd` 或对应 fixture / baseline
 
 当前 Gojo 与 Sukuna 都必须满足这套交付面，后续新角色默认沿用。
 
@@ -210,9 +222,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-30）
 
-- `src/**/*.gd`：`8384` 行
-- `tests/**/*.gd`：`8885` 行
-- GDScript 合计：`17269` 行
+- `src/**/*.gd`：`8603` 行
+- `tests/**/*.gd`：`9165` 行
+- GDScript 合计：`17768` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 
@@ -222,6 +234,6 @@ tests/run_with_gate.sh
 
 1. 继续保持“规则先行”：新增机制先改 `docs/rules`，再改实现。
 2. 角色设计优先复用现有 payload 与触发点，不先扩流程控制口。
-3. 正式角色接入必须同时落 `设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite`。
+3. 正式角色接入必须同时落 `设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite`，并补 `AI policy catalog 接线 + AI decision regression + probe fixture / baseline`。
 4. 新角色/技能回归至少覆盖命中、伤害、生命周期、日志字段与公开快照。
 5. 每个小任务都走 `tests/run_with_gate.sh`，再进入下一步扩展。

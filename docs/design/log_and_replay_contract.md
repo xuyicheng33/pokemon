@@ -59,6 +59,17 @@
 
 `event_type` 使用 `src/shared/event_types.gd` 的固定枚举（`system:* / action:* / effect:* / state:* / result:*`）。
 
+### 2.4 Manager 对外日志快照
+
+- `BattleCoreManager.get_event_log_snapshot()` 返回的是公开安全快照，不是内部 `LogEvent` 原样序列化。
+- manager 出口固定移除内部 runtime id：`actor_id / source_instance_id / target_instance_id / killer_id / value_changes[].entity_id`。
+- 对外事件快照固定补公开归因字段：
+  - `actor_public_id / actor_definition_id`
+  - `target_public_id / target_definition_id`
+  - `killer_public_id / killer_definition_id`
+- 对外 `value_changes` 只保留 `entity_public_id / entity_definition_id / resource_name / before_value / after_value / delta`。
+- 内部完整日志与 replay 仍可保留 runtime id；但 manager 出口必须走白名单投影，禁止再次透传内部字段。
+
 ## 3. Replay 契约
 
 回放执行输入固定为 `ReplayInput`（`battle_seed + content_snapshot_paths + battle_setup + command_stream`）。  
@@ -102,14 +113,20 @@
 - 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`，且 `cause_event_id` 不得等于当前日志事件自身 ID）。
 - `run_replay` 使用临时容器隔离执行，不读写活跃会话池；回放完成后释放临时容器。
 
-## 4. 失败语义（测试口径）
+## 4. Manager 初始化公开契约
+
+- `create_session()` 对外返回的是“已预回首回合 MP 后”的初始公开快照。
+- 这次初始化预回蓝不会补写到初始 `event_log`；在首回合开始前看不到对应 `effect:resource_mod`，这是正式 contract。
+- 初始化阶段的 `invalid_battle` 与 startup victory 结果落盘统一由 `BattleResultService` 负责，`BattleInitializer` 只保留初始化编排。
+
+## 5. 失败语义（测试口径）
 
 - 业务断言失败：`tests/run_all.gd` 返回非 0。
 - 引擎错误失败：输出命中 `SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`。
 - 预期的 `invalid_battle / hard_terminate_invalid_state` 诊断输出使用普通文本告警，不再伪装成引擎级 `ERROR:`。
 - 严格通过条件：业务断言全绿且引擎错误日志为 0。
 
-## 5. 最小验收
+## 6. 最小验收
 
 1. 同输入重复回放，`final_state_hash` 一致。
 2. 日志链路字段遵守“行动链继承、系统链 `null + system:*`”语义，且所有 effect 事件都指向真实上游触发事件。

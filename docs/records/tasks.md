@@ -20,14 +20,14 @@
 
 ## 2026-03-30
 
-### 扩角前规范整合（进行中）
+### 扩角前规范整合（已完成）
 
 - 目标：
-  - 统一错误日志、门禁和 README 口径
-  - 统一 `content/` 目录规范与默认快照加载入口
-  - 把 `docs/records/` 收回为索引与追溯层
-  - 抽出独立的领域模板文档，减少角色稿重复公共规则
-  - 给 batch probe 配套固定 replay case，避免只剩聚合统计
+  - 收紧 manager 对外日志接口，移除 runtime id 泄漏
+  - 把 active field creator invariant 升级为权威规则
+  - 正式澄清初始化预回蓝 contract 与 BattleResult owner
+  - 补齐角色接入模板的 AI / probe 交付面
+  - 预拆 AI / ActionCast / FaintResolver 热点职责
 - 范围：
   - `src/battle_core/**/*`
   - `src/composition/*`
@@ -38,20 +38,20 @@
   - `README.md`
 - 验收标准：
   - `tests/run_with_gate.sh` 通过，且预期 invalid path 不再伪装成引擎级 `ERROR:`
-  - `BattleFormatConfig` 正式目录、默认快照扫描目录与文档描述一致
-  - `docs/records/tasks.md` / `decisions.md` 回落到高频可读规模
-  - 领域公共规则存在单独权威模板入口
-  - `tests/replay_cases/` 有可直接复查的固定案例
+  - manager 对外日志不再泄漏 runtime id
+  - field creator invariant 已进入规则 / 设计文档
+  - 角色接入模板已补 AI policy / regression / probe 交付面
+  - `ActionCastService` / `FaintResolver` 已完成一轮职责预拆
 
 #### 当前执行结果
 
 - 已完成：
-  - 预期 invalid termination 诊断从 `push_error()` 改为普通文本告警
-  - `SampleBattleFactory.content_snapshot_paths()` 已纳入 `battle_formats / passive_items`
-  - `sample_battle_format.tres` 已迁到 `content/battle_formats/`
-  - `README` / `content/README.md` / `docs/design/*` / `tests/README.md` 已开始同步新目录与门禁口径
-  - 本文件与 `docs/records/decisions.md` 已从大正文模式切回精简索引模式
-  - 最终自查补充：active field 缺失 creator 改为统一 `invalid_state_corruption` fail-fast，不再让领域对拼用 `-1` MP 静默继续算
+  - `BattleCoreManager.get_event_log_snapshot()` 已切到公开安全投影，contract 测试已守住公开字段与私有字段边界
+  - active field 缺失 creator 与同侧领域重开主路径都已统一 `invalid_state_corruption` fail-fast
+  - `BattleResultService` 已接管初始化阶段 invalid/startup victory 落盘
+  - `BattleAIPolicyService` 已收口为通用调度，Gojo / Sukuna 角色分支已下沉到 catalog + mode handler
+  - `ActionCastService` 与 `FaintResolver` 已拆出子 pipeline / 子服务
+  - README / 规则 / 设计 / 测试文档已同步公开日志、初始化预回蓝与角色接入模板口径
 
 #### 当前验证结果
 
@@ -74,9 +74,8 @@
 
 ## 下一步建议
 
-1. 先完成领域模板文档与 replay case 收口。
-2. 再复跑统一闸门与对称 probe。
-3. 确认规范层稳定后，再开启“新角色接入”或“宿傩领域兑现率修正”。
+1. 先复跑统一闸门与对称 probe，确认本轮收口没有回归。
+2. 规范层稳定后，再二选一开启“新角色接入”或“宿傩领域兑现率修正”。
 
 ### 领域规范整合与扩角前收口（已完成）
 

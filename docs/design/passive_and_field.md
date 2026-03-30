@@ -60,6 +60,8 @@
 - 对拼失败的一方：field 不落地，只有成功后才成立的附带效果也不生效。
 - 若当前领域由本方创建，则本方领域技能在合法性阶段直接禁用，禁止“自己续开自己领域”。
 - 同回合双方都已排队领域时，后手领域不得被中途合法性锁回溯取消，必须进入对拼。
+- active field 运行态一旦存在，`field_state.creator` 必须非空且能解析到当前存活单位；否则统一 `invalid_state_corruption`。
+- 若同侧领域重开意外穿过前置合法性并落到 `FieldApplyService` 主路径，也必须直接 `invalid_state_corruption`，不再存在 `same_creator` 静默刷新分支。
 
 ### 5.2 FieldService
 
@@ -76,6 +78,7 @@
 - 非 creator 离场不会触发领域提前打断。
 - 当前同一时刻全场只允许 1 个 field；若尝试展开新 field，必须先走 `FieldApplyService` 的对拼判定。
 - field buff 必须绑定 field 生命周期：`field_apply` 生效、自然到期移除、提前打断移除；不再允许靠角色离场时顺手清 stat_stage 兜底。
+- `RuntimeGuardService` 负责每回合入口兜底拦 active field 坏状态，但 `FieldApplyConflictService` 也要在局部主路径上做同样的 fail-fast 防御。
 
 ## 6. 约束
 

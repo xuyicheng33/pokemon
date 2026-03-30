@@ -13,6 +13,7 @@
 - `normal vs domain`：新普通 field 被阻断，并写 `effect:field_blocked`。
 - 同回合双方都已排队施放领域时，后手领域动作不得被 action lock 或合法性回溯取消，必须进入对拼。
 - 己方领域在场时，己方不得再次施放己方领域技能；该限制不影响对手领域，也不影响普通 field。
+- 只要存在 active domain，`field_state.creator` 就必须非空且能解析到当前运行态单位；任何缺失都视为 `invalid_state_corruption`。
 
 ## 2. 成功与失败语义
 
@@ -23,6 +24,7 @@
   - 领域成功后附带链不执行
   - field 绑定增幅不成立
   - 只允许保留奥义本体伤害或本体动作已产生的结算结果
+- 若同侧领域重开意外绕过前置合法性并进入 `field clash` 主路径，必须直接 fail-fast 为 `invalid_state_corruption`，而不是刷新旧领域。
 
 ## 3. 领域增幅模板
 
@@ -72,6 +74,7 @@
 - 领域对拼失败
 - 平 MP tie-break 可复现
 - 己方领域在场时不可重开
+- 同侧领域重开若落入主路径必须 `invalid_state_corruption`
 - 对手领域在场时仍可提交己方领域
 - 普通 field 被领域阻断
 - 领域绑定增幅在自然到期与提前打断后都能正确回收

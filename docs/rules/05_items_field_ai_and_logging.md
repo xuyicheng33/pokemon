@@ -82,6 +82,8 @@
 9. 同回合双方都已排队施放领域时，后手领域动作不得被中途合法性锁回溯取消，必须进入 `domain vs domain` 对拼。
 10. `field_break / field_expire` 链上，`scope=self` 的 effect 允许命中“已离场但仍存活”的领域创建者运行态（用于离场打断与到期清理）。
 11. field 绑定的能力阶段回滚必须按“field 生效期间实际写入的净增量”执行；若期间被其他效果抵消或触发 clamp，只回滚已记录部分，禁止过量回滚。
+12. 只要存在 active field，`field_state.creator` 就必须非空且能解析到当前运行态中的现存单位；否则统一视为坏状态，直接 `invalid_state_corruption`。
+13. 若“己方领域在场时不可重开”的前置合法性意外漏掉，同侧领域重开一旦落进 `field clash` 主路径，也必须直接 `invalid_state_corruption`，禁止静默走 `same_creator` 刷新。
 
 ## 3. 统一效果排序
 
@@ -148,6 +150,11 @@
 |强制动作注入职责|`forced_command_type` 只由合法性层给出，`TurnSelectionResolver` 统一注入 `resource_forced_default`；AI adapter 在“无可选动作且 `wait_allowed=false`”时返回空命令，不再自行拼强制动作|
 |空列表处理|若技能、手动换人、奥义都不合法：仅在“全部仅因 MP 不足”时强制 `resource_forced_default`；存在任一非 MP 阻断时允许 `wait`|
 |超时处理|AI 若在截止时间前未返回：当前应强制资源型默认动作 `resource_forced_default` 则走 `resource_forced_default`；否则走 `wait`（`command_source = timeout_auto`）|
+
+补充规则：
+
+1. `BattleAIPolicyService` 只保留共通调度，不再长期承载角色专用分支。
+2. 正式角色若接入 heuristic AI，必须显式补 `policy catalog` 配置与 `AI decision regression`；未配置的角色固定退回 `naive`，不允许半接入。
 
 ## 5. 战斗日志
 
@@ -216,6 +223,13 @@
 |完整战斗日志|给调试、回放校验、回归测试用，必须可复现；不是单独的回放输入|
 |调试扩展日志|可以更详细，但不能替代完整战斗日志|
 
+对外快照规则：
+
+1. `BattleCoreManager.get_event_log_snapshot()` 对外固定返回公开安全投影，不再直接透传内部 `LogEvent.to_stable_dict()`。
+2. manager 出口禁止暴露 `actor_id / source_instance_id / target_instance_id / killer_id` 与 `value_changes[].entity_id`。
+3. 对外事件快照必须改用公开语义：`actor_public_id / actor_definition_id / target_public_id / target_definition_id / killer_public_id / killer_definition_id`。
+4. 对外 `value_changes` 只允许公开实体标识：`entity_public_id / entity_definition_id / resource_name / before_value / after_value / delta`。
+
 ### 5.4 `event_type` 枚举（最小集）
 
 |`event_type`|说明|
@@ -258,5 +272,6 @@
 4. 效果排序统一走 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`。
 5. AI 不会自己死循环试指令，而是从引擎给出的合法列表里选。
 6. `resource_forced_default / resource_auto / wait / timeout_auto` 命名在规则和日志里只有这一套口径。
+7. `create_session()` 返回的是“已预回首回合 MP 后的初始公开快照”；这次预回蓝不补写进初始 `event_log`，属于正式 contract，不是缺日志。
 7. 非适用日志字段一律写 `null`，不会混用 `0` 或省略。
 8. 完整日志能还原命中、同速打平、field 替换、触发源实例与每次随机消费。
