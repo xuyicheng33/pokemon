@@ -20,6 +20,39 @@
 
 ## 2026-03-31
 
+### 宿傩回蓝语义收口与样例口径同步（已完成）
+
+- 目标：
+  - 把宿傩被动回蓝从“覆盖最终值”收口成“基础回蓝 + 对位追加”
+  - 重算默认装配与反转术式装配的首次奥义窗口基线
+  - 同步收口 README / content / design / registry / samples 目录口径
+- 范围：
+  - `content/effects/sukuna_refresh_love_regen.tres`
+  - `content/samples/*`
+  - `tests/suites/sukuna_setup_regen_suite.gd`
+  - `docs/design/sukuna_design.md`
+  - `docs/design/sukuna_adjustments.md`
+  - `docs/records/*`
+  - `content/README.md`
+  - `README.md`
+- 验收标准：
+  - 宿傩动态回蓝按 `基础 12 + 对位追加` 结算，初始化预回蓝与后续 `turn_start` 一致
+  - 默认装配与反转术式装配的首次奥义窗口新基线已写入设计稿、调整记录、注册表与 suite
+  - `content/samples/` 补入最小合法样例资源，占位目录不再为空
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 宿傩 `sukuna_refresh_love_regen` 已从 `mp_regen set` 改为 `mp_regen add`
+  - `sukuna_setup_regen_suite.gd` 已改为同时守住初始化预回蓝与下一回合 `turn_start` 的追加回蓝
+  - 宿傩默认装配与反转术式装配的首次奥义窗口已统一更新为第 `4` 回合
+  - `content/samples/` 已补最小合法样例资源占位，目录口径重新对齐
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### Gojo 领域失败锁人修补（已完成）
 
 - 目标：
@@ -215,7 +248,7 @@
   - `runtime_guard_service` 与 `turn_selection_resolver` 都已补“仍有存活单位但 active 槽为空”的本地 fail-fast
   - `tests/run_with_gate.sh` 已串上 suite reachability gate，`tests/check_architecture_constraints.sh` 已补 L1/L2 静态约束
   - `formal_character_registry.json` 已补 Gojo / 宿傩 effect 资产、子 suite 路径与关键测试名锚点
-  - `docs/design/sukuna_design.md` / `docs/design/sukuna_adjustments.md` 已冻结默认装配第 6 回合、反转装配第 7 回合的首次奥义窗口
+  - `docs/design/sukuna_design.md` / `docs/design/sukuna_adjustments.md` 已冻结默认装配第 4 回合、反转装配第 4 回合的首次奥义窗口
 
 #### 当前验证结果
 
@@ -257,9 +290,9 @@
 
 ## 当前未解决问题
 
-### 1. 宿傩对 Gojo 的领域兑现率仍为 0（已知，不在本轮修）
+### 1. 宿傩对 Gojo 的领域兑现率仍需复查（已知，不在本轮修）
 
-- 当前结论：宿傩已经能稳定进入奥义窗口，也会按领域，但在 Gojo 对位里仍长期立不住领域。
+- 当前结论：宿傩已经能稳定进入奥义窗口，也会按领域；但在回蓝语义从 `set` 改成 `add` 之后，Gojo 对位里的领域兑现率需要在下一轮平衡任务里重新复查。
 - 当前处理：只记录为下一轮平衡问题，不在本轮规范整合里动数值。
 - 后续入口：完成本轮整合后，再单开“领域资源轴/平衡修正”任务。
 
@@ -287,4 +320,4 @@
   - `bash tests/run_with_gate.sh` 通过
   - `CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd` 通过
 - 本轮遗留（非本任务范围）：
-  - 宿傩在 Gojo 对位中的 `domain_successes` 仍为 `0`，属于后续平衡与角色资源轴问题，不影响本轮规范收口目标。
+  - 宿傩在 Gojo 对位中的领域兑现率仍需另开平衡任务复查，不影响本轮规范收口目标。

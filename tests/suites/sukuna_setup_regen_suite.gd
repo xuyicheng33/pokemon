@@ -68,12 +68,25 @@ func _test_sukuna_matchup_regen_runtime_path(harness) -> Dictionary:
     )
     if int(regen_instances[0].value) != expected_value:
         return harness.fail_result("sukuna matchup regen rule_mod value mismatch: expected=%d actual=%d" % [expected_value, int(regen_instances[0].value)])
-    var expected_current_mp: int = min(int(sukuna_unit.max_mp), int(content_index.units["sukuna"].init_mp) + expected_value)
+    var expected_turn_regen: int = int(content_index.units["sukuna"].regen_per_turn) + expected_value
+    var expected_current_mp: int = min(int(sukuna_unit.max_mp), int(content_index.units["sukuna"].init_mp) + expected_turn_regen)
     if int(sukuna_unit.current_mp) != expected_current_mp:
-        return harness.fail_result("sukuna initial current_mp should reflect the matchup-based regen override value: expected=%d actual=%d" % [expected_current_mp, int(sukuna_unit.current_mp)])
+        return harness.fail_result("sukuna initial current_mp should reflect base regen plus matchup bonus: expected=%d actual=%d" % [expected_current_mp, int(sukuna_unit.current_mp)])
+    var before_turn_mp: int = sukuna_unit.current_mp
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        _build_manual_wait_command(core, 1, "P1", "P1-A"),
+        _build_manual_wait_command(core, 1, "P2", "P2-A"),
+    ])
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        _build_manual_wait_command(core, 2, "P1", "P1-A"),
+        _build_manual_wait_command(core, 2, "P2", "P2-A"),
+    ])
+    var expected_next_turn_mp: int = min(int(sukuna_unit.max_mp), before_turn_mp + expected_turn_regen)
+    if int(sukuna_unit.current_mp) != expected_next_turn_mp:
+        return harness.fail_result("sukuna next turn regen should keep base regen plus matchup bonus after the pre-applied first turn: expected=%d actual=%d" % [expected_next_turn_mp, int(sukuna_unit.current_mp)])
     var regen_payload = content_index.effects["sukuna_refresh_love_regen"].payloads[0]
-    if String(regen_payload.mod_op) != "set":
-        return harness.fail_result("sukuna matchup regen payload should override regen with the matchup table value")
+    if String(regen_payload.mod_op) != "add":
+        return harness.fail_result("sukuna matchup regen payload should add the matchup table value on top of base regen")
     if int(regen_payload.value) != 0:
         return harness.fail_result("runtime formula must not mutate shared rule_mod payload value")
     return harness.pass_result()
@@ -199,8 +212,8 @@ func _test_sukuna_default_loadout_first_ultimate_window_contract(harness) -> Dic
                 return _build_manual_skill_command(core, turn_index, "P1", "P1-A", "sukuna_kai")
             return _build_manual_wait_command(core, turn_index, "P1", "P1-A")
     )
-    if window_turn != 6:
-        return harness.fail_result("默认装配当前基准线的首次奥义窗口应固定在 turn 6，actual=%d" % window_turn)
+    if window_turn != 4:
+        return harness.fail_result("默认装配当前基准线的首次奥义窗口应固定在 turn 4，actual=%d" % window_turn)
     return harness.pass_result()
 
 func _test_sukuna_ritual_loadout_first_ultimate_window_contract(harness) -> Dictionary:
@@ -230,8 +243,8 @@ func _test_sukuna_ritual_loadout_first_ultimate_window_contract(harness) -> Dict
                 })
             return _build_manual_wait_command(core, turn_index, "P1", "P1-A")
     )
-    if window_turn != 7:
-        return harness.fail_result("反转术式装配当前基准线的首次奥义窗口应固定在 turn 7，actual=%d" % window_turn)
+    if window_turn != 4:
+        return harness.fail_result("反转术式装配当前基准线的首次奥义窗口应固定在 turn 4，actual=%d" % window_turn)
     return harness.pass_result()
 
 

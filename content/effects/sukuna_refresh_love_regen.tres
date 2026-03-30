@@ -7,7 +7,7 @@
 script = ExtResource("2")
 payload_type = "rule_mod"
 mod_kind = "mp_regen"
-mod_op = "set"
+mod_op = "add"
 value = 0
 scope = "self"
 duration_mode = "turns"

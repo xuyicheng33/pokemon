@@ -175,7 +175,7 @@ tests/run_with_gate.sh
 - 加载期强校验（非法内容直接 fail-fast）
 - `combat_type_chart` 使用强类型 `CombatTypeChartEntry` 资源条目，不做代码侧反向推导
 - `combat_type` 与 `damage_kind` 完全独立；缺失 pair 默认 `1.0`
-- `on_receive_effect_ids` 为禁用迁移字段，非空即失败
+- `on_receive_effect_ids` 为禁用迁移字段（历史保留字段），非空即失败
 - `EffectDefinition.stacking` 已开放 `stack`
 - `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
 - 触发点当前包含 `field_apply / field_break / field_expire / on_expire`，并要求引用关系与触发器声明一致
@@ -191,7 +191,7 @@ tests/run_with_gate.sh
 ### 8.1 Gojo / 宿傩角色资源
 
 - `Gojo`：默认技能组 `苍 / 赫 / 茈`（`gojo_ao / gojo_aka / gojo_murasaki`），候选技能池 `candidate_skill_ids = 苍 / 赫 / 茈 / 反转术式`，奥义 `无量空处`，被动 `无下限`，奥义点 `required=3 / cap=3 / regular skill cast +1`
-- `宿傩`：默认技能组 `解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`），奥义 `伏魔御厨子`，被动 `教会你爱的是...`，候选技能池 `candidate_skill_ids = 解 / 捌 / 开 / 反转术式`，奥义点 `required=3 / cap=3 / regular skill cast +1`
+- `宿傩`：默认技能组 `解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`），奥义 `伏魔御厨子`，被动 `教会你爱的是...`，候选技能池 `candidate_skill_ids = 解 / 捌 / 开 / 反转术式`，奥义点 `required=3 / cap=3 / regular skill cast +1`；MP 回复按“基础 `12` + 对位追加值”结算
 - 赛前覆盖：`SideSetup.regular_skill_loadout_overrides` 可把候选常规技能换入本场装配；未提供覆盖时，行为等价于使用默认 `skill_ids`
 - 公开快照：`prebattle_public_teams[*].units[*].skill_ids` 只公开本场实际已装备的常规技能，不公开候选池全集
 
@@ -220,11 +220,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-03-30）
+## 10. 当前代码规模（2026-03-31）
 
-- `src/**/*.gd`：`8433` 行
-- `tests/**/*.gd`：`9105` 行
-- GDScript 合计：`17538` 行
+- `src/**/*.gd`：`8506` 行
+- `tests/**/*.gd`：`9158` 行
+- GDScript 合计：`17664` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

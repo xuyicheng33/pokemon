@@ -32,6 +32,6 @@ Gojo 当前内容语义已经结构化进 schema：
 - 奥义：`ultimate_skill_id = 伏魔御厨子`
 - 被动：`passive_skill_id = 教会你爱的是...`
 - 奥义点：`ultimate_points_required = 3`，`ultimate_points_cap = 3`，`ultimate_point_gain_on_regular_skill_cast = 1`
-- 动态回蓝：当前按对位差值把 `mp_regen` 覆盖到 `9 / 8 / 7 / 6 / 5 / 0`
+- 动态回蓝：当前按对位差值给 `mp_regen` 追加 `9 / 8 / 7 / 6 / 5 / 0`；宿傩最终每回合回复值为 `基础 12 + 对位追加`
 
 赛前若要替换本场常规三技能，统一通过 `BattleSetup -> SideSetup.regular_skill_loadout_overrides`，不再通过临时改写 `UnitDefinition.skill_ids` 做测试捷径。
