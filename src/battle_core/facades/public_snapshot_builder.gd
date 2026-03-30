@@ -94,22 +94,23 @@ func _build_public_field_snapshot(battle_state, content_index = null) -> Diction
             "creator_public_id": null,
             "creator_side_id": null,
         }
+    var creator_id := String(battle_state.field_state.creator)
+    assert(not creator_id.is_empty(), "BattleCorePublicSnapshotBuilder requires non-empty creator for active field %s" % String(battle_state.field_state.field_def_id))
     var field_kind: Variant = null
     if content_index != null:
         var field_definition = content_index.fields.get(String(battle_state.field_state.field_def_id), null)
         if field_definition != null:
             field_kind = String(field_definition.field_kind)
     var creator_side_id: Variant = null
-    var creator_side = battle_state.get_side_for_unit(String(battle_state.field_state.creator))
-    if field_kind == "domain":
-        assert(creator_side != null, "BattleCorePublicSnapshotBuilder requires creator side for active domain field %s" % String(battle_state.field_state.field_def_id))
+    var creator_side = battle_state.get_side_for_unit(creator_id)
+    assert(creator_side != null, "BattleCorePublicSnapshotBuilder requires creator side for active field %s" % String(battle_state.field_state.field_def_id))
     if creator_side != null:
         creator_side_id = String(creator_side.side_id)
     return {
         "field_id": battle_state.field_state.field_def_id,
         "field_kind": field_kind,
         "remaining_turns": battle_state.field_state.remaining_turns,
-        "creator_public_id": _resolve_public_id_or_system(battle_state, battle_state.field_state.creator),
+        "creator_public_id": _resolve_public_id_or_system(battle_state, creator_id),
         "creator_side_id": creator_side_id,
     }
 

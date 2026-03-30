@@ -3,6 +3,7 @@ class_name FieldService
 
 const SOURCE_KIND_ORDER_FIELD := 1
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var trigger_dispatcher
@@ -76,7 +77,7 @@ func break_field_if_creator_inactive(battle_state, content_index, chain_context)
         return null
     var creator_id := String(battle_state.field_state.creator)
     if creator_id.is_empty():
-        return null
+        return ErrorCodesScript.INVALID_STATE_CORRUPTION
     var creator_unit = battle_state.get_unit(creator_id)
     if creator_unit != null and creator_unit.current_hp > 0 and creator_unit.leave_state == LeaveStatesScript.ACTIVE:
         return null
@@ -108,8 +109,7 @@ func break_active_field(battle_state, content_index, trigger_name: String, chain
             )
             if break_invalid_code != null:
                 return break_invalid_code
-    battle_state.field_rule_mod_instances.clear()
-    battle_state.field_state = null
+    _clear_old_field_if_still_active(battle_state, current_field_state)
     return null
 
 func tick_turn_end(field_state) -> bool:
@@ -150,3 +150,34 @@ func _build_lifecycle_chain_context(chain_context, battle_state, creator_id: Str
     lifecycle_chain_context.target_slot = ContentSchemaScript.ACTIVE_SLOT_PRIMARY
     lifecycle_chain_context.target_unit_id = resolve_opponent_active_id_for_creator(battle_state, creator_id)
     return lifecycle_chain_context
+
+func clear_field_state_if_matches(battle_state, field_state) -> void:
+    if battle_state == null or field_state == null:
+        return
+    _clear_old_field_if_still_active(battle_state, field_state)
+
+func _clear_old_field_if_still_active(battle_state, field_state) -> void:
+    if battle_state == null or field_state == null:
+        return
+    _remove_field_rule_mods_for_instance(battle_state, String(field_state.instance_id))
+    var active_field = battle_state.field_state
+    if active_field == null:
+        return
+    if String(active_field.instance_id) != String(field_state.instance_id):
+        return
+    battle_state.field_state = null
+
+func _remove_field_rule_mods_for_instance(battle_state, field_instance_id: String) -> void:
+    if battle_state == null:
+        return
+    if field_instance_id.is_empty():
+        battle_state.field_rule_mod_instances.clear()
+        return
+    var keep_instances: Array = []
+    for rule_mod_instance in battle_state.field_rule_mod_instances:
+        var owner_field_instance_id := String(rule_mod_instance.field_instance_id) if rule_mod_instance != null else ""
+        var source_instance_id := String(rule_mod_instance.source_instance_id) if rule_mod_instance != null else ""
+        if owner_field_instance_id == field_instance_id or source_instance_id == field_instance_id:
+            continue
+        keep_instances.append(rule_mod_instance)
+    battle_state.field_rule_mod_instances = keep_instances

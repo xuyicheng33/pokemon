@@ -57,7 +57,8 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 	_sync_runtime_services()
 	var challenger_field_definition = content_index.fields.get(payload.field_definition_id)
 	var before_field = battle_state.field_state
-	if before_field != null:
+	var resolves_replacing_field_lifecycle := before_field != null and _is_replacing_current_field_from_its_lifecycle(effect_event, before_field)
+	if before_field != null and not resolves_replacing_field_lifecycle:
 		var incumbent_field_definition = field_service.get_field_definition_for_state(before_field, content_index)
 		if _conflict_service.is_normal_field_blocked_by_domain(challenger_field_definition, incumbent_field_definition):
 			_log_service.log_field_blocked_by_active_domain(before_field, payload, effect_event, battle_state)
@@ -90,6 +91,14 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 	if field_apply_invalid_code != null:
 		return field_apply_invalid_code
 	return _effect_runner.execute_success_effects(payload.on_success_effect_ids, effect_event, battle_state, content_index)
+
+func _is_replacing_current_field_from_its_lifecycle(effect_event, current_field_state) -> bool:
+	if effect_event == null or current_field_state == null:
+		return false
+	var trigger_name := String(effect_event.trigger_name)
+	if trigger_name != "field_break" and trigger_name != "field_expire":
+		return false
+	return String(effect_event.source_instance_id) == String(current_field_state.instance_id)
 
 func _sync_runtime_services() -> void:
 	_conflict_service.rng_service = rng_service

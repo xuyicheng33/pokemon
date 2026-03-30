@@ -121,7 +121,7 @@ func decrement_rule_mods_and_log(battle_state, trigger_name: String, cause_event
         )
         battle_logger.append_event(log_event)
 
-func decrement_effect_instances_and_log(battle_state, content_index, trigger_name: String, owner_unit_ids: Array, cause_event_id: String) -> void:
+func decrement_effect_instances_and_log(battle_state, content_index, trigger_name: String, owner_unit_ids: Array, cause_event_id: String) -> bool:
     var decrement_result: Dictionary = effect_instance_dispatcher.decrement_for_trigger(trigger_name, battle_state, content_index, owner_unit_ids)
     var removed_instances: Array = decrement_result.get("removed_instances", [])
     var expire_events: Array = decrement_result.get("expire_events", [])
@@ -136,7 +136,7 @@ func decrement_effect_instances_and_log(battle_state, content_index, trigger_nam
         )
         if expire_invalid_code != null:
             battle_result_service.terminate_invalid_battle(battle_state, str(expire_invalid_code))
-            return
+            return true
     for removed in removed_instances:
         var removed_instance = removed["instance"]
         var effect_definition = removed["definition"]
@@ -153,6 +153,7 @@ func decrement_effect_instances_and_log(battle_state, content_index, trigger_nam
             }
         )
         battle_logger.append_event(log_event)
+    return false
 
 func apply_turn_end_field_tick(battle_state, content_index, cause_event_id: String):
     return field_lifecycle_service.apply_turn_end_field_tick(battle_state, content_index, cause_event_id)

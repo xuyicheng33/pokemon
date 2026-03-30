@@ -22,6 +22,7 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, o
             effect_event.trigger_name = trigger_name
             effect_event.priority = effect_definition.priority
             effect_event.source_instance_id = effect_instance.source_instance_id
+            effect_event.effect_instance_id = effect_instance.instance_id
             effect_event.source_kind_order = effect_instance.source_kind_order
             effect_event.source_order_speed_snapshot = effect_instance.source_order_speed_snapshot
             effect_event.effect_definition_id = effect_definition.id
@@ -78,6 +79,7 @@ func _collect_expire_events(effect_instance, effect_definition, owner_id: String
         effect_event.trigger_name = "on_expire"
         effect_event.priority = next_effect_definition.priority
         effect_event.source_instance_id = effect_instance.instance_id
+        effect_event.effect_instance_id = effect_instance.instance_id
         effect_event.source_kind_order = effect_instance.source_kind_order
         effect_event.source_order_speed_snapshot = effect_instance.source_order_speed_snapshot
         effect_event.effect_definition_id = effect_id

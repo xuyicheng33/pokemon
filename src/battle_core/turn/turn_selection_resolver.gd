@@ -37,6 +37,9 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
         commands_by_side[command.side_id] = command
     var locked_commands: Array = []
     for side_state in battle_state.sides:
+        var active_unit = side_state.get_active_unit()
+        if active_unit == null and _side_has_available_unit(side_state):
+            return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
         var legal_action_set = legal_action_service.get_legal_actions(battle_state, side_state.side_id, content_index)
         var provided_command = commands_by_side.get(side_state.side_id, null)
         var resolved_command = null
@@ -45,7 +48,9 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
         elif not legal_action_set.forced_command_type.is_empty():
             if provided_command != null:
                 return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
-            var forced_actor = side_state.get_active_unit()
+            var forced_actor = active_unit
+            if forced_actor == null:
+                return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
             resolved_command = command_builder.build_command({
                 "turn_index": battle_state.turn_index,
                 "command_type": CommandTypesScript.RESOURCE_FORCED_DEFAULT,
@@ -54,7 +59,9 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
                 "actor_id": forced_actor.unit_instance_id,
             })
         elif provided_command == null:
-            var timeout_actor = side_state.get_active_unit()
+            var timeout_actor = active_unit
+            if timeout_actor == null:
+                return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
             resolved_command = command_builder.build_command({
                 "turn_index": battle_state.turn_index,
                 "command_type": CommandTypesScript.WAIT,
@@ -73,6 +80,14 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
         side_state.selection_state.timed_out = resolved_command.command_source == "timeout_auto"
         locked_commands.append(resolved_command)
     return {"locked_commands": locked_commands, "invalid_code": null}
+
+func _side_has_available_unit(side_state) -> bool:
+    if side_state == null:
+        return false
+    for unit_state in side_state.team_units:
+        if unit_state.current_hp > 0:
+            return true
+    return false
 
 func clear_turn_end_state(battle_state) -> void:
     for side_state in battle_state.sides:

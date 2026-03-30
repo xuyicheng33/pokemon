@@ -45,6 +45,7 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
     rule_mod_instance.duration_mode = rule_mod_payload.duration_mode
     rule_mod_instance.owner_scope = owner_ref["scope"]
     rule_mod_instance.owner_id = owner_ref["id"]
+    rule_mod_instance.field_instance_id = _resolve_field_instance_id(owner_ref, battle_state)
     rule_mod_instance.stacking_key = stacking_key
     rule_mod_instance.remaining = rule_mod_payload.duration if rule_mod_payload.duration_mode == "turns" else -1
     rule_mod_instance.created_turn = battle_state.turn_index
@@ -141,6 +142,13 @@ func _decrement_owner_instances(owner_instances: Array, owner_id: String, trigge
         "keep_instances": keep_instances,
         "removed_instances": removed_instances,
     }
+
+func _resolve_field_instance_id(owner_ref: Dictionary, battle_state) -> String:
+    if str(owner_ref.get("scope", "")) != OWNER_SCOPE_FIELD:
+        return ""
+    if battle_state == null or battle_state.field_state == null:
+        return ""
+    return str(battle_state.field_state.instance_id)
 
 func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary) -> String:
     var schema: Array = STACKING_KEY_SCHEMA_BY_KIND.get(rule_mod_payload.mod_kind, [])

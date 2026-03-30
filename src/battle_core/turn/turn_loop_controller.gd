@@ -46,13 +46,14 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
         return
     if turn_resolution_service.execute_matchup_changed_if_needed(battle_state, content_index):
         return
-    turn_resolution_service.decrement_effect_instances_and_log(
+    if turn_resolution_service.decrement_effect_instances_and_log(
         battle_state,
         content_index,
         "turn_start",
         turn_resolution_service.collect_active_unit_ids(battle_state),
         turn_start_event_id
-    )
+    ):
+        return
     turn_resolution_service.decrement_rule_mods_and_log(battle_state, "turn_start", turn_start_event_id)
     if battle_result_service.resolve_standard_victory(battle_state):
         return
@@ -103,14 +104,18 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     var turn_end_event_id: String = log_event_builder.resolve_event_id(turn_end_event)
     if turn_resolution_service.execute_system_trigger_batch("turn_end", battle_state, content_index):
         return
-    var field_change = turn_resolution_service.apply_turn_end_field_tick(battle_state, content_index, turn_end_event_id)
-    turn_resolution_service.decrement_effect_instances_and_log(
+    var field_tick_result = turn_resolution_service.apply_turn_end_field_tick(battle_state, content_index, turn_end_event_id)
+    if bool(field_tick_result.get("terminated", false)):
+        return
+    var field_change = field_tick_result.get("field_change", null)
+    if turn_resolution_service.decrement_effect_instances_and_log(
         battle_state,
         content_index,
         "turn_end",
         turn_resolution_service.collect_active_unit_ids(battle_state),
         turn_end_event_id
-    )
+    ):
+        return
     turn_resolution_service.decrement_rule_mods_and_log(battle_state, "turn_end", turn_end_event_id)
     turn_end_event.field_change = field_change
     var turn_end_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
