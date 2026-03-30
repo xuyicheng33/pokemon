@@ -13,6 +13,8 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("ai_policy_sukuna_ultimate_when_ready", failures, Callable(self, "_test_sukuna_ultimate_when_ready").bind(harness))
     runner.run_test("ai_policy_sukuna_ultimate_beats_heal_when_ready", failures, Callable(self, "_test_sukuna_ultimate_beats_heal_when_ready").bind(harness))
     runner.run_test("ai_policy_gojo_ultimate_beats_heal_when_ready", failures, Callable(self, "_test_gojo_ultimate_beats_heal_when_ready").bind(harness))
+    runner.run_test("ai_policy_domain_not_blocked_by_owned_normal_field", failures, Callable(self, "_test_domain_not_blocked_by_owned_normal_field").bind(harness))
+    runner.run_test("ai_policy_domain_blocked_by_owned_domain_field", failures, Callable(self, "_test_domain_blocked_by_owned_domain_field").bind(harness))
     runner.run_test("ai_policy_adapter_service_alignment", failures, Callable(self, "_test_adapter_service_alignment").bind(harness))
 
 func _test_forced_command_contract(harness) -> Dictionary:
@@ -89,6 +91,38 @@ func _test_gojo_ultimate_beats_heal_when_ready(harness) -> Dictionary:
         return _fail(harness, "领域角色已满足开大条件时，不应被治疗优先级截走")
     return _pass(harness)
 
+func _test_domain_not_blocked_by_owned_normal_field(harness) -> Dictionary:
+    var legal_actions = _build_legal_action_set()
+    legal_actions.legal_skill_ids = PackedStringArray(["gojo_ao"])
+    legal_actions.legal_ultimate_ids = PackedStringArray(["gojo_unlimited_void"])
+    var snapshot := _build_snapshot("gojo_satoru", "sukuna")
+    snapshot["field"] = {
+        "field_id": "sample_focus_field",
+        "field_kind": "normal",
+        "creator_public_id": "P1-A",
+        "creator_side_id": "P1",
+    }
+    var choice: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
+    if str(choice.get("command_type", "")) != CommandTypesScript.ULTIMATE or str(choice.get("skill_id", "")) != "gojo_unlimited_void":
+        return _fail(harness, "己方普通field在场时，领域奥义不应被误判为己方领域重开")
+    return _pass(harness)
+
+func _test_domain_blocked_by_owned_domain_field(harness) -> Dictionary:
+    var legal_actions = _build_legal_action_set()
+    legal_actions.legal_skill_ids = PackedStringArray(["gojo_ao"])
+    legal_actions.legal_ultimate_ids = PackedStringArray(["gojo_unlimited_void"])
+    var snapshot := _build_snapshot("gojo_satoru", "sukuna")
+    snapshot["field"] = {
+        "field_id": "gojo_unlimited_void_field",
+        "field_kind": "domain",
+        "creator_public_id": "P1-A",
+        "creator_side_id": "P1",
+    }
+    var choice: Dictionary = BattleAIPolicyServiceScript.new().choose_command(legal_actions, snapshot, "P1", "heuristic")
+    if str(choice.get("skill_id", "")) == "gojo_unlimited_void":
+        return _fail(harness, "己方领域在场时不应重复选择己方领域奥义")
+    return _pass(harness)
+
 func _test_adapter_service_alignment(harness) -> Dictionary:
     var legal_actions = _build_legal_action_set()
     legal_actions.legal_skill_ids = PackedStringArray(["gojo_ao", "gojo_aka"])
@@ -108,7 +142,10 @@ func _build_legal_action_set():
 func _build_snapshot(p1_def_id: String, p2_def_id: String) -> Dictionary:
     return {
         "field": {
+            "field_id": null,
+            "field_kind": null,
             "creator_public_id": null,
+            "creator_side_id": null,
         },
         "sides": [
             {

@@ -3,7 +3,7 @@ class_name BattleCorePublicSnapshotBuilder
 
 func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
     assert(battle_state != null, "BattleCorePublicSnapshotBuilder requires battle_state")
-    var field_snapshot = _build_public_field_snapshot(battle_state)
+    var field_snapshot = _build_public_field_snapshot(battle_state, content_index)
     var side_models: Array = []
     for side_state in battle_state.sides:
         var active_unit = side_state.get_active_unit()
@@ -46,7 +46,7 @@ func build_header_snapshot(battle_state, content_index = null) -> Dictionary:
         "visibility_mode": battle_state.visibility_mode,
         "prebattle_public_teams": _build_prebattle_public_teams(battle_state, content_index),
         "initial_active_public_ids_by_side": _build_initial_active_public_ids_by_side(battle_state),
-        "initial_field": _build_public_field_snapshot(battle_state) if battle_state.field_state != null else null,
+        "initial_field": _build_public_field_snapshot(battle_state, content_index) if battle_state.field_state != null else null,
     }
 
 func _build_public_unit_snapshot(side_state, unit_state) -> Dictionary:
@@ -85,17 +85,30 @@ func _build_public_unit_snapshot(side_state, unit_state) -> Dictionary:
         "effect_instances": effect_summaries,
     }
 
-func _build_public_field_snapshot(battle_state) -> Dictionary:
+func _build_public_field_snapshot(battle_state, content_index = null) -> Dictionary:
     if battle_state.field_state == null:
         return {
             "field_id": null,
+            "field_kind": null,
             "remaining_turns": null,
             "creator_public_id": null,
+            "creator_side_id": null,
         }
+    var field_kind: Variant = null
+    if content_index != null:
+        var field_definition = content_index.fields.get(String(battle_state.field_state.field_def_id), null)
+        if field_definition != null:
+            field_kind = String(field_definition.field_kind)
+    var creator_side_id: Variant = null
+    var creator_side = battle_state.get_side_for_unit(String(battle_state.field_state.creator))
+    if creator_side != null:
+        creator_side_id = String(creator_side.side_id)
     return {
         "field_id": battle_state.field_state.field_def_id,
+        "field_kind": field_kind,
         "remaining_turns": battle_state.field_state.remaining_turns,
         "creator_public_id": _resolve_public_id_or_system(battle_state, battle_state.field_state.creator),
+        "creator_side_id": creator_side_id,
     }
 
 func _build_prebattle_public_teams(battle_state, content_index) -> Array:

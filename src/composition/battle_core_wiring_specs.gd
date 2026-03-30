@@ -4,6 +4,7 @@ class_name BattleCoreWiringSpecs
 const WIRING_SPECS := [
     {"owner": "command_builder", "dependency": "id_factory", "source": "id_factory"},
     {"owner": "legal_action_service", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "legal_action_service", "dependency": "domain_legality_service", "source": "domain_legality_service"},
     {"owner": "battle_initializer", "dependency": "id_factory", "source": "id_factory"},
     {"owner": "battle_initializer", "dependency": "rng_service", "source": "rng_service"},
     {"owner": "battle_initializer", "dependency": "faint_resolver", "source": "faint_resolver"},
@@ -107,6 +108,7 @@ const WIRING_SPECS := [
     {"owner": "action_executor", "dependency": "switch_action_service", "source": "switch_action_service"},
     {"owner": "action_executor", "dependency": "action_log_service", "source": "action_log_service"},
     {"owner": "action_executor", "dependency": "rule_mod_service", "source": "rule_mod_service"},
+    {"owner": "action_executor", "dependency": "domain_legality_service", "source": "domain_legality_service"},
     {"owner": "turn_selection_resolver", "dependency": "legal_action_service", "source": "legal_action_service"},
     {"owner": "turn_selection_resolver", "dependency": "command_builder", "source": "command_builder"},
     {"owner": "turn_selection_resolver", "dependency": "command_validator", "source": "command_validator"},

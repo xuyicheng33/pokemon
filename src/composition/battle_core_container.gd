@@ -4,6 +4,7 @@ class_name BattleCoreContainer
 var id_factory
 var rng_service
 var legal_action_service
+var domain_legality_service
 var command_builder
 var command_validator
 var battle_initializer

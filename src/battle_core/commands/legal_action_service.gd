@@ -3,9 +3,9 @@ class_name LegalActionService
 
 const LegalActionSetScript := preload("res://src/battle_core/contracts/legal_action_set.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
-const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
 var rule_mod_service
+var domain_legality_service
 
 func get_legal_actions(battle_state, side_id: String, content_index):
     var side_state = battle_state.get_side(side_id)
@@ -18,7 +18,12 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     legal_action_set.actor_public_id = actor.public_id
     var has_non_mp_blocked_option: bool = false
     var has_any_skill_or_ultimate_option: bool = false
-    var side_domain_recast_blocked: bool = _is_side_domain_recast_blocked(battle_state, side_id, content_index)
+    assert(domain_legality_service != null, "LegalActionService.domain_legality_service is required")
+    var side_domain_recast_blocked: bool = domain_legality_service.is_side_domain_recast_blocked(
+        battle_state,
+        side_id,
+        content_index
+    )
     for skill_id in actor.regular_skill_ids:
         var skill_definition = content_index.skills.get(skill_id)
         if skill_definition == null:
@@ -79,16 +84,3 @@ func get_legal_actions(battle_state, side_id: String, content_index):
 func _is_action_legal_with_rule_mod(battle_state, actor_id: String, action_type: String, skill_id: String = "") -> bool:
     assert(rule_mod_service != null, "LegalActionService.rule_mod_service is required")
     return rule_mod_service.is_action_allowed(battle_state, actor_id, action_type, skill_id)
-
-func _is_side_domain_recast_blocked(battle_state, side_id: String, content_index) -> bool:
-    if battle_state == null or battle_state.field_state == null:
-        return false
-    var active_field_definition = content_index.fields.get(battle_state.field_state.field_def_id)
-    if active_field_definition == null:
-        return false
-    if String(active_field_definition.field_kind) != ContentSchemaScript.FIELD_KIND_DOMAIN:
-        return false
-    var creator_side = battle_state.get_side_for_unit(String(battle_state.field_state.creator))
-    if creator_side == null:
-        return false
-    return creator_side.side_id == side_id

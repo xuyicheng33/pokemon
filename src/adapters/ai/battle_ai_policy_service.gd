@@ -3,6 +3,36 @@ class_name BattleAIPolicyService
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
+const ROLE_POLICY_CONFIG := {
+    "gojo_satoru": {
+        "mode": "double_mark_combo",
+        "domain_ultimate_id": "gojo_unlimited_void",
+        "heal_skill_id": "gojo_reverse_ritual",
+        "heal_threshold": 0.35,
+        "combo_skill_id": "gojo_murasaki",
+        "combo_marks": ["gojo_ao_mark", "gojo_aka_mark"],
+        "mark_build_order": ["gojo_ao", "gojo_aka"],
+        "low_hp_finish_skill_id": "gojo_murasaki",
+        "low_hp_finish_threshold": 0.45,
+        "fallback_skill_order": ["gojo_aka", "gojo_ao"],
+    },
+    "sukuna": {
+        "mode": "kamado_cycle",
+        "domain_ultimate_id": "sukuna_fukuma_mizushi",
+        "heal_skill_id": "sukuna_reverse_ritual",
+        "heal_threshold": 0.40,
+        "point_rush_skill_order": ["sukuna_kai", "sukuna_hatsu", "sukuna_hiraku"],
+        "kamado_mark_id": "sukuna_kamado_mark",
+        "kamado_skill_id": "sukuna_hiraku",
+        "kamado_prefer_max_stacks": 2,
+        "kamado_target_hp_min": 0.25,
+        "kamado_self_hp_min": 0.45,
+        "mp_adv_skill_id": "sukuna_hatsu",
+        "mp_adv_margin": 8,
+        "fallback_skill_order": ["sukuna_kai", "sukuna_hatsu", "sukuna_hiraku"],
+    },
+}
+
 func choose_command(legal_action_set, public_snapshot: Dictionary = {}, side_id: String = "", policy: String = "heuristic") -> Dictionary:
     if legal_action_set == null:
         return {}
@@ -36,68 +66,104 @@ func _choose_heuristic(legal_action_set, public_snapshot: Dictionary, side_id: S
     var actor := _find_active_unit(public_snapshot, side_id)
     if actor.is_empty():
         return _choose_naive(legal_action_set, public_snapshot, side_id)
+    var actor_def_id := str(actor.get("definition_id", ""))
+    var role_policy: Dictionary = ROLE_POLICY_CONFIG.get(actor_def_id, {})
+    if role_policy.is_empty():
+        return _choose_naive(legal_action_set, public_snapshot, side_id)
     var opponent_side_id := "P2" if side_id == "P1" else "P1"
     var target := _find_active_unit(public_snapshot, opponent_side_id)
-    var actor_def_id := str(actor.get("definition_id", ""))
-    if actor_def_id == "gojo_satoru":
-        return _choose_gojo_action(actor, target, legal_action_set, public_snapshot, side_id)
-    if actor_def_id == "sukuna":
-        return _choose_sukuna_action(actor, target, legal_action_set, public_snapshot, side_id)
-    return _choose_naive(legal_action_set, public_snapshot, side_id)
+    return _choose_role_action(actor, target, legal_action_set, public_snapshot, side_id, role_policy)
 
-func _choose_gojo_action(actor: Dictionary, target: Dictionary, legal_action_set, public_snapshot: Dictionary, side_id: String) -> Dictionary:
-    var domain_choice := _choose_domain_when_ready(actor, target, legal_action_set, public_snapshot, side_id, "gojo_unlimited_void")
+func _choose_role_action(
+    actor: Dictionary,
+    target: Dictionary,
+    legal_action_set,
+    public_snapshot: Dictionary,
+    side_id: String,
+    role_policy: Dictionary
+) -> Dictionary:
+    var domain_skill_id := str(role_policy.get("domain_ultimate_id", ""))
+    var domain_choice := _choose_domain_when_ready(legal_action_set, public_snapshot, side_id, domain_skill_id)
     if not domain_choice.is_empty():
         return domain_choice
+
+    var heal_skill_id := str(role_policy.get("heal_skill_id", ""))
+    var heal_threshold: float = float(role_policy.get("heal_threshold", 0.0))
     var hp_ratio := _hp_ratio(actor)
-    if _has_legal_skill(legal_action_set, "gojo_reverse_ritual") and hp_ratio <= 0.35 and int(actor.get("current_hp", 0)) < int(actor.get("max_hp", 0)):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "gojo_reverse_ritual"}
-    var has_ao_mark := _has_effect(target, "gojo_ao_mark")
-    var has_aka_mark := _has_effect(target, "gojo_aka_mark")
-    if has_ao_mark and has_aka_mark and _has_legal_skill(legal_action_set, "gojo_murasaki"):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "gojo_murasaki"}
-    if not has_ao_mark and _has_legal_skill(legal_action_set, "gojo_ao"):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "gojo_ao"}
-    if not has_aka_mark and _has_legal_skill(legal_action_set, "gojo_aka"):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "gojo_aka"}
-    if _has_legal_skill(legal_action_set, "gojo_murasaki") and _hp_ratio(target) <= 0.45:
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "gojo_murasaki"}
-    if _has_legal_skill(legal_action_set, "gojo_aka"):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "gojo_aka"}
-    if _has_legal_skill(legal_action_set, "gojo_ao"):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "gojo_ao"}
-    return _choose_naive(legal_action_set, public_snapshot, side_id)
+    if _has_legal_skill(legal_action_set, heal_skill_id) \
+    and hp_ratio <= heal_threshold \
+    and int(actor.get("current_hp", 0)) < int(actor.get("max_hp", 0)):
+        return {"command_type": CommandTypesScript.SKILL, "skill_id": heal_skill_id}
 
-func _choose_sukuna_action(actor: Dictionary, target: Dictionary, legal_action_set, public_snapshot: Dictionary, side_id: String) -> Dictionary:
-    var domain_choice := _choose_domain_when_ready(actor, target, legal_action_set, public_snapshot, side_id, "sukuna_fukuma_mizushi")
-    if not domain_choice.is_empty():
-        return domain_choice
-    var hp_ratio: float = _hp_ratio(actor)
-    if _has_legal_skill(legal_action_set, "sukuna_reverse_ritual") and hp_ratio <= 0.40 and int(actor.get("current_hp", 0)) < int(actor.get("max_hp", 0)):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "sukuna_reverse_ritual"}
+    var mode := str(role_policy.get("mode", ""))
+    if mode == "double_mark_combo":
+        var gojo_choice := _choose_double_mark_combo_action(target, legal_action_set, role_policy)
+        if not gojo_choice.is_empty():
+            return gojo_choice
+    elif mode == "kamado_cycle":
+        var sukuna_choice := _choose_kamado_cycle_action(actor, target, legal_action_set, role_policy)
+        if not sukuna_choice.is_empty():
+            return sukuna_choice
 
+    return _choose_first_legal_skill(legal_action_set, role_policy.get("fallback_skill_order", []))
+
+func _choose_double_mark_combo_action(target: Dictionary, legal_action_set, role_policy: Dictionary) -> Dictionary:
+    var combo_skill_id := str(role_policy.get("combo_skill_id", ""))
+    var combo_marks: Array = role_policy.get("combo_marks", [])
+    var has_all_marks := true
+    for mark_id in combo_marks:
+        if not _has_effect(target, String(mark_id)):
+            has_all_marks = false
+            break
+    if has_all_marks and _has_legal_skill(legal_action_set, combo_skill_id):
+        return {"command_type": CommandTypesScript.SKILL, "skill_id": combo_skill_id}
+
+    var mark_build_order: Array = role_policy.get("mark_build_order", [])
+    for skill_id in mark_build_order:
+        if _has_legal_skill(legal_action_set, String(skill_id)) and not _has_effect(target, "%s_mark" % _resolve_mark_key(skill_id)):
+            return {"command_type": CommandTypesScript.SKILL, "skill_id": String(skill_id)}
+
+    var low_hp_finish_skill_id := str(role_policy.get("low_hp_finish_skill_id", ""))
+    var low_hp_finish_threshold := float(role_policy.get("low_hp_finish_threshold", 0.0))
+    if _has_legal_skill(legal_action_set, low_hp_finish_skill_id) and _hp_ratio(target) <= low_hp_finish_threshold:
+        return {"command_type": CommandTypesScript.SKILL, "skill_id": low_hp_finish_skill_id}
+    return {}
+
+func _resolve_mark_key(skill_id: String) -> String:
+    if skill_id == "gojo_ao":
+        return "gojo_ao"
+    if skill_id == "gojo_aka":
+        return "gojo_aka"
+    return skill_id
+
+func _choose_kamado_cycle_action(actor: Dictionary, target: Dictionary, legal_action_set, role_policy: Dictionary) -> Dictionary:
     var points: int = int(actor.get("ultimate_points", 0))
     var required_points: int = max(1, int(actor.get("ultimate_points_required", 3)))
     if points < required_points:
-        if _has_legal_skill(legal_action_set, "sukuna_kai"):
-            return {"command_type": CommandTypesScript.SKILL, "skill_id": "sukuna_kai"}
-        if _has_legal_skill(legal_action_set, "sukuna_hatsu"):
-            return {"command_type": CommandTypesScript.SKILL, "skill_id": "sukuna_hatsu"}
-        if _has_legal_skill(legal_action_set, "sukuna_hiraku"):
-            return {"command_type": CommandTypesScript.SKILL, "skill_id": "sukuna_hiraku"}
+        var point_rush_choice := _choose_first_legal_skill(legal_action_set, role_policy.get("point_rush_skill_order", []))
+        if not point_rush_choice.is_empty():
+            return point_rush_choice
 
-    var kamado_count: int = _count_effects(target, "sukuna_kamado_mark")
-    if _has_legal_skill(legal_action_set, "sukuna_hiraku") and kamado_count < 2 and _hp_ratio(target) > 0.25 and hp_ratio > 0.45:
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "sukuna_hiraku"}
-    if _has_legal_skill(legal_action_set, "sukuna_hatsu") and int(actor.get("current_mp", 0)) >= int(target.get("current_mp", 0)) + 8:
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "sukuna_hatsu"}
-    if _has_legal_skill(legal_action_set, "sukuna_kai"):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "sukuna_kai"}
-    if _has_legal_skill(legal_action_set, "sukuna_hatsu"):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "sukuna_hatsu"}
-    if _has_legal_skill(legal_action_set, "sukuna_hiraku"):
-        return {"command_type": CommandTypesScript.SKILL, "skill_id": "sukuna_hiraku"}
-    return _choose_naive(legal_action_set, public_snapshot, side_id)
+    var kamado_mark_id := str(role_policy.get("kamado_mark_id", ""))
+    var kamado_skill_id := str(role_policy.get("kamado_skill_id", ""))
+    var kamado_count: int = _count_effects(target, kamado_mark_id)
+    if _has_legal_skill(legal_action_set, kamado_skill_id) \
+    and kamado_count < int(role_policy.get("kamado_prefer_max_stacks", 2)) \
+    and _hp_ratio(target) > float(role_policy.get("kamado_target_hp_min", 0.25)) \
+    and _hp_ratio(actor) > float(role_policy.get("kamado_self_hp_min", 0.45)):
+        return {"command_type": CommandTypesScript.SKILL, "skill_id": kamado_skill_id}
+
+    var mp_adv_skill_id := str(role_policy.get("mp_adv_skill_id", ""))
+    var mp_adv_margin: int = int(role_policy.get("mp_adv_margin", 8))
+    if _has_legal_skill(legal_action_set, mp_adv_skill_id) and int(actor.get("current_mp", 0)) >= int(target.get("current_mp", 0)) + mp_adv_margin:
+        return {"command_type": CommandTypesScript.SKILL, "skill_id": mp_adv_skill_id}
+    return {}
+
+func _choose_first_legal_skill(legal_action_set, skill_order: Array) -> Dictionary:
+    for skill_id in skill_order:
+        if _has_legal_skill(legal_action_set, String(skill_id)):
+            return {"command_type": CommandTypesScript.SKILL, "skill_id": String(skill_id)}
+    return {}
 
 func _best_switch_target(public_snapshot: Dictionary, side_id: String, legal_targets: PackedStringArray) -> String:
     if public_snapshot.is_empty() or side_id.is_empty():
@@ -151,20 +217,29 @@ func _hp_ratio(unit_snapshot: Dictionary) -> float:
     return float(int(unit_snapshot.get("current_hp", 0))) / float(max_hp)
 
 func _has_legal_skill(legal_action_set, skill_id: String) -> bool:
+    if skill_id.is_empty():
+        return false
     return legal_action_set.legal_skill_ids.has(skill_id)
 
 func _has_legal_ultimate(legal_action_set, skill_id: String) -> bool:
+    if skill_id.is_empty():
+        return false
     return legal_action_set.legal_ultimate_ids.has(skill_id)
 
-func _choose_domain_when_ready(actor: Dictionary, target: Dictionary, legal_action_set, public_snapshot: Dictionary, side_id: String, skill_id: String) -> Dictionary:
+func _choose_domain_when_ready(legal_action_set, public_snapshot: Dictionary, side_id: String, skill_id: String) -> Dictionary:
     if not _has_legal_ultimate(legal_action_set, skill_id):
         return {}
-    if _field_owned_by_side(public_snapshot, side_id):
+    if _has_owned_active_domain(public_snapshot, side_id):
         return {}
     return {"command_type": CommandTypesScript.ULTIMATE, "skill_id": skill_id}
 
-func _field_owned_by_side(public_snapshot: Dictionary, side_id: String) -> bool:
+func _has_owned_active_domain(public_snapshot: Dictionary, side_id: String) -> bool:
     var field_snapshot: Dictionary = public_snapshot.get("field", {})
+    if str(field_snapshot.get("field_kind", "")) != "domain":
+        return false
+    var creator_side_id := str(field_snapshot.get("creator_side_id", ""))
+    if not creator_side_id.is_empty():
+        return creator_side_id == side_id
     var creator_public_id := str(field_snapshot.get("creator_public_id", ""))
     if creator_public_id.is_empty():
         return false

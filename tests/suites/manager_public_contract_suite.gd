@@ -45,6 +45,9 @@ func _test_full_open_public_snapshot_contract(harness) -> Dictionary:
 		return harness.fail_result("public_snapshot visibility_mode should be prototype_full_open")
 	if not public_snapshot.has("field") or typeof(public_snapshot["field"]) != TYPE_DICTIONARY:
 		return harness.fail_result("public_snapshot should include field snapshot")
+	var field_snapshot: Dictionary = public_snapshot["field"]
+	if not field_snapshot.has("field_kind") or not field_snapshot.has("creator_side_id"):
+		return harness.fail_result("field snapshot should expose field_kind and creator_side_id")
 	if not public_snapshot.has("sides") or public_snapshot["sides"].size() != 2:
 		return harness.fail_result("public_snapshot should include 2 sides")
 	for side_snapshot in public_snapshot["sides"]:
