@@ -123,6 +123,9 @@ for rel_path in [
     "docs/design/sukuna_design.md",
     "docs/design/gojo_satoru_adjustments.md",
     "docs/design/sukuna_adjustments.md",
+    "docs/design/domain_field_template.md",
+    "tests/replay_cases/domain_cases.md",
+    "tests/helpers/domain_case_runner.gd",
 ]:
     if not (root / rel_path).exists():
         failures.append(f"missing required character asset doc: {rel_path}")
@@ -149,8 +152,12 @@ require_contains("docs/design/gojo_satoru_design.md", "on_success_effect_ids", "
 require_contains("docs/design/gojo_satoru_design.md", "对拼失败", "gojo design field clash failure contract")
 require_contains("docs/design/sukuna_design.md", "领域自然到期终爆保留", "sukuna design expire burst contract")
 require_contains("docs/design/sukuna_design.md", "3 点奥义点体系下", "sukuna design balance record")
+require_contains("docs/design/domain_field_template.md", "field_apply_success", "domain template success trigger contract")
+require_contains("docs/design/domain_field_template.md", "同回合双方都已排队施放领域时", "domain template dual-domain contract")
 require_contains("docs/design/gojo_satoru_adjustments.md", "影响测试", "gojo adjustment impact fields")
 require_contains("docs/design/sukuna_adjustments.md", "影响测试", "sukuna adjustment impact fields")
+require_contains("tests/README.md", "domain_case_runner.gd", "tests fixed domain case runner doc")
+require_contains("tests/replay_cases/domain_cases.md", "CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd", "domain case runner command")
 
 stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",

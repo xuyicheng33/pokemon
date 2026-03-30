@@ -33,7 +33,8 @@
 
 ```text
 content/                # 战斗定义资源（.tres）
-  samples/              # 最小可运行样例
+  battle_formats/
+  samples/              # 最小可运行样例与样例对局资源
   combat_types/
   units/
   skills/
@@ -41,7 +42,6 @@ content/                # 战斗定义资源（.tres）
   passive_items/
   effects/
   fields/
-  battle_formats/
 docs/
   rules/                # 规则权威
   design/               # 工程实现说明
@@ -107,7 +107,7 @@ tests/run_with_gate.sh
 闸门通过条件：
 
 - 业务断言全部通过（`tests/run_all.gd`）
-- 无引擎级错误日志（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
+- 无引擎级错误（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
 - 架构约束检查通过（`tests/check_architecture_constraints.sh`）
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
 
@@ -210,9 +210,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-30）
 
-- `src/**/*.gd`：`8201` 行
-- `tests/**/*.gd`：`8508` 行
-- GDScript 合计：`16709` 行
+- `src/**/*.gd`：`8203` 行
+- `tests/**/*.gd`：`8695` 行
+- GDScript 合计：`16898` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

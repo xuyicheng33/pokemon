@@ -10,12 +10,13 @@
 - `suites/trigger_validation_suite.gd`: 触发器声明一致性校验回归
 - `support/`: 测试 harness、公共构造器与 suite 级共享 helper
 - `run_all.gd`: Godot 原生测试入口（业务断言）
-- `run_with_gate.sh`: 闸门脚本（业务断言 + 引擎错误日志 + 架构约束 + 仓库一致性）
+- `run_with_gate.sh`: 闸门脚本（业务断言 + 引擎级错误检查 + 架构约束 + 仓库一致性）
 - `check_architecture_constraints.sh`: 分层与大文件架构闸门
 - `check_repo_consistency.sh`: README/文档/关键回归一致性闸门
 - `fixtures/`: 预留的样例输入与内容快照目录
 - `helpers/`: 测试辅助脚本目录（已包含批量对战探针，如 `gojo_sukuna_batch_probe.gd`）
-- `replay_cases/`: 预留的回放案例说明目录
+- `replay_cases/`: 固定 replay 案例与说明目录
+- `helpers/domain_case_runner.gd`: 固定领域案例 runner；用于在 batch probe 统计异常时快速复查具体局面
 
 当前约定：
 
