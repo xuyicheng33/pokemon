@@ -80,7 +80,7 @@ func _enter_effect_guard(effect_event, battle_state) -> bool:
     if battle_state.chain_context == null or battle_state.max_chain_depth <= 0:
         last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
         return false
-    var dedupe_key := "%s|%s|%s" % [effect_event.source_instance_id, effect_event.trigger_name, effect_event.event_id]
+    var dedupe_key := _build_dedupe_key(effect_event)
     if battle_state.chain_context.effect_dedupe_keys.has(dedupe_key):
         last_invalid_battle_code = ErrorCodesScript.INVALID_CHAIN_DEPTH
         return false
@@ -98,6 +98,21 @@ func _leave_effect_guard(battle_state) -> void:
         return
     if battle_state.chain_context.chain_depth > 0:
         battle_state.chain_context.chain_depth -= 1
+
+func _build_dedupe_key(effect_event) -> String:
+    var target_unit_id := ""
+    if effect_event != null and effect_event.chain_context != null:
+        target_unit_id = _string_or_empty(effect_event.chain_context.target_unit_id)
+    return "%s|%s|%s|%s|%s" % [
+        _string_or_empty(effect_event.source_instance_id if effect_event != null else null),
+        _string_or_empty(effect_event.trigger_name if effect_event != null else null),
+        _string_or_empty(effect_event.effect_definition_id if effect_event != null else null),
+        _string_or_empty(effect_event.owner_id if effect_event != null else null),
+        target_unit_id,
+    ]
+
+func _string_or_empty(value) -> String:
+    return "" if value == null else str(value)
 
 func _passes_effect_preconditions(effect_definition, effect_event, battle_state) -> bool:
     if effect_definition.required_target_effects.is_empty():

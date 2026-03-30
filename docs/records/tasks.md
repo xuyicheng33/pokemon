@@ -11,11 +11,11 @@
 
 ## 当前阶段
 
-- 阶段目标：先修 effect 链递归防抖与扩角前治理闸门，再进入新角色接入。
+- 阶段目标：先泛化角色接入与内容快照门禁，再进入新角色接入。
 - 当前不做：新角色扩充、Gojo / Sukuna 数值平衡调整、宿傩对 Gojo 的领域兑现率修正。
 - 当前优先级：
-  - 修补 effect 链递归重新派发时的去重失效
   - 泛化角色接入与内容快照门禁，避免继续绑死 Gojo / Sukuna
+  - 让正式角色接入门禁从“点名角色”收口为“统一交付面”
   - 保持无自动选指前提下的主线文档、测试与接入模板一致
 
 ## 2026-03-30
@@ -23,7 +23,7 @@
 ### 去自动选指化整合（已完成）
 
 - 目标：
-  - 从主线移除自动选指、heuristic policy、角色 mode handler 与 batch probe
+  - 从主线移除自动选指、旧策略表、角色 mode handler 与批量模拟案例
   - 保持核心战斗、手动输入、回放与固定案例复查链路可用
   - 同步收口 README / rules / design / records / tests 口径
 - 范围：
@@ -33,7 +33,7 @@
   - `docs/**/*`
   - `README.md`
 - 验收标准：
-  - 仓库不再保留自动选指 adapter、自动选指策略、自动选指决策回归、batch probe
+  - 仓库不再保留自动选指 adapter、自动选指策略、自动选指决策回归、批量模拟案例
   - `tests/run_with_gate.sh` 通过
   - 活跃文档不再把自动选指策略 / 自动选指回归 / probe 作为当前主线交付面
 
@@ -43,6 +43,37 @@
   - `src/adapters/` 下自动选指 adapter、policy service、角色 mode handler 已从主线移除
   - `tests/run_all.gd`、adapter / manager contract suites 与 consistency gate 已同步删除自动选指 / probe 交付面
   - README、rules、design、records、tests 文档口径已统一为“玩家输入 + 系统自动注入 + 回放 + 固定案例”
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
+### Effect 链递归防抖与规则命名收口（已完成）
+
+- 目标：
+  - 修补 effect 链递归重新派发时，`event_id` 导致的 dedupe 失效
+  - 保留合法的“换目标后重新触发”路径
+  - 清掉活跃规则文件里残留的旧自动选指命名
+- 范围：
+  - `src/battle_core/effects/**/*`
+  - `tests/suites/action_guard_state_integrity_suite.gd`
+  - `docs/rules/*`
+  - `docs/design/*`
+  - `docs/records/*`
+  - `tests/check_repo_consistency.sh`
+  - `README.md`
+- 验收标准：
+  - 新建的 effect event 在同链路递归重派发时会命中 `invalid_chain_depth`
+  - `battle_init` 换位后的 `on_matchup_changed` 合法重触发不受影响
+  - 活跃文档不再保留带 `ai` 的规则文件命名
+  - `tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `PayloadExecutor` 改为按稳定语义键做 effect dedupe，不再依赖一次性的 `event_id`
+  - `invalid_chain_depth_dedupe_guard` 已升级为“重新 collect 出新事件对象”的真实回归
+  - `docs/rules/05_items_field_input_and_logging.md` 已替换旧规则文件命名，活跃引用与 consistency gate 已同步
 
 #### 当前验证结果
 
@@ -95,8 +126,8 @@
 
 ## 下一步建议
 
-1. 先修掉 effect 链递归重新派发时的 dedupe 漏洞，并补真正覆盖“新事件对象”场景的回归。
-2. 再泛化内容快照收集与角色接入门禁，避免后续扩角继续手工追 Gojo / Sukuna 特例。
+1. 先把 `SampleBattleFactory.content_snapshot_paths()` 改成递归收集内容资源，堵住子目录漏扫。
+2. 再把角色接入门禁从手写 Gojo / Sukuna 特例抽成统一注册表或统一交付面校验。
 
 ### 领域规范整合与扩角前收口（已完成）
 

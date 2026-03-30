@@ -17,7 +17,7 @@
 - `docs/rules/02_turn_flow_and_action_resolution.md`
 - `docs/rules/03_stats_resources_and_damage.md`
 - `docs/rules/04_status_switch_and_lifecycle.md`
-- `docs/rules/05_items_field_ai_and_logging.md`
+- `docs/rules/05_items_field_input_and_logging.md`
 - `docs/rules/06_effect_schema_and_extension.md`
 
 ## 文档职责

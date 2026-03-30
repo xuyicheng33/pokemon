@@ -65,7 +65,7 @@
 ### 8. 固定案例诊断口径（已被第 15 条进一步收口）
 
 - 当前主线只保留 `tests/replay_cases/` 固定可复查案例作为角色与规则复查入口。
-- 历史上的 batch probe 拆分方案已随第 15 条一起退出主线，不再作为现行要求。
+- 历史上的批量模拟拆分方案已随第 15 条一起退出主线，不再作为现行要求。
 - 固定案例至少覆盖领域成功、领域失败、平 MP tie-break、普通 field 阻断、同回合双开域。
 
 ### 9. 正式角色资产交付面继续保持不变
@@ -124,10 +124,19 @@
 
 ### 15. 主线移除自动选指与批量模拟层（2026-03-30）
 
-- 当前主线不再保留 `BattleAIAdapter`、heuristic policy、角色 mode handler、batch probe 与对应回归。
+- 当前主线不再保留自动选指适配器、旧策略表、角色 mode handler、批量模拟案例与对应回归。
 - 原因：
   - 现阶段优先收口核心战斗 contract、角色资源与扩角前治理，不再维护实验性自动选指层。
   - 继续保留自动选指模拟层会把角色行为问题与核心规则问题混在一起，增加扩角前整合成本。
 - 当前处理：
   - 正式角色交付面回退为 `设计稿 / 调整记录 / 内容资源 / SampleBattleFactory 接线 / 角色 suite / 必要固定案例`。
   - 若未来恢复自动选指，必须先补规则与设计文档，再单开接线任务，不得直接回填历史实现。
+
+### 16. Effect 链递归防抖改用稳定语义键（2026-03-30）
+
+- 同一条 `event_chain` 内，effect dedupe key 统一使用：
+  - `source_instance_id / trigger_name / effect_definition_id / owner_id / target_unit_id`
+- 不再把 `event_id` 作为去重键的一部分。
+- 原因：
+  - `TriggerDispatcher` / `EffectInstanceDispatcher` 每次重新收集 effect event 都会生成新的 `event_id`，继续依赖它只能拦住“同一个事件对象重复执行”，挡不住递归重新派发出来的新事件。
+  - 同时保留 `target_unit_id` 维度，避免把 battle_init 换位后重新形成的新稳定对位错误拦成递归。

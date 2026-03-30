@@ -86,12 +86,14 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 	content_index.register_resource(dedupe_effect)
 
 	var p1_active = battle_state.get_side("P1").get_active_unit()
+	var p2_active = battle_state.get_side("P2").get_active_unit()
 	var chain_context = ChainContextScript.new()
 	chain_context.event_chain_id = "test_dedupe_chain"
 	chain_context.chain_origin = "action"
 	chain_context.command_type = CommandTypesScript.SKILL
 	chain_context.command_source = "manual"
 	chain_context.actor_id = p1_active.unit_instance_id
+	chain_context.target_unit_id = p2_active.unit_instance_id
 	chain_context.step_counter = 7
 	battle_state.chain_context = chain_context
 	var effect_events = core.trigger_dispatcher.collect_events(
@@ -111,7 +113,22 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 	if core.payload_executor.last_invalid_battle_code != null:
 		return harness.fail_result("first dedupe event should pass")
 	battle_state.chain_context.step_counter = 7
-	core.payload_executor.execute_effect_event(effect_events[0], battle_state, content_index)
+	var retriggered_effect_events = core.trigger_dispatcher.collect_events(
+		"on_cast",
+		battle_state,
+		content_index,
+		PackedStringArray([dedupe_effect.id]),
+		p1_active.unit_instance_id,
+		"action_dedupe_guard",
+		2,
+		p1_active.base_speed,
+		battle_state.chain_context
+	)
+	if retriggered_effect_events.is_empty():
+		return harness.fail_result("failed to rebuild dedupe guard effect event")
+	if retriggered_effect_events[0].event_id == effect_events[0].event_id:
+		return harness.fail_result("dedupe guard regression needs a fresh effect_event id")
+	core.payload_executor.execute_effect_event(retriggered_effect_events[0], battle_state, content_index)
 	if core.payload_executor.last_invalid_battle_code != ErrorCodesScript.INVALID_CHAIN_DEPTH:
 		return harness.fail_result("expected invalid_chain_depth on dedupe guard, got %s" % str(core.payload_executor.last_invalid_battle_code))
 	return harness.pass_result()

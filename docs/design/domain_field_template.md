@@ -1,6 +1,6 @@
 # 领域角色模板（Domain Field Template）
 
-本文件定义领域型角色的公共接入模板。规则权威仍以 `docs/rules/05_items_field_ai_and_logging.md` 与 `docs/rules/06_effect_schema_and_extension.md` 为准；本文件只收口“新角色做领域时，工程和内容应如何落地”。
+本文件定义领域型角色的公共接入模板。规则权威仍以 `docs/rules/05_items_field_input_and_logging.md` 与 `docs/rules/06_effect_schema_and_extension.md` 为准；本文件只收口“新角色做领域时，工程和内容应如何落地”。
 
 当前 Gojo / Sukuna 都必须遵守这套模板；后续新领域角色默认沿用，不再从角色稿里重复发明一套冲突矩阵。
 
