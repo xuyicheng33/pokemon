@@ -4,6 +4,9 @@ class_name GojoTestSupport
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
+const DomainRoleTestSupportScript := preload("res://tests/support/domain_role_test_support.gd")
+
+var _domain_support = DomainRoleTestSupportScript.new()
 
 func build_gojo_vs_sample_state(harness, seed: int) -> Dictionary:
     return build_gojo_battle_state(harness, seed, false, true)
@@ -37,43 +40,16 @@ func build_gojo_battle_state(harness, seed: int, use_sukuna: bool, gojo_on_p1: b
     }
 
 func build_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-    return core.command_builder.build_command({
-        "turn_index": turn_index,
-        "command_type": CommandTypesScript.SKILL,
-        "command_source": "manual",
-        "side_id": side_id,
-        "actor_public_id": actor_public_id,
-        "skill_id": skill_id,
-    })
+    return _domain_support.build_manual_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
 
 func build_ultimate_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-    return core.command_builder.build_command({
-        "turn_index": turn_index,
-        "command_type": CommandTypesScript.ULTIMATE,
-        "command_source": "manual",
-        "side_id": side_id,
-        "actor_public_id": actor_public_id,
-        "skill_id": skill_id,
-    })
+    return _domain_support.build_manual_ultimate_command(core, turn_index, side_id, actor_public_id, skill_id)
 
 func build_wait_command(core, turn_index: int, side_id: String, actor_public_id: String):
-    return core.command_builder.build_command({
-        "turn_index": turn_index,
-        "command_type": CommandTypesScript.WAIT,
-        "command_source": "manual",
-        "side_id": side_id,
-        "actor_public_id": actor_public_id,
-    })
+    return _domain_support.build_manual_wait_command(core, turn_index, side_id, actor_public_id)
 
 func build_switch_command(core, turn_index: int, side_id: String, actor_public_id: String, target_public_id: String):
-    return core.command_builder.build_command({
-        "turn_index": turn_index,
-        "command_type": CommandTypesScript.SWITCH,
-        "command_source": "manual",
-        "side_id": side_id,
-        "actor_public_id": actor_public_id,
-        "target_public_id": target_public_id,
-    })
+    return _domain_support.build_manual_switch_command(core, turn_index, side_id, actor_public_id, target_public_id)
 
 func build_resolved_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, actor_id: String, skill_id: String):
     var command = build_skill_command(core, turn_index, side_id, actor_public_id, skill_id)

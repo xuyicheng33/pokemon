@@ -125,13 +125,13 @@ func _test_sukuna_reverse_ritual_heal_path(harness) -> Dictionary:
 
 
 func _build_sukuna_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}):
-    return _support._build_sukuna_setup(sample_factory, p1_regular_skill_overrides)
+    return _support.build_sukuna_setup(sample_factory, p1_regular_skill_overrides)
 
 func _build_battle_state(core, content_index, battle_setup, seed: int):
-    return _support._build_battle_state(core, content_index, battle_setup, seed)
+    return _support.build_battle_state(core, content_index, battle_setup, seed)
 
 func _resolve_matchup_gap_value(owner_total: int, opponent_total: int, thresholds: PackedInt32Array, outputs: PackedInt32Array, default_value: int) -> int:
-    return _support._resolve_matchup_gap_value(owner_total, opponent_total, thresholds, outputs, default_value)
+    return _support.resolve_matchup_gap_value(owner_total, opponent_total, thresholds, outputs, default_value)
 
 func _sum_unit_bst(unit_state) -> int:
-    return _support._sum_unit_bst(unit_state)
+    return _support.sum_unit_bst(unit_state)

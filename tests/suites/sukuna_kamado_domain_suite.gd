@@ -220,13 +220,13 @@ func _test_sukuna_field_accuracy_override_path(harness) -> Dictionary:
 
 
 func _build_sukuna_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}):
-    return _support._build_sukuna_setup(sample_factory, p1_regular_skill_overrides)
+    return _support.build_sukuna_setup(sample_factory, p1_regular_skill_overrides)
 
 func _build_battle_state(core, content_index, battle_setup, seed: int):
-    return _support._build_battle_state(core, content_index, battle_setup, seed)
+    return _support.build_battle_state(core, content_index, battle_setup, seed)
 
 func _build_manual_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-    return _support._build_manual_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
+    return _support.build_manual_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
 
 func _build_manual_wait_command(core, turn_index: int, side_id: String, actor_public_id: String):
-    return _support._build_manual_wait_command(core, turn_index, side_id, actor_public_id)
+    return _support.build_manual_wait_command(core, turn_index, side_id, actor_public_id)
