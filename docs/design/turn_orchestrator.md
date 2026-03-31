@@ -12,6 +12,7 @@
 |`turn_loop_controller.gd`|驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`|
 |`turn_selection_resolver.gd`|锁定本回合指令，处理 `wait / resource_forced_default / surrender` 分流|
 |`turn_field_lifecycle_service.gd`|处理 field 自然到期、提前打断与 `on_matchup_changed` 对位变化钩子|
+|`turn_limit_scoring_service.gd`|封装 turn limit 计分、比较与平局决策辅助|
 |`action_queue_builder.gd`|按统一排序链生成 `QueuedAction`|
 |`turn_resolution_service.gd`|统一回合节点触发、MP 回复、effect/rule_mod 扣减与链终止处理|
 |`battle_result_service.gd`|胜负判定与终局结果落盘（含初始化阶段 invalid/startup victory）|

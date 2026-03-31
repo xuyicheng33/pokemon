@@ -16,10 +16,10 @@
 |`rule_mod_read_service.gd`|`rule_mod` 读取查询（合法性、命中、最终倍率、回蓝）|
 |`rule_mod_write_service.gd`|`rule_mod` 写路径（create / stacking / decrement / remove）|
 |`rule_mod_value_resolver.gd`|对动态 `rule_mod` 值做运行时求值，不回写共享内容资源|
-|`passive_skill_service.gd`|按触发点收集被动技能事件|
-|`passive_item_service.gd`|按触发点收集被动持有物事件|
-|`field_apply_service.gd`|field 落地主路径：领域对拼、成功后附带效果、`field_apply` 触发|
-|`field_service.gd`|field 生命周期：按触发点收集事件、`turn_end` 扣减、自然到期与提前打断|
+
+补充说明：
+
+- 被动技能、被动持有物与 field 作为 trigger source 的接入与归属，统一见 [passive_and_field.md](./passive_and_field.md)。
 
 ## 2. EffectEvent 契约
 
@@ -43,6 +43,8 @@
 `priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> random`
 
 不同触发点不混排。
+
+当前完整触发点全集与扩展约束，以 `docs/rules/06_effect_schema_and_extension.md` 第 4 节为权威；本文件不重复维护一份独立触发点清单，避免文档漂移。
 
 ## 4. PayloadExecutor
 

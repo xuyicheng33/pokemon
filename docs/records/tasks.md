@@ -20,6 +20,39 @@
 
 ## 2026-03-31
 
+### 闸门前置依赖与设计文档补齐（已完成）
+
+- 目标：
+  - 把测试闸门的 shell 工具前置依赖改成显式 fail-fast，避免依赖表达不清
+  - 修正 effect / turn 编排设计文档里的模块归属与文件清单偏差
+- 范围：
+  - `tests/run_with_gate.sh`
+  - `tests/check_architecture_constraints.sh`
+  - `tests/check_suite_reachability.sh`
+  - `tests/check_repo_consistency.sh`
+  - `tests/require_tools.sh`
+  - `tests/README.md`
+  - `docs/design/effect_engine.md`
+  - `docs/design/turn_orchestrator.md`
+- 验收标准：
+  - 闸门脚本缺少 `godot / python3 / rg` 任一工具时直接 fail-fast
+  - `effect_engine.md` 不再错挂 `passives` 子域文件，且触发点权威来源写清楚
+  - `turn_orchestrator.md` 文件清单补齐 `turn_limit_scoring_service.gd`
+
+#### 当前执行结果
+
+- 已完成：
+  - 新增 `tests/require_tools.sh`，统一收口 gate 脚本工具前置检查
+  - `run_with_gate.sh`、`check_architecture_constraints.sh`、`check_suite_reachability.sh`、`check_repo_consistency.sh` 已改为显式检查所需 shell 工具
+  - `tests/README.md` 已补“`godot / python3 / rg` 缺任一即 fail-fast”的约定
+  - `effect_engine.md` 已移除错挂的 `passives` 子域文件清单，并改成引用 `passive_and_field.md`
+  - `effect_engine.md` 已声明触发点全集以 `docs/rules/06_effect_schema_and_extension.md` 为权威，不再重复维护一份漂移副本
+  - `turn_orchestrator.md` 已补入 `turn_limit_scoring_service.gd`
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### 审查报告复核与问题收口（已完成）
 
 - 目标：
