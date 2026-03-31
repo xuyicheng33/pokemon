@@ -2,7 +2,8 @@ extends RefCounted
 class_name BattleCorePublicSnapshotBuilder
 
 func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
-    assert(battle_state != null, "BattleCorePublicSnapshotBuilder requires battle_state")
+    if battle_state == null:
+        return {}
     var field_snapshot = _build_public_field_snapshot(battle_state, content_index)
     var side_models: Array = []
     for side_state in battle_state.sides:
@@ -41,7 +42,8 @@ func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
     }
 
 func build_header_snapshot(battle_state, content_index = null) -> Dictionary:
-    assert(battle_state != null, "BattleCorePublicSnapshotBuilder requires battle_state for header snapshot")
+    if battle_state == null:
+        return {}
     return {
         "visibility_mode": battle_state.visibility_mode,
         "prebattle_public_teams": _build_prebattle_public_teams(battle_state, content_index),
@@ -95,7 +97,14 @@ func _build_public_field_snapshot(battle_state, content_index = null) -> Diction
             "creator_side_id": null,
         }
     var creator_id := String(battle_state.field_state.creator)
-    assert(not creator_id.is_empty(), "BattleCorePublicSnapshotBuilder requires non-empty creator for active field %s" % String(battle_state.field_state.field_def_id))
+    if creator_id.is_empty():
+        return {
+            "field_id": battle_state.field_state.field_def_id,
+            "field_kind": null,
+            "remaining_turns": battle_state.field_state.remaining_turns,
+            "creator_public_id": null,
+            "creator_side_id": null,
+        }
     var field_kind: Variant = null
     if content_index != null:
         var field_definition = content_index.fields.get(String(battle_state.field_state.field_def_id), null)
@@ -103,7 +112,6 @@ func _build_public_field_snapshot(battle_state, content_index = null) -> Diction
             field_kind = String(field_definition.field_kind)
     var creator_side_id: Variant = null
     var creator_side = battle_state.get_side_for_unit(creator_id)
-    assert(creator_side != null, "BattleCorePublicSnapshotBuilder requires creator side for active field %s" % String(battle_state.field_state.field_def_id))
     if creator_side != null:
         creator_side_id = String(creator_side.side_id)
     return {

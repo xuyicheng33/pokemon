@@ -5,22 +5,36 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 const SideStateScript := preload("res://src/battle_core/runtime/side_state.gd")
 const SelectionStateScript := preload("res://src/battle_core/contracts/selection_state.gd")
 const UnitStateScript := preload("res://src/battle_core/runtime/unit_state.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+
+var last_error_code: Variant = null
+var last_error_message: String = ""
 
 func build_side_state(side_setup, format_config, content_index, id_factory, public_id_allocator):
-    assert(side_setup != null, "BattleInitializerStateBuilder requires side_setup")
-    assert(format_config != null, "BattleInitializerStateBuilder requires format_config")
-    assert(content_index != null, "BattleInitializerStateBuilder requires content_index")
-    assert(id_factory != null, "BattleInitializerStateBuilder requires id_factory")
-    assert(public_id_allocator != null, "BattleInitializerStateBuilder requires public_id_allocator")
-    assert(side_setup.unit_definition_ids.size() == format_config.team_size, "Side %s must provide exactly %d units" % [side_setup.side_id, format_config.team_size])
-    assert(side_setup.starting_index >= 0 and side_setup.starting_index < side_setup.unit_definition_ids.size(), "Invalid starting index for %s" % side_setup.side_id)
+    last_error_code = null
+    last_error_message = ""
+    if side_setup == null:
+        return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "BattleInitializerStateBuilder requires side_setup")
+    if format_config == null:
+        return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "BattleInitializerStateBuilder requires format_config")
+    if content_index == null:
+        return _fail(ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, "BattleInitializerStateBuilder requires content_index")
+    if id_factory == null:
+        return _fail(ErrorCodesScript.INVALID_STATE_CORRUPTION, "BattleInitializerStateBuilder requires id_factory")
+    if public_id_allocator == null:
+        return _fail(ErrorCodesScript.INVALID_STATE_CORRUPTION, "BattleInitializerStateBuilder requires public_id_allocator")
+    if side_setup.unit_definition_ids.size() != format_config.team_size:
+        return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Side %s must provide exactly %d units" % [side_setup.side_id, format_config.team_size])
+    if side_setup.starting_index < 0 or side_setup.starting_index >= side_setup.unit_definition_ids.size():
+        return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Invalid starting index for %s" % side_setup.side_id)
     var side_state = SideStateScript.new()
     side_state.side_id = side_setup.side_id
     side_state.selection_state = SelectionStateScript.new()
     for unit_index in range(side_setup.unit_definition_ids.size()):
         var unit_definition_id = side_setup.unit_definition_ids[unit_index]
         var unit_definition = content_index.units.get(unit_definition_id)
-        assert(unit_definition != null, "Missing unit definition: %s" % unit_definition_id)
+        if unit_definition == null:
+            return _fail(ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, "Missing unit definition: %s" % unit_definition_id)
         var unit_state = UnitStateScript.new()
         unit_state.unit_instance_id = id_factory.next_id("unit")
         unit_state.public_id = public_id_allocator.build_public_id(side_setup.side_id, unit_index)
@@ -36,6 +50,8 @@ func build_side_state(side_setup, format_config, content_index, id_factory, publ
         unit_state.ultimate_points_required = unit_definition.ultimate_points_required
         unit_state.ultimate_point_gain_on_regular_skill_cast = unit_definition.ultimate_point_gain_on_regular_skill_cast
         unit_state.regular_skill_ids = _resolve_regular_skill_loadout(side_setup, unit_index, unit_definition)
+        if last_error_code != null:
+            return null
         unit_state.combat_type_ids = unit_definition.combat_type_ids.duplicate()
         unit_state.base_attack = unit_definition.base_attack
         unit_state.base_defense = unit_definition.base_defense
@@ -54,7 +70,18 @@ func build_side_state(side_setup, format_config, content_index, id_factory, publ
 func _resolve_regular_skill_loadout(side_setup, unit_index: int, unit_definition) -> PackedStringArray:
     if side_setup.regular_skill_loadout_overrides.has(unit_index):
         var override_loadout: PackedStringArray = side_setup.regular_skill_loadout_overrides[unit_index]
-        assert(override_loadout.size() == 3, "Invalid regular skill loadout size for side %s slot %d" % [side_setup.side_id, unit_index])
+        if override_loadout.size() != 3:
+            last_error_code = ErrorCodesScript.INVALID_BATTLE_SETUP
+            last_error_message = "Invalid regular skill loadout size for side %s slot %d" % [side_setup.side_id, unit_index]
+            return PackedStringArray()
         return override_loadout.duplicate()
-    assert(unit_definition.skill_ids.size() == 3, "UnitDefinition.skill_ids must remain 3-slot default loadout for %s" % unit_definition.id)
+    if unit_definition.skill_ids.size() != 3:
+        last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
+        last_error_message = "UnitDefinition.skill_ids must remain 3-slot default loadout for %s" % unit_definition.id
+        return PackedStringArray()
     return unit_definition.skill_ids.duplicate()
+
+func _fail(error_code: String, message: String):
+    last_error_code = error_code
+    last_error_message = message
+    return null

@@ -7,6 +7,7 @@ const ContentSnapshotValidatorScript := preload("res://src/battle_core/content/c
 const BattleSetupValidatorScript := preload("res://src/battle_core/content/battle_setup_validator.gd")
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_formats: Dictionary = {}
 var combat_types: Dictionary = {}
@@ -17,6 +18,8 @@ var passive_items: Dictionary = {}
 var effects: Dictionary = {}
 var fields: Dictionary = {}
 var duplicate_registration_errors: Array[String] = []
+var last_error_code: Variant = null
+var last_error_message: String = ""
 
 var _registry = BattleContentRegistryScript.new()
 var _snapshot_validator = ContentSnapshotValidatorScript.new()
@@ -24,15 +27,24 @@ var _setup_validator = BattleSetupValidatorScript.new()
 
 func clear() -> void:
     _registry.clear(self)
+    last_error_code = null
+    last_error_message = ""
 
-func load_snapshot(content_snapshot_paths: PackedStringArray) -> void:
+func load_snapshot(content_snapshot_paths: PackedStringArray) -> bool:
     clear()
     for path in content_snapshot_paths:
         var resource = ResourceLoader.load(path, "", 0)
-        assert(resource != null, "Missing content resource: %s" % path)
+        if resource == null:
+            last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
+            last_error_message = "Missing content resource: %s" % path
+            return false
         _registry.register_resource(self, resource)
     var errors = validate_snapshot()
-    assert(errors.is_empty(), "Content validation failed:\n%s" % "\n".join(errors))
+    if not errors.is_empty():
+        last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
+        last_error_message = "Content validation failed:\n%s" % "\n".join(errors)
+        return false
+    return true
 
 func register_resource(resource: Resource) -> void:
     _registry.register_resource(self, resource)

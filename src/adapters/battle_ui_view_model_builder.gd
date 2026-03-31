@@ -2,7 +2,8 @@ extends RefCounted
 class_name BattleUIViewModelBuilder
 
 func build_view_model(public_snapshot: Dictionary) -> Dictionary:
-    assert(public_snapshot != null, "BattleUIViewModelBuilder requires public snapshot")
+    if public_snapshot == null:
+        return {}
     var side_models: Array = []
     for side_snapshot in public_snapshot.get("sides", []):
         side_models.append({

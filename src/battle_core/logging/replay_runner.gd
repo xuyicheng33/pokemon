@@ -5,28 +5,41 @@ const BattleContentIndexScript := preload("res://src/battle_core/content/battle_
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const ReplayOutputScript := preload("res://src/battle_core/contracts/replay_output.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_initializer
 var turn_loop_controller
 var battle_logger
 var id_factory
 var rng_service
+var last_error_code: Variant = null
+var last_error_message: String = ""
 
 func run_replay(replay_input):
-    return run_replay_with_context(replay_input)["replay_output"]
+    return run_replay_with_context(replay_input).get("replay_output", null)
 
 func run_replay_with_context(replay_input) -> Dictionary:
-    assert(replay_input != null, "Replay input is required")
-    assert(replay_input.battle_setup != null, "Replay battle setup is required")
+    last_error_code = null
+    last_error_message = ""
+    if replay_input == null:
+        return _fail("Replay input is required")
+    if replay_input.battle_setup == null:
+        return _fail("Replay battle setup is required")
     id_factory.reset()
     var content_index = BattleContentIndexScript.new()
-    content_index.load_snapshot(replay_input.content_snapshot_paths)
+    if not content_index.load_snapshot(replay_input.content_snapshot_paths):
+        last_error_code = content_index.last_error_code
+        last_error_message = content_index.last_error_message
+        return {"replay_output": null, "content_index": null}
     rng_service.reset(replay_input.battle_seed)
     var battle_state = BattleStateScript.new()
     battle_state.battle_id = id_factory.next_id("battle")
     battle_state.seed = replay_input.battle_seed
     battle_state.rng_stream_index = rng_service.get_stream_index()
-    battle_initializer.initialize_battle(battle_state, content_index, replay_input.battle_setup)
+    if not battle_initializer.initialize_battle(battle_state, content_index, replay_input.battle_setup):
+        last_error_code = battle_initializer.last_error_code
+        last_error_message = battle_initializer.last_error_message
+        return {"replay_output": null, "content_index": content_index}
     var max_turn_index: int = battle_state.max_turn if battle_state.max_turn > 0 else battle_state.turn_index
     while not battle_state.battle_result.finished and battle_state.turn_index <= max_turn_index:
         var turn_commands: Array = []
@@ -45,6 +58,11 @@ func run_replay_with_context(replay_input) -> Dictionary:
         "replay_output": replay_output,
         "content_index": content_index,
     }
+
+func _fail(message: String) -> Dictionary:
+    last_error_code = ErrorCodesScript.INVALID_REPLAY_INPUT
+    last_error_message = message
+    return {"replay_output": null, "content_index": null}
 
 func _compute_state_hash(battle_state) -> String:
     var json_text := JSON.stringify(battle_state.to_stable_dict())

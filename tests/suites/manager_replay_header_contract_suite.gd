@@ -19,10 +19,14 @@ func _test_replay_snapshot_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var live_result = manager.create_session({"battle_seed": 405, "content_snapshot_paths": sample_factory.content_snapshot_paths(), "battle_setup": sample_factory.build_sample_setup()})
-	var live_snapshot = live_result.get("public_snapshot", {})
-	var replay_result: Dictionary = manager.run_replay(sample_factory.build_demo_replay_input(manager))
-	var replay_snapshot = replay_result.get("public_snapshot", {})
+	var live_unwrap = _unwrap_ok(manager.create_session({"battle_seed": 405, "content_snapshot_paths": sample_factory.content_snapshot_paths(), "battle_setup": sample_factory.build_sample_setup()}), "create_session")
+	if not bool(live_unwrap.get("ok", false)):
+		return harness.fail_result(str(live_unwrap.get("error", "manager create_session failed")))
+	var live_snapshot = live_unwrap.get("data", {}).get("public_snapshot", {})
+	var replay_unwrap = _unwrap_ok(manager.run_replay(sample_factory.build_demo_replay_input(manager)), "run_replay")
+	if not bool(replay_unwrap.get("ok", false)):
+		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
+	var replay_snapshot = replay_unwrap.get("data", {}).get("public_snapshot", {})
 	if typeof(replay_snapshot) != TYPE_DICTIONARY:
 		return harness.fail_result("run_replay should expose public_snapshot")
 	if not replay_snapshot.has("prebattle_public_teams"):
@@ -45,8 +49,10 @@ func _test_log_v3_header_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_result: Dictionary = manager.run_replay(sample_factory.build_demo_replay_input(manager))
-	var replay_output = replay_result.get("replay_output", null)
+	var replay_unwrap = _unwrap_ok(manager.run_replay(sample_factory.build_demo_replay_input(manager)), "run_replay")
+	if not bool(replay_unwrap.get("ok", false)):
+		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
+	var replay_output = replay_unwrap.get("data", {}).get("replay_output", null)
 	if replay_output == null:
 		return harness.fail_result("run_replay should return replay_output")
 	var header_count: int = 0
@@ -77,8 +83,10 @@ func _test_header_snapshot_private_id_guard(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_result: Dictionary = manager.run_replay(sample_factory.build_demo_replay_input(manager))
-	var replay_output = replay_result.get("replay_output", null)
+	var replay_unwrap = _unwrap_ok(manager.run_replay(sample_factory.build_demo_replay_input(manager)), "run_replay")
+	if not bool(replay_unwrap.get("ok", false)):
+		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
+	var replay_output = replay_unwrap.get("data", {}).get("replay_output", null)
 	if replay_output == null:
 		return harness.fail_result("run_replay should return replay_output")
 	var header_event = null
@@ -98,3 +106,16 @@ func _test_header_snapshot_private_id_guard(harness) -> Dictionary:
 	if _helper.contains_private_instance_id_key(header_snapshot):
 		return harness.fail_result("header_snapshot should not contain private instance IDs")
 	return harness.pass_result()
+
+func _unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:
+	if envelope == null:
+		return {"ok": false, "error": "%s returned null envelope" % label}
+	var required_keys := ["ok", "data", "error_code", "error_message"]
+	for key in required_keys:
+		if not envelope.has(key):
+			return {"ok": false, "error": "%s missing envelope key: %s" % [label, key]}
+	if bool(envelope.get("ok", false)):
+		return {"ok": true, "data": envelope.get("data", null)}
+	if envelope.get("data", null) != null:
+		return {"ok": false, "error": "%s failure envelope must set data=null" % label}
+	return {"ok": false, "error": "%s failed: %s (%s)" % [label, str(envelope.get("error_message", "")), str(envelope.get("error_code", ""))]}

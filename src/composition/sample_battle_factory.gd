@@ -32,7 +32,8 @@ func content_snapshot_paths() -> PackedStringArray:
 
 func collect_tres_paths_recursive(dir_path: String) -> Array[String]:
     var dir_access := DirAccess.open(dir_path)
-    assert(dir_access != null, "SampleBattleFactory missing content directory: %s" % dir_path)
+    if dir_access == null:
+        return []
     var paths: Array[String] = []
     for raw_subdir_name in dir_access.get_directories():
         var subdir_name := String(raw_subdir_name)
@@ -78,43 +79,49 @@ func build_gojo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
     return battle_setup
 
 func build_demo_replay_input(command_port, side_regular_skill_overrides: Dictionary = {}):
-    assert(command_port != null and command_port.has_method("build_command"), "build_demo_replay_input requires build_command port")
+    if command_port == null or not command_port.has_method("build_command"):
+        return null
     var replay_input = ReplayInputScript.new()
     replay_input.battle_seed = 17
     replay_input.content_snapshot_paths = content_snapshot_paths()
     replay_input.battle_setup = build_sample_setup(side_regular_skill_overrides)
     replay_input.command_stream = [
-        command_port.build_command({
+        _resolve_command_data(command_port.build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
             "side_id": "P1",
             "actor_public_id": "P1-A",
             "skill_id": "sample_field_call",
-        }),
-        command_port.build_command({
+        })),
+        _resolve_command_data(command_port.build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
             "side_id": "P2",
             "actor_public_id": "P2-A",
             "skill_id": "sample_strike",
-        }),
-        command_port.build_command({
+        })),
+        _resolve_command_data(command_port.build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
             "side_id": "P1",
             "actor_public_id": "P1-A",
             "skill_id": "sample_strike",
-        }),
-        command_port.build_command({
+        })),
+        _resolve_command_data(command_port.build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
             "side_id": "P2",
             "actor_public_id": "P2-A",
             "skill_id": "sample_whiff",
-        }),
+        })),
     ]
     return replay_input
+
+func _resolve_command_data(command_result):
+    if typeof(command_result) == TYPE_DICTIONARY and command_result.has("ok") and command_result.has("data"):
+        return command_result.get("data", null)
+    return command_result

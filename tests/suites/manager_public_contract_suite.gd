@@ -31,12 +31,14 @@ func _test_full_open_public_snapshot_contract(harness) -> Dictionary:
 		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
 		"battle_setup": sample_factory.build_sample_setup(),
 	})
-	if init_result == null:
-		return harness.fail_result("manager create_session returned null")
-	var session_id: String = str(init_result.get("session_id", ""))
+	var init_unwrap = _unwrap_ok(init_result, "create_session")
+	if not bool(init_unwrap.get("ok", false)):
+		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+	var init_data: Dictionary = init_unwrap.get("data", {})
+	var session_id: String = str(init_data.get("session_id", ""))
 	if session_id.is_empty():
 		return harness.fail_result("manager create_session missing session_id")
-	var public_snapshot = init_result.get("public_snapshot", null)
+	var public_snapshot = init_data.get("public_snapshot", null)
 	if typeof(public_snapshot) != TYPE_DICTIONARY:
 		return harness.fail_result("manager create_session missing public_snapshot")
 	if not public_snapshot.has("visibility_mode") or str(public_snapshot["visibility_mode"]) != "prototype_full_open":
@@ -63,7 +65,7 @@ func _test_full_open_public_snapshot_contract(harness) -> Dictionary:
 			if typeof(unit_snapshot.get("combat_type_ids", null)) != TYPE_PACKED_STRING_ARRAY:
 				return harness.fail_result("team unit snapshot missing combat_type_ids")
 
-	var prebattle_public_teams = init_result.get("prebattle_public_teams", null)
+	var prebattle_public_teams = init_data.get("prebattle_public_teams", null)
 	if typeof(prebattle_public_teams) != TYPE_ARRAY or prebattle_public_teams.size() != 2:
 		return harness.fail_result("create_session should expose prebattle_public_teams")
 	if prebattle_public_teams != public_snapshot.get("prebattle_public_teams", []):
@@ -76,14 +78,19 @@ func _test_full_open_public_snapshot_contract(harness) -> Dictionary:
 		return harness.fail_result("prebattle unit snapshot missing combat_type_ids")
 	if p1_lead_snapshot["combat_type_ids"] != PackedStringArray(["fire"]):
 		return harness.fail_result("prebattle unit combat_type_ids should expose sample fire typing")
-	var snapshot_after_init = manager.get_public_snapshot(session_id)
+	var snapshot_after_init_result = _unwrap_ok(manager.get_public_snapshot(session_id), "get_public_snapshot")
+	if not bool(snapshot_after_init_result.get("ok", false)):
+		return harness.fail_result(str(snapshot_after_init_result.get("error", "manager get_public_snapshot failed")))
+	var snapshot_after_init: Dictionary = snapshot_after_init_result.get("data", {})
 	if snapshot_after_init.get("prebattle_public_teams", []).size() != 2:
 		return harness.fail_result("get_public_snapshot should keep prebattle_public_teams")
 	if _helper.contains_key_recursive(public_snapshot, "unit_instance_id"):
 		return harness.fail_result("public_snapshot leaks unit_instance_id")
 	if _helper.contains_key_recursive(prebattle_public_teams, "unit_instance_id"):
 		return harness.fail_result("prebattle_public_teams leaks unit_instance_id")
-	manager.close_session(session_id)
+	var close_result = _unwrap_ok(manager.close_session(session_id), "close_session")
+	if not bool(close_result.get("ok", false)):
+		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
 func _test_visibility_mode_runtime_decoupled_contract(harness) -> Dictionary:
@@ -136,10 +143,14 @@ func _test_legal_action_public_id_contract(harness) -> Dictionary:
 		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
 		"battle_setup": sample_factory.build_sample_setup(),
 	})
-	var session_id: String = str(init_result.get("session_id", ""))
-	var legal_actions = manager.get_legal_actions(session_id, "P1")
-	if legal_actions == null:
-		return harness.fail_result("manager get_legal_actions returned null")
+	var init_unwrap = _unwrap_ok(init_result, "create_session")
+	if not bool(init_unwrap.get("ok", false)):
+		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+	var session_id: String = str(init_unwrap.get("data", {}).get("session_id", ""))
+	var legal_actions_unwrap = _unwrap_ok(manager.get_legal_actions(session_id, "P1"), "get_legal_actions")
+	if not bool(legal_actions_unwrap.get("ok", false)):
+		return harness.fail_result(str(legal_actions_unwrap.get("error", "manager get_legal_actions failed")))
+	var legal_actions = legal_actions_unwrap.get("data", null)
 	if legal_actions.actor_public_id != "P1-A":
 		return harness.fail_result("legal_action_set actor should expose actor_public_id only")
 	if legal_actions.legal_switch_target_public_ids != PackedStringArray(["P1-B", "P1-C"]):
@@ -149,7 +160,9 @@ func _test_legal_action_public_id_contract(harness) -> Dictionary:
 		property_names.append(str(property_data.get("name", "")))
 	if property_names.has("actor_id") or property_names.has("legal_switch_target_ids"):
 		return harness.fail_result("legal_action_set should not leak deprecated runtime instance id fields")
-	manager.close_session(session_id)
+	var close_result = _unwrap_ok(manager.close_session(session_id), "close_session")
+	if not bool(close_result.get("ok", false)):
+		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
 func _test_initial_selection_mp_contract(harness) -> Dictionary:
@@ -178,17 +191,27 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
 		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
 		"battle_setup": battle_setup,
 	})
-	var session_id: String = str(init_result.get("session_id", ""))
-	var public_snapshot: Dictionary = init_result.get("public_snapshot", {})
+	var init_unwrap = _unwrap_ok(init_result, "create_session")
+	if not bool(init_unwrap.get("ok", false)):
+		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+	var init_data: Dictionary = init_unwrap.get("data", {})
+	var session_id: String = str(init_data.get("session_id", ""))
+	var public_snapshot: Dictionary = init_data.get("public_snapshot", {})
 	var p1_snapshot = _helper.find_side_snapshot(public_snapshot, "P1")
 	if p1_snapshot.is_empty():
 		return harness.fail_result("manager snapshot missing P1 side")
 	if int(p1_snapshot.get("active_mp", -1)) != int(expected_p1_snapshot.get("active_mp", -1)):
 		return harness.fail_result("create_session should expose the same pre-applied first-turn regen result as the core initializer")
-	var legal_actions = manager.get_legal_actions(session_id, "P1")
+	var legal_actions_unwrap = _unwrap_ok(manager.get_legal_actions(session_id, "P1"), "get_legal_actions")
+	if not bool(legal_actions_unwrap.get("ok", false)):
+		return harness.fail_result(str(legal_actions_unwrap.get("error", "manager get_legal_actions failed")))
+	var legal_actions = legal_actions_unwrap.get("data", null)
 	if legal_actions.legal_ultimate_ids != expected_legal_actions.legal_ultimate_ids:
 		return harness.fail_result("first-turn legal set should match the core initializer after pre-applied regen")
-	var initial_log_snapshot: Dictionary = manager.get_event_log_snapshot(session_id)
+	var initial_log_unwrap = _unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot")
+	if not bool(initial_log_unwrap.get("ok", false)):
+		return harness.fail_result(str(initial_log_unwrap.get("error", "manager get_event_log_snapshot failed")))
+	var initial_log_snapshot: Dictionary = initial_log_unwrap.get("data", {})
 	for event_snapshot in initial_log_snapshot.get("events", []):
 		if String(event_snapshot.get("event_type", "")) == EventTypesScript.EFFECT_RESOURCE_MOD:
 			var value_changes: Array = event_snapshot.get("value_changes", [])
@@ -196,7 +219,7 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
 				if str(value_change.get("resource_name", "")) == "mp":
 					return harness.fail_result("create_session initial event_log should not retroactively append the pre-applied turn_start regen event")
 
-	var after_turn = manager.run_turn(session_id, [
+	var after_turn_envelope = manager.run_turn(session_id, [
 		manager.build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.WAIT,
@@ -212,6 +235,10 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
 			"actor_public_id": "P2-A",
 		}),
 	])
+	var after_turn_unwrap = _unwrap_ok(after_turn_envelope, "run_turn")
+	if not bool(after_turn_unwrap.get("ok", false)):
+		return harness.fail_result(str(after_turn_unwrap.get("error", "manager run_turn failed")))
+	var after_turn: Dictionary = after_turn_unwrap.get("data", {})
 	core.turn_loop_controller.run_turn(reference_state, content_index, [
 		core.command_builder.build_command({
 			"turn_index": 1,
@@ -234,7 +261,9 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
 	var expected_after_p1_snapshot = _helper.find_side_snapshot(expected_after_snapshot, "P1")
 	if int(after_p1_snapshot.get("active_mp", -1)) != int(expected_after_p1_snapshot.get("active_mp", -1)):
 		return harness.fail_result("first run_turn must not apply turn_start regen twice or drift from the core path")
-	manager.close_session(session_id)
+	var close_result = _unwrap_ok(manager.close_session(session_id), "close_session")
+	if not bool(close_result.get("ok", false)):
+		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
 func _test_selection_adapters_public_id_contract(_harness) -> Dictionary:
@@ -289,13 +318,19 @@ func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
 		"battle_setup": sample_factory.build_gojo_vs_sukuna_setup(),
 	})
-	var session_id: String = str(init_result.get("session_id", ""))
-	var initial_snapshot: Dictionary = manager.get_event_log_snapshot(session_id)
+	var init_unwrap = _unwrap_ok(init_result, "create_session")
+	if not bool(init_unwrap.get("ok", false)):
+		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+	var session_id: String = str(init_unwrap.get("data", {}).get("session_id", ""))
+	var initial_snapshot_unwrap = _unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot")
+	if not bool(initial_snapshot_unwrap.get("ok", false)):
+		return harness.fail_result(str(initial_snapshot_unwrap.get("error", "manager get_event_log_snapshot failed")))
+	var initial_snapshot: Dictionary = initial_snapshot_unwrap.get("data", {})
 	var initial_events: Array = initial_snapshot.get("events", [])
 	var initial_total_size: int = int(initial_snapshot.get("total_size", -1))
 	if initial_total_size != initial_events.size():
 		return harness.fail_result("get_event_log_snapshot total_size should match full snapshot size")
-	var turn_result: Dictionary = manager.run_turn(session_id, [
+	var turn_result_envelope: Dictionary = manager.run_turn(session_id, [
 		manager.build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
@@ -313,9 +348,16 @@ func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 			"skill_id": "sukuna_kai",
 		}),
 	])
+	var turn_result_unwrap = _unwrap_ok(turn_result_envelope, "run_turn")
+	if not bool(turn_result_unwrap.get("ok", false)):
+		return harness.fail_result(str(turn_result_unwrap.get("error", "manager run_turn failed")))
+	var turn_result: Dictionary = turn_result_unwrap.get("data", {})
 	if typeof(turn_result.get("public_snapshot", null)) != TYPE_DICTIONARY:
 		return harness.fail_result("run_turn should keep returning public_snapshot after event log API addition")
-	var delta_snapshot: Dictionary = manager.get_event_log_snapshot(session_id, initial_total_size)
+	var delta_snapshot_unwrap = _unwrap_ok(manager.get_event_log_snapshot(session_id, initial_total_size), "get_event_log_snapshot")
+	if not bool(delta_snapshot_unwrap.get("ok", false)):
+		return harness.fail_result(str(delta_snapshot_unwrap.get("error", "manager get_event_log_snapshot delta failed")))
+	var delta_snapshot: Dictionary = delta_snapshot_unwrap.get("data", {})
 	var delta_events: Array = delta_snapshot.get("events", [])
 	if delta_events.is_empty():
 		return harness.fail_result("event log delta should include turn events after run_turn")
@@ -349,8 +391,30 @@ func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 		return harness.fail_result("event log snapshot should expose derived actor_public_id and actor_definition_id")
 	if not public_value_change_shape_checked:
 		return harness.fail_result("event log snapshot should expose public-safe value_change entity identifiers")
-	var empty_delta: Dictionary = manager.get_event_log_snapshot(session_id, int(delta_snapshot.get("total_size", 0)))
+	var empty_delta_unwrap = _unwrap_ok(manager.get_event_log_snapshot(session_id, int(delta_snapshot.get("total_size", 0))), "get_event_log_snapshot")
+	if not bool(empty_delta_unwrap.get("ok", false)):
+		return harness.fail_result(str(empty_delta_unwrap.get("error", "manager get_event_log_snapshot tail failed")))
+	var empty_delta: Dictionary = empty_delta_unwrap.get("data", {})
 	if not empty_delta.get("events", []).is_empty():
 		return harness.fail_result("event log snapshot tail query should return empty delta")
-	manager.close_session(session_id)
+	var close_result = _unwrap_ok(manager.close_session(session_id), "close_session")
+	if not bool(close_result.get("ok", false)):
+		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
 	return harness.pass_result()
+
+func _unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:
+	if envelope == null:
+		return {"ok": false, "error": "%s returned null envelope" % label}
+	var required_keys := ["ok", "data", "error_code", "error_message"]
+	for key in required_keys:
+		if not envelope.has(key):
+			return {"ok": false, "error": "%s missing envelope key: %s" % [label, key]}
+	if bool(envelope.get("ok", false)):
+		if envelope.get("error_code", null) != null or envelope.get("error_message", null) != null:
+			return {"ok": false, "error": "%s success envelope should not expose error payload" % label}
+		return {"ok": true, "data": envelope.get("data", null)}
+	if envelope.get("data", null) != null:
+		return {"ok": false, "error": "%s failure envelope must set data=null" % label}
+	if envelope.get("error_code", null) == null or String(envelope.get("error_message", "")).is_empty():
+		return {"ok": false, "error": "%s failure envelope missing error payload" % label}
+	return {"ok": false, "error": "%s failed: %s (%s)" % [label, String(envelope.get("error_message", "")), String(envelope.get("error_code", ""))]}

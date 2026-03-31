@@ -2,13 +2,30 @@ extends RefCounted
 class_name CommandBuilder
 
 const CommandScript := preload("res://src/battle_core/contracts/command.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var id_factory
+var last_error_code: Variant = null
+var last_error_message: String = ""
+
+func resolve_missing_dependency() -> String:
+    if id_factory == null:
+        return "id_factory"
+    return ""
 
 func build_command(input_payload: Dictionary):
-    assert(input_payload.has("command_type"), "CommandBuilder requires command_type")
-    assert(input_payload.has("side_id"), "CommandBuilder requires side_id")
-    assert(input_payload.has("actor_id") or input_payload.has("actor_public_id"), "CommandBuilder requires actor_id or actor_public_id")
+    last_error_code = null
+    last_error_message = ""
+    if id_factory == null:
+        last_error_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        last_error_message = "CommandBuilder missing id_factory"
+        return null
+    if not input_payload.has("command_type"):
+        return _fail_invalid_payload("CommandBuilder requires command_type")
+    if not input_payload.has("side_id"):
+        return _fail_invalid_payload("CommandBuilder requires side_id")
+    if not input_payload.has("actor_id") and not input_payload.has("actor_public_id"):
+        return _fail_invalid_payload("CommandBuilder requires actor_id or actor_public_id")
     var command = CommandScript.new()
     command.command_id = input_payload.get("command_id", id_factory.next_id("command"))
     command.turn_index = input_payload.get("turn_index", 1)
@@ -22,3 +39,8 @@ func build_command(input_payload: Dictionary):
     command.target_public_id = input_payload.get("target_public_id", "")
     command.target_slot = input_payload.get("target_slot", "")
     return command
+
+func _fail_invalid_payload(message: String):
+    last_error_code = ErrorCodesScript.INVALID_COMMAND_PAYLOAD
+    last_error_message = message
+    return null

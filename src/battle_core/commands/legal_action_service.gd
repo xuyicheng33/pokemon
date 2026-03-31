@@ -3,22 +3,38 @@ class_name LegalActionService
 
 const LegalActionSetScript := preload("res://src/battle_core/contracts/legal_action_set.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var rule_mod_service
 var domain_legality_service
+var last_error_code: Variant = null
+var last_error_message: String = ""
+
+func resolve_missing_dependency() -> String:
+    if rule_mod_service == null:
+        return "rule_mod_service"
+    if domain_legality_service == null:
+        return "domain_legality_service"
+    return ""
 
 func get_legal_actions(battle_state, side_id: String, content_index):
+    last_error_code = null
+    last_error_message = ""
     var side_state = battle_state.get_side(side_id)
-    assert(side_state != null, "Unknown side: %s" % side_id)
+    if side_state == null:
+        return _fail_invalid_state("Unknown side: %s" % side_id)
     var actor = side_state.get_active_unit()
-    assert(actor != null, "Side %s has no active unit" % side_id)
+    if actor == null:
+        return _fail_invalid_state("Side %s has no active unit" % side_id)
     var unit_definition = content_index.units.get(actor.definition_id)
-    assert(unit_definition != null, "Missing unit definition: %s" % actor.definition_id)
+    if unit_definition == null:
+        return _fail_invalid_state("Missing unit definition: %s" % actor.definition_id)
     var legal_action_set = LegalActionSetScript.new()
     legal_action_set.actor_public_id = actor.public_id
     var has_non_mp_blocked_option: bool = false
     var has_any_skill_or_ultimate_option: bool = false
-    assert(domain_legality_service != null, "LegalActionService.domain_legality_service is required")
+    if domain_legality_service == null:
+        return _fail_invalid_state("LegalActionService.domain_legality_service is required")
     var side_domain_recast_blocked: bool = domain_legality_service.is_side_domain_recast_blocked(
         battle_state,
         side_id,
@@ -82,5 +98,12 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     return legal_action_set
 
 func _is_action_legal_with_rule_mod(battle_state, actor_id: String, action_type: String, skill_id: String = "") -> bool:
-    assert(rule_mod_service != null, "LegalActionService.rule_mod_service is required")
+    if rule_mod_service == null:
+        _fail_invalid_state("LegalActionService.rule_mod_service is required")
+        return false
     return rule_mod_service.is_action_allowed(battle_state, actor_id, action_type, skill_id)
+
+func _fail_invalid_state(message: String):
+    last_error_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+    last_error_message = message
+    return null

@@ -22,7 +22,8 @@ func resolve_active_domain_creator_side_id(battle_state, content_index) -> Strin
     if String(active_field_definition.field_kind) != ContentSchemaScript.FIELD_KIND_DOMAIN:
         return ""
     var creator_side = battle_state.get_side_for_unit(String(battle_state.field_state.creator))
-    assert(creator_side != null, "DomainLegalityService missing creator side for active domain field %s" % String(battle_state.field_state.field_def_id))
+    if creator_side == null:
+        return ""
     return String(creator_side.side_id)
 
 func is_side_domain_recast_blocked(battle_state, side_id: String, content_index) -> bool:
