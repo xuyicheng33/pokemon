@@ -38,7 +38,10 @@ func load_snapshot(content_snapshot_paths: PackedStringArray) -> bool:
             last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
             last_error_message = "Missing content resource: %s" % path
             return false
-        _registry.register_resource(self, resource)
+        if not _registry.register_resource(self, resource):
+            last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
+            last_error_message = _registry.last_error_message if not _registry.last_error_message.is_empty() else "Unsupported content resource: %s" % path
+            return false
     var errors = validate_snapshot()
     if not errors.is_empty():
         last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
@@ -46,8 +49,8 @@ func load_snapshot(content_snapshot_paths: PackedStringArray) -> bool:
         return false
     return true
 
-func register_resource(resource: Resource) -> void:
-    _registry.register_resource(self, resource)
+func register_resource(resource: Resource) -> bool:
+    return _registry.register_resource(self, resource)
 
 func validate_snapshot() -> Array:
     return _snapshot_validator.validate(self)

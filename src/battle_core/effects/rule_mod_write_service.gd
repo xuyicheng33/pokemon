@@ -14,16 +14,20 @@ const STACKING_KEY_SCHEMA_BY_KIND := RuleModSchemaScript.STACKING_KEY_SCHEMA_BY_
 
 var id_factory
 var last_error_code: Variant = null
+var last_error_message: String = ""
 var _rule_mod_schema = RuleModSchemaScript.new()
 
 func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null):
     last_error_code = null
+    last_error_message = ""
     if not _validate_rule_mod_payload(rule_mod_payload):
         return null
     if not _validate_owner_ref(owner_ref, rule_mod_payload.scope, battle_state):
         return null
     var owner_instances: Array = _get_owner_instances(battle_state, owner_ref)
     var stacking_key: String = _build_stacking_key(rule_mod_payload, owner_ref)
+    if last_error_code != null:
+        return null
     var existing_instance = _find_existing(owner_instances, stacking_key)
     match rule_mod_payload.stacking:
         ContentSchemaScript.STACKING_NONE:
@@ -80,28 +84,34 @@ func _validate_rule_mod_payload(rule_mod_payload) -> bool:
     if _rule_mod_schema.validate_payload(rule_mod_payload).is_empty():
         return true
     last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+    last_error_message = "rule_mod payload failed schema validation"
     return false
 
 func _validate_owner_ref(owner_ref: Dictionary, payload_scope: String, battle_state) -> bool:
     if owner_ref == null or not owner_ref.has("scope") or not owner_ref.has("id"):
         last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+        last_error_message = "rule_mod owner_ref must include scope/id"
         return false
     var owner_scope: String = str(owner_ref["scope"])
     var owner_id: String = str(owner_ref["id"])
     if owner_scope == OWNER_SCOPE_UNIT:
         if payload_scope == "field":
             last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+            last_error_message = "field-scope rule_mod requires field owner"
             return false
         if battle_state.get_unit(owner_id) == null:
             last_error_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+            last_error_message = "rule_mod owner unit missing: %s" % owner_id
             return false
         return true
     if owner_scope == OWNER_SCOPE_FIELD:
         if payload_scope != "field" or owner_id != FIELD_OWNER_ID:
             last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+            last_error_message = "field owner_ref must bind scope=field id=field"
             return false
         return true
     last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+    last_error_message = "unsupported rule_mod owner scope: %s" % owner_scope
     return false
 
 func _get_owner_instances(battle_state, owner_ref: Dictionary) -> Array:
@@ -151,8 +161,11 @@ func _resolve_field_instance_id(owner_ref: Dictionary, battle_state) -> String:
     return str(battle_state.field_state.instance_id)
 
 func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary) -> String:
-    var schema: Array = STACKING_KEY_SCHEMA_BY_KIND.get(rule_mod_payload.mod_kind, [])
-    assert(not schema.is_empty(), "Missing stacking key schema for rule_mod kind: %s" % rule_mod_payload.mod_kind)
+    var schema: Array = _resolve_stacking_key_schema(String(rule_mod_payload.mod_kind))
+    if schema.is_empty():
+        last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+        last_error_message = "Missing stacking key schema for rule_mod kind: %s" % rule_mod_payload.mod_kind
+        return ""
     var key_parts: PackedStringArray = PackedStringArray()
     for field_name in schema:
         match str(field_name):
@@ -169,8 +182,13 @@ func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary) -> String:
             "value":
                 key_parts.append(_resolve_stacking_value_token(rule_mod_payload))
             _:
-                assert(false, "Unknown stacking key field: %s" % str(field_name))
+                last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+                last_error_message = "Unknown stacking key field: %s" % str(field_name)
+                return ""
     return "|".join(key_parts)
+
+func _resolve_stacking_key_schema(mod_kind: String) -> Array:
+    return STACKING_KEY_SCHEMA_BY_KIND.get(mod_kind, [])
 
 func _resolve_stacking_value_token(rule_mod_payload) -> String:
     if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:

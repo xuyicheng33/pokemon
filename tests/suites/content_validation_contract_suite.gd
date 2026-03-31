@@ -13,11 +13,13 @@ const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_pa
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const FieldDefinitionScript := preload("res://src/battle_core/content/field_definition.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("content_validation_failures", failures, Callable(self, "_test_content_validation_failures").bind(harness))
 	runner.run_test("content_validation_new_constraints", failures, Callable(self, "_test_content_validation_new_constraints").bind(harness))
 	runner.run_test("formal_character_shared_fire_burst_validation", failures, Callable(self, "_test_formal_character_shared_fire_burst_validation").bind(harness))
+	runner.run_test("unsupported_resource_snapshot_fails_fast", failures, Callable(self, "_test_unsupported_resource_snapshot_fails_fast").bind(harness))
 	runner.run_test("on_receive_forbidden_in_content", failures, Callable(self, "_test_on_receive_forbidden_in_content").bind(harness))
 	runner.run_test("nested_domain_skill_validation", failures, Callable(self, "_test_nested_domain_skill_validation").bind(harness))
 	runner.run_test("domain_field_contract_validation", failures, Callable(self, "_test_domain_field_contract_validation").bind(harness))
@@ -221,6 +223,19 @@ func _test_formal_character_shared_fire_burst_validation(harness) -> Dictionary:
 		if str(error_msg).find("formal[sukuna].shared_fire_burst payload mismatch") != -1:
 			return harness.pass_result()
 	return harness.fail_result("formal shared fire burst validation should fail when Sukuna payloads drift")
+
+func _test_unsupported_resource_snapshot_fails_fast(harness) -> Dictionary:
+	var content_index = BattleContentIndexScript.new()
+	var ok: bool = content_index.load_snapshot(PackedStringArray([
+		"res://tests/fixtures/unsupported_resource.tres",
+	]))
+	if ok:
+		return harness.fail_result("unsupported snapshot resource should fail-fast")
+	if content_index.last_error_code != ErrorCodesScript.INVALID_CONTENT_SNAPSHOT:
+		return harness.fail_result("unsupported snapshot should report invalid_content_snapshot, got %s" % str(content_index.last_error_code))
+	if content_index.last_error_message.find("unsupported content resource") == -1:
+		return harness.fail_result("unsupported snapshot should report explicit unsupported content resource message")
+	return harness.pass_result()
 
 func _test_on_receive_forbidden_in_content(harness) -> Dictionary:
 	var content_index = BattleContentIndexScript.new()
