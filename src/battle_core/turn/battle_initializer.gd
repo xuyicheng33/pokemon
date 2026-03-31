@@ -21,6 +21,7 @@ var combat_type_service
 var mp_service
 var rule_mod_service
 var battle_result_service
+var field_lifecycle_service
 var public_id_allocator = PublicIdAllocatorScript.new()
 var _state_builder = BattleInitializerStateBuilderScript.new()
 
@@ -89,9 +90,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
     if on_enter_faint_invalid_code != null:
         battle_result_service.terminate_invalid_battle(battle_state, str(on_enter_faint_invalid_code))
         return
-    var matchup_invalid_code = _execute_matchup_changed_if_needed(battle_state, content_index)
-    if matchup_invalid_code != null:
-        battle_result_service.terminate_invalid_battle(battle_state, str(matchup_invalid_code))
+    if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index):
         return
     if battle_result_service.resolve_initialization_victory(battle_state):
         return
@@ -116,9 +115,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> void:
         return
     if battle_result_service.resolve_initialization_victory(battle_state):
         return
-    var post_battle_init_matchup_invalid_code = _execute_matchup_changed_if_needed(battle_state, content_index)
-    if post_battle_init_matchup_invalid_code != null:
-        battle_result_service.terminate_invalid_battle(battle_state, str(post_battle_init_matchup_invalid_code))
+    if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index):
         return
     _apply_initial_turn_start_regen(battle_state)
     battle_state.phase = BattlePhasesScript.SELECTION
@@ -133,17 +130,6 @@ func _collect_active_unit_ids(battle_state) -> Array:
         if active_unit != null and active_unit.current_hp > 0:
             active_ids.append(active_unit.unit_instance_id)
     return active_ids
-
-func _execute_matchup_changed_if_needed(battle_state, content_index):
-    var signature: String = field_service.build_matchup_signature(battle_state)
-    if signature.is_empty() or signature == battle_state.last_matchup_signature:
-        return null
-    var owner_unit_ids: Array = _collect_active_unit_ids(battle_state)
-    var invalid_code = _execute_trigger_batch("on_matchup_changed", battle_state, content_index, owner_unit_ids)
-    if invalid_code != null:
-        return invalid_code
-    battle_state.last_matchup_signature = signature
-    return null
 
 func _apply_initial_turn_start_regen(battle_state) -> void:
     assert(mp_service != null, "BattleInitializer requires mp_service for initial turn_start regen")

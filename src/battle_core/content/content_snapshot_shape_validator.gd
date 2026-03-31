@@ -3,102 +3,35 @@ class_name ContentSnapshotShapeValidator
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ContentSnapshotCatalogValidatorScript := preload("res://src/battle_core/content/content_snapshot_catalog_validator.gd")
+const ContentSnapshotUnitValidatorScript := preload("res://src/battle_core/content/content_snapshot_unit_validator.gd")
 
 var _content_index = null
 var _payload_validator = null
 var _catalog_validator = ContentSnapshotCatalogValidatorScript.new()
+var _unit_validator = ContentSnapshotUnitValidatorScript.new()
 
 func validate(content_index, errors: Array, payload_validator) -> void:
     _content_index = content_index
     _payload_validator = payload_validator
-    var allowed_targets := PackedStringArray([
-        ContentSchemaScript.TARGET_ENEMY_ACTIVE,
-        ContentSchemaScript.TARGET_SELF,
-        ContentSchemaScript.TARGET_FIELD,
-        ContentSchemaScript.TARGET_NONE,
-    ])
-    var allowed_damage_kinds := PackedStringArray([
-        ContentSchemaScript.DAMAGE_KIND_PHYSICAL,
-        ContentSchemaScript.DAMAGE_KIND_SPECIAL,
-        ContentSchemaScript.DAMAGE_KIND_NONE,
-    ])
-    var allowed_scopes: PackedStringArray = PackedStringArray(["self", "target", "field"])
-    var allowed_power_bonus_sources: PackedStringArray = PackedStringArray(["", "mp_diff_clamped"])
-    var allowed_field_kinds: PackedStringArray = PackedStringArray([
-        ContentSchemaScript.FIELD_KIND_NORMAL,
-        ContentSchemaScript.FIELD_KIND_DOMAIN,
-    ])
     var regular_skill_refs: Dictionary = {}
     var ultimate_skill_refs: Dictionary = {}
 
     _catalog_validator.validate(_content_index, errors)
+    _unit_validator.validate_units(_content_index, errors, regular_skill_refs, ultimate_skill_refs)
+    _validate_skills(errors)
+    _validate_passive_skills(errors)
+    _validate_passive_items(errors)
+    _validate_skill_role_constraints(errors, regular_skill_refs, ultimate_skill_refs)
+    _validate_fields(errors)
+    _validate_effects(errors)
 
-    for unit_id in _content_index.units.keys():
-        var unit_definition = _content_index.units[unit_id]
-        if int(unit_definition.ultimate_points_required) < 0:
-            errors.append("unit[%s].ultimate_points_required must be >= 0, got %d" % [unit_id, int(unit_definition.ultimate_points_required)])
-        if int(unit_definition.ultimate_points_cap) < 0:
-            errors.append("unit[%s].ultimate_points_cap must be >= 0, got %d" % [unit_id, int(unit_definition.ultimate_points_cap)])
-        if int(unit_definition.ultimate_point_gain_on_regular_skill_cast) < 0:
-            errors.append("unit[%s].ultimate_point_gain_on_regular_skill_cast must be >= 0, got %d" % [unit_id, int(unit_definition.ultimate_point_gain_on_regular_skill_cast)])
-        if int(unit_definition.ultimate_points_cap) < int(unit_definition.ultimate_points_required):
-            errors.append("unit[%s].ultimate_points_cap must be >= ultimate_points_required" % unit_id)
-        if unit_definition.combat_type_ids.size() > 2:
-            errors.append("unit[%s].combat_type_ids must contain at most 2 entries, got %d" % [unit_id, unit_definition.combat_type_ids.size()])
-        var seen_unit_types: Dictionary = {}
-        for combat_type_id in unit_definition.combat_type_ids:
-            var normalized_type_id := String(combat_type_id).strip_edges()
-            if normalized_type_id.is_empty():
-                errors.append("unit[%s].combat_type_ids must not contain empty entry" % unit_id)
-                continue
-            if seen_unit_types.has(normalized_type_id):
-                errors.append("unit[%s].combat_type_ids duplicated type: %s" % [unit_id, normalized_type_id])
-                continue
-            seen_unit_types[normalized_type_id] = true
-            if not _content_index.combat_types.has(normalized_type_id):
-                errors.append("unit[%s].combat_type_ids missing combat type: %s" % [unit_id, normalized_type_id])
-        if unit_definition.skill_ids.size() != 3:
-            errors.append("unit[%s].skill_ids must contain exactly 3 entries, got %d" % [unit_id, unit_definition.skill_ids.size()])
-        for skill_id in unit_definition.skill_ids:
-            regular_skill_refs[skill_id] = true
-            if not _content_index.skills.has(skill_id):
-                errors.append("unit[%s].skill_ids missing skill: %s" % [unit_id, skill_id])
-        if not unit_definition.candidate_skill_ids.is_empty():
-            if unit_definition.candidate_skill_ids.size() < 3:
-                errors.append("unit[%s].candidate_skill_ids must contain at least 3 entries, got %d" % [unit_id, unit_definition.candidate_skill_ids.size()])
-            var seen_candidate_skills: Dictionary = {}
-            for candidate_skill_id in unit_definition.candidate_skill_ids:
-                var normalized_candidate_skill_id := String(candidate_skill_id).strip_edges()
-                regular_skill_refs[normalized_candidate_skill_id] = true
-                if normalized_candidate_skill_id.is_empty():
-                    errors.append("unit[%s].candidate_skill_ids must not contain empty entry" % unit_id)
-                    continue
-                if seen_candidate_skills.has(normalized_candidate_skill_id):
-                    errors.append("unit[%s].candidate_skill_ids duplicated skill: %s" % [unit_id, normalized_candidate_skill_id])
-                    continue
-                seen_candidate_skills[normalized_candidate_skill_id] = true
-                if not _content_index.skills.has(normalized_candidate_skill_id):
-                    errors.append("unit[%s].candidate_skill_ids missing skill: %s" % [unit_id, normalized_candidate_skill_id])
-                if normalized_candidate_skill_id == unit_definition.ultimate_skill_id and not unit_definition.ultimate_skill_id.is_empty():
-                    errors.append("unit[%s].candidate_skill_ids must not include ultimate_skill_id: %s" % [unit_id, normalized_candidate_skill_id])
-            for default_skill_id in unit_definition.skill_ids:
-                if not unit_definition.candidate_skill_ids.has(default_skill_id):
-                    errors.append("unit[%s].candidate_skill_ids must include default skill: %s" % [unit_id, default_skill_id])
-        if not unit_definition.ultimate_skill_id.is_empty():
-            ultimate_skill_refs[unit_definition.ultimate_skill_id] = true
-            if not _content_index.skills.has(unit_definition.ultimate_skill_id):
-                errors.append("unit[%s].ultimate_skill_id missing skill: %s" % [unit_id, unit_definition.ultimate_skill_id])
-            if unit_definition.skill_ids.has(unit_definition.ultimate_skill_id):
-                errors.append("unit[%s].ultimate_skill_id duplicated in skill_ids: %s" % [unit_id, unit_definition.ultimate_skill_id])
-        elif int(unit_definition.ultimate_points_required) != 0 \
-        or int(unit_definition.ultimate_points_cap) != 0 \
-        or int(unit_definition.ultimate_point_gain_on_regular_skill_cast) != 0:
-            errors.append("unit[%s].ultimate point config requires ultimate_skill_id" % unit_id)
-        if not unit_definition.passive_skill_id.is_empty() and not _content_index.passive_skills.has(unit_definition.passive_skill_id):
-            errors.append("unit[%s].passive_skill_id missing passive skill: %s" % [unit_id, unit_definition.passive_skill_id])
-        if not unit_definition.passive_item_id.is_empty() and not _content_index.passive_items.has(unit_definition.passive_item_id):
-            errors.append("unit[%s].passive_item_id missing passive item: %s" % [unit_id, unit_definition.passive_item_id])
+    _payload_validator = null
+    _content_index = null
 
+func _validate_skills(errors: Array) -> void:
+    var allowed_targets := _allowed_targets()
+    var allowed_damage_kinds := _allowed_damage_kinds()
+    var allowed_power_bonus_sources := _allowed_power_bonus_sources()
     for skill_id in _content_index.skills.keys():
         var skill_definition = _content_index.skills[skill_id]
         if not String(skill_definition.combat_type_id).is_empty() and not _content_index.combat_types.has(skill_definition.combat_type_id):
@@ -127,10 +60,12 @@ func validate(content_index, errors: Array, payload_validator) -> void:
         if has_domain_apply_field and not bool(skill_definition.is_domain_skill):
             errors.append("skill[%s] applies domain field and must set is_domain_skill=true" % skill_id)
 
+func _validate_passive_skills(errors: Array) -> void:
     for passive_id in _content_index.passive_skills.keys():
         var passive_definition = _content_index.passive_skills[passive_id]
         _payload_validator.validate_effect_refs(errors, "passive_skill[%s].effect_ids" % passive_id, passive_definition.effect_ids, _content_index.effects)
 
+func _validate_passive_items(errors: Array) -> void:
     for passive_id in _content_index.passive_items.keys():
         var passive_definition = _content_index.passive_items[passive_id]
         _payload_validator.validate_effect_refs(errors, "passive_item[%s].effect_ids" % passive_id, passive_definition.effect_ids, _content_index.effects)
@@ -139,13 +74,13 @@ func validate(content_index, errors: Array, payload_validator) -> void:
             errors.append("passive_item[%s].on_receive_effect_ids is disabled in current baseline and must be empty" % passive_id)
         _payload_validator.validate_effect_refs(errors, "passive_item[%s].on_turn_effect_ids" % passive_id, passive_definition.on_turn_effect_ids, _content_index.effects)
 
+func _validate_skill_role_constraints(errors: Array, regular_skill_refs: Dictionary, ultimate_skill_refs: Dictionary) -> void:
     for skill_id in regular_skill_refs.keys():
         if not _content_index.skills.has(skill_id):
             continue
         var regular_skill = _content_index.skills[skill_id]
         if int(regular_skill.priority) < -2 or int(regular_skill.priority) > 2:
             errors.append("skill[%s] used in unit.skill_ids must have priority in -2..2, got %d" % [skill_id, int(regular_skill.priority)])
-
     for skill_id in ultimate_skill_refs.keys():
         if not _content_index.skills.has(skill_id):
             continue
@@ -155,6 +90,8 @@ func validate(content_index, errors: Array, payload_validator) -> void:
         if regular_skill_refs.has(skill_id):
             errors.append("skill[%s] used as ultimate must not appear in any unit.skill_ids" % skill_id)
 
+func _validate_fields(errors: Array) -> void:
+    var allowed_field_kinds := _allowed_field_kinds()
     for field_id in _content_index.fields.keys():
         var field_definition = _content_index.fields[field_id]
         var field_kind := String(field_definition.field_kind)
@@ -173,6 +110,8 @@ func validate(content_index, errors: Array, payload_validator) -> void:
             if field_definition.on_break_effect_ids.is_empty():
                 errors.append("field[%s].on_break_effect_ids must not be empty for domain field" % field_id)
 
+func _validate_effects(errors: Array) -> void:
+    var allowed_scopes := _allowed_scopes()
     for effect_id in _content_index.effects.keys():
         var effect_definition = _content_index.effects[effect_id]
         if not allowed_scopes.has(effect_definition.scope):
@@ -198,8 +137,32 @@ func validate(content_index, errors: Array, payload_validator) -> void:
         for payload in effect_definition.payloads:
             _payload_validator.validate_payload(errors, effect_id, payload, _content_index)
 
-    _payload_validator = null
-    _content_index = null
+func _allowed_targets() -> PackedStringArray:
+    return PackedStringArray([
+        ContentSchemaScript.TARGET_ENEMY_ACTIVE,
+        ContentSchemaScript.TARGET_SELF,
+        ContentSchemaScript.TARGET_FIELD,
+        ContentSchemaScript.TARGET_NONE,
+    ])
+
+func _allowed_damage_kinds() -> PackedStringArray:
+    return PackedStringArray([
+        ContentSchemaScript.DAMAGE_KIND_PHYSICAL,
+        ContentSchemaScript.DAMAGE_KIND_SPECIAL,
+        ContentSchemaScript.DAMAGE_KIND_NONE,
+    ])
+
+func _allowed_scopes() -> PackedStringArray:
+    return PackedStringArray(["self", "target", "field"])
+
+func _allowed_power_bonus_sources() -> PackedStringArray:
+    return PackedStringArray(["", "mp_diff_clamped"])
+
+func _allowed_field_kinds() -> PackedStringArray:
+    return PackedStringArray([
+        ContentSchemaScript.FIELD_KIND_NORMAL,
+        ContentSchemaScript.FIELD_KIND_DOMAIN,
+    ])
 
 func _validate_required_target_effects(errors: Array, effect_id: String, effect_definition) -> void:
     if effect_definition.required_target_effects.is_empty():

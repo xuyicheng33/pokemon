@@ -9,6 +9,7 @@ const ChainContextScript := preload("res://src/battle_core/contracts/chain_conte
 var id_factory
 var battle_logger
 var log_event_builder
+var turn_limit_scoring_service
 
 func resolve_missing_dependency() -> String:
     if id_factory == null:
@@ -17,6 +18,8 @@ func resolve_missing_dependency() -> String:
         return "battle_logger"
     if log_event_builder == null:
         return "log_event_builder"
+    if turn_limit_scoring_service == null:
+        return "turn_limit_scoring_service"
     return ""
 
 func build_system_chain(command_type: String):
@@ -154,26 +157,10 @@ func _resolve_victory(battle_state, payload_summary: String) -> bool:
     return true
 
 func resolve_turn_limit(battle_state) -> void:
-    var scored_sides: Array = []
-    for side_state in battle_state.sides:
-        var available_count: int = 0
-        var current_hp_total: int = 0
-        var max_hp_total: int = 0
-        for unit_state in side_state.team_units:
-            if unit_state.current_hp > 0:
-                available_count += 1
-            current_hp_total += unit_state.current_hp
-            max_hp_total += unit_state.max_hp
-        scored_sides.append({
-            "side_id": side_state.side_id,
-            "available_count": available_count,
-            "current_hp_total": current_hp_total,
-            "max_hp_total": max_hp_total,
-        })
-    scored_sides.sort_custom(_sort_turn_limit_scores)
+    var scored_sides: Array = turn_limit_scoring_service.build_scored_sides(battle_state)
     battle_state.battle_result.finished = true
     battle_state.phase = BattlePhasesScript.FINISHED
-    if scored_sides.size() > 1 and _turn_limit_scores_equal(scored_sides[0], scored_sides[1]):
+    if turn_limit_scoring_service.scores_tied(scored_sides):
         battle_state.battle_result.winner_side_id = null
         battle_state.battle_result.result_type = "draw"
     else:
@@ -197,22 +184,6 @@ func resolve_turn_limit(battle_state) -> void:
             "payload_summary": "battle ended by turn limit",
         }
     ))
-
-func _sort_turn_limit_scores(left: Dictionary, right: Dictionary) -> bool:
-    if left["available_count"] != right["available_count"]:
-        return left["available_count"] > right["available_count"]
-    var left_cross: int = int(left["current_hp_total"]) * int(right["max_hp_total"])
-    var right_cross: int = int(right["current_hp_total"]) * int(left["max_hp_total"])
-    if left_cross != right_cross:
-        return left_cross > right_cross
-    if left["current_hp_total"] != right["current_hp_total"]:
-        return left["current_hp_total"] > right["current_hp_total"]
-    return left["side_id"] < right["side_id"]
-
-func _turn_limit_scores_equal(left: Dictionary, right: Dictionary) -> bool:
-    return left["available_count"] == right["available_count"] \
-    and left["current_hp_total"] * right["max_hp_total"] == right["current_hp_total"] * left["max_hp_total"] \
-    and left["current_hp_total"] == right["current_hp_total"]
 
 func _side_has_available_unit(side_state) -> bool:
     for unit_state in side_state.team_units:

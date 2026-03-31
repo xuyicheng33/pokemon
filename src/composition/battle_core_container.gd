@@ -13,6 +13,7 @@ var turn_loop_controller
 var turn_resolution_service
 var turn_selection_resolver
 var turn_field_lifecycle_service
+var turn_limit_scoring_service
 var battle_result_service
 var runtime_guard_service
 var action_executor
