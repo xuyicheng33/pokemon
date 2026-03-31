@@ -9,6 +9,9 @@ const ChainContextScript := preload("res://src/battle_core/contracts/chain_conte
 const PublicIdAllocatorScript := preload("res://src/battle_core/turn/public_id_allocator.gd")
 const BattleInitializerStateBuilderScript := preload("res://src/battle_core/turn/battle_initializer_state_builder.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const INIT_PHASE_CONTINUE := 0
+const INIT_PHASE_STOP := 1
+const INIT_PHASE_FAIL := 2
 
 var id_factory
 var rng_service
@@ -31,30 +34,65 @@ var last_error_message: String = ""
 func initialize_battle(battle_state, content_index, battle_setup) -> bool:
     last_error_code = null
     last_error_message = ""
+    var format_config = _prepare_battle_state(battle_state, content_index, battle_setup)
+    if format_config == null:
+        return false
+    if not _build_side_states(battle_state, battle_setup, format_config, content_index):
+        return false
+    _append_battle_header_event(battle_state, content_index)
+    var on_enter_outcome: int = _run_on_enter_phase(battle_state, content_index)
+    if on_enter_outcome == INIT_PHASE_FAIL:
+        return false
+    if on_enter_outcome == INIT_PHASE_STOP:
+        return true
+    if battle_result_service.resolve_initialization_victory(battle_state):
+        return true
+    var battle_init_outcome: int = _run_battle_init_phase(battle_state, content_index)
+    if battle_init_outcome == INIT_PHASE_FAIL:
+        return false
+    if battle_init_outcome == INIT_PHASE_STOP:
+        return true
+    if battle_result_service.resolve_initialization_victory(battle_state):
+        return true
+    if not _apply_initial_turn_start_regen(battle_state):
+        return false
+    battle_state.phase = BattlePhasesScript.SELECTION
+    return true
+
+func _prepare_battle_state(battle_state, content_index, battle_setup):
     if battle_setup == null:
-        return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup is required")
+        _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup is required")
+        return null
     if public_snapshot_builder == null:
-        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires public_snapshot_builder")
+        _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires public_snapshot_builder")
+        return null
     if combat_type_service == null:
-        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires combat_type_service")
+        _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires combat_type_service")
+        return null
     if public_id_allocator == null:
-        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires public_id_allocator")
+        _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires public_id_allocator")
+        return null
     if battle_result_service == null:
-        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires battle_result_service")
+        _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires battle_result_service")
+        return null
     var format_config = content_index.battle_formats.get(battle_setup.format_id)
     if format_config == null:
-        return _fail(ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, "Missing battle format: %s" % battle_setup.format_id)
+        _fail(ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, "Missing battle format: %s" % battle_setup.format_id)
+        return null
     combat_type_service.build_chart(format_config.combat_type_chart)
     if battle_setup.sides.size() != 2:
-        return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Current baseline requires exactly 2 sides")
+        _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Current baseline requires exactly 2 sides")
+        return null
     var setup_errors: Array = content_index.validate_setup(battle_setup)
     if not setup_errors.is_empty():
-        return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup validation failed:\n%s" % "\n".join(setup_errors))
+        _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup validation failed:\n%s" % "\n".join(setup_errors))
+        return null
     battle_logger.reset()
     battle_state.format_id = battle_setup.format_id
     battle_state.visibility_mode = String(format_config.visibility_mode).strip_edges()
     if battle_state.visibility_mode.is_empty():
-        return _fail(ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, "Battle format visibility_mode must not be empty: %s" % battle_setup.format_id)
+        _fail(ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, "Battle format visibility_mode must not be empty: %s" % battle_setup.format_id)
+        return null
     battle_state.max_turn = format_config.max_turn
     battle_state.max_chain_depth = max(1, int(format_config.max_chain_depth))
     battle_state.battle_level = format_config.level
@@ -68,6 +106,9 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
     battle_state.field_rule_mod_instances.clear()
     battle_state.last_matchup_signature = ""
     battle_state.pre_applied_turn_start_regen_turn_index = 0
+    return format_config
+
+func _build_side_states(battle_state, battle_setup, format_config, content_index) -> bool:
     for side_setup in battle_setup.sides:
         var side_state = _state_builder.build_side_state(side_setup, format_config, content_index, id_factory, public_id_allocator)
         if side_state == null:
@@ -76,6 +117,9 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
                 _state_builder.last_error_message if not _state_builder.last_error_message.is_empty() else "BattleInitializerStateBuilder failed"
             )
         battle_state.sides.append(side_state)
+    return true
+
+func _append_battle_header_event(battle_state, content_index) -> void:
     battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_HEADER, "battle_init")
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.SYSTEM_BATTLE_HEADER,
@@ -86,7 +130,8 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
             "payload_summary": "battle header",
         }
     ))
-    var initial_active_ids: Array = _collect_active_unit_ids(battle_state)
+
+func _run_on_enter_phase(battle_state, content_index) -> int:
     battle_state.chain_context = _build_system_chain("system:replace", "system_replace")
     for side_state in battle_state.sides:
         var active_unit = side_state.get_active_unit()
@@ -101,18 +146,17 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
                 "payload_summary": "%s entered battle" % active_unit.public_id,
             }
         ))
-    var on_enter_invalid_code = _execute_trigger_batch("on_enter", battle_state, content_index, initial_active_ids)
+    var on_enter_invalid_code = _execute_trigger_batch("on_enter", battle_state, content_index, _collect_active_unit_ids(battle_state))
     if on_enter_invalid_code != null:
         battle_result_service.terminate_invalid_battle(battle_state, str(on_enter_invalid_code))
-        return false
+        return INIT_PHASE_FAIL
     var on_enter_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
     if on_enter_faint_invalid_code != null:
         battle_result_service.terminate_invalid_battle(battle_state, str(on_enter_faint_invalid_code))
-        return false
-    if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index):
-        return true
-    if battle_result_service.resolve_initialization_victory(battle_state):
-        return true
+        return INIT_PHASE_FAIL
+    return INIT_PHASE_STOP if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index) else INIT_PHASE_CONTINUE
+
+func _run_battle_init_phase(battle_state, content_index) -> int:
     battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, "battle_init")
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.SYSTEM_BATTLE_INIT,
@@ -123,23 +167,15 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
             "payload_summary": "battle initialized",
         }
     ))
-    var battle_init_owner_ids: Array = _collect_active_unit_ids(battle_state)
-    var battle_init_invalid_code = _execute_trigger_batch("battle_init", battle_state, content_index, battle_init_owner_ids)
+    var battle_init_invalid_code = _execute_trigger_batch("battle_init", battle_state, content_index, _collect_active_unit_ids(battle_state))
     if battle_init_invalid_code != null:
         battle_result_service.terminate_invalid_battle(battle_state, str(battle_init_invalid_code))
-        return false
+        return INIT_PHASE_FAIL
     var battle_init_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
     if battle_init_faint_invalid_code != null:
         battle_result_service.terminate_invalid_battle(battle_state, str(battle_init_faint_invalid_code))
-        return false
-    if battle_result_service.resolve_initialization_victory(battle_state):
-        return true
-    if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index):
-        return true
-    if not _apply_initial_turn_start_regen(battle_state):
-        return false
-    battle_state.phase = BattlePhasesScript.SELECTION
-    return true
+        return INIT_PHASE_FAIL
+    return INIT_PHASE_STOP if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index) else INIT_PHASE_CONTINUE
 
 func _execute_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
     return trigger_batch_runner.execute_trigger_batch(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context)
