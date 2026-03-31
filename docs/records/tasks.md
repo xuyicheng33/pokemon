@@ -631,3 +631,45 @@
   - `CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd` 通过
 - 本轮遗留（非本任务范围）：
   - 宿傩在 Gojo 对位中的领域兑现率仍需另开平衡任务复查，不影响本轮规范收口目标。
+
+### 扩角前治理收口实施（已完成）
+
+- 目标：
+  - 收口 release-safe fail-fast，去掉受内容/运行态输入影响的生产路径 raw `assert()`
+  - 把内容快照 shape validator 推进到第二轮按子域编排
+  - 预拆初始化与回合主编排函数，降低继续扩角时的增长风险
+  - 保持 `250` 硬门禁不变，同时补 `220..250` 非阻断预警
+- 范围：
+  - `src/battle_core/content/*`
+  - `src/battle_core/effects/rule_mod_write_service.gd`
+  - `src/battle_core/turn/battle_initializer.gd`
+  - `src/battle_core/turn/turn_loop_controller.gd`
+  - `tests/suites/content_validation_contract_suite.gd`
+  - `tests/suites/rule_mod_runtime_suite.gd`
+  - `tests/check_architecture_constraints.sh`
+  - `tests/check_repo_consistency.sh`
+  - `docs/design/battle_core_architecture_constraints.md`
+  - `docs/records/decisions.md`
+  - `README.md`
+- 验收标准：
+  - unsupported content resource 与 invalid stacking key schema 都走结构化 fail-fast，不再依赖 raw `assert()`
+  - `ContentSnapshotShapeValidator.validate()` 只保留编排入口，formal character dual-write 一致性校验继续保留
+  - `BattleInitializer.initialize_battle()` 与 `TurnLoopController.run_turn()` 只保留阶段编排
+  - 架构闸门对 `220..250` 行输出 `ARCH_GATE_WARNING`，但不阻断
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `BattleContentRegistry` 对 unsupported resource 改成显式错误，`BattleContentIndex.load_snapshot()` 现在会返回 `INVALID_CONTENT_SNAPSHOT`
+  - `RuleModWriteService` 的 stacking key schema / field 异常改成 `INVALID_RULE_MOD_DEFINITION`，并补了定向回归
+  - 内容快照 shape validator 已拆成 catalog / unit / skill / field / effect / formal-character consistency 多个 helper
+  - `BattleInitializer` 与 `TurnLoopController` 已拆成阶段式私有 helper，日志、回放与终止点行为保持不变
+  - 架构闸门已补 `220..250` 非阻断预警，README 统计、架构约束文档与决策记录已同步
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+- 当前非阻断预警热点：
+  - `src/battle_core/turn/battle_initializer.gd` `226` 行
+  - `src/battle_core/facades/battle_core_manager.gd` `237` 行

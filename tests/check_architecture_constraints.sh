@@ -69,10 +69,13 @@ size_review_rules = {}
 decisions_text = (root / "docs/records/decisions.md").read_text(encoding="utf-8")
 
 review_required = []
+warning_review = []
 for source_root in [root / "src/battle_core", root / "src/composition"]:
     for path in source_root.rglob("*.gd"):
         rel = str(path.relative_to(root))
         line_count = len(path.read_text(encoding="utf-8").splitlines())
+        if 220 <= line_count <= 250:
+            warning_review.append((rel, line_count))
         if line_count > 250:
             review_required.append((rel, line_count))
 
@@ -116,6 +119,11 @@ if missing_decision_notes:
     for rel in missing_decision_notes:
         print(f"  - {rel}", file=sys.stderr)
     sys.exit(1)
+
+if warning_review:
+    print("ARCH_GATE_WARNING: core files approaching 250-line review threshold:")
+    for rel, line_count in warning_review:
+        print(f"  - {rel} ({line_count} lines)")
 
 for path in (root / "tests").rglob("*.gd"):
     rel = str(path.relative_to(root))

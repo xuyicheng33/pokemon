@@ -291,7 +291,7 @@
 
 - 当前宿傩 `sukuna_kamado_mark`、`sukuna_kamado_explode`、`sukuna_domain_expire_burst` 都各自带一份 `20` 点火属性固定伤害 payload。
 - 这三处独立定义暂时保留，因为它们分别挂在 `on_exit / on_expire / field_expire` 三条不同 effect 链上，直接抽成独立 content 资源会越过当前注册表支持范围。
-- `ContentSnapshotShapeValidator` 现在会在加载期强校验三处 `amount / use_formula / combat_type_id` 必须完全一致。
+- `ContentSnapshotShapeValidator` 现在继续通过 formal-character helper 在加载期强校验三处 `amount / use_formula / combat_type_id` 必须完全一致。
 - 原因：
   - 不再只靠设计稿里的“手工同步点”提醒维护数值。
   - 保持现有 content schema 不扩新资源类型，同时让这类正式角色共享数值漂移能在加载时 fail-fast。
@@ -316,3 +316,27 @@
   - 领域 skill / field 继续使用英文描述命名，例如 `gojo_unlimited_void / gojo_unlimited_void_field / sukuna_malevolent_shrine_field`
 - 因此外部审查里“Gojo 全套用英文，所以宿傩命名风格不一致”这条判断不成立；当前不做只针对宿傩单角色的重命名。
 - 若未来要统一成“全英文”或“全罗马音”，必须走一次仓库级命名规范任务，同时修改角色资源、文档、测试与注册表，不能单独改一个角色。
+
+### 35. 生产路径里的 raw `assert()` 只允许保留给测试、抽象基类与程序员不变量（2026-03-31）
+
+- 会直接受内容快照、战斗输入、运行态污染影响的生产路径，不再允许把 raw `assert()` 当成正式失败路径。
+- 本轮已收口的路径：
+  - `RuleModWriteService` 的 stacking key schema / stacking key field 异常改成 `INVALID_RULE_MOD_DEFINITION`
+  - `BattleContentRegistry` 的 unsupported resource 改成显式内容加载失败，并由 `BattleContentIndex.load_snapshot()` 返回 `INVALID_CONTENT_SNAPSHOT`
+- 当前明确允许保留 raw `assert()` 的位置：
+  - `tests/support/formal_character_registry.gd`
+  - `src/battle_core/lifecycle/replacement_selector.gd`
+  - `src/battle_core/logging/log_event_builder.gd`
+  - `src/battle_core/effects/effect_queue_service.gd`
+  - `src/battle_core/turn/public_id_allocator.gd`
+  - `src/battle_core/effects/payload_handlers/payload_damage_runtime_service.gd`
+- 原因：
+  - 上述点要么只服务测试装配，要么是必须 override 的抽象占位，要么属于纯程序员不变量；保留 raw `assert()` 比把它们包装成业务错误更清晰。
+
+### 36. 核心源码 `220..250` 行进入非阻断预警，`>250` 仍维持硬门禁（2026-03-31）
+
+- `tests/check_architecture_constraints.sh` 现在对 `src/battle_core` 与 `src/composition` 中落在 `220..250` 行的 `.gd` 输出 `ARCH_GATE_WARNING`，但不阻断闸门。
+- `>250` 行源码与 `>600` 行测试的硬门禁不变。
+- 原因：
+  - 当前主线已经有若干文件长期贴近 `250` 行上限，只在超线后才治理会把拆分任务变成被动救火。
+  - 提前预警能暴露热点，但不会把日常迭代变成机械拆文件。
