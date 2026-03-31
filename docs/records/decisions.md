@@ -308,3 +308,11 @@
 - 原因：
   - 扩角后平铺目录会迅速退化成文件汤，查找和审查成本线性上升。
   - 现有 loader 已支持递归扫描，目录治理不需要改内容 schema 或运行时装配。
+
+### 34. 正式角色命名继续沿用“术式罗马音 + 领域英文描述”的当前混合口径（2026-03-31）
+
+- 当前 Gojo / Sukuna 的正式资源命名并不是“单角色全英文”：
+  - 常规术式与术式衍生 effect 继续使用角色侧约定的罗马音命名，例如 `gojo_ao / gojo_aka / gojo_murasaki / sukuna_hiraku / sukuna_fukuma_mizushi`
+  - 领域 skill / field 继续使用英文描述命名，例如 `gojo_unlimited_void / gojo_unlimited_void_field / sukuna_malevolent_shrine_field`
+- 因此外部审查里“Gojo 全套用英文，所以宿傩命名风格不一致”这条判断不成立；当前不做只针对宿傩单角色的重命名。
+- 若未来要统一成“全英文”或“全罗马音”，必须走一次仓库级命名规范任务，同时修改角色资源、文档、测试与注册表，不能单独改一个角色。

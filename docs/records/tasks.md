@@ -20,6 +20,31 @@
 
 ## 2026-03-31
 
+### 外部审查报告复核结论补档（已完成）
+
+- 目标：
+  - 核对外部审查报告里的低中优先级观察，明确哪些是事实、哪些是误判、哪些已被当前仓库口径覆盖
+  - 把 helper 文档缺口与命名结论补进正式记录，避免后续重复误读
+- 范围：
+  - `docs/design/architecture_overview.md`
+  - `docs/records/decisions.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - `architecture_overview.md` 明确写出内部 helper 的存在与边界
+  - records 明确记录宿傩命名问题为何“不成立”，以及当前命名口径是什么
+  - 不为报告中的误判项引入无必要的仓库级重命名
+
+#### 当前执行结果
+
+- 已完成：
+  - `architecture_overview.md` 已补 `BattleInitializerStateBuilder` / `BattleCoreManagerContractHelper` 的 helper 说明，并把 `battle_core_session.gd` / `battle_core_manager_contract_helper.gd` 标回 facade 子域内部实现
+  - 已确认外部审查里的 `S-1` 结论不成立：Gojo 与 Sukuna 当前都采用“术式罗马音 + 领域英文描述”的混合命名，不存在“只有宿傩跑偏”
+  - 已沿用既有正式口径，不做只针对宿傩单角色的重命名
+
+#### 当前验证结果
+
+- `bash tests/check_repo_consistency.sh` 通过
+
 ### 闸门前置依赖与设计文档补齐（已完成）
 
 - 目标：

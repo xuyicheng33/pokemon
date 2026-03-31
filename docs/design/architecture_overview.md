@@ -50,6 +50,11 @@
 |Logging|`battle_core/logging`|日志构造、写入、回放|
 |Facades|`battle_core/facades`|外围稳定入口、公开快照与事件日志公开快照构建|
 
+补充说明：
+
+- 为了把 owner 文件维持在可控体量内，同子域允许拆出只服务于该 owner 的内部 helper；当前已存在 `BattleInitializerStateBuilder` 与 `BattleCoreManagerContractHelper` 两个例子。
+- 这类 helper 只负责分担编排或 contract 拼装，不改变模块边界，也不自动升级成新的稳定入口。
+
 ## 4. 数据流
 
 1. `BattleSandboxRunner` 或测试入口请求 `BattleCoreComposer` 创建核心依赖图。
@@ -105,6 +110,8 @@
 - `battle_core_manager.gd`
 - `public_snapshot_builder.gd`
 - `event_log_public_snapshot_builder.gd`
+- `battle_core_manager_contract_helper.gd`（manager 内部 helper）
+- `battle_core_session.gd`（manager 内部会话壳）
 
 对外围稳定开放的最小接口为：
 
