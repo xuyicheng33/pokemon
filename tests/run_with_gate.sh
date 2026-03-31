@@ -2,11 +2,16 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT_DIR/tests/require_tools.sh"
 LOG_FILE="$(mktemp)"
 trap 'rm -f "$LOG_FILE"' EXIT
 ENGINE_ERROR_PATTERN='SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script|Failed loading resource|Failed to instantiate script|Cannot open file '\''res://'
 
 cd "$ROOT_DIR"
+
+require_command godot "running tests/run_all.gd"
+require_command rg "scanning engine error logs"
+require_command python3 "running static gate scripts"
 
 status=0
 godot --headless --path . --script tests/run_all.gd >"$LOG_FILE" 2>&1 || status=$?

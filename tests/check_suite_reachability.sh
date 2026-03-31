@@ -2,7 +2,10 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT_DIR/tests/require_tools.sh"
 cd "$ROOT_DIR"
+
+require_command python3 "suite reachability gate"
 
 python3 - <<'PY'
 from pathlib import Path

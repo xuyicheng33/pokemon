@@ -2,7 +2,11 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+source "$ROOT_DIR/tests/require_tools.sh"
 cd "$ROOT_DIR"
+
+require_command rg "architecture import gates"
+require_command python3 "architecture size gates"
 
 if rg -n "res://src/battle_core/runtime/" src/adapters src/composition scenes >/tmp/runtime_imports.out 2>/dev/null; then
   echo "ARCH_GATE_FAILED: outer layers must not import battle_core/runtime/*" >&2

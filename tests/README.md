@@ -21,6 +21,7 @@
 当前约定：
 
 - `run_all.gd` 只注册顶层 wrapper，不直接注册子套件，避免重复执行。
+- 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback。
 - 正式角色 wrapper 统一登记在 `docs/records/formal_character_registry.json`，由 `tests/run_all.gd` 自动加载。
 - 正式角色注册表除 `suite_path` 外，还要显式登记 `required_suite_paths` 与 `required_test_names`，把角色 suite 子树与关键回归锚点一并固定下来。
 - 正式角色的 `required_suite_paths` 可以同时挂角色专属子套件与共享 suite；例如 `gojo_snapshot_suite.gd` / `sukuna_snapshot_suite.gd` 用来锁资源快照，`ultimate_field_suite.gd` 用来把共享领域回归正式挂回角色交付面。
