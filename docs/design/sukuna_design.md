@@ -6,7 +6,7 @@
 |------|------|
 | 角色定位 | 中速高压破阵手；靠稳定伤害、灶与领域终爆持续施压 |
 | 被动“教会你爱的是...” | 保留当前 `on_matchup_changed -> mp_regen` 方案 |
-| 灶 | 保留“命中后挂灶；离场触发；自然到期也会爆”的现有机制 |
+| 灶 | 保留“命中后挂灶；离场触发；自然到期也会爆”的现有机制，并补成显式 3 层硬上限 |
 | 奥义点 | `required=3 / cap=3 / regular_skill_cast +1` |
 | 领域终局语义 | **领域自然到期终爆保留**；被打断时**无终爆** |
 | 领域增幅归属 | `attack +1 / sp_attack +1` 改为 field 绑定效果；成功立场时生效，领域结束或打断时移除 |
@@ -143,13 +143,19 @@
 | 资源 | 语义 |
 |------|------|
 | `sukuna_apply_kamado` | `on_hit` 时对目标施加 `sukuna_kamado_mark` |
-| `sukuna_kamado_mark` | 持续 3 次 `turn_end`；`stacking=stack`；`on_exit` 触发 20 点火属性固定伤害；自然到期时通过 `on_expire_effect_ids` 再爆一次 |
+| `sukuna_kamado_mark` | 持续 3 次 `turn_end`；`stacking=stack`；`max_stacks = 3`；`on_exit` 触发 20 点火属性固定伤害；自然到期时通过 `on_expire_effect_ids` 再爆一次 |
 | `sukuna_kamado_explode` | 灶的自然到期爆炸，本体为 20 点火属性固定伤害 |
 
 - 玩家说明：`priority = -2` 的火属性特殊术式；命中后会把“灶”挂在对手身上，逼对手换人或吃到后续爆炸。
 - 机制说明（领域公共规则仍以 `docs/design/domain_field_template.md` 为准）：
   - `开` 命中后只负责施加 `sukuna_kamado_mark`。
   - 灶层数独立存在，`stacking=stack`，多层会各自扣减、各自结算。
+  - 灶正式硬上限为 **3 层**。
+  - 目标已经有 3 层灶时，再命中一次 `开`：
+    - 不新增第 4 层
+    - 不刷新现有层数的剩余回合
+    - 不顶掉旧层
+    - 不额外写特殊日志
   - `persists_on_switch=false` 表示标记持有者离场时会把灶实例带走；但在离场链上的 `on_exit` 会先结算 20 点火属性固定伤害。
   - 若目标一直不离场，灶会在第 3 次 `turn_end` 后自然到期，并通过 `sukuna_kamado_explode` 再爆一次。
   - 每一层灶只会跟着各自那一层实例结算一次；无论是“离场炸”还是“自然到期炸”，炸完那一层就会消失。

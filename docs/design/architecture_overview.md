@@ -48,6 +48,7 @@
 |Effects|`battle_core/effects`|触发、排序、payload 执行、rule mod 接入；`payload_handlers/` 负责按 payload 家族拆分运行时处理|
 |Passives|`battle_core/passives`|被动技能、被动持有物、field 作为 trigger source 接入|
 |Logging|`battle_core/logging`|日志构造、写入、回放|
+|Facades|`battle_core/facades`|外围稳定入口、公开快照与事件日志公开快照构建|
 
 ## 4. 数据流
 
@@ -99,6 +100,12 @@
 `battle_core` 对外围公开稳定 facade 的当前实现是 `BattleCoreManager`。
 `BattleCoreSession` 只是 manager 内部会话壳，不属于外围稳定入口。
 
+`battle_core/facades/` 当前包含：
+
+- `battle_core_manager.gd`
+- `public_snapshot_builder.gd`
+- `event_log_public_snapshot_builder.gd`
+
 对外围稳定开放的最小接口为：
 
 - `create_session`
@@ -120,3 +127,6 @@
 
 - `initialize_battle` 与 `build_public_snapshot` 仍然存在于核心内部服务图中，但属于 `composition + facades` 内部装配细节，不作为外围稳定入口。
 - facade 若需要装配核心容器，只能依赖 build-container callable / factory port，不应直接持有完整 composition root。
+- `BattleCoreManager` 的公开返回当前统一使用严格 envelope：
+  - 成功：`{"ok": true, "data": ... , "error_code": null, "error_message": null}`
+  - 失败：`{"ok": false, "data": null, "error_code": String, "error_message": String}`

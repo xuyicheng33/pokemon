@@ -8,6 +8,8 @@
 |---|---|
 |`leave_service.gd`|统一执行离场状态清理并写 `state:exit`|
 |`faint_resolver.gd`|处理 `fainted_pending_leave` 窗口与触发批次|
+|`faint_killer_attribution_service.gd`|记录致死来源、解析击杀归属并收集行动链 `on_kill` 事件|
+|`faint_leave_replacement_service.gd`|收口击倒离场、creator 打断与补位主链的 helper|
 |`replacement_service.gd`|处理强制换下/补位目标合法性并执行入场|
 |`replacement_selector.gd`|系统替补选择接口，返回合法 bench 目标的 `unit_instance_id`|
 |`default_replacement_selector.gd`|默认系统替补策略实现（从合法候选中确定目标）|

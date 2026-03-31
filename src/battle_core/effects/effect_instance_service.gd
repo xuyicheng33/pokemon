@@ -3,12 +3,19 @@ class_name EffectInstanceService
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const EffectInstanceScript := preload("res://src/battle_core/runtime/effect_instance.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var id_factory
+var last_invalid_battle_code: Variant = null
+var last_apply_skipped: bool = false
 
 func create_instance(effect_definition, owner_id: String, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int):
+    last_invalid_battle_code = null
+    last_apply_skipped = false
     var owner_unit = battle_state.get_unit(owner_id)
-    assert(owner_unit != null, "Effect owner missing: %s" % owner_id)
+    if owner_unit == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return null
     var existing_instance = _find_existing(owner_unit, effect_definition.id)
     match effect_definition.stacking:
         ContentSchemaScript.STACKING_NONE:
@@ -22,7 +29,11 @@ func create_instance(effect_definition, owner_id: String, battle_state, source_i
             if existing_instance != null:
                 owner_unit.effect_instances.erase(existing_instance)
         ContentSchemaScript.STACKING_STACK:
-            pass
+            var matching_instances: Array = _find_matching_instances(owner_unit, effect_definition.id)
+            var max_stacks: int = int(effect_definition.max_stacks)
+            if max_stacks > 0 and matching_instances.size() >= max_stacks:
+                last_apply_skipped = true
+                return matching_instances[0]
     var effect_instance = EffectInstanceScript.new()
     effect_instance.instance_id = id_factory.next_id("effect")
     effect_instance.def_id = effect_definition.id

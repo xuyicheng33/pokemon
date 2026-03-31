@@ -8,6 +8,7 @@ class_name EffectDefinition
 @export var duration: int = 0
 @export var decrement_on: String = ""
 @export var stacking: String = "none"
+@export var max_stacks: int = -1
 @export var priority: int = 0
 @export var trigger_names: PackedStringArray = PackedStringArray()
 @export var required_target_effects: PackedStringArray = PackedStringArray()

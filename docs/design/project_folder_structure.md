@@ -36,6 +36,7 @@
       effects/
       passives/
       logging/
+      facades/
     adapters/
     composition/
     shared/
@@ -63,6 +64,7 @@
 |`src/battle_core/content`|内容 `Resource` 类型|
 |`src/battle_core/contracts`|跨模块强类型契约|
 |`src/battle_core/*`|领域服务|
+|`src/battle_core/facades`|对外围公开的稳定 facade 与公开快照构建辅助|
 |`src/adapters`|UI/输入/测试适配层|
 |`src/composition`|服务装配入口|
 |`src/shared`|无业务依赖的通用工具和常量|

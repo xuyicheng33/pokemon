@@ -9,6 +9,10 @@
 |`passive_skill_service.gd`|按触发点收集被动技能 `EffectEvent`|
 |`passive_item_service.gd`|按触发点收集被动持有物 `EffectEvent`|
 |`field_apply_service.gd`|field 落地主路径：领域对拼、成功后附带效果（`field_apply_success`）、`field_apply` 触发|
+|`field_apply_context_resolver.gd`|统一解析 field creator 与公开日志里要用到的显示 ID|
+|`field_apply_conflict_service.gd`|负责领域对拼、普通 field 被领域阻断等判定|
+|`field_apply_log_service.gd`|负责 field 对拼、阻断与落地日志|
+|`field_apply_effect_runner.gd`|负责创建 field state、跑 `field_apply` / `field_apply_success` / deferred success 链|
 |`field_service.gd`|收集 field `EffectEvent`、处理自然到期扣减与 creator 离场后的提前打断|
 
 ## 2. 接入原则

@@ -9,6 +9,7 @@
 |`command_builder.gd`|把外部输入组装成 `Command`|
 |`command_validator.gd`|校验 `Command` 是否满足当前规则|
 |`legal_action_service.gd`|产出 `LegalActionSet`|
+|`domain_legality_service.gd`|统一处理领域重开禁用与同回合对拼豁免判断|
 |`command_types.gd`|集中定义行动类型常量|
 
 ## 2. Contract

@@ -233,3 +233,43 @@
 - 正式角色必须各自拥有全量 snapshot suite，用字面量断言锁死单位面板、技能资源与关键 effect / field / passive 资源，不再只靠“从当前资源反推期望值”的测试。
 - Gojo `苍 / 赫` 当前正式口径固定为速度能力阶段 `+1 / -1`，范围 `-2..+2`，离场清空，不改成 3 回合 buff / debuff。
 - 宿傩对外类型文案统一写“恶魔”；内部资源 `combat_type_id = demon` 不改。
+
+### 28. 扩角前运行时 helper 全部统一进 composition 装配（2026-03-31）
+
+- 当前统一装配边界收口到“战斗运行时 helper”：
+  - 行动链 helper
+  - 数值 payload helper
+  - 击倒/补位 helper
+  - field apply helper
+- 这些 helper 不再允许由 owner service 内部 `new()`，也不再允许 `_sync_*dependencies()` 这种手工灌依赖链继续存在。
+- 原因：
+  - 扩角后每新增一个运行时依赖，若还保留“composition wiring + owner 手工同步”双维护路径，极容易出现 helper 漏接线且只在运行到半截时才炸。
+- 当前处理：
+  - helper 统一注册进 `BattleCoreServiceSpecs` / `BattleCoreWiringSpecs`
+  - `BattleCoreContainer` 显式持有 helper slot
+  - `RuntimeGuardService` 递归检查这些 helper 的缺线问题
+
+### 29. `BattleCoreManager` 公开 contract 统一为严格 envelope（2026-03-31）
+
+- 当前所有公开方法统一返回：
+  - `{"ok": bool, "data": ..., "error_code": String|null, "error_message": String|null}`
+- 公开成功结果只允许把原 payload 放在 `data` 里；失败时必须 `data = null`。
+- 原因：
+  - 旧 contract 有的直接回对象，有的靠断言崩，外围调用方很难稳定判断“是业务失败、会话不存在，还是装配断了”。
+- 当前处理：
+  - `BattleCoreComposer` 装配失败不再靠断言暴露
+  - `BattleCoreManager` 对 compose / session / replay / build_command 等失败路径全部统一转成结构化错误
+  - manager contract suite 现在把 envelope 形状视为正式回归的一部分
+
+### 30. 宿傩“灶”正式写死为 3 层硬上限，满层后忽略新层（2026-03-31）
+
+- `sukuna_kamado_mark` 当前正式配置：
+  - `stacking = stack`
+  - `max_stacks = 3`
+- 当目标已满 3 层灶时，再次命中 `开`：
+  - 不新增第 4 层
+  - 不刷新现有层数的剩余回合
+  - 不顶掉旧层
+  - 不额外写特殊日志
+- 原因：
+  - 当前回蓝与领域续航虽然通常不会把灶堆到失控，但扩角后只要出现多动、多段或复制触发，没有显式上限就会把数值边界重新炸开。

@@ -132,6 +132,11 @@ func _validate_effects(errors: Array) -> void:
         and effect_definition.stacking != ContentSchemaScript.STACKING_REPLACE \
         and effect_definition.stacking != ContentSchemaScript.STACKING_STACK:
             errors.append("effect[%s].stacking invalid: %s" % [effect_id, effect_definition.stacking])
+        if effect_definition.stacking == ContentSchemaScript.STACKING_STACK:
+            if int(effect_definition.max_stacks) != -1 and int(effect_definition.max_stacks) <= 0:
+                errors.append("effect[%s].max_stacks must be positive or -1 for stack effects, got %d" % [effect_id, int(effect_definition.max_stacks)])
+        elif int(effect_definition.max_stacks) != -1:
+            errors.append("effect[%s].max_stacks only allowed when stacking=stack, got %d" % [effect_id, int(effect_definition.max_stacks)])
         _validate_required_target_effects(errors, effect_id, effect_definition)
         _payload_validator.validate_effect_refs(errors, "effect[%s].on_expire_effect_ids" % effect_id, effect_definition.on_expire_effect_ids, _content_index.effects)
         for payload in effect_definition.payloads:

@@ -19,6 +19,7 @@ duration_mode = "turns"
 duration = 3
 decrement_on = "turn_end"
 stacking = "stack"
+max_stacks = 3
 trigger_names = PackedStringArray("on_exit")
 on_expire_effect_ids = PackedStringArray("sukuna_kamado_explode")
 payloads = Array[Resource]([SubResource("1")])

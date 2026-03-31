@@ -86,6 +86,11 @@ func _apply_effect_payload(payload, effect_definition, effect_event, battle_stat
         effect_event.source_kind_order,
         effect_event.source_order_speed_snapshot
     )
+    if effect_instance_service.last_invalid_battle_code != null:
+        last_invalid_battle_code = effect_instance_service.last_invalid_battle_code
+        return
+    if effect_instance_service.last_apply_skipped:
+        return
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.EFFECT_APPLY_EFFECT,
         battle_state,

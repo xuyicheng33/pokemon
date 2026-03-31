@@ -20,6 +20,46 @@
 
 ## 2026-03-31
 
+### 战斗核心全量治理整顿（已完成）
+
+- 目标：
+  - 把扩角前最后一轮底盘治理一次收紧：统一运行时 helper 装配、移除公开入口与主链关键断言、公开 API 统一结构化 envelope、宿傩灶补正式 3 层上限，并把文档与回归锚点补齐
+- 范围：
+  - `src/composition/*`
+  - `src/battle_core/facades/*`
+  - `src/battle_core/actions/*`
+  - `src/battle_core/commands/*`
+  - `src/battle_core/lifecycle/*`
+  - `src/battle_core/passives/*`
+  - `src/battle_core/effects/*`
+  - `src/battle_core/content/*`
+  - `tests/suites/manager_*`
+  - `tests/suites/adapter_contract_suite.gd`
+  - `tests/suites/sukuna_kamado_domain_suite.gd`
+  - `docs/design/*`
+  - `docs/records/*`
+- 验收标准：
+  - 运行时 helper 不再由 owner service 内部 `new()` + 手工同步依赖
+  - `BattleCoreManager` 公开方法统一返回严格 `{"ok","data","error_code","error_message"}` envelope
+  - 宿傩灶正式写死 `max_stacks = 3`，满层后再挂灶不新增、不刷新、不替换
+  - manager / Sukuna / 架构回归与三条总闸门全绿
+
+#### 当前执行结果
+
+- 已完成：
+  - `ActionExecutor`、`ActionCastService`、`PayloadNumericHandler`、`FaintResolver`、`FieldApplyService` 已切到容器统一注入 helper
+  - `RuntimeGuardService` 已改为递归缺依赖检查，缺线会在主链启动前 fail-fast
+  - `BattleCoreComposer` 不再靠断言暴露装配失败；`BattleCoreManager` 公开方法已统一 envelope
+  - `CommandBuilder`、`LegalActionService`、`BattleInitializer`、`ReplayRunner` 等公开主链依赖点已改为显式错误路径
+  - 宿傩灶已补 `max_stacks = 3`，并新增“满层忽略新层”“强制换下触发 on_exit”“creator 被击倒导致 field_break 无终爆”回归
+  - helper 文件清单、`facades/` 目录、宿傩设计稿与 records 已同步补齐
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/check_architecture_constraints.sh` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+
 ### 角色契约收口与机制说明统一（已完成）
 
 - 目标：
