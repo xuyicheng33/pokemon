@@ -3,12 +3,14 @@ class_name FieldApplyEffectRunner
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var field_service
 var trigger_dispatcher
 var trigger_batch_runner
 var id_factory
 var context_resolver
+var last_invalid_battle_code: Variant = null
 
 func resolve_missing_dependency() -> String:
 	if field_service == null:
@@ -24,11 +26,14 @@ func resolve_missing_dependency() -> String:
 	return ""
 
 func create_field_state(effect_definition, payload, effect_event):
+	last_invalid_battle_code = null
 	var field_state = FieldStateScript.new()
 	field_state.field_def_id = payload.field_definition_id
 	field_state.instance_id = id_factory.next_id("field")
 	field_state.creator = context_resolver.resolve_field_creator(effect_event)
-	assert(not field_state.creator.is_empty(), "FieldApplyEffectRunner.create_field_state requires non-empty creator for %s" % field_state.field_def_id)
+	if field_state.creator.is_empty():
+		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+		return null
 	field_state.remaining_turns = effect_definition.duration
 	field_state.source_instance_id = effect_event.source_instance_id
 	field_state.source_kind_order = effect_event.source_kind_order
@@ -72,6 +77,8 @@ func execute_success_effects(effect_ids: PackedStringArray, effect_event, battle
 		effect_event.source_order_speed_snapshot,
 		effect_event.chain_context
 	)
+	if trigger_dispatcher.last_invalid_battle_code != null:
+		return trigger_dispatcher.last_invalid_battle_code
 	if success_events.is_empty():
 		return null
 	return trigger_batch_runner.execute_trigger_batch(
@@ -106,6 +113,9 @@ func execute_pending_success_effects(field_state, battle_state, content_index) -
 		field_state.pending_success_source_order_speed_snapshot,
 		field_state.pending_success_chain_context
 	)
+	if trigger_dispatcher.last_invalid_battle_code != null:
+		clear_pending_success_effects(field_state)
+		return trigger_dispatcher.last_invalid_battle_code
 	clear_pending_success_effects(field_state)
 	if success_events.is_empty():
 		return null

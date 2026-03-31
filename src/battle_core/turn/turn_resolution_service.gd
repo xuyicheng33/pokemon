@@ -123,6 +123,10 @@ func decrement_rule_mods_and_log(battle_state, trigger_name: String, cause_event
 
 func decrement_effect_instances_and_log(battle_state, content_index, trigger_name: String, owner_unit_ids: Array, cause_event_id: String) -> bool:
     var decrement_result: Dictionary = effect_instance_dispatcher.decrement_for_trigger(trigger_name, battle_state, content_index, owner_unit_ids)
+    var decrement_invalid_code = decrement_result.get("invalid_code", null)
+    if decrement_invalid_code != null:
+        battle_result_service.terminate_invalid_battle(battle_state, str(decrement_invalid_code))
+        return true
     var removed_instances: Array = decrement_result.get("removed_instances", [])
     var expire_events: Array = decrement_result.get("expire_events", [])
     if not expire_events.is_empty():

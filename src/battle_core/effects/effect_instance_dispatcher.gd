@@ -3,10 +3,13 @@ class_name EffectInstanceDispatcher
 
 const EffectEventScript := preload("res://src/battle_core/contracts/effect_event.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var id_factory
+var last_invalid_battle_code: Variant = null
 
 func collect_trigger_events(trigger_name: String, battle_state, content_index, owner_unit_ids: Array, chain_context) -> Array:
+    last_invalid_battle_code = null
     var effect_events: Array = []
     for owner_id in owner_unit_ids:
         var owner_unit = battle_state.get_unit(str(owner_id))
@@ -14,7 +17,9 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, o
             continue
         for effect_instance in owner_unit.effect_instances:
             var effect_definition = content_index.effects.get(effect_instance.def_id)
-            assert(effect_definition != null, "Missing effect definition: %s" % effect_instance.def_id)
+            if effect_definition == null:
+                last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+                return []
             if not effect_definition.trigger_names.has(trigger_name):
                 continue
             var effect_event = EffectEventScript.new()
@@ -32,6 +37,7 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, o
     return effect_events
 
 func decrement_for_trigger(trigger_name: String, battle_state, content_index, owner_unit_ids: Array) -> Dictionary:
+    last_invalid_battle_code = null
     var removed_instances: Array = []
     var expire_events: Array = []
     for owner_id in owner_unit_ids:
@@ -41,7 +47,13 @@ func decrement_for_trigger(trigger_name: String, battle_state, content_index, ow
         var keep_instances: Array = []
         for effect_instance in owner_unit.effect_instances:
             var effect_definition = content_index.effects.get(effect_instance.def_id)
-            assert(effect_definition != null, "Missing effect definition: %s" % effect_instance.def_id)
+            if effect_definition == null:
+                last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+                return {
+                    "removed_instances": [],
+                    "expire_events": [],
+                    "invalid_code": last_invalid_battle_code,
+                }
             var should_remove: bool = false
             if effect_definition.duration_mode == ContentSchemaScript.DURATION_TURNS and effect_definition.decrement_on == trigger_name:
                 effect_instance.remaining -= 1
@@ -56,6 +68,12 @@ func decrement_for_trigger(trigger_name: String, battle_state, content_index, ow
                         battle_state,
                         content_index
                     ))
+                    if last_invalid_battle_code != null:
+                        return {
+                            "removed_instances": [],
+                            "expire_events": [],
+                            "invalid_code": last_invalid_battle_code,
+                        }
                 removed_instances.append({
                     "owner_id": owner_unit.unit_instance_id,
                     "instance": effect_instance,
@@ -67,13 +85,16 @@ func decrement_for_trigger(trigger_name: String, battle_state, content_index, ow
     return {
         "removed_instances": removed_instances,
         "expire_events": expire_events,
+        "invalid_code": null,
     }
 
 func _collect_expire_events(effect_instance, effect_definition, owner_id: String, battle_state, content_index) -> Array:
     var expire_events: Array = []
     for effect_id in effect_definition.on_expire_effect_ids:
         var next_effect_definition = content_index.effects.get(effect_id)
-        assert(next_effect_definition != null, "Missing effect definition: %s" % effect_id)
+        if next_effect_definition == null:
+            last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+            return []
         var effect_event = EffectEventScript.new()
         effect_event.event_id = id_factory.next_id("effect_event")
         effect_event.trigger_name = "on_expire"

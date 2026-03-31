@@ -1,8 +1,6 @@
 extends RefCounted
 class_name FaintResolver
 
-const FaintKillerAttributionServiceScript := preload("res://src/battle_core/lifecycle/faint_killer_attribution_service.gd")
-const FaintLeaveReplacementServiceScript := preload("res://src/battle_core/lifecycle/faint_leave_replacement_service.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 var leave_service
@@ -12,9 +10,35 @@ var trigger_dispatcher
 var trigger_batch_runner
 var battle_logger
 var log_event_builder
+var faint_killer_attribution_service
+var faint_leave_replacement_service
 
-var _killer_attribution_service := FaintKillerAttributionServiceScript.new()
-var _leave_replacement_service := FaintLeaveReplacementServiceScript.new()
+func resolve_missing_dependency() -> String:
+    if leave_service == null:
+        return "leave_service"
+    if replacement_service == null:
+        return "replacement_service"
+    if field_service == null:
+        return "field_service"
+    if trigger_dispatcher == null:
+        return "trigger_dispatcher"
+    if trigger_batch_runner == null:
+        return "trigger_batch_runner"
+    if battle_logger == null:
+        return "battle_logger"
+    if log_event_builder == null:
+        return "log_event_builder"
+    if faint_killer_attribution_service == null:
+        return "faint_killer_attribution_service"
+    var killer_missing := str(faint_killer_attribution_service.resolve_missing_dependency())
+    if not killer_missing.is_empty():
+        return "faint_killer_attribution_service.%s" % killer_missing
+    if faint_leave_replacement_service == null:
+        return "faint_leave_replacement_service"
+    var leave_missing := str(faint_leave_replacement_service.resolve_missing_dependency())
+    if not leave_missing.is_empty():
+        return "faint_leave_replacement_service.%s" % leave_missing
+    return ""
 
 func record_fatal_damage(
     battle_state,
@@ -28,8 +52,7 @@ func record_fatal_damage(
     priority: int,
     cause_event_step_id: int
 ) -> void:
-    _sync_subservices()
-    _killer_attribution_service.record_fatal_damage(
+    faint_killer_attribution_service.record_fatal_damage(
         battle_state,
         target_unit_id,
         before_hp,
@@ -43,15 +66,14 @@ func record_fatal_damage(
     )
 
 func resolve_faint_window(battle_state, content_index):
-    _sync_subservices()
-    var fainted_units: Array = _leave_replacement_service.collect_pending_fainted_units(battle_state)
+    var fainted_units: Array = faint_leave_replacement_service.collect_pending_fainted_units(battle_state)
 
     if not fainted_units.is_empty():
         var faint_invalid_code = _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units)
         if faint_invalid_code != null:
             return faint_invalid_code
 
-    var replacement_resolution: Dictionary = _leave_replacement_service.resolve_faint_replacements(battle_state)
+    var replacement_resolution: Dictionary = faint_leave_replacement_service.resolve_faint_replacements(battle_state)
     var replacement_invalid_code = replacement_resolution.get("invalid_code", null)
     if replacement_invalid_code != null:
         return replacement_invalid_code
@@ -60,15 +82,15 @@ func resolve_faint_window(battle_state, content_index):
         var on_enter_invalid_code = _execute_unit_trigger_batch("on_enter", battle_state, content_index, entered_unit_ids)
         if on_enter_invalid_code != null:
             return on_enter_invalid_code
-    if _leave_replacement_service.has_pending_faint_active(battle_state):
+    if faint_leave_replacement_service.has_pending_faint_active(battle_state):
         return resolve_faint_window(battle_state, content_index)
     return null
 
 func _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units: Array) -> Variant:
-    var fainted_unit_ids: Array = _leave_replacement_service.collect_unit_ids(fainted_units)
+    var fainted_unit_ids: Array = faint_leave_replacement_service.collect_unit_ids(fainted_units)
     var killer_by_target: Dictionary = {}
     for fainted_unit_id in fainted_unit_ids:
-        killer_by_target[fainted_unit_id] = _killer_attribution_service.resolve_killer_for_target(battle_state, fainted_unit_id)
+        killer_by_target[fainted_unit_id] = faint_killer_attribution_service.resolve_killer_for_target(battle_state, fainted_unit_id)
     for fainted_unit in fainted_units:
         battle_logger.append_event(log_event_builder.build_event(
             EventTypesScript.STATE_FAINT,
@@ -85,10 +107,10 @@ func _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units:
     var on_faint_invalid_code = _execute_unit_trigger_batch("on_faint", battle_state, content_index, fainted_unit_ids)
     if on_faint_invalid_code != null:
         return on_faint_invalid_code
-    var killer_resolution: Dictionary = _killer_attribution_service.resolve_killer_units(battle_state, fainted_unit_ids)
+    var killer_resolution: Dictionary = faint_killer_attribution_service.resolve_killer_units(battle_state, fainted_unit_ids)
     var killer_unit_ids: Array = killer_resolution["killer_unit_ids"]
     if not killer_unit_ids.is_empty():
-        var action_on_kill_events_result: Dictionary = _killer_attribution_service.collect_action_on_kill_events(
+        var action_on_kill_events_result: Dictionary = faint_killer_attribution_service.collect_action_on_kill_events(
             battle_state,
             content_index,
             killer_unit_ids
@@ -104,7 +126,7 @@ func _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units:
         )
         if on_kill_invalid_code != null:
             return on_kill_invalid_code
-    var exit_invalid_code = _leave_replacement_service.resolve_fainted_units_leave(
+    var exit_invalid_code = faint_leave_replacement_service.resolve_fainted_units_leave(
         battle_state,
         content_index,
         fainted_units,
@@ -112,7 +134,7 @@ func _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units:
     )
     if exit_invalid_code != null:
         return exit_invalid_code
-    _killer_attribution_service.clear_fatal_damage_records(battle_state, fainted_unit_ids)
+    faint_killer_attribution_service.clear_fatal_damage_records(battle_state, fainted_unit_ids)
     return null
 
 func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array, extra_effect_events: Array = []):
@@ -124,9 +146,3 @@ func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_ind
         battle_state.chain_context,
         extra_effect_events
     )
-
-func _sync_subservices() -> void:
-    _killer_attribution_service.trigger_dispatcher = trigger_dispatcher
-    _leave_replacement_service.leave_service = leave_service
-    _leave_replacement_service.replacement_service = replacement_service
-    _leave_replacement_service.field_service = field_service

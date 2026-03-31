@@ -12,16 +12,19 @@ func resolve_missing_dependency(controller_deps: Dictionary) -> String:
         "battle_result_service",
     ])
     for dependency_name in required:
-        if controller_deps.get(dependency_name, null) == null:
+        var dependency = controller_deps.get(dependency_name, null)
+        if dependency == null:
             return dependency_name
-    var turn_resolution_service = controller_deps.get("turn_resolution_service")
-    var turn_resolution_missing := str(turn_resolution_service.resolve_missing_dependency())
-    if not turn_resolution_missing.is_empty():
-        return "turn_resolution_service.%s" % turn_resolution_missing
-    var battle_result_service = controller_deps.get("battle_result_service")
-    var battle_result_missing := str(battle_result_service.resolve_missing_dependency())
-    if not battle_result_missing.is_empty():
-        return "battle_result_service.%s" % battle_result_missing
+        var nested_missing := _resolve_object_missing_dependency(dependency)
+        if not nested_missing.is_empty():
+            return "%s.%s" % [dependency_name, nested_missing]
+    return ""
+
+func _resolve_object_missing_dependency(dependency) -> String:
+    if dependency == null:
+        return "missing"
+    if dependency.has_method("resolve_missing_dependency"):
+        return str(dependency.resolve_missing_dependency())
     return ""
 
 func validate_runtime_state(battle_state):

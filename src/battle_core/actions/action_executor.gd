@@ -6,14 +6,13 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const ActionResultScript := preload("res://src/battle_core/contracts/action_result.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
-const ActionDomainGuardScript := preload("res://src/battle_core/actions/action_domain_guard.gd")
-
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var action_cast_service
 var switch_action_service
 var action_log_service
 var rule_mod_service
 var domain_legality_service
-var _domain_guard = ActionDomainGuardScript.new()
+var action_domain_guard
 
 func resolve_missing_dependency() -> String:
     if action_cast_service == null:
@@ -35,11 +34,11 @@ func resolve_missing_dependency() -> String:
         return "rule_mod_service"
     if domain_legality_service == null:
         return "domain_legality_service"
-    _domain_guard.rule_mod_service = rule_mod_service
-    _domain_guard.domain_legality_service = domain_legality_service
-    var domain_missing := _domain_guard.resolve_missing_dependency()
+    if action_domain_guard == null:
+        return "action_domain_guard"
+    var domain_missing := str(action_domain_guard.resolve_missing_dependency())
     if not domain_missing.is_empty():
-        return "domain_guard.%s" % domain_missing
+        return "action_domain_guard.%s" % domain_missing
     return ""
 
 func execute_action(queued_action, battle_state, content_index):
@@ -49,6 +48,10 @@ func execute_action(queued_action, battle_state, content_index):
     var actor = battle_state.get_unit(command.actor_id)
     var skill_definition = _resolve_skill_definition(command, content_index)
     battle_state.chain_context = _build_chain_context(queued_action, battle_state)
+    if command.command_type == CommandTypesScript.SKILL or command.command_type == CommandTypesScript.ULTIMATE:
+        if skill_definition == null:
+            result.invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+            return result
     if not _can_start_and_stay_legal(queued_action, command, actor, battle_state, content_index):
         _log_cancelled_pre_start(queued_action, battle_state, command, result)
         return result
@@ -103,16 +106,12 @@ func execute_action(queued_action, battle_state, content_index):
 func _resolve_skill_definition(command, content_index):
     if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
         return null
-    var skill_definition = content_index.skills.get(command.skill_id)
-    assert(skill_definition != null, "Missing skill definition: %s" % command.skill_id)
-    return skill_definition
+    return content_index.skills.get(command.skill_id, null)
 
 func _can_start_and_stay_legal(queued_action, command, actor, battle_state, content_index) -> bool:
     if not _can_start_action(actor, command, battle_state):
         return false
-    _domain_guard.rule_mod_service = rule_mod_service
-    _domain_guard.domain_legality_service = domain_legality_service
-    return _domain_guard.is_action_still_allowed(queued_action, command, actor, battle_state, content_index)
+    return action_domain_guard.is_action_still_allowed(queued_action, command, actor, battle_state, content_index)
 
 func _log_cancelled_pre_start(queued_action, battle_state, command, result) -> void:
     action_log_service.log_action_cancelled_pre_start(queued_action, battle_state, command)

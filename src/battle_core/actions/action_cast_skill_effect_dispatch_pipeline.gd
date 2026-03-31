@@ -31,6 +31,9 @@ func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String,
         queued_action.speed_snapshot,
         battle_state.chain_context
     )
+    if trigger_dispatcher.last_invalid_battle_code != null:
+        result.invalid_battle_code = trigger_dispatcher.last_invalid_battle_code
+        return
     if effect_events.is_empty():
         return
     battle_state.pending_effect_queue = effect_events

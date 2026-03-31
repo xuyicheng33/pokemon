@@ -6,6 +6,7 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var rng_service
 var context_resolver
+var last_invalid_battle_code: Variant = null
 
 func resolve_missing_dependency() -> String:
 	if rng_service == null:
@@ -15,23 +16,37 @@ func resolve_missing_dependency() -> String:
 	return ""
 
 func resolve_field_kind(field_definition) -> String:
+	last_invalid_battle_code = null
 	if field_definition == null:
 		return ContentSchemaScript.FIELD_KIND_NORMAL
 	var normalized_kind := String(field_definition.field_kind).strip_edges()
-	assert(not normalized_kind.is_empty(), "FieldDefinition.field_kind must not be empty for %s" % String(field_definition.id))
-	assert(
-		normalized_kind == ContentSchemaScript.FIELD_KIND_NORMAL or normalized_kind == ContentSchemaScript.FIELD_KIND_DOMAIN,
-		"FieldDefinition.field_kind invalid: %s" % normalized_kind
-	)
+	if normalized_kind.is_empty():
+		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+		return ""
+	if normalized_kind != ContentSchemaScript.FIELD_KIND_NORMAL and normalized_kind != ContentSchemaScript.FIELD_KIND_DOMAIN:
+		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+		return ""
 	return normalized_kind
 
 func should_resolve_domain_clash(challenger_field_definition, incumbent_field_definition) -> bool:
-	return resolve_field_kind(challenger_field_definition) == ContentSchemaScript.FIELD_KIND_DOMAIN \
-	and resolve_field_kind(incumbent_field_definition) == ContentSchemaScript.FIELD_KIND_DOMAIN
+	var challenger_kind := resolve_field_kind(challenger_field_definition)
+	if last_invalid_battle_code != null:
+		return false
+	var incumbent_kind := resolve_field_kind(incumbent_field_definition)
+	if last_invalid_battle_code != null:
+		return false
+	return challenger_kind == ContentSchemaScript.FIELD_KIND_DOMAIN \
+	and incumbent_kind == ContentSchemaScript.FIELD_KIND_DOMAIN
 
 func is_normal_field_blocked_by_domain(challenger_field_definition, incumbent_field_definition) -> bool:
-	return resolve_field_kind(challenger_field_definition) == ContentSchemaScript.FIELD_KIND_NORMAL \
-	and resolve_field_kind(incumbent_field_definition) == ContentSchemaScript.FIELD_KIND_DOMAIN
+	var challenger_kind := resolve_field_kind(challenger_field_definition)
+	if last_invalid_battle_code != null:
+		return false
+	var incumbent_kind := resolve_field_kind(incumbent_field_definition)
+	if last_invalid_battle_code != null:
+		return false
+	return challenger_kind == ContentSchemaScript.FIELD_KIND_NORMAL \
+	and incumbent_kind == ContentSchemaScript.FIELD_KIND_DOMAIN
 
 func resolve_field_clash(before_field, effect_event, battle_state) -> Dictionary:
 	var challenger_creator: String = context_resolver.resolve_field_creator(effect_event)

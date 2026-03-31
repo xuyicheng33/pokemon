@@ -8,6 +8,7 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var trigger_dispatcher
 var trigger_batch_runner
+var last_invalid_battle_code: Variant = null
 
 func resolve_missing_dependency() -> String:
     if trigger_dispatcher == null:
@@ -17,6 +18,7 @@ func resolve_missing_dependency() -> String:
     return ""
 
 func collect_trigger_events(trigger_name: String, battle_state, content_index, chain_context) -> Array:
+    last_invalid_battle_code = null
     if battle_state.field_state == null:
         return []
     var field_definition = content_index.fields.get(battle_state.field_state.field_def_id)
@@ -32,7 +34,7 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, c
         effect_ids.append(effect_id)
     if effect_ids.is_empty():
         return []
-    return trigger_dispatcher.collect_events(
+    var effect_events = trigger_dispatcher.collect_events(
         trigger_name,
         battle_state,
         content_index,
@@ -43,6 +45,8 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, c
         battle_state.field_state.source_order_speed_snapshot,
         chain_context
     )
+    last_invalid_battle_code = trigger_dispatcher.last_invalid_battle_code
+    return effect_events
 
 func get_field_definition_for_state(field_state, content_index):
     if field_state == null or content_index == null:
@@ -57,10 +61,11 @@ func collect_lifecycle_effect_events(
     content_index,
     chain_context
 ) -> Array:
+    last_invalid_battle_code = null
     if field_state == null or content_index == null or effect_ids.is_empty():
         return []
     var lifecycle_chain_context = _build_lifecycle_chain_context(chain_context, battle_state, field_state.creator)
-    return trigger_dispatcher.collect_events(
+    var effect_events = trigger_dispatcher.collect_events(
         trigger_name,
         battle_state,
         content_index,
@@ -71,6 +76,8 @@ func collect_lifecycle_effect_events(
         field_state.source_order_speed_snapshot,
         lifecycle_chain_context
     )
+    last_invalid_battle_code = trigger_dispatcher.last_invalid_battle_code
+    return effect_events
 
 func break_field_if_creator_inactive(battle_state, content_index, chain_context) -> Variant:
     if battle_state.field_state == null:
@@ -86,7 +93,8 @@ func break_field_if_creator_inactive(battle_state, content_index, chain_context)
 func break_active_field(battle_state, content_index, trigger_name: String, chain_context) -> Variant:
     if battle_state.field_state == null:
         return null
-    assert(trigger_batch_runner != null, "FieldService.trigger_batch_runner is required")
+    if trigger_batch_runner == null:
+        return ErrorCodesScript.INVALID_STATE_CORRUPTION
     var current_field_state = battle_state.field_state
     var field_definition = get_field_definition_for_state(current_field_state, content_index)
     if field_definition != null and not field_definition.on_break_effect_ids.is_empty():

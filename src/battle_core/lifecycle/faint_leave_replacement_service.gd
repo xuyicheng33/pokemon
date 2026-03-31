@@ -7,6 +7,15 @@ var leave_service
 var replacement_service
 var field_service
 
+func resolve_missing_dependency() -> String:
+    if leave_service == null:
+        return "leave_service"
+    if replacement_service == null:
+        return "replacement_service"
+    if field_service == null:
+        return "field_service"
+    return ""
+
 func collect_pending_fainted_units(battle_state) -> Array:
     var fainted_units: Array = []
     for side_state in battle_state.sides:
@@ -26,6 +35,8 @@ func resolve_fainted_units_leave(battle_state, content_index, fainted_units: Arr
         return on_exit_invalid_code
     for fainted_unit in fainted_units:
         leave_service.leave_unit(battle_state, fainted_unit, "faint", content_index)
+        if leave_service != null and leave_service.last_invalid_battle_code != null:
+            return leave_service.last_invalid_battle_code
     var field_break_invalid_code = field_service.break_field_if_creator_inactive(
         battle_state,
         content_index,

@@ -10,6 +10,7 @@ var effect_instance_dispatcher
 var effect_queue_service
 var payload_executor
 var rng_service
+var last_invalid_battle_code: Variant = null
 
 func execute_trigger_batch(
     trigger_name: String,
@@ -19,6 +20,7 @@ func execute_trigger_batch(
     chain_context,
     extra_effect_events: Array = []
 ):
+    last_invalid_battle_code = null
     var missing_dependency := resolve_missing_dependency()
     if not missing_dependency.is_empty():
         return ErrorCodesScript.INVALID_STATE_CORRUPTION
@@ -30,6 +32,8 @@ func execute_trigger_batch(
         chain_context,
         extra_effect_events
     )
+    if last_invalid_battle_code != null:
+        return last_invalid_battle_code
     if effect_events.is_empty():
         return null
     battle_state.pending_effect_queue = effect_events
@@ -51,6 +55,7 @@ func collect_trigger_events(
     chain_context,
     extra_effect_events: Array = []
 ) -> Array:
+    last_invalid_battle_code = null
     var effect_events: Array = []
     effect_events.append_array(passive_skill_service.collect_trigger_events(
         trigger_name,
@@ -73,12 +78,18 @@ func collect_trigger_events(
         owner_unit_ids,
         chain_context
     ))
+    if effect_instance_dispatcher.last_invalid_battle_code != null:
+        last_invalid_battle_code = effect_instance_dispatcher.last_invalid_battle_code
+        return []
     effect_events.append_array(field_service.collect_trigger_events(
         trigger_name,
         battle_state,
         content_index,
         chain_context
     ))
+    if field_service.get("last_invalid_battle_code") != null:
+        last_invalid_battle_code = field_service.get("last_invalid_battle_code")
+        return []
     effect_events.append_array(extra_effect_events)
     return effect_events
 

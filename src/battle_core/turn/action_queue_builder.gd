@@ -5,12 +5,15 @@ const QueuedActionScript := preload("res://src/battle_core/contracts/queued_acti
 const TargetSnapshotScript := preload("res://src/battle_core/contracts/target_snapshot.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var id_factory
 var rng_service
 var stat_calculator
+var last_invalid_battle_code: Variant = null
 
 func build_queue(commands: Array, battle_state, content_index) -> Array:
+    last_invalid_battle_code = null
     var queued_actions: Array = []
     var grouped_actions: Dictionary = {}
     for command in commands:
@@ -21,6 +24,8 @@ func build_queue(commands: Array, battle_state, content_index) -> Array:
         queued_action.priority = _resolve_priority(command, battle_state, content_index)
         queued_action.speed_snapshot = _resolve_speed_snapshot(command, battle_state)
         queued_action.target_snapshot = _build_target_snapshot(command, battle_state, content_index)
+        if last_invalid_battle_code != null:
+            return []
         var group_key := "%d|%d" % [queued_action.priority, queued_action.speed_snapshot]
         if not grouped_actions.has(group_key):
             grouped_actions[group_key] = []
@@ -46,14 +51,18 @@ func _resolve_priority(command, battle_state, content_index) -> int:
             return 0
         CommandTypesScript.SKILL, CommandTypesScript.ULTIMATE:
             var skill_definition = content_index.skills.get(command.skill_id)
-            assert(skill_definition != null, "Missing skill definition: %s" % command.skill_id)
+            if skill_definition == null:
+                last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+                return 0
             return skill_definition.priority
         _:
             return 0
 
 func _resolve_speed_snapshot(command, battle_state) -> int:
     var actor = battle_state.get_unit(command.actor_id)
-    assert(actor != null, "Missing action actor: %s" % command.actor_id)
+    if actor == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return 0
     actor.last_effective_speed = stat_calculator.calc_effective_stat(actor.base_speed, int(actor.stat_stages.get("speed", 0)))
     return actor.last_effective_speed
 
@@ -72,7 +81,9 @@ func _build_target_snapshot(command, battle_state, content_index):
             target_snapshot.target_slot = ContentSchemaScript.ACTIVE_SLOT_PRIMARY
         CommandTypesScript.SKILL, CommandTypesScript.ULTIMATE:
             var skill_definition = content_index.skills.get(command.skill_id)
-            assert(skill_definition != null, "Missing skill definition: %s" % command.skill_id)
+            if skill_definition == null:
+                last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+                return target_snapshot
             target_snapshot.target_kind = skill_definition.targeting
             if skill_definition.targeting == ContentSchemaScript.TARGET_ENEMY_ACTIVE:
                 target_snapshot.target_slot = ContentSchemaScript.ACTIVE_SLOT_PRIMARY

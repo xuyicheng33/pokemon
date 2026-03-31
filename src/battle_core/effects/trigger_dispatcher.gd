@@ -2,18 +2,22 @@ extends RefCounted
 class_name TriggerDispatcher
 
 const EffectEventScript := preload("res://src/battle_core/contracts/effect_event.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var id_factory
+var last_invalid_battle_code: Variant = null
 
 func collect_events(trigger_name: String, _battle_state, content_index, effect_ids: PackedStringArray, owner_id: String, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, chain_context) -> Array:
+    last_invalid_battle_code = null
     var effect_events: Array = []
     for effect_id in effect_ids:
         var effect_definition = content_index.effects.get(effect_id)
-        assert(effect_definition != null, "Missing effect definition: %s" % effect_id)
-        assert(
-            effect_definition.trigger_names.has(trigger_name),
-            "Effect %s missing trigger_names entry for dispatched trigger: %s" % [effect_id, trigger_name]
-        )
+        if effect_definition == null:
+            last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+            return []
+        if not effect_definition.trigger_names.has(trigger_name):
+            last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+            return []
         var effect_event = EffectEventScript.new()
         effect_event.event_id = id_factory.next_id("effect_event")
         effect_event.trigger_name = trigger_name

@@ -35,7 +35,8 @@ func execute_forced_replace(battle_state, content_index, target_unit_id: String,
     if target_unit == null or target_unit.current_hp <= 0 or target_unit.leave_state != LeaveStatesScript.ACTIVE:
         return {"replaced": false, "entered_unit": null, "invalid_code": null}
     var side_state = battle_state.get_side_for_unit(target_unit_id)
-    assert(side_state != null, "ReplacementService forced_replace missing side for %s" % target_unit_id)
+    if side_state == null:
+        return {"replaced": false, "entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
     var active_slot_id: String = _find_active_slot_id(side_state, target_unit_id)
     if active_slot_id.is_empty():
         return {"replaced": false, "entered_unit": null, "invalid_code": null}
@@ -86,6 +87,8 @@ func execute_forced_replace(battle_state, content_index, target_unit_id: String,
 
     side_state.bench_order.append(target_unit.unit_instance_id)
     leave_service.leave_unit(battle_state, target_unit, "forced_replace", content_index)
+    if leave_service != null and leave_service.last_invalid_battle_code != null:
+        return {"replaced": false, "entered_unit": null, "invalid_code": leave_service.last_invalid_battle_code}
     var field_break_invalid_code = field_service.break_field_if_creator_inactive(
         battle_state,
         content_index,

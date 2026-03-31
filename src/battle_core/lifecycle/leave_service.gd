@@ -3,13 +3,18 @@ class_name LeaveService
 
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_logger
 var log_event_builder
+var last_invalid_battle_code: Variant = null
 
 func leave_unit(battle_state, unit_state, reason: String, content_index) -> void:
+    last_invalid_battle_code = null
     var side_state = battle_state.get_side_for_unit(unit_state.unit_instance_id)
-    assert(side_state != null, "LeaveService missing side for %s" % unit_state.unit_instance_id)
+    if side_state == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return
     for slot_id in side_state.active_slots.keys():
         if side_state.active_slots[slot_id] == unit_state.unit_instance_id:
             side_state.clear_active_unit(slot_id)
@@ -53,7 +58,9 @@ func leave_unit(battle_state, unit_state, reason: String, content_index) -> void
     var state_exit_event_id: String = log_event_builder.resolve_event_id(state_exit_event)
     for effect_instance in removed_effects:
         var effect_definition = content_index.effects.get(effect_instance.def_id) if content_index != null else null
-        assert(effect_definition != null, "Missing effect definition: %s" % effect_instance.def_id)
+        if effect_definition == null:
+            last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+            return
         var log_event = log_event_builder.build_effect_event(
             EventTypesScript.EFFECT_REMOVE_EFFECT,
             battle_state,

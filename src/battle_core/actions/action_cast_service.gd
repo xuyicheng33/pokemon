@@ -4,9 +4,6 @@ class_name ActionCastService
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
-const ActionCastDirectDamagePipelineScript := preload("res://src/battle_core/actions/action_cast_direct_damage_pipeline.gd")
-const ActionCastSkillEffectDispatchPipelineScript := preload("res://src/battle_core/actions/action_cast_skill_effect_dispatch_pipeline.gd")
-
 const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 
 var mp_service
@@ -23,8 +20,8 @@ var faint_resolver
 var trigger_batch_runner
 var rng_service
 var action_log_service
-var _direct_damage_pipeline = ActionCastDirectDamagePipelineScript.new()
-var _skill_effect_dispatch_pipeline = ActionCastSkillEffectDispatchPipelineScript.new()
+var action_cast_direct_damage_pipeline
+var action_cast_skill_effect_dispatch_pipeline
 
 func resolve_missing_dependency() -> String:
     if mp_service == null:
@@ -58,13 +55,16 @@ func resolve_missing_dependency() -> String:
         return "rng_service"
     if action_log_service == null:
         return "action_log_service"
-    _sync_pipeline_dependencies()
-    var direct_pipeline_missing := str(_direct_damage_pipeline.resolve_missing_dependency())
+    if action_cast_direct_damage_pipeline == null:
+        return "action_cast_direct_damage_pipeline"
+    var direct_pipeline_missing := str(action_cast_direct_damage_pipeline.resolve_missing_dependency())
     if not direct_pipeline_missing.is_empty():
-        return "direct_damage_pipeline.%s" % direct_pipeline_missing
-    var dispatch_pipeline_missing := str(_skill_effect_dispatch_pipeline.resolve_missing_dependency())
+        return "action_cast_direct_damage_pipeline.%s" % direct_pipeline_missing
+    if action_cast_skill_effect_dispatch_pipeline == null:
+        return "action_cast_skill_effect_dispatch_pipeline"
+    var dispatch_pipeline_missing := str(action_cast_skill_effect_dispatch_pipeline.resolve_missing_dependency())
     if not dispatch_pipeline_missing.is_empty():
-        return "skill_effect_dispatch_pipeline.%s" % dispatch_pipeline_missing
+        return "action_cast_skill_effect_dispatch_pipeline.%s" % dispatch_pipeline_missing
     return ""
 
 func resolve_mp_cost(command, skill_definition) -> int:
@@ -114,8 +114,7 @@ func is_damage_action(command, skill_definition) -> bool:
     return skill_definition != null and skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and skill_definition.power > 0
 
 func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, cause_event_id: String) -> void:
-    _sync_pipeline_dependencies()
-    _direct_damage_pipeline.apply_direct_damage(
+    action_cast_direct_damage_pipeline.apply_direct_damage(
         queued_action,
         actor,
         target,
@@ -126,8 +125,7 @@ func apply_direct_damage(queued_action, actor, target, skill_definition, battle_
     )
 
 func apply_default_recoil(queued_action, actor, battle_state, cause_event_id: String) -> void:
-    _sync_pipeline_dependencies()
-    _direct_damage_pipeline.apply_default_recoil(
+    action_cast_direct_damage_pipeline.apply_default_recoil(
         queued_action,
         actor,
         battle_state,
@@ -136,8 +134,7 @@ func apply_default_recoil(queued_action, actor, battle_state, cause_event_id: St
     )
 
 func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String, queued_action, actor, battle_state, content_index, result) -> void:
-    _sync_pipeline_dependencies()
-    _skill_effect_dispatch_pipeline.dispatch_skill_effects(
+    action_cast_skill_effect_dispatch_pipeline.dispatch_skill_effects(
         effect_ids,
         trigger_name,
         queued_action,
@@ -156,15 +153,3 @@ func execute_lifecycle_trigger_batch(trigger_name: String, battle_state, content
         owner_unit_ids,
         battle_state.chain_context
     )
-
-func _sync_pipeline_dependencies() -> void:
-    _direct_damage_pipeline.damage_service = damage_service
-    _direct_damage_pipeline.combat_type_service = combat_type_service
-    _direct_damage_pipeline.stat_calculator = stat_calculator
-    _direct_damage_pipeline.rule_mod_service = rule_mod_service
-    _direct_damage_pipeline.faint_resolver = faint_resolver
-    _direct_damage_pipeline.action_log_service = action_log_service
-    _skill_effect_dispatch_pipeline.trigger_dispatcher = trigger_dispatcher
-    _skill_effect_dispatch_pipeline.effect_queue_service = effect_queue_service
-    _skill_effect_dispatch_pipeline.payload_executor = payload_executor
-    _skill_effect_dispatch_pipeline.rng_service = rng_service

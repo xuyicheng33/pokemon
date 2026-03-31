@@ -2,11 +2,7 @@ extends RefCounted
 class_name FieldApplyService
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
-const FieldApplyContextResolverScript := preload("res://src/battle_core/passives/field_apply_context_resolver.gd")
-const FieldApplyConflictServiceScript := preload("res://src/battle_core/passives/field_apply_conflict_service.gd")
-const FieldApplyLogServiceScript := preload("res://src/battle_core/passives/field_apply_log_service.gd")
-const FieldApplyEffectRunnerScript := preload("res://src/battle_core/passives/field_apply_effect_runner.gd")
-
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var field_service
 var trigger_dispatcher
 var trigger_batch_runner
@@ -14,11 +10,10 @@ var id_factory
 var battle_logger
 var log_event_builder
 var rng_service
-
-var _context_resolver = FieldApplyContextResolverScript.new()
-var _conflict_service = FieldApplyConflictServiceScript.new()
-var _log_service = FieldApplyLogServiceScript.new()
-var _effect_runner = FieldApplyEffectRunnerScript.new()
+var field_apply_context_resolver
+var field_apply_conflict_service
+var field_apply_log_service
+var field_apply_effect_runner
 
 func resolve_missing_dependency() -> String:
 	if field_service == null:
@@ -39,38 +34,49 @@ func resolve_missing_dependency() -> String:
 		return "log_event_builder"
 	if rng_service == null:
 		return "rng_service"
-	_sync_runtime_services()
-	var conflict_missing := _conflict_service.resolve_missing_dependency()
+	if field_apply_context_resolver == null:
+		return "field_apply_context_resolver"
+	if field_apply_conflict_service == null:
+		return "field_apply_conflict_service"
+	var conflict_missing := str(field_apply_conflict_service.resolve_missing_dependency())
 	if not conflict_missing.is_empty():
-		return "conflict_service.%s" % conflict_missing
-	var log_missing := _log_service.resolve_missing_dependency()
+		return "field_apply_conflict_service.%s" % conflict_missing
+	if field_apply_log_service == null:
+		return "field_apply_log_service"
+	var log_missing := str(field_apply_log_service.resolve_missing_dependency())
 	if not log_missing.is_empty():
-		return "log_service.%s" % log_missing
-	var effect_missing := _effect_runner.resolve_missing_dependency()
+		return "field_apply_log_service.%s" % log_missing
+	if field_apply_effect_runner == null:
+		return "field_apply_effect_runner"
+	var effect_missing := str(field_apply_effect_runner.resolve_missing_dependency())
 	if not effect_missing.is_empty():
-		return "effect_runner.%s" % effect_missing
+		return "field_apply_effect_runner.%s" % effect_missing
 	return ""
 
 func apply_field(effect_definition, payload, effect_event, battle_state, content_index) -> Variant:
-	assert(effect_definition != null, "FieldApplyService.apply_field requires effect_definition")
-	assert(payload != null, "FieldApplyService.apply_field requires payload")
-	assert(effect_event != null, "FieldApplyService.apply_field requires effect_event")
-	_sync_runtime_services()
+	if effect_definition == null or payload == null or effect_event == null:
+		return ErrorCodesScript.INVALID_STATE_CORRUPTION
 	var challenger_field_definition = content_index.fields.get(payload.field_definition_id)
 	var before_field = battle_state.field_state
 	var resolves_replacing_field_lifecycle := before_field != null and _is_replacing_current_field_from_its_lifecycle(effect_event, before_field)
 	if before_field != null and not resolves_replacing_field_lifecycle:
 		var incumbent_field_definition = field_service.get_field_definition_for_state(before_field, content_index)
-		if _conflict_service.is_normal_field_blocked_by_domain(challenger_field_definition, incumbent_field_definition):
-			_log_service.log_field_blocked_by_active_domain(before_field, payload, effect_event, battle_state)
+		var blocked_by_domain: bool = field_apply_conflict_service.is_normal_field_blocked_by_domain(challenger_field_definition, incumbent_field_definition)
+		if field_apply_conflict_service.last_invalid_battle_code != null:
+			return field_apply_conflict_service.last_invalid_battle_code
+		if blocked_by_domain:
+			field_apply_log_service.log_field_blocked_by_active_domain(before_field, payload, effect_event, battle_state)
 			return null
-		if _conflict_service.should_resolve_domain_clash(challenger_field_definition, incumbent_field_definition):
-			var clash_result := _conflict_service.resolve_field_clash(before_field, effect_event, battle_state)
+		var should_resolve_clash: bool = field_apply_conflict_service.should_resolve_domain_clash(challenger_field_definition, incumbent_field_definition)
+		if field_apply_conflict_service.last_invalid_battle_code != null:
+			return field_apply_conflict_service.last_invalid_battle_code
+		if should_resolve_clash:
+			var clash_result: Dictionary = field_apply_conflict_service.resolve_field_clash(before_field, effect_event, battle_state)
 			if clash_result.has("invalid_code"):
 				return clash_result["invalid_code"]
-			_log_service.log_field_clash(clash_result, before_field, payload, effect_event, battle_state)
+			field_apply_log_service.log_field_clash(clash_result, before_field, payload, effect_event, battle_state)
 			if not bool(clash_result.get("challenger_won", false)):
-				var release_invalid_code = _effect_runner.execute_pending_success_effects(before_field, battle_state, content_index)
+				var release_invalid_code = field_apply_effect_runner.execute_pending_success_effects(before_field, battle_state, content_index)
 				if release_invalid_code != null:
 					return release_invalid_code
 				return null
@@ -82,10 +88,12 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 		)
 		if break_invalid_code != null:
 			return break_invalid_code
-	var field_state = _effect_runner.create_field_state(effect_definition, payload, effect_event)
+	var field_state = field_apply_effect_runner.create_field_state(effect_definition, payload, effect_event)
+	if field_state == null:
+		return field_apply_effect_runner.last_invalid_battle_code if field_apply_effect_runner.last_invalid_battle_code != null else ErrorCodesScript.INVALID_STATE_CORRUPTION
 	battle_state.field_state = field_state
-	_log_service.log_apply_field(before_field, field_state, effect_event, battle_state)
-	var field_apply_invalid_code = _effect_runner.execute_field_effects(
+	field_apply_log_service.log_apply_field(before_field, field_state, effect_event, battle_state)
+	var field_apply_invalid_code = field_apply_effect_runner.execute_field_effects(
 		"field_apply",
 		field_state,
 		battle_state,
@@ -95,9 +103,9 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 	if field_apply_invalid_code != null:
 		return field_apply_invalid_code
 	if _should_defer_success_effects(challenger_field_definition, payload, effect_event):
-		_effect_runner.defer_success_effects(field_state, payload.on_success_effect_ids, effect_event)
+		field_apply_effect_runner.defer_success_effects(field_state, payload.on_success_effect_ids, effect_event)
 		return null
-	return _effect_runner.execute_success_effects(payload.on_success_effect_ids, effect_event, battle_state, content_index)
+	return field_apply_effect_runner.execute_success_effects(payload.on_success_effect_ids, effect_event, battle_state, content_index)
 
 func _should_defer_success_effects(field_definition, payload, effect_event) -> bool:
 	if field_definition == null or payload == null or effect_event == null or effect_event.chain_context == null:
@@ -115,17 +123,3 @@ func _is_replacing_current_field_from_its_lifecycle(effect_event, current_field_
 	if trigger_name != "field_break" and trigger_name != "field_expire":
 		return false
 	return String(effect_event.source_instance_id) == String(current_field_state.instance_id)
-
-func _sync_runtime_services() -> void:
-	_conflict_service.rng_service = rng_service
-	_conflict_service.context_resolver = _context_resolver
-
-	_log_service.battle_logger = battle_logger
-	_log_service.log_event_builder = log_event_builder
-	_log_service.context_resolver = _context_resolver
-
-	_effect_runner.field_service = field_service
-	_effect_runner.trigger_dispatcher = trigger_dispatcher
-	_effect_runner.trigger_batch_runner = trigger_batch_runner
-	_effect_runner.id_factory = id_factory
-	_effect_runner.context_resolver = _context_resolver

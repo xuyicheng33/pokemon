@@ -69,6 +69,9 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
 
     battle_state.phase = BattlePhasesScript.QUEUE_LOCK
     var action_queue = action_queue_builder.build_queue(locked_commands, battle_state, content_index)
+    if action_queue_builder.last_invalid_battle_code != null:
+        battle_result_service.terminate_invalid_battle(battle_state, str(action_queue_builder.last_invalid_battle_code))
+        return
     battle_state.phase = BattlePhasesScript.EXECUTION
     for queued_action in action_queue:
         var action_result = action_executor.execute_action(queued_action, battle_state, content_index)

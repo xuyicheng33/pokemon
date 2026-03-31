@@ -8,6 +8,11 @@ const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 
 var trigger_dispatcher
 
+func resolve_missing_dependency() -> String:
+    if trigger_dispatcher == null:
+        return "trigger_dispatcher"
+    return ""
+
 func record_fatal_damage(
     battle_state,
     target_unit_id: String,
