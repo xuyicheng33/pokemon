@@ -45,6 +45,34 @@
 
 - `bash tests/check_repo_consistency.sh` 通过
 
+### 宿傩领域与灶伤害断言去硬编码（已完成）
+
+- 目标：
+  - 去掉宿傩回归里对“火打水减半后一定等于 10 / 20”的字面量依赖，避免属性表调整时出现误报
+  - 保持 suite 继续验证“运行时结算值必须匹配当前 content + combat type chart”
+- 范围：
+  - `tests/suites/sukuna_kamado_domain_suite.gd`
+  - `README.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - `sukuna_kamado_stack_on_exit_path`
+  - `sukuna_kamado_forced_replace_on_exit_path`
+  - `sukuna_domain_expire_chain_path`
+    不再硬编码当前属性表下的固定伤害结果
+  - `README.md` 的 GDScript 行数统计与仓库一致性闸门保持同步
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `sukuna_kamado_domain_suite.gd` 已改为按 effect payload 与当前属性表动态计算预期固定伤害，不再把 `10 / 20` 写死在断言里
+  - 连带收口了 `double kamado on_exit`、`forced_replace on_exit`、`domain expire burst` 三处同类脆断点
+  - `README.md` 已同步最新测试行数与 GDScript 总行数统计，恢复仓库一致性闸门
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### 闸门前置依赖与设计文档补齐（已完成）
 
 - 目标：

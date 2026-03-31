@@ -67,8 +67,13 @@ func _test_sukuna_kamado_stack_on_exit_path(harness) -> Dictionary:
         and log_event.trigger_name == "on_exit" \
         and log_event.target_instance_id == target_unit.unit_instance_id:
             on_exit_damage_events += 1
-    if hp_before_exit - target_unit.current_hp != 20:
-        return harness.fail_result("double kamado on_exit damage mismatch: delta=%d events=%d" % [hp_before_exit - target_unit.current_hp, on_exit_damage_events])
+    var expected_on_exit_damage := _calc_expected_fixed_effect_damage(core, content_index, "sukuna_kamado_mark", target_unit) * 2
+    if hp_before_exit - target_unit.current_hp != expected_on_exit_damage:
+        return harness.fail_result("double kamado on_exit damage mismatch: delta=%d expected=%d events=%d" % [
+            hp_before_exit - target_unit.current_hp,
+            expected_on_exit_damage,
+            on_exit_damage_events,
+        ])
     if on_exit_damage_events != 2:
         return harness.fail_result("double kamado should emit two on_exit damage events")
     return harness.pass_result()
@@ -174,8 +179,12 @@ func _test_sukuna_kamado_forced_replace_on_exit_path(harness) -> Dictionary:
         and log_event.trigger_name == "on_exit" \
         and log_event.target_instance_id == target_unit.unit_instance_id:
             forced_replace_on_exit_events += 1
-    if hp_before_forced_replace - target_unit.current_hp != 10:
-        return harness.fail_result("forced_replace should trigger exactly one kamado on_exit burst")
+    var expected_forced_replace_damage := _calc_expected_fixed_effect_damage(core, content_index, "sukuna_kamado_mark", target_unit)
+    if hp_before_forced_replace - target_unit.current_hp != expected_forced_replace_damage:
+        return harness.fail_result("forced_replace kamado on_exit damage mismatch: delta=%d expected=%d" % [
+            hp_before_forced_replace - target_unit.current_hp,
+            expected_forced_replace_damage,
+        ])
     if forced_replace_on_exit_events != 1:
         return harness.fail_result("forced_replace should emit exactly one kamado on_exit damage event")
     return harness.pass_result()
@@ -219,8 +228,12 @@ func _test_sukuna_domain_expire_chain_path(harness) -> Dictionary:
     ])
     if battle_state.field_state != null:
         return harness.fail_result("malevolent shrine should expire after third turn")
-    if hp_before_expire - target_unit.current_hp != 10:
-        return harness.fail_result("malevolent shrine expire burst should deal resisted 10 damage")
+    var expected_expire_damage := _calc_expected_fixed_effect_damage(core, content_index, "sukuna_domain_expire_burst", target_unit)
+    if hp_before_expire - target_unit.current_hp != expected_expire_damage:
+        return harness.fail_result("malevolent shrine expire burst damage mismatch: delta=%d expected=%d" % [
+            hp_before_expire - target_unit.current_hp,
+            expected_expire_damage,
+        ])
     if int(sukuna_unit.stat_stages.get("attack", 0)) != 0 or int(sukuna_unit.stat_stages.get("sp_attack", 0)) != 0:
         return harness.fail_result("malevolent shrine 自然到期后应移除领域绑定增幅")
     var legal_action_set = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
@@ -391,3 +404,13 @@ func _build_manual_skill_command(core, turn_index: int, side_id: String, actor_p
 
 func _build_manual_wait_command(core, turn_index: int, side_id: String, actor_public_id: String):
     return _support.build_manual_wait_command(core, turn_index, side_id, actor_public_id)
+
+func _calc_expected_fixed_effect_damage(core, content_index, effect_id: String, target_unit) -> int:
+    var effect_definition = content_index.effects.get(effect_id, null)
+    if effect_definition == null or effect_definition.payloads.is_empty():
+        return -1
+    var payload = effect_definition.payloads[0]
+    var type_effectiveness := 1.0
+    if not String(payload.combat_type_id).is_empty():
+        type_effectiveness = core.combat_type_service.calc_effectiveness(String(payload.combat_type_id), target_unit.combat_type_ids)
+    return core.damage_service.apply_final_mod(max(1, int(payload.amount)), type_effectiveness)
