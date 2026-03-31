@@ -6,10 +6,11 @@ const BattleContentIndexScript := preload("res://src/battle_core/content/battle_
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const EventLogPublicSnapshotBuilderScript := preload("res://src/battle_core/facades/event_log_public_snapshot_builder.gd")
 
-var composer
+var container_factory: Callable = Callable()
 var command_builder
 var command_id_factory
 var public_snapshot_builder
+var _container_factory_owner = null
 
 var _sessions: Dictionary = {}
 var _session_seq: int = 0
@@ -113,15 +114,16 @@ func dispose() -> void:
     _sessions.clear()
     if command_builder != null:
         command_builder.id_factory = null
-    composer = null
+    container_factory = Callable()
+    _container_factory_owner = null
     command_builder = null
     command_id_factory = null
     public_snapshot_builder = null
     _event_log_public_snapshot_builder = null
 
 func resolve_missing_dependency() -> String:
-    if composer == null:
-        return "composer"
+    if not container_factory.is_valid():
+        return "container_factory"
     if command_builder == null:
         return "command_builder"
     if command_id_factory == null:
@@ -141,8 +143,8 @@ func _get_session_or_fail(session_id: String):
     return session
 
 func _compose_container_or_fail():
-    assert(composer != null and composer.has_method("compose"), "BattleCoreManager requires composer.compose")
-    var container = composer.compose()
+    assert(container_factory.is_valid(), "BattleCoreManager requires container_factory")
+    var container = container_factory.call()
     assert(container != null, "BattleCoreManager failed to compose battle core container")
     return container
 

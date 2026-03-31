@@ -6,6 +6,15 @@ const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_c
 const ServiceSpecsScript := preload("res://src/composition/battle_core_service_specs.gd")
 const WiringSpecsScript := preload("res://src/composition/battle_core_wiring_specs.gd")
 
+class ContainerFactoryPort:
+    extends RefCounted
+
+    var composer
+
+    func build_container():
+        assert(composer != null, "ContainerFactoryPort requires composer")
+        return composer.compose()
+
 func compose():
     var container = BattleCoreContainerScript.new()
     _instantiate_services(container)
@@ -17,7 +26,10 @@ func compose():
 func compose_manager():
     var manager = BattleCoreManagerScript.new()
     assert(manager != null, "compose_manager requires manager")
-    manager.composer = self
+    var factory_port = ContainerFactoryPort.new()
+    factory_port.composer = self
+    manager._container_factory_owner = factory_port
+    manager.container_factory = Callable(factory_port, "build_container")
     manager.command_id_factory = _new_service_instance("id_factory")
     manager.command_builder = _new_service_instance("command_builder")
     manager.command_builder.id_factory = manager.command_id_factory
