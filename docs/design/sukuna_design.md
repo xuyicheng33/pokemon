@@ -30,7 +30,7 @@
 |------|-----|------|
 | id | `sukuna` | |
 | display_name | `宿傩` | |
-| combat_type_ids | `["fire", "demon"]` | 火 + 咒灵 |
+| combat_type_ids | `["fire", "demon"]` | 火 + 恶魔 |
 | base_hp | **126** | |
 | base_attack | **78** | 物理端高于五条悟 |
 | base_defense | **62** | |
@@ -95,8 +95,8 @@
 | effects_on_cast_ids | `[]` |
 | effects_on_hit_ids | `[]` |
 
-- 玩家说明：低消耗、带先手的稳定斩击，用来压血和攒奥义点。
-- 机制说明：纯单段物理伤害；`combat_type_id=""` 表示中立属性，不吃属性克制加成或减免。
+- 玩家说明：低消耗、`priority = +1` 的稳定斩击，用来压血和攒奥义点。
+- 机制说明：无属性单段物理伤害；`combat_type_id=""` 表示中立属性，不吃属性克制加成或减免。
 - 验收点：
   - 命中后只产出伤害事件，不挂额外 effect。
   - 作为常规技能，开始施放时会按角色配置获得 `+1` 奥义点。
@@ -117,8 +117,8 @@
 | power_bonus_source | `mp_diff_clamped` |
 | effects_on_hit_ids | `[]` |
 
-- 玩家说明：慢一拍的重斩，自己 MP 越多、对手 MP 越少时越痛。
-- 机制说明：基础威力 `46`，再叠加 `max(0, actor.current_mp - target.current_mp)` 的威力 bonus；读取点发生在当前施法结算时，不回写内容资源。
+- 玩家说明：`priority = -1` 的重斩，自己蓝多、对手蓝少时会更痛。
+- 机制说明：无属性特殊伤害。基础威力 `46`，再叠加一段“先扣自己这回合耗蓝，再拿自己当前剩余蓝减对方当前蓝，正数才加威力”的 bonus；换成公式就是 `max(0, actor.current_mp_after_cost - target.current_mp_now)`。
 - 验收点：
   - 额外威力只吃正向 MP 差，不会出现负 bonus。
   - 作为常规技能，开始施放时也会获得奥义点。
@@ -146,12 +146,13 @@
 | `sukuna_kamado_mark` | 持续 3 次 `turn_end`；`stacking=stack`；`on_exit` 触发 20 点火属性固定伤害；自然到期时通过 `on_expire_effect_ids` 再爆一次 |
 | `sukuna_kamado_explode` | 灶的自然到期爆炸，本体为 20 点火属性固定伤害 |
 
-- 玩家说明：慢速火术式；命中后会把“灶”挂在对手身上，逼对手换人或吃到后续爆炸。
+- 玩家说明：`priority = -2` 的火属性特殊术式；命中后会把“灶”挂在对手身上，逼对手换人或吃到后续爆炸。
 - 机制说明（领域公共规则仍以 `docs/design/domain_field_template.md` 为准）：
   - `开` 命中后只负责施加 `sukuna_kamado_mark`。
   - 灶层数独立存在，`stacking=stack`，多层会各自扣减、各自结算。
   - `persists_on_switch=false` 表示标记持有者离场时会把灶实例带走；但在离场链上的 `on_exit` 会先结算 20 点火属性固定伤害。
   - 若目标一直不离场，灶会在第 3 次 `turn_end` 后自然到期，并通过 `sukuna_kamado_explode` 再爆一次。
+  - 每一层灶只会跟着各自那一层实例结算一次；无论是“离场炸”还是“自然到期炸”，炸完那一层就会消失。
 - 边界行为：
   - 目标带着两层灶离场时，应触发两次 `on_exit` 伤害事件。
   - 灶的自然到期爆炸与离场爆炸是两条不同路径，不能互相吞掉。
@@ -221,7 +222,8 @@
   - 若场上已有领域，领域冲突判定、对拼胜负与日志语义统一沿用 `docs/design/domain_field_template.md` 与 `docs/rules/05_items_field_input_and_logging.md`，不在角色稿重复定义。
   - 宿傩若在领域对拼中失败，则本次领域不落地；`attack +1 / sp_attack +1` 与自然到期终爆都不会成立。
   - `creator_accuracy_override=100` 只在领域成功立住后生效。
-  - **领域自然到期终爆保留**：`sukuna_domain_expire_burst` 造成 20 点火属性固定伤害。
+  - `伏魔御厨子` 本体是**恶魔属性特殊伤害**，不是咒灵属性。
+  - **领域自然到期终爆保留**：`sukuna_domain_expire_burst` 造成 `20` 点固定火属性伤害；它不走公式威力，但实战仍然会吃属性克制。
   - 领域被打断时只移除增幅，不触发终爆。
 - 边界行为：
   - 领域自然到期后，宿傩双攻必须回到入场基线。
@@ -273,11 +275,20 @@
 
 ---
 
-## 4. 专项验收点（sukuna_suite + ultimate_field_suite）
+## 4. 专项验收点（sukuna_suite + sukuna_snapshot_suite + ultimate_field_suite）
+
+正式交付面说明：
+
+- `sukuna_suite.gd` 承担宿傩玩法与行为回归。
+- `sukuna_snapshot_suite.gd` 用字面量断言锁死宿傩单位面板、技能资源与关键 effect / field / passive 资源。
+- `ultimate_field_suite.gd` 中登记到注册表的共享领域回归，同样属于宿傩正式交付面的一部分。
 
 | 编号 | 用例 | 验证点 |
 |------|------|--------|
 | 1 | 默认配招与候选池契约 | 默认三技能固定为 `解 / 捌 / 开`；`反转术式` 只在 `candidate_skill_ids` 中 |
+| 1A | 单位资源快照 | 宿傩基础面板、MP、奥义点配置、默认配招、候选池、奥义、被动固定不漂移 |
+| 1B | 技能资源快照 | 解 / 捌 / 开 / 反转术式 / 伏魔御厨子的 `damage_kind / power / accuracy / mp_cost / priority / combat_type_id / targeting` 固定不漂移 |
+| 1C | 关键 effect / field / passive 快照 | 灶、领域、终爆、动态回蓝阈值表全部固定不漂移 |
 | 2 | 赛前换装 | `regular_skill_loadout_overrides` 可把 `反转术式` 装入本场三技能 |
 | 3 | 被动回蓝动态值 | `on_matchup_changed` 后只存在 1 条 `mp_regen add` 实例；初始化预回蓝与后续 `turn_start` 都按 `基础 12 + 差距表加值` 结算 |
 | 4 | 反转术式回复 | 回复 `25% max_hp`，并写出治疗日志 |

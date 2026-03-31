@@ -20,6 +20,51 @@
 
 ## 2026-03-31
 
+### 角色契约收口与机制说明统一（已完成）
+
+- 目标：
+  - 把 Gojo / Sukuna 的正式交付契约、共享回归归属、资源快照断言和机制说明统一收口
+  - 统一对外 facade 口径，明确 `BattleCoreManager` 是唯一稳定入口
+  - 在不改角色主玩法语义的前提下，把现状文档、测试和注册表挂稳
+- 范围：
+  - `src/battle_core/facades/battle_core_manager.gd`
+  - `src/composition/battle_core_composer.gd`
+  - `tests/support/battle_core_test_harness.gd`
+  - `tests/suites/gojo_suite.gd`
+  - `tests/suites/sukuna_suite.gd`
+  - `tests/suites/gojo_snapshot_suite.gd`
+  - `tests/suites/sukuna_snapshot_suite.gd`
+  - `tests/suites/gojo_murasaki_suite.gd`
+  - `docs/records/formal_character_registry.json`
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/action_execution.md`
+  - `docs/design/turn_orchestrator.md`
+  - `docs/design/architecture_overview.md`
+  - `docs/design/battle_core_architecture_constraints.md`
+  - `docs/design/gojo_satoru_design.md`
+  - `docs/design/sukuna_design.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - Gojo / Sukuna 正式角色交付面显式挂住共享领域回归与各自 snapshot suite
+  - Gojo `茈` 新增“无反噬”回归
+  - README / 设计稿 / 测试说明 / 决策记录里的 facade、priority、类型名与机制说明一致
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `BattleCoreManager` 内部装配依赖改为 `container_factory`，并通过独立工厂端口保活，不再直接依赖完整 composition root
+  - Gojo / Sukuna wrapper 已接入各自 snapshot suite
+  - Gojo 新增 `gojo_murasaki_no_recoil_contract`
+  - 正式角色注册表已补齐 snapshot suite、共享领域 suite 与共享子 suite 锚点
+  - Gojo / Sukuna 设计稿已统一 priority 数字写法、领域 / 锁行动 / 来袭命中修正 / 灶 / 终爆等机制说明
+  - README、架构文档、测试说明与决策记录已统一为“`BattleCoreManager` 是唯一稳定 facade”
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### 扩角前中等治理收口（已完成）
 
 - 目标：

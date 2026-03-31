@@ -97,6 +97,7 @@
 ## 8. Facade 稳定入口
 
 `battle_core` 对外围公开稳定 facade 的当前实现是 `BattleCoreManager`。
+`BattleCoreSession` 只是 manager 内部会话壳，不属于外围稳定入口。
 
 对外围稳定开放的最小接口为：
 
@@ -118,3 +119,4 @@
 补充说明：
 
 - `initialize_battle` 与 `build_public_snapshot` 仍然存在于核心内部服务图中，但属于 `composition + facades` 内部装配细节，不作为外围稳定入口。
+- facade 若需要装配核心容器，只能依赖 build-container callable / factory port，不应直接持有完整 composition root。

@@ -220,3 +220,16 @@
 - turn limit 的 side 计分、排序与平局比较当前统一下沉到 `TurnLimitScoringService`。
 - 原因：
   - 后续若补特殊胜利条件或追加更多 turn limit 规则，不应继续把评分细节堆进 battle result 主类。
+
+### 27. 正式角色契约收口统一为“唯一 facade + 全量快照 + 共享回归回挂”（2026-03-31）
+
+- `BattleCoreManager` 是外围唯一稳定 facade。
+- `BattleCoreSession` 只作为 manager 内部会话壳，不属于外围稳定入口。
+- facade 若需要装配容器，只能依赖 build-container callable / factory port，不再直接持有完整 composition root。
+- 正式角色注册表除 wrapper `suite_path` 外，必须继续显式登记：
+  - `required_suite_paths`
+  - `required_test_names`
+- 共享 suite 只要属于角色正式验收项，也必须回挂到角色注册表；当前 Gojo / Sukuna 都要显式挂住 `ultimate_field_suite.gd` 的共享领域回归。
+- 正式角色必须各自拥有全量 snapshot suite，用字面量断言锁死单位面板、技能资源与关键 effect / field / passive 资源，不再只靠“从当前资源反推期望值”的测试。
+- Gojo `苍 / 赫` 当前正式口径固定为速度能力阶段 `+1 / -1`，范围 `-2..+2`，离场清空，不改成 3 回合 buff / debuff。
+- 宿傩对外类型文案统一写“恶魔”；内部资源 `combat_type_id = demon` 不改。

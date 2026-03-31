@@ -87,6 +87,8 @@
 
 外围层只允许调用 facade，不允许直连内部容器和 runtime。
 
+当前核心稳定 facade 只有 `BattleCoreManager`；`BattleCoreSession` 只是内部会话壳。
+
 当前核心 facade 最小职责：
 
 - `create_session`
@@ -94,11 +96,17 @@
 - `build_command`
 - `run_turn`
 - `get_public_snapshot`
+- `get_event_log_snapshot`
 - `close_session`
 - `run_replay`
 - `active_session_count`
 - `dispose`
 - `resolve_missing_dependency`
+
+补充约束：
+
+- facade 若需要装配容器，只能依赖 build-container callable / factory port，不得直接持有完整 composition root。
+- 外围不得绕过 facade 直接操作 `BattleCoreSession`、内部容器或 runtime。
 
 输出契约分离：
 

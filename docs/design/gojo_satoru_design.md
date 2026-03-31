@@ -7,6 +7,7 @@
 | 茈 | 保留“苍+赫双标记”条件爆发，**不做自伤** |
 | 无下限 | 改为“敌方技能或奥义攻击五条悟时，若该次不是必中，则命中率 -10” |
 | 奥义点 | `required=3 / cap=3 / regular_skill_cast +1` |
+| 苍 / 赫速度变化 | 保留当前简化能力阶段制：命中后分别 `speed +1 / speed -1`，阶段范围继续是 `-2..+2`，离场清空，不改成 3 回合 buff / debuff |
 | 无量空处锁人条件 | 只有领域**成功立住**时，才通过 `on_success_effect_ids -> field_apply_success` 施加 `gojo_domain_action_lock` |
 | 领域增幅归属 | `sp_attack +1` 改为 field 绑定效果；成功立场时生效，领域自然结束/提前打断时移除，对拼失败时不成立 |
 | 领域后摇 | **删除**（不再追加封印/回滚） |
@@ -95,6 +96,7 @@
 
 - `gojo_ao_speed_up`：`scope=self`，`stat_mod(speed, +1)`
 - `gojo_ao_mark_apply`：`scope=target`，`apply_effect(gojo_ao_mark)`
+- 这是**速度能力阶段 +1**，不是“持续 3 回合的加速 buff”；当前项目的简化阶段制范围固定为 `-2..+2`，单位离场时会统一清空阶段变化。
 
 ### 2.2 赫（Aka）
 
@@ -118,6 +120,7 @@
 
 - `gojo_aka_slow_down`：`scope=target`，`stat_mod(speed, -1)`
 - `gojo_aka_mark_apply`：`scope=target`，`apply_effect(gojo_aka_mark)`
+- 这是**速度能力阶段 -1**，不是“持续 3 回合的减速 debuff”；阶段范围同样固定为 `-2..+2`，离场清空。
 
 顺序约束：
 
@@ -139,6 +142,7 @@
 - 换人语义：`persists_on_switch=false` 代表“**标记持有者**离场会清标记”；若五条悟自己离场，目标身上的标记不会因此自动消失。
 - 当前正式玩法语义：只要目标身上同时存在 `gojo_ao_mark + gojo_aka_mark`，当前出战的这名五条悟就能触发 `gojo_murasaki` 追加段；由于队伍构筑规则已禁止同队重复角色，正式对局里不会出现“双五条悟接力消耗同一目标标记”的验收场景。
 - 时间语义：`duration=3 + decrement_on=turn_end` 按当前引擎表示“从施加当回合开始，连续经过 3 次 `turn_end` 节点后到期”。例如第 1 回合中途施加，则会在第 1/2/3 回合的 `turn_end` 各扣 1 次，并在第 3 次后移除。
+- 这里的“持续 3 次 `turn_end`”只属于**标记**；苍 / 赫本身的速度变化不是定时效果，而是能力阶段变化。
 
 ### 2.4 茈（Murasaki）—— 条件追加爆发（无自伤）
 
@@ -170,6 +174,7 @@
 补充说明：
 
 - 此处不额外写 `combat_type_id`：`DamagePayload.use_formula=true` 且处于技能链中时，类型继承链技能 `gojo_murasaki` 的 `combat_type_id=space`。
+- 因此茈的**本体伤害**和**追加段伤害**都是“空间属性 + 特殊伤害”；区别只在公式威力分别是 `64` 与 `32`。
 - `required_target_effects` 当前只检查“目标身上是否同时存在双标记”，**不检查标记施加者是谁**。在“同队重复角色禁止”的当前规则下，这已经足够支撑 Gojo 的正式玩法闭环。
 - `required_target_effects` 的设计目标是“effect 级前置守卫”，不是 payload 级条件分支；前置不满足时，整条 effect 直接退出，payload 循环不会开始，因此也不会写出任何由该 effect 产生的 payload 日志。
 - 若未来要改成“只有同一个五条悟本人打上的双标记，才允许该五条悟自己触发茈追加段”，则仅靠 `required_target_effects` 不够，必须新增第 4 块扩展能力来校验标记来源。
@@ -250,6 +255,7 @@
 - 奥义合法性必须同时满足：`current_mp >= 50` 且 `ultimate_points >= 3`；开始施放无量空处时，奥义点立即清零；换下后点数保留。
 - 若场上已有领域，领域冲突判定、对拼胜负与日志语义统一沿用 `docs/design/domain_field_template.md` 与 `docs/rules/05_items_field_input_and_logging.md`，不在角色稿重复定义。
 - 若五条悟在领域对拼中失败，则无量空处**不落地、不加 `sp_attack +1`、也不锁人**；只有领域真正成功立住后，才会继续跑 `field_apply` 增幅和 `on_success_effect_ids`（`field_apply_success`）锁人。
+- 同回合双方都已排队施放领域时，会先等待公共领域对拼结论，再兑现 `field_apply_success`；因此 `gojo_domain_action_lock` 不会先挂后残留，也不会把对手同回合已入队的领域动作回溯取消。
 - 由于 `gojo_domain_cast_buff` 已改成 field 绑定效果，所以不会再出现“领域已经没了，但 `sp_attack +1` 还残留在五条悟身上”的状态。
 
 顺序约束：
@@ -286,6 +292,10 @@
 1. 先按现有流程得到 `resolved_accuracy`（技能精度 + 领域覆盖等）。
 2. 若 `resolved_accuracy >= 100`，视为必中，**无下限不生效**。
 3. 若 `resolved_accuracy < 100`，且目标是五条悟，则本次命中率再减 `10` 后再 roll。
+- 大白话例子：
+  - 敌方技能原本结算命中是 `95`，打到五条悟身上会变成 `85`。
+  - 敌方技能原本结算命中是 `100`，那就是必中，仍然保持 `100`，不会被削成 `90`。
+  - `switch / wait / resource_forced_default`，以及 `self / field / none` 这类不属于“敌方打向五条悟”的路径，都不读取这条修正。
 
 ### 3.2 资源定义
 
@@ -525,11 +535,20 @@
 
 ---
 
-## 6. 测试计划（gojo_suite，当前主线已接线）
+## 6. 测试计划（gojo_suite + gojo_snapshot_suite + ultimate_field_suite）
+
+正式交付面说明：
+
+- `gojo_suite.gd` 承担五条悟玩法与行为回归。
+- `gojo_snapshot_suite.gd` 用字面量断言锁死五条悟单位面板、技能资源与关键 effect / field / passive 资源。
+- `ultimate_field_suite.gd` 中登记到注册表的共享领域回归，同样属于五条悟正式交付面的一部分。
 
 | 编号 | 用例 | 验证点 |
 |------|------|--------|
 | 1 | 默认配招与候选池契约 | `skill_ids=[ao,aka,murasaki]`；`candidate_skill_ids` 含 `reverse_ritual` |
+| 1A | 单位资源快照 | 五条悟基础面板、MP、奥义点配置、默认配招、候选池、奥义、被动固定不漂移 |
+| 1B | 技能资源快照 | 苍 / 赫 / 茈 / 反转术式 / 无量空处的 `damage_kind / power / accuracy / mp_cost / priority / combat_type_id / targeting` 固定不漂移 |
+| 1C | 关键 effect / field / passive 快照 | 双标记时长、无量空处领域、锁行动、无下限命中修正全部固定不漂移 |
 | 2 | 赛前换装 | `SideSetup.regular_skill_loadout_overrides` 可将 `reverse_ritual` 装入 |
 | 3 | 苍命中后效果 | 自身 speed +1；目标挂 `gojo_ao_mark` |
 | 4 | 赫命中后效果 | 目标 speed -1；目标挂 `gojo_aka_mark` |
@@ -554,18 +573,18 @@
 | 23 | 茈对位槽位重定向边界 | 目标在 Gojo 行动前换下时，`enemy_active_slot` 茈命中新 active；若新 active 不持双标记，则不触发追加段 |
 | 24 | required_target_effects 坏引用 | `required_target_effects` 指向不存在 effect 时内容加载期直接失败 |
 | 25 | 无量空处先手但领域对拼失败 | 若 Gojo 先手展开领域、后手领域随后翻盘，则 `gojo_domain_action_lock` 不得先挂上又残留；失败方视为“未成功立住” |
-| 25 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
-| 26 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
-| 27 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
-| 28 | 双 `+5` 先后手竞争 | 对手也使用 `+5` 奥义时，若对手先动，则 Gojo 本回合不得被文档误写成“仍然锁到对方” |
-| 29 | 标记 / 领域时间线 | `duration=3 + decrement_on=turn_end` 必须按“施放当回合起连续 3 次 `turn_end` 扣减”验证 |
-| 30 | 领域对拼失败边界 | 五条悟在领域对拼中输掉时，不落领域、不加 `sp_attack +1`、也不锁人 |
-| 31 | required_target_effects 跳过无日志 | 前置条件不满足时，`gojo_murasaki_conditional_burst` 不执行 payload，也不得写出该 effect 产生的 payload 日志 |
-| 32 | incoming_accuracy 多实例顺序 | `add/set` 混用时，必须按统一 rule_mod 读取顺序求值，再统一 clamp 到 `0~99` |
-| 33 | action_legality 同 key 覆盖语义 | 同 key `replace` 覆盖后，后实例到期不得把旧实例“复活”；若要支持恢复，必须另扩实例模型 |
-| 34 | 标记 refresh 续时语义 | `gojo_ao_mark / gojo_aka_mark` 再次命中施加时，应刷新持续时间，不得额外并行出第二层同名标记 |
-| 35 | 奥义点 3/3/1 contract | 常规技能开始施放即 +1，miss 也加；上限 3；奥义开始施放清零；换下保留 |
-| 36 | 领域 buff 生命周期 | `gojo_domain_cast_buff` 只在 `field_apply` 成立时生效；自然到期与提前打断都必须通过 `gojo_domain_buff_remove` 回收 |
+| 26 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
+| 27 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
+| 28 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
+| 29 | 双 `+5` 先后手竞争 | 对手也使用 `+5` 奥义时，若对手先动，则 Gojo 本回合不得被文档误写成“仍然锁到对方” |
+| 30 | 标记 / 领域时间线 | `duration=3 + decrement_on=turn_end` 必须按“施放当回合起连续 3 次 `turn_end` 扣减”验证 |
+| 31 | 领域对拼失败边界 | 五条悟在领域对拼中输掉时，不落领域、不加 `sp_attack +1`、也不锁人 |
+| 32 | required_target_effects 跳过无日志 | 前置条件不满足时，`gojo_murasaki_conditional_burst` 不执行 payload，也不得写出该 effect 产生的 payload 日志 |
+| 33 | incoming_accuracy 多实例顺序 | `add/set` 混用时，必须按统一 rule_mod 读取顺序求值，再统一 clamp 到 `0~99` |
+| 34 | action_legality 同 key 覆盖语义 | 同 key `replace` 覆盖后，后实例到期不得把旧实例“复活”；若要支持恢复，必须另扩实例模型 |
+| 35 | 标记 refresh 续时语义 | `gojo_ao_mark / gojo_aka_mark` 再次命中施加时，应刷新持续时间，不得额外并行出第二层同名标记 |
+| 36 | 奥义点 3/3/1 contract | 常规技能开始施放即 +1，miss 也加；上限 3；奥义开始施放清零；换下保留 |
+| 37 | 领域 buff 生命周期 | `gojo_domain_cast_buff` 只在 `field_apply` 成立时生效；自然到期与提前打断都必须通过 `gojo_domain_buff_remove` 回收 |
 
 ---
 

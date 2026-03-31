@@ -6,7 +6,9 @@
 
 |文件|职责|
 |---|---|
-|`battle_initializer.gd`|初始化运行态、首发入场、`battle_init` 批次与首回合前预回蓝编排|
+|`battle_initializer.gd`|初始化总编排：建局、首发入场、`battle_init` 批次与首回合前预回蓝|
+|`battle_initializer_state_builder.gd`|把 `BattleSetup` 展开成 side / unit 运行态，并写入本场实际常规技能装配|
+|`public_id_allocator.gd`|在建局阶段分配公开 `public_id`，保证外层输入 / 输出 ID 稳定|
 |`turn_loop_controller.gd`|驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`|
 |`turn_selection_resolver.gd`|锁定本回合指令，处理 `wait / resource_forced_default / surrender` 分流|
 |`turn_field_lifecycle_service.gd`|处理 field 自然到期、提前打断与 `on_matchup_changed` 对位变化钩子|
@@ -36,6 +38,7 @@
 - `on_enter` 与 `battle_init` 不能混排到同一排序池。
 - 任一批次命中 `invalid_battle_*`，立即终止并写 `system:invalid_battle`。
 - 建局时必须先完成 `SideSetup.regular_skill_loadout_overrides` 校验，再把默认装配或覆盖结果写入 `UnitState.regular_skill_ids`；后续合法性、快照与指令执行都只认这份运行态镜像。
+- `BattleInitializer` 只做编排 owner；side / unit 运行态构造与 `public_id` 分配分别下沉到 `battle_initializer_state_builder.gd` 与 `public_id_allocator.gd`。
 - manager 对外 `create_session()` 返回的就是第 10 步完成后的公开快照；初始 `event_log` 不追补这次预回蓝事件。
 - 初始化阶段的 `invalid_battle` 与 startup victory 统一由 `BattleResultService` 落盘，避免多 owner 漂移。
 

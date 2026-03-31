@@ -8,7 +8,11 @@
 |---|---|
 |`action_executor.gd`|执行单个 `QueuedAction`|
 |`target_resolver.gd`|根据 targeting 解析目标|
-|`action_cast_service.gd`|执行行动主链（扣 MP、命中判定、payload、击倒归因记录）|
+|`action_cast_service.gd`|编排技能 / 奥义行动主链，协调命中、直伤与技能 effect 分发|
+|`action_hit_resolution_service.gd`|处理命中率读取、领域必中覆盖与来袭命中修正|
+|`action_cast_direct_damage_pipeline.gd`|处理技能本体直伤、额外威力读取与伤害公式调用|
+|`action_cast_skill_effect_dispatch_pipeline.gd`|按 `on_cast / on_hit / on_miss` 分发技能 effect 链|
+|`action_domain_guard.gd`|行动开始前做领域重开与 `action_legality` 的二次合法性拦截|
 |`switch_action_service.gd`|执行手动换人行动链|
 |`action_log_service.gd`|统一写入行动链结构化日志|
 
@@ -47,13 +51,14 @@
 
 ## 3. 固定执行顺序
 
-1. 标记 `has_acted = true`
-2. 扣 MP
-3. 触发 `on_cast`
-4. 命中判定
-5. 处理命中侧 payload（命中成功时）
-6. 资源型/超时型默认动作在命中后追加默认反伤
-7. 触发 `effects_on_hit_ids` 或 `effects_on_miss_ids`
+1. pre-start 合法性复核：检查行动者仍可行动，且领域 / `action_legality` 没有把该行动变成非法
+2. 标记 `has_acted = true`
+3. 扣 MP，并处理常规技能加奥义点 / 奥义清奥义点
+4. 触发 `on_cast`
+5. 命中判定
+6. 命中成功时，先走技能本体直伤与额外威力 pipeline
+7. 资源型/超时型默认动作在命中后追加默认反伤
+8. 触发 `effects_on_hit_ids` 或 `effects_on_miss_ids`
 
 ## 4. TargetResolver
 

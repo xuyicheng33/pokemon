@@ -85,7 +85,7 @@ tests/
 - `lifecycle`：离场/倒下/补位链
 - `passives`：被动技能、被动持有物、field 落地/对拼/生命周期
 - `logging`：日志构造、回放、确定性校验
-- `facades`：对外稳定接口（Manager + Session）
+- `facades`：对外稳定接口（唯一稳定 facade 是 `BattleCoreManager`；`BattleCoreSession` 只是内部会话壳）
 
 架构约束见：`docs/design/battle_core_architecture_constraints.md`。
 
@@ -130,6 +130,8 @@ tests/run_with_gate.sh
 其中 `run_replay` 使用临时容器隔离执行，不污染活跃会话池。
 对外返回结构固定为 `{ replay_output, public_snapshot }`，其中 `replay_output.final_battle_state` 必须为 `null`，运行态对象不得越过 manager 边界。
 内部 `ReplayRunner` 仍保留 `final_battle_state`，用于计算 `final_state_hash` 与回放诊断，不对外透传。
+`BattleCoreSession` 只作为 manager 内部持有的会话对象，不属于外围稳定入口。
+`BattleCoreManager` 现在也不再直接持有完整 composition root；若需要装配容器，只允许依赖一个 build-container callable / factory port。
 
 `get_event_log_snapshot()` 对外固定补公开归因字段：
 
@@ -204,8 +206,9 @@ tests/run_with_gate.sh
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
 - 角色注册：`docs/records/formal_character_registry.json`
-- 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `required_suite_paths / required_test_names`
+- 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `required_suite_paths / required_test_names`；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
+- 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 
 当前 Gojo 与 Sukuna 都必须满足这套交付面，后续新角色默认沿用。
@@ -222,9 +225,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-31）
 
-- `src/**/*.gd`：`8566` 行
-- `tests/**/*.gd`：`9158` 行
-- GDScript 合计：`17724` 行
+- `src/**/*.gd`：`8580` 行
+- `tests/**/*.gd`：`9566` 行
+- GDScript 合计：`18146` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 
