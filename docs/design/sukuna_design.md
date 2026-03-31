@@ -267,6 +267,7 @@
 补充说明：
 
 - 当前 `gap` 读取的是双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的总和差距绝对值。
+- 上述 BST 口径把 `max_mp` 视为正式第七维；当前样例与正式角色都必须满足这个假设，若未来引入 `max_mp = 0` 的 dummy / 测试单位，需要先重审该公式再接入。
 - 动态公式只会把求值结果写进运行时 `rule_mod instance`，不会回写共享 `.tres` payload。
 - 当前宿傩每回合最终回复值固定为 `12 + 动态加值`；例如对位五条悟时，当前口径为 `12 + 9 = 21`。
 

@@ -199,3 +199,24 @@
   - 最终回蓝值按 `基础 12 + 对位追加` 读取
 - 原因：
   - 旧的 `mp_regen set` 语义与宿傩面板基础回蓝 `12` 自相矛盾，会把接近对位下的被动补强写成实际削弱。
+
+### 24. 内容快照 shape validator 继续保持“入口编排 + 子域校验”结构（2026-03-31）
+
+- `ContentSnapshotShapeValidator.validate()` 只保留 shape 校验主流水线，不再回退成一个超长函数承载全部 unit / skill / passive / field / effect 规则。
+- unit 相关 shape 校验当前下沉到独立 helper；后续若继续增长，应继续按内容子域拆，而不是把逻辑重新堆回入口。
+- 原因：
+  - 内容快照校验会随着扩角和 payload / field 变种增加持续膨胀；若继续集中在单函数内，后续每个角色接入都会把治理成本抬高。
+
+### 25. `on_matchup_changed` 的签名比较与触发 owner 统一收口到 field lifecycle（2026-03-31）
+
+- 初始化阶段与回合内阶段统一复用 `TurnFieldLifecycleService.execute_matchup_changed_if_needed()`。
+- `BattleInitializer` 只保留初始化编排 owner，不再维护本地重复的 matchup signature 比较与 trigger 调度实现。
+- 原因：
+  - `on_matchup_changed` 已属于稳定对位变化的公共生命周期，不应该分别散落在初始化和回合推进两条链上各写一份。
+
+### 26. Turn limit 计分与 battle result 落盘职责分离（2026-03-31）
+
+- `BattleResultService` 保留 battle end 落盘、invalid / surrender / victory 编排与日志。
+- turn limit 的 side 计分、排序与平局比较当前统一下沉到 `TurnLimitScoringService`。
+- 原因：
+  - 后续若补特殊胜利条件或追加更多 turn limit 规则，不应继续把评分细节堆进 battle result 主类。

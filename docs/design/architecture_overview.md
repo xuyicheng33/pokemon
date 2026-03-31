@@ -45,7 +45,7 @@
 |Actions|`battle_core/actions`|执行单次行动与目标锁定|
 |Math|`battle_core/math`|纯计算服务|
 |Lifecycle|`battle_core/lifecycle`|倒下、离场、补位|
-|Effects|`battle_core/effects`|触发、排序、payload 执行、rule mod 接入|
+|Effects|`battle_core/effects`|触发、排序、payload 执行、rule mod 接入；`payload_handlers/` 负责按 payload 家族拆分运行时处理|
 |Passives|`battle_core/passives`|被动技能、被动持有物、field 作为 trigger source 接入|
 |Logging|`battle_core/logging`|日志构造、写入、回放|
 
@@ -66,7 +66,8 @@
 - `shared` 不依赖 `battle_core`。
 - `math` 不写 `BattleState`。
 - `logging` 不改写运行态，只观察并记录。
-- `effects` 只能通过 `PayloadExecutor` 与实例服务改写持续效果/field/rule mod。
+- `effects` 只能通过 `PayloadExecutor`、`payload_handlers/*` 与实例服务改写持续效果/field/rule mod。
+- `PayloadExecutor` 只负责 effect 级前置守卫、payload 分派与 handler 编排；具体 payload 语义下沉到 `payload_handlers/` 与其子 runtime service。
 - `adapters` 只通过公开 contract 访问核心，不直接拼内部细节。
 - `composition` 负责 new 依赖，但不做业务判断。
 

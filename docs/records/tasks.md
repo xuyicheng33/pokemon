@@ -20,6 +20,42 @@
 
 ## 2026-03-31
 
+### 扩角前中等治理收口（已完成）
+
+- 目标：
+  - 拆分内容快照 shape validator 的长函数，避免扩角时继续堆进单个入口
+  - 预拆 turn limit 计分职责，为后续新增胜负条件留出空间
+  - 统一 `on_matchup_changed` 的编排 owner，避免初始化与回合内双份实现继续漂移
+  - 同步架构文档与宿傩 BST 公式假设
+- 范围：
+  - `src/battle_core/content/content_snapshot_shape_validator.gd`
+  - `src/battle_core/content/content_snapshot_unit_validator.gd`
+  - `src/battle_core/turn/battle_result_service.gd`
+  - `src/battle_core/turn/turn_limit_scoring_service.gd`
+  - `src/battle_core/turn/battle_initializer.gd`
+  - `src/composition/*`
+  - `docs/design/architecture_overview.md`
+  - `docs/design/sukuna_design.md`
+  - `docs/records/*`
+- 验收标准：
+  - `ContentSnapshotShapeValidator.validate()` 收口成分段编排入口，不再承载全部 unit/skill/field/effect 校验细节
+  - `battle_result_service.gd` 低于 250 行，turn limit 计分独立成 helper service，行为不变
+  - 初始化阶段与回合内阶段统一复用 `TurnFieldLifecycleService.execute_matchup_changed_if_needed()`
+  - 相关 suite 与 `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `ContentSnapshotShapeValidator` 已改为分段校验入口；unit 校验下沉到独立 helper
+  - `BattleResultService` 已把 turn limit 计分职责拆到 `TurnLimitScoringService`
+  - `BattleInitializer` 已改为复用 `TurnFieldLifecycleService.execute_matchup_changed_if_needed()`
+  - `architecture_overview.md` 已补 `effects/payload_handlers/` 粒度说明
+  - `sukuna_design.md` 已明确 BST 公式包含 `max_mp` 的设计假设
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### 宿傩回蓝语义收口与样例口径同步（已完成）
 
 - 目标：
