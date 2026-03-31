@@ -7,10 +7,11 @@
 - 当前同时包含：
   - `content/battle_formats/` 下的正式战斗格式资源
   - `content/samples/` 下的最小样例资源
-  - `gojo` 正式角色内容包（单位、技能、被动、effect、field）
-  - `sukuna` 正式角色内容包（单位、技能、被动、effect、field）
+  - `content/{units,skills,effects,passive_skills,fields}/gojo/` 下的 Gojo 正式角色内容包
+  - `content/{units,skills,effects,passive_skills,fields}/sukuna/` 下的宿傩正式角色内容包
 - 内容资源以规则文档和加载期校验为准；非法定义会在 `BattleContentIndex` 加载时直接 fail-fast
 - `SampleBattleFactory.content_snapshot_paths()` 会自动从 `battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 收集 `.tres`，并做稳定排序
+- 正式角色资源按角色子目录收纳；sample / battle_format / combat_type 资源继续保持当前目录结构
 
 当前正式角色资产约束：
 

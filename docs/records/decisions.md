@@ -295,3 +295,16 @@
 - 原因：
   - 不再只靠设计稿里的“手工同步点”提醒维护数值。
   - 保持现有 content schema 不扩新资源类型，同时让这类正式角色共享数值漂移能在加载时 fail-fast。
+
+### 33. 正式角色 content 资源按角色子目录组织，继续复用递归 snapshot 收集（2026-03-31）
+
+- 当前正式角色资源统一下沉到：
+  - `content/units/{gojo,sukuna}/`
+  - `content/skills/{gojo,sukuna}/`
+  - `content/effects/{gojo,sukuna}/`
+  - `content/passive_skills/{gojo,sukuna}/`
+  - `content/fields/{gojo,sukuna}/`
+- `SampleBattleFactory.content_snapshot_paths()` 继续保持“按大类目录递归收集 `.tres`”的策略，不为单个角色写特判路径。
+- 原因：
+  - 扩角后平铺目录会迅速退化成文件汤，查找和审查成本线性上升。
+  - 现有 loader 已支持递归扫描，目录治理不需要改内容 schema 或运行时装配。

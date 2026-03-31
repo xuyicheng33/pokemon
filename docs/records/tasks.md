@@ -252,7 +252,7 @@
   - 重算默认装配与反转术式装配的首次奥义窗口基线
   - 同步收口 README / content / design / registry / samples 目录口径
 - 范围：
-  - `content/effects/sukuna_refresh_love_regen.tres`
+  - `content/effects/sukuna/sukuna_refresh_love_regen.tres`
   - `content/samples/*`
   - `tests/suites/sukuna_setup_regen_suite.gd`
   - `docs/design/sukuna_design.md`
@@ -273,6 +273,38 @@
   - `sukuna_setup_regen_suite.gd` 已改为同时守住初始化预回蓝与下一回合 `turn_start` 的追加回蓝
   - 宿傩默认装配与反转术式装配的首次奥义窗口已统一更新为第 `4` 回合
   - `content/samples/` 已补最小合法样例资源占位，目录口径重新对齐
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
+### 正式角色 content 子目录收口（已完成）
+
+- 目标：
+  - 把 Gojo / Sukuna 的正式内容资源从平铺目录下沉到各自角色子目录
+  - 保持递归 snapshot 收集策略不变，不为角色资源写额外装配分支
+  - 同步 formal character registry 与 content 文档口径
+- 范围：
+  - `content/units/{gojo,sukuna}/`
+  - `content/skills/{gojo,sukuna}/`
+  - `content/effects/{gojo,sukuna}/`
+  - `content/passive_skills/{gojo,sukuna}/`
+  - `content/fields/{gojo,sukuna}/`
+  - `docs/records/formal_character_registry.json`
+  - `content/README.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - 正式角色资源全部位于各自子目录，sample / format / combat type 资源不受影响
+  - `docs/records/formal_character_registry.json` 的 `required_content_paths` 全部指向新路径
+  - `SampleBattleFactory.content_snapshot_paths()` 无需新增角色特判仍能加载全量资源
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - Gojo / Sukuna 的 unit、skill、effect、passive_skill、field 资源已迁到各自角色子目录
+  - formal character registry 已同步切到新路径
+  - `content/README.md` 已明确记录正式角色子目录布局与递归收集策略
 
 #### 当前验证结果
 
