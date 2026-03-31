@@ -1,25 +1,27 @@
 extends RefCounted
 class_name PayloadForcedReplaceHandler
 
-const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var replacement_service
+var target_helper
 
 var last_invalid_battle_code: Variant = null
 
 func resolve_missing_dependency() -> String:
     if replacement_service == null:
         return "replacement_service"
+    if target_helper == null:
+        return "target_helper"
     return ""
 
 func execute(payload, effect_event, battle_state, content_index) -> bool:
     last_invalid_battle_code = null
     if not payload is ForcedReplacePayloadScript:
         return false
-    var target_unit = _resolve_target_unit(payload.scope, effect_event, battle_state)
-    if not _is_effect_target_valid(target_unit):
+    var target_unit = target_helper.resolve_target_unit(payload.scope, effect_event, battle_state)
+    if not target_helper.is_effect_target_valid(target_unit, payload.scope, effect_event):
         return true
     if replacement_service == null:
         last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
@@ -37,17 +39,3 @@ func execute(payload, effect_event, battle_state, content_index) -> bool:
     if invalid_code != null:
         last_invalid_battle_code = invalid_code
     return true
-
-func _resolve_target_unit(scope: String, effect_event, battle_state):
-    match scope:
-        "self":
-            return battle_state.get_unit(effect_event.owner_id)
-        "target":
-            if effect_event.chain_context == null or effect_event.chain_context.target_unit_id == null:
-                return null
-            return battle_state.get_unit(str(effect_event.chain_context.target_unit_id))
-        _:
-            return null
-
-func _is_effect_target_valid(target_unit) -> bool:
-    return target_unit != null and target_unit.leave_state == LeaveStatesScript.ACTIVE and target_unit.current_hp > 0

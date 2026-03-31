@@ -20,6 +20,46 @@
 
 ## 2026-03-31
 
+### 审查报告复核与问题收口（已完成）
+
+- 目标：
+  - 逐条复核外部审查报告里的架构、角色、代码质量与风险结论，确认哪些问题真实存在，哪些只是维护性观察，哪些属于表述过度
+  - 对真实存在的问题整理可执行整改方案，避免把“当前 bug”和“后续技术债”混成一类
+- 范围：
+  - `src/battle_core/effects/payload_handlers/*`
+  - `src/battle_core/passives/field_service.gd`
+  - `src/battle_core/lifecycle/replacement_service.gd`
+  - `src/composition/battle_core_wiring_specs.gd`
+  - `docs/design/architecture_overview.md`
+  - `docs/design/lifecycle_and_replacement.md`
+  - `docs/design/passive_and_field.md`
+  - `docs/design/sukuna_design.md`
+  - `tests/suites/sukuna_kamado_domain_suite.gd`
+  - `tests/suites/forced_replace_field_break_suite.gd`
+  - `tests/check_architecture_constraints.sh`
+- 验收标准：
+  - 审查报告中的重点问题要明确分成“成立 / 部分成立 / 不成立”
+  - 结论需要有源码或测试依据，不能只靠口头判断
+  - 对成立问题给出最小改法、验证点与实施顺序
+
+#### 当前执行结果
+
+- 已完成：
+  - 全量跑通 `bash tests/run_with_gate.sh`，确认当前主线无回归，角色链路、架构闸门与仓库一致性全部通过
+  - `PayloadForcedReplaceHandler` 已改为注入并复用 `PayloadUnitTargetHelper`，不再本地重复实现 target 解析与合法性判断
+  - 已新增 `payload_effect_event_helper.gd`，统一收口 4 处 `_resolve_effect_roll()` 重复逻辑
+  - `PayloadStateHandler` 也已改成复用组合根注入的 helper，不再内部 `new()` helper
+  - 确认 `last_invalid_battle_code` 在 `src/` 内共 13 处扩散，属于当前 fail-fast 错误传播约定，不是新近漂移
+  - 已把 `trigger_batch_runner -> payload_executor -> payload_numeric_handler -> faint_resolver -> replacement_service -> trigger_batch_runner` 的受控运行时环补成显式架构约束与决策记录
+  - 确认 `architecture_overview.md` 已明确写出 `BattleCoreSession` 是 manager 内部会话壳，因此原审查里“未在高层文档明确列出 battle_core_session”这句不准确
+  - 已修正 `lifecycle_and_replacement.md` 对 `field_service.gd` 的文档口径，明确它是 field 子域服务，本文件只是引用其提前打断能力
+  - 已在 `sukuna_design.md` 标注 `20` 点火属性固定伤害的三处同步修改点
+  - 确认源码最大文件当前为 `src/battle_core/facades/battle_core_manager.gd` 的 250 行，未超过架构闸门的 `>250` 阈值
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### 战斗核心全量治理整顿（已完成）
 
 - 目标：

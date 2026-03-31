@@ -7,7 +7,6 @@ const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_e
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
-const PayloadUnitTargetHelperScript := preload("res://src/battle_core/effects/payload_handlers/payload_unit_target_helper.gd")
 
 var battle_logger
 var log_event_builder
@@ -17,9 +16,10 @@ var rule_mod_service
 var rule_mod_value_resolver
 var field_service
 var field_apply_service
+var target_helper
+var effect_event_helper
 
 var last_invalid_battle_code: Variant = null
-var _target_helper = PayloadUnitTargetHelperScript.new()
 
 func resolve_missing_dependency() -> String:
     if battle_logger == null:
@@ -46,6 +46,10 @@ func resolve_missing_dependency() -> String:
         var field_apply_missing := str(field_apply_service.resolve_missing_dependency())
         if not field_apply_missing.is_empty():
             return "field_apply_service.%s" % field_apply_missing
+    if target_helper == null:
+        return "target_helper"
+    if effect_event_helper == null:
+        return "effect_event_helper"
     return ""
 
 func execute(payload, effect_definition, effect_event, battle_state, content_index) -> bool:
@@ -71,8 +75,8 @@ func _apply_field_payload(payload, effect_definition, effect_event, battle_state
         return
 
 func _apply_effect_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
-    var target_unit = _target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
-    if not _target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
+    var target_unit = target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
+    if not target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
         return
     var target_definition = content_index.effects.get(payload.effect_definition_id)
     if target_definition == null:
@@ -100,14 +104,14 @@ func _apply_effect_payload(payload, effect_definition, effect_event, battle_stat
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
-            "effect_roll": _resolve_effect_roll(effect_event),
+            "effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
             "payload_summary": "apply effect %s (%s)" % [payload.effect_definition_id, created_instance.instance_id],
         }
     ))
 
 func _remove_effect_payload(payload, effect_definition, effect_event, battle_state) -> void:
-    var target_unit = _target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
-    if not _target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
+    var target_unit = target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
+    if not target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
         return
     var removed_instance = effect_instance_service.remove_instance(target_unit.unit_instance_id, payload.effect_definition_id, battle_state)
     if removed_instance == null:
@@ -122,7 +126,7 @@ func _remove_effect_payload(payload, effect_definition, effect_event, battle_sta
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
-            "effect_roll": _resolve_effect_roll(effect_event),
+            "effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
             "payload_summary": "remove effect %s" % payload.effect_definition_id,
         }
     ))
@@ -156,7 +160,7 @@ func _apply_rule_mod_payload(payload, effect_event, battle_state) -> void:
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
-            "effect_roll": _resolve_effect_roll(effect_event),
+            "effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
             "payload_summary": "rule mod %s (%s)" % [created_instance.mod_kind, created_instance.instance_id],
         }
     ))
@@ -165,14 +169,14 @@ func _resolve_rule_mod_owner(payload, effect_event, battle_state):
     match payload.scope:
         "self":
             var owner_unit = battle_state.get_unit(effect_event.owner_id)
-            if not _target_helper.is_effect_target_valid(owner_unit, payload.scope, effect_event):
+            if not target_helper.is_effect_target_valid(owner_unit, payload.scope, effect_event):
                 return null
             return {"scope": "unit", "id": owner_unit.unit_instance_id}
         "target":
             if effect_event.chain_context == null or effect_event.chain_context.target_unit_id == null:
                 return null
             var target_unit = battle_state.get_unit(str(effect_event.chain_context.target_unit_id))
-            if not _target_helper.is_effect_target_valid(target_unit, payload.scope, effect_event):
+            if not target_helper.is_effect_target_valid(target_unit, payload.scope, effect_event):
                 return null
             return {"scope": "unit", "id": target_unit.unit_instance_id}
         "field":
@@ -180,8 +184,3 @@ func _resolve_rule_mod_owner(payload, effect_event, battle_state):
         _:
             last_invalid_battle_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
             return null
-
-func _resolve_effect_roll(effect_event) -> Variant:
-    if effect_event == null:
-        return null
-    return effect_event.sort_random_roll

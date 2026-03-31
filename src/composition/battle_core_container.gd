@@ -41,6 +41,7 @@ var trigger_batch_runner
 var effect_queue_service
 var payload_executor
 var payload_unit_target_helper
+var payload_effect_event_helper
 var payload_numeric_handler
 var payload_damage_runtime_service
 var payload_resource_runtime_service

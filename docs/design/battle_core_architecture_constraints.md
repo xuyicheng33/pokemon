@@ -25,6 +25,13 @@
 |adapters|禁止直接依赖 `runtime` 内部结构|
 |外围层|只能通过 facade 或明确 contract 进入核心|
 
+补充说明：
+
+- 当前核心允许少量**受控运行时环**，但只允许存在于 composition root 的属性注入图里，不能回退成构造器互相依赖或局部 `new()`。
+- 当前已知受控闭环之一：
+  - `trigger_batch_runner -> payload_executor -> payload_numeric_handler -> faint_resolver -> replacement_service -> trigger_batch_runner`
+- 该闭环当前依赖 fail-fast 守卫与 chain depth 保护保持可控；后续若要重构装配方式，必须先改文档与回归，不能直接改成构造器注入。
+
 ## 3. Rule Mod 约束
 
 `rule_mod` 定义为“受限读取修正器”，只能作用于白名单读取点，不能改流程。

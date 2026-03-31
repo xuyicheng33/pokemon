@@ -13,7 +13,7 @@
 |`replacement_service.gd`|处理强制换下/补位目标合法性并执行入场|
 |`replacement_selector.gd`|系统替补选择接口，返回合法 bench 目标的 `unit_instance_id`|
 |`default_replacement_selector.gd`|默认系统替补策略实现（从合法候选中确定目标）|
-|`field_service.gd`|field 触发收集、自然到期、creator 离场后的提前打断辅助|
+|`field_service.gd`|field 子域服务；本文件只引用其 creator 离场后的提前打断辅助|
 
 ## 2. LeaveService
 

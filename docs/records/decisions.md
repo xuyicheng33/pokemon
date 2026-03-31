@@ -273,3 +273,16 @@
   - 不额外写特殊日志
 - 原因：
   - 当前回蓝与领域续航虽然通常不会把灶堆到失控，但扩角后只要出现多动、多段或复制触发，没有显式上限就会把数值边界重新炸开。
+
+### 31. Effects/Lifecycle 受控运行时环只允许保留在 composition 属性注入层（2026-03-31）
+
+- 当前已知受控闭环之一：
+  - `trigger_batch_runner -> payload_executor -> payload_numeric_handler -> faint_resolver -> replacement_service -> trigger_batch_runner`
+- 该闭环当前允许保留，前提是：
+  - 只通过 composition root 统一属性注入接线
+  - 运行时继续受 `invalid_battle` fail-fast 与 chain depth 守卫保护
+- 明确禁止：
+  - 把这条链直接改成构造器注入
+  - 在 owner service 内局部 `new()` 出一段旁路 helper 来偷偷绕过 composition
+- 原因：
+  - 这条链是当前效果递归、击倒窗口与补位主链之间的稳定调用回路；贸然切装配方式比保留受控闭环更容易引入半初始化或递归死锁。

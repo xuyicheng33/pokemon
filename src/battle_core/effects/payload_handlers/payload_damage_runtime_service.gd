@@ -13,6 +13,7 @@ var stat_calculator
 var rule_mod_service
 var faint_resolver
 var target_helper
+var effect_event_helper
 
 func resolve_missing_dependency() -> String:
     if battle_logger == null:
@@ -29,6 +30,8 @@ func resolve_missing_dependency() -> String:
         return "rule_mod_service"
     if target_helper == null:
         return "target_helper"
+    if effect_event_helper == null:
+        return "effect_event_helper"
     return ""
 
 func apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
@@ -107,7 +110,7 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
-            "effect_roll": _resolve_effect_roll(effect_event),
+            "effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
             "type_effectiveness": type_effectiveness if is_damage_event else null,
             "value_changes": [value_change],
             "payload_summary": "%s %s %+d" % [target_unit.public_id, summary_tag, value_change.delta],
@@ -136,9 +139,6 @@ func _build_value_change(entity_id: String, resource_name: String, before_value:
     value_change.after_value = after_value
     value_change.delta = after_value - before_value
     return value_change
-
-func _resolve_effect_roll(effect_event) -> Variant:
-    return null if effect_event == null else effect_event.sort_random_roll
 
 func _resolve_chain_skill_definition(effect_event, content_index):
     if effect_event == null or effect_event.chain_context == null:

@@ -7,6 +7,7 @@ const ValueChangeScript := preload("res://src/battle_core/contracts/value_change
 var battle_logger
 var log_event_builder
 var target_helper
+var effect_event_helper
 
 func resolve_missing_dependency() -> String:
     if battle_logger == null:
@@ -15,6 +16,8 @@ func resolve_missing_dependency() -> String:
         return "log_event_builder"
     if target_helper == null:
         return "target_helper"
+    if effect_event_helper == null:
+        return "effect_event_helper"
     return ""
 
 func apply_heal_payload(payload, effect_definition, effect_event, battle_state) -> void:
@@ -66,7 +69,7 @@ func _apply_resource_like_change(battle_state, effect_event, target_unit, resour
             "priority": effect_event.priority,
             "trigger_name": effect_event.trigger_name,
             "cause_event_id": effect_event.event_id,
-            "effect_roll": _resolve_effect_roll(effect_event),
+            "effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
             "value_changes": [value_change],
             "payload_summary": "%s %s %+d" % [target_unit.public_id, summary_tag, value_change.delta],
         }
@@ -98,6 +101,3 @@ func _build_value_change(entity_id: String, resource_name: String, before_value:
     value_change.after_value = after_value
     value_change.delta = after_value - before_value
     return value_change
-
-func _resolve_effect_roll(effect_event) -> Variant:
-    return null if effect_event == null else effect_event.sort_random_roll
