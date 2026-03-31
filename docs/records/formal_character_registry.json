@@ -8,10 +8,18 @@
     "suite_path": "tests/suites/gojo_suite.gd",
     "required_suite_paths": [
       "tests/suites/gojo_setup_and_markers_suite.gd",
+      "tests/suites/gojo_snapshot_suite.gd",
       "tests/suites/gojo_murasaki_suite.gd",
-      "tests/suites/gojo_domain_suite.gd"
+      "tests/suites/gojo_domain_suite.gd",
+      "tests/suites/ultimate_field_suite.gd",
+      "tests/suites/ultimate_points_contract_suite.gd",
+      "tests/suites/domain_clash_contract_suite.gd",
+      "tests/suites/field_lifecycle_contract_suite.gd"
     ],
     "required_test_names": [
+      "gojo_unit_snapshot_contract",
+      "gojo_skill_snapshot_contract",
+      "gojo_effect_snapshot_contract",
       "gojo_content_and_setup_contract",
       "gojo_first_turn_mp_contract",
       "gojo_ao_hit_contract",
@@ -22,6 +30,7 @@
       "gojo_marker_refresh_contract",
       "gojo_murasaki_no_marks_contract",
       "gojo_murasaki_double_mark_burst_contract",
+      "gojo_murasaki_no_recoil_contract",
       "gojo_murasaki_base_kill_contract",
       "gojo_murasaki_burst_kill_contract",
       "gojo_murasaki_retargeted_switch_contract",
@@ -31,7 +40,13 @@
       "gojo_unlimited_void_cancelled_pre_start_contract",
       "gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract",
       "gojo_reverse_ritual_heal_contract",
-      "gojo_plus5_competition_contract"
+      "gojo_plus5_competition_contract",
+      "ultimate_points_regular_skill_gain_contract",
+      "ultimate_points_non_regular_switch_preserve_contract",
+      "ultimate_points_ultimate_legality_and_reset_contract",
+      "field_clash_high_mp_and_success_only_followup_contract",
+      "same_turn_dual_domain_not_cancelled_by_action_lock_contract",
+      "field_bound_stat_mod_restore_contract"
     ],
     "required_content_paths": [
       "content/units/gojo_satoru.tres",
@@ -76,9 +91,16 @@
     "suite_path": "tests/suites/sukuna_suite.gd",
     "required_suite_paths": [
       "tests/suites/sukuna_setup_regen_suite.gd",
-      "tests/suites/sukuna_kamado_domain_suite.gd"
+      "tests/suites/sukuna_snapshot_suite.gd",
+      "tests/suites/sukuna_kamado_domain_suite.gd",
+      "tests/suites/ultimate_field_suite.gd",
+      "tests/suites/domain_clash_contract_suite.gd",
+      "tests/suites/field_lifecycle_contract_suite.gd"
     ],
     "required_test_names": [
+      "sukuna_unit_snapshot_contract",
+      "sukuna_skill_snapshot_contract",
+      "sukuna_effect_snapshot_contract",
       "sukuna_default_loadout_contract",
       "sukuna_matchup_regen_runtime_path",
       "sukuna_reverse_ritual_heal_path",
@@ -89,7 +111,11 @@
       "sukuna_kamado_stack_on_exit_path",
       "sukuna_domain_expire_chain_path",
       "sukuna_domain_break_chain_path",
-      "sukuna_field_accuracy_override_path"
+      "sukuna_field_accuracy_override_path",
+      "field_clash_high_mp_and_success_only_followup_contract",
+      "opponent_domain_cast_still_legal_contract",
+      "same_turn_dual_domain_not_cancelled_by_action_lock_contract",
+      "field_bound_stat_mod_restore_contract"
     ],
     "required_content_paths": [
       "content/units/sukuna.tres",

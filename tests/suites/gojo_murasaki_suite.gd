@@ -9,6 +9,7 @@ var _support = GojoTestSupportScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("gojo_murasaki_no_marks_contract", failures, Callable(self, "_test_gojo_murasaki_no_marks_contract").bind(harness))
     runner.run_test("gojo_murasaki_double_mark_burst_contract", failures, Callable(self, "_test_gojo_murasaki_double_mark_burst_contract").bind(harness))
+    runner.run_test("gojo_murasaki_no_recoil_contract", failures, Callable(self, "_test_gojo_murasaki_no_recoil_contract").bind(harness))
     runner.run_test("gojo_murasaki_base_kill_contract", failures, Callable(self, "_test_gojo_murasaki_base_kill_contract").bind(harness))
     runner.run_test("gojo_murasaki_burst_kill_contract", failures, Callable(self, "_test_gojo_murasaki_burst_kill_contract").bind(harness))
     runner.run_test("gojo_murasaki_retargeted_switch_contract", failures, Callable(self, "_test_gojo_murasaki_retargeted_switch_contract").bind(harness))
@@ -87,6 +88,28 @@ func _test_gojo_murasaki_double_mark_burst_contract(harness) -> Dictionary:
         return harness.fail_result("茈追加段应继承技能 combat_type_id=space 的克制倍率")
     if _count_effect_instances(target_unit, "gojo_ao_mark") != 0 or _count_effect_instances(target_unit, "gojo_aka_mark") != 0:
         return harness.fail_result("茈在双标记追加后应清掉双标记")
+    return harness.pass_result()
+func _test_gojo_murasaki_no_recoil_contract(harness) -> Dictionary:
+    var state_payload = _build_gojo_vs_sample_state(harness, 1229)
+    if state_payload.has("error"):
+        return harness.fail_result(str(state_payload["error"]))
+    var core = state_payload["core"]
+    var content_index = state_payload["content_index"]
+    var battle_state = state_payload["battle_state"]
+    content_index.skills["gojo_murasaki"].accuracy = 100
+    var gojo_unit = battle_state.get_side("P1").get_active_unit()
+    var target_unit = battle_state.get_side("P2").get_active_unit()
+    var before_hp: int = gojo_unit.current_hp
+    _apply_gojo_double_marks(core, content_index, battle_state, target_unit, gojo_unit.unit_instance_id, gojo_unit.base_speed)
+    core.battle_logger.reset()
+    core.turn_loop_controller.run_turn(battle_state, content_index, [
+        _build_skill_command(core, 1, "P1", "P1-A", "gojo_murasaki"),
+        _build_wait_command(core, 1, "P2", "P2-A"),
+    ])
+    if gojo_unit.current_hp != before_hp:
+        return harness.fail_result("茈触发追加段后不应对五条悟造成反噬伤害")
+    if _count_target_damage_events(core.battle_logger.event_log, gojo_unit.unit_instance_id) != 0:
+        return harness.fail_result("茈结算后不应给五条悟自己写入伤害事件")
     return harness.pass_result()
 func _test_gojo_murasaki_base_kill_contract(harness) -> Dictionary:
     var state_payload = _build_gojo_vs_sample_state(harness, 1207)
