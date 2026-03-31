@@ -17,6 +17,7 @@ const FieldDefinitionScript := preload("res://src/battle_core/content/field_defi
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("content_validation_failures", failures, Callable(self, "_test_content_validation_failures").bind(harness))
 	runner.run_test("content_validation_new_constraints", failures, Callable(self, "_test_content_validation_new_constraints").bind(harness))
+	runner.run_test("formal_character_shared_fire_burst_validation", failures, Callable(self, "_test_formal_character_shared_fire_burst_validation").bind(harness))
 	runner.run_test("on_receive_forbidden_in_content", failures, Callable(self, "_test_on_receive_forbidden_in_content").bind(harness))
 	runner.run_test("nested_domain_skill_validation", failures, Callable(self, "_test_nested_domain_skill_validation").bind(harness))
 	runner.run_test("domain_field_contract_validation", failures, Callable(self, "_test_domain_field_contract_validation").bind(harness))
@@ -205,6 +206,21 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
 	if not has_duplicate_item_error:
 		return harness.fail_result("battle setup should reject duplicate passive items on same side")
 	return harness.pass_result()
+
+func _test_formal_character_shared_fire_burst_validation(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var kamado_mark = content_index.effects.get("sukuna_kamado_mark", null)
+	if kamado_mark == null or kamado_mark.payloads.is_empty():
+		return harness.fail_result("missing sukuna_kamado_mark damage payload")
+	kamado_mark.payloads[0].amount = 21
+	var errors: Array = content_index.validate_snapshot()
+	for error_msg in errors:
+		if str(error_msg).find("formal[sukuna].shared_fire_burst payload mismatch") != -1:
+			return harness.pass_result()
+	return harness.fail_result("formal shared fire burst validation should fail when Sukuna payloads drift")
 
 func _test_on_receive_forbidden_in_content(harness) -> Dictionary:
 	var content_index = BattleContentIndexScript.new()

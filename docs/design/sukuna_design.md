@@ -162,7 +162,7 @@
 - 边界行为：
   - 目标带着两层灶离场时，应触发两次 `on_exit` 伤害事件。
   - 灶的自然到期爆炸与离场爆炸是两条不同路径，不能互相吞掉。
-  - 当前 `20` 点火属性固定伤害分别独立定义在 `sukuna_kamado_mark`、`sukuna_kamado_explode` 与 `sukuna_domain_expire_burst`；若后续改这个数值，三处必须同步修改。
+  - 当前 `20` 点火属性固定伤害仍分别独立定义在 `sukuna_kamado_mark`、`sukuna_kamado_explode` 与 `sukuna_domain_expire_burst`；加载期会强校验三处 `amount / use_formula / combat_type_id` 一致，后续若调数值仍需三处一起改。
 - 验收点：
   - `double hiraku` 后，目标离场必须触发两次伤害日志。
   - 灶自然到期时仍会造成一次固定伤害。

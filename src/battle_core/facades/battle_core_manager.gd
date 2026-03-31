@@ -58,11 +58,7 @@ func create_session(init_payload: Dictionary) -> Dictionary:
     session.content_index = content_index
     _sessions[session_id] = session
     var public_snapshot = public_snapshot_builder.build_public_snapshot(battle_state, content_index)
-    return _contract_helper.ok({
-        "session_id": session_id,
-        "public_snapshot": public_snapshot,
-        "prebattle_public_teams": public_snapshot.get("prebattle_public_teams", []),
-    })
+    return _contract_helper.ok({"session_id": session_id, "public_snapshot": public_snapshot, "prebattle_public_teams": public_snapshot.get("prebattle_public_teams", [])})
 
 func get_legal_actions(session_id: String, side_id: String) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
@@ -111,10 +107,7 @@ func run_turn(session_id: String, commands: Array) -> Dictionary:
         normalized_commands.append(command_result.get("data", null))
     var session = session_result.get("data", null)
     session.container.turn_loop_controller.run_turn(session.battle_state, session.content_index, normalized_commands)
-    return _contract_helper.ok({
-        "session_id": session_id,
-        "public_snapshot": public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index),
-    })
+    return _contract_helper.ok({"session_id": session_id, "public_snapshot": public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index)})
 
 func get_public_snapshot(session_id: String) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
@@ -141,10 +134,7 @@ func get_event_log_snapshot(session_id: String, from_index: int = 0) -> Dictiona
     var event_snapshots: Array = []
     for event_index in range(start_index, event_log.size()):
         event_snapshots.append(_event_log_public_snapshot_builder.build_public_snapshot(event_log[event_index], session.battle_state))
-    return _contract_helper.ok({
-        "events": event_snapshots,
-        "total_size": event_log.size(),
-    })
+    return _contract_helper.ok({"events": event_snapshots, "total_size": event_log.size()})
 
 func close_session(session_id: String) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
@@ -181,10 +171,7 @@ func run_replay(replay_input) -> Dictionary:
     var public_snapshot = public_snapshot_builder.build_public_snapshot(internal_replay_output.final_battle_state, replay_result["content_index"])
     var replay_output = internal_replay_output.clone_without_runtime_state()
     temp_container.dispose()
-    return _contract_helper.ok({
-        "replay_output": replay_output,
-        "public_snapshot": public_snapshot,
-    })
+    return _contract_helper.ok({"replay_output": replay_output, "public_snapshot": public_snapshot})
 
 func active_session_count() -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()

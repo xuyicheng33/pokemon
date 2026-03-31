@@ -53,6 +53,37 @@
 
 - `bash tests/run_with_gate.sh` 通过
 
+### 扩角前共享 payload 与 facade 踩线收口（已完成）
+
+- 目标：
+  - 把宿傩三处共享火属性固定伤害从“纯文档同步点”升级成加载期硬校验
+  - 给这条约束补一条负向回归，确保漂移时直接 fail-fast
+  - 把 `BattleCoreManager` 从 250 行踩线状态收回到安全线，并在 BST 计算代码里写明 `max_mp` 第七维假设
+- 范围：
+  - `src/battle_core/content/content_snapshot_shape_validator.gd`
+  - `tests/suites/content_validation_contract_suite.gd`
+  - `src/battle_core/facades/battle_core_manager.gd`
+  - `src/battle_core/effects/rule_mod_value_resolver.gd`
+  - `docs/design/sukuna_design.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - 宿傩 `sukuna_kamado_mark / sukuna_kamado_explode / sukuna_domain_expire_burst` 的固定火伤配置若发生漂移，`BattleContentIndex.load_snapshot()` 必须直接失败
+  - `content_validation_contract_suite.gd` 有专项负向回归覆盖这条约束
+  - `battle_core_manager.gd` 低于 250 行阈值
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 内容快照 shape validator 已补正式角色共享火伤一致性校验
+  - `content_validation_contract_suite.gd` 已新增宿傩共享火伤漂移负向回归
+  - `BattleCoreManager` 已从 250 行踩线降回阈值以内
+  - `rule_mod_value_resolver.gd` 已补 `max_mp` 计入 BST 的代码注释
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### 审查报告复核与问题收口（已完成）
 
 - 目标：

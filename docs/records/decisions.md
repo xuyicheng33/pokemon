@@ -286,3 +286,12 @@
   - 在 owner service 内局部 `new()` 出一段旁路 helper 来偷偷绕过 composition
 - 原因：
   - 这条链是当前效果递归、击倒窗口与补位主链之间的稳定调用回路；贸然切装配方式比保留受控闭环更容易引入半初始化或递归死锁。
+
+### 32. 正式角色若因 effect 触发差异必须双写共享伤害 payload，加载期必须做一致性校验（2026-03-31）
+
+- 当前宿傩 `sukuna_kamado_mark`、`sukuna_kamado_explode`、`sukuna_domain_expire_burst` 都各自带一份 `20` 点火属性固定伤害 payload。
+- 这三处独立定义暂时保留，因为它们分别挂在 `on_exit / on_expire / field_expire` 三条不同 effect 链上，直接抽成独立 content 资源会越过当前注册表支持范围。
+- `ContentSnapshotShapeValidator` 现在会在加载期强校验三处 `amount / use_formula / combat_type_id` 必须完全一致。
+- 原因：
+  - 不再只靠设计稿里的“手工同步点”提醒维护数值。
+  - 保持现有 content schema 不扩新资源类型，同时让这类正式角色共享数值漂移能在加载时 fail-fast。
