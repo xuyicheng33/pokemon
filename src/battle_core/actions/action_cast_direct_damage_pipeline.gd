@@ -9,6 +9,7 @@ var stat_calculator
 var rule_mod_service
 var faint_resolver
 var action_log_service
+var power_bonus_resolver
 
 func resolve_missing_dependency() -> String:
     if damage_service == null:
@@ -23,6 +24,8 @@ func resolve_missing_dependency() -> String:
         return "faint_resolver"
     if action_log_service == null:
         return "action_log_service"
+    if power_bonus_resolver == null:
+        return "power_bonus_resolver"
     return ""
 
 func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, cause_event_id: String, source_kind_order_active_skill: int) -> void:
@@ -70,7 +73,10 @@ func apply_direct_damage(queued_action, actor, target, skill_definition, battle_
     )
 
 func apply_default_recoil(queued_action, actor, battle_state, cause_event_id: String, source_kind_order_active_skill: int) -> void:
-    var recoil_amount: int = max(1, int(floor(float(actor.max_hp) / 4.0)))
+    var recoil_ratio: float = 0.25
+    if battle_state != null:
+        recoil_ratio = float(battle_state.default_recoil_ratio)
+    var recoil_amount: int = max(1, int(floor(float(actor.max_hp) * recoil_ratio)))
     var before_hp: int = actor.current_hp
     actor.current_hp = clamp(actor.current_hp - recoil_amount, 0, actor.max_hp)
     var value_change = action_log_service.build_value_change(actor.unit_instance_id, "hp", before_hp, actor.current_hp)
@@ -115,11 +121,17 @@ func _resolve_unit_combat_types(target) -> PackedStringArray:
     return target.combat_type_ids
 
 func _resolve_power_bonus(skill_definition, actor, target) -> int:
-    if skill_definition == null or target == null:
+    if skill_definition == null or power_bonus_resolver == null:
         return 0
-    if String(skill_definition.power_bonus_source) == "mp_diff_clamped":
-        return max(0, int(actor.current_mp) - int(target.current_mp))
-    return 0
+    var actor_mp_after_cost: int = int(actor.current_mp) if actor != null else 0
+    var target_mp_before_cast: int = int(target.current_mp) if target != null else 0
+    return int(power_bonus_resolver.resolve_power_bonus(
+        skill_definition,
+        actor,
+        target,
+        actor_mp_after_cost,
+        target_mp_before_cast
+    ))
 
 func _build_direct_damage_context(actor, target, skill_definition) -> Dictionary:
     var power: int = 50

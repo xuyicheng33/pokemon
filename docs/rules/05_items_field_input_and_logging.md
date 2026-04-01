@@ -62,7 +62,7 @@
 |场上已有领域，新普通 field 生效|新普通 field 不生效，写 `effect:field_blocked`，旧领域保留|
 |场上已有领域，新领域生效|进入领域对拼，并写 `effect:field_clash`|
 |领域对拼比较值|比较双方在各自动作扣费后的当前 MP|
-|领域对拼胜负|MP 更高者保留领域；若 MP 相等，按 RNG 随机决定|
+|领域对拼胜负|MP 更高者保留领域；若 MP 相等，按 `BattleFormatConfig.domain_clash_tie_threshold` 决定 challenger 是否胜出；当前样例默认 `0.5`|
 |领域对拼失败方|field 不落地，且“只有领域成功立住后才成立”的附带效果一律不生效；即便先手方同回合曾短暂落地，若最终被后手领域翻盘，仍视为失败方|
 |剩余回合扣减|固定在 `turn_end` 效果全部结算完成后；`remaining <= 0` 时立即移除|
 |剩余回合起算|field 生效后，遇到的第一个 `turn_end` 结算节点即为首次扣减点；若本回合 `turn_end` 尚未执行，则本回合末立即扣减|

@@ -7,6 +7,7 @@
 |文件|职责|
 |---|---|
 |`leave_service.gd`|统一执行离场状态清理并写 `state:exit`|
+|`lifecycle_retention_policy.gd`|统一回答 effect / rule_mod 在不同离场原因下是否保留|
 |`faint_resolver.gd`|处理 `fainted_pending_leave` 窗口与触发批次|
 |`faint_killer_attribution_service.gd`|记录致死来源、解析击杀归属并收集行动链 `on_kill` 事件|
 |`faint_leave_replacement_service.gd`|收口击倒离场、creator 打断与补位主链的 helper|
@@ -21,7 +22,7 @@
 
 - 清空 active 槽位。
 - 按离场原因重置单位状态（能力阶段、临时标记、rule_mod 等）。
-- 对非倒下离场保留 `persists_on_switch` 的效果实例。
+- 通过 `LifecycleRetentionPolicy` 决定 effect / rule_mod 是否保留；当前正式口径仍是“非击倒离场只保留 `persists_on_switch=true`，`faint` 一律清空”。
 - 写 `state:exit` 日志。
 
 说明：

@@ -36,6 +36,8 @@
 |`level`|`int`|固定等级|
 |`selection_deadline_ms`|`int`|每回合选指令截止时间（毫秒）|
 |`max_chain_depth`|`int`|单条触发链允许的最大深度|
+|`default_recoil_ratio`|`float`|默认动作命中后的反伤比例；当前样例默认 `0.25`|
+|`domain_clash_tie_threshold`|`float`|领域对拼平 MP 时 challenger 判胜阈值；当前样例默认 `0.5`|
 |`combat_type_chart`|`Array[Resource]`|战斗属性克制表，元素类型固定为 `CombatTypeChartEntry`|
 
 ### 3.2 UnitDefinition
@@ -253,7 +255,8 @@
 - `UnitDefinition.candidate_skill_ids` 为空时表示没有额外候选池；非空时必须满足：长度至少 3、不能重复、不能含空串、必须命中已注册常规技能、必须完整包含默认 `skill_ids`、不得包含 `ultimate_skill_id`。
 - `UnitDefinition.ultimate_points_required / ultimate_points_cap / ultimate_point_gain_on_regular_skill_cast` 必须 `>= 0`，且 `ultimate_points_cap >= ultimate_points_required`；没有 `ultimate_skill_id` 的单位不得声明非零奥义点配置。
 - `SkillDefinition.combat_type_id` 可为空；非空时必须命中已注册 `combat_type`。
-- `SkillDefinition.power_bonus_source` 当前只允许空串或 `mp_diff_clamped`。
+- `SkillDefinition.power_bonus_source` 当前只允许 `PowerBonusResolver` 已注册的来源；正式主线现阶段只开放空串与 `mp_diff_clamped`。
+- `BattleFormatConfig.default_recoil_ratio / domain_clash_tie_threshold` 必须落在 `0.0..1.0`。
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
 - `SkillDefinition.is_domain_skill` 与其实际 `apply_field` 目标必须一致：领域技能必须施加 `field_kind=domain` 的 field；施加 `domain` field 的技能也必须声明 `is_domain_skill=true`。

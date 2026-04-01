@@ -185,7 +185,7 @@ tests/run_with_gate.sh
 - 触发点当前包含 `field_apply / field_break / field_expire / on_expire`，并要求引用关系与触发器声明一致
 - field 持续时间不写在 `FieldDefinition`；由施加它的 `EffectDefinition.duration / decrement_on` 决定
 - `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 rule_mod 使用；该公式按 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值）
-- `BattleFormatConfig` 已包含 `visibility_mode / selection_deadline_ms / max_chain_depth`
+- `BattleFormatConfig` 已包含 `visibility_mode / selection_deadline_ms / max_chain_depth / default_recoil_ratio / domain_clash_tie_threshold`
 - `UnitDefinition` 已包含 `max_mp / init_mp / regen_per_turn / ultimate_points_required / ultimate_points_cap / ultimate_point_gain_on_regular_skill_cast`
 - `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
 - 普通技能与奥义优先级约束分离校验
@@ -231,9 +231,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-01）
 
-- `src/**/*.gd`：`9724` 行
-- `tests/**/*.gd`：`11523` 行
-- GDScript 合计：`21247` 行
+- `src/**/*.gd`：`10027` 行
+- `tests/**/*.gd`：`11734` 行
+- GDScript 合计：`21761` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

@@ -11,10 +11,10 @@
 | 无量空处锁人条件 | 只有领域**成功立住**时，才通过 `on_success_effect_ids -> field_apply_success` 施加 `gojo_domain_action_lock` |
 | 领域增幅归属 | `sp_attack +1` 改为 field 绑定效果；成功立场时生效，领域自然结束/提前打断时移除，对拼失败时不成立 |
 | 领域后摇 | **删除**（不再追加封印/回滚） |
-| 施工顺序 | **第 4 节扩展、第 5 节资源、第 6 节 `gojo_suite` 均已落地；本轮新增奥义点 / 领域对拼 / field 绑定增幅专项回归** |
+| 当前状态 | 资源、validator、suite、manager smoke 已全部接线；本轮继续做扩角前整备收口 |
 | 苍/赫标记归属 | 标记挂在**目标**身上；换人清除只发生在**标记持有者**离场时 |
 | 苍/赫标记消耗语义 | 茈现在要求目标同时持有双标记，且两枚标记都必须由**当前这名五条悟本人**施加 |
-| 已接线引擎扩展 | `action_legality`、`required_target_effects`、`required_target_same_owner`、`incoming_accuracy` 已进入当前主线 |
+| 共享能力引用 | `required_target_effects`、`required_target_same_owner`、`incoming_accuracy` 全部回收到公共规则文档，本稿只写五条悟差异 |
 | 明确不做 | `effects_pre_damage_ids`、`on_before_damage`、`damage_override`、`action_tags`、`last_dealt_damage`、反噬链路 |
 
 ---
@@ -30,7 +30,12 @@
 
 ## 1. 角色基础属性
 
-### 1.1 UnitDefinition
+### 1.1 角色定位
+
+- 面向玩家：五条悟是高速压制型术师，靠双标记、稳定命中干扰与领域成功收益拉开节奏。
+- 面向实现：五条悟当前只依赖共享主线能力，不再额外携带角色专属 damage override / pre-damage 分支。
+
+### 1.2 UnitDefinition
 
 | 字段 | 值 | 说明 |
 |------|-----|------|
@@ -45,7 +50,7 @@
 | base_speed | **86** | 高速定位 |
 | BST | **482** | 低于宿傩（486） |
 
-### 1.2 MP 系统
+### 1.3 MP 系统
 
 | 字段 | 值 | 说明 |
 |------|-----|------|
@@ -57,7 +62,7 @@
 
 - 按当前 main 的固定回合时序，`turn_start` MP 回复发生在第 1 回合选指前；因此五条悟首个可操作回合的实战可用 MP 是 `64`，不是 `50`。
 
-### 1.3 技能组与赛前装配
+### 1.4 技能组与赛前装配
 
 **内容层（UnitDefinition）**
 
@@ -70,7 +75,7 @@
 - 本场装配通过 `SideSetup.regular_skill_loadout_overrides` 决定（该字段属于 `SideSetup`，不属于 `UnitDefinition`）。
 - 当 `candidate_skill_ids` 非空时，允许赛前从候选池选 3 个写入运行时配招。
 
-### 1.4 被动
+### 1.5 被动
 
 | 类型 | 值 |
 |------|-----|
@@ -294,9 +299,9 @@
 
 ---
 
-## 3. 被动技能：无下限（Mugen）
+### 2.7 被动技能：无下限（Mugen）
 
-### 3.1 玩法语义
+#### 玩家与机制语义
 
 - 当敌方对五条悟发动技能或奥义时：
 1. 先按现有流程得到 `resolved_accuracy`（技能精度 + 领域覆盖等）。
@@ -307,7 +312,7 @@
   - 敌方技能原本结算命中是 `100`，那就是必中，仍然保持 `100`，不会被削成 `90`。
   - `switch / wait / resource_forced_default`，以及 `self / field / none` 这类不属于“敌方打向五条悟”的路径，都不读取这条修正。
 
-### 3.2 资源定义
+#### 资源定义
 
 `gojo_mugen`（PassiveSkillDefinition）：
 
@@ -328,106 +333,16 @@
 
 ---
 
-## 4. Gojo 依赖的引擎扩展（2026-03-29 已接线）
+### 2.8 共享能力引用（只写五条悟差异）
 
-口径说明：
-
-- `docs/rules/*`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 当前已与这三块扩展同步。
-- 本节记录 Gojo 方案依赖的当前正式 contract，以及若玩法继续收紧时还需要追加的后续扩展。
-- 按本文当前冻结的“单角色正式玩法”方案，`action_legality / required_target_effects / incoming_accuracy` 已可直接用于 Gojo 资源。
-
-### 4.1 `action_legality`（当前正式口径）
-
-`rule_mod.mod_kind` 当前正式只使用 `action_legality`；`mod_op` 固定为 `allow / deny`，`value` 支持：
-
-- `"all"` / `"skill"` / `"ultimate"` / `"switch"` / 具体 `skill_id`
-
-补充：
-
-- `allow` 与 `deny` 使用同一套 `value` 取值范围。
-- `value="all"` 仅作用于技能 / 奥义 / 换人，不作用于 `wait`。
-- `action_legality.value` 必须在加载期 fail-fast 校验为：`all / skill / ultimate / switch / 已注册 skill_id` 之一；空串、拼写错误或未知 `skill_id` 都不得留到运行期。
-- `dynamic_value_formula` 对 `action_legality` 明确禁止；该读取点只接受静态 `value`。
-
-实现清单（当前正式实现）：
-
-- `content_schema.gd`：定义 `RULE_MOD_ACTION_LEGALITY`
-- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 负责 `action_legality` 白名单、`mod_op` 校验、`value` 白名单校验，并明确禁止 `dynamic_value_formula`
-- `rule_mod_service.gd + rule_mod_read_service.gd + rule_mod_write_service.gd`：
-1. `STACKING_KEY_SCHEMA_BY_KIND` 包含 `RULE_MOD_ACTION_LEGALITY`
-2. 写路径负责 `create / replace / decrement`
-3. 读路径负责 `is_action_allowed(battle_state, owner_id, action_type, skill_id="")`
-- `legal_action_service.gd`：技能、奥义、换人统一读 `is_action_allowed`；`wait_allowed / forced_command_type` 也必须把“换人被 rule_mod 封禁”视为**非 MP 阻断**
-- `turn_selection_resolver.gd`：提交通道继续只认 legal set；不得把“是否在 legal set 内”这层语义偷偷下沉到 `command_validator.gd`
-- `command_validator.gd`：继续负责结构、运行时 ID 回填、奥义入口、MP 等硬非法；不要复制第二套 `action_legality` 语义
-- `action_executor.gd`：执行前复检 `is_action_allowed`，覆盖排队后中途上锁场景
-
-文档同步落点：
-
-- `docs/design/command_and_legality.md`
-- `docs/rules/02_turn_flow_and_action_resolution.md`
-- `docs/records/decisions.md`
-
-`action_legality` stacking key schema：
-
-- `["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"]`
-- 说明：`value=all`、`value=switch`、`value=具体skill_id` 必须是不同 key，避免互相覆盖
-- 额外冻结：按当前 `RuleModService` 设计，同 key 实例若用 `replace` 被新实例覆盖，旧实例会被直接移除；**后来的锁到期后，旧锁不会“复活”**。若未来玩法需要“多来源同 key 并存、后过期的那条消失后恢复更早来源”的语义，必须另改 stacking key 或实例模型，不能把恢复行为当成默认存在。
-
-匹配矩阵（必须写死）：
-
-| 当前动作 | 命中的 `value` |
-|---|---|
-| `skill(skill_id=X)` | `all`、`skill`、`X` |
-| `ultimate(skill_id=Y)` | `all`、`ultimate`、`Y` |
-| `switch` | `all`、`switch` |
-| `wait` | 不命中任何 `action_legality`（恒合法） |
-
-最终判定顺序（必须写死）：
-
-1. 默认 `allowed = true`
-2. 统一收集 `action_legality` 实例，并走同一排序链（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`）
-3. 逐条判断是否命中当前动作；命中则按 `deny => allowed=false`、`allow => allowed=true` 覆盖
-4. 最终结果以“最后一条命中的 rule_mod”状态为准（last-write-wins）
-5. `wait` 不命中任何 `action_legality`；技能 / 奥义 / 换人以单口径结果为准
-
-### 4.2 `required_target_effects`
-
-- `required_target_effects / required_target_same_owner` 已是共享 effect 前置能力；完整 schema、加载期约束与运行时语义统一以 `docs/rules/06_effect_schema_and_extension.md` 与 `docs/design/battle_content_schema.md` 为准。
-- 五条悟在这套共享能力上的角色差异只有 1 条：`gojo_murasaki_conditional_burst` 必须要求 `gojo_ao_mark + gojo_aka_mark`，且 `required_target_same_owner=true`。
-- 也就是说，五条悟当前只消费“自己本人挂上的双标记”；前置不满足时，茈的追加段直接整条跳过，不写额外 payload 日志。
-
-### 4.3 `incoming_accuracy`（无下限命中干扰）
-
-- `incoming_accuracy` 已是共享 rule_mod 读取点；完整读路径、字段约束与排序链统一以 `docs/rules/03_stats_resources_and_damage.md`、`docs/rules/06_effect_schema_and_extension.md` 与 `docs/design/battle_runtime_model.md` 为准。
-- 当前正式主线已经把“多来源减命中”收口为：
-  - 来源分组优先 `payload.stacking_source_key -> effect_definition_id -> source_instance_id`
-  - 不同来源组可以并存
-  - 同来源组内继续按 `none / refresh / replace` 处理
-- 因此五条悟的 `gojo_mugen_incoming_accuracy_down` 不再假设自己是唯一来源；未来若再叠别的减命中来源，会一起算，而不是静默折叠。
-
-### 4.4 标记来源绑定现状
-
-当前主线已经把“本人专属消耗”落成正式能力：
-
-- 标记实例在 `apply_effect` 时写入 `meta.source_owner_id`
-- 茈通过 `required_target_same_owner = true` 把前置守卫收紧到“目标双标记 + 标记来源匹配当前施法者”
-- 因此后续即便恢复同队重复角色实验，也不会再把这件事误判成现有 `required_target_effects` 自动具备的能力
-
-### 4.5 本版明确不纳入实现
-
-| 机制 | 状态 |
-|------|------|
-| `effects_pre_damage_ids` | 不做 |
-| `on_before_damage` | 不做 |
-| `damage_override` payload | 不做 |
-| `trigger_chance`（用于无下限） | 不做 |
-| `action_tags` / `last_dealt_damage` | 不做 |
-| 茈反噬自伤 | 不做 |
+- `required_target_effects / required_target_same_owner` 的完整 schema 与运行时语义统一引用 `docs/rules/06_effect_schema_and_extension.md`；五条悟当前只在 `gojo_murasaki_conditional_burst` 上消费“自己本人挂上的双标记”。
+- `incoming_accuracy` 的完整读路径、来源分组与多实例排序统一引用 `docs/rules/03_stats_resources_and_damage.md` 与 `docs/design/battle_runtime_model.md`；五条悟当前只定义 `gojo_mugen_incoming_accuracy_down = -10` 这一条角色差异。
+- `action_legality` 的完整匹配矩阵、排序链与 `wait` 例外统一引用 `docs/design/command_and_legality.md`；五条悟当前只通过 `gojo_domain_action_lock` 在领域成功立住后写入 `deny all`。
+- 当前明确不纳入五条悟实现的历史方案仍然固定为：`effects_pre_damage_ids`、`on_before_damage`、`damage_override`、`trigger_chance`、`action_tags`、`last_dealt_damage` 与茈反噬链路。
 
 ---
 
-## 5. 资源文件清单
+## 附录 B. 资源文件清单
 
 以下清单是 **Gojo 当前主线资源面**。截至 2026-03-29，底层扩展、Gojo 内容资源、`SampleBattleFactory` 快照注册与 `gojo_suite` 均已接线完成。
 
@@ -436,11 +351,11 @@
 - 下列 `.tres` 已落盘，并已进入 `SampleBattleFactory.content_snapshot_paths()`。
 - 统一闸门当前已注册 `gojo_suite`；后续新增角色应沿用同一“资源清单 + SampleFactory 接线 + suite 注册”模板。
 
-### 5.1 `content/units/`
+### B.1 `content/units/`
 
 - `gojo_satoru.tres`
 
-### 5.2 `content/skills/`
+### B.2 `content/skills/`
 
 - `gojo_ao.tres`
 - `gojo_aka.tres`
@@ -448,7 +363,7 @@
 - `gojo_reverse_ritual.tres`
 - `gojo_unlimited_void.tres`
 
-### 5.3 `content/effects/`
+### B.3 `content/effects/`
 
 - `gojo_ao_speed_up.tres`
 - `gojo_ao_mark_apply.tres`
@@ -464,22 +379,22 @@
 - `gojo_domain_action_lock.tres`
 - `gojo_mugen_incoming_accuracy_down.tres`
 
-### 5.4 `content/fields/`
+### B.4 `content/fields/`
 
 - `gojo_unlimited_void_field.tres`
 
-### 5.5 `content/passive_skills/`
+### B.5 `content/passive_skills/`
 
 - `gojo_mugen.tres`
 
-### 5.6 已存在资源（无需新建）
+### B.6 已存在资源（无需新建）
 
 - `content/combat_types/space.tres`
 - `content/combat_types/psychic.tres`
 
 ---
 
-## 6. 测试计划（gojo_suite + gojo_snapshot_suite + ultimate_field_suite）
+## 3. 角色特有验收矩阵
 
 正式交付面说明：
 
@@ -532,7 +447,7 @@
 
 ---
 
-## 7. 平衡性备注
+## 4. 平衡备注
 
 | 维度 | 五条悟（本版） | 说明 |
 |------|----------------|------|
@@ -548,7 +463,7 @@
 
 本版目标不是最终平衡值，而是先落地“可施工、可验收、可迭代”的玩法闭环；最终强度仍需等 Gojo 落地后再用实战数据回调。
 
-## 8. 当前冻结
+### 4.1 当前冻结
 
 | 项目 | 说明 |
 |---|---|

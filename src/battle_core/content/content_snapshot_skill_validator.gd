@@ -2,6 +2,7 @@ extends RefCounted
 class_name ContentSnapshotSkillValidator
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const PowerBonusSourceRegistryScript := preload("res://src/battle_core/content/power_bonus_source_registry.gd")
 
 var _content_index = null
 var _payload_validator = null
@@ -28,7 +29,7 @@ func _validate_skills(errors: Array) -> void:
         ContentSchemaScript.DAMAGE_KIND_SPECIAL,
         ContentSchemaScript.DAMAGE_KIND_NONE,
     ])
-    var allowed_power_bonus_sources := PackedStringArray(["", "mp_diff_clamped"])
+    var allowed_power_bonus_sources := PowerBonusSourceRegistryScript.registered_sources()
     for skill_id in _content_index.skills.keys():
         var skill_definition = _content_index.skills[skill_id]
         if not String(skill_definition.combat_type_id).is_empty() and not _content_index.combat_types.has(skill_definition.combat_type_id):

@@ -155,7 +155,7 @@
 |`mp_cost`|`0`|
 |目标|敌方在场位置|
 |附加效果|无|
-|反伤|对自己造成 `floor(max_hp / 4)` 反伤，至少 1|
+|反伤|对自己造成 `floor(max_hp * BattleFormatConfig.default_recoil_ratio)` 反伤，至少 1；当前样例默认 `0.25`|
 
 ## 6. 命中判定
 

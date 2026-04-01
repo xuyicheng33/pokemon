@@ -22,6 +22,7 @@ var action_cast_service
 var action_cast_direct_damage_pipeline
 var action_cast_skill_effect_dispatch_pipeline
 var action_hit_resolution_service
+var power_bonus_resolver
 var switch_action_service
 var action_log_service
 var target_resolver
@@ -31,6 +32,7 @@ var hit_service
 var damage_service
 var combat_type_service
 var leave_service
+var lifecycle_retention_policy
 var faint_resolver
 var faint_killer_attribution_service
 var faint_leave_replacement_service
@@ -56,6 +58,7 @@ var passive_skill_service
 var passive_item_service
 var field_service
 var field_apply_service
+var domain_clash_orchestrator
 var field_apply_context_resolver
 var field_apply_conflict_service
 var field_apply_log_service

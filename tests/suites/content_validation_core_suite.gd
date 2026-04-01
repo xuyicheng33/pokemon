@@ -2,6 +2,7 @@ extends RefCounted
 class_name ContentValidationCoreSuite
 
 const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
+const BattleFormatConfigScript := preload("res://src/battle_core/content/battle_format_config.gd")
 const PassiveItemDefinitionScript := preload("res://src/battle_core/content/passive_item_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
@@ -18,6 +19,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("formal_character_shared_fire_burst_validation", failures, Callable(self, "_test_formal_character_shared_fire_burst_validation").bind(harness))
 	runner.run_test("unsupported_resource_snapshot_fails_fast", failures, Callable(self, "_test_unsupported_resource_snapshot_fails_fast").bind(harness))
 	runner.run_test("on_receive_forbidden_in_content", failures, Callable(self, "_test_on_receive_forbidden_in_content").bind(harness))
+	runner.run_test("battle_format_runtime_constant_validation", failures, Callable(self, "_test_battle_format_runtime_constant_validation").bind(harness))
 
 func _test_content_validation_failures(harness) -> Dictionary:
 	var content_index = BattleContentIndexScript.new()
@@ -29,6 +31,7 @@ func _test_content_validation_failures(harness) -> Dictionary:
 	bad_skill.mp_cost = -1
 	bad_skill.targeting = "bad_target"
 	bad_skill.priority = 9
+	bad_skill.power_bonus_source = "missing_power_bonus"
 	content_index.register_resource(bad_skill)
 	var duplicate_skill_a = SkillDefinitionScript.new()
 	duplicate_skill_a.id = "duplicate_skill"
@@ -102,6 +105,7 @@ func _test_content_validation_failures(harness) -> Dictionary:
 	var has_duplicate_id_error := false
 	var has_resource_key_error := false
 	var has_stat_name_error := false
+	var has_power_bonus_source_error := false
 	for error_msg in errors:
 		var msg := str(error_msg)
 		if msg.find("priority out of range") != -1:
@@ -120,7 +124,9 @@ func _test_content_validation_failures(harness) -> Dictionary:
 			has_resource_key_error = true
 		if msg.find("invalid stat_name") != -1:
 			has_stat_name_error = true
-	if not (has_priority_error and has_rule_mod_error and has_missing_ref and has_accuracy_error and has_mp_cost_error and has_duplicate_id_error and has_resource_key_error and has_stat_name_error):
+		if msg.find("power_bonus_source invalid") != -1:
+			has_power_bonus_source_error = true
+	if not (has_priority_error and has_rule_mod_error and has_missing_ref and has_accuracy_error and has_mp_cost_error and has_duplicate_id_error and has_resource_key_error and has_stat_name_error and has_power_bonus_source_error):
 		return harness.fail_result("content validation errors missing expected categories")
 	return harness.pass_result()
 
@@ -252,6 +258,27 @@ func _test_on_receive_forbidden_in_content(harness) -> Dictionary:
 		if str(error_msg).find("on_receive_effect_ids is disabled") != -1:
 			return harness.pass_result()
 	return harness.fail_result("missing disabled on_receive_effect_ids validation error")
+
+func _test_battle_format_runtime_constant_validation(harness) -> Dictionary:
+	var content_index = BattleContentIndexScript.new()
+	var format_config = BattleFormatConfigScript.new()
+	format_config.format_id = "test_bad_runtime_constants"
+	format_config.visibility_mode = "prototype_full_open"
+	format_config.default_recoil_ratio = 1.2
+	format_config.domain_clash_tie_threshold = -0.1
+	content_index.register_resource(format_config)
+	var errors: Array = content_index.validate_snapshot()
+	if errors.is_empty():
+		return harness.fail_result("battle format runtime constants should fail content validation when out of range")
+	var has_recoil_error := false
+	var has_tie_threshold_error := false
+	for error_msg in errors:
+		var msg := str(error_msg)
+		has_recoil_error = has_recoil_error or msg.find("default_recoil_ratio out of range") != -1
+		has_tie_threshold_error = has_tie_threshold_error or msg.find("domain_clash_tie_threshold out of range") != -1
+	if not (has_recoil_error and has_tie_threshold_error):
+		return harness.fail_result("battle format runtime constant validation should report both range errors")
+	return harness.pass_result()
 
 func _build_dynamic_formula_effect(effect_id: String, scope: String, thresholds: PackedInt32Array, outputs: PackedFloat32Array):
 	var payload = RuleModPayloadScript.new()

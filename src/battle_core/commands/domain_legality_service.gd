@@ -5,55 +5,60 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
+var domain_clash_orchestrator
 var last_invalid_battle_code: Variant = null
+
+func resolve_missing_dependency() -> String:
+    if domain_clash_orchestrator == null:
+        return "domain_clash_orchestrator"
+    var missing := str(domain_clash_orchestrator.resolve_missing_dependency())
+    if not missing.is_empty():
+        return "domain_clash_orchestrator.%s" % missing
+    return ""
 
 func is_domain_command(command, content_index) -> bool:
     last_invalid_battle_code = null
-    if command == null:
+    if domain_clash_orchestrator == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
         return false
-    if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
-        return false
-    if content_index == null:
-        return false
-    return content_index.is_domain_skill(String(command.skill_id))
+    var result: bool = domain_clash_orchestrator.is_domain_command(command, content_index)
+    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    return result
 
 func resolve_active_domain_creator_side_id(battle_state, content_index) -> String:
     last_invalid_battle_code = null
-    if battle_state == null or battle_state.field_state == null or content_index == null:
+    if domain_clash_orchestrator == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
         return ""
-    var active_field_definition = content_index.fields.get(String(battle_state.field_state.field_def_id))
-    if active_field_definition == null:
-        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
-        return ""
-    var creator_id := String(battle_state.field_state.creator)
-    if creator_id.is_empty():
-        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
-        return ""
-    var creator_side = battle_state.get_side_for_unit(creator_id)
-    if creator_side == null:
-        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
-        return ""
-    if String(active_field_definition.field_kind).strip_edges() != ContentSchemaScript.FIELD_KIND_DOMAIN:
-        return ""
-    return String(creator_side.side_id)
+    var creator_side_id: String = domain_clash_orchestrator.resolve_active_domain_creator_side_id(battle_state, content_index)
+    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    return creator_side_id
 
 func is_side_domain_recast_blocked(battle_state, side_id: String, content_index) -> bool:
-    var creator_side_id := resolve_active_domain_creator_side_id(battle_state, content_index)
-    if creator_side_id.is_empty():
+    if domain_clash_orchestrator == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
         return false
-    return creator_side_id == side_id
+    var blocked: bool = domain_clash_orchestrator.is_side_domain_recast_blocked(battle_state, side_id, content_index)
+    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    return blocked
 
 func is_domain_command_blocked_by_active_side_domain(command, battle_state, content_index) -> bool:
-    if not is_domain_command(command, content_index):
+    if domain_clash_orchestrator == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
         return false
-    return is_side_domain_recast_blocked(battle_state, String(command.side_id), content_index)
+    var blocked: bool = domain_clash_orchestrator.is_domain_command_blocked_by_active_side_domain(command, battle_state, content_index)
+    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    return blocked
 
 func can_bypass_domain_recast_for_clash(queued_action, command, battle_state, content_index) -> bool:
-    if queued_action == null or not bool(queued_action.domain_clash_protected):
+    if domain_clash_orchestrator == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
         return false
-    if not is_domain_command(command, content_index):
-        return false
-    var creator_side_id := resolve_active_domain_creator_side_id(battle_state, content_index)
-    if creator_side_id.is_empty():
-        return false
-    return creator_side_id != String(command.side_id)
+    var bypass: bool = domain_clash_orchestrator.can_bypass_domain_recast_for_clash(
+        queued_action,
+        command,
+        battle_state,
+        content_index
+    )
+    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    return bypass

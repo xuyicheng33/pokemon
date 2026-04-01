@@ -9,8 +9,9 @@
 |`passive_skill_service.gd`|按触发点收集被动技能 `EffectEvent`|
 |`passive_item_service.gd`|按触发点收集被动持有物 `EffectEvent`|
 |`field_apply_service.gd`|field 落地主路径：领域对拼、成功后附带效果（`field_apply_success`）、`field_apply` 触发|
+|`domain_clash_orchestrator.gd`|统一编排双领域保护、领域重开豁免与 field 冲突矩阵入口|
 |`field_apply_context_resolver.gd`|统一解析 field creator 与公开日志里要用到的显示 ID|
-|`field_apply_conflict_service.gd`|负责领域对拼、普通 field 被领域阻断等判定|
+|`field_apply_conflict_service.gd`|负责领域对拼数值判定、普通 field 被领域阻断与平 MP tie-break 结果生成|
 |`field_apply_log_service.gd`|负责 field 对拼、阻断与落地日志|
 |`field_apply_effect_runner.gd`|负责创建 field state、跑 `field_apply` / `field_apply_success` / deferred success 链|
 |`field_service.gd`|收集 field `EffectEvent`、处理自然到期扣减与 creator 离场后的提前打断|
@@ -51,7 +52,7 @@
 职责：
 
 - 处理 `apply_field` payload 的唯一主路径。
-- 根据 `field_kind` 决定是直接覆盖、领域对拼，还是阻断生效。
+- 通过 `DomainClashOrchestrator` 决定是直接覆盖、领域对拼，还是阻断生效。
 - field 真正落地后再执行 `field_apply` 触发，并以 `field_apply_success` 派发 `on_success_effect_ids`。
 
 规则：
@@ -60,7 +61,7 @@
 - `domain` 对 `normal`：新领域直接替换旧普通 field。
 - `normal` 对 `domain`：新普通 field 被阻断，旧领域保留。
 - 领域对拼比较双方扣费后的当前 MP。
-- MP 高者留场；平 MP 随机决定胜者，并把随机值写入日志，保证 replay 可复现。
+- MP 高者留场；平 MP 按 `BattleState.domain_clash_tie_threshold` 判 challenger 是否胜出，并把随机值写入日志，保证 replay 可复现。
 - 对拼失败的一方：field 不落地，只有成功后才成立的附带效果也不生效。
 - 若当前领域由本方创建，则本方领域技能在合法性阶段直接禁用，禁止“自己续开自己领域”。
 - 同回合双方都已排队领域时，后手领域不得被中途合法性锁回溯取消，必须进入对拼。

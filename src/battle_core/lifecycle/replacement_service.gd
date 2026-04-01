@@ -13,6 +13,33 @@ var leave_service
 var trigger_batch_runner
 var field_service
 
+func resolve_missing_dependency() -> String:
+    if battle_logger == null:
+        return "battle_logger"
+    if log_event_builder == null:
+        return "log_event_builder"
+    if replacement_selector == null:
+        return "replacement_selector"
+    if leave_service == null:
+        return "leave_service"
+    if leave_service.has_method("resolve_missing_dependency"):
+        var leave_missing := str(leave_service.resolve_missing_dependency())
+        if not leave_missing.is_empty():
+            return "leave_service.%s" % leave_missing
+    if trigger_batch_runner == null:
+        return "trigger_batch_runner"
+    if trigger_batch_runner.has_method("resolve_missing_dependency"):
+        var trigger_missing := str(trigger_batch_runner.resolve_missing_dependency())
+        if not trigger_missing.is_empty():
+            return "trigger_batch_runner.%s" % trigger_missing
+    if field_service == null:
+        return "field_service"
+    if field_service.has_method("resolve_missing_dependency"):
+        var field_missing := str(field_service.resolve_missing_dependency())
+        if not field_missing.is_empty():
+            return "field_service.%s" % field_missing
+    return ""
+
 func resolve_replacement(battle_state, side_state, reason: String) -> Dictionary:
     var legal_bench_ids := _collect_legal_bench_ids(battle_state, side_state)
     if legal_bench_ids.is_empty():

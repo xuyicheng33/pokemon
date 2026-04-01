@@ -8,6 +8,7 @@ var _helper = UltimateFieldTestHelperScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("field_clash_high_mp_and_success_only_followup_contract", failures, Callable(self, "_test_field_clash_high_mp_and_success_only_followup_contract").bind(harness))
 	runner.run_test("field_clash_tie_replay_contract", failures, Callable(self, "_test_field_clash_tie_replay_contract").bind(harness))
+	runner.run_test("field_clash_tie_threshold_runtime_contract", failures, Callable(self, "_test_field_clash_tie_threshold_runtime_contract").bind(harness))
 	runner.run_test("opponent_domain_cast_still_legal_contract", failures, Callable(self, "_test_opponent_domain_cast_still_legal_contract").bind(harness))
 	runner.run_test("same_turn_dual_domain_not_cancelled_by_action_lock_contract", failures, Callable(self, "_test_same_turn_dual_domain_not_cancelled_by_action_lock_contract").bind(harness))
 	runner.run_test("normal_field_cannot_replace_active_domain_contract", failures, Callable(self, "_test_normal_field_cannot_replace_active_domain_contract").bind(harness))
@@ -88,6 +89,57 @@ func _test_field_clash_tie_replay_contract(harness) -> Dictionary:
 		return harness.fail_result("同 seed 的平 MP 领域对拼随机值必须可复现")
 	if String(first_result["summary"]) != String(second_result["summary"]):
 		return harness.fail_result("领域对拼日志摘要必须和随机结果一起稳定复现")
+	return harness.pass_result()
+
+func _test_field_clash_tie_threshold_runtime_contract(harness) -> Dictionary:
+	var low_threshold_payload = _helper.build_gojo_vs_sukuna_state(harness, 22071)
+	if low_threshold_payload.has("error"):
+		return harness.fail_result(str(low_threshold_payload["error"]))
+	var low_core = low_threshold_payload["core"]
+	var low_content = low_threshold_payload["content_index"]
+	var low_state = low_threshold_payload["battle_state"]
+	low_content.battle_formats["prototype_full_open"].domain_clash_tie_threshold = 0.0
+	low_state.domain_clash_tie_threshold = 0.0
+	var low_gojo = low_state.get_side("P1").get_active_unit()
+	var low_sukuna = low_state.get_side("P2").get_active_unit()
+	low_gojo.current_mp = low_gojo.max_mp
+	low_gojo.ultimate_points = low_gojo.ultimate_points_cap
+	low_sukuna.current_mp = low_sukuna.max_mp
+	low_sukuna.ultimate_points = low_sukuna.ultimate_points_cap
+	low_sukuna.base_speed = 999
+	_helper.run_turn(
+		low_core,
+		low_state,
+		low_content,
+		_helper.build_ultimate_command(low_core, 1, "P1", "P1-A", "gojo_unlimited_void"),
+		_helper.build_ultimate_command(low_core, 1, "P2", "P2-A", "sukuna_fukuma_mizushi")
+	)
+	if low_state.field_state == null or low_state.field_state.field_def_id != "gojo_unlimited_void_field":
+		return harness.fail_result("tie threshold = 0.0 should always let challenger win equal-MP domain clash")
+	var high_threshold_payload = _helper.build_gojo_vs_sukuna_state(harness, 22072)
+	if high_threshold_payload.has("error"):
+		return harness.fail_result(str(high_threshold_payload["error"]))
+	var high_core = high_threshold_payload["core"]
+	var high_content = high_threshold_payload["content_index"]
+	var high_state = high_threshold_payload["battle_state"]
+	high_content.battle_formats["prototype_full_open"].domain_clash_tie_threshold = 1.0
+	high_state.domain_clash_tie_threshold = 1.0
+	var high_gojo = high_state.get_side("P1").get_active_unit()
+	var high_sukuna = high_state.get_side("P2").get_active_unit()
+	high_gojo.current_mp = high_gojo.max_mp
+	high_gojo.ultimate_points = high_gojo.ultimate_points_cap
+	high_sukuna.current_mp = high_sukuna.max_mp
+	high_sukuna.ultimate_points = high_sukuna.ultimate_points_cap
+	high_sukuna.base_speed = 999
+	_helper.run_turn(
+		high_core,
+		high_state,
+		high_content,
+		_helper.build_ultimate_command(high_core, 1, "P1", "P1-A", "gojo_unlimited_void"),
+		_helper.build_ultimate_command(high_core, 1, "P2", "P2-A", "sukuna_fukuma_mizushi")
+	)
+	if high_state.field_state == null or high_state.field_state.field_def_id != "sukuna_malevolent_shrine_field":
+		return harness.fail_result("tie threshold = 1.0 should always let incumbent win equal-MP domain clash")
 	return harness.pass_result()
 
 func _test_opponent_domain_cast_still_legal_contract(harness) -> Dictionary:

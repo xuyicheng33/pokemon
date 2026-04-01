@@ -32,6 +32,10 @@ func validate_runtime_state(battle_state, content_index = null):
         return ErrorCodesScript.INVALID_STATE_CORRUPTION
     if battle_state.max_chain_depth <= 0:
         return ErrorCodesScript.INVALID_STATE_CORRUPTION
+    if battle_state.default_recoil_ratio < 0.0 or battle_state.default_recoil_ratio > 1.0:
+        return ErrorCodesScript.INVALID_STATE_CORRUPTION
+    if battle_state.domain_clash_tie_threshold < 0.0 or battle_state.domain_clash_tie_threshold > 1.0:
+        return ErrorCodesScript.INVALID_STATE_CORRUPTION
     for side_state in battle_state.sides:
         for unit_state in side_state.team_units:
             if unit_state.max_hp <= 0 or unit_state.max_mp < 0:

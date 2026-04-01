@@ -142,7 +142,56 @@
 
 - `godot --headless --path . --script tests/run_all.gd` 通过
 - `bash tests/run_with_gate.sh` 通过
+
+### 第三角色前整备计划第二轮（已完成）
+
+- 目标：
+  - 在继续扩第三角色前，把 `power_bonus_source`、离场保留策略、领域对拼编排与少量硬编码战斗常量收成单点，并同步收口正式角色文档
+- 范围：
+  - `src/battle_core/actions/*`
+  - `src/battle_core/lifecycle/*`
+  - `src/battle_core/passives/*`
+  - `src/battle_core/content/*`
+  - `src/battle_core/runtime/*`
+  - `src/composition/*`
+  - `content/battle_formats/sample_battle_format.tres`
+  - `tests/suites/*`
+  - `tests/support/sukuna_setup_regen_test_support.gd`
+  - `docs/design/*`
+  - `docs/rules/01_battle_format_and_visibility.md`
+  - `docs/rules/03_stats_resources_and_damage.md`
+  - `docs/rules/05_items_field_input_and_logging.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `power_bonus_source` 不再硬编码在共享伤害管线
+  - `faint` 当前行为不变，但离场保留判断已有统一策略入口
+  - 领域对拼保护、重开豁免与 field 冲突矩阵由单点入口编排
+  - 默认反伤比例与领域平 MP 阈值进入 `BattleFormatConfig`
+  - Gojo / 宿傩正式角色稿按同一模板骨架收口，公共 contract 不再整段重写
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 已新增 `power_bonus_resolver.gd` 与共享 `power_bonus_source` 注册表；`ActionCastDirectDamagePipeline` 与 `ContentSnapshotSkillValidator` 现在统一读同一份来源定义，不再各自写死
+  - 已新增 `lifecycle_retention_policy.gd`，`LeaveService` 当前通过统一策略入口决定 effect / rule_mod 在不同离场原因下是否保留；`faint` 语义保持不变
+  - 已新增 `domain_clash_orchestrator.gd`，把同回合双领域保护、领域重开豁免与 field 冲突矩阵收口到单点；`ActionQueueBuilder`、`DomainLegalityService`、`FieldApplyService` 已改成薄转发
+  - 已把默认反伤比例与领域平 MP tie-break 阈值下沉到 `BattleFormatConfig -> BattleState` 运行时快照，并补 content validation / runtime guard
+  - 已补生命周期链的 fail-fast 守卫：`LeaveService`、`ReplacementService`、`FaintLeaveReplacementService`、`FaintResolver`、`SwitchActionService` 现在都会把嵌套缺依赖继续上抛
+  - 已补回归：
+    - `battle_format_runtime_constant_validation`
+    - `battle_format_runtime_constants_copy_contract`
+    - `recoil_ratio_runtime_config_contract`
+    - `field_clash_tie_threshold_runtime_contract`
+    - `power_bonus_resolver_delegation_contract`
+  - 已同步更新 README、BattleFormat / 运行时 / 行动 / 生命周期 / field 文档
+  - 已把 Gojo / Sukuna 正式角色稿继续收口到同一模板骨架：主章节统一为“基础属性 / 技能详细设计 / 角色特有验收矩阵 / 平衡备注”，共享 contract 回收到公共文档引用
+
+#### 当前验证结果
+
+- `HOME=/tmp GODOT_USER_HOME=/tmp godot --headless --path . --script tests/run_all.gd` 通过
 - `git diff --check` 通过
+- `HOME=/tmp GODOT_USER_HOME=/tmp bash tests/run_with_gate.sh` 通过
 
 ### 扩角前规范整合硬收口（已完成）
 

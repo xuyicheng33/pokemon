@@ -11,6 +11,7 @@
 |`action_cast_service.gd`|编排技能 / 奥义行动主链，协调命中、直伤与技能 effect 分发|
 |`action_hit_resolution_service.gd`|处理命中率读取、领域必中覆盖与来袭命中修正|
 |`action_cast_direct_damage_pipeline.gd`|处理技能本体直伤、额外威力读取与伤害公式调用|
+|`power_bonus_resolver.gd`|统一解析 `SkillDefinition.power_bonus_source` 对应的额外威力来源|
 |`action_cast_skill_effect_dispatch_pipeline.gd`|按 `on_cast / on_hit / on_miss` 分发技能 effect 链|
 |`action_domain_guard.gd`|行动开始前做领域重开与 `action_legality` 的二次合法性拦截|
 |`switch_action_service.gd`|执行手动换人行动链|
@@ -81,6 +82,6 @@
 
 默认动作补充：
 
-- 默认反伤在命中后执行，固定对施法者造成 `floor(max_hp / 4)`，最少 `1`。
+- 默认反伤在命中后执行，按 `BattleState.default_recoil_ratio` 计算，最少 `1`；当前样例默认仍为 `0.25`。
 - 默认反伤日志写 `event_type = effect:damage`、`trigger_name = recoil`。
 - 若施法者因此 HP 归 0，不提前中断当前行动链；击倒窗口在该行动结束后统一处理。

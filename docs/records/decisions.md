@@ -455,3 +455,39 @@
 - 原因：
   - 宿傩被动回蓝、装备回蓝、Gojo 无下限减命中、领域减命中这类来源后续都会并行出现，继续靠隐式 key 折叠会把扩角风险埋进运行时。
   - 把“是否合并”下放给内容层显式控制，比继续依赖隐式冲突键更清晰。
+
+### 48. `power_bonus_source` 统一只在 `PowerBonusResolver` 注册与求值（2026-04-01）
+
+- `ActionCastDirectDamagePipeline` 不再写角色专属 `power_bonus_source` 分支；共享伤害管线当前只调用 `PowerBonusResolver`。
+- `ContentSnapshotSkillValidator` 与 `PowerBonusResolver` 统一读取共享的 `power_bonus_source` 注册表，不再各自本地硬编码白名单。
+- 当前正式主线仍只开放两种来源：
+  - 空串
+  - `mp_diff_clamped`
+- 原因：
+  - 宿傩“捌”已经证明“额外威力来源”属于会继续扩张的共享能力；继续把公式硬编码在共享伤害管线里，会让后续扩角必然改到主线执行文件。
+
+### 49. 离场保留判断统一下沉到 `LifecycleRetentionPolicy`，但 `faint` 当前行为不变（2026-04-01）
+
+- `LeaveService` 当前不再自己展开“换人保留 / 击倒清空”的硬编码分支，而是统一委托给 `LifecycleRetentionPolicy`。
+- 当前正式行为保持不变：
+  - `manual_switch / forced_replace`：只保留 `persists_on_switch=true` 的 unit effect / unit rule mod
+  - `faint`：一律清空全部 unit effect / unit rule mod
+- 原因：
+  - 这轮只需要给未来“死亡后仍保留某类持续物”预留接线位，不需要提前放开内容能力。
+  - 先把判断入口收成单点，后续要扩新语义时才不必再散改 `LeaveService` 主链。
+
+### 50. 领域对拼编排统一下沉到 `DomainClashOrchestrator`，BattleFormat 增加两条运行时常量（2026-04-01）
+
+- `ActionQueueBuilder`、`DomainLegalityService`、`FieldApplyService` 当前都通过 `DomainClashOrchestrator` 读取同一套领域对拼编排逻辑。
+- `field_apply_conflict_service.gd` 继续保留，但职责收窄为：
+  - 领域 vs 领域 / 普通 field vs 领域 的低层冲突判定
+  - 平 MP tie-break 结果生成
+- `BattleFormatConfig` 当前新增：
+  - `default_recoil_ratio`
+  - `domain_clash_tie_threshold`
+- 运行时快照固定复制到 `BattleState`，默认样例值继续是：
+  - `default_recoil_ratio = 0.25`
+  - `domain_clash_tie_threshold = 0.5`
+- 原因：
+  - 第三角色若继续带领域差异，原先“队列保护 / 合法性豁免 / field 冲突”散落在多处的写法会明显放大维护成本。
+  - 默认反伤比例与领域平 MP 阈值已经属于格式级战斗常量，继续硬编码在执行路径里不利于复查与调参。

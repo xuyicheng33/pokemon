@@ -4,7 +4,7 @@ class_name FieldApplyService
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var field_service
-var field_apply_conflict_service
+var domain_clash_orchestrator
 var field_apply_log_service
 var field_apply_effect_runner
 
@@ -15,11 +15,11 @@ func resolve_missing_dependency() -> String:
 		var field_missing := str(field_service.resolve_missing_dependency())
 		if not field_missing.is_empty():
 			return "field_service.%s" % field_missing
-	if field_apply_conflict_service == null:
-		return "field_apply_conflict_service"
-	var conflict_missing := str(field_apply_conflict_service.resolve_missing_dependency())
-	if not conflict_missing.is_empty():
-		return "field_apply_conflict_service.%s" % conflict_missing
+	if domain_clash_orchestrator == null:
+		return "domain_clash_orchestrator"
+	var clash_missing := str(domain_clash_orchestrator.resolve_missing_dependency())
+	if not clash_missing.is_empty():
+		return "domain_clash_orchestrator.%s" % clash_missing
 	if field_apply_log_service == null:
 		return "field_apply_log_service"
 	var log_missing := str(field_apply_log_service.resolve_missing_dependency())
@@ -39,34 +39,35 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 	var before_field = battle_state.field_state
 	var resolves_replacing_field_lifecycle := before_field != null and _is_replacing_current_field_from_its_lifecycle(effect_event, before_field)
 	if before_field != null and not resolves_replacing_field_lifecycle:
-		var incumbent_field_definition = field_service.get_field_definition_for_state(before_field, content_index)
-		var blocked_by_domain: bool = field_apply_conflict_service.is_normal_field_blocked_by_domain(challenger_field_definition, incumbent_field_definition)
-		if field_apply_conflict_service.last_invalid_battle_code != null:
-			return field_apply_conflict_service.last_invalid_battle_code
-		if blocked_by_domain:
+		var conflict_result: Dictionary = domain_clash_orchestrator.resolve_field_conflict(
+			before_field,
+			challenger_field_definition,
+			effect_event,
+			battle_state,
+			content_index
+		)
+		if domain_clash_orchestrator.last_invalid_battle_code != null:
+			return domain_clash_orchestrator.last_invalid_battle_code
+		if bool(conflict_result.get("blocked", false)):
 			field_apply_log_service.log_field_blocked_by_active_domain(before_field, payload, effect_event, battle_state)
 			return null
-		var should_resolve_clash: bool = field_apply_conflict_service.should_resolve_domain_clash(challenger_field_definition, incumbent_field_definition)
-		if field_apply_conflict_service.last_invalid_battle_code != null:
-			return field_apply_conflict_service.last_invalid_battle_code
-		if should_resolve_clash:
-			var clash_result: Dictionary = field_apply_conflict_service.resolve_field_clash(before_field, effect_event, battle_state)
-			if clash_result.has("invalid_code"):
-				return clash_result["invalid_code"]
+		var clash_result: Dictionary = conflict_result.get("clash_result", {})
+		if not clash_result.is_empty():
 			field_apply_log_service.log_field_clash(clash_result, before_field, payload, effect_event, battle_state)
 			if not bool(clash_result.get("challenger_won", false)):
 				var release_invalid_code = field_apply_effect_runner.execute_pending_success_effects(before_field, battle_state, content_index)
 				if release_invalid_code != null:
 					return release_invalid_code
 				return null
-		var break_invalid_code = field_service.break_active_field(
-			battle_state,
-			content_index,
-			"field_break",
-			effect_event.chain_context
-		)
-		if break_invalid_code != null:
-			return break_invalid_code
+		if bool(conflict_result.get("should_break_before_apply", false)):
+			var break_invalid_code = field_service.break_active_field(
+				battle_state,
+				content_index,
+				"field_break",
+				effect_event.chain_context
+			)
+			if break_invalid_code != null:
+				return break_invalid_code
 	var field_state = field_apply_effect_runner.create_field_state(effect_definition, payload, effect_event)
 	if field_state == null:
 		return field_apply_effect_runner.last_invalid_battle_code if field_apply_effect_runner.last_invalid_battle_code != null else ErrorCodesScript.INVALID_STATE_CORRUPTION

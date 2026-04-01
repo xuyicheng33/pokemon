@@ -7,10 +7,21 @@ const SukunaSetupRegenTestSupportScript := preload("res://tests/support/sukuna_s
 
 var _support = SukunaSetupRegenTestSupportScript.new()
 
+class FlatBonusPowerBonusResolver:
+	extends RefCounted
+
+	func resolve_power_bonus(skill_definition, _actor, _target, _actor_mp_after_cost: int, _target_mp_before_cast: int) -> int:
+		if skill_definition == null:
+			return 0
+		if String(skill_definition.power_bonus_source) == "test_flat_bonus":
+			return 11
+		return 0
+
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("sukuna_reverse_ritual_heal_path", failures, Callable(self, "_test_sukuna_reverse_ritual_heal_path").bind(harness))
 	runner.run_test("sukuna_kai_priority_damage_contract", failures, Callable(self, "_test_sukuna_kai_priority_damage_contract").bind(harness))
 	runner.run_test("sukuna_hatsu_mp_diff_contract", failures, Callable(self, "_test_sukuna_hatsu_mp_diff_contract").bind(harness))
+	runner.run_test("power_bonus_resolver_delegation_contract", failures, Callable(self, "_test_power_bonus_resolver_delegation_contract").bind(harness))
 
 func _test_sukuna_reverse_ritual_heal_path(harness) -> Dictionary:
 	var core_payload = harness.build_core()
@@ -110,4 +121,41 @@ func _test_sukuna_hatsu_mp_diff_contract(harness) -> Dictionary:
 		return harness.fail_result("高 mp 差场景下，捌应获得正的 power bonus")
 	if int(high_result["damage"]) <= int(low_result["damage"]):
 		return harness.fail_result("更高的 mp 差应让 捌 造成更高伤害")
+	return harness.pass_result()
+
+func _test_power_bonus_resolver_delegation_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = _support.build_battle_state(core, content_index, _support.build_sukuna_setup(sample_factory), 710)
+	var sukuna_unit = battle_state.get_side("P1").get_active_unit()
+	var target_unit = battle_state.get_side("P2").get_active_unit()
+	if sukuna_unit == null or target_unit == null:
+		return harness.fail_result("missing active units for power bonus resolver delegation contract")
+	var fake_resolver = FlatBonusPowerBonusResolver.new()
+	core.power_bonus_resolver = fake_resolver
+	core.action_cast_direct_damage_pipeline.power_bonus_resolver = fake_resolver
+	var skill_definition = content_index.skills["sukuna_hatsu"]
+	skill_definition.power_bonus_source = "test_flat_bonus"
+	var expected_damage = _support.calc_expected_damage(
+		core,
+		battle_state,
+		sukuna_unit,
+		target_unit,
+		skill_definition,
+		sukuna_unit.current_mp - skill_definition.mp_cost,
+		target_unit.current_mp
+	)
+	core.turn_loop_controller.run_turn(battle_state, content_index, [
+		_support.build_manual_skill_command(core, 1, "P1", "P1-A", "sukuna_hatsu"),
+		_support.build_manual_wait_command(core, 1, "P2", "P2-A"),
+	])
+	var actual_damage: int = target_unit.max_hp - target_unit.current_hp
+	if actual_damage != expected_damage:
+		return harness.fail_result("direct damage pipeline should delegate power bonus resolution: expected=%d actual=%d" % [expected_damage, actual_damage])
 	return harness.pass_result()

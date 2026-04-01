@@ -7,7 +7,17 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_logger
 var log_event_builder
+var lifecycle_retention_policy
 var last_invalid_battle_code: Variant = null
+
+func resolve_missing_dependency() -> String:
+    if battle_logger == null:
+        return "battle_logger"
+    if log_event_builder == null:
+        return "log_event_builder"
+    if lifecycle_retention_policy == null:
+        return "lifecycle_retention_policy"
+    return ""
 
 func leave_unit(battle_state, unit_state, reason: String, content_index) -> void:
     last_invalid_battle_code = null
@@ -15,23 +25,23 @@ func leave_unit(battle_state, unit_state, reason: String, content_index) -> void
     if side_state == null:
         last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
         return
+    if lifecycle_retention_policy == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
+        return
     for slot_id in side_state.active_slots.keys():
         if side_state.active_slots[slot_id] == unit_state.unit_instance_id:
             side_state.clear_active_unit(slot_id)
     var kept_effects: Array = []
     var removed_effects: Array = []
     var kept_rule_mods: Array = []
-    if reason != "faint":
-        for effect_instance in unit_state.effect_instances:
-            if effect_instance.persists_on_switch:
-                kept_effects.append(effect_instance)
-            else:
-                removed_effects.append(effect_instance)
-        for rule_mod_instance in unit_state.rule_mod_instances:
-            if bool(rule_mod_instance.persists_on_switch):
-                kept_rule_mods.append(rule_mod_instance)
-    else:
-        removed_effects = unit_state.effect_instances.duplicate()
+    for effect_instance in unit_state.effect_instances:
+        if lifecycle_retention_policy.should_keep_effect_instance(effect_instance, reason):
+            kept_effects.append(effect_instance)
+        else:
+            removed_effects.append(effect_instance)
+    for rule_mod_instance in unit_state.rule_mod_instances:
+        if lifecycle_retention_policy.should_keep_rule_mod_instance(rule_mod_instance, reason):
+            kept_rule_mods.append(rule_mod_instance)
     unit_state.effect_instances = kept_effects
     unit_state.rule_mod_instances = kept_rule_mods
     unit_state.stat_stages = {

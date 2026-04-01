@@ -1,6 +1,8 @@
 extends RefCounted
 class_name SukunaSetupRegenTestSupport
 
+const PowerBonusResolverScript := preload("res://src/battle_core/actions/power_bonus_resolver.gd")
+
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const SukunaTestSupportScript := preload("res://tests/support/sukuna_test_support.gd")
 
@@ -54,9 +56,14 @@ func run_sukuna_hatsu_damage_case(harness, seed: int, actor_mp_before_cast: int,
 	}
 
 func calc_expected_damage(core, battle_state, actor, target, skill_definition, actor_mp_after_cost: int, target_mp_before_cast: int) -> int:
-	var power_bonus := 0
-	if String(skill_definition.power_bonus_source) == "mp_diff_clamped":
-		power_bonus = max(0, actor_mp_after_cost - target_mp_before_cast)
+	var resolver = core.power_bonus_resolver if core != null and core.power_bonus_resolver != null else PowerBonusResolverScript.new()
+	var power_bonus := int(resolver.resolve_power_bonus(
+		skill_definition,
+		actor,
+		target,
+		actor_mp_after_cost,
+		target_mp_before_cast
+	))
 	var power: int = int(skill_definition.power) + power_bonus
 	var attack_value: int = core.stat_calculator.calc_effective_stat(actor.base_sp_attack, int(actor.stat_stages.get("sp_attack", 0))) if String(skill_definition.damage_kind) == "special" else core.stat_calculator.calc_effective_stat(actor.base_attack, int(actor.stat_stages.get("attack", 0)))
 	var defense_value: int = core.stat_calculator.calc_effective_stat(target.base_sp_defense, int(target.stat_stages.get("sp_defense", 0))) if String(skill_definition.damage_kind) == "special" else core.stat_calculator.calc_effective_stat(target.base_defense, int(target.stat_stages.get("defense", 0)))

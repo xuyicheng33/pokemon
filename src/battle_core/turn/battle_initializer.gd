@@ -109,6 +109,8 @@ func _prepare_battle_state(battle_state, content_index, battle_setup):
     battle_state.max_chain_depth = max(1, int(format_config.max_chain_depth))
     battle_state.battle_level = format_config.level
     battle_state.selection_deadline_ms = format_config.selection_deadline_ms
+    battle_state.default_recoil_ratio = float(format_config.default_recoil_ratio)
+    battle_state.domain_clash_tie_threshold = float(format_config.domain_clash_tie_threshold)
     battle_state.rng_profile = rng_service.get_profile()
     battle_state.phase = BattlePhasesScript.BATTLE_INIT
     battle_state.turn_index = 1

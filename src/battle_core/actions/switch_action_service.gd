@@ -14,12 +14,28 @@ var field_service
 func resolve_missing_dependency() -> String:
     if leave_service == null:
         return "leave_service"
+    if leave_service.has_method("resolve_missing_dependency"):
+        var leave_missing := str(leave_service.resolve_missing_dependency())
+        if not leave_missing.is_empty():
+            return "leave_service.%s" % leave_missing
     if action_cast_service == null:
         return "action_cast_service"
+    if action_cast_service.has_method("resolve_missing_dependency"):
+        var cast_missing := str(action_cast_service.resolve_missing_dependency())
+        if not cast_missing.is_empty():
+            return "action_cast_service.%s" % cast_missing
     if action_log_service == null:
         return "action_log_service"
+    if action_log_service.has_method("resolve_missing_dependency"):
+        var log_missing := str(action_log_service.resolve_missing_dependency())
+        if not log_missing.is_empty():
+            return "action_log_service.%s" % log_missing
     if field_service == null:
         return "field_service"
+    if field_service.has_method("resolve_missing_dependency"):
+        var field_missing := str(field_service.resolve_missing_dependency())
+        if not field_missing.is_empty():
+            return "field_service.%s" % field_missing
     return ""
 
 func execute_switch_action(queued_action, battle_state, content_index):

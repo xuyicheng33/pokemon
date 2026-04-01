@@ -14,6 +14,10 @@ func validate(content_index, errors: Array) -> void:
         var format_definition = content_index.battle_formats[format_id]
         if String(format_definition.visibility_mode).strip_edges().is_empty():
             errors.append("battle_format[%s].visibility_mode must not be empty" % format_id)
+        if float(format_definition.default_recoil_ratio) < 0.0 or float(format_definition.default_recoil_ratio) > 1.0:
+            errors.append("battle_format[%s].default_recoil_ratio out of range: %s" % [format_id, float(format_definition.default_recoil_ratio)])
+        if float(format_definition.domain_clash_tie_threshold) < 0.0 or float(format_definition.domain_clash_tie_threshold) > 1.0:
+            errors.append("battle_format[%s].domain_clash_tie_threshold out of range: %s" % [format_id, float(format_definition.domain_clash_tie_threshold)])
         var seen_chart_pairs: Dictionary = {}
         for chart_entry in format_definition.combat_type_chart:
             if chart_entry == null:

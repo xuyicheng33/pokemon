@@ -39,6 +39,8 @@
 |`max_chain_depth`|`int`|事件链最大深度|
 |`battle_level`|`int`|本场统一等级快照|
 |`selection_deadline_ms`|`int`|选择阶段超时阈值（毫秒）|
+|`default_recoil_ratio`|`float`|默认动作命中后的反伤比例快照（由 `BattleFormatConfig.default_recoil_ratio` 初始化）|
+|`domain_clash_tie_threshold`|`float`|领域对拼平 MP 时 challenger 判胜阈值快照（由 `BattleFormatConfig.domain_clash_tie_threshold` 初始化）|
 |`turn_index`|`int`|当前回合号，初始化后从 `1` 开始|
 |`phase`|`String`|当前阶段，必须取自 `BattlePhases`|
 |`sides`|`Array[SideState]`|双方运行态|

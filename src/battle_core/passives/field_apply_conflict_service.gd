@@ -64,9 +64,12 @@ func resolve_field_clash(before_field, effect_event, battle_state) -> Dictionary
 	if challenger_mp < incumbent_mp:
 		return _build_clash_result(false, false, challenger_creator, incumbent_creator, challenger_mp, incumbent_mp, null)
 	var tie_roll: Variant = rng_service.next_float()
+	var tie_threshold: float = 0.5
+	if battle_state != null:
+		tie_threshold = float(battle_state.domain_clash_tie_threshold)
 	battle_state.rng_stream_index = rng_service.get_stream_index()
 	return _build_clash_result(
-		tie_roll >= 0.5,
+		tie_roll >= tie_threshold,
 		false,
 		challenger_creator,
 		incumbent_creator,
