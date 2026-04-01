@@ -867,3 +867,39 @@
 - 当前非阻断预警热点：
   - `src/battle_core/turn/battle_initializer.gd` `226` 行
   - `src/battle_core/facades/battle_core_manager.gd` `237` 行
+
+### 2026-04-01 当前项目完整审查（已完成）
+
+- 目标：
+  - 对当前项目做一次完整实现审查，覆盖架构、设计文档对齐、Gojo / 宿傩正式角色实现、最近提交回归，以及单文件体量风险
+- 范围：
+  - `README.md`
+  - `docs/design/*`
+  - `docs/rules/*`
+  - `docs/records/formal_character_registry.json`
+  - `content/{units,skills,effects,passive_skills,fields}/{gojo,sukuna}/*`
+  - `src/battle_core/**/*`
+  - `tests/**/*`
+- 验收标准：
+  - 明确给出“是否适合继续扩角”的结论
+  - 明确区分阻断问题、结构风险、测试缺口与单文件体量风险
+  - 审查结论落盘并附本地验证结果
+
+#### 当前执行结果
+
+- 已完成：
+  - 已完成架构、规则文档、设计稿、正式角色资源、关键运行时服务与回归套件的交叉审查
+  - 已复查最近提交 `6dec8c5..df059e1` 的主线变更，未发现新的可复现破坏性回归
+  - 已输出完整审查记录：`docs/records/review_2026-04-01_current_state_audit.md`
+- 核心结论：
+  - 当前没有发现阻断级问题，完整闸门通过
+  - 建议先做一轮规范整合，再继续扩新角色
+  - 主要风险集中在：
+    - `stacking=none` 重复施加日志语义
+    - Gojo 缺少 formal content validator
+    - 正式角色缺少 manager 级端到端 smoke 模板
+    - 角色设计文档开始混入过多共享引擎规范
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
