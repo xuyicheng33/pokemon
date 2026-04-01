@@ -218,6 +218,8 @@
 |字段|类型|说明|
 |---|---|---|
 |`mod_kind / mod_op / value`|`Variant`|基础 rule_mod 定义；见 `docs/rules/06`|
+|`persists_on_switch`|`bool`|非击倒离场时是否保留该 rule_mod；仅允许单位 owner 的 `self / target` 声明|
+|`stacking_source_key`|`String`|`mp_regen / incoming_accuracy` 的来源分组键；留空时按共享兜底口径生成|
 |`dynamic_value_formula`|`String`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 `rule_mod` 使用|
 |`dynamic_value_thresholds`|`PackedInt32Array`|运行时区间阈值|
 |`dynamic_value_outputs`|`PackedFloat32Array`|每个阈值对应输出值|
@@ -229,6 +231,8 @@
 - `action_legality` 是当前覆盖技能 / 奥义 / 换人的正式合法性读取点；`wait` 不受其影响。
 - `matchup_bst_gap_band` 当前按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值，`max_mp` 视为正式第七维。
 - `incoming_accuracy.value` 当前要求为 `int`，并且禁止 `dynamic_value_formula`。
+- `persists_on_switch=true` 的 rule_mod 只允许 `scope=self/target`；`field` scope 非法。
+- `mp_regen / incoming_accuracy` 当前正式支持多来源并存；来源分组优先级固定为 `stacking_source_key -> effect_definition_id -> source_instance_id`，同来源组内继续按 `none / refresh / replace` 处理。
 
 实现状态说明（2026-03-25）：
 

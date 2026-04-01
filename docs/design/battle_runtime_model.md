@@ -151,6 +151,11 @@
 |`persists_on_switch`|`bool`|非击倒离场时是否保留该持续效果|
 |`meta`|`Dictionary`|仅用于明确允许的扩展字段；当前已包含 `source_owner_id` 以支持 same-owner 前置守卫|
 
+补充说明：
+
+- `persists_on_switch=true` 的 unit effect 在非击倒离场后继续挂在 owner 身上；owner 位于 bench 时，该实例只继续扣减 `remaining`，不参与普通 `turn_start / turn_end` trigger batch。
+- 这类 bench 持久 effect 若在板凳上到期，当前只移除并写正常 remove log，不派发 `on_expire_effect_ids`。
+
 ## 9. RuleModInstance
 
 |字段|类型|说明|
@@ -170,11 +175,15 @@
 |`source_instance_id`|`String`|来源实例|
 |`source_kind_order`|`int`|来源类型|
 |`source_order_speed_snapshot`|`int`|速度快照|
+|`persists_on_switch`|`bool`|非击倒离场时是否保留该规则修正|
+|`source_stacking_key`|`String`|多来源分组键；当前供 `mp_regen / incoming_accuracy` 使用|
 |`priority`|`int`|读取顺序优先级|
 
 补充说明：
 
 - `action_legality` 与 `incoming_accuracy` 已是当前运行态 contract 的正式组成部分。
+- `mp_regen / incoming_accuracy` 当前按“来源分组内走 stacking、不同来源组并存”的主线语义运行；`source_stacking_key` 的解析优先级为 `payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
+- `persists_on_switch=true` 的 unit rule mod 在非击倒离场后继续保留；`faint` 仍然清空全部 unit rule mod。
 
 ## 10. 临时状态重置点
 

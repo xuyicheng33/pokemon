@@ -45,7 +45,8 @@
 |---|---|---|---|---|
 |当前 HP / MP|保留|保留|HP = 0；不再继续参与结算|存活单位的 HP/MP 带下场|
 |能力阶段|移除|移除|移除|当前不允许跨离场保留|
-|单位级临时效果|移除|移除|移除|即模块 06 中未声明 `persists_on_switch = true` 的效果实例|
+|单位级 effect 实例|仅保留 `persists_on_switch=true` 的 unit effect；其余移除|仅保留 `persists_on_switch=true` 的 unit effect；其余移除|全部移除|板凳上的持久 effect 只继续倒计时，不跑普通每回合触发|
+|单位级 rule_mod 实例|仅保留 `persists_on_switch=true` 的 unit rule mod；其余移除|仅保留 `persists_on_switch=true` 的 unit rule mod；其余移除|全部移除|`field` scope 不允许声明 `persists_on_switch=true`|
 |锁定目标 / 蓄力标记 / 本行动临时标记|移除|移除|移除|不得跨离场保留|
 |当前回合队列项|若尚未轮到则取消|若尚未轮到则取消|取消|见模块 02|
 |被动持有物|保留|保留|随单位失效|装备关系不变|
@@ -71,6 +72,7 @@
 2. 若行动轮到前行动者已离场或倒下，该换人行动按模块 02 的 `cancelled_pre_start` 处理，不再另行补选。
 3. 若行动已经开始执行，却发现所选目标不在合法 bench，视为运行态破坏规则，按 `invalid_battle` 处理。
 4. 新入场单位、其 `on_enter`、以及后续 `on_matchup_changed` 不得读取一个按本规则已被打断的旧 field。
+5. 若旧单位保留了 `persists_on_switch=true` 的 effect / rule mod，它们跟着单位下场保留，但不会让该单位继续以“在场单位”身份参与普通回合批次。
 
 ## 5. 强制换下顺序
 
@@ -89,6 +91,7 @@
 2. 若系统接口返回空值、返回不在合法候选列表、或超时，按 `invalid_replacement_selection` 立即终止战斗。
 3. 若当前没有合法 bench，强制换下效果直接失效；不触发 `on_switch / on_exit`，也不改写当前 active。
 4. 提前打断不会触发 `effect:field_expire`，也不会执行 `on_expire_effect_ids`。
+5. `forced_replace` 与 `manual_switch` 的保留口径一致：只保留显式声明 `persists_on_switch=true` 的 unit effect / unit rule mod。
 
 ## 6. 倒下离场顺序
 
@@ -132,11 +135,12 @@
 
 |节点|规则|
 |---|---|
-|`turn_start`|只处理当前在场单位与全场 field|
-|`turn_end`|只处理当前在场单位与全场 field|
-|离场单位|不参与 `turn_start / turn_end`|
-|重新上场后|重新以在场单位身份参与后续回合|
-|回合节点触发范围|被动技能、被动持有物的 `turn_start / turn_end` 触发仅限当前在场单位，bench 不参与|
+|`turn_start`|普通 trigger batch 只处理当前在场单位与全场 field|
+|`turn_end`|普通 trigger batch 只处理当前在场单位与全场 field|
+|bench 持久 effect|若单位持有 `persists_on_switch=true` 的 effect，则该 effect 在 bench 上继续扣 `remaining`|
+|bench 持久 effect 到期|只做正常移除与移除日志；不派发 `on_expire_effect_ids`|
+|bench 单位普通回合行为|不参与 `turn_start / turn_end` 普通触发、被动结算或其他在场限定批次|
+|重新上场后|重新以在场单位身份参与后续回合，并继续带着未到期的持久 effect / rule mod|
 
 ## 9. 未来持续效果的接入纪律
 
@@ -149,3 +153,9 @@
 |离场去留|换人后清除还是保留|
 |归属|来源是谁，挂在谁身上|
 |日志|施加、刷新、移除、结算都怎么记|
+
+补充规则：
+
+1. 若 effect 要跨非击倒离场保留，必须显式声明 `persists_on_switch=true`；未声明就按默认离场清除。
+2. 若 `persists_on_switch=true` 的 effect 自身携带 `rule_mod` payload，这些 payload 也必须显式声明 `persists_on_switch=true`。
+3. 板凳持续效果当前只支持“时间继续流动”；若以后要支持板凳上继续跑普通 `turn_start / turn_end` 结算，必须单开规则，不得默认放开。

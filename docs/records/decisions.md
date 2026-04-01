@@ -419,3 +419,24 @@
 - 原因：
   - 上述文件已经出现“角色资源、运行时路径、坏例 contract、多主题断言堆叠”的混杂趋势。
   - 继续扩角前先拆开，能降低回归定位成本，也避免单文件继续滚到新的屎山热点。
+
+### 46. 持久 buff 在板凳上只掉时间，不跑普通每回合结算（2026-04-01）
+
+- `persists_on_switch=true` 的 unit effect / unit rule mod 在 `manual_switch / forced_replace` 后继续保留；`faint` 仍然清空全部 unit effect / rule mod。
+- owner 位于 bench 时，这类持久 effect 当前只继续扣 `remaining`，不进入普通 `turn_start / turn_end` trigger batch。
+- 若持久 effect 在板凳上到期，只移除并写正常 remove log；当前不派发 `on_expire_effect_ids`。
+- 原因：
+  - 当前扩角主线只需要“换下后持续时间继续流动”，不需要把完整 off-field 结算链一起放开。
+  - 先把板凳语义收成“只掉时间”能避免半场外结算把生命周期、日志和领域链路一起拉复杂。
+
+### 47. `mp_regen / incoming_accuracy` 正式允许多来源并存，来源组内再走 stacking（2026-04-01）
+
+- `mp_regen / incoming_accuracy` 当前不再默认按“同 owner + 同 mod_op”静默折叠。
+- 来源分组优先级固定为：
+  - `payload.stacking_source_key`
+  - 否则当前 effect definition id
+  - 再兜底到 `source_instance_id`
+- 不同来源组可以并存；同一来源组内继续按 `none / refresh / replace` 处理。
+- 原因：
+  - 宿傩被动回蓝、装备回蓝、Gojo 无下限减命中、领域减命中这类来源后续都会并行出现，继续靠隐式 key 折叠会把扩角风险埋进运行时。
+  - 把“是否合并”下放给内容层显式控制，比继续依赖隐式冲突键更清晰。

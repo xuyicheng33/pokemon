@@ -19,6 +19,15 @@
 
 ---
 
+## 0.1 角色稿范围
+
+- 本稿按 `docs/design/formal_character_design_template.md` 收口，只保留五条悟自己的资源定义、角色机制、验收矩阵与平衡备注。
+- 共享引擎规则统一引用：
+  - 生命周期与换人保留：`docs/rules/04_status_switch_and_lifecycle.md`
+  - effect / rule_mod schema：`docs/rules/06_effect_schema_and_extension.md`
+  - 运行时字段：`docs/design/battle_runtime_model.md`
+  - 领域公共模板：`docs/design/domain_field_template.md`
+
 ## 1. 角色基础属性
 
 ### 1.1 UnitDefinition
@@ -384,75 +393,18 @@
 
 ### 4.2 `required_target_effects`
 
-`effect_definition.gd` 新增：
-
-```gdscript
-@export var required_target_effects: PackedStringArray = PackedStringArray()
-@export var required_target_same_owner: bool = false
-```
-
-执行规则：
-
-- `PayloadExecutor.execute_effect_event()` 在 payload 循环前做 effect 级前置检查
-- `required_target_effects` 只允许出现在 `scope=target` 的 effect 上；`scope=self/field` 一律视为 schema 非法并在加载期 fail-fast
-- 目标固定取 `effect_event.chain_context.target_unit_id` 对应单位；若为空、单位不存在、目标已不满足 `ACTIVE && hp>0`、或缺少任一 required effect，则整条 effect 跳过
-- `required_target_same_owner = true` 时，还要求命中的 required effect instance 记录的 `meta.source_owner_id` 等于当前 `effect_event.owner_id`
-- 不满足则跳过该 effect，不报错，也不写任何由该 effect 产生的 payload 日志
-- 安全前提：只要前置检查实现正确，`remove_effect` 不会走到“目标标记不存在”分支，自然不会触发 `INVALID_EFFECT_REMOVE_AMBIGUOUS`
-
-加载期 fail-fast（必须补齐）：
-
-- `content_snapshot_validator.gd` 必须校验 `required_target_effects`：每个 effect id 非空、不得重复、且必须命中 `content_index.effects`
-- `content_snapshot_validator.gd` 还必须校验：凡 `required_target_effects` 非空的 effect，`scope` 必须等于 `target`
-- 若 `required_target_same_owner=true`，则 `required_target_effects` 必须非空，且 effect `scope` 必须等于 `target`
-- 任一引用非法时，内容加载期直接失败；禁止把错误引用留到运行期再“静默跳过”
-- 真正接线时，需同步更新 `docs/rules/06_effect_schema_and_extension.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 与 `docs/records/decisions.md`
-- 测试必须包含“坏引用触发加载期失败”的坏例用例
-
-该能力仅用于茈的条件追加爆发，不引入 `action_tags`
+- `required_target_effects / required_target_same_owner` 已是共享 effect 前置能力；完整 schema、加载期约束与运行时语义统一以 `docs/rules/06_effect_schema_and_extension.md` 与 `docs/design/battle_content_schema.md` 为准。
+- 五条悟在这套共享能力上的角色差异只有 1 条：`gojo_murasaki_conditional_burst` 必须要求 `gojo_ao_mark + gojo_aka_mark`，且 `required_target_same_owner=true`。
+- 也就是说，五条悟当前只消费“自己本人挂上的双标记”；前置不满足时，茈的追加段直接整条跳过，不写额外 payload 日志。
 
 ### 4.3 `incoming_accuracy`（无下限命中干扰）
 
-新增 rule_mod kind：
-
-- `incoming_accuracy`
-
-实现点：
-
-- `content_schema.gd`：新增 `RULE_MOD_INCOMING_ACCURACY`
-- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 增加 `incoming_accuracy` 白名单、`mod_op=add/set` 约束、数值 `value` 校验，并明确禁止 `dynamic_value_formula`
-- `rule_mod_service.gd + rule_mod_read_service.gd + rule_mod_write_service.gd`：
-1. `STACKING_KEY_SCHEMA_BY_KIND` 增加 `RULE_MOD_INCOMING_ACCURACY`
-2. 写路径继续负责实例创建与扣减
-3. 读路径新增 `resolve_incoming_accuracy(battle_state, target_owner_id, base_accuracy)`
-- `action_cast_service.gd`：`resolve_hit` 在 field 覆盖后、`roll_hit` 前读取目标侧 `incoming_accuracy`
-- `action_executor.gd`：调用 `resolve_hit` 时补传目标（建议签名改为 `resolve_hit(command, skill_definition, target, battle_state, content_index)`）
-
-约束：
-
-- 只在 `resolved_accuracy < 100` 时读取（必中不受影响）
-- 最终命中率 clamp 到 `0~99`
-- `0~99` 是刻意设计：`incoming_accuracy` 不得把命中改成“硬必中”；`100` 只由技能本体或 field 覆盖产生
-- `incoming_accuracy.value` 必须是数值；非数值或 NaN 口径在内容加载期直接失败
-- 多个 `incoming_accuracy` 实例的合成顺序，必须**完全复用**现有 `RuleModService` 读取顺序（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`）；读取时 `add` 叠到当前命中值上，`set` 覆盖当前命中值，整轮读完后再统一 clamp 到 `0~99`
-- 读取范围必须收紧为“敌方来袭技能 / 奥义”：
-1. 仅当 `command_type in {skill, ultimate}` 且技能 `targeting=enemy_active_slot` 时才可读取
-2. 仅当 `target` 为敌方 active 单位时读取；`self/field/none` 与无目标动作一律跳过
-3. `switch / wait / resource_forced_default` 一律不读取 `incoming_accuracy`
-
-`incoming_accuracy` stacking key schema：
-
-- `["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"]`
-- 说明：不按 `value` 分键，沿用 `final_mod/mp_regen` 的同类 schema
-
-真正接线时的文档同步清单（必须补齐）：
-
-- `docs/rules/03_stats_resources_and_damage.md`
-- `docs/design/effect_engine.md`
-- `docs/design/battle_runtime_model.md`
-- `docs/design/battle_content_schema.md`
-- `docs/design/battle_core_architecture_constraints.md`
-- `docs/records/decisions.md`
+- `incoming_accuracy` 已是共享 rule_mod 读取点；完整读路径、字段约束与排序链统一以 `docs/rules/03_stats_resources_and_damage.md`、`docs/rules/06_effect_schema_and_extension.md` 与 `docs/design/battle_runtime_model.md` 为准。
+- 当前正式主线已经把“多来源减命中”收口为：
+  - 来源分组优先 `payload.stacking_source_key -> effect_definition_id -> source_instance_id`
+  - 不同来源组可以并存
+  - 同来源组内继续按 `none / refresh / replace` 处理
+- 因此五条悟的 `gojo_mugen_incoming_accuracy_down` 不再假设自己是唯一来源；未来若再叠别的减命中来源，会一起算，而不是静默折叠。
 
 ### 4.4 标记来源绑定现状
 

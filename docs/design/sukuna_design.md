@@ -14,6 +14,15 @@
 
 ---
 
+## 0.1 角色稿范围
+
+- 本稿按 `docs/design/formal_character_design_template.md` 收口，只保留宿傩自己的资源定义、角色机制、验收矩阵与平衡备注。
+- 共享引擎规则统一引用：
+  - 生命周期与换人保留：`docs/rules/04_status_switch_and_lifecycle.md`
+  - effect / rule_mod schema：`docs/rules/06_effect_schema_and_extension.md`
+  - 运行时字段：`docs/design/battle_runtime_model.md`
+  - 领域公共模板：`docs/design/domain_field_template.md`
+
 ## 1. 角色基础属性
 
 ### 1.1 角色定位
@@ -280,6 +289,7 @@
 - 当前样例与正式角色都必须满足这个 7 维公式假设；若未来引入 `max_mp = 0` 的 dummy / 测试单位，需要先重审该公式再接入。
 - 动态公式只会把求值结果写进运行时 `rule_mod instance`，不会回写共享 `.tres` payload。
 - 当前宿傩每回合最终回复值固定为 `12 + 动态加值`；例如对位五条悟时，当前口径为 `12 + 9 = 21`。
+- `mp_regen` 的多来源叠加语义不再由隐式 key 折叠；共享 contract 统一按“不同来源组并存、同来源组内再走 `none / refresh / replace`”执行。因此宿傩被动回蓝和未来装备回蓝会一起算；若内容想刻意合并，必须显式复用同一个 `stacking_source_key`。
 
 ---
 

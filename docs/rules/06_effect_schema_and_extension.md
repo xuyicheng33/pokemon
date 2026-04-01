@@ -42,6 +42,8 @@
 2. `required_target_effects` 只允许挂在 `scope=target` 的 effect 上；加载期必须校验非空项、去重和引用存在性。
 3. `required_target_same_owner = true` 时，前置除检查目标持有这些 effect 外，还必须校验这些 effect instance 记录的 `meta.source_owner_id` 与当前 effect owner 一致。
 4. 前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
+5. `persists_on_switch=true` 的 unit effect 在非击倒离场后继续保留，但 bench 上只继续倒计时，不参与普通 `turn_start / turn_end` trigger batch。
+6. 上述 bench 持久 effect 若在板凳上到期，只移除并写正常 remove log；当前不派发 `on_expire_effect_ids`。
 
 ## 3. `EffectInstance`
 
@@ -87,10 +89,11 @@
 5. 首发入场仍然走 `on_enter`；同一份效果不能因为“首发入场”同时挂在 `on_enter` 和 `battle_init` 两边重复结算。
 6. `battle_init` 固定发生在初始 `on_enter` 与其引发的补位链完全稳定之后；不同触发点不跨批次混排。
 7. 若 `battle_init` 批次本身导致补位并形成新的稳定对位，可在进入 `selection` 前追加一次 `on_matchup_changed`；该追加批次只读取 `battle_init` 后稳定战场，不会重放 `battle_init`。
-8. `turn_start / turn_end` 触发只对“当前在场单位”和全场 field 生效；bench 单位不参与回合节点触发。
-9. `field_break` 只用于 field 被提前打断链；`field_expire` 只用于 field 自然到期链。
-10. `field_apply_success` 只用于 `ApplyFieldPayload.on_success_effect_ids` 的 follow-up 派发。
-11. `on_expire` 只用于 `EffectDefinition.on_expire_effect_ids` 派发，语义与 `field_expire` 严格分离，不混用。
+8. `turn_start / turn_end` 的普通 trigger 只对“当前在场单位”和全场 field 生效；bench 单位不参与普通回合节点触发。
+9. 若 bench 单位持有 `persists_on_switch=true` 的 effect，则该实例仍会在对应节点继续扣减 `remaining`，但不会进入普通 trigger batch。
+10. `field_break` 只用于 field 被提前打断链；`field_expire` 只用于 field 自然到期链。
+11. `field_apply_success` 只用于 `ApplyFieldPayload.on_success_effect_ids` 的 follow-up 派发。
+12. `on_expire` 只用于 `EffectDefinition.on_expire_effect_ids` 派发，语义与 `field_expire` 严格分离，不混用。
 
 ## 5. 当前基线 payload 类型
 
@@ -148,6 +151,8 @@
 |`decrement_on`|`turn_start / turn_end`，声明扣减节点|
 |`stacking`|`none / refresh / replace`|
 |`priority`|可选，默认 `0`，用于同一 hook 内的应用顺序|
+|`persists_on_switch`|可选，默认 `false`；仅允许 `self / target` 的 unit rule mod 声明|
+|`stacking_source_key`|可选；用于 `mp_regen / incoming_accuracy` 的来源分组|
 |`dynamic_value_formula`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`（按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值）|
 |`dynamic_value_thresholds / dynamic_value_outputs / dynamic_value_default`|动态求值所需阈值、输出和值兜底|
 
@@ -158,6 +163,16 @@
 3. 动态值公式当前只允许用于“owner 为单位”的数值型 `rule_mod`（即当前只开放 `self / target`，不开放 `field`），且运行时求值不得回写共享内容资源。
 4. 若未来需要 field 作用域的动态公式，必须先补明确定义、校验和运行时语义，不能复用当前 `matchup_bst_gap_band` 口径。
 5. `incoming_accuracy` 当前要求 `value` 为整数，并且禁止 `dynamic_value_formula`。
+6. `persists_on_switch=true` 只允许声明在 `scope=self/target` 且 owner 为单位的 rule mod 上；`field` scope 禁止这样声明。
+7. 若 `mp_regen / incoming_accuracy` 需要多来源并存，来源分组优先级固定为：
+   - `payload.stacking_source_key`
+   - 否则当前 effect definition id
+   - 再兜底到 `source_instance_id`
+8. 同一来源分组内继续按 `none / refresh / replace` 处理；不同来源分组可以并存。
+9. 当前正式例子：
+   - “宿傩被动回蓝 + 装备回蓝”应一起算
+   - “Gojo 无下限减命中 + 其他减命中来源”应一起算
+   - 若内容作者想故意合并成一条，必须显式复用同一个 `stacking_source_key`
 
 ### 5.3 `RuleModInstance` 运行时模型
 
@@ -176,6 +191,8 @@
 |`source_instance_id`|创建它的根来源实例 ID|
 |`source_kind_order`|根来源类型枚举|
 |`source_order_speed_snapshot`|排序速度快照|
+|`persists_on_switch`|非击倒离场时是否保留|
+|`source_stacking_key`|来源分组键；供多来源并存与断言使用|
 |`priority`|用于同一 hook 的应用排序|
 
 应用规则：
@@ -183,7 +200,12 @@
 1. `rule_mod` 在执行 payload 时创建/刷新/替换实例，不进入效果队列二次排序。
 2. 需要读取规则修正的节点（`final_mod`、`turn_start` MP 回复、技能/动作合法性、命中干扰）必须收集所有仍有效的 `RuleModInstance`。
 3. 同一 hook 内的应用顺序固定为：`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`。
-4. `stacking_key` 当前固定由 `mod_kind + scope + owner_scope + owner_id + mod_op` 组成；`action_legality` 额外把 `value` 纳入键。`none` 遇到同键直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
+4. `stacking_key` 当前按 `mod_kind` 分流：
+   - `final_mod`：`mod_kind + scope + owner_scope + owner_id + mod_op`
+   - `mp_regen / incoming_accuracy`：在上式基础上额外加入 `source_stacking_key`
+   - `action_legality`：在基础式上额外加入 `value`
+5. `mp_regen / incoming_accuracy` 的 `source_stacking_key` 解析优先级固定为：`payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
+6. 同键下的 `none / refresh / replace` 语义不变；不同来源组不互相折叠，读取顺序继续沿用现有全局排序链。
 
 ### 5.4 `rule_mod` 边界冻结（架构强约束）
 
@@ -240,6 +262,7 @@
 3. 若未显式声明 `persists_on_switch = true`，则离场时移除。
 4. 当前不允许只写“按触发次数移除”这种口头规则；因为现行基线还没有这套持续模型。
 5. field 的持续时间不定义在 `FieldDefinition`；由触发 `apply_field` 的 `EffectDefinition.duration / decrement_on` 决定。
+6. `persists_on_switch=true` 的 unit effect 在 bench 上仍会继续扣减 `remaining`；但它在板凳上到期时，不派发 `on_expire_effect_ids`。
 
 ## 9. 防循环与安全保护
 

@@ -907,3 +907,46 @@
 #### 当前验证结果
 
 - `bash tests/run_with_gate.sh` 通过
+
+### 扩角前规范整合计划（已完成）
+
+- 目标：
+  - 在继续扩第三个复杂角色前，先把持久 buff 生命周期、`mp_regen / incoming_accuracy` 多来源叠加、正式角色交付面 smoke，以及角色设计稿模板化一次收口
+- 范围：
+  - `src/battle_core/content/*`
+  - `src/battle_core/lifecycle/*`
+  - `src/battle_core/effects/*`
+  - `src/battle_core/turn/*`
+  - `tests/suites/*`
+  - `docs/rules/04_status_switch_and_lifecycle.md`
+  - `docs/rules/06_effect_schema_and_extension.md`
+  - `docs/design/battle_runtime_model.md`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/formal_character_design_template.md`
+  - `docs/design/gojo_satoru_design.md`
+  - `docs/design/sukuna_design.md`
+  - `docs/records/formal_character_registry.json`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `persists_on_switch` 与 bench 持续效果 contract 明确落地
+  - `mp_regen / incoming_accuracy` 支持多来源并存，且有回归覆盖
+  - Gojo formal validator、Gojo/Sukuna manager smoke 接入正式角色交付面
+  - 角色稿改成“共享引擎规则只引用、不重写”
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 生命周期 contract 已收口：非击倒离场会保留 `persists_on_switch=true` 的 unit effect / unit rule mod；板凳上只继续倒计时，不跑普通 `turn_start / turn_end` trigger
+  - `mp_regen / incoming_accuracy` 已改成按来源分组并存，并补了多来源回归
+  - 已新增 `content_snapshot_formal_gojo_validator.gd`，并把 Gojo validator path 挂进 `formal_character_registry.json`
+  - 已新增 `gojo_manager_smoke_suite.gd` / `sukuna_manager_smoke_suite.gd`，wrapper suite 与 formal registry 都已接线
+  - 已新增 `formal_character_design_template.md`，并把共享 lifecycle / rule_mod contract 下沉回公共规则文档
+  - 已补两条正式决策：
+    - 持久 buff 在板凳上只掉时间
+    - `mp_regen / incoming_accuracy` 允许多来源并存，来源组内再走 stacking
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
