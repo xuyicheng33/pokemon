@@ -27,7 +27,6 @@ const TRIGGER_FIELD_APPLY_SUCCESS := "field_apply_success"
 
 const RULE_MOD_FINAL_MOD := "final_mod"
 const RULE_MOD_MP_REGEN := "mp_regen"
-const RULE_MOD_SKILL_LEGALITY := "skill_legality"
 const RULE_MOD_ACTION_LEGALITY := "action_legality"
 const RULE_MOD_INCOMING_ACCURACY := "incoming_accuracy"
 

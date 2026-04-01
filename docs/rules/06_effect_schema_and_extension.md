@@ -136,22 +136,22 @@
 
 |字段|说明|
 |---|---|
-|`mod_kind`|`final_mod / mp_regen / skill_legality / action_legality / incoming_accuracy`|
-|`mod_op`|`final_mod` 允许 `mul / add / set`；`mp_regen / incoming_accuracy` 允许 `add / set`；`skill_legality / action_legality` 允许 `allow / deny`|
-|`value`|`final_mod / mp_regen / incoming_accuracy` 下为数值；`skill_legality` 下为技能 ID（空值=全局技能）；`action_legality` 下为 `all / skill / ultimate / switch / 已注册 skill_id`|
+|`mod_kind`|`final_mod / mp_regen / action_legality / incoming_accuracy`|
+|`mod_op`|`final_mod` 允许 `mul / add / set`；`mp_regen / incoming_accuracy` 允许 `add / set`；`action_legality` 允许 `allow / deny`|
+|`value`|`final_mod / mp_regen / incoming_accuracy` 下为数值；`action_legality` 下为 `all / skill / ultimate / switch / 已注册 skill_id`|
 |`scope`|`self / target / field`，与创建时的目标一致|
 |`duration_mode`|`turns / permanent`|
 |`duration`|`turns` 模式必填|
 |`decrement_on`|`turn_start / turn_end`，声明扣减节点|
 |`stacking`|`none / refresh / replace`|
 |`priority`|可选，默认 `0`，用于同一 hook 内的应用顺序|
-|`dynamic_value_formula`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`|
+|`dynamic_value_formula`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`（按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值）|
 |`dynamic_value_thresholds / dynamic_value_outputs / dynamic_value_default`|动态求值所需阈值、输出和值兜底|
 
 补充规则：
 
 1. `rule_mod` 必须显式声明 `decrement_on`；否则按 `invalid_battle` 处理。
-2. `skill_legality / action_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段。
+2. `action_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段。
 3. 动态值公式当前只允许用于“owner 为单位”的数值型 `rule_mod`（即当前只开放 `self / target`，不开放 `field`），且运行时求值不得回写共享内容资源。
 4. 若未来需要 field 作用域的动态公式，必须先补明确定义、校验和运行时语义，不能复用当前 `matchup_bst_gap_band` 口径。
 5. `incoming_accuracy` 当前要求 `value` 为整数，并且禁止 `dynamic_value_formula`。
@@ -180,13 +180,13 @@
 1. `rule_mod` 在执行 payload 时创建/刷新/替换实例，不进入效果队列二次排序。
 2. 需要读取规则修正的节点（`final_mod`、`turn_start` MP 回复、技能/动作合法性、命中干扰）必须收集所有仍有效的 `RuleModInstance`。
 3. 同一 hook 内的应用顺序固定为：`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`。
-4. `stacking_key` 当前固定由 `mod_kind + scope + owner_scope + owner_id + mod_op` 组成；`skill_legality / action_legality` 额外把 `value` 纳入键。`none` 遇到同键直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
+4. `stacking_key` 当前固定由 `mod_kind + scope + owner_scope + owner_id + mod_op` 组成；`action_legality` 额外把 `value` 纳入键。`none` 遇到同键直接忽略新实例；`refresh` 刷新 `remaining` 但保留 `instance_id`；`replace` 移除旧实例并创建新实例。
 
 ### 5.4 `rule_mod` 边界冻结（架构强约束）
 
 |项|规则|
 |---|---|
-|白名单读取点|固定为 `final_mod / mp_regen / skill_legality / action_legality / incoming_accuracy`|
+|白名单读取点|固定为 `final_mod / mp_regen / action_legality / incoming_accuracy`|
 |流程控制权|禁止通过 `rule_mod` 改行动排序、回合阶段顺序、击倒窗口、补位时机、胜负判定、目标模型、生命周期、日志语义|
 |新增读取点流程|先改 `docs/rules/06` 与架构约束文档，再实现|
 |扩展策略|若玩法长期需要更多权限，优先新建专用机制，不继续扩大 `rule_mod` 放权范围|

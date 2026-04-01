@@ -156,7 +156,7 @@
 |字段|类型|说明|
 |---|---|---|
 |`instance_id`|`String`|实例 ID|
-|`mod_kind`|`String`|`final_mod / mp_regen / skill_legality / action_legality / incoming_accuracy`|
+|`mod_kind`|`String`|`final_mod / mp_regen / action_legality / incoming_accuracy`|
 |`mod_op`|`String`|`mul / add / set / allow / deny`|
 |`value`|`Variant`|运算值|
 |`scope`|`String`|生效域（如 `self / field`）|
@@ -174,7 +174,6 @@
 
 补充说明：
 
-- `skill_legality` 仍保留为兼容读取口径，但只参与 `skill / ultimate` 两类动作。
 - `action_legality` 与 `incoming_accuracy` 已是当前运行态 contract 的正式组成部分。
 
 ## 10. 临时状态重置点

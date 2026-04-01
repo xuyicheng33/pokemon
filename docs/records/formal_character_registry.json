@@ -107,6 +107,7 @@
       "sukuna_effect_snapshot_contract",
       "sukuna_default_loadout_contract",
       "sukuna_matchup_regen_runtime_path",
+      "sukuna_matchup_bst_includes_max_mp_contract",
       "sukuna_reverse_ritual_heal_path",
       "sukuna_kai_priority_damage_contract",
       "sukuna_hatsu_mp_diff_contract",

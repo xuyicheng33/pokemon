@@ -326,9 +326,9 @@
 - 本节记录 Gojo 方案依赖的当前正式 contract，以及若玩法继续收紧时还需要追加的后续扩展。
 - 按本文当前冻结的“单角色正式玩法”方案，`action_legality / required_target_effects / incoming_accuracy` 已可直接用于 Gojo 资源。
 
-### 4.1 `action_legality`（新增并逐步替代 `skill_legality`）
+### 4.1 `action_legality`（当前正式口径）
 
-`rule_mod.mod_kind` 从“只支持 `skill_legality`”扩展为同时支持 `action_legality`；`mod_op` 仍为 `allow / deny`，`value` 支持：
+`rule_mod.mod_kind` 当前正式只使用 `action_legality`；`mod_op` 固定为 `allow / deny`，`value` 支持：
 
 - `"all"` / `"skill"` / `"ultimate"` / `"switch"` / 具体 `skill_id`
 
@@ -339,35 +339,24 @@
 - `action_legality.value` 必须在加载期 fail-fast 校验为：`all / skill / ultimate / switch / 已注册 skill_id` 之一；空串、拼写错误或未知 `skill_id` 都不得留到运行期。
 - `dynamic_value_formula` 对 `action_legality` 明确禁止；该读取点只接受静态 `value`。
 
-迁移策略（避免一次性硬切导致旧内容失效）：
+实现清单（当前正式实现）：
 
-1. **阶段 A（兼容期）**：新增 `action_legality` 并保留 `skill_legality` 兼容读取。
-2. **阶段 B（迁移期）**：现存主线资源无强制迁移动作；新内容一律只用 `action_legality`。
-3. **阶段 C（收口期）**：移除 `skill_legality` 常量、校验与读取路径。
-
-实现清单（阶段 A 起步）：
-
-- `content_schema.gd`：新增 `RULE_MOD_ACTION_LEGALITY`
-- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 新增 `action_legality` 白名单、`mod_op` 校验、`value` 白名单校验，并明确禁止 `dynamic_value_formula`
+- `content_schema.gd`：定义 `RULE_MOD_ACTION_LEGALITY`
+- `content_payload_validator.gd`：`_validate_rule_mod_payload()` 负责 `action_legality` 白名单、`mod_op` 校验、`value` 白名单校验，并明确禁止 `dynamic_value_formula`
 - `rule_mod_service.gd + rule_mod_read_service.gd + rule_mod_write_service.gd`：
-1. `STACKING_KEY_SCHEMA_BY_KIND` 增加 `RULE_MOD_ACTION_LEGALITY`
+1. `STACKING_KEY_SCHEMA_BY_KIND` 包含 `RULE_MOD_ACTION_LEGALITY`
 2. 写路径负责 `create / replace / decrement`
 3. 读路径负责 `is_action_allowed(battle_state, owner_id, action_type, skill_id="")`
-- `legal_action_service.gd`：技能、奥义、换人都改读 `is_action_allowed`；`wait_allowed / forced_command_type` 也必须把“换人被 rule_mod 封禁”视为**非 MP 阻断**
+- `legal_action_service.gd`：技能、奥义、换人统一读 `is_action_allowed`；`wait_allowed / forced_command_type` 也必须把“换人被 rule_mod 封禁”视为**非 MP 阻断**
 - `turn_selection_resolver.gd`：提交通道继续只认 legal set；不得把“是否在 legal set 内”这层语义偷偷下沉到 `command_validator.gd`
-- `command_validator.gd`：继续负责结构、运行时 ID 回填、奥义入口、MP 等硬非法；不要复制一套独立的 `action_legality` 语义
-- `action_executor.gd`：执行前新增 `is_action_allowed` 复检（可保留在 `action_executor.gd`，也可抽 helper），覆盖排队后中途上锁场景
+- `command_validator.gd`：继续负责结构、运行时 ID 回填、奥义入口、MP 等硬非法；不要复制第二套 `action_legality` 语义
+- `action_executor.gd`：执行前复检 `is_action_allowed`，覆盖排队后中途上锁场景
 
-真正接线时的文档同步清单（必须补齐）：
+文档同步落点：
 
 - `docs/design/command_and_legality.md`
 - `docs/rules/02_turn_flow_and_action_resolution.md`
 - `docs/records/decisions.md`
-
-兼容期读取策略（必须写死）：
-
-- `is_action_allowed` 在阶段 A 同时读取两类实例：`action_legality` 与旧 `skill_legality`
-- 混合实例统一按现有 rule_mod 排序链处理（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`），避免新旧规则并存时顺序漂移
 
 `action_legality` stacking key schema：
 
@@ -387,10 +376,10 @@
 最终判定顺序（必须写死）：
 
 1. 默认 `allowed = true`
-2. 兼容期统一收集 `action_legality + skill_legality` 两类实例，并走同一排序链（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`）
+2. 统一收集 `action_legality` 实例，并走同一排序链（`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`）
 3. 逐条判断是否命中当前动作；命中则按 `deny => allowed=false`、`allow => allowed=true` 覆盖
 4. 最终结果以“最后一条命中的 rule_mod”状态为准（last-write-wins）
-5. `skill_legality` 兼容读取只参与 `skill/ultimate` 两类动作；`switch/wait` 不读取旧 `skill_legality`
+5. `wait` 不命中任何 `action_legality`；技能 / 奥义 / 换人以单口径结果为准
 
 ### 4.2 `required_target_effects`
 
@@ -575,7 +564,7 @@
 | 25 | 无量空处先手但领域对拼失败 | 若 Gojo 先手展开领域、后手领域随后翻盘，则 `gojo_domain_action_lock` 不得先挂上又残留；失败方视为“未成功立住” |
 | 26 | incoming_accuracy 作用域收紧 | `self/field/none` 目标技能、`switch/wait/resource_forced_default` 不读取 `incoming_accuracy` |
 | 27 | action_legality 匹配矩阵 | `deny all + allow switch`、`deny skill + allow gojo_ao`、`deny ultimate + allow ultimate_id` 结果与矩阵一致 |
-| 28 | 兼容期双口径共读 | 阶段 A 下 `action_legality + skill_legality` 同排序链读取，不得因 mod_kind 不同而顺序漂移 |
+| 28 | action_legality 单口径排序 | `action_legality` 必须沿统一排序链读取，不得再残留旧合法性分支或双口径漂移 |
 | 29 | 双 `+5` 先后手竞争 | 对手也使用 `+5` 奥义时，若对手先动，则 Gojo 本回合不得被文档误写成“仍然锁到对方” |
 | 30 | 标记 / 领域时间线 | `duration=3 + decrement_on=turn_end` 必须按“施放当回合起连续 3 次 `turn_end` 扣减”验证 |
 | 31 | 领域对拼失败边界 | 五条悟在领域对拼中输掉时，不落领域、不加 `sp_attack +1`、也不锁人 |

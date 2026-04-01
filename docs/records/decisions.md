@@ -363,3 +363,33 @@
 - `tests/suites/sukuna_suite.gd` 继续只做 wrapper；正式角色注册表里的 `required_suite_paths` 也同步改为两条子 suite。
 - 原因：
   - 宿傩当前是最复杂的正式角色之一，灶层数生命周期与领域链路已经跨两个子域；继续堆在单一 suite 会拖慢定位回归与后续扩角复查。
+
+### 40. 旧合法性口径从当前正式 contract 硬移除，只保留 `action_legality`（2026-04-01）
+
+- 当前正式 `rule_mod` 合法性读取点只剩 `action_legality`；活动规则、设计文档、测试与运行时代码不再保留旧合法性双口径。
+- `wait` 继续不受 `action_legality` 影响；技能 / 奥义 / 换人统一走单一匹配矩阵与统一排序链。
+- 原因：
+  - 旧双口径在代码已经硬切后，继续留在活动文档里只会制造“看起来还能用”的假象，直接抬高扩角时的误用风险。
+
+### 41. `matchup_bst_gap_band` 正式冻结为包含 `max_mp` 的七维口径（2026-04-01）
+
+- 当前 `dynamic_value_formula = matchup_bst_gap_band` 固定按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值。
+- `max_mp` 当前视为正式第七维；宿傩对位追加回蓝与相关角色回归都以此为准。
+- 原因：
+  - 这条公式已经进入正式角色资源与回归；若不把 `max_mp` 写成明文 contract，后续扩角时很容易有人按“六维 BST”误实现。
+
+### 42. `BattleInitializer` 与 `BattleCoreManager` 继续通过内部 helper 留出治理余量（2026-04-01）
+
+- `BattleInitializer` 当前把初始化阶段子流程下沉到 `BattleInitializerPhaseService`，`BattleCoreManager` 把 session/replay 容器编排下沉到 `BattleCoreManagerContainerService`。
+- 这两类 helper 只负责 owner 内部编排，不升级成新的稳定 facade，也不改变原有模块边界。
+- 原因：
+  - 本轮目标不是“刚好压到线下”，而是给继续扩角留下安全余量，避免 owner 文件再次贴着 `220..250` 行预警区滚雪球。
+
+### 43. 仓库一致性闸门按 `surface / formal_character / docs` 模块化拆分（2026-04-01）
+
+- `tests/check_repo_consistency.sh` 当前只作为聚合入口，实际校验下沉到：
+  - `tests/gates/repo_consistency_surface_gate.py`
+  - `tests/gates/repo_consistency_formal_character_gate.py`
+  - `tests/gates/repo_consistency_docs_gate.py`
+- 原因：
+  - 把 README、正式角色交付面、活动文档针脚全堆在单脚本里，维护时定位太慢，也容易让无关修改互相牵连。

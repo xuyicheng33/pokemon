@@ -52,8 +52,8 @@
 
 补充说明：
 
-- 为了把 owner 文件维持在可控体量内，同子域允许拆出只服务于该 owner 的内部 helper；当前已存在 `BattleInitializerStateBuilder` 与 `BattleCoreManagerContractHelper` 两个例子。
-- `BattleCoreManagerContractHelper` 当前同时承担 envelope 拼装、session 查找与公开入口 runtime 校验，目的是把 manager 本体留在 facade 编排边界内，而不是继续长成混合型大文件。
+- 为了把 owner 文件维持在可控体量内，同子域允许拆出只服务于该 owner 的内部 helper；当前例子包括 `BattleInitializerStateBuilder`、`BattleInitializerPhaseService`、`BattleCoreManagerContractHelper` 与 `BattleCoreManagerContainerService`。
+- `BattleInitializerPhaseService` 负责初始化阶段的 `battle_header / on_enter / battle_init / 首回合预回蓝` 子流程；`BattleCoreManagerContainerService` 负责 session 建立与 replay 的容器级编排，目的是把 owner 本体留在稳定边界内，而不是继续长成混合型大文件。
 - 这类 helper 只负责分担编排或 contract 拼装，不改变模块边界，也不自动升级成新的稳定入口。
 
 ## 4. 数据流
@@ -112,6 +112,7 @@
 - `public_snapshot_builder.gd`
 - `event_log_public_snapshot_builder.gd`
 - `battle_core_manager_contract_helper.gd`（manager 内部 helper）
+- `battle_core_manager_container_service.gd`（manager 内部 helper）
 - `battle_core_session.gd`（manager 内部会话壳）
 
 对外围稳定开放的最小接口为：

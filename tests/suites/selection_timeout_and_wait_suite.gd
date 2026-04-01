@@ -114,7 +114,7 @@ func _test_wait_allowed_non_mp_blocked_path(harness) -> Dictionary:
 			bench_unit.current_hp = 0
 	var deny_payload = RuleModPayloadScript.new()
 	deny_payload.payload_type = "rule_mod"
-	deny_payload.mod_kind = "skill_legality"
+	deny_payload.mod_kind = "action_legality"
 	deny_payload.mod_op = "deny"
 	deny_payload.value = "sample_strike"
 	deny_payload.scope = "self"

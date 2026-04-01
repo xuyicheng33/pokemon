@@ -40,7 +40,6 @@
 
 - `final_mod`
 - `mp_regen`
-- `skill_legality`
 - `action_legality`
 - `incoming_accuracy`
 

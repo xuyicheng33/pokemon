@@ -74,6 +74,12 @@
 5. 奥义点属于单位运行态，换下后保留。
 6. 奥义点必须进入公开快照与日志；至少要能看到加点、清零和变化后的当前点数。
 
+### 3.4 动态对位面板差公式补充
+
+- `dynamic_value_formula = matchup_bst_gap_band` 当前固定按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值。
+- `max_mp` 当前视为正式第七维；宿傩的对位追加回蓝与相关回归都依赖这个口径。
+- 该公式当前只允许用于单位 owner 的数值型 `rule_mod`，目标对位固定取当前敌方 active。
+
 ## 4. 技能系统
 
 ### 4.1 技能分类

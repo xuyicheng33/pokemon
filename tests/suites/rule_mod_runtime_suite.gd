@@ -38,7 +38,7 @@ func _test_rule_mod_paths(harness) -> Dictionary:
 
     var deny_payload = RuleModPayloadScript.new()
     deny_payload.payload_type = "rule_mod"
-    deny_payload.mod_kind = "skill_legality"
+    deny_payload.mod_kind = "action_legality"
     deny_payload.mod_op = "deny"
     deny_payload.value = "sample_strike"
     deny_payload.scope = "self"
@@ -48,7 +48,7 @@ func _test_rule_mod_paths(harness) -> Dictionary:
     deny_payload.stacking = "replace"
     deny_payload.priority = 10
     if core.rule_mod_service.create_instance(deny_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_rule_mod_deny", 0, p1_active.base_speed) == null:
-        return harness.fail_result("failed to create skill_legality rule_mod")
+        return harness.fail_result("failed to create action_legality rule_mod")
 
     var regen_payload = RuleModPayloadScript.new()
     regen_payload.payload_type = "rule_mod"
@@ -66,7 +66,7 @@ func _test_rule_mod_paths(harness) -> Dictionary:
 
     var legal_action_set = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
     if legal_action_set.legal_skill_ids.has("sample_strike"):
-        return harness.fail_result("skill_legality rule_mod did not block sample_strike")
+        return harness.fail_result("action_legality rule_mod did not block sample_strike")
 
     core.turn_loop_controller.run_turn(battle_state, content_index, [])
     if p1_active.current_mp != p1_before_mp:
@@ -212,7 +212,7 @@ func _test_rule_mod_field_scope_paths(harness) -> Dictionary:
     var legality_state = harness.build_initialized_battle(core, content_index, sample_factory, 117)
     var field_legality_payload = RuleModPayloadScript.new()
     field_legality_payload.payload_type = "rule_mod"
-    field_legality_payload.mod_kind = "skill_legality"
+    field_legality_payload.mod_kind = "action_legality"
     field_legality_payload.mod_op = "deny"
     field_legality_payload.value = "sample_strike"
     field_legality_payload.scope = "field"
@@ -221,11 +221,11 @@ func _test_rule_mod_field_scope_paths(harness) -> Dictionary:
     field_legality_payload.decrement_on = "turn_start"
     field_legality_payload.stacking = "replace"
     field_legality_payload.priority = 10
-    if core.rule_mod_service.create_instance(field_legality_payload, {"scope": "field", "id": "field"}, legality_state, "test_field_skill_legality", 0, 0) == null:
-        return harness.fail_result("failed to create field-scope skill_legality rule_mod")
+    if core.rule_mod_service.create_instance(field_legality_payload, {"scope": "field", "id": "field"}, legality_state, "test_field_action_legality", 0, 0) == null:
+        return harness.fail_result("failed to create field-scope action_legality rule_mod")
     var legal_action_set = core.legal_action_service.get_legal_actions(legality_state, "P1", content_index)
     if legal_action_set.legal_skill_ids.has("sample_strike"):
-        return harness.fail_result("field-scope skill_legality rule_mod did not block sample_strike")
+        return harness.fail_result("field-scope action_legality rule_mod did not block sample_strike")
 
     var invalid_scope_payload = RuleModPayloadScript.new()
     invalid_scope_payload.payload_type = "rule_mod"

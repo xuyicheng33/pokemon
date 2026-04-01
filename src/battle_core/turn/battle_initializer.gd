@@ -5,9 +5,9 @@ const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const BattleResultScript := preload("res://src/battle_core/contracts/battle_result.gd")
-const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const PublicIdAllocatorScript := preload("res://src/battle_core/turn/public_id_allocator.gd")
 const BattleInitializerStateBuilderScript := preload("res://src/battle_core/turn/battle_initializer_state_builder.gd")
+const BattleInitializerPhaseServiceScript := preload("res://src/battle_core/turn/battle_initializer_phase_service.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const INIT_PHASE_CONTINUE := 0
 const INIT_PHASE_STOP := 1
@@ -27,6 +27,7 @@ var battle_result_service
 var field_lifecycle_service
 var public_id_allocator = PublicIdAllocatorScript.new()
 var _state_builder = BattleInitializerStateBuilderScript.new()
+var _phase_service = BattleInitializerPhaseServiceScript.new()
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
@@ -38,22 +39,28 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
         return false
     if not _build_side_states(battle_state, battle_setup, format_config, content_index):
         return false
-    _append_battle_header_event(battle_state, content_index)
-    var on_enter_outcome: int = _run_on_enter_phase(battle_state, content_index)
+    _sync_phase_service()
+    _phase_service.append_battle_header_event(battle_state, content_index)
+    var on_enter_outcome: int = _phase_service.run_on_enter_phase(battle_state, content_index)
     if on_enter_outcome == INIT_PHASE_FAIL:
         return false
     if on_enter_outcome == INIT_PHASE_STOP:
         return true
     if battle_result_service.resolve_initialization_victory(battle_state):
         return true
-    var battle_init_outcome: int = _run_battle_init_phase(battle_state, content_index)
+    var battle_init_outcome: int = _phase_service.run_battle_init_phase(battle_state, content_index)
     if battle_init_outcome == INIT_PHASE_FAIL:
         return false
     if battle_init_outcome == INIT_PHASE_STOP:
         return true
     if battle_result_service.resolve_initialization_victory(battle_state):
         return true
-    if not _apply_initial_turn_start_regen(battle_state):
+    if mp_service == null:
+        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires mp_service for initial turn_start regen")
+    if rule_mod_service == null:
+        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires rule_mod_service for initial turn_start regen")
+    _phase_service.apply_initial_turn_start_regen(battle_state)
+    if battle_state.pre_applied_turn_start_regen_turn_index != battle_state.turn_index:
         return false
     battle_state.phase = BattlePhasesScript.SELECTION
     return true
@@ -118,106 +125,17 @@ func _build_side_states(battle_state, battle_setup, format_config, content_index
         battle_state.sides.append(side_state)
     return true
 
-func _append_battle_header_event(battle_state, content_index) -> void:
-    battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_HEADER, "battle_init")
-    battle_logger.append_event(log_event_builder.build_event(
-        EventTypesScript.SYSTEM_BATTLE_HEADER,
-        battle_state,
-        {
-            "source_instance_id": EventTypesScript.SYSTEM_BATTLE_HEADER,
-            "header_snapshot": public_snapshot_builder.build_header_snapshot(battle_state, content_index),
-            "payload_summary": "battle header",
-        }
-    ))
-
-func _run_on_enter_phase(battle_state, content_index) -> int:
-    battle_state.chain_context = _build_system_chain("system:replace", "system_replace")
-    for side_state in battle_state.sides:
-        var active_unit = side_state.get_active_unit()
-        battle_logger.append_event(log_event_builder.build_event(
-            EventTypesScript.STATE_ENTER,
-            battle_state,
-            {
-                "source_instance_id": active_unit.unit_instance_id,
-                "target_instance_id": active_unit.unit_instance_id,
-                "target_slot": ContentSchemaScript.ACTIVE_SLOT_PRIMARY,
-                "trigger_name": "on_enter",
-                "payload_summary": "%s entered battle" % active_unit.public_id,
-            }
-        ))
-    var on_enter_invalid_code = _execute_trigger_batch("on_enter", battle_state, content_index, _collect_active_unit_ids(battle_state))
-    if on_enter_invalid_code != null:
-        battle_result_service.terminate_invalid_battle(battle_state, str(on_enter_invalid_code))
-        return INIT_PHASE_FAIL
-    var on_enter_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
-    if on_enter_faint_invalid_code != null:
-        battle_result_service.terminate_invalid_battle(battle_state, str(on_enter_faint_invalid_code))
-        return INIT_PHASE_FAIL
-    return INIT_PHASE_STOP if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index) else INIT_PHASE_CONTINUE
-
-func _run_battle_init_phase(battle_state, content_index) -> int:
-    battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, "battle_init")
-    battle_logger.append_event(log_event_builder.build_event(
-        EventTypesScript.SYSTEM_BATTLE_INIT,
-        battle_state,
-        {
-            "source_instance_id": "system:battle_init",
-            "trigger_name": "battle_init",
-            "payload_summary": "battle initialized",
-        }
-    ))
-    var battle_init_invalid_code = _execute_trigger_batch("battle_init", battle_state, content_index, _collect_active_unit_ids(battle_state))
-    if battle_init_invalid_code != null:
-        battle_result_service.terminate_invalid_battle(battle_state, str(battle_init_invalid_code))
-        return INIT_PHASE_FAIL
-    var battle_init_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
-    if battle_init_faint_invalid_code != null:
-        battle_result_service.terminate_invalid_battle(battle_state, str(battle_init_faint_invalid_code))
-        return INIT_PHASE_FAIL
-    return INIT_PHASE_STOP if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index) else INIT_PHASE_CONTINUE
-
-func _execute_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
-    return trigger_batch_runner.execute_trigger_batch(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context)
-
-func _collect_active_unit_ids(battle_state) -> Array:
-    var active_ids: Array = []
-    for side_state in battle_state.sides:
-        var active_unit = side_state.get_active_unit()
-        if active_unit != null and active_unit.current_hp > 0:
-            active_ids.append(active_unit.unit_instance_id)
-    return active_ids
-
-func _apply_initial_turn_start_regen(battle_state) -> bool:
-    if mp_service == null:
-        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires mp_service for initial turn_start regen")
-    if rule_mod_service == null:
-        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires rule_mod_service for initial turn_start regen")
-    for side_state in battle_state.sides:
-        var active_unit = side_state.get_active_unit()
-        if active_unit == null or active_unit.current_hp <= 0:
-            continue
-        var regen_value: int = rule_mod_service.resolve_mp_regen_value(
-            battle_state,
-            active_unit.unit_instance_id,
-            active_unit.regen_per_turn
-        )
-        active_unit.current_mp = mp_service.apply_turn_start_regen(
-            active_unit.current_mp,
-            regen_value,
-            active_unit.max_mp
-        )
-    battle_state.pre_applied_turn_start_regen_turn_index = battle_state.turn_index
-    return true
-
-func _build_system_chain(command_type: String, chain_origin: String):
-    var chain_context = ChainContextScript.new()
-    chain_context.event_chain_id = id_factory.next_id("chain")
-    chain_context.chain_origin = chain_origin
-    chain_context.command_type = command_type
-    chain_context.command_source = "system"
-    chain_context.select_deadline_ms = null
-    chain_context.select_timeout = null
-    return chain_context
+func _sync_phase_service() -> void:
+    _phase_service.id_factory = id_factory
+    _phase_service.faint_resolver = faint_resolver
+    _phase_service.trigger_batch_runner = trigger_batch_runner
+    _phase_service.battle_logger = battle_logger
+    _phase_service.log_event_builder = log_event_builder
+    _phase_service.public_snapshot_builder = public_snapshot_builder
+    _phase_service.mp_service = mp_service
+    _phase_service.rule_mod_service = rule_mod_service
+    _phase_service.battle_result_service = battle_result_service
+    _phase_service.field_lifecycle_service = field_lifecycle_service
 
 func _fail(error_code: String, message: String) -> bool:
     last_error_code = error_code

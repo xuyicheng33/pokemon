@@ -223,8 +223,9 @@
 
 补充约束：
 
-- `mod_kind` 当前实现白名单以 `docs/rules/06_effect_schema_and_extension.md` 为准，当前包含 `final_mod / mp_regen / skill_legality / action_legality / incoming_accuracy`。
-- `skill_legality` 当前作为技能/奥义兼容口径保留；`action_legality` 是覆盖技能 / 奥义 / 换人的正式扩展读取点。
+- `mod_kind` 当前实现白名单以 `docs/rules/06_effect_schema_and_extension.md` 为准，当前包含 `final_mod / mp_regen / action_legality / incoming_accuracy`。
+- `action_legality` 是当前覆盖技能 / 奥义 / 换人的正式合法性读取点；`wait` 不受其影响。
+- `matchup_bst_gap_band` 当前按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值，`max_mp` 视为正式第七维。
 - `incoming_accuracy.value` 当前要求为 `int`，并且禁止 `dynamic_value_formula`。
 
 实现状态说明（2026-03-25）：

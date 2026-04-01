@@ -3,14 +3,13 @@ class_name RuleModSchema
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
-const ALLOWED_MOD_KINDS := ["final_mod", "mp_regen", "skill_legality", "action_legality", "incoming_accuracy"]
+const ALLOWED_MOD_KINDS := ["final_mod", "mp_regen", "action_legality", "incoming_accuracy"]
 const ALLOWED_SCOPES := ["self", "target", "field"]
 const ALLOWED_STACKING := ["none", "refresh", "replace"]
 const ACTION_LEGALITY_VALUES := ["all", "skill", "ultimate", "switch"]
 const STACKING_KEY_SCHEMA_BY_KIND := {
     "final_mod": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
     "mp_regen": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
-    "skill_legality": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"],
     "action_legality": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"],
     "incoming_accuracy": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
 }
@@ -36,10 +35,6 @@ func validate_payload(rule_mod_payload, content_index = null) -> Array:
         ContentSchemaScript.RULE_MOD_MP_REGEN:
             if rule_mod_payload.mod_op != "add" and rule_mod_payload.mod_op != "set":
                 errors.append("mod_op %s" % rule_mod_payload.mod_op)
-        ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
-            if rule_mod_payload.mod_op != "allow" and rule_mod_payload.mod_op != "deny":
-                errors.append("mod_op %s" % rule_mod_payload.mod_op)
-            _validate_skill_legality_value(errors, rule_mod_payload, content_index)
         ContentSchemaScript.RULE_MOD_ACTION_LEGALITY:
             if rule_mod_payload.mod_op != "allow" and rule_mod_payload.mod_op != "deny":
                 errors.append("mod_op %s" % rule_mod_payload.mod_op)
@@ -51,16 +46,6 @@ func validate_payload(rule_mod_payload, content_index = null) -> Array:
                 errors.append("incoming_accuracy value must be int")
     _validate_dynamic_value_schema(errors, rule_mod_payload)
     return errors
-
-func _validate_skill_legality_value(errors: Array, rule_mod_payload, content_index) -> void:
-    if typeof(rule_mod_payload.value) != TYPE_STRING:
-        errors.append("skill_legality value must be String")
-        return
-    var skill_id := String(rule_mod_payload.value).strip_edges()
-    if skill_id.is_empty():
-        return
-    if content_index != null and not content_index.skills.has(skill_id):
-        errors.append("skill_legality value missing skill: %s" % skill_id)
 
 func _validate_action_legality_value(errors: Array, rule_mod_payload, content_index) -> void:
     if typeof(rule_mod_payload.value) != TYPE_STRING:
@@ -85,8 +70,7 @@ func _validate_dynamic_value_schema(errors: Array, rule_mod_payload) -> void:
         return
     if dynamic_formula != ContentSchemaScript.RULE_MOD_VALUE_FORMULA_MATCHUP_BST_GAP_BAND:
         errors.append("dynamic_value_formula %s" % dynamic_formula)
-    if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY \
-    or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_ACTION_LEGALITY \
+    if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_ACTION_LEGALITY \
     or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_INCOMING_ACCURACY:
         errors.append("dynamic value formula is not allowed for %s" % String(rule_mod_payload.mod_kind))
     if rule_mod_payload.scope == "field":

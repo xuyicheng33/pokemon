@@ -9,7 +9,6 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const OWNER_SCOPE_UNIT := "unit"
 const OWNER_SCOPE_FIELD := "field"
 const FIELD_OWNER_ID := "field"
-const SKILL_LEGALITY_GLOBAL_KEY := "__all_skills__"
 const STACKING_KEY_SCHEMA_BY_KIND := RuleModSchemaScript.STACKING_KEY_SCHEMA_BY_KIND
 
 var id_factory
@@ -191,10 +190,6 @@ func _resolve_stacking_key_schema(mod_kind: String) -> Array:
     return STACKING_KEY_SCHEMA_BY_KIND.get(mod_kind, [])
 
 func _resolve_stacking_value_token(rule_mod_payload) -> String:
-    if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
-        if typeof(rule_mod_payload.value) == TYPE_STRING and not String(rule_mod_payload.value).is_empty():
-            return "skill:%s" % String(rule_mod_payload.value)
-        return SKILL_LEGALITY_GLOBAL_KEY
     if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_ACTION_LEGALITY:
         var action_value := String(rule_mod_payload.value).strip_edges()
         if action_value == ContentSchemaScript.ACTION_LEGALITY_ALL \

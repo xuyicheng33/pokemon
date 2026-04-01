@@ -66,10 +66,11 @@ tests/
   support/              # 测试 harness 与公共构造器
   fixtures/             # 预留样例输入与内容快照
   helpers/              # 测试辅助与批量探针脚本
+  gates/                # README/文档/注册表一致性细分 gate
   replay_cases/         # 预留 deterministic 回放案例
   run_all.gd            # 测试入口
   run_with_gate.sh      # 测试闸门（断言 + 引擎错误 + 架构 + 仓库一致性）
-  check_repo_consistency.sh # README/文档/关键回归一致性闸门
+  check_repo_consistency.sh # README/文档/关键回归一致性闸门聚合入口
 ```
 
 ## 4. 架构分层（核心）
@@ -110,6 +111,7 @@ tests/run_with_gate.sh
 - 无引擎级错误（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
 - 架构约束检查通过（`tests/check_architecture_constraints.sh`）
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
+  - 当前会聚合 `tests/gates/repo_consistency_surface_gate.py`、`tests/gates/repo_consistency_formal_character_gate.py`、`tests/gates/repo_consistency_docs_gate.py`
 
 ## 6. 对外核心接口（Manager）
 
@@ -182,7 +184,7 @@ tests/run_with_gate.sh
 - `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
 - 触发点当前包含 `field_apply / field_break / field_expire / on_expire`，并要求引用关系与触发器声明一致
 - field 持续时间不写在 `FieldDefinition`；由施加它的 `EffectDefinition.duration / decrement_on` 决定
-- `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 rule_mod 使用）
+- `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 rule_mod 使用；该公式按 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值）
 - `BattleFormatConfig` 已包含 `visibility_mode / selection_deadline_ms / max_chain_depth`
 - `UnitDefinition` 已包含 `max_mp / init_mp / regen_per_turn / ultimate_points_required / ultimate_points_cap / ultimate_point_gain_on_regular_skill_cast`
 - `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
@@ -226,9 +228,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-31）
 
-- `src/**/*.gd`：`9339` 行
-- `tests/**/*.gd`：`10206` 行
-- GDScript 合计：`19545` 行
+- `src/**/*.gd`：`9382` 行
+- `tests/**/*.gd`：`10259` 行
+- GDScript 合计：`19641` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

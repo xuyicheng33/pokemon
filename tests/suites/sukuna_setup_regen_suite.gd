@@ -10,11 +10,13 @@ var _support = SukunaTestSupportScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("sukuna_default_loadout_contract", failures, Callable(self, "_test_sukuna_default_loadout_contract").bind(harness))
     runner.run_test("sukuna_matchup_regen_runtime_path", failures, Callable(self, "_test_sukuna_matchup_regen_runtime_path").bind(harness))
+    runner.run_test("sukuna_matchup_bst_includes_max_mp_contract", failures, Callable(self, "_test_sukuna_matchup_bst_includes_max_mp_contract").bind(harness))
     runner.run_test("sukuna_reverse_ritual_heal_path", failures, Callable(self, "_test_sukuna_reverse_ritual_heal_path").bind(harness))
     runner.run_test("sukuna_kai_priority_damage_contract", failures, Callable(self, "_test_sukuna_kai_priority_damage_contract").bind(harness))
     runner.run_test("sukuna_hatsu_mp_diff_contract", failures, Callable(self, "_test_sukuna_hatsu_mp_diff_contract").bind(harness))
     runner.run_test("sukuna_default_loadout_first_ultimate_window_contract", failures, Callable(self, "_test_sukuna_default_loadout_first_ultimate_window_contract").bind(harness))
     runner.run_test("sukuna_ritual_loadout_first_ultimate_window_contract", failures, Callable(self, "_test_sukuna_ritual_loadout_first_ultimate_window_contract").bind(harness))
+
 func _test_sukuna_default_loadout_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
@@ -89,6 +91,57 @@ func _test_sukuna_matchup_regen_runtime_path(harness) -> Dictionary:
         return harness.fail_result("sukuna matchup regen payload should add the matchup table value on top of base regen")
     if int(regen_payload.value) != 0:
         return harness.fail_result("runtime formula must not mutate shared rule_mod payload value")
+    return harness.pass_result()
+
+func _test_sukuna_matchup_bst_includes_max_mp_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var opponent_definition = content_index.units.get("sample_tidekit", null)
+    if opponent_definition == null:
+        return harness.fail_result("missing sample_tidekit unit definition")
+    opponent_definition.max_mp = 250
+    var battle_state = _build_battle_state(core, content_index, _build_sukuna_setup(sample_factory), 712)
+    var sukuna_unit = battle_state.get_side("P1").get_active_unit()
+    var opponent_unit = battle_state.get_side("P2").get_active_unit()
+    if sukuna_unit == null or opponent_unit == null:
+        return harness.fail_result("missing active units for matchup bst contract")
+    if int(opponent_unit.max_mp) != 250:
+        return harness.fail_result("runtime unit max_mp should mirror overridden content definition in this contract test")
+    var regen_instance = null
+    for instance in sukuna_unit.rule_mod_instances:
+        if instance.mod_kind == "mp_regen":
+            regen_instance = instance
+            break
+    if regen_instance == null:
+        return harness.fail_result("sukuna matchup regen rule_mod missing")
+    var thresholds := PackedInt32Array([20, 40, 70, 110, 160])
+    var outputs := PackedInt32Array([9, 8, 7, 6, 5])
+    var expected_with_max_mp := _resolve_matchup_gap_value(
+        _sum_unit_bst(sukuna_unit),
+        _sum_unit_bst(opponent_unit),
+        thresholds,
+        outputs,
+        0
+    )
+    var expected_without_max_mp := _resolve_matchup_gap_value(
+        _sum_unit_bst(sukuna_unit) - int(sukuna_unit.max_mp),
+        _sum_unit_bst(opponent_unit) - int(opponent_unit.max_mp),
+        thresholds,
+        outputs,
+        0
+    )
+    if expected_with_max_mp == expected_without_max_mp:
+        return harness.fail_result("max_mp contract test must cross a gap band; current fixture no longer proves the seventh-dimension assumption")
+    if int(regen_instance.value) != expected_with_max_mp:
+        return harness.fail_result("sukuna matchup regen should use bst gap that includes max_mp: expected=%d actual=%d" % [expected_with_max_mp, int(regen_instance.value)])
+    if int(regen_instance.value) == expected_without_max_mp:
+        return harness.fail_result("sukuna matchup regen must not fall back to six-stat bst without max_mp")
     return harness.pass_result()
 
 func _test_sukuna_reverse_ritual_heal_path(harness) -> Dictionary:

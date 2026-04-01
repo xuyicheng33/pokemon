@@ -101,7 +101,7 @@ func _test_sukuna_domain_break_chain_path(harness) -> Dictionary:
     for log_event in core.battle_logger.event_log:
         if log_event.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE:
             return harness.fail_result("field break should not emit natural expire log")
-        if log_event.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and String(log_event.payload_summary).find("skill_legality") != -1:
+        if log_event.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and String(log_event.payload_summary).find("action_legality") != -1:
             return harness.fail_result("field break should not apply any post-domain seal rule_mod")
     return harness.pass_result()
 

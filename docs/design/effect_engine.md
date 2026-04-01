@@ -88,7 +88,6 @@ effect 级前置约束：
 
 - `final_mod`：伤害最终倍率。
 - `mp_regen`：`turn_start` MP 回复值。
-- `skill_legality`：技能/奥义合法性兼容读取点。
 - `action_legality`：技能 / 奥义 / 换人合法性正式读取点；`wait` 不受影响。
 - `incoming_accuracy`：目标侧命中干扰读取点；在 field 覆盖后、命中 roll 前参与计算。
 

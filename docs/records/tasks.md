@@ -11,12 +11,95 @@
 
 ## 当前阶段
 
-- 阶段目标：扩角前治理闸门、角色回归锚点与运行态 fail-fast 已收口；下一步可按统一 formal registry 接入新角色与共享内容校验。
+- 阶段目标：扩角前规范整合已收口；下一步可按统一 formal registry、单一 `action_legality` 合法性口径与模块化 gate 继续扩角或做专项整合。
 - 当前不做：新角色扩充、Gojo / Sukuna 数值平衡调整、宿傩对 Gojo 的领域兑现率修正。
 - 当前优先级：
   - 若继续扩角，先补 `formal_character_registry.json` 资产登记，再补内容与 suite
   - 保持正式角色接入门禁走统一交付面，不再回到手写角色特例
   - 保持无自动选指前提下的主线文档、测试与接入模板一致
+
+## 2026-04-01
+
+### 扩角前规范整合硬收口（已完成）
+
+- 目标：
+  - 把活动 contract 中残留的旧合法性口径彻底移除，统一到 `action_legality`
+  - 把宿傩 `matchup_bst_gap_band` 的 `max_mp` 第七维假设正式写死到规则、设计文档、回归与角色注册表
+  - 把新拆出的 owner helper 与 repo consistency 子 gate 写回 README / 设计文档 / 测试文档，避免继续靠口头约定
+- 范围：
+  - `docs/design/battle_runtime_model.md`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/battle_core_architecture_constraints.md`
+  - `docs/design/effect_engine.md`
+  - `docs/design/architecture_overview.md`
+  - `docs/design/turn_orchestrator.md`
+  - `docs/design/gojo_satoru_design.md`
+  - `docs/design/sukuna_design.md`
+  - `docs/rules/03_stats_resources_and_damage.md`
+  - `docs/rules/06_effect_schema_and_extension.md`
+  - `README.md`
+  - `tests/README.md`
+  - `tests/suites/sukuna_setup_regen_suite.gd`
+  - `docs/records/formal_character_registry.json`
+  - `docs/records/decisions.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - 活动规则/设计文档里不再保留旧合法性双口径表述
+  - 宿傩新增一条专门证明 `matchup_bst_gap_band` 必须计入 `max_mp` 的回归，并挂回 formal registry
+  - README、测试文档、架构文档能解释 `BattleInitializerPhaseService`、`BattleCoreManagerContainerService` 与 `tests/gates/*`
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 活动文档里的 rule_mod 合法性 contract 已统一收口为 `final_mod / mp_regen / action_legality / incoming_accuracy`，不再保留旧合法性口径
+  - 宿傩新增 `sukuna_matchup_bst_includes_max_mp_contract`，并同步写入 `formal_character_registry.json`
+  - `matchup_bst_gap_band` 当前按 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值，README / 规则 / 设计稿已统一
+  - `architecture_overview.md`、`turn_orchestrator.md`、`tests/README.md` 与 README 已补齐 `BattleInitializerPhaseService`、`BattleCoreManagerContainerService` 与 `tests/gates/*` 的落点说明
+  - `README.md` 代码量统计已同步到当前仓库实际值
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
+
+### 当前实现全量审查与未提交变更复核（已完成）
+
+- 目标：
+  - 对当前项目的整体架构、核心实现、设计文档与正式角色交付面做一次完整审查
+  - 严格复核 Gojo / Sukuna 两个正式角色的设计稿、内容资源、suite 与 formal registry 是否一致
+  - 评估未提交改动是否引入新问题，并判断当前阶段更适合继续扩角还是先做整合
+- 范围：
+  - `README.md`
+  - `docs/design/*.md`
+  - `docs/rules/*.md`
+  - `docs/records/formal_character_registry.json`
+  - `src/battle_core/**/*.gd`
+  - `src/composition/**/*.gd`
+  - `content/gojo|sukuna` 相关正式资源
+  - `tests/run_all.gd`
+  - `tests/check_repo_consistency.sh`
+  - `tests/gates/*`
+  - `tests/suites/gojo_*.gd`
+  - `tests/suites/sukuna_*.gd`
+- 验收标准：
+  - 能明确回答“架构/实现/文档是否对齐”
+  - 能明确回答“两个角色当前是否存在阻断扩角的问题”
+  - 能明确回答“未提交改动是否引入新增回归”
+  - 审查结论与验证结果已写回记录
+
+#### 当前执行结果
+
+- 已完成：
+  - 已确认本轮未提交改动的主线目标一致：统一移除旧 `skill_legality` 口径、补齐宿傩 `matchup_bst_gap_band` 的 `max_mp` 第七维 contract、并把 `BattleInitializerPhaseService` / `BattleCoreManagerContainerService` / `tests/gates/*` 写回文档与 gate
+  - 已确认正式角色交付面当前由 `formal_character_registry.json`、角色设计稿、内容资源、wrapper suite、required suite / test anchors 共同收口，Gojo / Sukuna 两条链路当前保持一致
+  - 已确认当前未提交改动没有引入新的红灯回归；总测试、总闸门、架构闸门、仓库一致性 gate 均通过
+  - 审查结论：当前仓库没有发现阻断继续扩角的硬伤；但 `BattleCoreManager` 的 dispose 后复用安全性、初始化 helper 的依赖防御，以及多个角色/规则测试文件继续膨胀，仍是扩角前值得优先整合的维护风险
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
 
 ## 2026-03-31
 
@@ -90,7 +173,7 @@
 #### 当前执行结果
 
 - 已完成：
-  - `architecture_overview.md` 已补 `BattleInitializerStateBuilder` / `BattleCoreManagerContractHelper` 的 helper 说明，并把 `battle_core_session.gd` / `battle_core_manager_contract_helper.gd` 标回 facade 子域内部实现
+  - `architecture_overview.md` 已补 `BattleInitializerStateBuilder / BattleInitializerPhaseService / BattleCoreManagerContractHelper / BattleCoreManagerContainerService` 的 helper 说明，并把 `battle_core_session.gd` / manager 内部 helper 标回 facade 子域内部实现
   - 已确认外部审查里的 `S-1` 结论不成立：Gojo 与 Sukuna 当前都采用“术式罗马音 + 领域英文描述”的混合命名，不存在“只有宿傩跑偏”
   - 已沿用既有正式口径，不做只针对宿傩单角色的重命名
 

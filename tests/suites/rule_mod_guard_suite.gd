@@ -10,7 +10,7 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("invalid_battle_rule_mod_definition", failures, Callable(self, "_test_invalid_battle_rule_mod_definition").bind(harness))
-    runner.run_test("rule_mod_skill_legality_enforced", failures, Callable(self, "_test_rule_mod_skill_legality_enforced").bind(harness))
+    runner.run_test("rule_mod_action_legality_enforced", failures, Callable(self, "_test_rule_mod_action_legality_enforced").bind(harness))
 func _test_invalid_battle_rule_mod_definition(harness) -> Dictionary:
     var core_payload = harness.build_core()
     if core_payload.has("error"):
@@ -83,7 +83,7 @@ func _test_invalid_battle_rule_mod_definition(harness) -> Dictionary:
             return harness.pass_result()
     return harness.fail_result("invalid_battle log event missing")
 
-func _test_rule_mod_skill_legality_enforced(harness) -> Dictionary:
+func _test_rule_mod_action_legality_enforced(harness) -> Dictionary:
     var core_payload = harness.build_core()
     if core_payload.has("error"):
         return harness.fail_result(str(core_payload["error"]))
@@ -99,7 +99,7 @@ func _test_rule_mod_skill_legality_enforced(harness) -> Dictionary:
 
     var deny_payload = RuleModPayloadScript.new()
     deny_payload.payload_type = "rule_mod"
-    deny_payload.mod_kind = "skill_legality"
+    deny_payload.mod_kind = "action_legality"
     deny_payload.mod_op = "deny"
     deny_payload.value = "sample_strike"
     deny_payload.scope = "self"
@@ -108,8 +108,8 @@ func _test_rule_mod_skill_legality_enforced(harness) -> Dictionary:
     deny_payload.decrement_on = "turn_start"
     deny_payload.stacking = "replace"
     deny_payload.priority = 10
-    if core.rule_mod_service.create_instance(deny_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_skill_legality_gate", 0, p1_active.base_speed) == null:
-        return harness.fail_result("failed to create skill_legality deny instance")
+    if core.rule_mod_service.create_instance(deny_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_action_legality_gate", 0, p1_active.base_speed) == null:
+        return harness.fail_result("failed to create action_legality deny instance")
 
     var commands: Array = [
         core.command_builder.build_command({

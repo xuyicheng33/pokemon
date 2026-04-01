@@ -29,9 +29,6 @@ func get_final_multiplier(battle_state, owner_id: String) -> float:
 func resolve_mp_regen_value(battle_state, owner_id: String, base_regen: int) -> int:
     return _read_service.resolve_mp_regen_value(battle_state, owner_id, base_regen)
 
-func is_skill_allowed(battle_state, owner_id: String, skill_id: String) -> bool:
-    return _read_service.is_skill_allowed(battle_state, owner_id, skill_id)
-
 func is_action_allowed(battle_state, owner_id: String, action_type: String, skill_id: String = "") -> bool:
     return _read_service.is_action_allowed(battle_state, owner_id, action_type, skill_id)
 

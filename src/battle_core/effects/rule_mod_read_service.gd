@@ -35,9 +35,6 @@ func resolve_mp_regen_value(battle_state, owner_id: String, base_regen: int) -> 
                 regen_value = int(rule_mod_instance.value)
     return max(0, regen_value)
 
-func is_skill_allowed(battle_state, owner_id: String, skill_id: String) -> bool:
-    return is_action_allowed(battle_state, owner_id, "skill", skill_id)
-
 func is_action_allowed(battle_state, owner_id: String, action_type: String, skill_id: String = "") -> bool:
     if battle_state.get_unit(owner_id) == null:
         return false
@@ -46,15 +43,9 @@ func is_action_allowed(battle_state, owner_id: String, action_type: String, skil
     var allowed: bool = true
     var ordered_instances: Array = _sorted_active_instances_for_read(battle_state, owner_id)
     for rule_mod_instance in ordered_instances:
-        if rule_mod_instance.mod_kind == ContentSchemaScript.RULE_MOD_ACTION_LEGALITY:
-            if not _action_legality_matches(rule_mod_instance, action_type, skill_id):
-                continue
-        elif rule_mod_instance.mod_kind == ContentSchemaScript.RULE_MOD_SKILL_LEGALITY:
-            if action_type != "skill" and action_type != "ultimate":
-                continue
-            if not _skill_legality_matches(rule_mod_instance, skill_id):
-                continue
-        else:
+        if rule_mod_instance.mod_kind != ContentSchemaScript.RULE_MOD_ACTION_LEGALITY:
+            continue
+        if not _action_legality_matches(rule_mod_instance, action_type, skill_id):
             continue
         allowed = rule_mod_instance.mod_op == "allow"
     return allowed
@@ -117,9 +108,3 @@ func _action_legality_matches(rule_mod_instance, action_type: String, skill_id: 
                 or value == ContentSchemaScript.ACTION_LEGALITY_SWITCH
         _:
             return false
-
-func _skill_legality_matches(rule_mod_instance, skill_id: String) -> bool:
-    if typeof(rule_mod_instance.value) != TYPE_STRING:
-        return false
-    var value := String(rule_mod_instance.value).strip_edges()
-    return value.is_empty() or value == skill_id
