@@ -20,6 +20,7 @@ func create_instance(effect_definition, owner_id: String, battle_state, source_i
     match effect_definition.stacking:
         ContentSchemaScript.STACKING_NONE:
             if existing_instance != null:
+                last_apply_skipped = true
                 return existing_instance
         ContentSchemaScript.STACKING_REFRESH:
             if existing_instance != null:

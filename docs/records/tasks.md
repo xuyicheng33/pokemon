@@ -890,15 +890,19 @@
 - 已完成：
   - 已完成架构、规则文档、设计稿、正式角色资源、关键运行时服务与回归套件的交叉审查
   - 已复查最近提交 `6dec8c5..df059e1` 的主线变更，未发现新的可复现破坏性回归
+  - 已顺手修复 `stacking=none` 的重复施加仍会误写 `EFFECT_APPLY_EFFECT` 日志的问题，并补 `apply_effect_none_repeat_skips_log` 回归
+  - 已补 `sukuna_kamado_natural_expire_path`，把“灶自然到期终爆”纳入正式回归
+  - 已补宿傩 formal registry 缺失的关键回归锚点，并让 `BattleCoreTestHarness` 在内容快照加载失败时立刻 fail-fast
+  - 已澄清宿傩设计稿里 6 维面板 BST 与被动公式 7 维 matchup BST 的口径差异
   - 已输出完整审查记录：`docs/records/review_2026-04-01_current_state_audit.md`
 - 核心结论：
   - 当前没有发现阻断级问题，完整闸门通过
   - 建议先做一轮规范整合，再继续扩新角色
   - 主要风险集中在：
-    - `stacking=none` 重复施加日志语义
+    - `persists_on_switch` 与 `rule_mod` 跨离场语义仍未收口
+    - `mp_regen / incoming_accuracy` stacking key 的多来源折叠风险
     - Gojo 缺少 formal content validator
     - 正式角色缺少 manager 级端到端 smoke 模板
-    - 角色设计文档开始混入过多共享引擎规范
 
 #### 当前验证结果
 

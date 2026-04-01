@@ -15,6 +15,7 @@ var _helper = LogCauseTestHelperScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("log_contract_semantics", failures, Callable(self, "_test_log_contract_semantics").bind(harness))
     runner.run_test("apply_effect_lifecycle_chain", failures, Callable(self, "_test_apply_effect_lifecycle_chain").bind(harness))
+    runner.run_test("apply_effect_none_repeat_skips_log", failures, Callable(self, "_test_apply_effect_none_repeat_skips_log").bind(harness))
 func _test_log_contract_semantics(harness) -> Dictionary:
     var core_payload = harness.build_core()
     if core_payload.has("error"):
@@ -171,6 +172,107 @@ func _test_apply_effect_lifecycle_chain(harness) -> Dictionary:
         return harness.fail_result("effect expiration remove log should point to the real system:turn_end anchor")
     if tick_event.cause_event_id == _event_id(tick_event) or remove_event.cause_event_id == _event_id(remove_event):
         return harness.fail_result("effect lifecycle cause_event_id must not point to itself")
+    return harness.pass_result()
+
+func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+
+    var marker_effect = EffectDefinitionScript.new()
+    marker_effect.id = "test_none_marker"
+    marker_effect.display_name = "None Marker"
+    marker_effect.scope = "self"
+    marker_effect.duration_mode = "permanent"
+    marker_effect.stacking = "none"
+    marker_effect.trigger_names = PackedStringArray()
+    marker_effect.payloads.clear()
+    content_index.register_resource(marker_effect)
+
+    var apply_payload = ApplyEffectPayloadScript.new()
+    apply_payload.payload_type = "apply_effect"
+    apply_payload.effect_definition_id = marker_effect.id
+    var apply_effect = EffectDefinitionScript.new()
+    apply_effect.id = "test_apply_none_marker"
+    apply_effect.display_name = "Apply None Marker"
+    apply_effect.scope = "target"
+    apply_effect.duration_mode = "permanent"
+    apply_effect.trigger_names = PackedStringArray(["on_cast"])
+    apply_effect.payloads.clear()
+    apply_effect.payloads.append(apply_payload)
+    content_index.register_resource(apply_effect)
+
+    var mark_skill = SkillDefinitionScript.new()
+    mark_skill.id = "test_none_marker_skill"
+    mark_skill.display_name = "None Marker Skill"
+    mark_skill.damage_kind = "none"
+    mark_skill.power = 0
+    mark_skill.accuracy = 100
+    mark_skill.mp_cost = 0
+    mark_skill.priority = 0
+    mark_skill.targeting = "enemy_active_slot"
+    mark_skill.effects_on_cast_ids = PackedStringArray([apply_effect.id])
+    content_index.register_resource(mark_skill)
+    content_index.units["sample_pyron"].skill_ids[0] = mark_skill.id
+
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 244)
+    var commands_turn_1: Array = [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": mark_skill.id,
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_whiff",
+        }),
+    ]
+    var commands_turn_2: Array = [
+        core.command_builder.build_command({
+            "turn_index": 2,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": mark_skill.id,
+        }),
+        core.command_builder.build_command({
+            "turn_index": 2,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_whiff",
+        }),
+    ]
+    core.turn_loop_controller.run_turn(battle_state, content_index, commands_turn_1)
+    core.turn_loop_controller.run_turn(battle_state, content_index, commands_turn_2)
+
+    var target_unit = battle_state.get_side("P2").get_active_unit()
+    var apply_events := 0
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.EFFECT_APPLY_EFFECT and String(ev.payload_summary).find(marker_effect.id) != -1:
+            apply_events += 1
+    if apply_events != 1:
+        return harness.fail_result("stacking=none effect should emit exactly one apply log while the instance remains active")
+    var marker_count := 0
+    for effect_instance in target_unit.effect_instances:
+        if effect_instance.def_id == marker_effect.id:
+            marker_count += 1
+    if marker_count != 1:
+        return harness.fail_result("stacking=none effect should keep exactly one runtime instance after repeated apply")
     return harness.pass_result()
 
 func _event_id(log_event) -> String:

@@ -91,7 +91,8 @@ func build_sample_factory():
 
 func build_loaded_content_index(sample_factory):
     var content_index = BattleContentIndexScript.new()
-    content_index.load_snapshot(sample_factory.content_snapshot_paths())
+    var loaded: bool = content_index.load_snapshot(sample_factory.content_snapshot_paths())
+    assert(loaded, "Content snapshot load failed: %s" % content_index.last_error_message)
     return content_index
 
 func build_initialized_battle(core, content_index, sample_factory, seed: int, battle_setup = null):
