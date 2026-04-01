@@ -149,7 +149,7 @@
 |`source_kind_order`|`int`|根来源类型|
 |`source_order_speed_snapshot`|`int`|根来源速度快照|
 |`persists_on_switch`|`bool`|非击倒离场时是否保留该持续效果|
-|`meta`|`Dictionary`|仅用于明确允许的扩展字段|
+|`meta`|`Dictionary`|仅用于明确允许的扩展字段；当前已包含 `source_owner_id` 以支持 same-owner 前置守卫|
 
 ## 9. RuleModInstance
 

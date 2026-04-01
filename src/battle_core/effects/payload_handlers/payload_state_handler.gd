@@ -88,7 +88,10 @@ func _apply_effect_payload(payload, effect_definition, effect_event, battle_stat
         battle_state,
         effect_event.source_instance_id,
         effect_event.source_kind_order,
-        effect_event.source_order_speed_snapshot
+        effect_event.source_order_speed_snapshot,
+        {
+            "source_owner_id": String(effect_event.owner_id),
+        }
     )
     if effect_instance_service.last_invalid_battle_code != null:
         last_invalid_battle_code = effect_instance_service.last_invalid_battle_code

@@ -72,6 +72,21 @@ func _test_extension_validation_contract(harness) -> Dictionary:
     bad_required_duplicate.required_target_effects = PackedStringArray([marker_effect.id, marker_effect.id])
     content_index.register_resource(bad_required_duplicate)
 
+    var bad_required_same_owner_scope = EffectDefinitionScript.new()
+    bad_required_same_owner_scope.id = "test_bad_required_same_owner_scope"
+    bad_required_same_owner_scope.display_name = "Bad Required Same Owner Scope"
+    bad_required_same_owner_scope.scope = "self"
+    bad_required_same_owner_scope.required_target_effects = PackedStringArray([marker_effect.id])
+    bad_required_same_owner_scope.required_target_same_owner = true
+    content_index.register_resource(bad_required_same_owner_scope)
+
+    var bad_required_same_owner_missing = EffectDefinitionScript.new()
+    bad_required_same_owner_missing.id = "test_bad_required_same_owner_missing"
+    bad_required_same_owner_missing.display_name = "Bad Required Same Owner Missing"
+    bad_required_same_owner_missing.scope = "target"
+    bad_required_same_owner_missing.required_target_same_owner = true
+    content_index.register_resource(bad_required_same_owner_missing)
+
     var errors: Array = content_index.validate_snapshot()
     var needles := [
         "effect[test_bad_action_legality].rule_mod invalid: action_legality value missing skill: missing_skill_id",
@@ -79,6 +94,9 @@ func _test_extension_validation_contract(harness) -> Dictionary:
         "effect[test_bad_required_scope].required_target_effects requires scope=target",
         "effect[test_bad_required_missing].required_target_effects missing effect: missing_required_effect",
         "effect[test_bad_required_duplicate].required_target_effects duplicated effect: test_required_marker",
+        "effect[test_bad_required_same_owner_scope].required_target_effects requires scope=target",
+        "effect[test_bad_required_same_owner_scope].required_target_same_owner requires scope=target",
+        "effect[test_bad_required_same_owner_missing].required_target_same_owner requires required_target_effects",
     ]
     for needle in needles:
         if not _has_error(errors, needle):

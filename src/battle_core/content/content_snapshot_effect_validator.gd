@@ -37,9 +37,13 @@ func validate(content_index, errors: Array, payload_validator) -> void:
 
 func _validate_required_target_effects(content_index, errors: Array, effect_id: String, effect_definition) -> void:
     if effect_definition.required_target_effects.is_empty():
+        if bool(effect_definition.required_target_same_owner):
+            errors.append("effect[%s].required_target_same_owner requires required_target_effects" % effect_id)
         return
     if effect_definition.scope != "target":
         errors.append("effect[%s].required_target_effects requires scope=target" % effect_id)
+    if bool(effect_definition.required_target_same_owner) and effect_definition.scope != "target":
+        errors.append("effect[%s].required_target_same_owner requires scope=target" % effect_id)
     var seen_required_effects: Dictionary = {}
     for required_effect_id in effect_definition.required_target_effects:
         var normalized_effect_id := String(required_effect_id).strip_edges()

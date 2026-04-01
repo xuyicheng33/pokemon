@@ -74,6 +74,7 @@ effect 级前置约束：
 
 - 当前 `required_target_effects` 已接线到 `PayloadExecutor`。
 - 该前置只允许挂在 `scope=target` 的 effect 上；目标固定读取 `chain_context.target_unit_id`。
+- 若 `required_target_same_owner=true`，则命中的 required effect instance 还必须记录 `meta.source_owner_id == effect_event.owner_id`。
 - 前置不满足时整条 effect 直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 
 ## 5. RuleMod 子域

@@ -30,4 +30,5 @@ duration_mode = "permanent"
 stacking = "none"
 trigger_names = PackedStringArray("on_hit")
 required_target_effects = PackedStringArray("gojo_ao_mark", "gojo_aka_mark")
+required_target_same_owner = true
 payloads = Array[Resource]([SubResource("1"), SubResource("2"), SubResource("3")])

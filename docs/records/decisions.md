@@ -393,3 +393,29 @@
   - `tests/gates/repo_consistency_docs_gate.py`
 - 原因：
   - 把 README、正式角色交付面、活动文档针脚全堆在单脚本里，维护时定位太慢，也容易让无关修改互相牵连。
+
+### 44. `required_target_effects` 可选收紧到“必须由当前 owner 本人施加”（2026-04-01）
+
+- `EffectDefinition` 当前新增可选字段 `required_target_same_owner`。
+- 当 `required_target_same_owner = true` 时：
+  - 前置不只检查目标身上是否存在 `required_target_effects`
+  - 还要检查命中的 effect instance 记录的 `meta.source_owner_id == effect_event.owner_id`
+- `apply_effect` 创建实例时，当前统一写入 `meta.source_owner_id`，供该前置守卫读取。
+- 当前正式接线角色：
+  - `gojo_murasaki_conditional_burst`
+- 原因：
+  - Gojo 的双标记爆发已经不该继续依赖“同队重复角色禁止”这种玩法前提兜语义。
+  - 把来源绑定收口成 effect 级前置能力，比写角色特判更稳，也更利于后续扩角复用。
+
+### 45. 高热点角色/规则 suite 继续按 wrapper + 子 suite 拆分（2026-04-01）
+
+- 本轮已继续拆分的热点 suite：
+  - `content_validation_contract_suite.gd`
+  - `sukuna_setup_regen_suite.gd`
+  - `action_guard_state_integrity_suite.gd`
+  - `rule_mod_runtime_suite.gd`
+  - `gojo_domain_suite.gd`
+- wrapper 继续保留原路径与角色/模块归属；真实断言下沉到按主题拆开的子 suite。
+- 原因：
+  - 上述文件已经出现“角色资源、运行时路径、坏例 contract、多主题断言堆叠”的混杂趋势。
+  - 继续扩角前先拆开，能降低回归定位成本，也避免单文件继续滚到新的屎山热点。

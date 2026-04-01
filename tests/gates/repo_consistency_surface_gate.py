@@ -69,8 +69,23 @@ ctx.require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("se
 ctx.require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("runtime_regular_skill_loadout_contract"', "runtime loadout dedicated regression")
 ctx.require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("same_side_duplicate_unit_forbidden"', "same-side duplicate unit regression")
 ctx.require_contains("tests/suites/gojo_murasaki_suite.gd", 'runner.run_test("gojo_murasaki_double_mark_burst_contract"', "gojo burst regression")
-ctx.require_contains("tests/suites/gojo_domain_suite.gd", 'runner.run_test("gojo_mugen_incoming_accuracy_contract"', "gojo mugen regression")
-ctx.require_contains("tests/suites/gojo_domain_suite.gd", 'runner.run_test("gojo_unlimited_void_runtime_contract"', "gojo domain regression")
+ctx.require_contains_any(
+    [
+        "tests/suites/gojo_domain_suite.gd",
+        "tests/suites/gojo_mugen_suite.gd",
+        "tests/suites/gojo_unlimited_void_suite.gd",
+    ],
+    'runner.run_test("gojo_mugen_incoming_accuracy_contract"',
+    "gojo mugen regression",
+)
+ctx.require_contains_any(
+    [
+        "tests/suites/gojo_domain_suite.gd",
+        "tests/suites/gojo_unlimited_void_suite.gd",
+    ],
+    'runner.run_test("gojo_unlimited_void_runtime_contract"',
+    "gojo domain regression",
+)
 ctx.require_contains("tests/suites/sukuna_domain_suite.gd", 'runner.run_test("sukuna_domain_expire_chain_path"', "sukuna domain expire regression")
 ctx.require_contains("tests/suites/sukuna_domain_suite.gd", 'runner.run_test("sukuna_domain_break_chain_path"', "sukuna domain break regression")
 ctx.require_contains("tests/suites/ultimate_points_contract_suite.gd", 'runner.run_test("ultimate_points_regular_skill_gain_contract"', "ultimate point gain regression")

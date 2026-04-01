@@ -124,8 +124,10 @@ func _passes_effect_preconditions(effect_definition, effect_event, battle_state)
     var target_unit = _resolve_required_target(effect_event, battle_state)
     if not _is_required_target_valid(target_unit):
         return false
+    var require_same_owner: bool = bool(effect_definition.required_target_same_owner)
+    var required_owner_id := String(effect_event.owner_id if effect_event != null else "")
     for required_effect_id in effect_definition.required_target_effects:
-        if not _target_has_effect(target_unit, String(required_effect_id)):
+        if not _target_has_required_effect(target_unit, String(required_effect_id), require_same_owner, required_owner_id):
             return false
     return true
 
@@ -140,8 +142,13 @@ func _resolve_required_target(effect_event, battle_state):
 func _is_required_target_valid(target_unit) -> bool:
     return target_unit != null and target_unit.leave_state == LeaveStatesScript.ACTIVE and target_unit.current_hp > 0
 
-func _target_has_effect(target_unit, effect_definition_id: String) -> bool:
+func _target_has_required_effect(target_unit, effect_definition_id: String, require_same_owner: bool, required_owner_id: String) -> bool:
     for effect_instance in target_unit.effect_instances:
-        if effect_instance.def_id == effect_definition_id:
+        if effect_instance.def_id != effect_definition_id:
+            continue
+        if not require_same_owner:
+            return true
+        var source_owner_id := String(effect_instance.meta.get("source_owner_id", ""))
+        if not source_owner_id.is_empty() and source_owner_id == required_owner_id:
             return true
     return false

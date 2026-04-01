@@ -140,6 +140,7 @@ func _test_gojo_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "gojo_murasaki_conditional_burst scope", "actual": String(murasaki_burst.scope), "expected": "target"},
         {"label": "gojo_murasaki_conditional_burst trigger_names", "actual": murasaki_burst.trigger_names, "expected": PackedStringArray(["on_hit"])},
         {"label": "gojo_murasaki_conditional_burst required_target_effects", "actual": murasaki_burst.required_target_effects, "expected": PackedStringArray(["gojo_ao_mark", "gojo_aka_mark"])},
+        {"label": "gojo_murasaki_conditional_burst required_target_same_owner", "actual": bool(murasaki_burst.required_target_same_owner), "expected": true},
         {"label": "gojo_murasaki burst payload_type", "actual": String(burst_damage_payload.payload_type), "expected": "damage"},
         {"label": "gojo_murasaki burst use_formula", "actual": bool(burst_damage_payload.use_formula), "expected": true},
         {"label": "gojo_murasaki burst amount", "actual": int(burst_damage_payload.amount), "expected": 32},

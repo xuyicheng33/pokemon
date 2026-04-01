@@ -9,7 +9,7 @@ var id_factory
 var last_invalid_battle_code: Variant = null
 var last_apply_skipped: bool = false
 
-func create_instance(effect_definition, owner_id: String, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int):
+func create_instance(effect_definition, owner_id: String, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, meta: Dictionary = {}):
     last_invalid_battle_code = null
     last_apply_skipped = false
     var owner_unit = battle_state.get_unit(owner_id)
@@ -24,6 +24,7 @@ func create_instance(effect_definition, owner_id: String, battle_state, source_i
         ContentSchemaScript.STACKING_REFRESH:
             if existing_instance != null:
                 existing_instance.remaining = effect_definition.duration
+                existing_instance.meta = meta.duplicate(true)
                 return existing_instance
         ContentSchemaScript.STACKING_REPLACE:
             if existing_instance != null:
@@ -44,6 +45,7 @@ func create_instance(effect_definition, owner_id: String, battle_state, source_i
     effect_instance.source_kind_order = source_kind_order
     effect_instance.source_order_speed_snapshot = source_order_speed_snapshot
     effect_instance.persists_on_switch = effect_definition.persists_on_switch
+    effect_instance.meta = meta.duplicate(true)
     owner_unit.effect_instances.append(effect_instance)
     return effect_instance
 

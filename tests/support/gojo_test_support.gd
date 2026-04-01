@@ -68,9 +68,13 @@ func build_accuracy_skill(skill_id: String, accuracy: int):
     skill.targeting = "enemy_active_slot"
     return skill
 
-func apply_gojo_double_marks(core, content_index, battle_state, target_unit, source_instance_id: String, source_speed: int) -> void:
-    core.effect_instance_service.create_instance(content_index.effects["gojo_ao_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed)
-    core.effect_instance_service.create_instance(content_index.effects["gojo_aka_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed)
+func apply_gojo_double_marks(core, content_index, battle_state, target_unit, source_instance_id: String, source_speed: int, source_owner_id: String = "") -> void:
+    var resolved_owner_id := source_owner_id if not source_owner_id.is_empty() else source_instance_id
+    var effect_meta := {
+        "source_owner_id": resolved_owner_id,
+    }
+    core.effect_instance_service.create_instance(content_index.effects["gojo_ao_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed, effect_meta)
+    core.effect_instance_service.create_instance(content_index.effects["gojo_aka_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed, effect_meta)
 
 func set_field_state(battle_state, field_id: String, creator_id: String) -> void:
     var field_state = FieldStateScript.new()

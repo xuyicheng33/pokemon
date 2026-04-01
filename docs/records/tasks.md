@@ -20,6 +20,61 @@
 
 ## 2026-04-01
 
+### 审查问题修复与热点 suite 拆分治理（已完成）
+
+- 目标：
+  - 把完整审查里确认的问题真正落成修复，而不是只停留在报告层
+  - 去掉 Gojo 双标记爆发仍靠玩法前提兜住的实现债
+  - 把已点名的高热点大 suite 按主题继续拆分，降低扩角前维护成本
+- 范围：
+  - `src/battle_core/content/effect_definition.gd`
+  - `src/battle_core/content/content_snapshot_effect_validator.gd`
+  - `src/battle_core/effects/payload_executor.gd`
+  - `src/battle_core/effects/effect_instance_service.gd`
+  - `src/battle_core/effects/payload_handlers/payload_state_handler.gd`
+  - `content/effects/gojo/gojo_murasaki_conditional_burst.tres`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/battle_runtime_model.md`
+  - `docs/design/effect_engine.md`
+  - `docs/design/gojo_satoru_design.md`
+  - `docs/rules/06_effect_schema_and_extension.md`
+  - `docs/records/decisions.md`
+  - `docs/records/tasks.md`
+  - `docs/records/formal_character_registry.json`
+  - `tests/suites/gojo_murasaki_suite.gd`
+  - `tests/suites/gojo_snapshot_suite.gd`
+  - `tests/suites/extension_targeting_accuracy_suite.gd`
+  - `tests/suites/extension_validation_contract_suite.gd`
+  - `tests/suites/content_validation_contract_suite.gd`
+  - `tests/suites/sukuna_setup_regen_suite.gd`
+  - `tests/suites/action_guard_state_integrity_suite.gd`
+  - `tests/suites/rule_mod_runtime_suite.gd`
+  - `tests/suites/gojo_domain_suite.gd`
+  - `tests/support/gojo_test_support.gd`
+  - `tests/support/action_guard_state_integrity_test_support.gd`
+  - `tests/support/sukuna_setup_regen_test_support.gd`
+  - `tests/gates/repo_consistency_docs_gate.py`
+- 验收标准：
+  - Gojo 的茈只消费当前五条悟本人施加的双标记
+  - `required_target_same_owner` 已进入内容 schema、加载期校验、运行时前置守卫与回归
+  - 已点名的热点大 suite 完成 wrapper + 子 suite 拆分，原有回归锚点不丢
+  - `bash tests/run_with_gate.sh` 通过
+  - 完成提交与推送
+
+#### 当前执行结果
+
+- 已完成：
+  - 新增 `required_target_same_owner`，并把 `meta.source_owner_id` 写入 effect instance；当前 `gojo_murasaki_conditional_burst` 已正式要求双标记必须来自当前这名五条悟本人
+  - 已补 `gojo_murasaki_same_owner_contract`、`required_target_same_owner_contract` 与对应坏例校验，Gojo snapshot / formal registry / docs gate 已同步
+  - 已把 `content_validation_contract_suite.gd`、`sukuna_setup_regen_suite.gd`、`action_guard_state_integrity_suite.gd`、`rule_mod_runtime_suite.gd`、`gojo_domain_suite.gd` 拆成 wrapper + 子 suite
+  - 已新增两份测试 support helper，把 suite 级共享构造与辅助逻辑从热点文件里下沉
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+- `git diff --check` 通过
+- 工作区已提交并推送
+
 ### 当前项目完整审查、风险研判与提交流程（已完成）
 
 - 目标：

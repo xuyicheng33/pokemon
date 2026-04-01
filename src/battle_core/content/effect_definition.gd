@@ -12,6 +12,7 @@ class_name EffectDefinition
 @export var priority: int = 0
 @export var trigger_names: PackedStringArray = PackedStringArray()
 @export var required_target_effects: PackedStringArray = PackedStringArray()
+@export var required_target_same_owner: bool = false
 @export var on_expire_effect_ids: PackedStringArray = PackedStringArray()
 @export var payloads: Array[Resource] = []
 @export var persists_on_switch: bool = false

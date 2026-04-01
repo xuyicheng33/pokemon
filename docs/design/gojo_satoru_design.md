@@ -13,8 +13,8 @@
 | 领域后摇 | **删除**（不再追加封印/回滚） |
 | 施工顺序 | **第 4 节扩展、第 5 节资源、第 6 节 `gojo_suite` 均已落地；本轮新增奥义点 / 领域对拼 / field 绑定增幅专项回归** |
 | 苍/赫标记归属 | 标记挂在**目标**身上；换人清除只发生在**标记持有者**离场时 |
-| 苍/赫标记消耗语义 | 引擎层当前只检查目标是否同时持有双标记，不校验施加者；但**同队重复角色已禁止**，正式玩法不包含“双五条悟接力消耗”场景 |
-| 已接线引擎扩展 | `action_legality`、`required_target_effects`、`incoming_accuracy` 已进入当前主线；若要收紧为“必须同一施法者本人消耗标记”，仍需**第 4 块扩展** |
+| 苍/赫标记消耗语义 | 茈现在要求目标同时持有双标记，且两枚标记都必须由**当前这名五条悟本人**施加 |
+| 已接线引擎扩展 | `action_legality`、`required_target_effects`、`required_target_same_owner`、`incoming_accuracy` 已进入当前主线 |
 | 明确不做 | `effects_pre_damage_ids`、`on_before_damage`、`damage_override`、`action_tags`、`last_dealt_damage`、反噬链路 |
 
 ---
@@ -140,7 +140,7 @@
 - 说明：纯标记 effect 无 payload，不直接产生数值结算；仅用于条件判定。
 - owner 语义：标记实例挂在**目标本人**身上，不挂在五条悟身上。
 - 换人语义：`persists_on_switch=false` 代表“**标记持有者**离场会清标记”；若五条悟自己离场，目标身上的标记不会因此自动消失。
-- 当前正式玩法语义：只要目标身上同时存在 `gojo_ao_mark + gojo_aka_mark`，当前出战的这名五条悟就能触发 `gojo_murasaki` 追加段；由于队伍构筑规则已禁止同队重复角色，正式对局里不会出现“双五条悟接力消耗同一目标标记”的验收场景。
+- 当前正式玩法语义：只有目标身上同时存在 `gojo_ao_mark + gojo_aka_mark`，且这两枚标记的 `source_owner_id` 都等于当前这名五条悟本人时，`gojo_murasaki` 才能触发追加段。
 - 时间语义：`duration=3 + decrement_on=turn_end` 按当前引擎表示“从施加当回合开始，连续经过 3 次 `turn_end` 节点后到期”。例如第 1 回合中途施加，则会在第 1/2/3 回合的 `turn_end` 各扣 1 次，并在第 3 次后移除。
 - 这里的“持续 3 次 `turn_end`”只属于**标记**；苍 / 赫本身的速度变化不是定时效果，而是能力阶段变化。
 
@@ -166,6 +166,7 @@
 
 - EffectDefinition：`scope=target`, `duration_mode=permanent`, `decrement_on=""`, `stacking=none`, `trigger_names=["on_hit"]`
 - `required_target_effects = ["gojo_ao_mark", "gojo_aka_mark"]`
+- `required_target_same_owner = true`
 - payload 顺序：
 1. `damage(use_formula=true, amount=32, damage_kind=special)`（条件追加一段伤害；`amount` 在 `use_formula=true` 下作为公式威力）
 2. `remove_effect(gojo_ao_mark)`
@@ -175,9 +176,9 @@
 
 - 此处不额外写 `combat_type_id`：`DamagePayload.use_formula=true` 且处于技能链中时，类型继承链技能 `gojo_murasaki` 的 `combat_type_id=space`。
 - 因此茈的**本体伤害**和**追加段伤害**都是“空间属性 + 特殊伤害”；区别只在公式威力分别是 `64` 与 `32`。
-- `required_target_effects` 当前只检查“目标身上是否同时存在双标记”，**不检查标记施加者是谁**。在“同队重复角色禁止”的当前规则下，这已经足够支撑 Gojo 的正式玩法闭环。
+- `required_target_effects + required_target_same_owner` 当前共同组成茈的前置守卫：既要检查“目标身上是否同时存在双标记”，也要检查这两枚标记的 `meta.source_owner_id` 是否都等于当前 effect owner。
 - `required_target_effects` 的设计目标是“effect 级前置守卫”，不是 payload 级条件分支；前置不满足时，整条 effect 直接退出，payload 循环不会开始，因此也不会写出任何由该 effect 产生的 payload 日志。
-- 若未来要改成“只有同一个五条悟本人打上的双标记，才允许该五条悟自己触发茈追加段”，则仅靠 `required_target_effects` 不够，必须新增第 4 块扩展能力来校验标记来源。
+- 标记来源当前通过 `EffectInstance.meta.source_owner_id` 落盘；因此就算未来临时构造出“异来源双标记”，当前五条悟也不会误吃掉别人的标记。
 
 语义：
 
@@ -387,6 +388,7 @@
 
 ```gdscript
 @export var required_target_effects: PackedStringArray = PackedStringArray()
+@export var required_target_same_owner: bool = false
 ```
 
 执行规则：
@@ -394,6 +396,7 @@
 - `PayloadExecutor.execute_effect_event()` 在 payload 循环前做 effect 级前置检查
 - `required_target_effects` 只允许出现在 `scope=target` 的 effect 上；`scope=self/field` 一律视为 schema 非法并在加载期 fail-fast
 - 目标固定取 `effect_event.chain_context.target_unit_id` 对应单位；若为空、单位不存在、目标已不满足 `ACTIVE && hp>0`、或缺少任一 required effect，则整条 effect 跳过
+- `required_target_same_owner = true` 时，还要求命中的 required effect instance 记录的 `meta.source_owner_id` 等于当前 `effect_event.owner_id`
 - 不满足则跳过该 effect，不报错，也不写任何由该 effect 产生的 payload 日志
 - 安全前提：只要前置检查实现正确，`remove_effect` 不会走到“目标标记不存在”分支，自然不会触发 `INVALID_EFFECT_REMOVE_AMBIGUOUS`
 
@@ -401,6 +404,7 @@
 
 - `content_snapshot_validator.gd` 必须校验 `required_target_effects`：每个 effect id 非空、不得重复、且必须命中 `content_index.effects`
 - `content_snapshot_validator.gd` 还必须校验：凡 `required_target_effects` 非空的 effect，`scope` 必须等于 `target`
+- 若 `required_target_same_owner=true`，则 `required_target_effects` 必须非空，且 effect `scope` 必须等于 `target`
 - 任一引用非法时，内容加载期直接失败；禁止把错误引用留到运行期再“静默跳过”
 - 真正接线时，需同步更新 `docs/rules/06_effect_schema_and_extension.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md`、`docs/design/battle_runtime_model.md`、`docs/design/battle_core_architecture_constraints.md` 与 `docs/records/decisions.md`
 - 测试必须包含“坏引用触发加载期失败”的坏例用例
@@ -450,14 +454,13 @@
 - `docs/design/battle_core_architecture_constraints.md`
 - `docs/records/decisions.md`
 
-### 4.4 可选第 4 块扩展（仅当未来重新开放同队重复角色，且要限制为“同一施法者本人消耗标记”时）
+### 4.4 标记来源绑定现状
 
-当前“同队重复角色禁止”的正式规则**不需要**这一块；但若未来重新开放同队重复角色，并且要把语义收紧为“只有打出苍/赫的那一名五条悟本人，才能用茈吃掉自己铺的双标记”，则必须补一个来源绑定能力，最小要求至少包括：
+当前主线已经把“本人专属消耗”落成正式能力：
 
-- 标记实例需要记录可校验的施加者身份（不能只看 `def_id`）
-- 茈的前置检查必须能同时检查“目标持有双标记 + 标记来源匹配当前施法者”
-- 该能力需要明确是扩在 `EffectInstance.meta`、新 schema 字段，还是新增专用条件机制；在拍板前，不得把它伪装成现有 `required_target_effects` 已能解决的问题
-- 若未来真要走“本人专属消耗”路线，推荐补一个明确的来源写入扩展，再把 `source_unit_id` 之类的标识落进 `EffectInstance.meta`；**当前仓库还没有这条写入链路**，不能把它当成已经可直接使用的现成能力。
+- 标记实例在 `apply_effect` 时写入 `meta.source_owner_id`
+- 茈通过 `required_target_same_owner = true` 把前置守卫收紧到“目标双标记 + 标记来源匹配当前施法者”
+- 因此后续即便恢复同队重复角色实验，也不会再把这件事误判成现有 `required_target_effects` 自动具备的能力
 
 ### 4.5 本版明确不纳入实现
 
@@ -597,7 +600,7 @@
 
 | 项目 | 说明 |
 |---|---|
-| 标记来源校验 | 当前不做；双标记默认是团队共享资源 |
+| 标记来源校验 | 当前已做；茈只消费当前五条悟本人施加的双标记 |
 | 奥义点 | `required=3 / cap=3 / regular_skill_cast +1` |
 | 锁人条件 | 只有领域成功立住才锁人 |
 | 领域增幅归属 | `sp_attack +1` 跟 `gojo_unlimited_void_field` 生命周期走 |

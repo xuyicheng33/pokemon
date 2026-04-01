@@ -31,6 +31,7 @@
 |`priority`|统一优先级字段；默认 `0`；数值越大越先|
 |`trigger_names`|触发点列表|
 |`required_target_effects`|effect 级前置条件；仅 `scope=target` 允许声明|
+|`required_target_same_owner`|可选；要求 `required_target_effects` 必须由当前 effect owner 本人施加|
 |`on_expire_effect_ids`|实例到期后追加执行的效果 ID 列表|
 |`payloads`|效果行为列表|
 |`persists_on_switch`|是否跨离场保留；默认 `false`|
@@ -39,7 +40,8 @@
 
 1. 当前 schema 仍然没有通用 `conditions` 字段；effect 级前置目前只开放 `required_target_effects`。
 2. `required_target_effects` 只允许挂在 `scope=target` 的 effect 上；加载期必须校验非空项、去重和引用存在性。
-3. 前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
+3. `required_target_same_owner = true` 时，前置除检查目标持有这些 effect 外，还必须校验这些 effect instance 记录的 `meta.source_owner_id` 与当前 effect owner 一致。
+4. 前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 
 ## 3. `EffectInstance`
 
@@ -59,7 +61,8 @@
 补充规则：
 
 1. `apply_effect` 创建实例时，必须把当下根来源的 `source_instance_id / source_kind_order / source_order_speed_snapshot` 一并复制进实例。
-2. 持续效果后续触发时继续沿用创建时复制下来的根来源排序元数据，不因 owner 改变而重算来源类型。
+2. 当前主线还会把稳定来源 owner 写入 `meta.source_owner_id`，供 `required_target_same_owner` 这类前置守卫读取。
+3. 持续效果后续触发时继续沿用创建时复制下来的根来源排序元数据，不因 owner 改变而重算来源类型。
 
 ## 4. 当前基线触发点
 
