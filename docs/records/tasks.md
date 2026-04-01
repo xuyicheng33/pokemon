@@ -1030,3 +1030,33 @@
 
 - `godot --headless --path . --script tests/run_all.gd` 通过
 - `bash tests/run_with_gate.sh` 通过
+
+### 鹿紫云一设计稿对齐重写（已完成）
+
+- 目标：
+  - 把鹿紫云一角色稿改回最终讨论方向，消除“文档冻结结论”和实际讨论内容之间的偏差
+- 范围：
+  - `docs/design/kashimo_hajime_design.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - 被动不再写成 `incoming_accuracy -15`，而是改回“抗雷减伤 + 水属性命中后漏 MP 并毒返”
+  - 四个常规技能的讨论结论明确落成“当前格式下 4 选 3”，不再模糊表达
+  - 幻兽琥珀的换人语义明确写成“强化、自伤、奥义封锁都应保留”，不再接受静默降级
+  - 需要的引擎 / 内容扩展单独列清楚
+
+#### 当前执行结果
+
+- 已完成：
+  - 已将 `docs/design/kashimo_hajime_design.md` 重写为 `v1.1`
+  - 已把“雷抗改减伤、水属性漏 MP 与毒返、弥虚葛笼只中和必中、四技能按 4 选 3 落地、琥珀按不可逆形态处理”写成明确冻结结论
+  - 已把原草稿里偏离讨论的点显式移除或改写：
+    - 不再把鹿紫云的抗性写成闪避型被动
+    - 不再把水属性弱点写成“首版暂缓”
+    - 不再默认接受“琥珀换人后只留自伤、不留强化”的半残语义
+  - 已把 `poison` 类型、来袭属性触发条件、弥虚葛笼读取点、回授电击动态威力与整层移除能力写入扩展清单
+
+#### 当前验证结果
+
+- `git diff --check` 通过
+- `bash tests/check_repo_consistency.sh` 通过
