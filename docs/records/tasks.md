@@ -11,14 +11,45 @@
 
 ## 当前阶段
 
-- 阶段目标：扩角前规范整合已收口；下一步可按统一 formal registry、单一 `action_legality` 合法性口径与模块化 gate 继续扩角或做专项整合。
-- 当前不做：新角色扩充、Gojo / Sukuna 数值平衡调整、宿傩对 Gojo 的领域兑现率修正。
+- 阶段目标：扩角前模板层收口已完成；下一步按统一设计模板、接入清单、formal registry 与最低测试面继续扩角。
+- 当前不做：Gojo / Sukuna 数值平衡调整、宿傩对 Gojo 的领域兑现率修正。
 - 当前优先级：
-  - 若继续扩角，先补 `formal_character_registry.json` 资产登记，再补内容与 suite
+  - 若继续扩角，先按 `formal_character_design_template.md` 写角色稿
+  - 再按 `formal_character_delivery_checklist.md` 补齐资源、registry、suite 与记录
   - 保持正式角色接入门禁走统一交付面，不再回到手写角色特例
-  - 保持无自动选指前提下的主线文档、测试与接入模板一致
 
 ## 2026-04-01
+
+### 扩角前模板化收口（已完成）
+
+- 目标：
+  - 把正式角色设计模板补成可直接套用的标准模板
+  - 把角色接入动作从分散约定收成一份单独 checklist
+  - 固定正式角色最低测试面，避免后续再靠角色 suite 手搓流程
+- 范围：
+  - `docs/design/formal_character_design_template.md`
+  - `docs/design/formal_character_delivery_checklist.md`
+  - `docs/design/domain_field_template.md`
+  - `README.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - 正式角色模板已包含角色定位与资源定义、角色机制、验收矩阵、平衡备注和可选领域附录
+  - 仓库中存在单独的正式角色接入 checklist，覆盖设计稿、资源、registry、suite、记录与最终验证
+  - 正式角色最低测试面已明确固定为 `snapshot / runtime / manager smoke`
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `formal_character_design_template.md` 已升级为可直接填写的正式模板，并补了“领域角色差异附录”写法
+  - 已新增 `formal_character_delivery_checklist.md`，统一收口角色接入动作、最低测试面与最终验证步骤
+  - `domain_field_template.md` 已明确“领域角色只补差异附录，不重写公共矩阵”的写法
+  - `README.md` 已补模板、checklist 与 manager smoke 的正式入口说明
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
 
 ### 审查问题修复与热点 suite 拆分治理（已完成）
 

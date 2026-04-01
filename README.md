@@ -205,6 +205,8 @@ tests/run_with_gate.sh
 
 - 设计稿：`docs/design/<character>_design.md`
 - 调整记录：`docs/design/<character>_adjustments.md`
+- 设计模板：`docs/design/formal_character_design_template.md`
+- 接入清单：`docs/design/formal_character_delivery_checklist.md`
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
 - 角色注册：`docs/records/formal_character_registry.json`
@@ -212,6 +214,7 @@ tests/run_with_gate.sh
 - 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `required_suite_paths / required_test_names`；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
+- manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 
 当前 Gojo 与 Sukuna 都必须满足这套交付面，后续新角色默认沿用。

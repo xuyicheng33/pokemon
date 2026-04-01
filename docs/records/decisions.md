@@ -78,6 +78,21 @@
   - 独立角色 suite
 - 后续新角色默认沿用这套交付面，不再接受“只有 `.tres` + 测试”的半成品接入。
 
+### 9.1 正式角色模板、checklist 与最低测试面固定（2026-04-01）
+
+- 正式角色设计稿统一使用 `docs/design/formal_character_design_template.md`。
+- 正式角色接入动作统一使用 `docs/design/formal_character_delivery_checklist.md`。
+- 默认施工顺序固定为：
+  - 先写设计稿 / 调整记录
+  - 再落内容资源
+  - 再补 `SampleBattleFactory`、formal registry 与 suite
+- 正式角色最低测试面固定包含：
+  - `snapshot suite`
+  - 角色独有 `runtime suite`
+  - `manager smoke suite`
+- 若角色是领域角色，只在角色稿末尾追加“领域角色差异附录”；公共领域规则继续引用 `docs/design/domain_field_template.md`，不再在角色稿内重复展开。
+- 若只是复用现有机制接入新角色，不新增 `decisions.md`；只有引入新 trigger / payload / schema / 生命周期口径时，才补新决策记录。
+
 ### 10. 对外 contract 继续收口到公开层接口
 
 - 外层输入与公开快照继续只使用 `public_id`。
