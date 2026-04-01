@@ -4,13 +4,6 @@ class_name FieldApplyService
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var field_service
-var trigger_dispatcher
-var trigger_batch_runner
-var id_factory
-var battle_logger
-var log_event_builder
-var rng_service
-var field_apply_context_resolver
 var field_apply_conflict_service
 var field_apply_log_service
 var field_apply_effect_runner
@@ -22,20 +15,6 @@ func resolve_missing_dependency() -> String:
 		var field_missing := str(field_service.resolve_missing_dependency())
 		if not field_missing.is_empty():
 			return "field_service.%s" % field_missing
-	if trigger_dispatcher == null:
-		return "trigger_dispatcher"
-	if trigger_batch_runner == null:
-		return "trigger_batch_runner"
-	if id_factory == null:
-		return "id_factory"
-	if battle_logger == null:
-		return "battle_logger"
-	if log_event_builder == null:
-		return "log_event_builder"
-	if rng_service == null:
-		return "rng_service"
-	if field_apply_context_resolver == null:
-		return "field_apply_context_resolver"
 	if field_apply_conflict_service == null:
 		return "field_apply_conflict_service"
 	var conflict_missing := str(field_apply_conflict_service.resolve_missing_dependency())

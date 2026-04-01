@@ -40,6 +40,8 @@ func get_legal_actions(battle_state, side_id: String, content_index):
         side_id,
         content_index
     )
+    if domain_legality_service.last_invalid_battle_code != null:
+        return _fail_invalid_state("LegalActionService detected invalid active field runtime while resolving domain legality")
     for skill_id in actor.regular_skill_ids:
         var skill_definition = content_index.skills.get(skill_id)
         if skill_definition == null:

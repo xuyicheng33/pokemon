@@ -13,7 +13,8 @@
       "tests/suites/gojo_domain_suite.gd",
       "tests/suites/ultimate_field_suite.gd",
       "tests/suites/ultimate_points_contract_suite.gd",
-      "tests/suites/domain_clash_contract_suite.gd",
+      "tests/suites/domain_clash_resolution_suite.gd",
+      "tests/suites/domain_clash_guard_suite.gd",
       "tests/suites/field_lifecycle_contract_suite.gd"
     ],
     "required_test_names": [
@@ -89,12 +90,15 @@
     "design_doc": "docs/design/sukuna_design.md",
     "adjustment_doc": "docs/design/sukuna_adjustments.md",
     "suite_path": "tests/suites/sukuna_suite.gd",
+    "content_validator_script_path": "src/battle_core/content/content_snapshot_formal_sukuna_validator.gd",
     "required_suite_paths": [
       "tests/suites/sukuna_setup_regen_suite.gd",
       "tests/suites/sukuna_snapshot_suite.gd",
-      "tests/suites/sukuna_kamado_domain_suite.gd",
+      "tests/suites/sukuna_kamado_suite.gd",
+      "tests/suites/sukuna_domain_suite.gd",
       "tests/suites/ultimate_field_suite.gd",
-      "tests/suites/domain_clash_contract_suite.gd",
+      "tests/suites/domain_clash_resolution_suite.gd",
+      "tests/suites/domain_clash_guard_suite.gd",
       "tests/suites/field_lifecycle_contract_suite.gd"
     ],
     "required_test_names": [

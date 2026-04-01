@@ -3,8 +3,12 @@ class_name DomainLegalityService
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+
+var last_invalid_battle_code: Variant = null
 
 func is_domain_command(command, content_index) -> bool:
+    last_invalid_battle_code = null
     if command == null:
         return false
     if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
@@ -14,15 +18,22 @@ func is_domain_command(command, content_index) -> bool:
     return content_index.is_domain_skill(String(command.skill_id))
 
 func resolve_active_domain_creator_side_id(battle_state, content_index) -> String:
+    last_invalid_battle_code = null
     if battle_state == null or battle_state.field_state == null or content_index == null:
         return ""
     var active_field_definition = content_index.fields.get(String(battle_state.field_state.field_def_id))
     if active_field_definition == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
         return ""
-    if String(active_field_definition.field_kind) != ContentSchemaScript.FIELD_KIND_DOMAIN:
+    var creator_id := String(battle_state.field_state.creator)
+    if creator_id.is_empty():
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
         return ""
-    var creator_side = battle_state.get_side_for_unit(String(battle_state.field_state.creator))
+    var creator_side = battle_state.get_side_for_unit(creator_id)
     if creator_side == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return ""
+    if String(active_field_definition.field_kind).strip_edges() != ContentSchemaScript.FIELD_KIND_DOMAIN:
         return ""
     return String(creator_side.side_id)
 

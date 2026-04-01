@@ -3,6 +3,7 @@ class_name DomainRoleTestSupport
 
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const UnitBstHelperScript := preload("res://src/shared/unit_bst_helper.gd")
 
 func build_battle_state(core, content_index, battle_setup, seed: int):
     core.rng_service.reset(seed)
@@ -54,15 +55,7 @@ func build_manual_ultimate_command(core, turn_index: int, side_id: String, actor
     })
 
 func sum_unit_bst(unit_state) -> int:
-    if unit_state == null:
-        return 0
-    return int(unit_state.max_hp) \
-    + int(unit_state.base_attack) \
-    + int(unit_state.base_defense) \
-    + int(unit_state.base_sp_attack) \
-    + int(unit_state.base_sp_defense) \
-    + int(unit_state.base_speed) \
-    + int(unit_state.max_mp)
+    return UnitBstHelperScript.sum_unit_bst(unit_state)
 
 func resolve_matchup_gap_value(owner_total: int, opponent_total: int, thresholds: PackedInt32Array, outputs: PackedInt32Array, default_value: int) -> int:
     var gap: int = abs(owner_total - opponent_total)

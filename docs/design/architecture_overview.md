@@ -53,6 +53,7 @@
 补充说明：
 
 - 为了把 owner 文件维持在可控体量内，同子域允许拆出只服务于该 owner 的内部 helper；当前已存在 `BattleInitializerStateBuilder` 与 `BattleCoreManagerContractHelper` 两个例子。
+- `BattleCoreManagerContractHelper` 当前同时承担 envelope 拼装、session 查找与公开入口 runtime 校验，目的是把 manager 本体留在 facade 编排边界内，而不是继续长成混合型大文件。
 - 这类 helper 只负责分担编排或 contract 拼装，不改变模块边界，也不自动升级成新的稳定入口。
 
 ## 4. 数据流
@@ -137,3 +138,4 @@
 - `BattleCoreManager` 的公开返回当前统一使用严格 envelope：
   - 成功：`{"ok": true, "data": ... , "error_code": null, "error_message": null}`
   - 失败：`{"ok": false, "data": null, "error_code": String, "error_message": String}`
+- `get_legal_actions / run_turn / get_public_snapshot / get_event_log_snapshot` 在读取或推进 session 前都必须先做 runtime guard；一旦 session 已经落入坏状态，manager 只能返回结构化错误，不能继续向外投影半坏快照或日志。

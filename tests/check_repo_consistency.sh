@@ -141,10 +141,18 @@ require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("same_s
 require_contains("tests/suites/gojo_murasaki_suite.gd", 'runner.run_test("gojo_murasaki_double_mark_burst_contract"', "gojo burst regression")
 require_contains("tests/suites/gojo_domain_suite.gd", 'runner.run_test("gojo_mugen_incoming_accuracy_contract"', "gojo mugen regression")
 require_contains("tests/suites/gojo_domain_suite.gd", 'runner.run_test("gojo_unlimited_void_runtime_contract"', "gojo domain regression")
-require_contains("tests/suites/sukuna_kamado_domain_suite.gd", 'runner.run_test("sukuna_domain_expire_chain_path"', "sukuna domain expire regression")
-require_contains("tests/suites/sukuna_kamado_domain_suite.gd", 'runner.run_test("sukuna_domain_break_chain_path"', "sukuna domain break regression")
+require_contains("tests/suites/sukuna_domain_suite.gd", 'runner.run_test("sukuna_domain_expire_chain_path"', "sukuna domain expire regression")
+require_contains("tests/suites/sukuna_domain_suite.gd", 'runner.run_test("sukuna_domain_break_chain_path"', "sukuna domain break regression")
 require_contains("tests/suites/ultimate_points_contract_suite.gd", 'runner.run_test("ultimate_points_regular_skill_gain_contract"', "ultimate point gain regression")
-require_contains("tests/suites/domain_clash_contract_suite.gd", 'runner.run_test("field_clash_tie_replay_contract"', "field clash replay regression")
+require_contains_any(
+    [
+        "tests/suites/domain_clash_contract_suite.gd",
+        "tests/suites/domain_clash_resolution_suite.gd",
+        "tests/suites/domain_clash_guard_suite.gd",
+    ],
+    'runner.run_test("field_clash_tie_replay_contract"',
+    "field clash replay regression",
+)
 require_contains("tests/suites/content_index_split_suite.gd", 'runner.run_test("content_snapshot_recursive_contract"', "recursive snapshot contract regression")
 
 for rel_path in [
@@ -163,6 +171,7 @@ for entry in formal_character_registry:
     design_doc = str(entry.get("design_doc", ""))
     adjustment_doc = str(entry.get("adjustment_doc", ""))
     suite_path = str(entry.get("suite_path", ""))
+    content_validator_script_path = str(entry.get("content_validator_script_path", ""))
     required_content_paths = entry.get("required_content_paths", [])
     required_suite_paths = entry.get("required_suite_paths", [])
     required_test_names = entry.get("required_test_names", [])
@@ -187,6 +196,8 @@ for entry in formal_character_registry:
     else:
         require_exists(suite_path, f"{character_id} suite")
         suite_scope_paths.append(suite_path)
+    if content_validator_script_path != "":
+        require_exists(content_validator_script_path, f"{character_id} content validator script")
     if not isinstance(required_suite_paths, list) or not required_suite_paths:
         failures.append(f"formal character registry[{character_id}] missing required_suite_paths")
     else:
@@ -277,9 +288,9 @@ require_contains("docs/records/decisions.md", "正式角色注册表当前必须
 require_contains("docs/records/decisions.md", "BattleCoreManager` 公开 contract 统一为严格 envelope", "manager envelope decision wording")
 require_contains("docs/records/decisions.md", "宿傩“灶”正式写死为 3 层硬上限，满层后忽略新层", "sukuna kamado cap decision wording")
 require_contains("docs/records/decisions.md", "运行时 helper 全部统一进 composition 装配", "runtime helper composition decision wording")
-require_contains("tests/suites/sukuna_kamado_domain_suite.gd", 'runner.run_test("sukuna_kamado_stack_cap_path"', "sukuna kamado cap regression")
-require_contains("tests/suites/sukuna_kamado_domain_suite.gd", 'runner.run_test("sukuna_kamado_forced_replace_on_exit_path"', "sukuna forced replace kamado regression")
-require_contains("tests/suites/sukuna_kamado_domain_suite.gd", 'runner.run_test("sukuna_domain_break_on_faint_path"', "sukuna creator faint field break regression")
+require_contains("tests/suites/sukuna_kamado_suite.gd", 'runner.run_test("sukuna_kamado_stack_cap_path"', "sukuna kamado cap regression")
+require_contains("tests/suites/sukuna_kamado_suite.gd", 'runner.run_test("sukuna_kamado_forced_replace_on_exit_path"', "sukuna forced replace kamado regression")
+require_contains("tests/suites/sukuna_domain_suite.gd", 'runner.run_test("sukuna_domain_break_on_faint_path"', "sukuna creator faint field break regression")
 require_contains("docs/records/decisions.md", "suite 可达性闸门", "suite reachability decision wording")
 require_contains("README.md", "check_suite_reachability.sh", "README suite reachability gate")
 

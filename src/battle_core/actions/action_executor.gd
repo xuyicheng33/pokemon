@@ -10,8 +10,6 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var action_cast_service
 var switch_action_service
 var action_log_service
-var rule_mod_service
-var domain_legality_service
 var action_domain_guard
 
 func resolve_missing_dependency() -> String:
@@ -30,10 +28,6 @@ func resolve_missing_dependency() -> String:
     var log_missing := str(action_log_service.resolve_missing_dependency())
     if not log_missing.is_empty():
         return "action_log_service.%s" % log_missing
-    if rule_mod_service == null:
-        return "rule_mod_service"
-    if domain_legality_service == null:
-        return "domain_legality_service"
     if action_domain_guard == null:
         return "action_domain_guard"
     var domain_missing := str(action_domain_guard.resolve_missing_dependency())

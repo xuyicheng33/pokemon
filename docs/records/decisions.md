@@ -340,3 +340,26 @@
 - 原因：
   - 当前主线已经有若干文件长期贴近 `250` 行上限，只在超线后才治理会把拆分任务变成被动救火。
   - 提前预警能暴露热点，但不会把日常迭代变成机械拆文件。
+
+### 37. `BattleCoreManager` 的公开读口与回合入口先做 runtime fail-fast（2026-03-31）
+
+- `get_legal_actions / run_turn / get_public_snapshot / get_event_log_snapshot` 进入 session 后都必须先经过 `RuntimeGuardService` 校验。
+- 若 active field 缺失 creator、field 定义漂移或其他运行态硬约束已经损坏，manager 只能返回结构化 `invalid_state_corruption`，不能继续构造 legal actions、公开快照或事件日志。
+- 原因：
+  - 旧口径虽然能在部分主链入口拦坏状态，但外围仍可能通过 facade 读到“半正常、半损坏”的公开结果，等于把内部污染继续泄漏给上层。
+
+### 38. 正式角色共享内容校验由 formal registry 的可选 validator path 驱动（2026-03-31）
+
+- `ContentSnapshotFormalCharacterValidator` 只负责编排；`content_snapshot_formal_character_registry.gd` 会从 `docs/records/formal_character_registry.json` 读取可选 `content_validator_script_path`，动态装配角色级 validator。
+- `docs/records/formal_character_registry.json` 继续是正式角色交付面的单一真相；除设计稿、内容资源、suite 与关键回归锚点外，现在允许登记角色共享内容校验脚本路径。
+- 原因：
+  - 正式角色的共享内容约束本来就和交付面绑定；把 validator path 收回同一注册表后，文档、门禁与运行时加载可以共用一份 source of truth，同时仍由代码 loader 负责 fail-fast。
+
+### 39. 宿傩正式回归拆成“灶生命周期”和“领域链路”两组 suite（2026-03-31）
+
+- 原 `tests/suites/sukuna_kamado_domain_suite.gd` 现已拆分为：
+  - `tests/suites/sukuna_kamado_suite.gd`
+  - `tests/suites/sukuna_domain_suite.gd`
+- `tests/suites/sukuna_suite.gd` 继续只做 wrapper；正式角色注册表里的 `required_suite_paths` 也同步改为两条子 suite。
+- 原因：
+  - 宿傩当前是最复杂的正式角色之一，灶层数生命周期与领域链路已经跨两个子域；继续堆在单一 suite 会拖慢定位回归与后续扩角复查。

@@ -33,6 +33,36 @@ func validate_create_session_payload(init_payload):
 		return error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "BattleCoreManager.create_session requires content_snapshot_paths")
 	return null
 
+func get_session_result(sessions: Dictionary, session_id: String) -> Dictionary:
+	if session_id.is_empty():
+		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager requires non-empty session_id")
+	var session = sessions.get(session_id, null)
+	if session == null:
+		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager unknown battle session: %s" % session_id)
+	return ok(session)
+
+func validate_session_runtime_result(session) -> Variant:
+	if session == null or session.container == null or session.battle_state == null:
+		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
+	var runtime_guard_service = session.container.runtime_guard_service
+	if runtime_guard_service == null:
+		return error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: runtime_guard_service")
+	var invalid_code = runtime_guard_service.validate_runtime_state(session.battle_state, session.content_index)
+	if invalid_code == null:
+		return null
+	return error(str(invalid_code), "BattleCoreManager runtime state invalid: %s" % str(invalid_code))
+
+func resolve_turn_failure_result(session) -> Variant:
+	if session == null or session.battle_state == null or session.battle_state.battle_result == null:
+		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
+	var battle_result = session.battle_state.battle_result
+	if not bool(battle_result.finished):
+		return null
+	var reason := String(battle_result.reason)
+	if not reason.begins_with("invalid_"):
+		return null
+	return error(reason, "BattleCoreManager run_turn terminated invalid battle: %s" % reason)
+
 func normalize_command_input(raw_command) -> Dictionary:
 	if raw_command == null:
 		return error(ErrorCodesScript.INVALID_COMMAND_PAYLOAD, "BattleCoreManager.run_turn received null command")

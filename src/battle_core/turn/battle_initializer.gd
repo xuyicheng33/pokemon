@@ -16,7 +16,6 @@ const INIT_PHASE_FAIL := 2
 var id_factory
 var rng_service
 var faint_resolver
-var field_service
 var trigger_batch_runner
 var battle_logger
 var log_event_builder

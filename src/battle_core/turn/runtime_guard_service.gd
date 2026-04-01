@@ -27,7 +27,7 @@ func _resolve_object_missing_dependency(dependency) -> String:
         return str(dependency.resolve_missing_dependency())
     return ""
 
-func validate_runtime_state(battle_state):
+func validate_runtime_state(battle_state, content_index = null):
     if battle_state.chain_context == null:
         return ErrorCodesScript.INVALID_STATE_CORRUPTION
     if battle_state.max_chain_depth <= 0:
@@ -53,9 +53,13 @@ func validate_runtime_state(battle_state):
     if battle_state.field_state != null:
         if battle_state.field_state.remaining_turns < 0:
             return ErrorCodesScript.INVALID_STATE_CORRUPTION
+        if String(battle_state.field_state.field_def_id).strip_edges().is_empty():
+            return ErrorCodesScript.INVALID_STATE_CORRUPTION
         if String(battle_state.field_state.creator).is_empty():
             return ErrorCodesScript.INVALID_STATE_CORRUPTION
         if battle_state.get_unit(String(battle_state.field_state.creator)) == null:
+            return ErrorCodesScript.INVALID_STATE_CORRUPTION
+        if content_index != null and content_index.fields.get(String(battle_state.field_state.field_def_id), null) == null:
             return ErrorCodesScript.INVALID_STATE_CORRUPTION
     return null
 

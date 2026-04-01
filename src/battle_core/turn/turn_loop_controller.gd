@@ -20,7 +20,7 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     if _validate_dependencies_or_terminate(battle_state):
         return
     turn_resolution_service.reset_turn_state(battle_state)
-    if _validate_runtime_or_terminate(battle_state):
+    if _validate_runtime_or_terminate(battle_state, content_index):
         return
     if _run_turn_start_phase(battle_state, content_index):
         return
@@ -96,7 +96,7 @@ func _execute_action_queue(battle_state, content_index, action_queue: Array) -> 
         if action_result.invalid_battle_code != null:
             battle_result_service.terminate_invalid_battle(battle_state, str(action_result.invalid_battle_code))
             return true
-        if _validate_runtime_or_terminate(battle_state):
+        if _validate_runtime_or_terminate(battle_state, content_index):
             return true
         var faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
         if faint_invalid_code != null:
@@ -149,7 +149,7 @@ func _run_turn_end_phase(battle_state, content_index) -> bool:
         return true
     if turn_resolution_service.execute_matchup_changed_if_needed(battle_state, content_index):
         return true
-    if _validate_runtime_or_terminate(battle_state):
+    if _validate_runtime_or_terminate(battle_state, content_index):
         return true
     turn_resolution_service.clear_turn_end_state(battle_state)
     return false
@@ -164,8 +164,8 @@ func _finish_turn_progression(battle_state) -> void:
     battle_state.turn_index += 1
     battle_state.phase = BattlePhasesScript.SELECTION
 
-func _validate_runtime_or_terminate(battle_state) -> bool:
-    var invalid_code = runtime_guard_service.validate_runtime_state(battle_state)
+func _validate_runtime_or_terminate(battle_state, content_index = null) -> bool:
+    var invalid_code = runtime_guard_service.validate_runtime_state(battle_state, content_index)
     if invalid_code == null:
         return false
     battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))

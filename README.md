@@ -206,6 +206,7 @@ tests/run_with_gate.sh
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
 - 角色注册：`docs/records/formal_character_registry.json`
+- 共享内容校验：若角色有跨资源共享不变量，可在 formal registry 里登记可选 `content_validator_script_path`，内容快照校验会自动装配并 fail-fast
 - 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `required_suite_paths / required_test_names`；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
@@ -225,9 +226,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-03-31）
 
-- `src/**/*.gd`：`9291` 行
-- `tests/**/*.gd`：`10008` 行
-- GDScript 合计：`19299` 行
+- `src/**/*.gd`：`9339` 行
+- `tests/**/*.gd`：`10206` 行
+- GDScript 合计：`19545` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

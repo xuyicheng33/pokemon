@@ -3,6 +3,7 @@ class_name RuleModValueResolver
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const UnitBstHelperScript := preload("res://src/shared/unit_bst_helper.gd")
 
 var last_error_code: Variant = null
 
@@ -41,22 +42,13 @@ func _resolve_matchup_bst_gap_band(rule_mod_payload, effect_event, battle_state)
     if opponent_unit == null:
         last_error_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
         return null
-    var gap: int = abs(_sum_unit_bst(owner_unit) - _sum_unit_bst(opponent_unit))
+    var gap: int = abs(
+        UnitBstHelperScript.sum_unit_bst(owner_unit)
+        - UnitBstHelperScript.sum_unit_bst(opponent_unit)
+    )
     var thresholds: PackedInt32Array = rule_mod_payload.dynamic_value_thresholds
     var outputs: PackedFloat32Array = rule_mod_payload.dynamic_value_outputs
     for index in range(thresholds.size()):
         if gap <= int(thresholds[index]):
             return float(outputs[index])
     return float(rule_mod_payload.dynamic_value_default)
-
-func _sum_unit_bst(unit_state) -> int:
-    if unit_state == null:
-        return 0
-    # 正式 BST 口径把 max_mp 视为第七维；宿傩回蓝公式与设计稿都依赖这个假设。
-    return int(unit_state.max_hp) \
-    + int(unit_state.base_attack) \
-    + int(unit_state.base_defense) \
-    + int(unit_state.base_sp_attack) \
-    + int(unit_state.base_sp_defense) \
-    + int(unit_state.base_speed) \
-    + int(unit_state.max_mp)

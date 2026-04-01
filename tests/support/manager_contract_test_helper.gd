@@ -75,3 +75,42 @@ func contains_any_key_recursive(value, keys: PackedStringArray) -> bool:
 			if contains_any_key_recursive(element, keys):
 				return true
 	return false
+
+func unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:
+	if envelope == null:
+		return {"ok": false, "error": "%s returned null envelope" % label}
+	var required_keys := ["ok", "data", "error_code", "error_message"]
+	for key in required_keys:
+		if not envelope.has(key):
+			return {"ok": false, "error": "%s missing envelope key: %s" % [label, key]}
+	if bool(envelope.get("ok", false)):
+		if envelope.get("error_code", null) != null or envelope.get("error_message", null) != null:
+			return {"ok": false, "error": "%s success envelope should not expose error payload" % label}
+		return {"ok": true, "data": envelope.get("data", null)}
+	if envelope.get("data", null) != null:
+		return {"ok": false, "error": "%s failure envelope must set data=null" % label}
+	if envelope.get("error_code", null) == null or String(envelope.get("error_message", "")).is_empty():
+		return {"ok": false, "error": "%s failure envelope missing error payload" % label}
+	return {"ok": false, "error": "%s failed: %s (%s)" % [label, String(envelope.get("error_message", "")), String(envelope.get("error_code", ""))]}
+
+func expect_failure_code(
+	envelope: Dictionary,
+	label: String,
+	error_code: String,
+	message_substring: String = ""
+) -> Dictionary:
+	if envelope == null:
+		return {"ok": false, "error": "%s returned null envelope" % label}
+	var required_keys := ["ok", "data", "error_code", "error_message"]
+	for key in required_keys:
+		if not envelope.has(key):
+			return {"ok": false, "error": "%s missing envelope key: %s" % [label, key]}
+	if bool(envelope.get("ok", false)):
+		return {"ok": false, "error": "%s should fail-fast" % label}
+	if envelope.get("data", null) != null:
+		return {"ok": false, "error": "%s failure envelope must set data=null" % label}
+	if String(envelope.get("error_code", "")) != error_code:
+		return {"ok": false, "error": "%s error_code mismatch: expected %s got %s" % [label, error_code, str(envelope.get("error_code", null))]}
+	if not message_substring.is_empty() and String(envelope.get("error_message", "")).find(message_substring) == -1:
+		return {"ok": false, "error": "%s should mention %s in error_message" % [label, message_substring]}
+	return {"ok": true}

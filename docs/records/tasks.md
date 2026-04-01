@@ -11,7 +11,7 @@
 
 ## 当前阶段
 
-- 阶段目标：扩角前治理闸门、角色回归锚点与运行态 fail-fast 已收口；下一步可按统一注册表进入新角色接入。
+- 阶段目标：扩角前治理闸门、角色回归锚点与运行态 fail-fast 已收口；下一步可按统一 formal registry 接入新角色与共享内容校验。
 - 当前不做：新角色扩充、Gojo / Sukuna 数值平衡调整、宿傩对 Gojo 的领域兑现率修正。
 - 当前优先级：
   - 若继续扩角，先补 `formal_character_registry.json` 资产登记，再补内容与 suite
@@ -19,6 +19,59 @@
   - 保持无自动选指前提下的主线文档、测试与接入模板一致
 
 ## 2026-03-31
+
+### 运行态公开读口、正式角色校验注册与宿傩 suite 拆分收口（已完成）
+
+- 目标：
+  - 把 `BattleCoreManager` 的公开读口与回合入口补成真正的 runtime fail-fast，避免外围读到半坏 session
+  - 把正式角色内容层共享约束从单文件 hardcode 收口成由 formal registry 驱动的可选 validator 装配
+  - 把 manager / domain 这两组过大的 contract suite 拆成 wrapper + 子 suite，并同步仓库记录
+- 范围：
+  - `src/battle_core/facades/battle_core_manager.gd`
+  - `src/battle_core/facades/battle_core_manager_contract_helper.gd`
+  - `src/battle_core/commands/domain_legality_service.gd`
+  - `src/battle_core/commands/legal_action_service.gd`
+  - `src/battle_core/content/content_snapshot_formal_character_validator.gd`
+  - `src/battle_core/content/content_snapshot_formal_character_registry.gd`
+  - `src/battle_core/content/content_snapshot_formal_sukuna_validator.gd`
+  - `tests/suites/domain_clash_contract_suite.gd`
+  - `tests/suites/domain_clash_resolution_suite.gd`
+  - `tests/suites/domain_clash_guard_suite.gd`
+  - `tests/suites/manager_public_contract_suite.gd`
+  - `tests/suites/manager_snapshot_public_contract_suite.gd`
+  - `tests/suites/manager_log_and_runtime_contract_suite.gd`
+  - `tests/suites/sukuna_suite.gd`
+  - `tests/suites/sukuna_kamado_suite.gd`
+  - `tests/suites/sukuna_domain_suite.gd`
+  - `tests/support/sukuna_test_support.gd`
+  - `tests/check_repo_consistency.sh`
+  - `docs/design/architecture_overview.md`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/passive_and_field.md`
+  - `docs/records/decisions.md`
+  - `docs/records/formal_character_registry.json`
+  - `docs/records/tasks.md`
+  - `README.md`
+- 验收标准：
+  - manager 在公开读口和 `run_turn` 入口命中坏运行态时，必须返回结构化 `invalid_state_corruption`
+  - 正式角色共享内容约束通过 formal registry 的可选 `content_validator_script_path` 分发，门禁与运行时口径一致
+  - 宿傩正式回归拆分后，角色 wrapper、注册表和仓库一致性闸门全部同步
+  - `README.md` 代码量统计与仓库实际一致
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `BattleCoreManager` 公开读口与 `run_turn` 入口已统一先做 runtime 校验；session 坏状态会直接返回结构化错误 envelope
+  - `domain_legality_service` / `legal_action_service` 已把 active domain 缺失 creator 等坏状态收口为 `invalid_state_corruption`
+  - 已新增 `content_snapshot_formal_character_registry.gd` 与 `content_snapshot_formal_sukuna_validator.gd`；formal character validator 现在按 formal registry 的可选 validator path 分发
+  - `manager_public_contract_suite.gd` 已拆为 snapshot / log-runtime 两组子 suite；`domain_clash_contract_suite.gd` 已拆为 resolution / guard 两组子 suite
+  - 宿傩原单文件 suite 已拆为 `sukuna_kamado_suite.gd` 与 `sukuna_domain_suite.gd`，wrapper、角色注册表与一致性脚本已同步
+  - `README.md`、设计文档、决策记录与任务记录已补齐本轮口径
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
 
 ### 外部审查报告复核结论补档（已完成）
 
@@ -51,7 +104,8 @@
   - 去掉宿傩回归里对“火打水减半后一定等于 10 / 20”的字面量依赖，避免属性表调整时出现误报
   - 保持 suite 继续验证“运行时结算值必须匹配当前 content + combat type chart”
 - 范围：
-  - `tests/suites/sukuna_kamado_domain_suite.gd`
+  - `tests/suites/sukuna_kamado_suite.gd`
+  - `tests/suites/sukuna_domain_suite.gd`
   - `README.md`
   - `docs/records/tasks.md`
 - 验收标准：
@@ -65,7 +119,7 @@
 #### 当前执行结果
 
 - 已完成：
-  - `sukuna_kamado_domain_suite.gd` 已改为按 effect payload 与当前属性表动态计算预期固定伤害，不再把 `10 / 20` 写死在断言里
+  - 原 `sukuna_kamado_domain_suite.gd` 已拆成 `sukuna_kamado_suite.gd` 与 `sukuna_domain_suite.gd`，并按 effect payload 与当前属性表动态计算预期固定伤害，不再把 `10 / 20` 写死在断言里
   - 连带收口了 `double kamado on_exit`、`forced_replace on_exit`、`domain expire burst` 三处同类脆断点
   - `README.md` 已同步最新测试行数与 GDScript 总行数统计，恢复仓库一致性闸门
 
@@ -151,7 +205,8 @@
   - `docs/design/lifecycle_and_replacement.md`
   - `docs/design/passive_and_field.md`
   - `docs/design/sukuna_design.md`
-  - `tests/suites/sukuna_kamado_domain_suite.gd`
+  - `tests/suites/sukuna_kamado_suite.gd`
+  - `tests/suites/sukuna_domain_suite.gd`
   - `tests/suites/forced_replace_field_break_suite.gd`
   - `tests/check_architecture_constraints.sh`
 - 验收标准：
@@ -171,7 +226,7 @@
   - 确认 `architecture_overview.md` 已明确写出 `BattleCoreSession` 是 manager 内部会话壳，因此原审查里“未在高层文档明确列出 battle_core_session”这句不准确
   - 已修正 `lifecycle_and_replacement.md` 对 `field_service.gd` 的文档口径，明确它是 field 子域服务，本文件只是引用其提前打断能力
   - 已在 `sukuna_design.md` 标注 `20` 点火属性固定伤害的三处同步修改点
-  - 确认源码最大文件当前为 `src/battle_core/facades/battle_core_manager.gd` 的 250 行，未超过架构闸门的 `>250` 阈值
+  - 确认源码最大文件当前为 `src/battle_core/facades/battle_core_manager.gd` 的 241 行，仍处在架构闸门的预警区间内但未超过 `>250` 阈值
 
 #### 当前验证结果
 
@@ -192,7 +247,8 @@
   - `src/battle_core/content/*`
   - `tests/suites/manager_*`
   - `tests/suites/adapter_contract_suite.gd`
-  - `tests/suites/sukuna_kamado_domain_suite.gd`
+  - `tests/suites/sukuna_kamado_suite.gd`
+  - `tests/suites/sukuna_domain_suite.gd`
   - `docs/design/*`
   - `docs/records/*`
 - 验收标准：

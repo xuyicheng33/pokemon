@@ -83,6 +83,7 @@
 - 当前同一时刻全场只允许 1 个 field；若尝试展开新 field，必须先走 `FieldApplyService` 的对拼判定。
 - field buff 必须绑定 field 生命周期：`field_apply` 生效、自然到期移除、提前打断移除；不再允许靠角色离场时顺手清 stat_stage 兜底。
 - `RuntimeGuardService` 负责每回合入口兜底拦 active field 坏状态，但 `FieldApplyConflictService` 也要在局部主路径上做同样的 fail-fast 防御。
+- facade 的公开读口（`get_legal_actions / get_public_snapshot / get_event_log_snapshot`）也必须跟随 runtime guard 一起拦这类坏状态；外层不允许读到缺失 creator 的半坏 field 投影。
 
 ## 6. 约束
 

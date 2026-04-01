@@ -7,18 +7,9 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 
 var mp_service
-var damage_service
-var combat_type_service
-var stat_calculator
-var rule_mod_service
 var action_hit_resolution_service
 var target_resolver
-var trigger_dispatcher
-var effect_queue_service
-var payload_executor
-var faint_resolver
 var trigger_batch_runner
-var rng_service
 var action_log_service
 var action_cast_direct_damage_pipeline
 var action_cast_skill_effect_dispatch_pipeline
@@ -26,14 +17,6 @@ var action_cast_skill_effect_dispatch_pipeline
 func resolve_missing_dependency() -> String:
     if mp_service == null:
         return "mp_service"
-    if damage_service == null:
-        return "damage_service"
-    if combat_type_service == null:
-        return "combat_type_service"
-    if stat_calculator == null:
-        return "stat_calculator"
-    if rule_mod_service == null:
-        return "rule_mod_service"
     if action_hit_resolution_service == null:
         return "action_hit_resolution_service"
     var hit_missing := str(action_hit_resolution_service.resolve_missing_dependency())
@@ -41,18 +24,8 @@ func resolve_missing_dependency() -> String:
         return "action_hit_resolution_service.%s" % hit_missing
     if target_resolver == null:
         return "target_resolver"
-    if trigger_dispatcher == null:
-        return "trigger_dispatcher"
-    if effect_queue_service == null:
-        return "effect_queue_service"
-    if payload_executor == null:
-        return "payload_executor"
-    if faint_resolver == null:
-        return "faint_resolver"
     if trigger_batch_runner == null:
         return "trigger_batch_runner"
-    if rng_service == null:
-        return "rng_service"
     if action_log_service == null:
         return "action_log_service"
     if action_cast_direct_damage_pipeline == null:

@@ -64,10 +64,13 @@ func get_legal_actions(session_id: String, side_id: String) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
     if dependency_error != null:
         return dependency_error
-    var session_result = _get_session_result(session_id)
+    var session_result = _contract_helper.get_session_result(_sessions, session_id)
     if not bool(session_result.get("ok", false)):
         return session_result
     var session = session_result.get("data", null)
+    var runtime_error = _contract_helper.validate_session_runtime_result(session)
+    if runtime_error != null:
+        return runtime_error
     var legal_actions = session.container.legal_action_service.get_legal_actions(session.battle_state, side_id, session.content_index)
     if legal_actions == null:
         return _contract_helper.service_error(
@@ -96,7 +99,7 @@ func run_turn(session_id: String, commands: Array) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
     if dependency_error != null:
         return dependency_error
-    var session_result = _get_session_result(session_id)
+    var session_result = _contract_helper.get_session_result(_sessions, session_id)
     if not bool(session_result.get("ok", false)):
         return session_result
     var normalized_commands: Array = []
@@ -106,17 +109,26 @@ func run_turn(session_id: String, commands: Array) -> Dictionary:
             return command_result
         normalized_commands.append(command_result.get("data", null))
     var session = session_result.get("data", null)
+    var runtime_error = _contract_helper.validate_session_runtime_result(session)
+    if runtime_error != null:
+        return runtime_error
     session.container.turn_loop_controller.run_turn(session.battle_state, session.content_index, normalized_commands)
+    var turn_failure = _contract_helper.resolve_turn_failure_result(session)
+    if turn_failure != null:
+        return turn_failure
     return _contract_helper.ok({"session_id": session_id, "public_snapshot": public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index)})
 
 func get_public_snapshot(session_id: String) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
     if dependency_error != null:
         return dependency_error
-    var session_result = _get_session_result(session_id)
+    var session_result = _contract_helper.get_session_result(_sessions, session_id)
     if not bool(session_result.get("ok", false)):
         return session_result
     var session = session_result.get("data", null)
+    var runtime_error = _contract_helper.validate_session_runtime_result(session)
+    if runtime_error != null:
+        return runtime_error
     return _contract_helper.ok(public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index))
 
 func get_event_log_snapshot(session_id: String, from_index: int = 0) -> Dictionary:
@@ -125,10 +137,13 @@ func get_event_log_snapshot(session_id: String, from_index: int = 0) -> Dictiona
         return dependency_error
     if from_index < 0:
         return _contract_helper.error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "BattleCoreManager.get_event_log_snapshot requires from_index >= 0")
-    var session_result = _get_session_result(session_id)
+    var session_result = _contract_helper.get_session_result(_sessions, session_id)
     if not bool(session_result.get("ok", false)):
         return session_result
     var session = session_result.get("data", null)
+    var runtime_error = _contract_helper.validate_session_runtime_result(session)
+    if runtime_error != null:
+        return runtime_error
     var event_log: Array = session.container.battle_logger.snapshot()
     var start_index: int = min(from_index, event_log.size())
     var event_snapshots: Array = []
@@ -140,7 +155,7 @@ func close_session(session_id: String) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
     if dependency_error != null:
         return dependency_error
-    var session_result = _get_session_result(session_id)
+    var session_result = _contract_helper.get_session_result(_sessions, session_id)
     if not bool(session_result.get("ok", false)):
         return session_result
     var session = session_result.get("data", null)
@@ -209,14 +224,6 @@ func resolve_missing_dependency() -> String:
 
 func _validate_core_dependencies_result():
     return _contract_helper.dependency_error(resolve_missing_dependency())
-
-func _get_session_result(session_id: String) -> Dictionary:
-    if session_id.is_empty():
-        return _contract_helper.error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager requires non-empty session_id")
-    var session = _sessions.get(session_id, null)
-    if session == null:
-        return _contract_helper.error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager unknown battle session: %s" % session_id)
-    return _contract_helper.ok(session)
 
 func _compose_container_result() -> Dictionary:
     if not container_factory.is_valid():
