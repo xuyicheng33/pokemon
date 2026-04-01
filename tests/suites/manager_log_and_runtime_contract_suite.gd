@@ -15,6 +15,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("manager_invalid_runtime_read_contract", failures, Callable(self, "_test_manager_invalid_runtime_read_contract").bind(harness))
 	runner.run_test("manager_run_turn_invalid_envelope_contract", failures, Callable(self, "_test_manager_run_turn_invalid_envelope_contract").bind(harness))
 	runner.run_test("manager_create_session_initializer_dependency_guard_contract", failures, Callable(self, "_test_manager_create_session_initializer_dependency_guard_contract").bind(harness))
+	runner.run_test("manager_disposed_request_guard_contract", failures, Callable(self, "_test_manager_disposed_request_guard_contract").bind(harness))
 
 func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
@@ -243,6 +244,29 @@ func _test_manager_create_session_initializer_dependency_guard_contract(harness)
 	manager.dispose()
 	if not bool(failure.get("ok", false)):
 		return harness.fail_result(str(failure.get("error", "manager create_session initializer dependency guard contract failed")))
+	return harness.pass_result()
+
+func _test_manager_disposed_request_guard_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	manager.dispose()
+	var failure = _helper.expect_failure_code(
+		manager.create_session({
+			"battle_seed": 311,
+			"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+			"battle_setup": sample_factory.build_sample_setup(),
+		}),
+		"create_session_after_dispose",
+		ErrorCodesScript.INVALID_MANAGER_REQUEST,
+		"BattleCoreManager is disposed"
+	)
+	if not bool(failure.get("ok", false)):
+		return harness.fail_result(str(failure.get("error", "disposed manager guard contract failed")))
 	return harness.pass_result()
 
 func _build_invalid_field_state(field_def_id: String, creator: String, label: String):

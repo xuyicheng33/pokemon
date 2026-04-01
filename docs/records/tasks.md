@@ -47,9 +47,10 @@
   - 已确认本轮未提交改动的主线目标一致：统一移除旧 `skill_legality` 口径、补齐宿傩 `matchup_bst_gap_band` 的 `max_mp` 第七维 contract、并把 `BattleInitializerPhaseService` / `BattleCoreManagerContainerService` / `tests/gates/*` 写回文档与 gate
   - 已确认正式角色交付面当前由 `formal_character_registry.json`、角色设计稿、内容资源、wrapper suite、required suite / test anchors 共同收口，Gojo / Sukuna 两条链路当前保持一致
   - 已补 `BattleInitializer` 本地依赖缺失的 fail-fast 守卫，并新增 `manager_create_session_initializer_dependency_guard_contract` 覆盖坏装配场景
+  - 已补 `BattleCoreManager.dispose()` 后的请求防御，避免外层误复用已释放 manager 时直接落入空引用崩溃，并新增 `manager_disposed_request_guard_contract`
   - 已恢复 `tests/check_repo_consistency.sh` 的可执行位，并同步 `README.md` 当前代码量统计
   - 已确认当前未提交改动没有引入新的红灯回归；总测试、总闸门、架构闸门、仓库一致性 gate 均通过
-  - 审查结论：当前仓库没有发现阻断继续扩角的硬伤；但 `BattleCoreManager` 的 dispose 后复用安全性，以及多个角色/规则测试文件继续膨胀，仍是扩角前值得优先整合的维护风险
+  - 审查结论：当前仓库没有发现阻断继续扩角的硬伤；但多个角色/规则测试文件继续膨胀，仍是扩角前值得优先整合的维护风险
 
 #### 当前验证结果
 

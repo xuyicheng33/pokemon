@@ -18,6 +18,7 @@ var _session_seq: int = 0
 var _event_log_public_snapshot_builder = EventLogPublicSnapshotBuilderScript.new()
 var _contract_helper = BattleCoreManagerContractHelperScript.new()
 var _container_service = BattleCoreManagerContainerServiceScript.new()
+var _disposed: bool = false
 
 func create_session(init_payload: Dictionary) -> Dictionary:
     var payload_error = _contract_helper.validate_create_session_payload(init_payload)
@@ -155,12 +156,15 @@ func active_session_count() -> Dictionary:
     return _contract_helper.ok({"count": _sessions.size()})
 
 func dispose() -> void:
+    if _disposed:
+        return
     for session in _sessions.values():
         if session != null and session.has_method("dispose"):
             session.dispose()
     _sessions.clear()
     if command_builder != null:
         command_builder.id_factory = null
+    _disposed = true
     container_factory = Callable()
     _container_factory_owner = null
     command_builder = null
@@ -168,7 +172,6 @@ func dispose() -> void:
     public_snapshot_builder = null
     _event_log_public_snapshot_builder = null
     _container_service = null
-    _contract_helper = null
 
 func resolve_missing_dependency() -> String:
     if not container_factory.is_valid():
@@ -184,6 +187,8 @@ func resolve_missing_dependency() -> String:
     return ""
 
 func _validate_core_dependencies_result():
+    if _disposed:
+        return _contract_helper.error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "BattleCoreManager is disposed")
     return _contract_helper.dependency_error(resolve_missing_dependency())
 
 func _sync_container_service() -> void:
