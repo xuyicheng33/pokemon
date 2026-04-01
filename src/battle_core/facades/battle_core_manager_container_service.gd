@@ -37,12 +37,14 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
     battle_state.seed = battle_seed
     battle_state.rng_stream_index = container.rng_service.get_stream_index()
     if not container.battle_initializer.initialize_battle(battle_state, content_index, init_payload["battle_setup"]):
+        var initializer_error_code = container.battle_initializer.last_error_code
+        var initializer_error_message := String(container.battle_initializer.last_error_message)
         container.dispose()
         return {
             "session": null,
             "response": contract_helper.error(
-                container.battle_initializer.last_error_code if container.battle_initializer.last_error_code != null else ErrorCodesScript.INVALID_BATTLE_SETUP,
-                container.battle_initializer.last_error_message if not container.battle_initializer.last_error_message.is_empty() else "BattleCoreManager failed to initialize battle"
+                initializer_error_code if initializer_error_code != null else ErrorCodesScript.INVALID_BATTLE_SETUP,
+                initializer_error_message if not initializer_error_message.is_empty() else "BattleCoreManager failed to initialize battle"
             ),
         }
     var session = BattleCoreSessionScript.new()

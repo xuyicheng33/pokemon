@@ -1,6 +1,7 @@
 extends RefCounted
 class_name ManagerLogAndRuntimeContractSuite
 
+const BattleCoreComposerScript := preload("res://src/composition/battle_core_composer.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -13,6 +14,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("event_log_snapshot_public_contract", failures, Callable(self, "_test_event_log_snapshot_public_contract").bind(harness))
 	runner.run_test("manager_invalid_runtime_read_contract", failures, Callable(self, "_test_manager_invalid_runtime_read_contract").bind(harness))
 	runner.run_test("manager_run_turn_invalid_envelope_contract", failures, Callable(self, "_test_manager_run_turn_invalid_envelope_contract").bind(harness))
+	runner.run_test("manager_create_session_initializer_dependency_guard_contract", failures, Callable(self, "_test_manager_create_session_initializer_dependency_guard_contract").bind(harness))
 
 func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
@@ -211,6 +213,36 @@ func _test_manager_run_turn_invalid_envelope_contract(harness) -> Dictionary:
 	var close_result = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
 	if not bool(close_result.get("ok", false)):
 		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
+	return harness.pass_result()
+
+func _test_manager_create_session_initializer_dependency_guard_contract(harness) -> Dictionary:
+	var composer = BattleCoreComposerScript.new()
+	if composer == null:
+		return harness.fail_result("BattleCoreComposer init failed")
+	var manager = composer.compose_manager()
+	if manager == null:
+		return harness.fail_result("compose_manager returned null")
+	manager.container_factory = func ():
+		var broken_core = BattleCoreComposerScript.new().compose()
+		if broken_core != null and broken_core.battle_initializer != null:
+			broken_core.battle_initializer.faint_resolver = null
+		return broken_core
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var failure = _helper.expect_failure_code(
+		manager.create_session({
+			"battle_seed": 309,
+			"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+			"battle_setup": sample_factory.build_sample_setup(),
+		}),
+		"create_session",
+		ErrorCodesScript.INVALID_COMPOSITION,
+		"BattleInitializer missing dependency: faint_resolver"
+	)
+	manager.dispose()
+	if not bool(failure.get("ok", false)):
+		return harness.fail_result(str(failure.get("error", "manager create_session initializer dependency guard contract failed")))
 	return harness.pass_result()
 
 func _build_invalid_field_state(field_def_id: String, creator: String, label: String):

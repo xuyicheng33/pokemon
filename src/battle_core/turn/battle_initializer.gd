@@ -34,12 +34,18 @@ var last_error_message: String = ""
 func initialize_battle(battle_state, content_index, battle_setup) -> bool:
     last_error_code = null
     last_error_message = ""
+    var missing_dependency := _resolve_local_missing_dependency()
+    if not missing_dependency.is_empty():
+        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer missing dependency: %s" % missing_dependency)
+    _sync_phase_service()
+    missing_dependency = _phase_service.resolve_missing_dependency()
+    if not missing_dependency.is_empty():
+        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer missing dependency: %s" % missing_dependency)
     var format_config = _prepare_battle_state(battle_state, content_index, battle_setup)
     if format_config == null:
         return false
     if not _build_side_states(battle_state, battle_setup, format_config, content_index):
         return false
-    _sync_phase_service()
     _phase_service.append_battle_header_event(battle_state, content_index)
     var on_enter_outcome: int = _phase_service.run_on_enter_phase(battle_state, content_index)
     if on_enter_outcome == INIT_PHASE_FAIL:
@@ -136,6 +142,39 @@ func _sync_phase_service() -> void:
     _phase_service.rule_mod_service = rule_mod_service
     _phase_service.battle_result_service = battle_result_service
     _phase_service.field_lifecycle_service = field_lifecycle_service
+
+func _resolve_local_missing_dependency() -> String:
+    if id_factory == null:
+        return "id_factory"
+    if rng_service == null:
+        return "rng_service"
+    if faint_resolver == null:
+        return "faint_resolver"
+    if trigger_batch_runner == null:
+        return "trigger_batch_runner"
+    if battle_logger == null:
+        return "battle_logger"
+    if log_event_builder == null:
+        return "log_event_builder"
+    if public_snapshot_builder == null:
+        return "public_snapshot_builder"
+    if combat_type_service == null:
+        return "combat_type_service"
+    if mp_service == null:
+        return "mp_service"
+    if rule_mod_service == null:
+        return "rule_mod_service"
+    if battle_result_service == null:
+        return "battle_result_service"
+    if field_lifecycle_service == null:
+        return "field_lifecycle_service"
+    if public_id_allocator == null:
+        return "public_id_allocator"
+    if _state_builder == null:
+        return "state_builder"
+    if _phase_service == null:
+        return "phase_service"
+    return ""
 
 func _fail(error_code: String, message: String) -> bool:
     last_error_code = error_code

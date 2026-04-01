@@ -20,6 +20,43 @@
 
 ## 2026-04-01
 
+### 当前项目完整审查、风险研判与提交流程（已完成）
+
+- 目标：
+  - 对当前项目做一次完整审查，覆盖架构、实现、设计文档对齐、正式角色实现与未提交改动风险
+  - 明确当前是否适合继续扩角，还是应先做一轮整合规范
+  - 在结论落盘后完成一次提交与推送
+- 范围：
+  - `docs/design/*.md`
+  - `docs/rules/*.md`
+  - `docs/records/*.md`
+  - `src/battle_core/**/*.gd`
+  - `src/composition/sample_battle_factory.gd`
+  - `tests/**/*.gd`
+  - `tests/gates/*`
+- 验收标准：
+  - 架构 / 文档 / 运行时主线 contract 对齐结论已落盘
+  - Gojo / Sukuna 的设计兑现、测试覆盖与扩角风险已给出明确结论
+  - 未提交改动已复核，新增问题与大文件风险已形成可执行判断
+  - `bash tests/run_with_gate.sh` 通过
+  - 完成提交与推送
+
+#### 当前执行结果
+
+- 已完成：
+  - 已确认本轮未提交改动的主线目标一致：统一移除旧 `skill_legality` 口径、补齐宿傩 `matchup_bst_gap_band` 的 `max_mp` 第七维 contract、并把 `BattleInitializerPhaseService` / `BattleCoreManagerContainerService` / `tests/gates/*` 写回文档与 gate
+  - 已确认正式角色交付面当前由 `formal_character_registry.json`、角色设计稿、内容资源、wrapper suite、required suite / test anchors 共同收口，Gojo / Sukuna 两条链路当前保持一致
+  - 已补 `BattleInitializer` 本地依赖缺失的 fail-fast 守卫，并新增 `manager_create_session_initializer_dependency_guard_contract` 覆盖坏装配场景
+  - 已恢复 `tests/check_repo_consistency.sh` 的可执行位，并同步 `README.md` 当前代码量统计
+  - 已确认当前未提交改动没有引入新的红灯回归；总测试、总闸门、架构闸门、仓库一致性 gate 均通过
+  - 审查结论：当前仓库没有发现阻断继续扩角的硬伤；但 `BattleCoreManager` 的 dispose 后复用安全性，以及多个角色/规则测试文件继续膨胀，仍是扩角前值得优先整合的维护风险
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
+- `git diff --check` 通过
+
 ### 扩角前规范整合硬收口（已完成）
 
 - 目标：
@@ -57,44 +94,6 @@
   - `matchup_bst_gap_band` 当前按 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值，README / 规则 / 设计稿已统一
   - `architecture_overview.md`、`turn_orchestrator.md`、`tests/README.md` 与 README 已补齐 `BattleInitializerPhaseService`、`BattleCoreManagerContainerService` 与 `tests/gates/*` 的落点说明
   - `README.md` 代码量统计已同步到当前仓库实际值
-
-#### 当前验证结果
-
-- `godot --headless --path . --script tests/run_all.gd` 通过
-- `bash tests/run_with_gate.sh` 通过
-
-### 当前实现全量审查与未提交变更复核（已完成）
-
-- 目标：
-  - 对当前项目的整体架构、核心实现、设计文档与正式角色交付面做一次完整审查
-  - 严格复核 Gojo / Sukuna 两个正式角色的设计稿、内容资源、suite 与 formal registry 是否一致
-  - 评估未提交改动是否引入新问题，并判断当前阶段更适合继续扩角还是先做整合
-- 范围：
-  - `README.md`
-  - `docs/design/*.md`
-  - `docs/rules/*.md`
-  - `docs/records/formal_character_registry.json`
-  - `src/battle_core/**/*.gd`
-  - `src/composition/**/*.gd`
-  - `content/gojo|sukuna` 相关正式资源
-  - `tests/run_all.gd`
-  - `tests/check_repo_consistency.sh`
-  - `tests/gates/*`
-  - `tests/suites/gojo_*.gd`
-  - `tests/suites/sukuna_*.gd`
-- 验收标准：
-  - 能明确回答“架构/实现/文档是否对齐”
-  - 能明确回答“两个角色当前是否存在阻断扩角的问题”
-  - 能明确回答“未提交改动是否引入新增回归”
-  - 审查结论与验证结果已写回记录
-
-#### 当前执行结果
-
-- 已完成：
-  - 已确认本轮未提交改动的主线目标一致：统一移除旧 `skill_legality` 口径、补齐宿傩 `matchup_bst_gap_band` 的 `max_mp` 第七维 contract、并把 `BattleInitializerPhaseService` / `BattleCoreManagerContainerService` / `tests/gates/*` 写回文档与 gate
-  - 已确认正式角色交付面当前由 `formal_character_registry.json`、角色设计稿、内容资源、wrapper suite、required suite / test anchors 共同收口，Gojo / Sukuna 两条链路当前保持一致
-  - 已确认当前未提交改动没有引入新的红灯回归；总测试、总闸门、架构闸门、仓库一致性 gate 均通过
-  - 审查结论：当前仓库没有发现阻断继续扩角的硬伤；但 `BattleCoreManager` 的 dispose 后复用安全性、初始化 helper 的依赖防御，以及多个角色/规则测试文件继续膨胀，仍是扩角前值得优先整合的维护风险
 
 #### 当前验证结果
 
