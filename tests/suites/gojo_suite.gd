@@ -5,9 +5,11 @@ const GojoSetupAndMarkersSuiteScript := preload("res://tests/suites/gojo_setup_a
 const GojoSnapshotSuiteScript := preload("res://tests/suites/gojo_snapshot_suite.gd")
 const GojoMurasakiSuiteScript := preload("res://tests/suites/gojo_murasaki_suite.gd")
 const GojoDomainSuiteScript := preload("res://tests/suites/gojo_domain_suite.gd")
+const GojoManagerSmokeSuiteScript := preload("res://tests/suites/gojo_manager_smoke_suite.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     GojoSetupAndMarkersSuiteScript.new().register_tests(runner, failures, harness)
     GojoSnapshotSuiteScript.new().register_tests(runner, failures, harness)
     GojoMurasakiSuiteScript.new().register_tests(runner, failures, harness)
     GojoDomainSuiteScript.new().register_tests(runner, failures, harness)
+    GojoManagerSmokeSuiteScript.new().register_tests(runner, failures, harness)

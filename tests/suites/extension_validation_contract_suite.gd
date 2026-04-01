@@ -6,6 +6,7 @@ const EffectDefinitionScript := preload("res://src/battle_core/content/effect_de
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("extension_validation_contract", failures, Callable(self, "_test_extension_validation_contract").bind(harness))
+    runner.run_test("formal_gojo_validator_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_bad_case_contract").bind(harness))
 func _test_extension_validation_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
@@ -51,6 +52,42 @@ func _test_extension_validation_contract(harness) -> Dictionary:
     bad_accuracy_effect.payloads.append(bad_accuracy_payload)
     content_index.register_resource(bad_accuracy_effect)
 
+    var bad_persistent_field_payload = RuleModPayloadScript.new()
+    bad_persistent_field_payload.payload_type = "rule_mod"
+    bad_persistent_field_payload.mod_kind = "mp_regen"
+    bad_persistent_field_payload.mod_op = "add"
+    bad_persistent_field_payload.value = 3
+    bad_persistent_field_payload.scope = "field"
+    bad_persistent_field_payload.duration_mode = "turns"
+    bad_persistent_field_payload.duration = 1
+    bad_persistent_field_payload.decrement_on = "turn_start"
+    bad_persistent_field_payload.stacking = "replace"
+    bad_persistent_field_payload.persists_on_switch = true
+    var bad_persistent_field_effect = EffectDefinitionScript.new()
+    bad_persistent_field_effect.id = "test_bad_persistent_field_rule_mod"
+    bad_persistent_field_effect.display_name = "Bad Persistent Field Rule Mod"
+    bad_persistent_field_effect.scope = "field"
+    bad_persistent_field_effect.payloads.append(bad_persistent_field_payload)
+    content_index.register_resource(bad_persistent_field_effect)
+
+    var bad_persistent_nested_payload = RuleModPayloadScript.new()
+    bad_persistent_nested_payload.payload_type = "rule_mod"
+    bad_persistent_nested_payload.mod_kind = "mp_regen"
+    bad_persistent_nested_payload.mod_op = "add"
+    bad_persistent_nested_payload.value = 2
+    bad_persistent_nested_payload.scope = "self"
+    bad_persistent_nested_payload.duration_mode = "turns"
+    bad_persistent_nested_payload.duration = 1
+    bad_persistent_nested_payload.decrement_on = "turn_start"
+    bad_persistent_nested_payload.stacking = "replace"
+    var bad_persistent_nested_effect = EffectDefinitionScript.new()
+    bad_persistent_nested_effect.id = "test_bad_persistent_nested_rule_mod"
+    bad_persistent_nested_effect.display_name = "Bad Persistent Nested Rule Mod"
+    bad_persistent_nested_effect.scope = "self"
+    bad_persistent_nested_effect.persists_on_switch = true
+    bad_persistent_nested_effect.payloads.append(bad_persistent_nested_payload)
+    content_index.register_resource(bad_persistent_nested_effect)
+
     var bad_required_scope = EffectDefinitionScript.new()
     bad_required_scope.id = "test_bad_required_scope"
     bad_required_scope.display_name = "Bad Required Scope"
@@ -91,6 +128,8 @@ func _test_extension_validation_contract(harness) -> Dictionary:
     var needles := [
         "effect[test_bad_action_legality].rule_mod invalid: action_legality value missing skill: missing_skill_id",
         "effect[test_bad_incoming_accuracy].rule_mod invalid: incoming_accuracy value must be int",
+        "effect[test_bad_persistent_field_rule_mod].rule_mod invalid: persists_on_switch is not allowed for field scope",
+        "effect[test_bad_persistent_nested_rule_mod].rule_mod persists_on_switch must be true when effect persists_on_switch=true",
         "effect[test_bad_required_scope].required_target_effects requires scope=target",
         "effect[test_bad_required_missing].required_target_effects missing effect: missing_required_effect",
         "effect[test_bad_required_duplicate].required_target_effects duplicated effect: test_required_marker",
@@ -101,6 +140,20 @@ func _test_extension_validation_contract(harness) -> Dictionary:
     for needle in needles:
         if not _has_error(errors, needle):
             return harness.fail_result("extension validation missing error: %s" % needle)
+    return harness.pass_result()
+
+func _test_formal_gojo_validator_bad_case_contract(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var murasaki_burst = content_index.effects.get("gojo_murasaki_conditional_burst", null)
+    if murasaki_burst == null:
+        return harness.fail_result("missing gojo_murasaki_conditional_burst")
+    murasaki_burst.required_target_same_owner = false
+    var errors: Array = content_index.validate_snapshot()
+    if not _has_error(errors, "formal[gojo].murasaki_burst required_target_same_owner must be true"):
+        return harness.fail_result("gojo formal validator should fail-fast when murasaki same-owner guard drifts")
     return harness.pass_result()
 
 
