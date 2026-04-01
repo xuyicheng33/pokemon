@@ -62,7 +62,7 @@ func _run_turn_start_phase(battle_state, content_index) -> bool:
         battle_state,
         content_index,
         "turn_start",
-        turn_resolution_service.collect_active_unit_ids(battle_state),
+        turn_resolution_service.collect_effect_decrement_owner_ids(battle_state),
         turn_start_event_id
     ):
         return true
@@ -135,7 +135,7 @@ func _run_turn_end_phase(battle_state, content_index) -> bool:
         battle_state,
         content_index,
         "turn_end",
-        turn_resolution_service.collect_active_unit_ids(battle_state),
+        turn_resolution_service.collect_effect_decrement_owner_ids(battle_state),
         turn_end_event_id
     ):
         return true

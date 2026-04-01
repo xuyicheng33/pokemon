@@ -168,6 +168,32 @@ func clear_turn_end_state(battle_state) -> void:
 func collect_active_unit_ids(battle_state) -> Array:
     return field_lifecycle_service.collect_active_unit_ids(battle_state)
 
+func collect_effect_decrement_owner_ids(battle_state) -> Array:
+    var owner_ids: Array = collect_active_unit_ids(battle_state)
+    var seen_owner_ids: Dictionary = {}
+    for owner_id in owner_ids:
+        seen_owner_ids[str(owner_id)] = true
+    for side_state in battle_state.sides:
+        for unit_state in side_state.team_units:
+            if unit_state == null:
+                continue
+            var unit_id := String(unit_state.unit_instance_id)
+            if seen_owner_ids.has(unit_id):
+                continue
+            if not _unit_has_persistent_effect(unit_state):
+                continue
+            owner_ids.append(unit_id)
+            seen_owner_ids[unit_id] = true
+    return owner_ids
+
+func _unit_has_persistent_effect(unit_state) -> bool:
+    if unit_state == null:
+        return false
+    for effect_instance in unit_state.effect_instances:
+        if bool(effect_instance.persists_on_switch):
+            return true
+    return false
+
 func execute_matchup_changed_if_needed(battle_state, content_index) -> bool:
     return field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index)
 

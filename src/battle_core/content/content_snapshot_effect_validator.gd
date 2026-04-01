@@ -2,6 +2,7 @@ extends RefCounted
 class_name ContentSnapshotEffectValidator
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 
 func validate(content_index, errors: Array, payload_validator) -> void:
     var allowed_scopes := PackedStringArray(["self", "target", "field"])
@@ -31,6 +32,7 @@ func validate(content_index, errors: Array, payload_validator) -> void:
         elif int(effect_definition.max_stacks) != -1:
             errors.append("effect[%s].max_stacks only allowed when stacking=stack, got %d" % [effect_id, int(effect_definition.max_stacks)])
         _validate_required_target_effects(content_index, errors, effect_id, effect_definition)
+        _validate_persistent_rule_mod_contract(errors, effect_id, effect_definition)
         payload_validator.validate_effect_refs(errors, "effect[%s].on_expire_effect_ids" % effect_id, effect_definition.on_expire_effect_ids, content_index.effects)
         for payload in effect_definition.payloads:
             payload_validator.validate_payload(errors, effect_id, payload, content_index)
@@ -56,3 +58,13 @@ func _validate_required_target_effects(content_index, errors: Array, effect_id: 
         seen_required_effects[normalized_effect_id] = true
         if not content_index.effects.has(normalized_effect_id):
             errors.append("effect[%s].required_target_effects missing effect: %s" % [effect_id, normalized_effect_id])
+
+func _validate_persistent_rule_mod_contract(errors: Array, effect_id: String, effect_definition) -> void:
+    if not bool(effect_definition.persists_on_switch):
+        return
+    for payload in effect_definition.payloads:
+        if not (payload is RuleModPayloadScript):
+            continue
+        if bool(payload.persists_on_switch):
+            continue
+        errors.append("effect[%s].rule_mod persists_on_switch must be true when effect persists_on_switch=true" % effect_id)

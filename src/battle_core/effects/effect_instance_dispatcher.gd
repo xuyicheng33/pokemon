@@ -60,7 +60,7 @@ func decrement_for_trigger(trigger_name: String, battle_state, content_index, ow
                 if effect_instance.remaining <= 0:
                     should_remove = true
             if should_remove:
-                if not effect_definition.on_expire_effect_ids.is_empty():
+                if not effect_definition.on_expire_effect_ids.is_empty() and _is_unit_currently_active(battle_state, owner_unit):
                     expire_events.append_array(_collect_expire_events(
                         effect_instance,
                         effect_definition,
@@ -87,6 +87,17 @@ func decrement_for_trigger(trigger_name: String, battle_state, content_index, ow
         "expire_events": expire_events,
         "invalid_code": null,
     }
+
+func _is_unit_currently_active(battle_state, owner_unit) -> bool:
+    if battle_state == null or owner_unit == null:
+        return false
+    var owner_side = battle_state.get_side_for_unit(owner_unit.unit_instance_id)
+    if owner_side == null:
+        return false
+    for slot_id in owner_side.active_slots.keys():
+        if String(owner_side.active_slots[slot_id]) == String(owner_unit.unit_instance_id):
+            return true
+    return false
 
 func _collect_expire_events(effect_instance, effect_definition, owner_id: String, battle_state, content_index) -> Array:
     var expire_events: Array = []

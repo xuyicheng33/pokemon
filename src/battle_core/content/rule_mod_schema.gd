@@ -9,9 +9,9 @@ const ALLOWED_STACKING := ["none", "refresh", "replace"]
 const ACTION_LEGALITY_VALUES := ["all", "skill", "ultimate", "switch"]
 const STACKING_KEY_SCHEMA_BY_KIND := {
     "final_mod": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
-    "mp_regen": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
+    "mp_regen": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
     "action_legality": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"],
-    "incoming_accuracy": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
+    "incoming_accuracy": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
 }
 
 func validate_payload(rule_mod_payload, content_index = null) -> Array:
@@ -26,6 +26,8 @@ func validate_payload(rule_mod_payload, content_index = null) -> Array:
         errors.append("decrement_on %s" % rule_mod_payload.decrement_on)
     if rule_mod_payload.duration_mode != ContentSchemaScript.DURATION_TURNS and rule_mod_payload.duration_mode != ContentSchemaScript.DURATION_PERMANENT:
         errors.append("duration_mode %s" % rule_mod_payload.duration_mode)
+    if bool(rule_mod_payload.persists_on_switch) and String(rule_mod_payload.scope) == "field":
+        errors.append("persists_on_switch is not allowed for field scope")
     if rule_mod_payload.duration_mode == ContentSchemaScript.DURATION_TURNS and int(rule_mod_payload.duration) <= 0:
         errors.append("duration %s" % rule_mod_payload.duration)
     match String(rule_mod_payload.mod_kind):

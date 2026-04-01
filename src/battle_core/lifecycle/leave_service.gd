@@ -20,16 +20,20 @@ func leave_unit(battle_state, unit_state, reason: String, content_index) -> void
             side_state.clear_active_unit(slot_id)
     var kept_effects: Array = []
     var removed_effects: Array = []
+    var kept_rule_mods: Array = []
     if reason != "faint":
         for effect_instance in unit_state.effect_instances:
             if effect_instance.persists_on_switch:
                 kept_effects.append(effect_instance)
             else:
                 removed_effects.append(effect_instance)
+        for rule_mod_instance in unit_state.rule_mod_instances:
+            if bool(rule_mod_instance.persists_on_switch):
+                kept_rule_mods.append(rule_mod_instance)
     else:
         removed_effects = unit_state.effect_instances.duplicate()
     unit_state.effect_instances = kept_effects
-    unit_state.rule_mod_instances.clear()
+    unit_state.rule_mod_instances = kept_rule_mods
     unit_state.stat_stages = {
         "attack": 0,
         "defense": 0,

@@ -149,7 +149,8 @@ func _apply_rule_mod_payload(payload, effect_event, battle_state) -> void:
         effect_event.source_instance_id,
         effect_event.source_kind_order,
         effect_event.source_order_speed_snapshot,
-        resolved_value
+        resolved_value,
+        String(effect_event.effect_definition_id)
     )
     if created_instance == null:
         last_invalid_battle_code = rule_mod_service.last_error_code if rule_mod_service != null else ErrorCodesScript.INVALID_RULE_MOD_DEFINITION

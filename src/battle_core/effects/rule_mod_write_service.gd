@@ -16,7 +16,7 @@ var last_error_code: Variant = null
 var last_error_message: String = ""
 var _rule_mod_schema = RuleModSchemaScript.new()
 
-func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null):
+func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = ""):
     last_error_code = null
     last_error_message = ""
     if not _validate_rule_mod_payload(rule_mod_payload):
@@ -24,7 +24,8 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
     if not _validate_owner_ref(owner_ref, rule_mod_payload.scope, battle_state):
         return null
     var owner_instances: Array = _get_owner_instances(battle_state, owner_ref)
-    var stacking_key: String = _build_stacking_key(rule_mod_payload, owner_ref)
+    var resolved_source_stacking_key := _resolve_source_stacking_key(rule_mod_payload, source_stacking_token, source_instance_id)
+    var stacking_key: String = _build_stacking_key(rule_mod_payload, owner_ref, resolved_source_stacking_key)
     if last_error_code != null:
         return null
     var existing_instance = _find_existing(owner_instances, stacking_key)
@@ -35,6 +36,8 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
         ContentSchemaScript.STACKING_REFRESH:
             if existing_instance != null:
                 existing_instance.remaining = rule_mod_payload.duration if rule_mod_payload.duration_mode == "turns" else -1
+                existing_instance.persists_on_switch = bool(rule_mod_payload.persists_on_switch)
+                existing_instance.source_stacking_key = resolved_source_stacking_key
                 return existing_instance
         ContentSchemaScript.STACKING_REPLACE:
             if existing_instance != null:
@@ -57,6 +60,8 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
     rule_mod_instance.source_kind_order = source_kind_order
     rule_mod_instance.source_order_speed_snapshot = source_order_speed_snapshot
     rule_mod_instance.priority = rule_mod_payload.priority
+    rule_mod_instance.persists_on_switch = bool(rule_mod_payload.persists_on_switch)
+    rule_mod_instance.source_stacking_key = resolved_source_stacking_key
     owner_instances.append(rule_mod_instance)
     _set_owner_instances(battle_state, owner_ref, owner_instances)
     return rule_mod_instance
@@ -159,7 +164,7 @@ func _resolve_field_instance_id(owner_ref: Dictionary, battle_state) -> String:
         return ""
     return str(battle_state.field_state.instance_id)
 
-func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary) -> String:
+func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary, source_stacking_key: String) -> String:
     var schema: Array = _resolve_stacking_key_schema(String(rule_mod_payload.mod_kind))
     if schema.is_empty():
         last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
@@ -178,6 +183,8 @@ func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary) -> String:
                 key_parts.append(str(owner_ref["id"]))
             "mod_op":
                 key_parts.append(str(rule_mod_payload.mod_op))
+            "source_stacking_key":
+                key_parts.append(source_stacking_key)
             "value":
                 key_parts.append(_resolve_stacking_value_token(rule_mod_payload))
             _:
@@ -199,3 +206,12 @@ func _resolve_stacking_value_token(rule_mod_payload) -> String:
             return "action:%s" % action_value
         return "skill:%s" % action_value
     return str(rule_mod_payload.value)
+
+func _resolve_source_stacking_key(rule_mod_payload, source_stacking_token: String, source_instance_id: String) -> String:
+    var payload_key := String(rule_mod_payload.stacking_source_key).strip_edges()
+    if not payload_key.is_empty():
+        return payload_key
+    var provided_key := String(source_stacking_token).strip_edges()
+    if not provided_key.is_empty():
+        return provided_key
+    return str(source_instance_id)
