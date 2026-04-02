@@ -1,4 +1,4 @@
-extends RefCounted
+extends "res://src/battle_core/content/content_snapshot_formal_character_validator_base.gd"
 class_name ContentSnapshotFormalSukunaValidator
 
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
@@ -41,14 +41,11 @@ func _validate_matching_damage_payloads(content_index, errors: Array, label: Str
             ])
 
 func _extract_single_damage_payload(errors: Array, label: String, effect_id: String, effect_definition):
-    var damage_payload = null
-    var damage_payload_count := 0
-    for payload in effect_definition.payloads:
-        if payload is DamagePayloadScript:
-            damage_payload_count += 1
-            if damage_payload == null:
-                damage_payload = payload
-    if damage_payload_count != 1:
-        errors.append("%s effect[%s] must define exactly one damage payload, got %d" % [label, effect_id, damage_payload_count])
-        return null
-    return damage_payload
+    return _extract_single_payload(
+        errors,
+        label,
+        effect_id,
+        effect_definition,
+        DamagePayloadScript,
+        "damage"
+    )

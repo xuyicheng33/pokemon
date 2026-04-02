@@ -51,13 +51,20 @@
     - warning 拦截
     - headless 主流程启动 smoke（`godot --headless --path . --quit-after 20`）
   - `README.md` 的 gate 描述与代码量统计已同步到当前仓库实际值
+- 已完成（阶段二：formal character validator 公共化）：
+  - 已新增 `ContentSnapshotFormalCharacterValidatorBase`
+  - 三个正式角色 validator 已统一复用公共 helper：
+    - `_extract_single_payload(...)`
+    - `_expect_packed_string_array(...)`
+  - `Gojo / Sukuna / Kashimo` 的角色级内容校验脚本不再各自重复维护同一套底层 helper
+  - Phase 2 收口时已同步刷新 `README.md` 代码量统计，避免 gate 因文档漂移失败
 - 进行中：
-  - 已确认当前仓库在功能上可继续扩角，但仍有 2 个扩角前值得继续收口的热点：
-    - formal character validator helper 已开始重复
+  - 已确认当前仓库在功能上可继续扩角，但仍有 1 个扩角前值得继续收口的热点：
     - composition service / wiring / container 维护成本开始上升
 
 #### 当前验证结果
 
+- `git diff --check` 通过
 - `bash tests/run_with_gate.sh` 通过
 
 ## 2026-04-01

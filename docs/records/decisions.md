@@ -653,3 +653,13 @@
 - 原因：
   - `execute_action()` 原先把建链、起手资源、命中与伤害后置都揉在一起，继续叠第三、第四角色特例只会再次推高热点复杂度。
   - 先把职责拆回可测试的小服务，后面补间接伤害修正或新角色动作特例时，改动面才能保持局部。
+
+### 60. 正式角色内容 validator 的通用 helper 统一下沉到共享基类（2026-04-02）
+
+- 当前新增 `ContentSnapshotFormalCharacterValidatorBase`，承接所有正式角色 validator 都会反复用到的底层 helper：
+  - `_extract_single_payload(...)`
+  - `_expect_packed_string_array(...)`
+- `Gojo / Sukuna / Kashimo` 的角色级 validator 继续各自保留角色专属断言，不再各自复制一份公共 helper。
+- 原因：
+  - 角色 validator 的增长模式和正式角色数量强相关；如果第 4、5 个角色继续从旧文件复制 helper，维护成本会按角色数线性抬升。
+  - 先把“公共取 payload / 公共数组断言”收成共享基类，后续角色只需要新增自身机制校验，能把改动面保持在角色差异层。

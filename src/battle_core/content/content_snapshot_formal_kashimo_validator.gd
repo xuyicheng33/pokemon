@@ -1,4 +1,4 @@
-extends RefCounted
+extends "res://src/battle_core/content/content_snapshot_formal_character_validator_base.gd"
 class_name ContentSnapshotFormalKashimoValidator
 
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
@@ -170,28 +170,6 @@ func _validate_amber_contract(content_index, errors: Array) -> void:
     if not bool(amber_bleed.persists_on_switch):
         errors.append("%s amber bleed must persist_on_switch=true" % label)
 
-func _extract_single_payload(
-    errors: Array,
-    label: String,
-    effect_id: String,
-    effect_definition,
-    payload_script,
-    payload_name: String
-):
-    var matched_payloads: Array = []
-    for payload in effect_definition.payloads:
-        if payload != null and payload.get_script() == payload_script:
-            matched_payloads.append(payload)
-    if matched_payloads.size() != 1:
-        errors.append("%s effect[%s] must define exactly one %s payload, got %d" % [
-            label,
-            effect_id,
-            payload_name,
-            matched_payloads.size(),
-        ])
-        return null
-    return matched_payloads[0]
-
 func _extract_stat_payloads(effect_definition) -> Array:
     var matched_payloads: Array = []
     for payload in effect_definition.payloads:
@@ -224,8 +202,3 @@ func _expect_persistent_stat_mod(errors: Array, label: String, stat_payloads: Ar
             ])
         return
     errors.append("%s missing stat_mod payload for %s" % [label, stat_name])
-
-func _expect_packed_string_array(errors: Array, label: String, actual: PackedStringArray, expected: PackedStringArray) -> void:
-    if actual == expected:
-        return
-    errors.append("%s mismatch: expected %s got %s" % [label, var_to_str(expected), var_to_str(actual)])
