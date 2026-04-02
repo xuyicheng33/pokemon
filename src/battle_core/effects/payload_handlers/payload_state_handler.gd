@@ -173,6 +173,8 @@ func _apply_rule_mod_payload(payload, effect_event, battle_state) -> void:
     if created_instance == null:
         last_invalid_battle_code = rule_mod_service.last_error_code if rule_mod_service != null else ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
         return
+    if rule_mod_service.last_apply_skipped:
+        return
     battle_logger.append_event(log_event_builder.build_event(
         EventTypesScript.EFFECT_RULE_MOD_APPLY,
         battle_state,

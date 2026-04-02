@@ -11,15 +11,60 @@
 
 ## 当前阶段
 
-- 阶段目标：扩角前模板层收口已完成；下一步先做“warning 清零 / validator 公共化 / composition 热点降耦”三段稳定化，再继续扩角。
-- 当前不做：Gojo / Sukuna 数值平衡调整、宿傩对 Gojo 的领域兑现率修正。
+- 阶段目标：按完整审查结论分阶段收口当前仓库问题；当前顺序是“运行时硬问题修复 → 文档与 gate 对齐 → formal registry / manager smoke / gate 耦合收口”。
+- 当前不做：Gojo / Sukuna / Kashimo 数值平衡调整、新角色扩角、现有角色机制重设计。
 - 当前优先级：
-  - 先清掉项目启动 warning，并把 warning 纳入 gate
-  - 再抽正式角色 validator 公共基类，避免第 4 个角色开始重复堆 helper
-  - 再整理 composition 装配热点，降低新增机制时的接线漏项风险
-  - 工作区收口干净后，再继续按 `formal_character_design_template.md` 与 `formal_character_delivery_checklist.md` 扩角
+  - 先修运行时硬问题，确保坏依赖与重复 rule_mod 不再静默漏报
+  - 再补文档与 gate 漂移，确保正式角色交付面、effect schema 与 README 统计一致
+  - 再收 formal registry / runtime validator / manager smoke / repo consistency gate 的边界，降低扩第 4 个角色时的耦合与漏线风险
+  - 每阶段都要完成验证、提交、推送，并在进入下一阶段前把工作区收干净
 
 ## 2026-04-02
+
+### 审查问题分阶段修复（进行中）
+
+- 目标：
+  - 按完整审查里确认的问题顺序逐段修复，而不是只停留在报告层
+  - 每阶段完成后都完成最小回归、记录、提交、推送，保持工作区干净
+  - 在继续扩角前先把运行时 contract、文档/gate 与 formal character 交付面收回一致
+- 范围：
+  - `src/battle_core/effects/**/*`
+  - `src/battle_core/content/*`
+  - `docs/design/*`
+  - `docs/rules/*`
+  - `docs/records/tasks.md`
+  - `README.md`
+  - `tests/suites/*`
+  - `tests/gates/*`
+- 验收标准：
+  - 运行时坏依赖必须 fail-fast，不允许静默跳过关键结算
+  - `stacking=none` 的重复施加日志语义与实例写入保持一致
+  - 正式角色文档、formal registry、manager smoke 与 repo consistency gate 保持同一交付口径
+  - 每个阶段完成后都完成验证并提交推送
+
+#### 当前执行结果
+
+- 已完成（阶段一：运行时硬问题收口）：
+  - `payload_damage_runtime_service.gd` 已把 `faint_resolver` 纳入依赖守卫，伤害结算不再允许缺依赖时静默漏掉濒死/补位链
+  - `trigger_batch_runner.gd` 已继续向下递归检查 `field_service` 与 `payload_executor` 的嵌套依赖，turn loop 入口现在能提前拦截这类坏装配
+  - `rule_mod_write_service.gd` / `rule_mod_service.gd` 已显式暴露 `last_apply_skipped`，`payload_state_handler.gd` 现在会在 `stacking=none` 的重复施加被跳过时同步跳过 apply 日志
+  - 已新增回归：
+    - `rule_mod_none_repeat_skips_log`
+    - `manager_create_session_damage_runtime_dependency_guard_contract`
+  - `README.md` 代码量统计已同步到当前仓库实际值：
+    - `src`：`10932`
+    - `tests`：`14081`
+    - `total`：`25013`
+  - `godot --headless --path . --script tests/run_all.gd` 已通过
+  - `bash tests/run_with_gate.sh` 已通过
+- 待处理（后续阶段）：
+  - 阶段二：effect schema / 角色交付文档 / docs gate 漂移收口
+  - 阶段三：formal registry / runtime validator / manager smoke / repo consistency gate 耦合收口
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
 
 ### 扩角前稳定化收口（进行中）
 

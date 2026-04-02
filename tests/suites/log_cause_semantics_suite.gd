@@ -5,6 +5,7 @@ const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/pas
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
+const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
@@ -16,6 +17,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("log_contract_semantics", failures, Callable(self, "_test_log_contract_semantics").bind(harness))
     runner.run_test("apply_effect_lifecycle_chain", failures, Callable(self, "_test_apply_effect_lifecycle_chain").bind(harness))
     runner.run_test("apply_effect_none_repeat_skips_log", failures, Callable(self, "_test_apply_effect_none_repeat_skips_log").bind(harness))
+    runner.run_test("rule_mod_none_repeat_skips_log", failures, Callable(self, "_test_rule_mod_none_repeat_skips_log").bind(harness))
 func _test_log_contract_semantics(harness) -> Dictionary:
     var core_payload = harness.build_core()
     if core_payload.has("error"):
@@ -273,6 +275,104 @@ func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
             marker_count += 1
     if marker_count != 1:
         return harness.fail_result("stacking=none effect should keep exactly one runtime instance after repeated apply")
+    return harness.pass_result()
+
+func _test_rule_mod_none_repeat_skips_log(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+
+    var rule_mod_payload = RuleModPayloadScript.new()
+    rule_mod_payload.payload_type = "rule_mod"
+    rule_mod_payload.mod_kind = "mp_regen"
+    rule_mod_payload.mod_op = "add"
+    rule_mod_payload.value = 2
+    rule_mod_payload.scope = "target"
+    rule_mod_payload.duration_mode = "permanent"
+    rule_mod_payload.decrement_on = "turn_end"
+    rule_mod_payload.stacking = "none"
+
+    var apply_effect = EffectDefinitionScript.new()
+    apply_effect.id = "test_apply_none_rule_mod"
+    apply_effect.display_name = "Apply None Rule Mod"
+    apply_effect.scope = "target"
+    apply_effect.duration_mode = "permanent"
+    apply_effect.trigger_names = PackedStringArray(["on_cast"])
+    apply_effect.payloads.clear()
+    apply_effect.payloads.append(rule_mod_payload)
+    content_index.register_resource(apply_effect)
+
+    var mark_skill = SkillDefinitionScript.new()
+    mark_skill.id = "test_none_rule_mod_skill"
+    mark_skill.display_name = "None Rule Mod Skill"
+    mark_skill.damage_kind = "none"
+    mark_skill.power = 0
+    mark_skill.accuracy = 100
+    mark_skill.mp_cost = 0
+    mark_skill.priority = 0
+    mark_skill.targeting = "enemy_active_slot"
+    mark_skill.effects_on_cast_ids = PackedStringArray([apply_effect.id])
+    content_index.register_resource(mark_skill)
+    content_index.units["sample_pyron"].skill_ids[0] = mark_skill.id
+
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 245)
+    var commands_turn_1: Array = [
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": mark_skill.id,
+        }),
+        core.command_builder.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_whiff",
+        }),
+    ]
+    var commands_turn_2: Array = [
+        core.command_builder.build_command({
+            "turn_index": 2,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": mark_skill.id,
+        }),
+        core.command_builder.build_command({
+            "turn_index": 2,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
+            "skill_id": "sample_whiff",
+        }),
+    ]
+    core.turn_loop_controller.run_turn(battle_state, content_index, commands_turn_1)
+    core.turn_loop_controller.run_turn(battle_state, content_index, commands_turn_2)
+
+    var target_unit = battle_state.get_side("P2").get_active_unit()
+    var apply_events := 0
+    for ev in core.battle_logger.event_log:
+        if ev.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and String(ev.payload_summary).find("mp_regen") != -1:
+            apply_events += 1
+    if apply_events != 1:
+        return harness.fail_result("stacking=none rule_mod should emit exactly one apply log while the instance remains active")
+    var rule_mod_count := 0
+    for rule_mod_instance in target_unit.rule_mod_instances:
+        if String(rule_mod_instance.mod_kind) == "mp_regen":
+            rule_mod_count += 1
+    if rule_mod_count != 1:
+        return harness.fail_result("stacking=none rule_mod should keep exactly one runtime instance after repeated apply")
     return harness.pass_result()
 
 func _event_id(log_event) -> String:

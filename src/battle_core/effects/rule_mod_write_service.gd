@@ -13,12 +13,14 @@ const STACKING_KEY_SCHEMA_BY_KIND := RuleModSchemaScript.STACKING_KEY_SCHEMA_BY_
 var id_factory
 var last_error_code: Variant = null
 var last_error_message: String = ""
+var last_apply_skipped: bool = false
 var _rule_mod_schema = RuleModSchemaScript.new()
 var _owner_scope_service = RuleModOwnerScopeServiceScript.new()
 
 func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = ""):
 	last_error_code = null
 	last_error_message = ""
+	last_apply_skipped = false
 	if not _validate_rule_mod_payload(rule_mod_payload):
 		return null
 	if not _owner_scope_service.validate_owner_ref(owner_ref, rule_mod_payload.scope, battle_state):
@@ -34,6 +36,7 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
 	match rule_mod_payload.stacking:
 		ContentSchemaScript.STACKING_NONE:
 			if existing_instance != null:
+				last_apply_skipped = true
 				return existing_instance
 		ContentSchemaScript.STACKING_REFRESH:
 			if existing_instance != null:

@@ -6,11 +6,13 @@ const RuleModWriteServiceScript := preload("res://src/battle_core/effects/rule_m
 
 var id_factory
 var last_error_code: Variant = null
+var last_apply_skipped: bool = false
 var _read_service = RuleModReadServiceScript.new()
 var _write_service = RuleModWriteServiceScript.new()
 
 func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = ""):
     _write_service.id_factory = id_factory
+    last_apply_skipped = false
     var created_instance = _write_service.create_instance(
         rule_mod_payload,
         owner_ref,
@@ -22,6 +24,7 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
         source_stacking_token
     )
     last_error_code = _write_service.last_error_code
+    last_apply_skipped = _write_service.last_apply_skipped
     return created_instance
 
 func get_final_multiplier(battle_state, owner_id: String) -> float:

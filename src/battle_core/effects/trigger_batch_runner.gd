@@ -100,12 +100,20 @@ func resolve_missing_dependency() -> String:
         return "passive_item_service"
     if field_service == null:
         return "field_service"
+    if field_service.has_method("resolve_missing_dependency"):
+        var field_missing := str(field_service.resolve_missing_dependency())
+        if not field_missing.is_empty():
+            return "field_service.%s" % field_missing
     if effect_instance_dispatcher == null:
         return "effect_instance_dispatcher"
     if effect_queue_service == null:
         return "effect_queue_service"
     if payload_executor == null:
         return "payload_executor"
+    if payload_executor.has_method("resolve_missing_dependency"):
+        var payload_missing := str(payload_executor.resolve_missing_dependency())
+        if not payload_missing.is_empty():
+            return "payload_executor.%s" % payload_missing
     if rng_service == null:
         return "rng_service"
     return ""
