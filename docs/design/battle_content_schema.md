@@ -128,10 +128,13 @@
 |`duration`|`int`|持续值|
 |`decrement_on`|`String`|`turn_start / turn_end`（仅 `turns`）|
 |`stacking`|`String`|`none / refresh / replace / stack`|
+|`max_stacks`|`int`|仅 `stacking=stack` 时允许声明；`-1` 表示不封顶|
 |`priority`|`int`|效果优先级|
 |`trigger_names`|`PackedStringArray`|允许的触发点|
 |`required_target_effects`|`PackedStringArray`|effect 级前置条件；仅 `scope=target` 允许声明|
 |`required_target_same_owner`|`bool`|是否要求 `required_target_effects` 必须由当前 effect owner 本人施加；仅 `scope=target` 且 `required_target_effects` 非空时允许|
+|`required_incoming_command_types`|`PackedStringArray`|仅 `trigger_names` 包含 `on_receive_action_hit` 时允许声明；用于过滤来袭动作类型|
+|`required_incoming_combat_type_ids`|`PackedStringArray`|仅 `trigger_names` 包含 `on_receive_action_hit` 时允许声明；用于过滤来袭动作属性|
 |`on_expire_effect_ids`|`PackedStringArray`|实例到期时追加执行的效果 ID|
 |`payloads`|`Array[Resource]`|payload 资源数组|
 |`persists_on_switch`|`bool`|离场是否保留|
@@ -140,7 +143,9 @@
 
 - `required_target_effects` 只允许出现在 `scope=target` 的 effect 上。
 - `required_target_same_owner=true` 时，前置检查除“目标持有这些 effect”外，还要求这些 effect instance 的 `meta.source_owner_id` 与当前 effect owner 一致。
-- 前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
+- `required_incoming_command_types / required_incoming_combat_type_ids` 只允许出现在 `trigger_names` 包含 `on_receive_action_hit` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
+- `max_stacks` 只允许和 `stacking=stack` 一起声明；`-1` 表示不封顶，正整数表示硬上限。
+- 若目标前置或来袭动作过滤不满足，整条 effect 会在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 
 ### 3.6 FieldDefinition
 
@@ -265,12 +270,13 @@
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
 - `SkillDefinition.is_domain_skill` 与其实际 `apply_field` 目标必须一致：领域技能必须施加 `field_kind=domain` 的 field；施加 `domain` field 的技能也必须声明 `is_domain_skill=true`。
-- 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单（含 `on_matchup_changed`、`stack`）、效果优先级范围、payload 类型与跨资源引用完整性。
+- 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单（含 `on_matchup_changed`、`on_receive_action_hit`、`stack`）、效果优先级范围、`max_stacks` 合法性、payload 类型与跨资源引用完整性。
 - `ApplyFieldPayload.on_success_effect_ids` 的引用必须全部存在，且被引用 effect 必须声明 `trigger_names` 包含 `field_apply_success`。
 - `required_target_effects` 的加载期校验固定包含：非空项、去重、引用存在性、以及 `scope=target` 约束；若 `required_target_same_owner=true`，则同时要求 `required_target_effects` 非空且 effect `scope=target`。
+- `required_incoming_command_types / required_incoming_combat_type_ids` 的加载期校验固定包含：只允许 `on_receive_action_hit` effect 使用、不得含空项、动作类型只允许 `skill / ultimate`、属性过滤必须命中已注册 `combat_type`。
 - field 校验覆盖：`field_kind in {normal, domain}`、`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
 - payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
-- 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；`content_snapshot_formal_character_registry.gd` 会从 `docs/records/formal_character_registry.json` 读取可选 `content_validator_script_path`，动态装配各角色 validator。
+- 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；运行时只读取 `src/battle_core/content/formal_character_validator_registry.json` 里的 `content_validator_script_path`，并由 repo consistency gate 校验它与 `docs/records/formal_character_registry.json` 的正式交付面记录保持一致。
 - 内容快照校验失败直接 fail-fast，不进入运行态。
 
 ## 7. 运行前校验（BattleSetup）

@@ -28,23 +28,28 @@
 |`duration`|持续值；`turns` 模式必填|
 |`decrement_on`|`turn_start / turn_end`；仅 `turns` 模式必填|
 |`stacking`|`none / refresh / replace / stack`|
+|`max_stacks`|仅 `stacking=stack` 时允许声明；`-1` 表示不封顶，正整数表示硬上限|
 |`priority`|统一优先级字段；默认 `0`；数值越大越先|
 |`trigger_names`|触发点列表|
 |`required_target_effects`|effect 级前置条件；仅 `scope=target` 允许声明|
 |`required_target_same_owner`|可选；要求 `required_target_effects` 必须由当前 effect owner 本人施加|
+|`required_incoming_command_types`|可选；仅 `trigger_names` 包含 `on_receive_action_hit` 时允许声明，用于过滤来袭动作类型|
+|`required_incoming_combat_type_ids`|可选；仅 `trigger_names` 包含 `on_receive_action_hit` 时允许声明，用于过滤来袭动作属性|
 |`on_expire_effect_ids`|实例到期后追加执行的效果 ID 列表|
 |`payloads`|效果行为列表|
 |`persists_on_switch`|是否跨离场保留；默认 `false`|
 
 补充规则：
 
-1. 当前 schema 仍然没有通用 `conditions` 字段；effect 级前置目前只开放 `required_target_effects`。
+1. 当前 schema 仍然没有通用 `conditions` 字段；effect 级前置目前只开放 `required_target_effects` 与 `on_receive_action_hit` 下的来袭动作过滤。
 2. `required_target_effects` 只允许挂在 `scope=target` 的 effect 上；加载期必须校验非空项、去重和引用存在性。
 3. `required_target_same_owner = true` 时，前置除检查目标持有这些 effect 外，还必须校验这些 effect instance 记录的 `meta.source_owner_id` 与当前 effect owner 一致。
-4. 前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
-5. `persists_on_switch=true` 的 unit effect 在非击倒离场后继续保留，但 bench 上只继续倒计时，不参与普通 `turn_start / turn_end` trigger batch。
-6. 若 owner 在执行阶段中途重新上场，则这些持久 effect 在“同回合重上场当回合”仍继续暂停普通 `turn_start / turn_end` trigger batch；从下一整回合起恢复。
-7. 上述 bench 持久 effect 若在板凳上到期，只移除并写正常 remove log；当前不派发 `on_expire_effect_ids`。
+4. `required_incoming_command_types / required_incoming_combat_type_ids` 只允许声明在 `trigger_names` 包含 `on_receive_action_hit` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
+5. 若目标前置或来袭动作过滤不满足，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
+6. `max_stacks` 只允许和 `stacking=stack` 一起出现；`-1` 表示不设上限，正整数表示最多并行层数。
+7. `persists_on_switch=true` 的 unit effect 在非击倒离场后继续保留，但 bench 上只继续倒计时，不参与普通 `turn_start / turn_end` trigger batch。
+8. 若 owner 在执行阶段中途重新上场，则这些持久 effect 在“同回合重上场当回合”仍继续暂停普通 `turn_start / turn_end` trigger batch；从下一整回合起恢复。
+9. 上述 bench 持久 effect 若在板凳上到期，只移除并写正常 remove log；当前不派发 `on_expire_effect_ids`。
 
 ## 3. `EffectInstance`
 
@@ -74,6 +79,7 @@
 |战斗开始|`battle_init`|
 |回合|`turn_start`, `turn_end`|
 |行动|`on_cast`, `on_hit`, `on_miss`|
+|受击动作|`on_receive_action_hit`|
 |换人|`on_enter`, `on_exit`, `on_switch`|
 |对位变化|`on_matchup_changed`|
 |倒下|`on_faint`, `on_kill`|
@@ -96,6 +102,7 @@
 11. `field_break` 只用于 field 被提前打断链；`field_expire` 只用于 field 自然到期链。
 12. `field_apply_success` 只用于 `ApplyFieldPayload.on_success_effect_ids` 的 follow-up 派发。
 13. `on_expire` 只用于 `EffectDefinition.on_expire_effect_ids` 派发，语义与 `field_expire` 严格分离，不混用。
+14. `on_receive_action_hit` 只表示“owner 被一次来袭行动命中后”的 effect 入口；若还要继续限制只对特定动作类型或属性生效，必须显式使用 `required_incoming_command_types / required_incoming_combat_type_ids`。
 
 ## 5. 当前基线 payload 类型
 
