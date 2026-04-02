@@ -21,7 +21,7 @@
 
 ## 2026-04-02
 
-### 审查问题分阶段修复（进行中）
+### 审查问题分阶段修复（已完成）
 
 - 目标：
   - 按完整审查里确认的问题顺序逐段修复，而不是只停留在报告层
@@ -66,8 +66,15 @@
   - `tests/gates/repo_consistency_docs_gate.py` 已新增文档锚点，后续若再把正式角色数、`rule_mod` 新读取点、鹿紫云 manager smoke 或固定案例说明写丢，会直接被 gate 拦住
   - `python3 tests/gates/repo_consistency_docs_gate.py` 已通过
   - `bash tests/run_with_gate.sh` 已通过
-- 待处理（后续阶段）：
-  - 阶段三：formal registry / runtime validator / manager smoke / repo consistency gate 耦合收口
+- 已完成（阶段三：formal registry / runtime validator / manager smoke / gate 收口）：
+  - 已新增 `src/battle_core/content/formal_character_validator_registry.json`；`ContentSnapshotFormalCharacterValidator` 运行时不再直接读取 `docs/records/formal_character_registry.json`
+  - `tests/gates/repo_consistency_formal_character_gate.py` 当前会强校验 docs registry 与 runtime validator registry 的 `content_validator_script_path` 完全对齐，避免双份注册表静默漂移
+  - 正式角色 registry 已新增 `sample_setup_method`；`repo_consistency_formal_character_gate.py` 不再只看角色 ID 字符串，而会强校验 `SampleBattleFactory` 上存在对应 builder
+  - 已新增 `SampleBattleFactory.build_sukuna_vs_sample_setup(...)`，让宿傩也有与五条悟 / 鹿紫云同口径的角色对样例建局入口
+  - `gojo_manager_smoke_suite.gd` 与 `sukuna_manager_smoke_suite.gd` 已改成真正黑盒：通过公开 facade 驱动“两回合先受伤、再反转术式回血”的主路径，不再伸手访问 `manager._sessions` 或内部 battle state
+  - `README.md`、`battle_content_schema.md`、`formal_character_delivery_checklist.md` 与 `decisions.md` 已同步改成“docs registry 记录交付面，runtime 只读 code-side validator registry”的当前口径
+  - `python3 tests/gates/repo_consistency_formal_character_gate.py` 已通过
+  - `bash tests/run_with_gate.sh` 已通过
 
 #### 当前验证结果
 
