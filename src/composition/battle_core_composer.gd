@@ -58,11 +58,10 @@ func compose_manager():
     return manager
 
 func _instantiate_services(container) -> bool:
-    for service_spec in ServiceSpecsScript.SERVICE_SPECS:
-        var slot_name := str(service_spec["slot"])
-        var script_ref = service_spec["script"]
+    for slot_name in ServiceSpecsScript.service_slots():
+        var script_ref = ServiceSpecsScript.SCRIPT_BY_SLOT.get(slot_name, null)
         if script_ref == null:
-            return _fail("Unknown service slot: %s" % slot_name)
+            return _fail("Unknown service slot: %s" % str(slot_name))
         container.set(slot_name, script_ref.new())
     return true
 
@@ -86,11 +85,10 @@ func _validate_container_dependencies(container) -> bool:
             return _fail("Composer missing owner: %s" % owner_name)
         if owner.get(dependency_name) == null:
             return _fail("%s missing dependency: %s" % [owner_name, dependency_name])
-    for service_spec in ServiceSpecsScript.SERVICE_SPECS:
-        var slot_name := str(service_spec["slot"])
+    for slot_name in ServiceSpecsScript.service_slots():
         var service = container.get(slot_name)
         if service == null:
-            return _fail("Composer missing service: %s" % slot_name)
+            return _fail("Composer missing service: %s" % str(slot_name))
         if slot_name == "runtime_guard_service":
             continue
         if service.has_method("resolve_missing_dependency"):
@@ -100,10 +98,7 @@ func _validate_container_dependencies(container) -> bool:
     return true
 
 func _resolve_service_slots() -> PackedStringArray:
-    var service_slots := PackedStringArray()
-    for service_spec in ServiceSpecsScript.SERVICE_SPECS:
-        service_slots.append(str(service_spec["slot"]))
-    return service_slots
+    return ServiceSpecsScript.service_slots()
 
 func _new_service_instance(slot_name: String):
     var script_ref = ServiceSpecsScript.SCRIPT_BY_SLOT.get(slot_name, null)

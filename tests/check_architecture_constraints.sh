@@ -8,6 +8,8 @@ cd "$ROOT_DIR"
 require_command rg "architecture import gates"
 require_command python3 "architecture size gates"
 
+python3 tests/gates/architecture_composition_consistency_gate.py
+
 if rg -n "res://src/battle_core/runtime/" src/adapters src/composition scenes >/tmp/runtime_imports.out 2>/dev/null; then
   echo "ARCH_GATE_FAILED: outer layers must not import battle_core/runtime/*" >&2
   cat /tmp/runtime_imports.out

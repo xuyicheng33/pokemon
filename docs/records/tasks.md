@@ -58,9 +58,17 @@
     - `_expect_packed_string_array(...)`
   - `Gojo / Sukuna / Kashimo` 的角色级内容校验脚本不再各自重复维护同一套底层 helper
   - Phase 2 收口时已同步刷新 `README.md` 代码量统计，避免 gate 因文档漂移失败
+- 已完成（阶段三：composition 接线热点降耦）：
+  - `BattleCoreServiceSpecs` 已改成“单一 slot 列表 + script map”的结构，不再在 `SERVICE_SPECS` 里重复抄一遍全部 slot
+  - 已新增 `tests/gates/architecture_composition_consistency_gate.py`
+  - `tests/check_architecture_constraints.sh` 已接入 composition 静态一致性 gate，当前会拦截：
+    - `service_slots` 与 `SCRIPT_BY_SLOT` 漂移
+    - `BattleCoreContainer` 服务槽位缺失或残留旧槽位
+    - `WIRING_SPECS / RESET_SPECS` 引用未知 owner/source
+    - 重复的 `owner + dependency` 接线项
+  - `README.md` 已补当前架构 gate 的 composition 一致性说明
 - 进行中：
-  - 已确认当前仓库在功能上可继续扩角，但仍有 1 个扩角前值得继续收口的热点：
-    - composition service / wiring / container 维护成本开始上升
+  - 当前进入最终复查阶段，继续确认是否还存在会影响下一名角色开发的热点
 
 #### 当前验证结果
 

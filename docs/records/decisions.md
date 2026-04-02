@@ -663,3 +663,16 @@
 - 原因：
   - 角色 validator 的增长模式和正式角色数量强相关；如果第 4、5 个角色继续从旧文件复制 helper，维护成本会按角色数线性抬升。
   - 先把“公共取 payload / 公共数组断言”收成共享基类，后续角色只需要新增自身机制校验，能把改动面保持在角色差异层。
+
+### 61. Composition 装配当前固定为“单一 service slot 列表 + 静态一致性 gate”双保险（2026-04-02）
+
+- `BattleCoreServiceSpecs` 当前不再维护一份重复的 `SERVICE_SPECS` 全量数组；统一改为：
+  - 一份 `SERVICE_SLOTS`
+  - 一份 `SCRIPT_BY_SLOT`
+- `tests/check_architecture_constraints.sh` 当前追加 `architecture_composition_consistency_gate.py`，固定校验：
+  - `service_slots / script map / container surface` 三处一致
+  - `WIRING_SPECS / RESET_SPECS` 的 owner/source 必须都是已声明服务槽位
+  - 相同 `owner + dependency` 不得重复接线
+- 原因：
+  - composition 真正的维护风险不是“现在不能跑”，而是新增服务时需要手工同时改三四处，长期很容易出现漏接、残留旧槽位或 copy-paste 重复接线。
+  - 先把 slot 列表收成单一真相，再补静态 gate，能把扩新角色或新机制时的装配风险从“靠人记”降成“门禁自动拦”。
