@@ -222,20 +222,24 @@
 |---|---|---|
 |`mod_kind / mod_op / value`|`Variant`|基础 rule_mod 定义；见 `docs/rules/06`|
 |`persists_on_switch`|`bool`|非击倒离场时是否保留该 rule_mod；仅允许单位 owner 的 `self / target` 声明|
-|`stacking_source_key`|`String`|`mp_regen / incoming_accuracy` 的来源分组键；留空时按共享兜底口径生成|
+|`stacking_source_key`|`String`|`mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 的来源分组键；留空时按共享兜底口径生成|
 |`dynamic_value_formula`|`String`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 `rule_mod` 使用|
 |`dynamic_value_thresholds`|`PackedInt32Array`|运行时区间阈值|
 |`dynamic_value_outputs`|`PackedFloat32Array`|每个阈值对应输出值|
 |`dynamic_value_default`|`float`|未命中任何阈值时的默认值|
+|`required_incoming_command_types`|`PackedStringArray`|仅 `incoming_action_final_mod` 可声明；当前只允许 `skill / ultimate`|
+|`required_incoming_combat_type_ids`|`PackedStringArray`|仅 `incoming_action_final_mod` 可声明；用于过滤来袭技能/奥义属性|
 
 补充约束：
 
-- `mod_kind` 当前实现白名单以 `docs/rules/06_effect_schema_and_extension.md` 为准，当前包含 `final_mod / mp_regen / action_legality / incoming_accuracy`。
+- `mod_kind` 当前实现白名单以 `docs/rules/06_effect_schema_and_extension.md` 为准，当前包含 `final_mod / mp_regen / action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod`。
 - `action_legality` 是当前覆盖技能 / 奥义 / 换人的正式合法性读取点；`wait` 不受其影响。
 - `matchup_bst_gap_band` 当前按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值，`max_mp` 视为正式第七维。
 - `incoming_accuracy.value` 当前要求为 `int`，并且禁止 `dynamic_value_formula`。
+- `nullify_field_accuracy.value` 当前要求为 `bool`，语义固定为“忽略领域附加必中，不影响技能原生命中率”。
+- `incoming_action_final_mod.value` 当前要求为数值；`required_incoming_command_types / required_incoming_combat_type_ids` 也只允许挂在这一类 rule_mod 上。
 - `persists_on_switch=true` 的 rule_mod 只允许 `scope=self/target`；`field` scope 非法。
-- `mp_regen / incoming_accuracy` 当前正式支持多来源并存；来源分组优先级固定为 `stacking_source_key -> effect_definition_id -> source_instance_id`，同来源组内继续按 `none / refresh / replace` 处理。
+- `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 当前正式支持多来源并存；来源分组优先级固定为 `stacking_source_key -> effect_definition_id -> source_instance_id`，同来源组内继续按 `none / refresh / replace` 处理。
 
 实现状态说明（2026-03-25）：
 

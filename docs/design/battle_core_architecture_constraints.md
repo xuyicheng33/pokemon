@@ -42,10 +42,13 @@
 - `mp_regen`
 - `action_legality`
 - `incoming_accuracy`
+- `nullify_field_accuracy`
+- `incoming_action_final_mod`
 
 补充说明：
 
 - `required_target_effects` 属于 effect 级前置守卫，不属于 `rule_mod` 读取点。
+- `required_incoming_command_types / required_incoming_combat_type_ids` 只属于 `incoming_action_final_mod` 的过滤条件，不单独形成新的读取点。
 
 ### 3.2 明确禁止
 

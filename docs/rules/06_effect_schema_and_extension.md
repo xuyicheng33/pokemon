@@ -113,7 +113,7 @@
 
 补充规则：
 
-1. 当前内容层不开放“任意 rule_mod”；只允许改写模块 03 / 05 已明确留口的 `final_mod` 链、MP 回复规则、动作合法性或命中干扰。
+1. 当前内容层不开放“任意 rule_mod”；只允许改写模块 03 / 05 已明确留口的 `final_mod` 链、MP 回复规则、动作合法性、来袭命中干扰、领域必中中和或来袭行动伤害倍率。
 2. `rule_mod` 是“读取点修正器”，不是流程节点扩展口；不得修改 `priority`、行动排序、目标锁定、击倒窗口、胜负判定、回合阶段顺序、生命周期顺序、日志链路语义等核心流程。
 3. `payloads` 列表严格按声明顺序执行；后一个 payload 必须读取前一个 payload 已经写回的最新运行态。
 4. 每个 payload 单独适用模块 02 的目标有效性与模块 04 的生命周期规则；若前序 payload 已让目标进入 `fainted_pending_leave`，后续直接作用该目标的普通 payload 按目标无效处理。
@@ -144,9 +144,9 @@
 
 |字段|说明|
 |---|---|
-|`mod_kind`|`final_mod / mp_regen / action_legality / incoming_accuracy`|
-|`mod_op`|`final_mod` 允许 `mul / add / set`；`mp_regen / incoming_accuracy` 允许 `add / set`；`action_legality` 允许 `allow / deny`|
-|`value`|`final_mod / mp_regen / incoming_accuracy` 下为数值；`action_legality` 下为 `all / skill / ultimate / switch / 已注册 skill_id`|
+|`mod_kind`|`final_mod / mp_regen / action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod`|
+|`mod_op`|`final_mod / incoming_action_final_mod` 允许 `mul / add / set`；`mp_regen / incoming_accuracy` 允许 `add / set`；`action_legality` 允许 `allow / deny`；`nullify_field_accuracy` 仅允许 `set`|
+|`value`|`final_mod / mp_regen / incoming_accuracy / incoming_action_final_mod` 下为数值；`action_legality` 下为 `all / skill / ultimate / switch / 已注册 skill_id`；`nullify_field_accuracy` 下为 `bool`|
 |`scope`|`self / target / field`，与创建时的目标一致|
 |`duration_mode`|`turns / permanent`|
 |`duration`|`turns` 模式必填|
@@ -154,9 +154,11 @@
 |`stacking`|`none / refresh / replace`|
 |`priority`|可选，默认 `0`，用于同一 hook 内的应用顺序|
 |`persists_on_switch`|可选，默认 `false`；仅允许 `self / target` 的 unit rule mod 声明|
-|`stacking_source_key`|可选；用于 `mp_regen / incoming_accuracy` 的来源分组|
+|`stacking_source_key`|可选；用于 `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 的来源分组|
 |`dynamic_value_formula`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`（按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值）|
 |`dynamic_value_thresholds / dynamic_value_outputs / dynamic_value_default`|动态求值所需阈值、输出和值兜底|
+|`required_incoming_command_types`|可选；仅 `incoming_action_final_mod` 可声明，当前只允许 `skill / ultimate`|
+|`required_incoming_combat_type_ids`|可选；仅 `incoming_action_final_mod` 可声明，运行时只匹配列出的来袭属性 ID|
 
 补充规则：
 
@@ -165,15 +167,21 @@
 3. 动态值公式当前只允许用于“owner 为单位”的数值型 `rule_mod`（即当前只开放 `self / target`，不开放 `field`），且运行时求值不得回写共享内容资源。
 4. 若未来需要 field 作用域的动态公式，必须先补明确定义、校验和运行时语义，不能复用当前 `matchup_bst_gap_band` 口径。
 5. `incoming_accuracy` 当前要求 `value` 为整数，并且禁止 `dynamic_value_formula`。
-6. `persists_on_switch=true` 只允许声明在 `scope=self/target` 且 owner 为单位的 rule mod 上；`field` scope 禁止这样声明。
-7. 若 `mp_regen / incoming_accuracy` 需要多来源并存，来源分组优先级固定为：
+6. `nullify_field_accuracy` 当前要求 `value` 为 `bool`，并且禁止 `dynamic_value_formula`；当前语义固定为“忽略领域附加必中，不改技能原生命中率”。
+7. `incoming_action_final_mod` 当前要求 `value` 为数值，并且禁止 `dynamic_value_formula`；其过滤字段 `required_incoming_command_types / required_incoming_combat_type_ids` 也只允许挂在这一类 rule_mod 上。
+8. 若 `incoming_action_final_mod.required_incoming_command_types` 非空，当前只允许 `skill / ultimate`；不得声明 `wait / switch / surrender`。
+9. `required_incoming_combat_type_ids` 若非空，加载期必须校验每个 `combat_type_id` 都已在内容快照里注册。
+10. `persists_on_switch=true` 只允许声明在 `scope=self/target` 且 owner 为单位的 rule mod 上；`field` scope 禁止这样声明。
+11. 若 `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 需要多来源并存，来源分组优先级固定为：
    - `payload.stacking_source_key`
    - 否则当前 effect definition id
    - 再兜底到 `source_instance_id`
-8. 同一来源分组内继续按 `none / refresh / replace` 处理；不同来源分组可以并存。
-9. 当前正式例子：
+12. 同一来源分组内继续按 `none / refresh / replace` 处理；不同来源分组可以并存。
+13. 当前正式例子：
    - “宿傩被动回蓝 + 装备回蓝”应一起算
    - “Gojo 无下限减命中 + 其他减命中来源”应一起算
+   - “鹿紫云的弥虚葛笼 + 其他领域必中中和来源”应按来源分组并存
+   - “鹿紫云抗雷 + 其他来袭伤害修正来源”应按同一读取顺序叠加
    - 若内容作者想故意合并成一条，必须显式复用同一个 `stacking_source_key`
 
 ### 5.3 `RuleModInstance` 运行时模型
@@ -200,20 +208,21 @@
 应用规则：
 
 1. `rule_mod` 在执行 payload 时创建/刷新/替换实例，不进入效果队列二次排序。
-2. 需要读取规则修正的节点（`final_mod`、`turn_start` MP 回复、技能/动作合法性、命中干扰）必须收集所有仍有效的 `RuleModInstance`。
+2. 需要读取规则修正的节点（`final_mod`、`turn_start` MP 回复、技能/动作合法性、来袭命中干扰、领域必中中和、来袭行动伤害倍率）必须收集所有仍有效的 `RuleModInstance`。
 3. 同一 hook 内的应用顺序固定为：`priority -> source_order_speed_snapshot -> source_kind_order -> source_instance_id -> instance_id`。
 4. `stacking_key` 当前按 `mod_kind` 分流：
    - `final_mod`：`mod_kind + scope + owner_scope + owner_id + mod_op`
-   - `mp_regen / incoming_accuracy`：在上式基础上额外加入 `source_stacking_key`
+   - `mp_regen / incoming_accuracy / incoming_action_final_mod`：在上式基础上额外加入 `source_stacking_key`
+   - `nullify_field_accuracy`：`mod_kind + scope + owner_scope + owner_id + source_stacking_key`
    - `action_legality`：在基础式上额外加入 `value`
-5. `mp_regen / incoming_accuracy` 的 `source_stacking_key` 解析优先级固定为：`payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
+5. `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 的 `source_stacking_key` 解析优先级固定为：`payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
 6. 同键下的 `none / refresh / replace` 语义不变；不同来源组不互相折叠，读取顺序继续沿用现有全局排序链。
 
 ### 5.4 `rule_mod` 边界冻结（架构强约束）
 
 |项|规则|
 |---|---|
-|白名单读取点|固定为 `final_mod / mp_regen / action_legality / incoming_accuracy`|
+|白名单读取点|固定为 `final_mod / mp_regen / action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod`|
 |流程控制权|禁止通过 `rule_mod` 改行动排序、回合阶段顺序、击倒窗口、补位时机、胜负判定、目标模型、生命周期、日志语义|
 |新增读取点流程|先改 `docs/rules/06` 与架构约束文档，再实现|
 |扩展策略|若玩法长期需要更多权限，优先新建专用机制，不继续扩大 `rule_mod` 放权范围|

@@ -60,8 +60,10 @@
 - 已完成（阶段二：文档与 gate 漂移收口）：
   - `docs/design/battle_content_schema.md` 已改成当前正式口径：仓库内正式角色内容包为 `Gojo / Sukuna / Kashimo` 三人，而不是旧的两人表述
   - `battle_content_schema.md` 已补 Kashimo 的正式字段示例，写清默认三技能、候选池与 `3 / 3 / 1` 奥义点 contract
+  - `docs/rules/06_effect_schema_and_extension.md` 已补齐 `nullify_field_accuracy / incoming_action_final_mod` 两个正式 `rule_mod` 读取点，以及 `required_incoming_command_types / required_incoming_combat_type_ids` 过滤字段
+  - `docs/design/battle_core_architecture_constraints.md` 已把上述两个读取点写回 `rule_mod` 白名单，并明确 incoming action 过滤字段不构成新读取点
   - `docs/design/kashimo_hajime_design.md` 已把 `kashimo_manager_smoke_suite.gd`、formal registry 挂回的共享 suite，以及 `tests/replay_cases/kashimo_cases.md` / `tests/helpers/kashimo_case_runner.gd` 固定复查入口写回正式交付面说明
-  - `tests/gates/repo_consistency_docs_gate.py` 已新增文档锚点，后续若再把正式角色数、鹿紫云 manager smoke 或固定案例说明写丢，会直接被 gate 拦住
+  - `tests/gates/repo_consistency_docs_gate.py` 已新增文档锚点，后续若再把正式角色数、`rule_mod` 新读取点、鹿紫云 manager smoke 或固定案例说明写丢，会直接被 gate 拦住
   - `python3 tests/gates/repo_consistency_docs_gate.py` 已通过
   - `bash tests/run_with_gate.sh` 已通过
 - 待处理（后续阶段）：
