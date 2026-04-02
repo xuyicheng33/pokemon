@@ -13,7 +13,7 @@
   - `combat_type` 战斗属性系统（单位 `0..2`、技能 `0..1`、显式克制表）
   - `ultimate_points` 奥义点资源、公开快照与合法性校验
   - `on_matchup_changed`、field 生命周期（自然到期 / 提前打断 / 领域对拼 / 普通 field 阻断 / 成功后附带效果）、被动技能、被动持有物、受限 rule_mod
-  - 默认装配可直接加载的 Gojo / Sukuna 正式角色原型内容包
+  - 默认装配可直接加载的 Gojo / Sukuna / Kashimo 正式角色原型内容包
   - deterministic 回放（同输入同结果）
   - 完整日志契约（`log_schema_version = 3`）
 - 明确不做：通用状态包、暴击、STAB、属性免疫、主动道具、多目标/双打
@@ -97,6 +97,8 @@ tests/
 ```bash
 godot --path .
 ```
+
+默认会进入 `BattleSandbox` 并运行 Kashimo 演示回放；如需保留旧样例演示，可追加命令行参数 `demo=legacy`。
 
 ### 5.2 运行完整闸门（推荐）
 
@@ -192,10 +194,12 @@ tests/run_with_gate.sh
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
 - `SampleBattleFactory.content_snapshot_paths()` 统一从 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 递归自动收集 `.tres`，并做稳定排序，避免角色接线漏资源与回放漂移
 
-### 8.1 Gojo / 宿傩角色资源
+### 8.1 正式角色资源
 
 - `Gojo`：默认技能组 `苍 / 赫 / 茈`（`gojo_ao / gojo_aka / gojo_murasaki`），候选技能池 `candidate_skill_ids = 苍 / 赫 / 茈 / 反转术式`，奥义 `无量空处`，被动 `无下限`，奥义点 `required=3 / cap=3 / regular skill cast +1`
 - `宿傩`：默认技能组 `解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`），奥义 `伏魔御厨子`，被动 `教会你爱的是...`，候选技能池 `candidate_skill_ids = 解 / 捌 / 开 / 反转术式`，奥义点 `required=3 / cap=3 / regular skill cast +1`；MP 回复按“基础 `12` + 对位追加值”结算
+- `Kashimo`：默认技能组 `雷拳 / 蓄电 / 回授电击`（`kashimo_raiken / kashimo_charge / kashimo_feedback_strike`），候选技能池 `candidate_skill_ids = 雷拳 / 蓄电 / 回授电击 / 弥虚葛笼`，奥义 `幻兽琥珀`，被动 `电荷分离`，奥义点 `required=3 / cap=3 / regular skill cast +1`
+- `poison` 已作为正式 `combat_type` 接入主线；仓库内同时保留独立样例技能 `sample_poison_sting` 与对应 runtime suite，用来验证它不是鹿紫云专属的临时标签
 - 赛前覆盖：`SideSetup.regular_skill_loadout_overrides` 可把候选常规技能换入本场装配；未提供覆盖时，行为等价于使用默认 `skill_ids`
 - 公开快照：`prebattle_public_teams[*].units[*].skill_ids` 只公开本场实际已装备的常规技能，不公开候选池全集
 
@@ -217,7 +221,7 @@ tests/run_with_gate.sh
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 
-当前 Gojo 与 Sukuna 都必须满足这套交付面，后续新角色默认沿用。
+当前 Gojo、Sukuna 与 Kashimo 都必须满足这套交付面，后续新角色默认沿用。
 
 ## 9. 日志与回放契约
 
@@ -231,9 +235,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-02）
 
-- `src/**/*.gd`：`10621` 行
-- `tests/**/*.gd`：`13365` 行
-- GDScript 合计：`23986` 行
+- `src/**/*.gd`：`10706` 行
+- `tests/**/*.gd`：`13498` 行
+- GDScript 合计：`24204` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 
