@@ -16,8 +16,9 @@
 - `gates/`: 仓库一致性细分 gate；当前按 `surface / formal_character / docs` 三类拆开维护，由 `check_repo_consistency.sh` 聚合执行
 - `fixtures/`: 预留的样例输入与内容快照目录
 - `helpers/`: 测试辅助脚本目录
-- `replay_cases/`: 固定 replay 案例与说明目录
+- `replay_cases/`: 固定 replay 案例与说明目录（当前包含领域案例与鹿紫云案例）
 - `helpers/domain_case_runner.gd`: 固定领域案例 runner；用于在门禁异常或契约漂移时快速复查具体局面
+- `helpers/kashimo_case_runner.gd`: 固定鹿紫云案例 runner；用于快速复查电荷主循环、琥珀换人与弥虚葛笼对抗领域
 
 当前约定：
 

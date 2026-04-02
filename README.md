@@ -67,7 +67,7 @@ tests/
   fixtures/             # 预留样例输入与内容快照
   helpers/              # 测试辅助与批量探针脚本
   gates/                # README/文档/注册表一致性细分 gate
-  replay_cases/         # 预留 deterministic 回放案例
+  replay_cases/         # 固定 deterministic 回放 / 复查案例
   run_all.gd            # 测试入口
   run_with_gate.sh      # 测试闸门（断言 + 引擎错误 + 架构 + 仓库一致性）
   check_repo_consistency.sh # README/文档/关键回归一致性闸门聚合入口
@@ -220,6 +220,12 @@ tests/run_with_gate.sh
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
+- 当前仓库已内置两组固定诊断入口：`tests/helpers/domain_case_runner.gd`（领域）与 `tests/helpers/kashimo_case_runner.gd`（鹿紫云）
+
+当前已落地的固定案例入口：
+
+- `tests/replay_cases/domain_cases.md`：领域与对拼复查
+- `tests/replay_cases/kashimo_cases.md`：鹿紫云电荷主循环 / 琥珀换人 / 弥虚葛笼复查
 
 当前 Gojo、Sukuna 与 Kashimo 都必须满足这套交付面，后续新角色默认沿用。
 
@@ -236,8 +242,8 @@ tests/run_with_gate.sh
 ## 10. 当前代码规模（2026-04-02）
 
 - `src/**/*.gd`：`10706` 行
-- `tests/**/*.gd`：`13498` 行
-- GDScript 合计：`24204` 行
+- `tests/**/*.gd`：`13742` 行
+- GDScript 合计：`24448` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 
