@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PassiveSkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/passive_skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kashimo_charge_separation"
+display_name = "电荷分离"
+trigger_names = PackedStringArray("on_enter")
+effect_ids = PackedStringArray("kashimo_thunder_resist", "kashimo_apply_water_leak_listeners")

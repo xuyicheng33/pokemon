@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/resource_mod_payload.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "resource_mod"
+resource_key = "mp"
+amount = -15
+
+[resource]
+script = ExtResource("1")
+id = "kashimo_water_leak_self_listener"
+display_name = "水中外泄·自身漏蓝"
+scope = "self"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_receive_action_hit")
+required_incoming_command_types = PackedStringArray("skill", "ultimate")
+required_incoming_combat_type_ids = PackedStringArray("water")
+payloads = Array[Resource]([SubResource("1")])

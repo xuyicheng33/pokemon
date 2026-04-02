@@ -555,3 +555,23 @@
 - 原因：
   - 鹿紫云的电荷体系、弥虚葛笼与水中外泄都依赖共享能力；先把底层收口，后续内容层和回归才不会一边做角色一边改公共骨架。
   - `poison` 一旦决定吃属性克制，就必须作为正式属性接入 chart，继续做成“半占位”只会把规则写脏。
+
+### 55. 鹿紫云 Phase 1 先按“主循环三技能 + 候选弥虚葛笼 + 无奥义”独立落地；水中外泄过滤下沉到 effect 级（2026-04-02）
+
+- 鹿紫云 Phase 1 当前正式内容面先只交付：
+  - 默认三技能：`雷拳 / 蓄电 / 回授电击`
+  - 候选位：`弥虚葛笼`
+  - 被动：`电荷分离`
+- 当前 Phase 1 unit 明确保持：
+  - `ultimate_skill_id = ""`
+  - `ultimate_points_required = 0`
+  - `ultimate_points_cap = 0`
+  - `ultimate_point_gain_on_regular_skill_cast = 0`
+- `幻兽琥珀` 留到持久能力阶段载体做好以后再正式接回 unit，不在这一步半接。
+- 为了表达“只对水属性主动技能 / 奥义命中触发”的被动监听，当前新增 effect 级来袭动作过滤字段：
+  - `EffectDefinition.required_incoming_command_types`
+  - `EffectDefinition.required_incoming_combat_type_ids`
+- 过滤判断当前在 `PayloadExecutor` 的 effect precondition 里统一执行，不写鹿紫云专属分支。
+- 原因：
+  - `on_receive_action_hit` + `action_actor` 解决了触发时机和反击对象，但如果没有 effect 级过滤，鹿紫云的水中外泄就只能错误地对所有来袭主动技触发。
+  - 先把 Phase 1 主循环单独交付，能避免 `幻兽琥珀` 的持久阶段机制没准备好时，把正式角色内容提前接成半成品。

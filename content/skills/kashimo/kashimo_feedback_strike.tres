@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kashimo_feedback_strike"
+display_name = "回授电击"
+damage_kind = "special"
+power = 30
+accuracy = 100
+mp_cost = 15
+priority = 0
+combat_type_id = "thunder"
+power_bonus_source = "effect_stack_sum"
+power_bonus_self_effect_ids = PackedStringArray("kashimo_positive_charge_mark")
+power_bonus_target_effect_ids = PackedStringArray("kashimo_negative_charge_mark")
+power_bonus_per_stack = 12
+targeting = "enemy_active_slot"
+effects_on_cast_ids = PackedStringArray()
+effects_on_hit_ids = PackedStringArray("kashimo_consume_positive_charges", "kashimo_consume_negative_charges")
+effects_on_miss_ids = PackedStringArray()
+effects_on_kill_ids = PackedStringArray()

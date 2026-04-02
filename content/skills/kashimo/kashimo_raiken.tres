@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kashimo_raiken"
+display_name = "雷拳"
+damage_kind = "physical"
+power = 45
+accuracy = 100
+mp_cost = 12
+priority = 1
+combat_type_id = "thunder"
+power_bonus_source = ""
+targeting = "enemy_active_slot"
+effects_on_cast_ids = PackedStringArray()
+effects_on_hit_ids = PackedStringArray("kashimo_apply_negative_charge")
+effects_on_miss_ids = PackedStringArray()
+effects_on_kill_ids = PackedStringArray()

@@ -32,6 +32,7 @@ func validate(content_index, errors: Array, payload_validator) -> void:
         elif int(effect_definition.max_stacks) != -1:
             errors.append("effect[%s].max_stacks only allowed when stacking=stack, got %d" % [effect_id, int(effect_definition.max_stacks)])
         _validate_required_target_effects(content_index, errors, effect_id, effect_definition)
+        _validate_incoming_action_filters(content_index, errors, effect_id, effect_definition)
         _validate_persistent_rule_mod_contract(errors, effect_id, effect_definition)
         payload_validator.validate_effect_refs(errors, "effect[%s].on_expire_effect_ids" % effect_id, effect_definition.on_expire_effect_ids, content_index.effects)
         for payload in effect_definition.payloads:
@@ -68,3 +69,30 @@ func _validate_persistent_rule_mod_contract(errors: Array, effect_id: String, ef
         if bool(payload.persists_on_switch):
             continue
         errors.append("effect[%s].rule_mod persists_on_switch must be true when effect persists_on_switch=true" % effect_id)
+
+func _validate_incoming_action_filters(content_index, errors: Array, effect_id: String, effect_definition) -> void:
+    var command_filters: PackedStringArray = effect_definition.required_incoming_command_types
+    var combat_type_filters: PackedStringArray = effect_definition.required_incoming_combat_type_ids
+    if command_filters.is_empty() and combat_type_filters.is_empty():
+        return
+    if not effect_definition.trigger_names.has(ContentSchemaScript.TRIGGER_ON_RECEIVE_ACTION_HIT):
+        if not command_filters.is_empty():
+            errors.append("effect[%s].required_incoming_command_types only allowed for on_receive_action_hit" % effect_id)
+        if not combat_type_filters.is_empty():
+            errors.append("effect[%s].required_incoming_combat_type_ids only allowed for on_receive_action_hit" % effect_id)
+        return
+    for command_type in command_filters:
+        var normalized_command_type := String(command_type).strip_edges()
+        if normalized_command_type.is_empty():
+            errors.append("effect[%s].required_incoming_command_types must not contain empty entry" % effect_id)
+            continue
+        if normalized_command_type != ContentSchemaScript.ACTION_LEGALITY_SKILL \
+        and normalized_command_type != ContentSchemaScript.ACTION_LEGALITY_ULTIMATE:
+            errors.append("effect[%s].required_incoming_command_types invalid: %s" % [effect_id, normalized_command_type])
+    for combat_type_id in combat_type_filters:
+        var normalized_combat_type_id := String(combat_type_id).strip_edges()
+        if normalized_combat_type_id.is_empty():
+            errors.append("effect[%s].required_incoming_combat_type_ids must not contain empty entry" % effect_id)
+            continue
+        if content_index != null and not content_index.combat_types.has(normalized_combat_type_id):
+            errors.append("effect[%s].required_incoming_combat_type_ids missing combat type: %s" % [effect_id, normalized_combat_type_id])

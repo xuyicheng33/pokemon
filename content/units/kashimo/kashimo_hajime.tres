@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="UnitDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/unit_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kashimo_hajime"
+display_name = "鹿紫云一"
+base_hp = 118
+base_attack = 82
+base_defense = 58
+base_sp_attack = 72
+base_sp_defense = 54
+base_speed = 90
+max_mp = 100
+init_mp = 40
+regen_per_turn = 10
+ultimate_points_required = 0
+ultimate_points_cap = 0
+ultimate_point_gain_on_regular_skill_cast = 0
+combat_type_ids = PackedStringArray("thunder", "fighting")
+skill_ids = PackedStringArray("kashimo_raiken", "kashimo_charge", "kashimo_feedback_strike")
+candidate_skill_ids = PackedStringArray("kashimo_raiken", "kashimo_charge", "kashimo_feedback_strike", "kashimo_kyokyo_katsura")
+ultimate_skill_id = ""
+passive_skill_id = "kashimo_charge_separation"
+passive_item_id = ""

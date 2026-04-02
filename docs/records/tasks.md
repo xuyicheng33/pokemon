@@ -1160,3 +1160,57 @@
 - `godot --headless --path . --script tests/run_all.gd` 通过
 - `git diff --check` 通过
 - `bash tests/check_repo_consistency.sh` 通过
+
+### 鹿紫云 Phase 1 主循环与候选技接线（已完成）
+
+- 目标：
+  - 先独立交付鹿紫云一的主循环常规技、候选位弥虚葛笼、被动与基础回归，不提前把 `幻兽琥珀` 半接上主线
+- 范围：
+  - `content/units/kashimo/*`
+  - `content/skills/kashimo/*`
+  - `content/effects/kashimo/*`
+  - `content/passive_skills/kashimo/*`
+  - `src/battle_core/content/effect_definition.gd`
+  - `src/battle_core/content/content_snapshot_effect_validator.gd`
+  - `src/battle_core/effects/payload_executor.gd`
+  - `tests/support/kashimo_test_support.gd`
+  - `tests/suites/kashimo_*`
+  - `tests/run_all.gd`
+  - `README.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - 鹿紫云 unit 能正常加载，默认三技能为 `雷拳 / 蓄电 / 回授电击`，候选池含 `弥虚葛笼`
+  - 主循环、弥虚葛笼、抗雷、水中外泄全部有 runtime 回归
+  - `godot --headless --path . --script tests/run_all.gd`、`git diff --check`、`bash tests/check_repo_consistency.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 已新增鹿紫云 Phase 1 资源：
+    - `content/units/kashimo/kashimo_hajime.tres`
+    - `content/skills/kashimo/*`
+    - `content/effects/kashimo/*`
+    - `content/passive_skills/kashimo/kashimo_charge_separation.tres`
+  - Phase 1 unit 仍采用“临时不挂奥义”口径：
+    - `ultimate_skill_id = ""`
+    - `ultimate_points_required = 0`
+    - `ultimate_points_cap = 0`
+    - `ultimate_point_gain_on_regular_skill_cast = 0`
+  - 已把 `回授电击` 正式接到：
+    - `power_bonus_source = effect_stack_sum`
+    - `remove_mode = all`
+  - 为了精确表达“只对水属性主动技能 / 奥义命中触发”，已新增 effect 级来袭动作过滤：
+    - `EffectDefinition.required_incoming_command_types`
+    - `EffectDefinition.required_incoming_combat_type_ids`
+  - 已新增：
+    - `tests/support/kashimo_test_support.gd`
+    - `tests/suites/kashimo_snapshot_suite.gd`
+    - `tests/suites/kashimo_runtime_suite.gd`
+    - `tests/suites/kashimo_suite.gd`
+  - 已将 `KashimoSuite` 接进 `tests/run_all.gd`
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `git diff --check` 通过
