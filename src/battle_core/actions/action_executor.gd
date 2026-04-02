@@ -41,7 +41,7 @@ func execute_action(queued_action, battle_state, content_index):
     var command = queued_action.command
     var actor = battle_state.get_unit(command.actor_id)
     var skill_definition = _resolve_skill_definition(command, content_index)
-    battle_state.chain_context = _build_chain_context(queued_action, battle_state)
+    battle_state.chain_context = _build_chain_context(queued_action, battle_state, skill_definition)
     if command.command_type == CommandTypesScript.SKILL or command.command_type == CommandTypesScript.ULTIMATE:
         if skill_definition == null:
             result.invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
@@ -89,6 +89,9 @@ func execute_action(queued_action, battle_state, content_index):
     )
     if action_cast_service.is_damage_action(command, skill_definition):
         action_cast_service.apply_direct_damage(queued_action, actor, resolved_target, skill_definition, battle_state, action_hit_cause_event_id)
+    _dispatch_on_receive_action_hit_if_needed(queued_action, command, resolved_target, battle_state, content_index, result)
+    if result.invalid_battle_code != null:
+        return result
     if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
         action_cast_service.apply_default_recoil(queued_action, actor, battle_state, action_hit_cause_event_id)
     _dispatch_effects_for_trigger("on_hit", skill_definition, queued_action, actor, battle_state, content_index, result)
@@ -143,7 +146,7 @@ func _dispatch_effects_for_trigger(trigger_name: String, skill_definition, queue
         result
     )
 
-func _build_chain_context(queued_action, battle_state):
+func _build_chain_context(queued_action, battle_state, skill_definition):
     var chain_context = ChainContextScript.new()
     chain_context.event_chain_id = queued_action.action_id
     chain_context.root_action_id = queued_action.action_id
@@ -157,8 +160,30 @@ func _build_chain_context(queued_action, battle_state):
     chain_context.select_deadline_ms = battle_state.selection_deadline_ms
     chain_context.target_unit_id = queued_action.target_snapshot.target_unit_id
     chain_context.target_slot = queued_action.target_snapshot.target_slot
+    chain_context.action_actor_id = queued_action.command.actor_id
+    chain_context.action_combat_type_id = String(skill_definition.combat_type_id) if skill_definition != null and skill_definition.combat_type_id != null else ""
     chain_context.defer_field_apply_success = queued_action.defer_domain_success_effects
     return chain_context
+
+func _dispatch_on_receive_action_hit_if_needed(queued_action, command, resolved_target, battle_state, content_index, result) -> void:
+    if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
+        return
+    if queued_action.target_snapshot.target_kind != ContentSchemaScript.TARGET_ENEMY_ACTIVE:
+        return
+    if resolved_target == null:
+        return
+    var actor_side = battle_state.get_side_for_unit(command.actor_id)
+    var target_side = battle_state.get_side_for_unit(resolved_target.unit_instance_id)
+    if actor_side == null or target_side == null or actor_side.side_id == target_side.side_id:
+        return
+    var invalid_code = action_cast_service.execute_lifecycle_trigger_batch(
+        ContentSchemaScript.TRIGGER_ON_RECEIVE_ACTION_HIT,
+        battle_state,
+        content_index,
+        [resolved_target.unit_instance_id]
+    )
+    if invalid_code != null:
+        result.invalid_battle_code = invalid_code
 
 func _can_start_action(actor, command, battle_state) -> bool:
     if actor == null or actor.current_hp <= 0 or actor.leave_state != LeaveStatesScript.ACTIVE:

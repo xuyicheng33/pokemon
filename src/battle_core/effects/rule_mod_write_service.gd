@@ -36,8 +36,11 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
         ContentSchemaScript.STACKING_REFRESH:
             if existing_instance != null:
                 existing_instance.remaining = rule_mod_payload.duration if rule_mod_payload.duration_mode == "turns" else -1
+                existing_instance.value = resolved_value if resolved_value != null else rule_mod_payload.value
                 existing_instance.persists_on_switch = bool(rule_mod_payload.persists_on_switch)
                 existing_instance.source_stacking_key = resolved_source_stacking_key
+                existing_instance.required_incoming_command_types = rule_mod_payload.required_incoming_command_types.duplicate()
+                existing_instance.required_incoming_combat_type_ids = rule_mod_payload.required_incoming_combat_type_ids.duplicate()
                 return existing_instance
         ContentSchemaScript.STACKING_REPLACE:
             if existing_instance != null:
@@ -62,6 +65,8 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
     rule_mod_instance.priority = rule_mod_payload.priority
     rule_mod_instance.persists_on_switch = bool(rule_mod_payload.persists_on_switch)
     rule_mod_instance.source_stacking_key = resolved_source_stacking_key
+    rule_mod_instance.required_incoming_command_types = rule_mod_payload.required_incoming_command_types.duplicate()
+    rule_mod_instance.required_incoming_combat_type_ids = rule_mod_payload.required_incoming_combat_type_ids.duplicate()
     owner_instances.append(rule_mod_instance)
     _set_owner_instances(battle_state, owner_ref, owner_instances)
     return rule_mod_instance

@@ -33,6 +33,14 @@ func apply_direct_damage(queued_action, actor, target, skill_definition, battle_
         return
     var damage_context := _build_direct_damage_context(actor, target, skill_definition)
     var final_multiplier: float = rule_mod_service.get_final_multiplier(battle_state, actor.unit_instance_id)
+    var incoming_action_multiplier: float = 1.0
+    if queued_action != null and queued_action.command != null:
+        incoming_action_multiplier = rule_mod_service.resolve_incoming_action_final_multiplier(
+            battle_state,
+            target.unit_instance_id,
+            String(queued_action.command.command_type),
+            _resolve_skill_combat_type_id(skill_definition)
+        )
     var type_effectiveness: float = combat_type_service.calc_effectiveness(
         _resolve_skill_combat_type_id(skill_definition),
         _resolve_unit_combat_types(target)
@@ -44,7 +52,7 @@ func apply_direct_damage(queued_action, actor, target, skill_definition, battle_
             int(damage_context.attack_value),
             int(damage_context.defense_value)
         ),
-        final_multiplier * type_effectiveness
+        final_multiplier * incoming_action_multiplier * type_effectiveness
     )
     var before_hp: int = target.current_hp
     target.current_hp = clamp(target.current_hp - damage_amount, 0, target.max_hp)

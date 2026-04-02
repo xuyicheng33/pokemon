@@ -25,6 +25,8 @@ func resolve_hit(command, skill_definition, resolved_target, battle_state, conte
     resolved_accuracy = _apply_field_accuracy_override(
         resolved_accuracy,
         command,
+        skill_definition,
+        resolved_target,
         battle_state,
         content_index
     )
@@ -42,13 +44,15 @@ func resolve_hit(command, skill_definition, resolved_target, battle_state, conte
 func _resolve_base_accuracy(skill_definition) -> int:
     return int(skill_definition.accuracy)
 
-func _apply_field_accuracy_override(base_accuracy: int, command, battle_state, content_index) -> int:
+func _apply_field_accuracy_override(base_accuracy: int, command, skill_definition, resolved_target, battle_state, content_index) -> int:
     if battle_state.field_state == null or command.actor_id != battle_state.field_state.creator:
         return base_accuracy
     var field_definition = content_index.fields.get(battle_state.field_state.field_def_id) if content_index != null else null
     if field_definition == null:
         return base_accuracy
     if int(field_definition.creator_accuracy_override) < 0:
+        return base_accuracy
+    if _should_nullify_field_accuracy(command, skill_definition, resolved_target, battle_state):
         return base_accuracy
     return int(field_definition.creator_accuracy_override)
 
@@ -65,6 +69,14 @@ func _apply_incoming_accuracy_override(base_accuracy: int, command, skill_defini
 
 func _roll_hit_result(resolved_accuracy: int) -> Dictionary:
     return hit_service.roll_hit(resolved_accuracy, rng_service)
+
+func _should_nullify_field_accuracy(command, skill_definition, resolved_target, battle_state) -> bool:
+    if not _should_read_incoming_accuracy(command, skill_definition, resolved_target, battle_state):
+        return false
+    return rule_mod_service.has_nullify_field_accuracy(
+        battle_state,
+        resolved_target.unit_instance_id
+    )
 
 func _should_read_incoming_accuracy(command, skill_definition, resolved_target, battle_state) -> bool:
     if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:

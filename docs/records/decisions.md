@@ -536,3 +536,22 @@
 - 原因：
   - 继续把固定伤害写成“最终值锁死”会和现有属性伤害读法冲突，也会让 `poison` 进入正式类型系统后变成半套规则。
   - `回授电击` 既然本来就不会空，再保留拆开的 `on_cast / on_hit` 清层语义只会让文档更绕，不能增加真实玩法价值。
+
+### 54. 鹿紫云共享底座扩展先独立交付，`poison` 首版即按正式属性进入系统（2026-04-02）
+
+- 本轮先独立落地鹿紫云需要的共享底层能力，不把角色内容资源和引擎扩展混在同一批提交里。
+- 当前正式进入主线的共享能力包括：
+  - `SkillDefinition.power_bonus_source = effect_stack_sum`
+  - `RemoveEffectPayload.remove_mode = single | all`
+  - `rule_mod`：`nullify_field_accuracy`、`incoming_action_final_mod`
+  - trigger：`on_receive_action_hit`
+  - effect scope：`action_actor`
+  - `ChainContext.action_actor_id / action_combat_type_id`
+- `incoming_action_final_mod` 当前只接“主动技能 / 奥义的直接伤害路径”，不向 effect-chain 持续伤害扩散。
+- `poison` 当前不再是鹿紫云专用的临时标签，而是正式战斗属性：
+  - 已新增独立 combat type 资源
+  - 已接入 battle format 克制表
+  - 固定毒属性伤害继续走属性克制，不锁死最终值
+- 原因：
+  - 鹿紫云的电荷体系、弥虚葛笼与水中外泄都依赖共享能力；先把底层收口，后续内容层和回归才不会一边做角色一边改公共骨架。
+  - `poison` 一旦决定吃属性克制，就必须作为正式属性接入 chart，继续做成“半占位”只会把规则写脏。

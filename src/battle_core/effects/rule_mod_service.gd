@@ -36,5 +36,11 @@ func is_action_allowed(battle_state, owner_id: String, action_type: String, skil
 func resolve_incoming_accuracy(battle_state, owner_id: String, base_accuracy: int) -> int:
     return _read_service.resolve_incoming_accuracy(battle_state, owner_id, base_accuracy)
 
+func has_nullify_field_accuracy(battle_state, owner_id: String) -> bool:
+    return _read_service.has_nullify_field_accuracy(battle_state, owner_id)
+
+func resolve_incoming_action_final_multiplier(battle_state, owner_id: String, command_type: String, combat_type_id: String) -> float:
+    return _read_service.resolve_incoming_action_final_multiplier(battle_state, owner_id, command_type, combat_type_id)
+
 func decrement_for_trigger(battle_state, trigger_name: String) -> Array:
     return _write_service.decrement_for_trigger(battle_state, trigger_name)

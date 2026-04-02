@@ -28,6 +28,7 @@ func validate_payload(errors: Array, effect_id: String, payload, content_index) 
         "sp_defense",
         "speed",
     ])
+    var allowed_stat_retention_modes := PackedStringArray(["normal", "persist_on_switch"])
     if payload == null:
         errors.append("effect[%s].payloads contains null" % effect_id)
         return
@@ -55,6 +56,8 @@ func validate_payload(errors: Array, effect_id: String, payload, content_index) 
     if payload is StatModPayloadScript:
         if not allowed_stat_names.has(String(payload.stat_name)):
             errors.append("effect[%s].stat_mod invalid stat_name: %s" % [effect_id, payload.stat_name])
+        if not allowed_stat_retention_modes.has(String(payload.retention_mode)):
+            errors.append("effect[%s].stat_mod invalid retention_mode: %s" % [effect_id, String(payload.retention_mode)])
         return
     if payload is ApplyFieldPayloadScript:
         if String(payload.field_definition_id).is_empty() or not content_index.fields.has(payload.field_definition_id):
@@ -68,6 +71,8 @@ func validate_payload(errors: Array, effect_id: String, payload, content_index) 
     if payload is RemoveEffectPayloadScript:
         if String(payload.effect_definition_id).is_empty() or not content_index.effects.has(payload.effect_definition_id):
             errors.append("effect[%s].remove_effect missing effect: %s" % [effect_id, payload.effect_definition_id])
+        if String(payload.remove_mode) != "single" and String(payload.remove_mode) != "all":
+            errors.append("effect[%s].remove_effect invalid remove_mode: %s" % [effect_id, String(payload.remove_mode)])
         return
     if payload is RuleModPayloadScript:
         var rule_mod_errors = _rule_mod_schema.validate_payload(payload, content_index)

@@ -65,6 +65,37 @@ func resolve_incoming_accuracy(battle_state, owner_id: String, base_accuracy: in
                 resolved_accuracy = int(rule_mod_instance.value)
     return clamp(resolved_accuracy, 0, 99)
 
+func has_nullify_field_accuracy(battle_state, owner_id: String) -> bool:
+    if battle_state.get_unit(owner_id) == null:
+        return false
+    var is_enabled := false
+    var ordered_instances: Array = _sorted_active_instances_for_read(battle_state, owner_id)
+    for rule_mod_instance in ordered_instances:
+        if rule_mod_instance.mod_kind != ContentSchemaScript.RULE_MOD_NULLIFY_FIELD_ACCURACY:
+            continue
+        if rule_mod_instance.mod_op == "set":
+            is_enabled = bool(rule_mod_instance.value)
+    return is_enabled
+
+func resolve_incoming_action_final_multiplier(battle_state, owner_id: String, command_type: String, combat_type_id: String) -> float:
+    if battle_state.get_unit(owner_id) == null:
+        return 1.0
+    var final_multiplier: float = 1.0
+    var ordered_instances: Array = _sorted_active_instances_for_read(battle_state, owner_id)
+    for rule_mod_instance in ordered_instances:
+        if rule_mod_instance.mod_kind != ContentSchemaScript.RULE_MOD_INCOMING_ACTION_FINAL_MOD:
+            continue
+        if not _incoming_action_filters_match(rule_mod_instance, command_type, combat_type_id):
+            continue
+        match rule_mod_instance.mod_op:
+            "mul":
+                final_multiplier *= float(rule_mod_instance.value)
+            "add":
+                final_multiplier += float(rule_mod_instance.value)
+            "set":
+                final_multiplier = float(rule_mod_instance.value)
+    return final_multiplier
+
 func _sorted_active_instances_for_read(battle_state, owner_id: String) -> Array:
     var owner_unit = battle_state.get_unit(owner_id)
     if owner_unit == null:
@@ -108,3 +139,12 @@ func _action_legality_matches(rule_mod_instance, action_type: String, skill_id: 
                 or value == ContentSchemaScript.ACTION_LEGALITY_SWITCH
         _:
             return false
+
+func _incoming_action_filters_match(rule_mod_instance, command_type: String, combat_type_id: String) -> bool:
+    var command_filters: PackedStringArray = rule_mod_instance.required_incoming_command_types
+    if not command_filters.is_empty() and not command_filters.has(command_type):
+        return false
+    var combat_type_filters: PackedStringArray = rule_mod_instance.required_incoming_combat_type_ids
+    if not combat_type_filters.is_empty() and not combat_type_filters.has(combat_type_id):
+        return false
+    return true

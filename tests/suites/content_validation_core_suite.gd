@@ -33,6 +33,19 @@ func _test_content_validation_failures(harness) -> Dictionary:
 	bad_skill.priority = 9
 	bad_skill.power_bonus_source = "missing_power_bonus"
 	content_index.register_resource(bad_skill)
+	var bad_stack_skill = SkillDefinitionScript.new()
+	bad_stack_skill.id = "bad_stack_skill"
+	bad_stack_skill.display_name = "Bad Stack Skill"
+	bad_stack_skill.damage_kind = "special"
+	bad_stack_skill.power = 20
+	bad_stack_skill.accuracy = 100
+	bad_stack_skill.mp_cost = 0
+	bad_stack_skill.priority = 0
+	bad_stack_skill.targeting = ContentSchemaScript.TARGET_ENEMY_ACTIVE
+	bad_stack_skill.power_bonus_source = "effect_stack_sum"
+	bad_stack_skill.power_bonus_self_effect_ids = PackedStringArray(["missing_stack_effect"])
+	bad_stack_skill.power_bonus_per_stack = 0
+	content_index.register_resource(bad_stack_skill)
 	var duplicate_skill_a = SkillDefinitionScript.new()
 	duplicate_skill_a.id = "duplicate_skill"
 	duplicate_skill_a.display_name = "Duplicate Skill A"
@@ -85,6 +98,7 @@ func _test_content_validation_failures(harness) -> Dictionary:
 	bad_stat_payload.payload_type = "stat_mod"
 	bad_stat_payload.stat_name = "luck"
 	bad_stat_payload.stage_delta = 1
+	bad_stat_payload.retention_mode = "forever"
 	var bad_stat_effect = EffectDefinitionScript.new()
 	bad_stat_effect.id = "bad_stat_effect"
 	bad_stat_effect.display_name = "Bad Stat Effect"
@@ -106,6 +120,7 @@ func _test_content_validation_failures(harness) -> Dictionary:
 	var has_resource_key_error := false
 	var has_stat_name_error := false
 	var has_power_bonus_source_error := false
+	var has_effect_stack_bonus_error := false
 	for error_msg in errors:
 		var msg := str(error_msg)
 		if msg.find("priority out of range") != -1:
@@ -126,7 +141,9 @@ func _test_content_validation_failures(harness) -> Dictionary:
 			has_stat_name_error = true
 		if msg.find("power_bonus_source invalid") != -1:
 			has_power_bonus_source_error = true
-	if not (has_priority_error and has_rule_mod_error and has_missing_ref and has_accuracy_error and has_mp_cost_error and has_duplicate_id_error and has_resource_key_error and has_stat_name_error and has_power_bonus_source_error):
+		if msg.find("effect_stack_sum requires at least one power bonus effect id") != -1 or msg.find("power_bonus_self_effect_ids missing effect") != -1 or msg.find("power_bonus_per_stack must be > 0") != -1:
+			has_effect_stack_bonus_error = true
+	if not (has_priority_error and has_rule_mod_error and has_missing_ref and has_accuracy_error and has_mp_cost_error and has_duplicate_id_error and has_resource_key_error and has_stat_name_error and has_power_bonus_source_error and has_effect_stack_bonus_error):
 		return harness.fail_result("content validation errors missing expected categories")
 	return harness.pass_result()
 

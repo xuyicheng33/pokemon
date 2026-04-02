@@ -5,7 +5,7 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 
 func validate(content_index, errors: Array, payload_validator) -> void:
-    var allowed_scopes := PackedStringArray(["self", "target", "field"])
+    var allowed_scopes := PackedStringArray(["self", "target", "field", "action_actor"])
     for effect_id in content_index.effects.keys():
         var effect_definition = content_index.effects[effect_id]
         if not allowed_scopes.has(effect_definition.scope):

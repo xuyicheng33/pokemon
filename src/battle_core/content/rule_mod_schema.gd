@@ -3,7 +3,7 @@ class_name RuleModSchema
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
-const ALLOWED_MOD_KINDS := ["final_mod", "mp_regen", "action_legality", "incoming_accuracy"]
+const ALLOWED_MOD_KINDS := ["final_mod", "mp_regen", "action_legality", "incoming_accuracy", "nullify_field_accuracy", "incoming_action_final_mod"]
 const ALLOWED_SCOPES := ["self", "target", "field"]
 const ALLOWED_STACKING := ["none", "refresh", "replace"]
 const ACTION_LEGALITY_VALUES := ["all", "skill", "ultimate", "switch"]
@@ -12,6 +12,8 @@ const STACKING_KEY_SCHEMA_BY_KIND := {
     "mp_regen": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
     "action_legality": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "value"],
     "incoming_accuracy": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
+    "nullify_field_accuracy": ["mod_kind", "scope", "owner_scope", "owner_id", "source_stacking_key"],
+    "incoming_action_final_mod": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
 }
 
 func validate_payload(rule_mod_payload, content_index = null) -> Array:
@@ -46,6 +48,17 @@ func validate_payload(rule_mod_payload, content_index = null) -> Array:
                 errors.append("mod_op %s" % rule_mod_payload.mod_op)
             if typeof(rule_mod_payload.value) != TYPE_INT:
                 errors.append("incoming_accuracy value must be int")
+        ContentSchemaScript.RULE_MOD_NULLIFY_FIELD_ACCURACY:
+            if rule_mod_payload.mod_op != "set":
+                errors.append("mod_op %s" % rule_mod_payload.mod_op)
+            if typeof(rule_mod_payload.value) != TYPE_BOOL:
+                errors.append("nullify_field_accuracy value must be bool")
+        ContentSchemaScript.RULE_MOD_INCOMING_ACTION_FINAL_MOD:
+            if rule_mod_payload.mod_op != "mul" and rule_mod_payload.mod_op != "add" and rule_mod_payload.mod_op != "set":
+                errors.append("mod_op %s" % rule_mod_payload.mod_op)
+            if typeof(rule_mod_payload.value) != TYPE_INT and typeof(rule_mod_payload.value) != TYPE_FLOAT:
+                errors.append("incoming_action_final_mod value must be number")
+    _validate_incoming_action_filters(errors, rule_mod_payload, content_index)
     _validate_dynamic_value_schema(errors, rule_mod_payload)
     return errors
 
@@ -73,7 +86,9 @@ func _validate_dynamic_value_schema(errors: Array, rule_mod_payload) -> void:
     if dynamic_formula != ContentSchemaScript.RULE_MOD_VALUE_FORMULA_MATCHUP_BST_GAP_BAND:
         errors.append("dynamic_value_formula %s" % dynamic_formula)
     if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_ACTION_LEGALITY \
-    or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_INCOMING_ACCURACY:
+    or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_INCOMING_ACCURACY \
+    or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_NULLIFY_FIELD_ACCURACY \
+    or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_INCOMING_ACTION_FINAL_MOD:
         errors.append("dynamic value formula is not allowed for %s" % String(rule_mod_payload.mod_kind))
     if rule_mod_payload.scope == "field":
         errors.append("dynamic value formula is not allowed for field scope")
@@ -89,3 +104,28 @@ func _validate_dynamic_value_schema(errors: Array, rule_mod_payload) -> void:
             errors.append("dynamic_value_thresholds must be strictly ascending")
             break
         previous_threshold = threshold
+
+func _validate_incoming_action_filters(errors: Array, rule_mod_payload, content_index) -> void:
+    var command_filters: PackedStringArray = rule_mod_payload.required_incoming_command_types
+    var combat_type_filters: PackedStringArray = rule_mod_payload.required_incoming_combat_type_ids
+    if String(rule_mod_payload.mod_kind) != ContentSchemaScript.RULE_MOD_INCOMING_ACTION_FINAL_MOD:
+        if not command_filters.is_empty():
+            errors.append("required_incoming_command_types only allowed for incoming_action_final_mod")
+        if not combat_type_filters.is_empty():
+            errors.append("required_incoming_combat_type_ids only allowed for incoming_action_final_mod")
+        return
+    for command_type in command_filters:
+        var normalized_command_type := String(command_type).strip_edges()
+        if normalized_command_type.is_empty():
+            errors.append("required_incoming_command_types must not contain empty entry")
+            continue
+        if normalized_command_type != ContentSchemaScript.ACTION_LEGALITY_SKILL \
+        and normalized_command_type != ContentSchemaScript.ACTION_LEGALITY_ULTIMATE:
+            errors.append("required_incoming_command_types invalid: %s" % normalized_command_type)
+    for combat_type_id in combat_type_filters:
+        var normalized_combat_type_id := String(combat_type_id).strip_edges()
+        if normalized_combat_type_id.is_empty():
+            errors.append("required_incoming_combat_type_ids must not contain empty entry")
+            continue
+        if content_index != null and not content_index.combat_types.has(normalized_combat_type_id):
+            errors.append("required_incoming_combat_type_ids missing combat type: %s" % normalized_combat_type_id)

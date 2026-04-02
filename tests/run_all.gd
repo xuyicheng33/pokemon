@@ -18,6 +18,7 @@ const DamagePayloadContractSuiteScript := preload("res://tests/suites/damage_pay
 const UltimateFieldSuiteScript := preload("res://tests/suites/ultimate_field_suite.gd")
 const AdapterContractSuiteScript := preload("res://tests/suites/adapter_contract_suite.gd")
 const TriggerValidationSuiteScript := preload("res://tests/suites/trigger_validation_suite.gd")
+const PowerBonusRuntimeSuiteScript := preload("res://tests/suites/power_bonus_runtime_suite.gd")
 const FormalCharacterRegistryScript := preload("res://tests/support/formal_character_registry.gd")
 
 var _harness
@@ -43,6 +44,7 @@ func _init() -> void:
         UltimateFieldSuiteScript.new(),
         AdapterContractSuiteScript.new(),
         TriggerValidationSuiteScript.new(),
+        PowerBonusRuntimeSuiteScript.new(),
     ]
     suites.append_array(FormalCharacterRegistryScript.new().build_suite_instances())
     for suite in suites:

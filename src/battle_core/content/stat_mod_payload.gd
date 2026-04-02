@@ -3,3 +3,4 @@ class_name StatModPayload
 
 @export var stat_name: String = ""
 @export var stage_delta: int = 0
+@export var retention_mode: String = "normal"

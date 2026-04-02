@@ -52,6 +52,41 @@ func _test_extension_validation_contract(harness) -> Dictionary:
     bad_accuracy_effect.payloads.append(bad_accuracy_payload)
     content_index.register_resource(bad_accuracy_effect)
 
+    var bad_nullify_payload = RuleModPayloadScript.new()
+    bad_nullify_payload.payload_type = "rule_mod"
+    bad_nullify_payload.mod_kind = "nullify_field_accuracy"
+    bad_nullify_payload.mod_op = "add"
+    bad_nullify_payload.value = 1
+    bad_nullify_payload.scope = "self"
+    bad_nullify_payload.duration_mode = "permanent"
+    bad_nullify_payload.decrement_on = "turn_end"
+    bad_nullify_payload.stacking = "none"
+    var bad_nullify_effect = EffectDefinitionScript.new()
+    bad_nullify_effect.id = "test_bad_nullify_field_accuracy"
+    bad_nullify_effect.display_name = "Bad Nullify Field Accuracy"
+    bad_nullify_effect.scope = "self"
+    bad_nullify_effect.payloads.append(bad_nullify_payload)
+    content_index.register_resource(bad_nullify_effect)
+
+    var bad_incoming_final_payload = RuleModPayloadScript.new()
+    bad_incoming_final_payload.payload_type = "rule_mod"
+    bad_incoming_final_payload.mod_kind = "incoming_action_final_mod"
+    bad_incoming_final_payload.mod_op = "mul"
+    bad_incoming_final_payload.value = "bad"
+    bad_incoming_final_payload.scope = "self"
+    bad_incoming_final_payload.duration_mode = "turns"
+    bad_incoming_final_payload.duration = 1
+    bad_incoming_final_payload.decrement_on = "turn_start"
+    bad_incoming_final_payload.stacking = "replace"
+    bad_incoming_final_payload.required_incoming_command_types = PackedStringArray(["wait"])
+    bad_incoming_final_payload.required_incoming_combat_type_ids = PackedStringArray(["missing_combat_type"])
+    var bad_incoming_final_effect = EffectDefinitionScript.new()
+    bad_incoming_final_effect.id = "test_bad_incoming_action_final_mod"
+    bad_incoming_final_effect.display_name = "Bad Incoming Action Final Mod"
+    bad_incoming_final_effect.scope = "self"
+    bad_incoming_final_effect.payloads.append(bad_incoming_final_payload)
+    content_index.register_resource(bad_incoming_final_effect)
+
     var bad_persistent_field_payload = RuleModPayloadScript.new()
     bad_persistent_field_payload.payload_type = "rule_mod"
     bad_persistent_field_payload.mod_kind = "mp_regen"
@@ -128,6 +163,11 @@ func _test_extension_validation_contract(harness) -> Dictionary:
     var needles := [
         "effect[test_bad_action_legality].rule_mod invalid: action_legality value missing skill: missing_skill_id",
         "effect[test_bad_incoming_accuracy].rule_mod invalid: incoming_accuracy value must be int",
+        "effect[test_bad_nullify_field_accuracy].rule_mod invalid: mod_op add",
+        "effect[test_bad_nullify_field_accuracy].rule_mod invalid: nullify_field_accuracy value must be bool",
+        "effect[test_bad_incoming_action_final_mod].rule_mod invalid: incoming_action_final_mod value must be number",
+        "effect[test_bad_incoming_action_final_mod].rule_mod invalid: required_incoming_command_types invalid: wait",
+        "effect[test_bad_incoming_action_final_mod].rule_mod invalid: required_incoming_combat_type_ids missing combat type: missing_combat_type",
         "effect[test_bad_persistent_field_rule_mod].rule_mod invalid: persists_on_switch is not allowed for field scope",
         "effect[test_bad_persistent_nested_rule_mod].rule_mod persists_on_switch must be true when effect persists_on_switch=true",
         "effect[test_bad_required_scope].required_target_effects requires scope=target",

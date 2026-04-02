@@ -61,6 +61,17 @@ func remove_instance(owner_id: String, effect_definition_id: String, battle_stat
     owner_unit.effect_instances.erase(existing_instance)
     return existing_instance
 
+func remove_all_instances(owner_id: String, effect_definition_id: String, battle_state) -> Array:
+    var owner_unit = battle_state.get_unit(owner_id)
+    if owner_unit == null:
+        return []
+    var matching_instances: Array = _find_matching_instances(owner_unit, effect_definition_id)
+    if matching_instances.is_empty():
+        return []
+    for effect_instance in matching_instances:
+        owner_unit.effect_instances.erase(effect_instance)
+    return matching_instances
+
 func _find_existing(owner_unit, effect_definition_id: String):
     for effect_instance in owner_unit.effect_instances:
         if effect_instance.def_id == effect_definition_id:

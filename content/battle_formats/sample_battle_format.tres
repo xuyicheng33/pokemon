@@ -1,4 +1,4 @@
-[gd_resource type="Resource" script_class="BattleFormatConfig" load_steps=91 format=3]
+[gd_resource type="Resource" script_class="BattleFormatConfig" load_steps=107 format=3]
 
 [ext_resource type="Script" path="res://src/battle_core/content/battle_format_config.gd" id="1"]
 [ext_resource type="Script" path="res://src/battle_core/content/combat_type_chart_entry.gd" id="2"]
@@ -543,6 +543,102 @@ atk = "wind"
 def = "dragon"
 mul = 0.5
 
+[sub_resource type="Resource" id="91"]
+script = ExtResource("2")
+atk = "poison"
+def = "water"
+mul = 2.0
+
+[sub_resource type="Resource" id="92"]
+script = ExtResource("2")
+atk = "poison"
+def = "wood"
+mul = 2.0
+
+[sub_resource type="Resource" id="93"]
+script = ExtResource("2")
+atk = "poison"
+def = "fighting"
+mul = 2.0
+
+[sub_resource type="Resource" id="94"]
+script = ExtResource("2")
+atk = "poison"
+def = "spirit"
+mul = 2.0
+
+[sub_resource type="Resource" id="95"]
+script = ExtResource("2")
+atk = "poison"
+def = "fire"
+mul = 0.5
+
+[sub_resource type="Resource" id="96"]
+script = ExtResource("2")
+atk = "poison"
+def = "earth"
+mul = 0.5
+
+[sub_resource type="Resource" id="97"]
+script = ExtResource("2")
+atk = "poison"
+def = "steel"
+mul = 0.5
+
+[sub_resource type="Resource" id="98"]
+script = ExtResource("2")
+atk = "poison"
+def = "holy"
+mul = 0.5
+
+[sub_resource type="Resource" id="99"]
+script = ExtResource("2")
+atk = "water"
+def = "poison"
+mul = 0.5
+
+[sub_resource type="Resource" id="100"]
+script = ExtResource("2")
+atk = "wood"
+def = "poison"
+mul = 0.5
+
+[sub_resource type="Resource" id="101"]
+script = ExtResource("2")
+atk = "fighting"
+def = "poison"
+mul = 0.5
+
+[sub_resource type="Resource" id="102"]
+script = ExtResource("2")
+atk = "spirit"
+def = "poison"
+mul = 0.5
+
+[sub_resource type="Resource" id="103"]
+script = ExtResource("2")
+atk = "fire"
+def = "poison"
+mul = 2.0
+
+[sub_resource type="Resource" id="104"]
+script = ExtResource("2")
+atk = "earth"
+def = "poison"
+mul = 2.0
+
+[sub_resource type="Resource" id="105"]
+script = ExtResource("2")
+atk = "steel"
+def = "poison"
+mul = 2.0
+
+[sub_resource type="Resource" id="106"]
+script = ExtResource("2")
+atk = "holy"
+def = "poison"
+mul = 2.0
+
 [resource]
 script = ExtResource("1")
 format_id = "prototype_full_open"
@@ -644,5 +740,21 @@ SubResource("86"),
 SubResource("87"),
 SubResource("88"),
 SubResource("89"),
-SubResource("90")
+SubResource("90"),
+SubResource("91"),
+SubResource("92"),
+SubResource("93"),
+SubResource("94"),
+SubResource("95"),
+SubResource("96"),
+SubResource("97"),
+SubResource("98"),
+SubResource("99"),
+SubResource("100"),
+SubResource("101"),
+SubResource("102"),
+SubResource("103"),
+SubResource("104"),
+SubResource("105"),
+SubResource("106")
 ])

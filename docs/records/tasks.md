@@ -1103,5 +1103,60 @@
 - 已完成：
   - 已把 `回授电击` 的技能描述与验收矩阵改为“命中后同时清空自身正电荷与目标负电荷”
   - 已删除“miss 时只亏自己正电荷”的旧残留口径
-  - 已把负电荷 DOT 与水中外泄毒返都明确写成“基础值固定，但最终仍吃属性克制”
-  - 已把“持续水伤不触发，但致死命中仍触发导电反击”写进主稿和决策记录
+- 已把负电荷 DOT 与水中外泄毒返都明确写成“基础值固定，但最终仍吃属性克制”
+- 已把“持续水伤不触发，但致死命中仍触发导电反击”写进主稿和决策记录
+
+### 鹿紫云共享底座扩展与 poison 属性落地（已完成）
+
+- 目标：
+  - 先独立交付鹿紫云一需要的共享引擎骨架与 `poison` 正式属性，不把角色内容和底层扩展混在一起
+- 范围：
+  - `src/battle_core/actions/*`
+  - `src/battle_core/content/*`
+  - `src/battle_core/contracts/*`
+  - `src/battle_core/effects/*`
+  - `src/battle_core/runtime/*`
+  - `content/combat_types/poison.tres`
+  - `content/battle_formats/sample_battle_format.tres`
+  - `tests/suites/*`
+  - `tests/run_all.gd`
+  - `README.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `effect_stack_sum`、`remove_mode=all`、`nullify_field_accuracy`、`incoming_action_final_mod`、`on_receive_action_hit`、`action_actor` scope 全部可用
+  - `poison` 成为正式属性并接入克制表与回归
+  - 全量 `godot --headless --path . --script tests/run_all.gd` 通过
+  - `git diff --check` 与 `bash tests/check_repo_consistency.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 已把 `SkillDefinition.power_bonus_source` 扩到通用的 `effect_stack_sum`，并新增：
+    - `power_bonus_self_effect_ids`
+    - `power_bonus_target_effect_ids`
+    - `power_bonus_per_stack`
+  - 已把 `RemoveEffectPayload` 扩成 `remove_mode = single | all`
+  - 已新增 `rule_mod`：
+    - `nullify_field_accuracy`
+    - `incoming_action_final_mod`
+  - 已新增 `required_incoming_command_types / required_incoming_combat_type_ids`
+  - 已新增：
+    - trigger `on_receive_action_hit`
+    - effect scope `action_actor`
+    - `ChainContext.action_actor_id`
+    - `ChainContext.action_combat_type_id`
+  - 已新增正式属性资源 `content/combat_types/poison.tres`
+  - 已把 `poison` 首版克制表接进 `sample_battle_format.tres`
+  - 已新增回归：
+    - `power_bonus_runtime_suite.gd`
+    - `on_receive_action_hit_suite.gd`
+    - 以及 rule_mod / combat_type / content validation 相关扩展断言
+  - 已把 `PowerBonusRuntimeSuite` 接进 `tests/run_all.gd`
+  - 已同步 README 代码行数统计，修复 consistency gate
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `git diff --check` 通过
+- `bash tests/check_repo_consistency.sh` 通过

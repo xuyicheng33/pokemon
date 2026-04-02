@@ -16,3 +16,5 @@ class_name RuleModPayload
 @export var dynamic_value_thresholds: PackedInt32Array = PackedInt32Array()
 @export var dynamic_value_outputs: PackedFloat32Array = PackedFloat32Array()
 @export var dynamic_value_default: float = 0.0
+@export var required_incoming_command_types: PackedStringArray = PackedStringArray()
+@export var required_incoming_combat_type_ids: PackedStringArray = PackedStringArray()

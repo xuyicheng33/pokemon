@@ -124,6 +124,12 @@ func _test_combat_type_chart_math(harness) -> Dictionary:
         return harness.fail_result("fire -> wood+water should multiply to 1.0")
     if not is_equal_approx(service.calc_effectiveness("fire", PackedStringArray(["water", "dragon"])), 0.25):
         return harness.fail_result("fire -> water+dragon should multiply to 0.25")
+    if not is_equal_approx(service.calc_effectiveness("poison", PackedStringArray(["water"])), 2.0):
+        return harness.fail_result("poison -> water should be 2.0")
+    if not is_equal_approx(service.calc_effectiveness("poison", PackedStringArray(["steel"])), 0.5):
+        return harness.fail_result("poison -> steel should be 0.5")
+    if not is_equal_approx(service.calc_effectiveness("fire", PackedStringArray(["poison"])), 2.0):
+        return harness.fail_result("fire -> poison should be 2.0")
     if not is_equal_approx(service.calc_effectiveness("", PackedStringArray(["wood"])), 1.0):
         return harness.fail_result("empty skill type should be neutral")
     if not is_equal_approx(service.calc_effectiveness("fire", PackedStringArray()), 1.0):
