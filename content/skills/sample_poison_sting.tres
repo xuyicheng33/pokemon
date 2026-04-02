@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "sample_poison_sting"
+display_name = "Poison Sting"
+damage_kind = "none"
+power = 0
+accuracy = 100
+mp_cost = 0
+priority = 0
+combat_type_id = ""
+targeting = "enemy_active_slot"
+effects_on_cast_ids = PackedStringArray()
+effects_on_hit_ids = PackedStringArray("sample_poison_sting_burst")
+effects_on_miss_ids = PackedStringArray()
+effects_on_kill_ids = PackedStringArray()
+
