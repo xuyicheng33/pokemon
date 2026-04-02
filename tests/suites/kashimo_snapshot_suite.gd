@@ -24,13 +24,13 @@ func _test_kashimo_unit_snapshot_contract(harness) -> Dictionary:
         {"label": "kashimo max_mp", "actual": int(kashimo.max_mp), "expected": 100},
         {"label": "kashimo init_mp", "actual": int(kashimo.init_mp), "expected": 40},
         {"label": "kashimo regen_per_turn", "actual": int(kashimo.regen_per_turn), "expected": 10},
-        {"label": "kashimo ultimate_points_required", "actual": int(kashimo.ultimate_points_required), "expected": 0},
-        {"label": "kashimo ultimate_points_cap", "actual": int(kashimo.ultimate_points_cap), "expected": 0},
-        {"label": "kashimo ultimate_point_gain_on_regular_skill_cast", "actual": int(kashimo.ultimate_point_gain_on_regular_skill_cast), "expected": 0},
+        {"label": "kashimo ultimate_points_required", "actual": int(kashimo.ultimate_points_required), "expected": 3},
+        {"label": "kashimo ultimate_points_cap", "actual": int(kashimo.ultimate_points_cap), "expected": 3},
+        {"label": "kashimo ultimate_point_gain_on_regular_skill_cast", "actual": int(kashimo.ultimate_point_gain_on_regular_skill_cast), "expected": 1},
         {"label": "kashimo combat_type_ids", "actual": kashimo.combat_type_ids, "expected": PackedStringArray(["thunder", "fighting"])},
         {"label": "kashimo default skill_ids", "actual": kashimo.skill_ids, "expected": PackedStringArray(["kashimo_raiken", "kashimo_charge", "kashimo_feedback_strike"])},
         {"label": "kashimo candidate_skill_ids", "actual": kashimo.candidate_skill_ids, "expected": PackedStringArray(["kashimo_raiken", "kashimo_charge", "kashimo_feedback_strike", "kashimo_kyokyo_katsura"])},
-        {"label": "kashimo ultimate_skill_id", "actual": String(kashimo.ultimate_skill_id), "expected": ""},
+        {"label": "kashimo ultimate_skill_id", "actual": String(kashimo.ultimate_skill_id), "expected": "kashimo_phantom_beast_amber"},
         {"label": "kashimo passive_skill_id", "actual": String(kashimo.passive_skill_id), "expected": "kashimo_charge_separation"},
     ]
     return _run_checks(harness, checks)
@@ -43,7 +43,8 @@ func _test_kashimo_skill_snapshot_contract(harness) -> Dictionary:
     var charge = content_index.skills.get("kashimo_charge", null)
     var feedback = content_index.skills.get("kashimo_feedback_strike", null)
     var kyokyo = content_index.skills.get("kashimo_kyokyo_katsura", null)
-    if raiken == null or charge == null or feedback == null or kyokyo == null:
+    var amber = content_index.skills.get("kashimo_phantom_beast_amber", null)
+    if raiken == null or charge == null or feedback == null or kyokyo == null or amber == null:
         return harness.fail_result("missing kashimo snapshot skill resource")
     var checks: Array[Dictionary] = [
         {"label": "kashimo_raiken damage_kind", "actual": String(raiken.damage_kind), "expected": "physical"},
@@ -76,6 +77,13 @@ func _test_kashimo_skill_snapshot_contract(harness) -> Dictionary:
         {"label": "kashimo_kyokyo mp_cost", "actual": int(kyokyo.mp_cost), "expected": 20},
         {"label": "kashimo_kyokyo priority", "actual": int(kyokyo.priority), "expected": 2},
         {"label": "kashimo_kyokyo effects_on_cast_ids", "actual": kyokyo.effects_on_cast_ids, "expected": PackedStringArray(["kashimo_kyokyo_nullify"])},
+        {"label": "kashimo_amber damage_kind", "actual": String(amber.damage_kind), "expected": "special"},
+        {"label": "kashimo_amber power", "actual": int(amber.power), "expected": 60},
+        {"label": "kashimo_amber accuracy", "actual": int(amber.accuracy), "expected": 100},
+        {"label": "kashimo_amber mp_cost", "actual": int(amber.mp_cost), "expected": 35},
+        {"label": "kashimo_amber priority", "actual": int(amber.priority), "expected": 5},
+        {"label": "kashimo_amber combat_type_id", "actual": String(amber.combat_type_id), "expected": "thunder"},
+        {"label": "kashimo_amber effects_on_cast_ids", "actual": amber.effects_on_cast_ids, "expected": PackedStringArray(["kashimo_amber_self_transform"])},
     ]
     return _run_checks(harness, checks)
 
@@ -92,8 +100,10 @@ func _test_kashimo_effect_snapshot_contract(harness) -> Dictionary:
     var apply_water = content_index.effects.get("kashimo_apply_water_leak_listeners", null)
     var water_self = content_index.effects.get("kashimo_water_leak_self_listener", null)
     var water_counter = content_index.effects.get("kashimo_water_leak_counter_listener", null)
+    var amber_transform = content_index.effects.get("kashimo_amber_self_transform", null)
+    var amber_bleed = content_index.effects.get("kashimo_amber_bleed", null)
     var passive = content_index.passive_skills.get("kashimo_charge_separation", null)
-    if negative_mark == null or positive_mark == null or consume_positive == null or consume_negative == null or kyokyo == null or thunder_resist == null or apply_water == null or water_self == null or water_counter == null or passive == null:
+    if negative_mark == null or positive_mark == null or consume_positive == null or consume_negative == null or kyokyo == null or thunder_resist == null or apply_water == null or water_self == null or water_counter == null or amber_transform == null or amber_bleed == null or passive == null:
         return harness.fail_result("missing kashimo snapshot effect resource")
     var negative_payload = negative_mark.payloads[0]
     var positive_payload = positive_mark.payloads[0]
@@ -105,6 +115,12 @@ func _test_kashimo_effect_snapshot_contract(harness) -> Dictionary:
     var apply_water_counter_payload = apply_water.payloads[1]
     var water_self_payload = water_self.payloads[0]
     var water_counter_payload = water_counter.payloads[0]
+    var amber_attack_payload = amber_transform.payloads[0]
+    var amber_sp_attack_payload = amber_transform.payloads[1]
+    var amber_speed_payload = amber_transform.payloads[2]
+    var amber_bleed_apply_payload = amber_transform.payloads[3]
+    var amber_ult_lock_payload = amber_transform.payloads[4]
+    var amber_bleed_payload = amber_bleed.payloads[0]
     var checks: Array[Dictionary] = [
         {"label": "kashimo_negative_mark duration_mode", "actual": String(negative_mark.duration_mode), "expected": "turns"},
         {"label": "kashimo_negative_mark duration", "actual": int(negative_mark.duration), "expected": 4},
@@ -147,6 +163,21 @@ func _test_kashimo_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "kashimo_water_counter combat_filters", "actual": water_counter.required_incoming_combat_type_ids, "expected": PackedStringArray(["water"])},
         {"label": "kashimo_water_counter payload amount", "actual": int(water_counter_payload.amount), "expected": 15},
         {"label": "kashimo_water_counter payload type", "actual": String(water_counter_payload.combat_type_id), "expected": "poison"},
+        {"label": "kashimo_amber_attack stat_name", "actual": String(amber_attack_payload.stat_name), "expected": "attack"},
+        {"label": "kashimo_amber_attack stage_delta", "actual": int(amber_attack_payload.stage_delta), "expected": 2},
+        {"label": "kashimo_amber_attack retention_mode", "actual": String(amber_attack_payload.retention_mode), "expected": "persist_on_switch"},
+        {"label": "kashimo_amber_sp_attack stat_name", "actual": String(amber_sp_attack_payload.stat_name), "expected": "sp_attack"},
+        {"label": "kashimo_amber_sp_attack stage_delta", "actual": int(amber_sp_attack_payload.stage_delta), "expected": 2},
+        {"label": "kashimo_amber_speed stat_name", "actual": String(amber_speed_payload.stat_name), "expected": "speed"},
+        {"label": "kashimo_amber_speed stage_delta", "actual": int(amber_speed_payload.stage_delta), "expected": 1},
+        {"label": "kashimo_amber_bleed apply_effect", "actual": String(amber_bleed_apply_payload.effect_definition_id), "expected": "kashimo_amber_bleed"},
+        {"label": "kashimo_amber_ult_lock mod_kind", "actual": String(amber_ult_lock_payload.mod_kind), "expected": "action_legality"},
+        {"label": "kashimo_amber_ult_lock mod_op", "actual": String(amber_ult_lock_payload.mod_op), "expected": "deny"},
+        {"label": "kashimo_amber_ult_lock value", "actual": String(amber_ult_lock_payload.value), "expected": "ultimate"},
+        {"label": "kashimo_amber_ult_lock persists_on_switch", "actual": bool(amber_ult_lock_payload.persists_on_switch), "expected": true},
+        {"label": "kashimo_amber_bleed trigger_names", "actual": amber_bleed.trigger_names, "expected": PackedStringArray(["turn_end"])},
+        {"label": "kashimo_amber_bleed persists_on_switch", "actual": bool(amber_bleed.persists_on_switch), "expected": true},
+        {"label": "kashimo_amber_bleed amount", "actual": int(amber_bleed_payload.amount), "expected": 20},
     ]
     return _run_checks(harness, checks)
 

@@ -1,4 +1,4 @@
-# 鹿紫云一（Kashimo Hajime）设计方案 v1.1
+# 鹿紫云一（Kashimo Hajime）设计方案 v1.2
 
 ## 0. 冻结结论（2026-04-01）
 
@@ -200,7 +200,7 @@
 | priority | **0** |
 | combat_type_id | `thunder` |
 | targeting | `enemy_active_slot` |
-| power_bonus_source | `charge_mark_count`（需引擎扩展） |
+| power_bonus_source | `effect_stack_sum` |
 | effects_on_cast_ids | `[]` |
 | effects_on_hit_ids | `["kashimo_consume_positive_charges", "kashimo_consume_negative_charges"]` |
 
@@ -281,6 +281,7 @@
 - 正式语义：
   - 这是“形态切换”，不是短暂状态。
   - 一旦开启，强化、自伤、奥义封锁都应该跟着换人保留。
+  - 若鹿紫云带着琥珀状态在本回合中途重新上场，则自伤在同回合重上场当回合仍暂停；从下一整回合的 `turn_end` 再恢复。
   - 不允许把它偷偷降级成“换人后只留自伤、不留强化”的半残版本；如果实现阶段不得不降级，必须单独写进 adjustment 文档，而不是改动主稿语义。
 - 机制说明：
   - 奥义合法性仍同时要求 `current_mp >= 35` 与 `ultimate_points >= 3`。
@@ -292,9 +293,9 @@
 | 资源 | 语义 |
 |------|------|
 | `kashimo_amber_self_transform` | `on_cast` 时施加琥珀形态相关效果 |
-| `kashimo_amber_attack_up` | 攻击 +2 级语义；应跨换人保留 |
-| `kashimo_amber_sp_attack_up` | 特攻 +2 级语义；应跨换人保留 |
-| `kashimo_amber_speed_up` | 速度 +1 级语义；应跨换人保留 |
+| `kashimo_amber_attack_up` | 攻击 +2 级语义；通过 `persistent_stat_stages` 跨换人保留 |
+| `kashimo_amber_sp_attack_up` | 特攻 +2 级语义；通过 `persistent_stat_stages` 跨换人保留 |
+| `kashimo_amber_speed_up` | 速度 +1 级语义；通过 `persistent_stat_stages` 跨换人保留 |
 | `kashimo_amber_bleed` | `turn_end` 每回合扣 20 HP；`persists_on_switch=true` |
 | `kashimo_amber_ult_lock` | 整场禁止再次使用奥义；`persists_on_switch=true` |
 
@@ -364,7 +365,7 @@
 | 10 | 幻兽琥珀一次性 | 使用后整场不能再开第二次 |
 | 11 | 幻兽琥珀强化 | 开启后获得攻击 +2、特攻 +2、速度 +1 |
 | 12 | 幻兽琥珀自伤 | 开启后每回合 `turn_end` 扣 20 HP，直到死亡 |
-| 13 | 幻兽琥珀换人语义 | 强化、自伤、奥义封锁都应在换人后继续保留 |
+| 13 | 幻兽琥珀换人语义 | 强化、自伤、奥义封锁都应在换人后继续保留；同回合重上场当回合仍暂停普通 `turn_end` 自伤 |
 | 14 | 雷属性抗性 | 雷属性主动技能 / 奥义命中鹿紫云时，本次最终伤害乘 `0.5`；该特性不外溢到其他雷属性单位 |
 | 15 | 水属性导电弱点 | 鹿紫云被 `water` 的主动技能 / 奥义命中后，自身立刻 -15 MP |
 | 16 | 水属性导电反击 | 同一次命中后，攻击者立刻受到 1 次基础值为 15 的 `poison` 固定伤害，最终仍吃毒属性克制 |
@@ -432,19 +433,20 @@
 
 ---
 
-## 附录 A. 引擎 / 内容扩展需求
+## 附录 A. 已落地共享机制与角色依赖
 
 | 扩展项 | 优先级 | 难度 | 说明 |
 |--------|--------|------|------|
-| `charge_mark_count` power_bonus_source | P0 | 中 | 回授电击按“自身正电荷 + 目标负电荷”的总层数加威力 |
-| `remove_all_by_def_id` payload 语义 | P0 | 小 | 当前 `RemoveEffectPayload` 只能移除单个实例；回授电击需要一口气清全部叠层 |
-| `nullify_field_accuracy` 读取点 | P0 | 小 | 弥虚葛笼要把领域附加必中还原成技能原始命中率 |
-| `incoming_action_final_mod` 读取点 | P0 | 中 | 目标侧对“主动技能 / 奥义本次伤害”的减伤读取点；鹿紫云的抗雷需要这一条，而不是全局类型表 |
-| `on_receive_action_hit` 被动触发 | P0 | 中 | 被动需要在“自己被主动技能 / 奥义命中”时触发，且链上下文必须带来袭 `skill_id / command_type` |
-| 来袭技能属性过滤条件 | P0 | 小 | 被动需要知道“这次命中的主动技能 / 奥义的 `combat_type_id` 是不是 `water` / `thunder`” |
-| `action_actor` 作用域 | P0 | 小 | 水中外泄的反击要能把伤害打回这次行动的攻击者，现有 `self / target` 不够用 |
-| `poison` combat type（完整属性） | P0 | 中 | 新增 `content/combat_types/poison.tres`，并把它作为正式新属性补进 combat_type chart 与回归套件，不再按“全中立占位”处理 |
-| 琥珀跨换人强化载体 | P0 | 中 | 需要一个能在换人后继续保留攻击 / 特攻 / 速度强化的正式表达，不能继续只靠离场就清零的 `stat_stage` |
+| `effect_stack_sum` | 已落地 | 中 | 回授电击按“自身正电荷 + 目标负电荷”的总层数加威力 |
+| `RemoveEffectPayload.remove_mode = all` | 已落地 | 小 | 回授电击命中后一次性清空双方全部电荷层 |
+| `nullify_field_accuracy` | 已落地 | 小 | 弥虚葛笼只中和领域附加必中，不影响技能原生 `100` 命中 |
+| `incoming_action_final_mod` | 已落地 | 中 | 目标侧对“主动技能 / 奥义本次伤害”的减伤读取点；鹿紫云的抗雷走这一条 |
+| `on_receive_action_hit` | 已落地 | 中 | 被动在“自己被主动技能 / 奥义命中”时触发，且致死命中仍可反击 |
+| `action_actor` | 已落地 | 小 | 水中外泄的毒返直接打回这次行动的攻击者 |
+| `required_incoming_command_types / required_incoming_combat_type_ids` | 已落地 | 小 | 被动可精确过滤来袭主动技类型与属性 |
+| `poison` combat type（完整属性） | 已落地 | 中 | `poison` 已成为正式属性，并接入 combat type chart 与回归 |
+| `persistent_stat_stages` | 已落地 | 中 | 幻兽琥珀的攻 / 特攻 / 速度强化改由持久能力阶段承载并跨换人保留 |
+| `重上场当回合持续 effect 继续暂停普通回合触发` | 已落地 | 小 | `persists_on_switch=true` 的效果若 owner 在执行阶段重上场，同回合仍不参与普通 `turn_start / turn_end` trigger batch |
 
 **补充说明**
 

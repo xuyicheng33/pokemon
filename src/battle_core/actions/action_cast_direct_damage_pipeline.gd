@@ -156,10 +156,10 @@ func _build_direct_damage_context(actor, target, skill_definition) -> Dictionary
 
 func _resolve_effective_attack_value(actor, damage_kind: String) -> int:
     if damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
-        return stat_calculator.calc_effective_stat(actor.base_sp_attack, int(actor.stat_stages.get("sp_attack", 0)))
-    return stat_calculator.calc_effective_stat(actor.base_attack, int(actor.stat_stages.get("attack", 0)))
+        return stat_calculator.calc_effective_stat(actor.base_sp_attack, actor.get_effective_stage("sp_attack"))
+    return stat_calculator.calc_effective_stat(actor.base_attack, actor.get_effective_stage("attack"))
 
 func _resolve_effective_defense_value(target, damage_kind: String) -> int:
     if damage_kind == ContentSchemaScript.DAMAGE_KIND_SPECIAL:
-        return stat_calculator.calc_effective_stat(target.base_sp_defense, int(target.stat_stages.get("sp_defense", 0)))
-    return stat_calculator.calc_effective_stat(target.base_defense, int(target.stat_stages.get("defense", 0)))
+        return stat_calculator.calc_effective_stat(target.base_sp_defense, target.get_effective_stage("sp_defense"))
+    return stat_calculator.calc_effective_stat(target.base_defense, target.get_effective_stage("defense"))

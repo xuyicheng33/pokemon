@@ -40,7 +40,8 @@ func apply_stat_mod_payload(payload, effect_definition, effect_event, battle_sta
         )
         if resolved_stage_delta == 0:
             return
-    var before_value: int = int(target_unit.stat_stages.get(payload.stat_name, 0))
+    var target_stage_bucket: Dictionary = target_unit.persistent_stat_stages if String(payload.retention_mode) == "persist_on_switch" else target_unit.stat_stages
+    var before_value: int = int(target_stage_bucket.get(payload.stat_name, 0))
     var after_value: int = clamp(before_value + resolved_stage_delta, -2, 2)
     if before_value == after_value:
         if _should_record_field_reversible_stat_mod(effect_event, battle_state):
@@ -49,7 +50,7 @@ func apply_stat_mod_payload(payload, effect_definition, effect_event, battle_sta
                 String(payload.stat_name)
             )
         return
-    target_unit.stat_stages[payload.stat_name] = after_value
+    target_stage_bucket[payload.stat_name] = after_value
     if _should_record_field_reversible_stat_mod(effect_event, battle_state):
         battle_state.field_state.record_reversible_stat_mod(
             target_unit.unit_instance_id,

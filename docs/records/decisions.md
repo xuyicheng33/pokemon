@@ -575,3 +575,36 @@
 - 原因：
   - `on_receive_action_hit` + `action_actor` 解决了触发时机和反击对象，但如果没有 effect 级过滤，鹿紫云的水中外泄就只能错误地对所有来袭主动技触发。
   - 先把 Phase 1 主循环单独交付，能避免 `幻兽琥珀` 的持久阶段机制没准备好时，把正式角色内容提前接成半成品。
+
+### 56. 持久能力阶段正式进入运行时；`persists_on_switch` 的持续效果在同回合重上场时仍暂停普通回合触发（2026-04-02）
+
+- `StatModPayload` 当前新增 `retention_mode = persist_on_switch`，并把跨换人保留的能力阶段正式下沉到 `UnitState.persistent_stat_stages`。
+- 当前有效能力阶段统一读取：
+  - `effective_stage = clamp(stat_stages + persistent_stat_stages, -2, 2)`
+- `manual_switch / forced_replace` 时：
+  - 临时能力阶段继续清零
+  - `persistent_stat_stages` 保留
+- `faint` 时：
+  - `persistent_stat_stages` 也一并清空
+- 对 `persists_on_switch=true` 的 unit effect，当前正式补一条生命周期语义：
+  - 若 owner 在执行阶段中途重新上场，则这些持久 effect 在“同回合重上场当回合”仍不参与普通 `turn_start / turn_end` trigger batch
+  - 下一整回合起恢复
+- 原因：
+  - 幻兽琥珀要求“强化、自伤、奥义封锁都跨换人保留”，只靠原来的临时 `stat_stage` 已经无法表达。
+  - 如果不把“同回合重上场仍暂停”写成共享规则，琥珀自伤会在重上场当回合立刻恢复，和冻结角色语义冲突。
+
+### 57. 鹿紫云正式交付面切回 registry；`run_all` 不再保留临时直连（2026-04-02）
+
+- 鹿紫云当前正式进入 `docs/records/formal_character_registry.json`：
+  - 设计稿：`docs/design/kashimo_hajime_design.md`
+  - 调整记录：`docs/design/kashimo_hajime_adjustments.md`
+  - wrapper suite：`tests/suites/kashimo_suite.gd`
+  - 角色级 content validator：`src/battle_core/content/content_snapshot_formal_kashimo_validator.gd`
+- `tests/run_all.gd` 当前删除了临时手动 `KashimoSuiteScript` 接线，改为和 Gojo / 宿傩一样统一走 formal registry 扩展。
+- `docs/design/kashimo_hajime_design.md` 当前同步升到 `v1.2`，把以下正式实现名写回主稿：
+  - `effect_stack_sum`
+  - `incoming_action_final_mod`
+  - `persistent_stat_stages`
+- 原因：
+  - 鹿紫云已经不再是“扩角中的临时角色”，而是正式角色交付面的一部分。
+  - 继续保留 `run_all` 的临时直连只会制造双跑与交付面不一致。

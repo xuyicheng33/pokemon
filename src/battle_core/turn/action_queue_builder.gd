@@ -81,7 +81,7 @@ func _resolve_speed_snapshot(command, battle_state) -> int:
     if actor == null:
         last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
         return 0
-    actor.last_effective_speed = stat_calculator.calc_effective_stat(actor.base_speed, int(actor.stat_stages.get("speed", 0)))
+    actor.last_effective_speed = stat_calculator.calc_effective_stat(actor.base_speed, actor.get_effective_stage("speed"))
     return actor.last_effective_speed
 
 func _build_target_snapshot(command, battle_state, content_index):

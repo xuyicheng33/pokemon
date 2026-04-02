@@ -43,7 +43,8 @@
 3. `required_target_same_owner = true` 时，前置除检查目标持有这些 effect 外，还必须校验这些 effect instance 记录的 `meta.source_owner_id` 与当前 effect owner 一致。
 4. 前置不满足时，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 5. `persists_on_switch=true` 的 unit effect 在非击倒离场后继续保留，但 bench 上只继续倒计时，不参与普通 `turn_start / turn_end` trigger batch。
-6. 上述 bench 持久 effect 若在板凳上到期，只移除并写正常 remove log；当前不派发 `on_expire_effect_ids`。
+6. 若 owner 在执行阶段中途重新上场，则这些持久 effect 在“同回合重上场当回合”仍继续暂停普通 `turn_start / turn_end` trigger batch；从下一整回合起恢复。
+7. 上述 bench 持久 effect 若在板凳上到期，只移除并写正常 remove log；当前不派发 `on_expire_effect_ids`。
 
 ## 3. `EffectInstance`
 
@@ -91,9 +92,10 @@
 7. 若 `battle_init` 批次本身导致补位并形成新的稳定对位，可在进入 `selection` 前追加一次 `on_matchup_changed`；该追加批次只读取 `battle_init` 后稳定战场，不会重放 `battle_init`。
 8. `turn_start / turn_end` 的普通 trigger 只对“当前在场单位”和全场 field 生效；bench 单位不参与普通回合节点触发。
 9. 若 bench 单位持有 `persists_on_switch=true` 的 effect，则该实例仍会在对应节点继续扣减 `remaining`，但不会进入普通 trigger batch。
-10. `field_break` 只用于 field 被提前打断链；`field_expire` 只用于 field 自然到期链。
-11. `field_apply_success` 只用于 `ApplyFieldPayload.on_success_effect_ids` 的 follow-up 派发。
-12. `on_expire` 只用于 `EffectDefinition.on_expire_effect_ids` 派发，语义与 `field_expire` 严格分离，不混用。
+10. 若 bench 单位在执行阶段中途重上场，则这些持久 effect 本回合仍不进入普通 `turn_start / turn_end` trigger batch；下一整回合才恢复。
+11. `field_break` 只用于 field 被提前打断链；`field_expire` 只用于 field 自然到期链。
+12. `field_apply_success` 只用于 `ApplyFieldPayload.on_success_effect_ids` 的 follow-up 派发。
+13. `on_expire` 只用于 `EffectDefinition.on_expire_effect_ids` 派发，语义与 `field_expire` 严格分离，不混用。
 
 ## 5. 当前基线 payload 类型
 

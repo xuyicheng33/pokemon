@@ -22,6 +22,8 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, o
                 return []
             if not effect_definition.trigger_names.has(trigger_name):
                 continue
+            if _should_skip_reentered_persistent_turn_trigger(effect_instance, trigger_name, owner_unit, battle_state):
+                continue
             var effect_event = EffectEventScript.new()
             effect_event.event_id = id_factory.next_id("effect_event")
             effect_event.trigger_name = trigger_name
@@ -35,6 +37,15 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, o
             effect_event.chain_context = chain_context
             effect_events.append(effect_event)
     return effect_events
+
+func _should_skip_reentered_persistent_turn_trigger(effect_instance, trigger_name: String, owner_unit, battle_state) -> bool:
+    if effect_instance == null or owner_unit == null or battle_state == null:
+        return false
+    if not bool(effect_instance.persists_on_switch):
+        return false
+    if trigger_name != "turn_start" and trigger_name != "turn_end":
+        return false
+    return int(owner_unit.reentered_turn_index) == int(battle_state.turn_index)
 
 func decrement_for_trigger(trigger_name: String, battle_state, content_index, owner_unit_ids: Array) -> Dictionary:
     last_invalid_battle_code = null

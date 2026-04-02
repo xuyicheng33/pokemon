@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/damage_payload.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "damage"
+amount = 20
+use_formula = false
+combat_type_id = ""
+
+[resource]
+script = ExtResource("1")
+id = "kashimo_amber_bleed"
+display_name = "幻兽琥珀·自毁"
+scope = "self"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("turn_end")
+payloads = Array[Resource]([SubResource("1")])
+persists_on_switch = true

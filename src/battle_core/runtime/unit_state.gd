@@ -2,6 +2,7 @@ extends RefCounted
 class_name UnitState
 
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
+const STAT_STAGE_KEYS := ["attack", "defense", "sp_attack", "sp_defense", "speed"]
 
 var unit_instance_id: String = ""
 var public_id: String = ""
@@ -30,6 +31,13 @@ var stat_stages: Dictionary = {
     "sp_defense": 0,
     "speed": 0,
 }
+var persistent_stat_stages: Dictionary = {
+    "attack": 0,
+    "defense": 0,
+    "sp_attack": 0,
+    "sp_defense": 0,
+    "speed": 0,
+}
 var effect_instances: Array = []
 var rule_mod_instances: Array = []
 var has_acted: bool = false
@@ -37,6 +45,7 @@ var action_window_passed: bool = false
 var leave_state: String = LeaveStatesScript.ACTIVE
 var leave_reason: Variant = null
 var last_effective_speed: int = 0
+var reentered_turn_index: int = -1
 
 func to_stable_dict() -> Dictionary:
     var effect_dicts: Array = []
@@ -71,6 +80,7 @@ func to_stable_dict() -> Dictionary:
         "base_sp_defense": base_sp_defense,
         "base_speed": base_speed,
         "stat_stages": stat_stages,
+        "persistent_stat_stages": persistent_stat_stages,
         "effect_instances": effect_dicts,
         "rule_mod_instances": rule_mod_dicts,
         "has_acted": has_acted,
@@ -78,4 +88,34 @@ func to_stable_dict() -> Dictionary:
         "leave_state": leave_state,
         "leave_reason": leave_reason,
         "last_effective_speed": last_effective_speed,
+        "reentered_turn_index": reentered_turn_index,
+    }
+
+func get_effective_stage(stat_name: String) -> int:
+    var temporary_stage: int = int(stat_stages.get(stat_name, 0))
+    var persistent_stage: int = int(persistent_stat_stages.get(stat_name, 0))
+    return clamp(temporary_stage + persistent_stage, -2, 2)
+
+func get_effective_stat_stage_map() -> Dictionary:
+    var combined: Dictionary = {}
+    for stat_name in STAT_STAGE_KEYS:
+        combined[String(stat_name)] = get_effective_stage(String(stat_name))
+    return combined
+
+func reset_temporary_stat_stages() -> void:
+    stat_stages = {
+        "attack": 0,
+        "defense": 0,
+        "sp_attack": 0,
+        "sp_defense": 0,
+        "speed": 0,
+    }
+
+func clear_persistent_stat_stages() -> void:
+    persistent_stat_stages = {
+        "attack": 0,
+        "defense": 0,
+        "sp_attack": 0,
+        "sp_defense": 0,
+        "speed": 0,
     }

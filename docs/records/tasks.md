@@ -1214,3 +1214,60 @@
 
 - `godot --headless --path . --script tests/run_all.gd` 通过
 - `git diff --check` 通过
+
+### 鹿紫云 Phase 2 幻兽琥珀、持久能力阶段与正式交付面（已完成）
+
+- 目标：
+  - 把 `幻兽琥珀`、持久能力阶段载体和正式角色交付面一起补齐，让鹿紫云从 Phase 1 临时状态切回正式角色
+- 范围：
+  - `src/battle_core/runtime/*`
+  - `src/battle_core/actions/*`
+  - `src/battle_core/effects/*`
+  - `src/battle_core/lifecycle/*`
+  - `src/battle_core/facades/*`
+  - `src/battle_core/content/*`
+  - `content/skills/kashimo/*`
+  - `content/effects/kashimo/*`
+  - `content/units/kashimo/*`
+  - `tests/suites/kashimo_*`
+  - `tests/suites/persistent_stat_stage_suite.gd`
+  - `tests/run_all.gd`
+  - `docs/design/kashimo_hajime_design.md`
+  - `docs/design/kashimo_hajime_adjustments.md`
+  - `docs/records/formal_character_registry.json`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+  - `docs/rules/04_status_switch_and_lifecycle.md`
+  - `docs/rules/06_effect_schema_and_extension.md`
+- 验收标准：
+  - `幻兽琥珀` 开启后获得持久 `+2 / +2 / +1`
+  - 强化、自伤、奥义封锁跨换人保留，击倒后清空
+  - 同回合重上场时，`persists_on_switch=true` 的持续效果仍暂停普通 `turn_start / turn_end` 触发；下一整回合恢复
+  - 鹿紫云正式接入 `formal_character_registry.json`，`tests/run_all.gd` 不再保留临时手动接线
+  - `godot --headless --path . --script tests/run_all.gd`、`bash tests/check_repo_consistency.sh`、`bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 已新增 `UnitState.persistent_stat_stages`
+  - 已把 `StatModPayload.retention_mode = persist_on_switch` 接进运行时读写与公开快照
+  - 已新增共享回归：
+    - `tests/suites/persistent_stat_stage_suite.gd`
+  - 已新增鹿紫云 Phase 2 内容资源：
+    - `content/skills/kashimo/kashimo_phantom_beast_amber.tres`
+    - `content/effects/kashimo/kashimo_amber_self_transform.tres`
+    - `content/effects/kashimo/kashimo_amber_bleed.tres`
+  - 已把 `content/units/kashimo/kashimo_hajime.tres` 切回正式奥义配置 `3 / 3 / 1`
+  - 已新增回归：
+    - `tests/suites/kashimo_amber_suite.gd`
+    - `tests/suites/kashimo_manager_smoke_suite.gd`
+  - 已把“持久 effect 同回合重上场仍暂停普通回合触发”补成共享生命周期语义
+  - 已新增：
+    - `docs/design/kashimo_hajime_adjustments.md`
+    - `src/battle_core/content/content_snapshot_formal_kashimo_validator.gd`
+  - 已把鹿紫云接进 `docs/records/formal_character_registry.json`
+  - 已把 `tests/run_all.gd` 的临时 `KashimoSuite` 手动接线删掉，改为统一走 formal registry
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过

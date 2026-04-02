@@ -140,7 +140,7 @@
 |bench 持久 effect|若单位持有 `persists_on_switch=true` 的 effect，则该 effect 在 bench 上继续扣 `remaining`|
 |bench 持久 effect 到期|只做正常移除与移除日志；不派发 `on_expire_effect_ids`|
 |bench 单位普通回合行为|不参与 `turn_start / turn_end` 普通触发、被动结算或其他在场限定批次|
-|重新上场后|重新以在场单位身份参与后续回合，并继续带着未到期的持久 effect / rule mod|
+|重新上场后|重新以在场单位身份参与后续回合，并继续带着未到期的持久 effect / rule mod；若是执行阶段中途重上场，则同回合仍不参与普通 `turn_start / turn_end` trigger batch，下一整回合起恢复|
 
 ## 9. 未来持续效果的接入纪律
 

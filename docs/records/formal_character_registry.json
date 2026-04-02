@@ -167,5 +167,78 @@
       "mp_regen add",
       "影响测试"
     ]
+  },
+  {
+    "character_id": "kashimo_hajime",
+    "display_name": "Kashimo",
+    "unit_definition_id": "kashimo_hajime",
+    "design_doc": "docs/design/kashimo_hajime_design.md",
+    "adjustment_doc": "docs/design/kashimo_hajime_adjustments.md",
+    "suite_path": "tests/suites/kashimo_suite.gd",
+    "content_validator_script_path": "src/battle_core/content/content_snapshot_formal_kashimo_validator.gd",
+    "required_suite_paths": [
+      "tests/suites/kashimo_snapshot_suite.gd",
+      "tests/suites/kashimo_runtime_suite.gd",
+      "tests/suites/kashimo_amber_suite.gd",
+      "tests/suites/kashimo_manager_smoke_suite.gd",
+      "tests/suites/persistent_stat_stage_suite.gd",
+      "tests/suites/combat_type_definition_suite.gd",
+      "tests/suites/combat_type_runtime_suite.gd",
+      "tests/suites/ultimate_points_contract_suite.gd"
+    ],
+    "required_test_names": [
+      "kashimo_unit_snapshot_contract",
+      "kashimo_skill_snapshot_contract",
+      "kashimo_effect_snapshot_contract",
+      "kashimo_raiken_negative_charge_contract",
+      "kashimo_charge_positive_charge_contract",
+      "kashimo_feedback_strike_dynamic_power_and_clear_contract",
+      "kashimo_kyokyo_katsura_nullify_field_accuracy_contract",
+      "kashimo_thunder_resist_contract",
+      "kashimo_water_leak_counter_contract",
+      "kashimo_phantom_beast_amber_persistent_stage_contract",
+      "kashimo_manager_smoke_contract",
+      "persistent_stat_stage_switch_and_faint_contract",
+      "persistent_stat_stage_effective_read_contract",
+      "combat_type_content_validation",
+      "combat_type_chart_math",
+      "combat_type_direct_damage_and_logs",
+      "ultimate_points_regular_skill_gain_contract",
+      "ultimate_points_non_regular_switch_preserve_contract",
+      "ultimate_points_ultimate_legality_and_reset_contract"
+    ],
+    "required_content_paths": [
+      "content/units/kashimo/kashimo_hajime.tres",
+      "content/skills/kashimo/kashimo_raiken.tres",
+      "content/skills/kashimo/kashimo_charge.tres",
+      "content/skills/kashimo/kashimo_feedback_strike.tres",
+      "content/skills/kashimo/kashimo_kyokyo_katsura.tres",
+      "content/skills/kashimo/kashimo_phantom_beast_amber.tres",
+      "content/effects/kashimo/kashimo_apply_negative_charge.tres",
+      "content/effects/kashimo/kashimo_negative_charge_mark.tres",
+      "content/effects/kashimo/kashimo_apply_positive_charge.tres",
+      "content/effects/kashimo/kashimo_positive_charge_mark.tres",
+      "content/effects/kashimo/kashimo_consume_positive_charges.tres",
+      "content/effects/kashimo/kashimo_consume_negative_charges.tres",
+      "content/effects/kashimo/kashimo_kyokyo_nullify.tres",
+      "content/effects/kashimo/kashimo_thunder_resist.tres",
+      "content/effects/kashimo/kashimo_apply_water_leak_listeners.tres",
+      "content/effects/kashimo/kashimo_water_leak_self_listener.tres",
+      "content/effects/kashimo/kashimo_water_leak_counter_listener.tres",
+      "content/effects/kashimo/kashimo_amber_self_transform.tres",
+      "content/effects/kashimo/kashimo_amber_bleed.tres",
+      "content/passive_skills/kashimo/kashimo_charge_separation.tres",
+      "content/combat_types/poison.tres"
+    ],
+    "design_needles": [
+      "effect_stack_sum",
+      "incoming_action_final_mod",
+      "persistent_stat_stages"
+    ],
+    "adjustment_needles": [
+      "effect_stack_sum",
+      "persistent_stat_stages",
+      "同回合重上场"
+    ]
   }
 ]

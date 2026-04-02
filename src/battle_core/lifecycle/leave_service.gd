@@ -44,13 +44,9 @@ func leave_unit(battle_state, unit_state, reason: String, content_index) -> void
             kept_rule_mods.append(rule_mod_instance)
     unit_state.effect_instances = kept_effects
     unit_state.rule_mod_instances = kept_rule_mods
-    unit_state.stat_stages = {
-        "attack": 0,
-        "defense": 0,
-        "sp_attack": 0,
-        "sp_defense": 0,
-        "speed": 0,
-    }
+    unit_state.reset_temporary_stat_stages()
+    if reason == "faint":
+        unit_state.clear_persistent_stat_stages()
     unit_state.has_acted = false
     unit_state.action_window_passed = false
     unit_state.leave_reason = reason

@@ -55,8 +55,8 @@ func apply_damage_payload(payload, effect_definition, effect_event, battle_state
             defense_stat_name = "sp_defense"
             attack_value = actor_unit.base_sp_attack
             defense_value = target_unit.base_sp_defense
-        attack_value = stat_calculator.calc_effective_stat(attack_value, int(actor_unit.stat_stages.get(attack_stat_name, 0)))
-        defense_value = stat_calculator.calc_effective_stat(defense_value, int(target_unit.stat_stages.get(defense_stat_name, 0)))
+        attack_value = stat_calculator.calc_effective_stat(attack_value, actor_unit.get_effective_stage(attack_stat_name))
+        defense_value = stat_calculator.calc_effective_stat(defense_value, target_unit.get_effective_stage(defense_stat_name))
         type_effectiveness = combat_type_service.calc_effectiveness(
             _resolve_skill_combat_type_id(formula_skill_definition),
             _resolve_unit_combat_types(target_unit)

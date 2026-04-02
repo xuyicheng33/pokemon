@@ -1,0 +1,55 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/stat_mod_payload.gd" id="2"]
+[ext_resource type="Script" path="res://src/battle_core/content/apply_effect_payload.gd" id="3"]
+[ext_resource type="Script" path="res://src/battle_core/content/rule_mod_payload.gd" id="4"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "stat_mod"
+stat_name = "attack"
+stage_delta = 2
+retention_mode = "persist_on_switch"
+
+[sub_resource type="Resource" id="2"]
+script = ExtResource("2")
+payload_type = "stat_mod"
+stat_name = "sp_attack"
+stage_delta = 2
+retention_mode = "persist_on_switch"
+
+[sub_resource type="Resource" id="3"]
+script = ExtResource("2")
+payload_type = "stat_mod"
+stat_name = "speed"
+stage_delta = 1
+retention_mode = "persist_on_switch"
+
+[sub_resource type="Resource" id="4"]
+script = ExtResource("3")
+payload_type = "apply_effect"
+effect_definition_id = "kashimo_amber_bleed"
+
+[sub_resource type="Resource" id="5"]
+script = ExtResource("4")
+payload_type = "rule_mod"
+mod_kind = "action_legality"
+mod_op = "deny"
+value = "ultimate"
+scope = "self"
+duration_mode = "permanent"
+decrement_on = "turn_end"
+stacking = "none"
+priority = 10
+persists_on_switch = true
+
+[resource]
+script = ExtResource("1")
+id = "kashimo_amber_self_transform"
+display_name = "幻兽琥珀·形态切换"
+scope = "self"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_cast")
+payloads = Array[Resource]([SubResource("1"), SubResource("2"), SubResource("3"), SubResource("4"), SubResource("5")])

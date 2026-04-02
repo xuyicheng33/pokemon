@@ -79,7 +79,7 @@ func _build_public_unit_snapshot(side_state, unit_state) -> Dictionary:
         "ultimate_points_cap": unit_state.ultimate_points_cap,
         "ultimate_points_required": unit_state.ultimate_points_required,
         "combat_type_ids": unit_state.combat_type_ids,
-        "stat_stages": unit_state.stat_stages.duplicate(true),
+        "stat_stages": unit_state.get_effective_stat_stage_map(),
         "leave_state": unit_state.leave_state,
         "leave_reason": unit_state.leave_reason,
         "is_active": is_active,

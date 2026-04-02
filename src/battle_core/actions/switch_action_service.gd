@@ -76,6 +76,7 @@ func execute_switch_action(queued_action, battle_state, content_index):
     side_state.set_active_unit(ContentSchemaScript.ACTIVE_SLOT_PRIMARY, command.target_unit_id)
     target_unit.leave_state = LeaveStatesScript.ACTIVE
     target_unit.leave_reason = null
+    target_unit.reentered_turn_index = battle_state.turn_index
     target_unit.has_acted = true
     target_unit.action_window_passed = true
     action_log_service.log_state_enter(battle_state, target_unit)
