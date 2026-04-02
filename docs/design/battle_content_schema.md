@@ -7,7 +7,7 @@
 - 内容层只描述静态定义，不保存运行时 HP/MP。
 - 所有内容资源类都放在 `src/battle_core/content/`。
 - 所有内容资源文件都放在 `content/`，不放进 `assets/`。
-- 当前仓库已同时承载最小样例资源，以及 Gojo / Sukuna 两个正式角色内容包；内容 schema 需要能直接描述正式原型角色与技能。
+- 当前仓库已同时承载最小样例资源，以及 Gojo / Sukuna / Kashimo 三个正式角色内容包；内容 schema 需要能直接描述正式原型角色与技能。
 
 ## 2. 文件与目录映射
 
@@ -74,6 +74,7 @@
 - `ultimate_points_required / ultimate_points_cap / ultimate_point_gain_on_regular_skill_cast` 属于角色级奥义点 contract；若单位没有 `ultimate_skill_id`，这三项必须保持 `0`。
 - 当前仓库里的宿傩已按正式字段落盘：默认技能组为 `解 / 捌 / 开`，`反转术式` 作为候选常规技能保留在 `candidate_skill_ids` 中。
 - 当前仓库里的 Gojo 也已按正式字段落盘：默认技能组为 `苍 / 赫 / 茈`，奥义点 contract 为 `3 / 3 / 1`。
+- 当前仓库里的 Kashimo 也已按正式字段落盘：默认技能组为 `雷拳 / 蓄电 / 回授电击`，`弥虚葛笼` 作为候选常规技能保留在 `candidate_skill_ids` 中，奥义点 contract 同样为 `3 / 3 / 1`。
 
 ### 3.3 SkillDefinition
 
