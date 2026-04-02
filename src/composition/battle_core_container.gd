@@ -17,6 +17,10 @@ var turn_limit_scoring_service
 var battle_result_service
 var runtime_guard_service
 var action_executor
+var action_chain_context_builder
+var action_start_phase_service
+var action_skill_effect_service
+var action_execution_resolution_service
 var action_domain_guard
 var action_cast_service
 var action_cast_direct_damage_pipeline
