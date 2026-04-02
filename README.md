@@ -217,8 +217,8 @@ tests/run_with_gate.sh
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
 - 角色注册：`docs/records/formal_character_registry.json`
-- 共享内容校验：若角色有跨资源共享不变量，可在 formal registry 里登记可选 `content_validator_script_path`，内容快照校验会自动装配并 fail-fast
-- 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `required_suite_paths / required_test_names`；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
+- 共享内容校验：若角色有跨资源共享不变量，可在 formal registry 里登记可选 `content_validator_script_path`；运行时只读取 `src/battle_core/content/formal_character_validator_registry.json` 这个 code-side read model，并由 repo consistency gate 校验它与 docs registry 对齐
+- 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `sample_setup_method / required_suite_paths / required_test_names`；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
