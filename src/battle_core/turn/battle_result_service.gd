@@ -191,7 +191,7 @@ func _side_has_available_unit(side_state) -> bool:
             return true
     return false
 
-func _build_battle_end_chain(resolved_phase: String, battle_state):
+func _build_battle_end_chain(resolved_phase: String, _battle_state):
     match resolved_phase:
         BattlePhasesScript.BATTLE_INIT:
             return build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT)

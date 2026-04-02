@@ -26,10 +26,13 @@ func apply_action_start_phase(queued_action, battle_state, actor, command, skill
     var mp_changes: Array = action_cast_service.consume_mp(actor, consumed_mp)
     var action_cast_event_id: String = action_log_service.log_action_cast(queued_action, battle_state, command, mp_changes)
     _apply_action_start_resource_changes(queued_action, battle_state, actor, command, action_cast_event_id)
+    var result_type: Variant = null
+    if command.command_type == CommandTypesScript.WAIT:
+        result_type = "resolved"
     return {
         "action_cast_event_id": action_cast_event_id,
         "consumed_mp": consumed_mp,
-        "result_type": "resolved" if command.command_type == CommandTypesScript.WAIT else null,
+        "result_type": result_type,
     }
 
 func _apply_action_start_resource_changes(queued_action, battle_state, actor, command, cause_event_id: String) -> void:

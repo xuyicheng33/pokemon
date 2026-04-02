@@ -44,11 +44,14 @@ func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
 func build_header_snapshot(battle_state, content_index = null) -> Dictionary:
     if battle_state == null:
         return {}
+    var initial_field_snapshot: Variant = null
+    if battle_state.field_state != null:
+        initial_field_snapshot = _build_public_field_snapshot(battle_state, content_index)
     return {
         "visibility_mode": battle_state.visibility_mode,
         "prebattle_public_teams": _build_prebattle_public_teams(battle_state, content_index),
         "initial_active_public_ids_by_side": _build_initial_active_public_ids_by_side(battle_state),
-        "initial_field": _build_public_field_snapshot(battle_state, content_index) if battle_state.field_state != null else null,
+        "initial_field": initial_field_snapshot,
     }
 
 func _build_public_unit_snapshot(side_state, unit_state) -> Dictionary:

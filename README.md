@@ -109,6 +109,8 @@ tests/run_with_gate.sh
 闸门通过条件：
 
 - 业务断言全部通过（`tests/run_all.gd`）
+- headless 主流程启动 smoke 通过（`godot --headless --path . --quit-after 20`）
+- 无引擎级 warning（`WARNING:`）
 - suite 可达性检查通过（`tests/check_suite_reachability.sh`）
 - 无引擎级错误（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
 - 架构约束检查通过（`tests/check_architecture_constraints.sh`）
@@ -241,9 +243,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-02）
 
-- `src/**/*.gd`：`10917` 行
+- `src/**/*.gd`：`10926` 行
 - `tests/**/*.gd`：`13871` 行
-- GDScript 合计：`24788` 行
+- GDScript 合计：`24797` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

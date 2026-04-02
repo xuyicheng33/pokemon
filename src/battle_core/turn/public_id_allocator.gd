@@ -14,7 +14,7 @@ func _build_label(slot_index: int) -> String:
     while true:
         var remainder := value % alphabet_size
         reversed_chars.append(char(65 + remainder))
-        value = int(value / alphabet_size) - 1
+        value = int(floor(float(value) / float(alphabet_size))) - 1
         if value < 0:
             break
     reversed_chars.reverse()

@@ -11,12 +11,54 @@
 
 ## 当前阶段
 
-- 阶段目标：扩角前模板层收口已完成；下一步按统一设计模板、接入清单、formal registry 与最低测试面继续扩角。
+- 阶段目标：扩角前模板层收口已完成；下一步先做“warning 清零 / validator 公共化 / composition 热点降耦”三段稳定化，再继续扩角。
 - 当前不做：Gojo / Sukuna 数值平衡调整、宿傩对 Gojo 的领域兑现率修正。
 - 当前优先级：
-  - 若继续扩角，先按 `formal_character_design_template.md` 写角色稿
-  - 再按 `formal_character_delivery_checklist.md` 补齐资源、registry、suite 与记录
-  - 保持正式角色接入门禁走统一交付面，不再回到手写角色特例
+  - 先清掉项目启动 warning，并把 warning 纳入 gate
+  - 再抽正式角色 validator 公共基类，避免第 4 个角色开始重复堆 helper
+  - 再整理 composition 装配热点，降低新增机制时的接线漏项风险
+  - 工作区收口干净后，再继续按 `formal_character_design_template.md` 与 `formal_character_delivery_checklist.md` 扩角
+
+## 2026-04-02
+
+### 扩角前稳定化收口（进行中）
+
+- 目标：
+  - 在继续开发下一个正式角色前，把当前仓库里已确认的工程问题真正修掉
+  - 收口项目到“warning 干净、gate 更严、扩角热点更平”的状态
+  - 每个阶段完成后都做最小回归、提交并推送，保持工作区干净
+- 范围：
+  - `tests/run_with_gate.sh`
+  - `src/battle_core/**/*`
+  - `src/composition/*`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - Godot 项目启动不再输出当前已确认的 warning
+  - `bash tests/run_with_gate.sh` 通过，且能拦截 warning 漂移
+  - formal character validator 的公共 helper 已下沉，不再为每个角色重复写一套
+  - composition 装配热点已整理，新增角色或机制时的接线改动面缩小
+  - 各阶段完成后均有提交与推送，最终主干工作区干净
+
+#### 当前执行结果
+
+- 已完成（阶段一：warning 清零 + gate 收紧）：
+  - 已修掉当前主流程启动时确认存在的 Godot warning：
+    - `ResourceLoader.load(..., 0)` 的无效 enum 用法
+    - `PublicIdAllocator` 的隐式整数除法 warning
+    - 若干未使用参数 / 变量遮蔽 / 兼容性差的三元表达式 warning
+  - `tests/run_with_gate.sh` 已新增：
+    - warning 拦截
+    - headless 主流程启动 smoke（`godot --headless --path . --quit-after 20`）
+  - `README.md` 的 gate 描述与代码量统计已同步到当前仓库实际值
+- 进行中：
+  - 已确认当前仓库在功能上可继续扩角，但仍有 2 个扩角前值得继续收口的热点：
+    - formal character validator helper 已开始重复
+    - composition service / wiring / container 维护成本开始上升
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
 
 ## 2026-04-01
 

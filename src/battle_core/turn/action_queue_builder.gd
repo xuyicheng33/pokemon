@@ -61,7 +61,7 @@ func build_queue(commands: Array, battle_state, content_index) -> Array:
         return []
     return queued_actions
 
-func _resolve_priority(command, battle_state, content_index) -> int:
+func _resolve_priority(command, _battle_state, content_index) -> int:
     match command.command_type:
         CommandTypesScript.SWITCH:
             return 4

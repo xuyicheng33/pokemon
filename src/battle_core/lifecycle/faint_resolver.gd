@@ -17,9 +17,9 @@ func resolve_missing_dependency() -> String:
     if leave_service == null:
         return "leave_service"
     if leave_service.has_method("resolve_missing_dependency"):
-        var leave_missing := str(leave_service.resolve_missing_dependency())
-        if not leave_missing.is_empty():
-            return "leave_service.%s" % leave_missing
+        var leave_service_missing := str(leave_service.resolve_missing_dependency())
+        if not leave_service_missing.is_empty():
+            return "leave_service.%s" % leave_service_missing
     if replacement_service == null:
         return "replacement_service"
     if replacement_service.has_method("resolve_missing_dependency"):
@@ -47,9 +47,9 @@ func resolve_missing_dependency() -> String:
         return "faint_killer_attribution_service.%s" % killer_missing
     if faint_leave_replacement_service == null:
         return "faint_leave_replacement_service"
-    var leave_missing := str(faint_leave_replacement_service.resolve_missing_dependency())
-    if not leave_missing.is_empty():
-        return "faint_leave_replacement_service.%s" % leave_missing
+    var faint_leave_missing := str(faint_leave_replacement_service.resolve_missing_dependency())
+    if not faint_leave_missing.is_empty():
+        return "faint_leave_replacement_service.%s" % faint_leave_missing
     return ""
 
 func record_fatal_damage(

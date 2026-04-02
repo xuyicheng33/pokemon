@@ -30,9 +30,12 @@ func record_fatal_damage(
     var record_index: int = 0
     if battle_state.fatal_damage_records_by_target.has(target_unit_id):
         record_index = battle_state.fatal_damage_records_by_target[target_unit_id].size()
+    var normalized_killer_id: Variant = null
+    if killer_unit_id != null:
+        normalized_killer_id = str(killer_unit_id)
     var fatal_record = {
         "target_unit_id": target_unit_id,
-        "killer_id": str(killer_unit_id) if killer_unit_id != null else null,
+        "killer_id": normalized_killer_id,
         "source_instance_id": source_instance_id,
         "source_kind_order": source_kind_order,
         "source_order_speed_snapshot": source_order_speed_snapshot,

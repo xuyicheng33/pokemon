@@ -33,7 +33,7 @@ func clear() -> void:
 func load_snapshot(content_snapshot_paths: PackedStringArray) -> bool:
     clear()
     for path in content_snapshot_paths:
-        var resource = ResourceLoader.load(path, "", 0)
+        var resource = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
         if resource == null:
             last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
             last_error_message = "Missing content resource: %s" % path

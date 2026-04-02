@@ -258,6 +258,15 @@
   - field apply helper
 - 这些 helper 不再允许由 owner service 内部 `new()`，也不再允许 `_sync_*dependencies()` 这种手工灌依赖链继续存在。
 - 原因：
+
+### 29. 扩角前门禁正式收紧到“warning 清零 + 主流程启动 smoke”（2026-04-02）
+
+- `tests/run_with_gate.sh` 当前除业务断言、suite 可达性、架构与仓库一致性外，还必须额外满足：
+  - headless 主流程启动 smoke 通过
+  - 输出中不存在 Godot `WARNING:`
+- 原因：
+  - 之前 gate 只拦 `SCRIPT ERROR / Parse Error / Compile Error`，会把真实存在的静态 warning 漏掉。
+  - 扩角前如果不先清 warning，后续新增角色或机制时很容易把真正的漂移淹没在噪声里。
   - 扩角后每新增一个运行时依赖，若还保留“composition wiring + owner 手工同步”双维护路径，极容易出现 helper 漏接线且只在运行到半截时才炸。
 - 当前处理：
   - helper 统一注册进 `BattleCoreServiceSpecs` / `BattleCoreWiringSpecs`
