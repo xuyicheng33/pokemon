@@ -608,3 +608,39 @@
 - 原因：
   - 鹿紫云已经不再是“扩角中的临时角色”，而是正式角色交付面的一部分。
   - 继续保留 `run_all` 的临时直连只会制造双跑与交付面不一致。
+
+### 58. `BattleCoreManager` 只允许通过 `BattleCoreSession` 做内部会话代理，不再直接穿透 `session.container`（2026-04-02）
+
+- `BattleCoreManager` 当前正式收口为：
+  - 只认 `BattleCoreSession` 这个内部会话壳
+  - 不再直接调用 `session.container.legal_action_service / turn_loop_controller / battle_logger / runtime_guard_service`
+- `BattleCoreSession` 当前承担 facade 内部代理职责，统一封装：
+  - runtime 校验
+  - 合法行动查询
+  - 回合执行
+  - event log 快照读取
+- `tests/check_architecture_constraints.sh` 当前补了一条 facade 专属 gate：
+  - 除 `battle_core_session.gd` 与 `battle_core_manager_container_service.gd` 外，不允许在 facade 层继续出现 `session.container` 直穿
+- 原因：
+  - manager 继续直穿容器会把 facade 的边界语义掏空，后续如果 adapter 或第三方接线变化，内部服务名就会反向绑死到外围调用面。
+  - 先把 session 代理层站稳，后面 manager 公共契约和容器装配才能各自独立演进。
+
+### 59. `ActionExecutor` 退回行动编排壳；起手、技能触发、命中结算、链上下文分别下沉到独立服务（2026-04-02）
+
+- `ActionExecutor` 当前正式只保留：
+  - 解析 command / actor / skill
+  - 建立 `chain_context`
+  - 统一前置合法性检查
+  - 串联 `start -> on_cast -> switch/resolve`
+- 以下职责当前正式拆出：
+  - `ActionChainContextBuilder`：构建 `ChainContext`
+  - `ActionStartPhaseService`：行动起手、MP 扣除、奥义点变更与 `action:cast` 记录
+  - `ActionSkillEffectService`：`on_cast / on_miss / on_hit` 技能触发分发
+  - `ActionExecutionResolutionService`：目标解析、命中判定、直接伤害、受击回调、默认反伤
+- 对应 composition wiring 当前已显式注册到：
+  - `battle_core_container`
+  - `battle_core_service_specs`
+  - `battle_core_wiring_specs`
+- 原因：
+  - `execute_action()` 原先把建链、起手资源、命中与伤害后置都揉在一起，继续叠第三、第四角色特例只会再次推高热点复杂度。
+  - 先把职责拆回可测试的小服务，后面补间接伤害修正或新角色动作特例时，改动面才能保持局部。

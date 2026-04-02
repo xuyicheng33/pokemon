@@ -141,6 +141,65 @@
 #### 当前验证结果
 
 - `godot --headless --path . --script tests/run_all.gd` 通过
+
+### 当前实现稳定化批次：固定案例、Facade 收口与 ActionExecutor 拆分（已完成）
+
+- 目标：
+  - 在继续扩新角色前，先把当前主线的固定复查入口、manager facade 边界和 `action_executor` 热点职责收口
+- 范围：
+  - `tests/helpers/kashimo_case_runner.gd`
+  - `tests/replay_cases/kashimo_cases.md`
+  - `tests/README.md`
+  - `README.md`
+  - `src/battle_core/facades/*`
+  - `src/battle_core/actions/*`
+  - `src/composition/battle_core_*`
+  - `tests/suites/manager_*`
+  - `tests/check_architecture_constraints.sh`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - 鹿紫云固定案例入口可直接复查 `电荷主循环 / 琥珀换人保留 / 弥虚葛笼对抗领域`
+  - `BattleCoreManager` 不再直接访问 `session.container.*`
+  - `action_executor.gd` 从热点大函数降回编排壳，链上下文、起手资源、技能触发、命中/命中后结算拆到独立服务
+  - `bash tests/run_with_gate.sh` 全量通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 已补固定鹿紫云案例入口：
+    - `tests/helpers/kashimo_case_runner.gd`
+    - `tests/replay_cases/kashimo_cases.md`
+  - 已把固定案例说明补回：
+    - `README.md`
+    - `tests/README.md`
+  - 已把 `BattleCoreManager` 的 session 内部调用改成统一经由 `BattleCoreSession`：
+    - runtime 校验
+    - 合法行动查询
+    - 回合执行
+    - event log 只读快照
+  - 已新增 manager 内部 facade 契约回归：
+    - `tests/suites/manager_facade_internal_contract_suite.gd`
+  - 已为 facade 泄露补架构 gate：
+    - `tests/check_architecture_constraints.sh`
+  - 已把 `action_executor.gd` 拆成 4 个独立子服务：
+    - `action_chain_context_builder.gd`
+    - `action_start_phase_service.gd`
+    - `action_skill_effect_service.gd`
+    - `action_execution_resolution_service.gd`
+  - 已把对应 wiring / container 装配补回：
+    - `src/composition/battle_core_container.gd`
+    - `src/composition/battle_core_service_specs.gd`
+    - `src/composition/battle_core_wiring_specs.gd`
+  - 当前稳定化批次分 3 个提交独立落盘：
+    - `13c4def add: kashimo replay cases and runner`
+    - `4c98d3d refactor: seal manager session facade`
+    - `6a0ddfa refactor: split action executor phases`
+
+#### 当前验证结果
+
+- `CASE=all godot --headless --path . --script tests/helpers/kashimo_case_runner.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
 - `bash tests/run_with_gate.sh` 通过
 
 ### 第三角色前整备计划第二轮（已完成）
