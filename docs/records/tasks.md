@@ -67,8 +67,13 @@
     - `WIRING_SPECS / RESET_SPECS` 引用未知 owner/source
     - 重复的 `owner + dependency` 接线项
   - `README.md` 已补当前架构 gate 的 composition 一致性说明
+- 已完成（最终复查与剩余热点收口）：
+  - `rule_mod_write_service.gd` 已把 owner 作用域/实例读写逻辑下沉到 `RuleModOwnerScopeService`，文件体积已从预警线附近降回安全范围
+  - 已修正 `field_service.break_active_field()` 错用 `battle_state.chain_context` 的问题，改为真正传递调用方给定的 `chain_context`
+  - 已新增回归 `field_break_uses_explicit_chain_context_contract`，锁定 field break 生命周期链使用显式 chain_context 的口径
+  - 当前 `ARCH_GATE_WARNING` 已不再提示 `rule_mod_write_service.gd`
 - 进行中：
-  - 当前进入最终复查阶段，继续确认是否还存在会影响下一名角色开发的热点
+  - 当前只剩合并回 `main`、推送与分支清理收尾
 
 #### 当前验证结果
 

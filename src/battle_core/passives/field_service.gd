@@ -112,7 +112,7 @@ func break_active_field(battle_state, content_index, trigger_name: String, chain
                 battle_state,
                 content_index,
                 [],
-                battle_state.chain_context,
+                chain_context,
                 break_events
             )
             if break_invalid_code != null:

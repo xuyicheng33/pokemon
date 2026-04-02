@@ -9,11 +9,48 @@ const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_pa
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const UltimateFieldTestHelperScript := preload("res://tests/support/ultimate_field_test_helper.gd")
 
+class CaptureFieldTriggerDispatcher:
+	extends RefCounted
+
+	var captured_chain_context = null
+	var last_invalid_battle_code: Variant = null
+
+	func collect_events(
+		_trigger_name: String,
+		_battle_state,
+		_content_index,
+		_effect_ids: PackedStringArray,
+		_owner_id: String,
+		_source_instance_id: String,
+		_source_kind_order: int,
+		_source_order_speed_snapshot: int,
+		chain_context
+	) -> Array:
+		captured_chain_context = chain_context
+		return [{"event_id": "captured_field_break_event"}]
+
+class CaptureFieldTriggerBatchRunner:
+	extends RefCounted
+
+	var captured_chain_context = null
+
+	func execute_trigger_batch(
+		_trigger_name: String,
+		_battle_state,
+		_content_index,
+		_owner_unit_ids: Array,
+		chain_context,
+		_extra_effect_events: Array = []
+	):
+		captured_chain_context = chain_context
+		return null
+
 var _helper = UltimateFieldTestHelperScript.new()
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("field_bound_stat_mod_restore_contract", failures, Callable(self, "_test_field_bound_stat_mod_restore_contract").bind(harness))
 	runner.run_test("field_break_self_owner_contract", failures, Callable(self, "_test_field_break_self_owner_contract").bind(harness))
+	runner.run_test("field_break_uses_explicit_chain_context_contract", failures, Callable(self, "_test_field_break_uses_explicit_chain_context_contract").bind(harness))
 	runner.run_test("field_break_transition_preserves_new_field_contract", failures, Callable(self, "_test_field_break_transition_preserves_new_field_contract").bind(harness))
 	runner.run_test("field_expire_transition_preserves_new_field_contract", failures, Callable(self, "_test_field_expire_transition_preserves_new_field_contract").bind(harness))
 
@@ -138,6 +175,45 @@ func _test_field_break_transition_preserves_new_field_contract(harness) -> Dicti
 		return harness.fail_result("new field's field rule_mod must survive field_break cleanup")
 	if String(battle_state.field_rule_mod_instances[0].field_instance_id) != String(battle_state.field_state.instance_id):
 		return harness.fail_result("field_break transition should keep the new field-bound rule_mod attached to the new field instance")
+	return harness.pass_result()
+
+func _test_field_break_uses_explicit_chain_context_contract(harness) -> Dictionary:
+	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2217)
+	if state_payload.has("error"):
+		return harness.fail_result(str(state_payload["error"]))
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var ids = _register_transition_field_test_content(content_index, "test_break_chain_context", "field_break")
+	var old_field = FieldStateScript.new()
+	old_field.field_def_id = ids["base_field_id"]
+	old_field.instance_id = "test_break_chain_context_base_instance"
+	old_field.creator = actor.unit_instance_id
+	old_field.remaining_turns = 2
+	battle_state.field_state = old_field
+	battle_state.chain_context = core.battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_END)
+	var explicit_chain_context = core.battle_result_service.build_system_chain("system:test_field_break_override")
+	var capture_dispatcher = CaptureFieldTriggerDispatcher.new()
+	var capture_runner = CaptureFieldTriggerBatchRunner.new()
+	core.field_service.trigger_dispatcher = capture_dispatcher
+	core.field_service.trigger_batch_runner = capture_runner
+	var invalid_code = core.field_service.break_active_field(
+		battle_state,
+		content_index,
+		"field_break",
+		explicit_chain_context
+	)
+	if invalid_code != null:
+		return harness.fail_result("field_break explicit chain_context should stay valid, got %s" % str(invalid_code))
+	if capture_dispatcher.captured_chain_context == null:
+		return harness.fail_result("field_break lifecycle collect should receive a derived lifecycle chain_context")
+	if String(capture_dispatcher.captured_chain_context.event_chain_id) != String(explicit_chain_context.event_chain_id):
+		return harness.fail_result("field_break lifecycle collect should inherit the explicit chain_context event_chain_id")
+	if String(capture_dispatcher.captured_chain_context.actor_id) != String(actor.unit_instance_id):
+		return harness.fail_result("field_break lifecycle collect should retarget actor_id to the field creator")
+	if capture_runner.captured_chain_context != explicit_chain_context:
+		return harness.fail_result("field_break trigger batch should use the explicit chain_context parameter")
 	return harness.pass_result()
 
 func _test_field_expire_transition_preserves_new_field_contract(harness) -> Dictionary:

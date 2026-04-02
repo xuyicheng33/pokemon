@@ -676,3 +676,18 @@
 - 原因：
   - composition 真正的维护风险不是“现在不能跑”，而是新增服务时需要手工同时改三四处，长期很容易出现漏接、残留旧槽位或 copy-paste 重复接线。
   - 先把 slot 列表收成单一真相，再补静态 gate，能把扩新角色或新机制时的装配风险从“靠人记”降成“门禁自动拦”。
+
+### 62. RuleMod 写入链的 owner 作用域逻辑下沉到独立 helper；field break 生命周期批次必须尊重显式 chain_context（2026-04-02）
+
+- `RuleModWriteService` 当前不再同时承载：
+  - payload schema 校验
+  - owner scope 校验
+  - owner instance 读写
+  - stacking key 组装
+  - 生命周期递减
+- 其中 owner scope / owner instance 读写 / turn 递减当前已下沉到 `RuleModOwnerScopeService`，让 `RuleModWriteService` 回到“创建实例 + 处理 stacking 语义”的主职责。
+- `FieldService.break_active_field()` 当前执行 `field_break` 生命周期 effect batch 时，固定使用调用方传入的 `chain_context`，不再回退偷用 `battle_state.chain_context`。
+- 当前已补共享回归 `field_break_uses_explicit_chain_context_contract`，避免 field 生命周期链未来再次把显式上下文丢回系统默认上下文。
+- 原因：
+  - `rule_mod_write_service.gd` 已经接近架构闸门的热点预警线；继续把 owner 校验、owner 落点和 stacking 规则全堆在一处，不利于下一个角色继续扩带 field/unit 混合 rule_mod。
+  - field 生命周期链若忽略显式传入的 `chain_context`，以后新增“由旧 field 生命周期派生出新 field / 新 effect”时，很容易把归因、链深和去重键落回错误的系统上下文。
