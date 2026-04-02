@@ -48,6 +48,16 @@ if rg -n "res://src/battle_core/facades/" src/battle_core/actions src/battle_cor
 fi
 rm -f /tmp/core_facade_leaks.out
 
+if rg -n "session\.container" src/battle_core/facades >/tmp/facade_session_container.out 2>/dev/null; then
+  if rg -v "battle_core_session\.gd|battle_core_manager_container_service\.gd" /tmp/facade_session_container.out >/tmp/facade_session_container_filtered.out 2>/dev/null; then
+    echo "ARCH_GATE_FAILED: BattleCoreManager facade must not reach through session.container outside session/container service" >&2
+    cat /tmp/facade_session_container_filtered.out
+    rm -f /tmp/facade_session_container.out /tmp/facade_session_container_filtered.out
+    exit 1
+  fi
+fi
+rm -f /tmp/facade_session_container.out /tmp/facade_session_container_filtered.out
+
 if rg -n "res://src/battle_core/commands/" src/adapters scenes >/tmp/outer_command_imports.out 2>/dev/null; then
   if rg -v "res://src/battle_core/commands/command_types.gd" /tmp/outer_command_imports.out >/tmp/outer_command_imports_filtered.out 2>/dev/null; then
     echo "ARCH_GATE_FAILED: adapters/scenes must not import battle_core commands except command_types.gd" >&2

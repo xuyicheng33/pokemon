@@ -48,14 +48,7 @@ func get_legal_actions(session_id: String, side_id: String) -> Dictionary:
     var runtime_error = _contract_helper.validate_session_runtime_result(session)
     if runtime_error != null:
         return runtime_error
-    var legal_actions = session.container.legal_action_service.get_legal_actions(session.battle_state, side_id, session.content_index)
-    if legal_actions == null:
-        return _contract_helper.service_error(
-            session.container.legal_action_service,
-            ErrorCodesScript.INVALID_STATE_CORRUPTION,
-            "BattleCoreManager failed to build legal action set"
-        )
-    return _contract_helper.ok(legal_actions)
+    return session.get_legal_actions_result(side_id)
 
 func build_command(input_payload: Dictionary) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
@@ -89,7 +82,9 @@ func run_turn(session_id: String, commands: Array) -> Dictionary:
     var runtime_error = _contract_helper.validate_session_runtime_result(session)
     if runtime_error != null:
         return runtime_error
-    session.container.turn_loop_controller.run_turn(session.battle_state, session.content_index, normalized_commands)
+    var run_turn_result = session.run_turn_result(normalized_commands)
+    if not bool(run_turn_result.get("ok", false)):
+        return run_turn_result
     var turn_failure = _contract_helper.resolve_turn_failure_result(session)
     if turn_failure != null:
         return turn_failure
@@ -121,7 +116,10 @@ func get_event_log_snapshot(session_id: String, from_index: int = 0) -> Dictiona
     var runtime_error = _contract_helper.validate_session_runtime_result(session)
     if runtime_error != null:
         return runtime_error
-    var event_log: Array = session.container.battle_logger.snapshot()
+    var event_log_result = session.get_event_log_snapshot_result()
+    if not bool(event_log_result.get("ok", false)):
+        return event_log_result
+    var event_log: Array = event_log_result.get("data", [])
     var start_index: int = min(from_index, event_log.size())
     var event_snapshots: Array = []
     for event_index in range(start_index, event_log.size()):

@@ -42,15 +42,9 @@ func get_session_result(sessions: Dictionary, session_id: String) -> Dictionary:
 	return ok(session)
 
 func validate_session_runtime_result(session) -> Variant:
-	if session == null or session.container == null or session.battle_state == null:
+	if session == null or not session.has_method("validate_runtime_result"):
 		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
-	var runtime_guard_service = session.container.runtime_guard_service
-	if runtime_guard_service == null:
-		return error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: runtime_guard_service")
-	var invalid_code = runtime_guard_service.validate_runtime_state(session.battle_state, session.content_index)
-	if invalid_code == null:
-		return null
-	return error(str(invalid_code), "BattleCoreManager runtime state invalid: %s" % str(invalid_code))
+	return session.validate_runtime_result()
 
 func resolve_turn_failure_result(session) -> Variant:
 	if session == null or session.battle_state == null or session.battle_state.battle_result == null:
