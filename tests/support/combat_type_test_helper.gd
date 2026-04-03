@@ -48,11 +48,11 @@ func run_direct_damage_case(harness, core, sample_factory, skill_type_id: String
         final_mod_payload.stacking = "replace"
         final_mod_payload.priority = 10
         var p1_active = battle_state.get_side("P1").get_active_unit()
-        if core.rule_mod_service.create_instance(final_mod_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_direct_damage_mod", 0, p1_active.base_speed) == null:
+        if core.service("rule_mod_service").create_instance(final_mod_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_direct_damage_mod", 0, p1_active.base_speed) == null:
             return {"error": "failed to create direct damage rule_mod"}
 
     var commands: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -60,7 +60,7 @@ func run_direct_damage_case(harness, core, sample_factory, skill_type_id: String
             "actor_public_id": "P1-A",
             "skill_id": direct_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -70,9 +70,9 @@ func run_direct_damage_case(harness, core, sample_factory, skill_type_id: String
         }),
     ]
 
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
-    var damage_event = find_actor_damage_event(core.battle_logger.event_log, "P1-A")
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
+    var damage_event = find_actor_damage_event(core.service("battle_logger").event_log, "P1-A")
     if damage_event == null or damage_event.value_changes.is_empty():
         return {"error": "missing direct damage event"}
     return {
@@ -129,7 +129,7 @@ func run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
     battle_setup.sides[1].starting_index = 2
     var battle_state = build_initialized_battle(core, content_index, battle_setup, 551)
     var commands: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -137,7 +137,7 @@ func run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -146,9 +146,9 @@ func run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
             "skill_id": harmless_skill.id,
         }),
     ]
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
-    var effect_damage_event = find_effect_damage_event(core.battle_logger.event_log)
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
+    var effect_damage_event = find_effect_damage_event(core.service("battle_logger").event_log)
     if effect_damage_event == null:
         return {"error": "missing formula damage event"}
     return {"type_effectiveness": effect_damage_event.type_effectiveness}
@@ -182,7 +182,7 @@ func run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
 
     var battle_setup = sample_factory.build_sample_setup()
     var battle_state = build_initialized_battle(core, content_index, battle_setup, 601)
-    var effect_damage_event = find_effect_damage_event(core.battle_logger.event_log)
+    var effect_damage_event = find_effect_damage_event(core.service("battle_logger").event_log)
     if effect_damage_event == null:
         return {"error": "missing non-skill formula damage event"}
     if battle_state.battle_result != null and battle_state.battle_result.finished:
@@ -190,13 +190,13 @@ func run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
     return {"type_effectiveness": effect_damage_event.type_effectiveness}
 
 func build_initialized_battle(core, content_index, battle_setup, seed: int):
-    core.rng_service.reset(seed)
-    core.id_factory.reset()
+    core.service("rng_service").reset(seed)
+    core.service("id_factory").reset()
     var battle_state = BattleStateScript.new()
-    battle_state.battle_id = core.id_factory.next_id("battle")
+    battle_state.battle_id = core.service("id_factory").next_id("battle")
     battle_state.seed = seed
-    battle_state.rng_stream_index = core.rng_service.get_stream_index()
-    core.battle_initializer.initialize_battle(battle_state, content_index, battle_setup)
+    battle_state.rng_stream_index = core.service("rng_service").get_stream_index()
+    core.service("battle_initializer").initialize_battle(battle_state, content_index, battle_setup)
     return battle_state
 
 func find_actor_damage_event(event_log: Array, actor_public_id: String):

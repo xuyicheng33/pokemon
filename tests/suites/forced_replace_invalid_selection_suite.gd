@@ -63,10 +63,10 @@ func _test_forced_replace_invalid_selection(harness) -> Dictionary:
 
     var selector := TestReplacementSelector.new()
     selector.next_selection = "unit_not_in_bench"
-    core.replacement_service.replacement_selector = selector
+    core.service("replacement_service").replacement_selector = selector
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -74,7 +74,7 @@ func _test_forced_replace_invalid_selection(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": forced_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -87,7 +87,7 @@ func _test_forced_replace_invalid_selection(harness) -> Dictionary:
         return harness.fail_result("invalid replacement selection should end battle immediately")
     if battle_state.battle_result.reason != ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
         return harness.fail_result("expected invalid_replacement_selection, got %s" % str(battle_state.battle_result.reason))
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
             return harness.pass_result()
     return harness.fail_result("missing invalid_battle log for invalid replacement selection")

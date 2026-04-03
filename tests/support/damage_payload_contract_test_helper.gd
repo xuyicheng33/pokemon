@@ -70,7 +70,7 @@ func run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
     var expected_damage: int = min(target.current_hp, _calc_expected_formula_damage(core, battle_state, actor, target, payload.amount, "special", 2.0))
 
     var commands: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -78,7 +78,7 @@ func run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -87,9 +87,9 @@ func run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
             "skill_id": harmless_skill.id,
         }),
     ]
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
-    var effect_damage_event = find_effect_damage_event(core.battle_logger.event_log)
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
+    var effect_damage_event = find_effect_damage_event(core.service("battle_logger").event_log)
     if effect_damage_event == null or effect_damage_event.value_changes.is_empty():
         return {"error": "missing inherited formula damage event"}
     return {
@@ -132,9 +132,9 @@ func run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
     _configure_self_special_formula_bias(actor)
     var expected_damage: int = min(actor.current_hp, _calc_expected_formula_damage(core, battle_state, actor, actor, payload.amount, "special", 1.0))
 
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [])
-    var effect_damage_event = find_effect_damage_event(core.battle_logger.event_log)
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [])
+    var effect_damage_event = find_effect_damage_event(core.service("battle_logger").event_log)
     if effect_damage_event == null or effect_damage_event.value_changes.is_empty():
         return {"error": "missing non-skill formula damage event"}
     return {
@@ -144,13 +144,13 @@ func run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
     }
 
 func build_initialized_battle(core, content_index, battle_setup, seed: int):
-    core.rng_service.reset(seed)
-    core.id_factory.reset()
+    core.service("rng_service").reset(seed)
+    core.service("id_factory").reset()
     var battle_state = BattleStateScript.new()
-    battle_state.battle_id = core.id_factory.next_id("battle")
+    battle_state.battle_id = core.service("id_factory").next_id("battle")
     battle_state.seed = seed
-    battle_state.rng_stream_index = core.rng_service.get_stream_index()
-    core.battle_initializer.initialize_battle(battle_state, content_index, battle_setup)
+    battle_state.rng_stream_index = core.service("rng_service").get_stream_index()
+    core.service("battle_initializer").initialize_battle(battle_state, content_index, battle_setup)
     return battle_state
 
 func find_effect_damage_event(event_log: Array):
@@ -213,9 +213,9 @@ func _calc_expected_formula_damage(core, battle_state, actor, target, amount: in
         defense_stat_name = "sp_defense"
         attack_value = actor.base_sp_attack
         defense_value = target.base_sp_defense
-    attack_value = core.stat_calculator.calc_effective_stat(attack_value, int(actor.stat_stages.get(attack_stat_name, 0)))
-    defense_value = core.stat_calculator.calc_effective_stat(defense_value, int(target.stat_stages.get(defense_stat_name, 0)))
-    return core.damage_service.apply_final_mod(
-        core.damage_service.calc_base_damage(battle_state.battle_level, max(1, amount), attack_value, defense_value),
+    attack_value = core.service("stat_calculator").calc_effective_stat(attack_value, int(actor.stat_stages.get(attack_stat_name, 0)))
+    defense_value = core.service("stat_calculator").calc_effective_stat(defense_value, int(target.stat_stages.get(defense_stat_name, 0)))
+    return core.service("damage_service").apply_final_mod(
+        core.service("damage_service").calc_base_damage(battle_state.battle_level, max(1, amount), attack_value, defense_value),
         type_effectiveness
     )

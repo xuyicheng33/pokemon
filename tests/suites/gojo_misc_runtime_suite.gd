@@ -28,8 +28,8 @@ func _test_gojo_reverse_ritual_heal_contract(harness) -> Dictionary:
 	gojo_unit.current_hp = max(1, int(floor(float(gojo_unit.max_hp) * 0.5)))
 	var before_hp: int = gojo_unit.current_hp
 	var expected_gain: int = min(gojo_unit.max_hp - before_hp, max(1, int(floor(float(gojo_unit.max_hp) * 0.25))))
-	core.battle_logger.reset()
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_skill_command(core, 1, "P1", "P1-A", "gojo_reverse_ritual"),
 		_support.build_wait_command(core, 1, "P2", "P2-A"),
 	])
@@ -51,16 +51,16 @@ func _test_gojo_plus5_competition_contract(harness) -> Dictionary:
 	sukuna_unit.current_mp = sukuna_unit.max_mp
 	sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
 	sukuna_unit.base_speed = 999
-	core.battle_logger.reset()
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
 		_support.build_ultimate_command(core, 1, "P2", "P2-A", "sukuna_fukuma_mizushi"),
 	])
-	if not _support.has_event(core.battle_logger.event_log, func(ev):
+	if not _support.has_event(core.service("battle_logger").event_log, func(ev):
 		return ev.event_type == EventTypesScript.ACTION_CAST and ev.source_instance_id.find("action_") != -1 and ev.target_instance_id == gojo_unit.unit_instance_id
 	):
 		return harness.fail_result("同优先级 +5 且对手更快时，对手应先正常行动")
-	if _support.has_event(core.battle_logger.event_log, func(ev):
+	if _support.has_event(core.service("battle_logger").event_log, func(ev):
 		return ev.event_type == EventTypesScript.ACTION_CANCELLED_PRE_START and ev.target_instance_id == sukuna_unit.unit_instance_id
 	):
 		return harness.fail_result("同优先级 +5 且对手先动时，Gojo 不应被误写成仍能首回合锁住对方")

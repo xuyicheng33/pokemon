@@ -99,15 +99,15 @@ func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictiona
         return harness.fail_result("missing active units for effect_stack_sum runtime contract")
 
     for _i in range(2):
-        if core.effect_instance_service.create_instance(self_mark, actor.unit_instance_id, battle_state, "test_self_mark", 0, actor.base_speed) == null:
+        if core.service("effect_instance_service").create_instance(self_mark, actor.unit_instance_id, battle_state, "test_self_mark", 0, actor.base_speed) == null:
             return harness.fail_result("failed to create self mark instance")
     for _i in range(3):
-        if core.effect_instance_service.create_instance(target_mark, target.unit_instance_id, battle_state, "test_target_mark", 0, actor.base_speed) == null:
+        if core.service("effect_instance_service").create_instance(target_mark, target.unit_instance_id, battle_state, "test_target_mark", 0, actor.base_speed) == null:
             return harness.fail_result("failed to create target mark instance")
 
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -115,7 +115,7 @@ func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictiona
             "actor_public_id": "P1-A",
             "skill_id": skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -125,8 +125,8 @@ func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictiona
         }),
     ])
 
-    var expected_damage: int = core.damage_service.apply_final_mod(
-        core.damage_service.calc_base_damage(
+    var expected_damage: int = core.service("damage_service").apply_final_mod(
+        core.service("damage_service").calc_base_damage(
             battle_state.battle_level,
             90,
             actor.base_sp_attack,
@@ -134,7 +134,7 @@ func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictiona
         ),
         1.0
     )
-    var actual_damage: int = harness.extract_damage_from_log(core.battle_logger.event_log, "P1-A")
+    var actual_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
     if actual_damage != expected_damage:
         return harness.fail_result("effect_stack_sum damage mismatch: expected=%d actual=%d" % [expected_damage, actual_damage])
     if _count_effect_instances(actor, self_mark.id) != 0:

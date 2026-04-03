@@ -30,12 +30,12 @@ func _test_sukuna_kamado_stack_on_exit_path(harness) -> Dictionary:
     if sukuna_unit == null or target_unit == null:
         return harness.fail_result("missing active units for kamado stack test")
     sukuna_unit.current_mp = sukuna_unit.max_mp
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_manual_skill_command(core, 1, "P1", "P1-A", "sukuna_hiraku"),
         _build_manual_wait_command(core, 1, "P2", "P2-A"),
     ])
     sukuna_unit.current_mp = sukuna_unit.max_mp
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_manual_skill_command(core, 2, "P1", "P1-A", "sukuna_hiraku"),
         _build_manual_wait_command(core, 2, "P2", "P2-A"),
     ])
@@ -47,12 +47,12 @@ func _test_sukuna_kamado_stack_on_exit_path(harness) -> Dictionary:
         return harness.fail_result("double hiraku should leave exactly two kamado stacks before exit")
     target_unit.current_hp = target_unit.max_hp
     var hp_before_exit: int = target_unit.current_hp
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_manual_wait_command(core, 3, "P1", "P1-A"),
         _build_manual_switch_command(core, 3, "P2", "P2-A", "P2-B"),
     ])
     var on_exit_damage_events: int = 0
-    for log_event in core.battle_logger.event_log:
+    for log_event in core.service("battle_logger").event_log:
         if log_event.event_type == EventTypesScript.EFFECT_DAMAGE \
         and log_event.trigger_name == "on_exit" \
         and log_event.target_instance_id == target_unit.unit_instance_id:
@@ -85,7 +85,7 @@ func _test_sukuna_kamado_natural_expire_path(harness) -> Dictionary:
     if sukuna_unit == null or target_unit == null:
         return harness.fail_result("missing active units for kamado expire test")
     sukuna_unit.current_mp = sukuna_unit.max_mp
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_manual_skill_command(core, 1, "P1", "P1-A", "sukuna_hiraku"),
         _build_manual_wait_command(core, 1, "P2", "P2-A"),
     ])
@@ -97,17 +97,17 @@ func _test_sukuna_kamado_natural_expire_path(harness) -> Dictionary:
         return harness.fail_result("single hiraku should leave exactly one kamado stack before natural expire")
     target_unit.current_hp = target_unit.max_hp
     var hp_before_expire: int = target_unit.current_hp
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_manual_wait_command(core, 2, "P1", "P1-A"),
         _build_manual_wait_command(core, 2, "P2", "P2-A"),
     ])
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_manual_wait_command(core, 3, "P1", "P1-A"),
         _build_manual_wait_command(core, 3, "P2", "P2-A"),
     ])
     var on_expire_damage_events: int = 0
-    for log_event in core.battle_logger.event_log:
+    for log_event in core.service("battle_logger").event_log:
         if log_event.event_type == EventTypesScript.EFFECT_DAMAGE \
         and log_event.trigger_name == "on_expire" \
         and log_event.target_instance_id == target_unit.unit_instance_id:
@@ -145,7 +145,7 @@ func _test_sukuna_kamado_stack_cap_path(harness) -> Dictionary:
     var before_ids: Array[String] = []
     var before_remaining: Array[int] = []
     for stack_index in range(3):
-        var created_instance = core.effect_instance_service.create_instance(
+        var created_instance = core.service("effect_instance_service").create_instance(
             kamado_definition,
             target_unit.unit_instance_id,
             battle_state,
@@ -161,7 +161,7 @@ func _test_sukuna_kamado_stack_cap_path(harness) -> Dictionary:
             before_remaining.append(int(effect_instance.remaining))
     before_ids.sort()
     before_remaining.sort()
-    var overflow_instance = core.effect_instance_service.create_instance(
+    var overflow_instance = core.service("effect_instance_service").create_instance(
         kamado_definition,
         target_unit.unit_instance_id,
         battle_state,
@@ -171,7 +171,7 @@ func _test_sukuna_kamado_stack_cap_path(harness) -> Dictionary:
     )
     if overflow_instance == null:
         return harness.fail_result("kamado overflow apply should be ignored, not fail")
-    if not core.effect_instance_service.last_apply_skipped:
+    if not core.service("effect_instance_service").last_apply_skipped:
         return harness.fail_result("kamado overflow apply should be marked as skipped once max_stacks is reached")
     var after_ids: Array[String] = []
     var after_remaining: Array[int] = []
@@ -206,13 +206,13 @@ func _test_sukuna_kamado_forced_replace_on_exit_path(harness) -> Dictionary:
     if sukuna_unit == null or target_unit == null:
         return harness.fail_result("missing active units for forced_replace kamado test")
     sukuna_unit.current_mp = sukuna_unit.max_mp
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_manual_skill_command(core, 1, "P1", "P1-A", "sukuna_hiraku"),
         _build_manual_wait_command(core, 1, "P2", "P2-A"),
     ])
     var hp_before_forced_replace: int = target_unit.current_hp
-    battle_state.chain_context = core.battle_result_service.build_system_chain("system:replace")
-    var replace_result: Dictionary = core.replacement_service.execute_forced_replace(
+    battle_state.chain_context = core.service("battle_result_service").build_system_chain("system:replace")
+    var replace_result: Dictionary = core.service("replacement_service").execute_forced_replace(
         battle_state,
         content_index,
         target_unit.unit_instance_id
@@ -222,7 +222,7 @@ func _test_sukuna_kamado_forced_replace_on_exit_path(harness) -> Dictionary:
     if not bool(replace_result.get("replaced", false)):
         return harness.fail_result("forced_replace should replace kamado target with a bench unit")
     var forced_replace_on_exit_events: int = 0
-    for log_event in core.battle_logger.event_log:
+    for log_event in core.service("battle_logger").event_log:
         if log_event.event_type == EventTypesScript.EFFECT_DAMAGE \
         and log_event.trigger_name == "on_exit" \
         and log_event.target_instance_id == target_unit.unit_instance_id:

@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_service_specs.gd"
 WIRING_SPECS_PATH = ROOT / "src/composition/battle_core_wiring_specs.gd"
 CONTAINER_PATH = ROOT / "src/composition/battle_core_container.gd"
+COMPOSER_PATH = ROOT / "src/composition/battle_core_composer.gd"
 
 
 def fail(message: str, details: list[str] | None = None) -> None:
@@ -39,26 +40,16 @@ def _duplicate_names(names: list[str]) -> list[str]:
 service_specs_text = SERVICE_SPECS_PATH.read_text(encoding="utf-8")
 wiring_specs_text = WIRING_SPECS_PATH.read_text(encoding="utf-8")
 container_text = CONTAINER_PATH.read_text(encoding="utf-8")
+composer_text = COMPOSER_PATH.read_text(encoding="utf-8")
 
-service_slots_block = _extract_named_block(
+service_descriptors_block = _extract_named_block(
     service_specs_text,
-    r"const SERVICE_SLOTS := \[(.*?)\]",
-    "SERVICE_SLOTS",
+    r"const SERVICE_DESCRIPTORS := \[(.*?)\]\n",
+    "SERVICE_DESCRIPTORS",
 )
-service_slots = _extract_quoted_names(service_slots_block, r'"([^"]+)"')
-
-script_by_slot_block = _extract_named_block(
-    service_specs_text,
-    r"const SCRIPT_BY_SLOT := \{(.*?)\n\}",
-    "SCRIPT_BY_SLOT",
-)
-script_slots = _extract_quoted_names(script_by_slot_block, r'"([^"]+)"\s*:')
-
-container_slots = [
-    name
-    for name in re.findall(r"^var ([a-zA-Z_][a-zA-Z0-9_]*)\b", container_text, re.M)
-    if not name.startswith("_")
-]
+service_slots = re.findall(r'"slot": "([^"]+)"', service_descriptors_block)
+script_slots = re.findall(r'"slot": "([^"]+)", "script": preload\("([^"]+)"\)', service_descriptors_block)
+slot_pattern = "|".join(re.escape(slot) for slot in service_slots)
 
 wiring_owner_source_pairs = re.findall(
     r'\{"owner": "([^"]+)", "dependency": "([^"]+)", "source": "([^"]+)"\}',
@@ -70,33 +61,36 @@ reset_owner_pairs = re.findall(
 )
 
 for label, names in [
-    ("SERVICE_SLOTS", service_slots),
-    ("SCRIPT_BY_SLOT", script_slots),
-    ("BattleCoreContainer service vars", container_slots),
+    ("SERVICE_DESCRIPTORS slots", service_slots),
+    ("SERVICE_DESCRIPTORS scripts", [slot for slot, _script in script_slots]),
 ]:
     duplicates = _duplicate_names(names)
     if duplicates:
         fail(f"{label} contains duplicate entries", duplicates)
 
 slot_set = set(service_slots)
-script_slot_set = set(script_slots)
-container_slot_set = set(container_slots)
+script_slot_set = {slot for slot, _script in script_slots}
 
 missing_script_slots = sorted(slot_set - script_slot_set)
 stale_script_slots = sorted(script_slot_set - slot_set)
 if missing_script_slots or stale_script_slots:
     details: list[str] = []
-    details.extend(f"SERVICE_SLOTS missing script: {slot}" for slot in missing_script_slots)
-    details.extend(f"SCRIPT_BY_SLOT stale key: {slot}" for slot in stale_script_slots)
-    fail("battle_core_service_specs slot list and script map drifted apart", details)
+    details.extend(f"SERVICE_DESCRIPTORS missing script: {slot}" for slot in missing_script_slots)
+    details.extend(f"SERVICE_DESCRIPTORS stale script slot: {slot}" for slot in stale_script_slots)
+    fail("battle_core_service_specs descriptors drifted apart", details)
 
-missing_container_slots = sorted(slot_set - container_slot_set)
-stale_container_slots = sorted(container_slot_set - slot_set)
-if missing_container_slots or stale_container_slots:
-    details = []
-    details.extend(f"container missing service slot var: {slot}" for slot in missing_container_slots)
-    details.extend(f"container has stale service slot var: {slot}" for slot in stale_container_slots)
-    fail("battle_core_container service slot surface drifted apart from service specs", details)
+required_service_specs_helpers = [
+    "static func service_slots()",
+    "static func script_by_slot(slot_name: String):",
+]
+missing_service_specs_helpers = [
+    helper for helper in required_service_specs_helpers if helper not in service_specs_text
+]
+if missing_service_specs_helpers:
+    fail(
+        "battle_core_service_specs must expose helpers derived from SERVICE_DESCRIPTORS",
+        missing_service_specs_helpers,
+    )
 
 unknown_wiring_slots: list[str] = []
 duplicate_wiring_keys = _duplicate_names(
@@ -119,4 +113,74 @@ if duplicate_wiring_keys:
 if unknown_wiring_slots:
     fail("composition wiring specs reference unknown service slots", sorted(unknown_wiring_slots))
 
-print("ARCH_GATE_PASSED: composition service slots, container surface, and wiring specs are aligned")
+required_container_api = [
+    "set_service",
+    "service",
+    "has_service",
+    "clear_service",
+    "configure_dispose_specs",
+    "dispose",
+]
+missing_container_api = [
+    name for name in required_container_api if re.search(rf"func {name}\b", container_text) is None
+]
+if missing_container_api:
+    fail("battle_core_container is missing required container API", missing_container_api)
+
+if re.search(r"^var [a-zA-Z_][a-zA-Z0-9_]*\b", container_text, re.M):
+    public_vars = [
+        name
+        for name in re.findall(r"^var ([a-zA-Z_][a-zA-Z0-9_]*)\b", container_text, re.M)
+        if not name.startswith("_")
+    ]
+    if public_vars:
+        fail("battle_core_container should not expose explicit service vars", public_vars)
+
+composer_issues: list[str] = []
+if "container.set_service(" not in composer_text:
+    composer_issues.append("composer must instantiate services via container.set_service")
+if "container.service(" not in composer_text:
+    composer_issues.append("composer must read services via container.service")
+if "ServiceSpecsScript.service_slots()" not in composer_text:
+    composer_issues.append("composer must iterate ServiceSpecsScript.service_slots()")
+if "ServiceSpecsScript.script_by_slot(" not in composer_text:
+    composer_issues.append("composer must resolve scripts via ServiceSpecsScript.script_by_slot()")
+if "container.get(" in composer_text:
+    composer_issues.append("composer must not use container.get")
+if "container.set(" in composer_text:
+    composer_issues.append("composer must not use container.set")
+if composer_issues:
+    fail("battle_core_composer did not adopt the container API", composer_issues)
+
+legacy_container_access: list[str] = []
+legacy_access_pattern = re.compile(
+    rf"\b(?:[A-Za-z_][A-Za-z0-9_]*(?:core|container)|core|container|session\.container)\.({slot_pattern})\b"
+)
+for source_root in [ROOT / "src", ROOT / "tests"]:
+    for path in source_root.rglob("*.gd"):
+        rel = path.relative_to(ROOT)
+        for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            match = legacy_access_pattern.search(line)
+            if match is None:
+                continue
+            legacy_container_access.append(f"{rel}:{line_no}: {match.group(0)}")
+
+if legacy_container_access:
+    fail(
+        "legacy BattleCoreContainer slot property access remains; use container.service(\"slot\") instead",
+        legacy_container_access,
+    )
+
+invalid_service_literals: list[str] = []
+for source_root in [ROOT / "src", ROOT / "tests"]:
+    for path in source_root.rglob("*.gd"):
+        rel = path.relative_to(ROOT)
+        text = path.read_text(encoding="utf-8")
+        for slot_name in re.findall(r'\.service\("([^"]+)"\)', text):
+            if slot_name not in slot_set:
+                invalid_service_literals.append(f"{rel}: unknown service literal {slot_name}")
+
+if invalid_service_literals:
+    fail("service(\"slot\") call sites reference unknown slots", sorted(invalid_service_literals))
+
+print("ARCH_GATE_PASSED: composition descriptors, container API, and wiring specs are aligned")

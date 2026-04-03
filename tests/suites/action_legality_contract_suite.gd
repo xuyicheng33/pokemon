@@ -34,9 +34,9 @@ func _test_action_legality_contract(harness) -> Dictionary:
     deny_all.decrement_on = "turn_start"
     deny_all.stacking = "replace"
     deny_all.priority = 10
-    if core.rule_mod_service.create_instance(deny_all, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_action_legality_deny_all", 0, p1_active.base_speed) == null:
+    if core.service("rule_mod_service").create_instance(deny_all, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_action_legality_deny_all", 0, p1_active.base_speed) == null:
         return harness.fail_result("failed to create action_legality deny all instance")
-    var denied_actions = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
+    var denied_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
     if denied_actions.wait_allowed != true or denied_actions.forced_command_type != "":
         return harness.fail_result("deny all should leave wait legal and must not fall back to resource_forced_default")
     if not denied_actions.legal_skill_ids.is_empty() or not denied_actions.legal_ultimate_ids.is_empty() or not denied_actions.legal_switch_target_public_ids.is_empty():
@@ -53,9 +53,9 @@ func _test_action_legality_contract(harness) -> Dictionary:
     allow_switch.decrement_on = "turn_start"
     allow_switch.stacking = "replace"
     allow_switch.priority = 9
-    if core.rule_mod_service.create_instance(allow_switch, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_action_legality_allow_switch", 0, p1_active.base_speed) == null:
+    if core.service("rule_mod_service").create_instance(allow_switch, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_action_legality_allow_switch", 0, p1_active.base_speed) == null:
         return harness.fail_result("failed to create action_legality allow switch instance")
-    var allow_switch_actions = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
+    var allow_switch_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
     if allow_switch_actions.legal_switch_target_public_ids != PackedStringArray(["P1-B", "P1-C"]):
         return harness.fail_result("deny all + allow switch should re-open switch targets only")
 
@@ -71,7 +71,7 @@ func _test_action_legality_contract(harness) -> Dictionary:
     deny_skill.duration = 2
     deny_skill.decrement_on = "turn_start"
     deny_skill.stacking = "replace"
-    if core.rule_mod_service.create_instance(deny_skill, {"scope": "unit", "id": selective_actor.unit_instance_id}, selective_state, "test_action_legality_deny_skill", 0, selective_actor.base_speed) == null:
+    if core.service("rule_mod_service").create_instance(deny_skill, {"scope": "unit", "id": selective_actor.unit_instance_id}, selective_state, "test_action_legality_deny_skill", 0, selective_actor.base_speed) == null:
         return harness.fail_result("failed to create action_legality deny skill instance")
     var allow_specific = RuleModPayloadScript.new()
     allow_specific.payload_type = "rule_mod"
@@ -84,9 +84,9 @@ func _test_action_legality_contract(harness) -> Dictionary:
     allow_specific.decrement_on = "turn_start"
     allow_specific.stacking = "replace"
     allow_specific.priority = -1
-    if core.rule_mod_service.create_instance(allow_specific, {"scope": "unit", "id": selective_actor.unit_instance_id}, selective_state, "test_action_legality_allow_specific", 0, selective_actor.base_speed) == null:
+    if core.service("rule_mod_service").create_instance(allow_specific, {"scope": "unit", "id": selective_actor.unit_instance_id}, selective_state, "test_action_legality_allow_specific", 0, selective_actor.base_speed) == null:
         return harness.fail_result("failed to create action_legality allow specific instance")
-    var selective_actions = core.legal_action_service.get_legal_actions(selective_state, "P1", content_index)
+    var selective_actions = core.service("legal_action_service").get_legal_actions(selective_state, "P1", content_index)
     if not selective_actions.legal_skill_ids.has("sample_strike") or selective_actions.legal_skill_ids.has("sample_field_call"):
         return harness.fail_result("deny skill + allow sample_strike should keep only the explicitly re-opened skill")
 
@@ -123,9 +123,9 @@ func _test_action_legality_contract(harness) -> Dictionary:
     var queue_lock_p2 = queue_lock_state.get_side("P2").get_active_unit()
     queue_lock_p1.regular_skill_ids[0] = lock_skill.id
     queue_lock_p1.base_speed = 999
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(queue_lock_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(queue_lock_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -133,7 +133,7 @@ func _test_action_legality_contract(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": lock_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -142,12 +142,12 @@ func _test_action_legality_contract(harness) -> Dictionary:
             "skill_id": "sample_strike",
         }),
     ])
-    if not _has_event(core.battle_logger.event_log, func(ev):
+    if not _has_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.ACTION_CANCELLED_PRE_START \
             and ev.target_instance_id == queue_lock_p2.unit_instance_id
     ):
         return harness.fail_result("mid-turn action_legality lock should cancel queued enemy action before start")
-    if _has_event(core.battle_logger.event_log, func(ev):
+    if _has_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.ACTION_CAST \
             and ev.actor_id == queue_lock_p2.unit_instance_id
     ):

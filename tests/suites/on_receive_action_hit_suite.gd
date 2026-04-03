@@ -62,9 +62,9 @@ func _test_on_receive_action_hit_lethal_counter_contract(harness) -> Dictionary:
     target.definition_id = "sample_tidekit"
     content_index.units["sample_tidekit"].passive_skill_id = "test_receive_counter_passive"
 
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -72,7 +72,7 @@ func _test_on_receive_action_hit_lethal_counter_contract(harness) -> Dictionary:
             "actor_public_id": "P1-B",
             "skill_id": water_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -85,7 +85,7 @@ func _test_on_receive_action_hit_lethal_counter_contract(harness) -> Dictionary:
     if target.current_mp != 5:
         return harness.fail_result("lethal on_receive_action_hit should still apply self mp loss: expected=5 actual=%d" % target.current_mp)
     var expected_counter_damage: int = 30
-    var counter_event = _find_counter_damage_event(core.battle_logger.event_log, attacker.unit_instance_id)
+    var counter_event = _find_counter_damage_event(core.service("battle_logger").event_log, attacker.unit_instance_id)
     if counter_event == null or counter_event.value_changes.is_empty():
         return harness.fail_result("missing poison counter damage event")
     var actual_counter_damage: int = abs(int(counter_event.value_changes[0].delta))
@@ -144,7 +144,7 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
     var passive_holder = battle_state.get_side("P2").get_active_unit()
     if source_actor == null or passive_holder == null:
         return harness.fail_result("missing active units for persistent damage contract")
-    if core.effect_instance_service.create_instance(
+    if core.service("effect_instance_service").create_instance(
         water_dot_effect,
         passive_holder.unit_instance_id,
         battle_state,
@@ -156,9 +156,9 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
         return harness.fail_result("failed to seed water dot effect instance")
     var attacker_hp_before: int = source_actor.current_hp
 
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -166,7 +166,7 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
             "actor_public_id": "P1-A",
             "skill_id": harmless_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -178,7 +178,7 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
 
     if source_actor.current_hp != attacker_hp_before:
         return harness.fail_result("persistent water damage should not trigger on_receive_action_hit counter damage")
-    if _find_counter_damage_event(core.battle_logger.event_log, source_actor.unit_instance_id) != null:
+    if _find_counter_damage_event(core.service("battle_logger").event_log, source_actor.unit_instance_id) != null:
         return harness.fail_result("persistent water damage should not emit poison counter damage event")
     return harness.pass_result()
 

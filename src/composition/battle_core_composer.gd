@@ -59,10 +59,10 @@ func compose_manager():
 
 func _instantiate_services(container) -> bool:
     for slot_name in ServiceSpecsScript.service_slots():
-        var script_ref = ServiceSpecsScript.SCRIPT_BY_SLOT.get(slot_name, null)
+        var script_ref = ServiceSpecsScript.script_by_slot(slot_name)
         if script_ref == null:
             return _fail("Unknown service slot: %s" % str(slot_name))
-        container.set(slot_name, script_ref.new())
+        container.set_service(slot_name, script_ref.new())
     return true
 
 func _wire_dependencies(container) -> bool:
@@ -70,23 +70,23 @@ func _wire_dependencies(container) -> bool:
         var owner_name := str(wiring_spec["owner"])
         var dependency_name := str(wiring_spec["dependency"])
         var source_name := str(wiring_spec["source"])
-        var owner = container.get(owner_name)
+        var owner = container.service(owner_name)
         if owner == null:
             return _fail("Composer missing owner: %s" % owner_name)
-        owner.set(dependency_name, container.get(source_name))
+        owner.set(dependency_name, container.service(source_name))
     return true
 
 func _validate_container_dependencies(container) -> bool:
     for wiring_spec in WiringSpecsScript.WIRING_SPECS:
         var owner_name := str(wiring_spec["owner"])
         var dependency_name := str(wiring_spec["dependency"])
-        var owner = container.get(owner_name)
+        var owner = container.service(owner_name)
         if owner == null:
             return _fail("Composer missing owner: %s" % owner_name)
         if owner.get(dependency_name) == null:
             return _fail("%s missing dependency: %s" % [owner_name, dependency_name])
     for slot_name in ServiceSpecsScript.service_slots():
-        var service = container.get(slot_name)
+        var service = container.service(slot_name)
         if service == null:
             return _fail("Composer missing service: %s" % str(slot_name))
         if slot_name == "runtime_guard_service":
@@ -101,7 +101,7 @@ func _resolve_service_slots() -> PackedStringArray:
     return ServiceSpecsScript.service_slots()
 
 func _new_service_instance(slot_name: String):
-    var script_ref = ServiceSpecsScript.SCRIPT_BY_SLOT.get(slot_name, null)
+    var script_ref = ServiceSpecsScript.script_by_slot(slot_name)
     if script_ref == null:
         _fail("Unknown service slot: %s" % slot_name)
         return null

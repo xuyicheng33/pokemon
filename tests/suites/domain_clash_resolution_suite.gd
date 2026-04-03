@@ -28,7 +28,7 @@ func _test_field_clash_high_mp_and_success_only_followup_contract(harness) -> Di
 	lose_sukuna.current_mp = lose_sukuna.max_mp
 	lose_sukuna.ultimate_points = lose_sukuna.ultimate_points_cap
 	lose_sukuna.base_speed = 999
-	lose_core.battle_logger.reset()
+	lose_core.service("battle_logger").reset()
 	_helper.run_turn(
 		lose_core,
 		lose_state,
@@ -40,9 +40,9 @@ func _test_field_clash_high_mp_and_success_only_followup_contract(harness) -> Di
 		return harness.fail_result("领域对拼时 MP 更高的一方必须保留领域")
 	if int(lose_gojo.stat_stages.get("sp_attack", 0)) != 0:
 		return harness.fail_result("Gojo 对拼失败时不应获得领域绑定增幅")
-	if _helper.has_rule_mod_apply_on_target(lose_core.battle_logger.event_log, lose_sukuna.unit_instance_id):
+	if _helper.has_rule_mod_apply_on_target(lose_core.service("battle_logger").event_log, lose_sukuna.unit_instance_id):
 		return harness.fail_result("Gojo 对拼失败时不应再追加行动封锁")
-	if _helper.find_field_clash_event(lose_core.battle_logger.event_log) == null:
+	if _helper.find_field_clash_event(lose_core.service("battle_logger").event_log) == null:
 		return harness.fail_result("领域对拼结果必须写入日志")
 
 	var win_payload = _helper.build_gojo_vs_sukuna_state(harness, 2206)
@@ -58,7 +58,7 @@ func _test_field_clash_high_mp_and_success_only_followup_contract(harness) -> Di
 	win_sukuna.current_mp = 80
 	win_sukuna.ultimate_points = win_sukuna.ultimate_points_cap
 	win_sukuna.base_speed = 999
-	win_core.battle_logger.reset()
+	win_core.service("battle_logger").reset()
 	_helper.run_turn(
 		win_core,
 		win_state,
@@ -72,7 +72,7 @@ func _test_field_clash_high_mp_and_success_only_followup_contract(harness) -> Di
 		return harness.fail_result("Gojo 领域成功立住后应获得领域绑定增幅")
 	if int(win_sukuna.stat_stages.get("attack", 0)) != 0 or int(win_sukuna.stat_stages.get("sp_attack", 0)) != 0:
 		return harness.fail_result("旧领域被打断时其领域绑定 buff 必须一并消失")
-	if not _helper.has_rule_mod_apply_on_target(win_core.battle_logger.event_log, win_sukuna.unit_instance_id):
+	if not _helper.has_rule_mod_apply_on_target(win_core.service("battle_logger").event_log, win_sukuna.unit_instance_id):
 		return harness.fail_result("Gojo 只有在领域成功立住后才应追加行动封锁")
 	return harness.pass_result()
 
@@ -164,7 +164,7 @@ func _test_opponent_domain_cast_still_legal_contract(harness) -> Dictionary:
 		return harness.fail_result("Gojo 首次开领域后应成功立场")
 	sukuna_unit.current_mp = sukuna_unit.max_mp
 	sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
-	var p2_legal_actions = core.legal_action_service.get_legal_actions(battle_state, "P2", content_index)
+	var p2_legal_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P2", content_index)
 	if not p2_legal_actions.legal_ultimate_ids.has("sukuna_fukuma_mizushi"):
 		return harness.fail_result("对手领域在场时，本方仍应允许施放自己的领域技能")
 	gojo_unit.current_mp = 20
@@ -193,7 +193,7 @@ func _test_same_turn_dual_domain_not_cancelled_by_action_lock_contract(harness) 
 	gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
 	sukuna_unit.current_mp = sukuna_unit.max_mp
 	sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
-	core.battle_logger.reset()
+	core.service("battle_logger").reset()
 	_helper.run_turn(
 		core,
 		battle_state,
@@ -201,9 +201,9 @@ func _test_same_turn_dual_domain_not_cancelled_by_action_lock_contract(harness) 
 		_helper.build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
 		_helper.build_ultimate_command(core, 1, "P2", "P2-A", "sukuna_fukuma_mizushi")
 	)
-	if _helper.find_field_clash_event(core.battle_logger.event_log) == null:
+	if _helper.find_field_clash_event(core.service("battle_logger").event_log) == null:
 		return harness.fail_result("双方同回合施放领域时，必须进入领域对拼")
-	if _helper.has_action_cancelled_pre_start_on_actor(core.battle_logger.event_log, sukuna_unit.unit_instance_id):
+	if _helper.has_action_cancelled_pre_start_on_actor(core.service("battle_logger").event_log, sukuna_unit.unit_instance_id):
 		return harness.fail_result("同回合同步开领域时，后手领域技能不应被 action_lock 直接取消")
 	return harness.pass_result()
 
@@ -215,7 +215,7 @@ func _test_normal_field_cannot_replace_active_domain_contract(harness) -> Dictio
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
 	var gojo_unit = battle_state.get_side("P1").get_active_unit()
-	var p2_actions = core.legal_action_service.get_legal_actions(battle_state, "P2", content_index)
+	var p2_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P2", content_index)
 	if not p2_actions.legal_skill_ids.has("sample_field_call"):
 		return harness.fail_result("样例单位应可施放普通 field 技能用于领域阻断回归")
 	gojo_unit.current_mp = gojo_unit.max_mp
@@ -229,7 +229,7 @@ func _test_normal_field_cannot_replace_active_domain_contract(harness) -> Dictio
 	)
 	if battle_state.field_state == null or battle_state.field_state.field_def_id != "gojo_unlimited_void_field":
 		return harness.fail_result("Gojo 首次开领域后应成功立场")
-	core.battle_logger.reset()
+	core.service("battle_logger").reset()
 	_helper.run_turn(
 		core,
 		battle_state,
@@ -239,7 +239,7 @@ func _test_normal_field_cannot_replace_active_domain_contract(harness) -> Dictio
 	)
 	if battle_state.field_state == null or battle_state.field_state.field_def_id != "gojo_unlimited_void_field":
 		return harness.fail_result("普通 field 技能不应覆盖当前生效的领域")
-	if not _helper.has_domain_block_log(core.battle_logger.event_log, "sample_focus_field"):
+	if not _helper.has_domain_block_log(core.service("battle_logger").event_log, "sample_focus_field"):
 		return harness.fail_result("普通 field 被领域阻断时应写出可回放日志")
 	return harness.pass_result()
 
@@ -251,10 +251,10 @@ func _test_domain_replaces_normal_field_contract(harness) -> Dictionary:
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
 	var gojo_unit = battle_state.get_side("P1").get_active_unit()
-	var p2_actions = core.legal_action_service.get_legal_actions(battle_state, "P2", content_index)
+	var p2_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P2", content_index)
 	if not p2_actions.legal_skill_ids.has("sample_field_call"):
 		return harness.fail_result("样例单位应可施放普通 field 技能用于领域替换回归")
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_helper.build_wait_command(core, 1, "P1", "P1-A"),
 		_helper.build_skill_command(core, 1, "P2", "P2-A", "sample_field_call")
 	])
@@ -262,15 +262,15 @@ func _test_domain_replaces_normal_field_contract(harness) -> Dictionary:
 		return harness.fail_result("普通 field 技能应先正常立场")
 	gojo_unit.current_mp = gojo_unit.max_mp
 	gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
-	core.battle_logger.reset()
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_helper.build_ultimate_command(core, 2, "P1", "P1-A", "gojo_unlimited_void"),
 		_helper.build_wait_command(core, 2, "P2", "P2-A")
 	])
 	if battle_state.field_state == null or battle_state.field_state.field_def_id != "gojo_unlimited_void_field":
 		return harness.fail_result("领域技能应直接替换在场普通 field")
-	if _helper.find_field_clash_event(core.battle_logger.event_log) != null:
+	if _helper.find_field_clash_event(core.service("battle_logger").event_log) != null:
 		return harness.fail_result("领域替换普通 field 时不应写出领域对拼日志")
-	if _helper.has_domain_block_log(core.battle_logger.event_log, "sample_focus_field"):
+	if _helper.has_domain_block_log(core.service("battle_logger").event_log, "sample_focus_field"):
 		return harness.fail_result("领域替换普通 field 时不应写出普通 field 被阻断日志")
 	return harness.pass_result()

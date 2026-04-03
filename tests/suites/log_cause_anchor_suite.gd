@@ -41,11 +41,11 @@ func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
     expire_payload.decrement_on = "turn_start"
     expire_payload.stacking = "replace"
     expire_payload.priority = 5
-    if core.rule_mod_service.create_instance(expire_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_turn_start_expire_rule_mod", 0, p1_active.base_speed) == null:
+    if core.service("rule_mod_service").create_instance(expire_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_turn_start_expire_rule_mod", 0, p1_active.base_speed) == null:
         return harness.fail_result("failed to create turn_start expiring rule_mod")
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -53,7 +53,7 @@ func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": "sample_field_call",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -61,15 +61,15 @@ func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
             "actor_public_id": "P2-A",
         }),
     ])
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
             "side_id": "P1",
             "actor_public_id": "P1-A",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -77,23 +77,23 @@ func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
             "actor_public_id": "P2-A",
         }),
     ])
-    var turn_start_events := _find_events(core.battle_logger.event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_START)
-    var turn_end_events := _find_events(core.battle_logger.event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_END)
+    var turn_start_events := _find_events(core.service("battle_logger").event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_START)
+    var turn_end_events := _find_events(core.service("battle_logger").event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_END)
     if turn_start_events.size() < 2 or turn_end_events.size() < 2:
         return harness.fail_result("missing turn anchor events for cause contract checks")
     var first_turn_start = turn_start_events[0]
     var second_turn_start = turn_start_events[1]
     var second_turn_end = turn_end_events[1]
-    var regen_event = _find_event(core.battle_logger.event_log, func(ev):
+    var regen_event = _find_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD \
         and ev.source_instance_id == "system:turn_start" \
         and ev.target_instance_id == p2_active.unit_instance_id
     )
-    var rule_mod_remove_event = _find_event(core.battle_logger.event_log, func(ev):
+    var rule_mod_remove_event = _find_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.EFFECT_RULE_MOD_REMOVE \
         and ev.target_instance_id == p1_active.unit_instance_id
     )
-    var field_expire_event = _find_event(core.battle_logger.event_log, func(ev): return ev.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE)
+    var field_expire_event = _find_event(core.service("battle_logger").event_log, func(ev): return ev.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE)
     if regen_event == null or rule_mod_remove_event == null or field_expire_event == null:
         return harness.fail_result("missing turn_start/turn_end effect logs for cause contract checks")
     if regen_event.cause_event_id != _event_id(second_turn_start):

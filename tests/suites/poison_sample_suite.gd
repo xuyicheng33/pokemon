@@ -27,9 +27,9 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
     var target_a = state_a.get_side("P2").get_active_unit()
     if attacker_a == null or target_a == null:
         return harness.fail_result("missing active units for poison sample case A")
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(state_a, content_index_a, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(state_a, content_index_a, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -37,7 +37,7 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
             "actor_public_id": "P1-A",
             "skill_id": "sample_poison_sting",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -45,11 +45,11 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
             "actor_public_id": "P2-A",
         }),
     ])
-    var expected_mul_a: float = core.combat_type_service.calc_effectiveness("poison", target_a.combat_type_ids)
+    var expected_mul_a: float = core.service("combat_type_service").calc_effectiveness("poison", target_a.combat_type_ids)
     if not is_equal_approx(expected_mul_a, 2.0):
         return harness.fail_result("poison -> water baseline should be 2.0, got %s" % var_to_str(expected_mul_a))
-    var expected_damage_a: int = core.damage_service.apply_final_mod(15, expected_mul_a)
-    var actual_damage_a: Dictionary = _extract_single_poison_burst_damage(core.battle_logger.event_log, target_a.unit_instance_id)
+    var expected_damage_a: int = core.service("damage_service").apply_final_mod(15, expected_mul_a)
+    var actual_damage_a: Dictionary = _extract_single_poison_burst_damage(core.service("battle_logger").event_log, target_a.unit_instance_id)
     if actual_damage_a.has("error"):
         return harness.fail_result(str(actual_damage_a["error"]))
     if not is_equal_approx(float(actual_damage_a["type_effectiveness"]), expected_mul_a):
@@ -70,9 +70,9 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
     var target_b = state_b.get_side("P2").get_active_unit()
     if target_b == null:
         return harness.fail_result("missing target unit for poison sample case B")
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(state_b, content_index_b, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(state_b, content_index_b, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -80,7 +80,7 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
             "actor_public_id": "P1-A",
             "skill_id": "sample_poison_sting",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -88,11 +88,11 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
             "actor_public_id": "P2-A",
         }),
     ])
-    var expected_mul_b: float = core.combat_type_service.calc_effectiveness("poison", target_b.combat_type_ids)
+    var expected_mul_b: float = core.service("combat_type_service").calc_effectiveness("poison", target_b.combat_type_ids)
     if not is_equal_approx(expected_mul_b, 0.5):
         return harness.fail_result("poison -> steel baseline should be 0.5, got %s" % var_to_str(expected_mul_b))
-    var expected_damage_b: int = core.damage_service.apply_final_mod(15, expected_mul_b)
-    var actual_damage_b: Dictionary = _extract_single_poison_burst_damage(core.battle_logger.event_log, target_b.unit_instance_id)
+    var expected_damage_b: int = core.service("damage_service").apply_final_mod(15, expected_mul_b)
+    var actual_damage_b: Dictionary = _extract_single_poison_burst_damage(core.service("battle_logger").event_log, target_b.unit_instance_id)
     if actual_damage_b.has("error"):
         return harness.fail_result(str(actual_damage_b["error"]))
     if not is_equal_approx(float(actual_damage_b["type_effectiveness"]), expected_mul_b):

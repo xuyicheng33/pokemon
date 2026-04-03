@@ -66,17 +66,17 @@ func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dict
     p1_active.base_speed = 999
     var selector := TestReplacementSelector.new()
     selector.next_selection = selected_unit.unit_instance_id
-    core.replacement_service.replacement_selector = selector
+    core.service("replacement_service").replacement_selector = selector
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
             "side_id": "P1",
             "actor_public_id": "P1-A",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -88,10 +88,10 @@ func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dict
     if battle_state.field_state == null or battle_state.field_state.field_def_id != "sample_focus_field":
         return harness.fail_result("forced_replace break test should start with active sample_focus_field")
     var field_instance_id: String = battle_state.field_state.instance_id
-    var log_start: int = core.battle_logger.event_log.size()
+    var log_start: int = core.service("battle_logger").event_log.size()
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -99,7 +99,7 @@ func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dict
             "actor_public_id": "P1-A",
             "skill_id": forced_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -112,8 +112,8 @@ func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dict
     var break_idx := -1
     var replace_idx := -1
     var enter_idx := -1
-    for i in range(log_start, core.battle_logger.event_log.size()):
-        var ev = core.battle_logger.event_log[i]
+    for i in range(log_start, core.service("battle_logger").event_log.size()):
+        var ev = core.service("battle_logger").event_log[i]
         if break_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.source_instance_id == field_instance_id and ev.trigger_name == "field_break":
             break_idx = i
         if replace_idx == -1 and ev.event_type == EventTypesScript.STATE_REPLACE and ev.target_instance_id == selected_unit.unit_instance_id:

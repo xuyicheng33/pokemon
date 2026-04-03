@@ -6,17 +6,17 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const UnitBstHelperScript := preload("res://src/shared/unit_bst_helper.gd")
 
 func build_battle_state(core, content_index, battle_setup, seed: int):
-    core.rng_service.reset(seed)
-    core.id_factory.reset()
+    core.service("rng_service").reset(seed)
+    core.service("id_factory").reset()
     var battle_state = BattleStateScript.new()
-    battle_state.battle_id = core.id_factory.next_id("battle")
+    battle_state.battle_id = core.service("id_factory").next_id("battle")
     battle_state.seed = seed
-    battle_state.rng_stream_index = core.rng_service.get_stream_index()
-    core.battle_initializer.initialize_battle(battle_state, content_index, battle_setup)
+    battle_state.rng_stream_index = core.service("rng_service").get_stream_index()
+    core.service("battle_initializer").initialize_battle(battle_state, content_index, battle_setup)
     return battle_state
 
 func build_manual_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-    return core.command_builder.build_command({
+    return core.service("command_builder").build_command({
         "turn_index": turn_index,
         "command_type": CommandTypesScript.SKILL,
         "command_source": "manual",
@@ -26,7 +26,7 @@ func build_manual_skill_command(core, turn_index: int, side_id: String, actor_pu
     })
 
 func build_manual_wait_command(core, turn_index: int, side_id: String, actor_public_id: String):
-    return core.command_builder.build_command({
+    return core.service("command_builder").build_command({
         "turn_index": turn_index,
         "command_type": CommandTypesScript.WAIT,
         "command_source": "manual",
@@ -35,7 +35,7 @@ func build_manual_wait_command(core, turn_index: int, side_id: String, actor_pub
     })
 
 func build_manual_switch_command(core, turn_index: int, side_id: String, actor_public_id: String, target_public_id: String):
-    return core.command_builder.build_command({
+    return core.service("command_builder").build_command({
         "turn_index": turn_index,
         "command_type": CommandTypesScript.SWITCH,
         "command_source": "manual",
@@ -45,7 +45,7 @@ func build_manual_switch_command(core, turn_index: int, side_id: String, actor_p
     })
 
 func build_manual_ultimate_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-    return core.command_builder.build_command({
+    return core.service("command_builder").build_command({
         "turn_index": turn_index,
         "command_type": CommandTypesScript.ULTIMATE,
         "command_source": "manual",

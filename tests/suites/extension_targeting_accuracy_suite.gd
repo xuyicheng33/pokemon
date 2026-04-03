@@ -62,9 +62,9 @@ func _test_required_target_effects_contract(harness) -> Dictionary:
     var skipped_p2 = skipped_state.get_side("P2").get_active_unit()
     skipped_p1.regular_skill_ids[0] = conditional_skill.id
     skipped_p1.base_speed = 999
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(skipped_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(skipped_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -72,7 +72,7 @@ func _test_required_target_effects_contract(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": conditional_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -82,7 +82,7 @@ func _test_required_target_effects_contract(harness) -> Dictionary:
     ])
     if int(skipped_p2.stat_stages.get("speed", 0)) != 0:
         return harness.fail_result("required_target_effects should skip payloads when target marker is missing")
-    if _has_event(core.battle_logger.event_log, func(ev):
+    if _has_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.EFFECT_STAT_MOD \
             and ev.target_instance_id == skipped_p2.unit_instance_id
     ):
@@ -93,10 +93,10 @@ func _test_required_target_effects_contract(harness) -> Dictionary:
     var applied_p2 = applied_state.get_side("P2").get_active_unit()
     applied_p1.regular_skill_ids[0] = conditional_skill.id
     applied_p1.base_speed = 999
-    core.effect_instance_service.create_instance(marker_effect, applied_p2.unit_instance_id, applied_state, "test_required_runtime_marker_source", 0, applied_p2.base_speed)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(applied_state, content_index, [
-        core.command_builder.build_command({
+    core.service("effect_instance_service").create_instance(marker_effect, applied_p2.unit_instance_id, applied_state, "test_required_runtime_marker_source", 0, applied_p2.base_speed)
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(applied_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -104,7 +104,7 @@ func _test_required_target_effects_contract(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": conditional_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -167,7 +167,7 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
     var mismatched_p2 = mismatched_state.get_side("P2").get_active_unit()
     mismatched_p1.regular_skill_ids[0] = conditional_skill.id
     mismatched_p1.base_speed = 999
-    core.effect_instance_service.create_instance(
+    core.service("effect_instance_service").create_instance(
         marker_effect,
         mismatched_p2.unit_instance_id,
         mismatched_state,
@@ -176,9 +176,9 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
         mismatched_p2.base_speed,
         {"source_owner_id": "other_owner"}
     )
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(mismatched_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(mismatched_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -186,7 +186,7 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": conditional_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -202,7 +202,7 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
     var matched_p2 = matched_state.get_side("P2").get_active_unit()
     matched_p1.regular_skill_ids[0] = conditional_skill.id
     matched_p1.base_speed = 999
-    core.effect_instance_service.create_instance(
+    core.service("effect_instance_service").create_instance(
         marker_effect,
         matched_p2.unit_instance_id,
         matched_state,
@@ -211,9 +211,9 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
         matched_p2.base_speed,
         {"source_owner_id": matched_p1.unit_instance_id}
     )
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(matched_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(matched_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -221,7 +221,7 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": conditional_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -257,7 +257,7 @@ func _test_incoming_accuracy_contract(harness) -> Dictionary:
     incoming_payload.duration_mode = "permanent"
     incoming_payload.decrement_on = "turn_end"
     incoming_payload.stacking = "none"
-    if core.rule_mod_service.create_instance(incoming_payload, {"scope": "unit", "id": p2_active.unit_instance_id}, battle_state, "test_incoming_accuracy_down", 0, p2_active.base_speed) == null:
+    if core.service("rule_mod_service").create_instance(incoming_payload, {"scope": "unit", "id": p2_active.unit_instance_id}, battle_state, "test_incoming_accuracy_down", 0, p2_active.base_speed) == null:
         return harness.fail_result("failed to create incoming_accuracy rule_mod")
 
     var accuracy_skill = SkillDefinitionScript.new()
@@ -271,7 +271,7 @@ func _test_incoming_accuracy_contract(harness) -> Dictionary:
     accuracy_skill.targeting = "enemy_active_slot"
     content_index.register_resource(accuracy_skill)
 
-    var command = core.command_builder.build_command({
+    var command = core.service("command_builder").build_command({
         "turn_index": 1,
         "command_type": CommandTypesScript.SKILL,
         "command_source": "manual",
@@ -280,18 +280,18 @@ func _test_incoming_accuracy_contract(harness) -> Dictionary:
         "skill_id": accuracy_skill.id,
     })
     command.actor_id = p1_active.unit_instance_id
-    var hit_info = core.action_cast_service.resolve_hit(command, accuracy_skill, p2_active, battle_state, content_index)
+    var hit_info = core.service("action_cast_service").resolve_hit(command, accuracy_skill, p2_active, battle_state, content_index)
     if abs(float(hit_info.get("hit_rate", -1.0)) - 0.85) > 0.0001:
         return harness.fail_result("incoming_accuracy should reduce 95 accuracy enemy_active skill to 85")
 
     accuracy_skill.accuracy = 100
-    var guaranteed_hit_info = core.action_cast_service.resolve_hit(command, accuracy_skill, p2_active, battle_state, content_index)
+    var guaranteed_hit_info = core.service("action_cast_service").resolve_hit(command, accuracy_skill, p2_active, battle_state, content_index)
     if guaranteed_hit_info.get("hit_roll", "not-null") != null or abs(float(guaranteed_hit_info.get("hit_rate", -1.0)) - 1.0) > 0.0001:
         return harness.fail_result("incoming_accuracy must not affect guaranteed-hit actions")
 
     accuracy_skill.accuracy = 95
     accuracy_skill.targeting = "self"
-    var self_target_hit_info = core.action_cast_service.resolve_hit(command, accuracy_skill, p1_active, battle_state, content_index)
+    var self_target_hit_info = core.service("action_cast_service").resolve_hit(command, accuracy_skill, p1_active, battle_state, content_index)
     if abs(float(self_target_hit_info.get("hit_rate", -1.0)) - 0.95) > 0.0001:
         return harness.fail_result("incoming_accuracy must not affect self-target actions")
     return harness.pass_result()

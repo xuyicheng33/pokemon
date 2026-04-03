@@ -23,12 +23,12 @@ func _test_gojo_murasaki_no_marks_contract(harness) -> Dictionary:
     var battle_state = state_payload["battle_state"]
     content_index.skills["gojo_murasaki"].accuracy = 100
     var target_unit = battle_state.get_side("P2").get_active_unit()
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_murasaki"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
-    if _count_target_damage_events(core.battle_logger.event_log, target_unit.unit_instance_id) != 1:
+    if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 1:
         return harness.fail_result("茈在无双标记时只能命中一次本体伤害")
     if _count_effect_instances(target_unit, "gojo_ao_mark") != 0 or _count_effect_instances(target_unit, "gojo_aka_mark") != 0:
         return harness.fail_result("茈在无双标记时不应误清或误造标记")
@@ -65,19 +65,19 @@ func _test_gojo_murasaki_double_mark_burst_contract(harness) -> Dictionary:
         target_unit,
         str(murasaki_skill.combat_type_id)
     )
-    var expected_type_effectiveness = core.combat_type_service.calc_effectiveness(
+    var expected_type_effectiveness = core.service("combat_type_service").calc_effectiveness(
         str(murasaki_skill.combat_type_id),
         target_unit.combat_type_ids
     )
     _apply_gojo_double_marks(core, content_index, battle_state, target_unit, gojo_unit.unit_instance_id, gojo_unit.base_speed)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_murasaki"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
-    if _count_target_damage_events(core.battle_logger.event_log, target_unit.unit_instance_id) != 2:
+    if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 2:
         return harness.fail_result("茈在双标记时应追加第二段伤害")
-    var burst_event = _find_burst_damage_event(core.battle_logger.event_log, target_unit.unit_instance_id, target_unit.public_id)
+    var burst_event = _find_burst_damage_event(core.service("battle_logger").event_log, target_unit.unit_instance_id, target_unit.public_id)
     if burst_event == null:
         return harness.fail_result("茈双标记时应写出追加段 payload_damage 的 EFFECT_DAMAGE")
     var burst_change = _first_value_change(burst_event)
@@ -110,12 +110,12 @@ func _test_gojo_murasaki_same_owner_contract(harness) -> Dictionary:
         gojo_unit.base_speed,
         "other_gojo_owner"
     )
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_murasaki"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
-    if _count_target_damage_events(core.battle_logger.event_log, target_unit.unit_instance_id) != 1:
+    if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 1:
         return harness.fail_result("茈只应消耗自己来源的双标记，异来源标记不应触发追加段")
     if _count_effect_instances(target_unit, "gojo_ao_mark") != 1 or _count_effect_instances(target_unit, "gojo_aka_mark") != 1:
         return harness.fail_result("异来源双标记未命中前置时不应被误清理")
@@ -132,14 +132,14 @@ func _test_gojo_murasaki_no_recoil_contract(harness) -> Dictionary:
     var target_unit = battle_state.get_side("P2").get_active_unit()
     var before_hp: int = gojo_unit.current_hp
     _apply_gojo_double_marks(core, content_index, battle_state, target_unit, gojo_unit.unit_instance_id, gojo_unit.base_speed)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_murasaki"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
     if gojo_unit.current_hp != before_hp:
         return harness.fail_result("茈触发追加段后不应对五条悟造成反噬伤害")
-    if _count_target_damage_events(core.battle_logger.event_log, gojo_unit.unit_instance_id) != 0:
+    if _count_target_damage_events(core.service("battle_logger").event_log, gojo_unit.unit_instance_id) != 0:
         return harness.fail_result("茈结算后不应给五条悟自己写入伤害事件")
     return harness.pass_result()
 func _test_gojo_murasaki_base_kill_contract(harness) -> Dictionary:
@@ -154,12 +154,12 @@ func _test_gojo_murasaki_base_kill_contract(harness) -> Dictionary:
     var target_unit = battle_state.get_side("P2").get_active_unit()
     target_unit.current_hp = 30
     _apply_gojo_double_marks(core, content_index, battle_state, target_unit, gojo_unit.unit_instance_id, gojo_unit.base_speed)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_murasaki"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
-    if _count_target_damage_events(core.battle_logger.event_log, target_unit.unit_instance_id) != 1:
+    if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 1:
         return harness.fail_result("茈本体先击杀时不应再触发追加段")
     return harness.pass_result()
 func _test_gojo_murasaki_burst_kill_contract(harness) -> Dictionary:
@@ -174,14 +174,14 @@ func _test_gojo_murasaki_burst_kill_contract(harness) -> Dictionary:
     var target_unit = battle_state.get_side("P2").get_active_unit()
     target_unit.current_hp = 50
     _apply_gojo_double_marks(core, content_index, battle_state, target_unit, gojo_unit.unit_instance_id, gojo_unit.base_speed)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_murasaki"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
-    if _count_target_damage_events(core.battle_logger.event_log, target_unit.unit_instance_id) != 2:
+    if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 2:
         return harness.fail_result("茈追加段击杀时仍应保留第二段伤害结算")
-    if _has_event(core.battle_logger.event_log, func(ev):
+    if _has_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE
     ):
         return harness.fail_result("茈追加段击杀后清标记应静默跳过，不能报 invalid_battle")
@@ -197,17 +197,17 @@ func _test_gojo_murasaki_retargeted_switch_contract(harness) -> Dictionary:
     var gojo_unit = battle_state.get_side("P1").get_active_unit()
     var original_target = battle_state.get_side("P2").get_active_unit()
     _apply_gojo_double_marks(core, content_index, battle_state, original_target, gojo_unit.unit_instance_id, gojo_unit.base_speed)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_murasaki"),
         _build_switch_command(core, 1, "P2", "P2-A", "P2-B"),
     ])
     var new_target = battle_state.get_side("P2").get_active_unit()
     if new_target == null or new_target.public_id != "P2-B":
         return harness.fail_result("target switch should complete before priority -1 茈")
-    if _count_target_damage_events(core.battle_logger.event_log, new_target.unit_instance_id) != 1:
+    if _count_target_damage_events(core.service("battle_logger").event_log, new_target.unit_instance_id) != 1:
         return harness.fail_result("原目标先换下时，茈应命中新 active 且只打本体")
-    if _count_target_damage_events(core.battle_logger.event_log, original_target.unit_instance_id) != 0:
+    if _count_target_damage_events(core.service("battle_logger").event_log, original_target.unit_instance_id) != 0:
         return harness.fail_result("原目标离场后不应继续承受茈伤害")
     return harness.pass_result()
 
@@ -288,12 +288,12 @@ func _calc_formula_damage(core, battle_state, power: int, damage_kind: String, a
         defense_base = target.base_sp_defense
         attack_stage = int(actor.stat_stages.get("sp_attack", 0))
         defense_stage = int(target.stat_stages.get("sp_defense", 0))
-    var attack_value = core.stat_calculator.calc_effective_stat(attack_base, attack_stage)
-    var defense_value = core.stat_calculator.calc_effective_stat(defense_base, defense_stage)
-    var effectiveness = core.combat_type_service.calc_effectiveness(combat_type_id, target.combat_type_ids)
-    var final_multiplier = core.rule_mod_service.get_final_multiplier(battle_state, actor.unit_instance_id)
-    return core.damage_service.apply_final_mod(
-        core.damage_service.calc_base_damage(
+    var attack_value = core.service("stat_calculator").calc_effective_stat(attack_base, attack_stage)
+    var defense_value = core.service("stat_calculator").calc_effective_stat(defense_base, defense_stage)
+    var effectiveness = core.service("combat_type_service").calc_effectiveness(combat_type_id, target.combat_type_ids)
+    var final_multiplier = core.service("rule_mod_service").get_final_multiplier(battle_state, actor.unit_instance_id)
+    return core.service("damage_service").apply_final_mod(
+        core.service("damage_service").calc_base_damage(
             battle_state.battle_level,
             max(1, power),
             attack_value,

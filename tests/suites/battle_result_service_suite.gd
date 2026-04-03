@@ -26,12 +26,12 @@ func _test_terminate_invalid_battle_reports_error(harness) -> Dictionary:
         return harness.fail_result("SampleBattleFactory init failed")
     var content_index = harness.build_loaded_content_index(sample_factory)
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 501)
-    core.battle_logger.reset()
+    core.service("battle_logger").reset()
 
     var spy = SpyBattleResultService.new()
-    spy.id_factory = core.id_factory
-    spy.battle_logger = core.battle_logger
-    spy.log_event_builder = core.log_event_builder
+    spy.id_factory = core.service("id_factory")
+    spy.battle_logger = core.service("battle_logger")
+    spy.log_event_builder = core.service("log_event_builder")
     spy.terminate_invalid_battle(battle_state, ErrorCodesScript.INVALID_COMMAND_PAYLOAD)
 
     if spy.reported_messages.size() != 1:
@@ -42,7 +42,7 @@ func _test_terminate_invalid_battle_reports_error(harness) -> Dictionary:
         return harness.fail_result("terminate_invalid_battle result semantics changed")
     if battle_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
         return harness.fail_result("terminate_invalid_battle should preserve invalid_code as reason")
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
             return harness.pass_result()
     return harness.fail_result("terminate_invalid_battle should keep system:invalid_battle log semantics")
@@ -57,12 +57,12 @@ func _test_hard_terminate_invalid_state_reports_error(harness) -> Dictionary:
         return harness.fail_result("SampleBattleFactory init failed")
     var content_index = harness.build_loaded_content_index(sample_factory)
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 502)
-    core.battle_logger.reset()
+    core.service("battle_logger").reset()
 
     var spy = SpyBattleResultService.new()
-    spy.id_factory = core.id_factory
-    spy.battle_logger = core.battle_logger
-    spy.log_event_builder = core.log_event_builder
+    spy.id_factory = core.service("id_factory")
+    spy.battle_logger = core.service("battle_logger")
+    spy.log_event_builder = core.service("log_event_builder")
     spy.hard_terminate_invalid_state(battle_state, ErrorCodesScript.INVALID_STATE_CORRUPTION, "turn_loop_controller")
 
     if spy.reported_messages.size() != 1:
@@ -75,7 +75,7 @@ func _test_hard_terminate_invalid_state_reports_error(harness) -> Dictionary:
         return harness.fail_result("hard_terminate_invalid_state result semantics changed")
     if battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
         return harness.fail_result("hard_terminate_invalid_state should preserve invalid_code as reason")
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_STATE_CORRUPTION:
             return harness.pass_result()
     return harness.fail_result("hard_terminate_invalid_state should keep system:invalid_battle log semantics")

@@ -101,6 +101,7 @@
     "content_validator_script_path": "src/battle_core/content/content_snapshot_formal_sukuna_validator.gd",
     "required_suite_paths": [
       "tests/suites/sukuna_setup_loadout_regen_suite.gd",
+      "tests/suites/sukuna_teach_love_band_suite.gd",
       "tests/suites/sukuna_setup_skill_runtime_suite.gd",
       "tests/suites/sukuna_setup_ultimate_window_suite.gd",
       "tests/suites/sukuna_snapshot_suite.gd",
@@ -119,6 +120,7 @@
       "sukuna_default_loadout_contract",
       "sukuna_matchup_regen_runtime_path",
       "sukuna_matchup_bst_includes_max_mp_contract",
+      "sukuna_teach_love_band_table_contract",
       "sukuna_reverse_ritual_heal_path",
       "sukuna_manager_smoke_contract",
       "sukuna_kai_priority_damage_contract",

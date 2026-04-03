@@ -21,6 +21,102 @@
 
 ## 2026-04-03
 
+### 战斗核心最大整顿计划（进行中）
+
+- 目标：
+  - 按“修真实问题 + 一次性收口长期治理项”执行 battle core 最大整顿
+  - 保持 `BattleCoreManager`、public snapshot、event log、replay 契约与角色玩法不变
+  - 分 5 个可提交小任务完成 formal validator、Teach Love 参数化、payload 执行层与 composition 容器重构
+- 范围：
+  - `src/battle_core/content/*`
+  - `src/battle_core/effects/*`
+  - `src/composition/*`
+  - `docs/design/architecture_overview.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+  - `tests/suites/*`
+  - `tests/gates/*`
+- 验收标准：
+  - Gojo / Sukuna / Kashimo 的 formal validator 能在加载期直接拦住关键资源漂移
+  - 宿傩 `Teach Love` 分档改成显式 table-driven 回归，覆盖边界值与运行时回蓝结果
+  - payload 执行层完成 registry + 单 payload handler 改造，未知 payload 继续 fail-fast
+  - composition 改成 descriptor + dictionary-backed 容器，仓库内不再依赖 `core.<service>` 访问
+  - `bash tests/run_with_gate.sh` 最终通过
+
+#### 当前执行结果
+
+- 已完成（任务 A：真问题收口与文档纠偏）：
+  - `docs/design/architecture_overview.md` 第 3 节模块表已补回 `Content`
+  - 已确认两条审查误报只做记录，不引入运行时代码补丁：
+    - `gojo_ao_mark_apply / gojo_aka_mark_apply` 残留实例
+    - `kashimo_kyokyo_nullify` 永久 meta-effect 残留
+- 已完成（任务 B：角色 formal validator 补强）：
+  - `ContentSnapshotFormalCharacterValidatorBase` 已新增统一 helper：
+    - `_require_unit / _require_skill / _require_effect / _require_field / _require_passive_skill`
+    - `_expect_int / _expect_string / _expect_bool / _expect_packed_string_array / _expect_payload_shape`
+  - `Gojo / Sukuna / Kashimo` formal validator 已统一套用 helper 结构
+  - Gojo validator 已补基础角色合约、`苍 / 赫`、双标记、`Mugen` 与领域链路
+  - Sukuna validator 已补基础角色合约、`解 / 捌 / 开`、`灶`、领域链路、`Teach Love` 阈值表与共享火伤 fingerprint
+  - Kashimo validator 已在不改玩法前提下补齐 `雷拳 priority / combat_type` 与 `蓄电 mp_cost / 正电荷绑定`
+  - `extension_validation_contract_suite.gd` 已新增三组 drift bad-case contract
+- 已完成（任务 C：Teach Love 分档参数化）：
+  - 已新增 `tests/suites/sukuna_teach_love_band_suite.gd`
+  - 宿傩回蓝分档现在显式覆盖：
+    - `gap 0 / 20 -> +9`
+    - `gap 21 / 40 -> +8`
+    - `gap 41 / 70 -> +7`
+    - `gap 71 / 110 -> +6`
+    - `gap 111 / 160 -> +5`
+    - `gap 161 -> +0`
+  - 每个 case 同时验证：
+    - 运行时 `mp_regen` rule mod 数值
+    - 初始化预回蓝 + 下一次有效 `turn_start` 后的 `current_mp` 增量
+- 已完成（任务 D：payload 执行层重构）：
+  - `PayloadExecutor` 已收口为：
+    - effect guard / chain depth / dedupe
+    - `EffectPreconditionService` 前置守卫
+    - `PayloadHandlerRegistry` 明确路由
+  - 已删除旧的粗粒度多 payload 壳：
+    - `payload_numeric_handler.gd`
+    - `payload_state_handler.gd`
+  - 当前 payload 路由已改为单 payload handler：
+    - `damage / heal / resource_mod / stat_mod`
+    - `apply_field / apply_effect / remove_effect / rule_mod / forced_replace`
+  - 既有 runtime 业务执行层保留复用：
+    - `payload_damage_runtime_service.gd`
+    - `payload_resource_runtime_service.gd`
+    - `payload_stat_mod_runtime_service.gd`
+  - 已补 payload contract 回归：
+    - `payload_handler_registry_completeness_contract`
+    - `payload_executor_unknown_payload_fail_fast_contract`
+    - `payload_executor_handler_missing_dependency_propagation_contract`
+- 已完成（任务 E：composition 容器重构）：
+  - `BattleCoreServiceSpecs` 已改成 `SERVICE_DESCRIPTORS = [{slot, script}]` 单一描述源
+  - `service_slots()` / `script_by_slot()` 现都由 descriptors 派生，不再维护双份 slot 表面
+  - `BattleCoreContainer` 已改成 dictionary-backed 容器，只保留：
+    - `set_service(slot_name, service)`
+    - `service(slot_name)`
+    - `has_service(slot_name)`
+    - `clear_service(slot_name)`
+    - `configure_dispose_specs(...)`
+    - `dispose()`
+  - `BattleCoreComposer` 已全量迁移到新容器 API：
+    - 实例化使用 `set_service(...)`
+    - wiring / 校验统一使用 `service(...)`
+  - 仓库内 battle core 容器消费者已全部迁移到 `core.service("slot") / container.service("slot")`
+  - `tests/gates/architecture_composition_consistency_gate.py` 已同步改造，当前会额外拦截：
+    - `SERVICE_DESCRIPTORS` 漂移
+    - container API 缺失
+    - composer 退回 `container.get/set(...)`
+    - repo 内残留 `core.<service> / container.<service>` 旧写法
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `tests/check_architecture_constraints.sh` 通过
+- `tests/check_repo_consistency.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
+
 ### 正式角色交付契约收口与 `rule_mod` 热区拆分（已完成）
 
 - 目标：

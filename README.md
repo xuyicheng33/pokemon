@@ -114,7 +114,7 @@ tests/run_with_gate.sh
 - suite 可达性检查通过（`tests/check_suite_reachability.sh`）
 - 无引擎级错误（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
 - 架构约束检查通过（`tests/check_architecture_constraints.sh`）
-  - 当前额外包含 composition `service_slots / container / wiring_specs` 一致性检查
+  - 当前额外包含 composition `SERVICE_DESCRIPTORS / container API / wiring_specs` 一致性检查
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
   - 当前会聚合 `tests/gates/repo_consistency_surface_gate.py`、`tests/gates/repo_consistency_formal_character_gate.py`、`tests/gates/repo_consistency_docs_gate.py`
 
@@ -242,11 +242,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-02）
+## 10. 当前代码规模（2026-04-03）
 
-- `src/**/*.gd`：`10963` 行
-- `tests/**/*.gd`：`14112` 行
-- GDScript 合计：`25075` 行
+- `src/**/*.gd`：`11480` 行
+- `tests/**/*.gd`：`14474` 行
+- GDScript 合计：`25954` 行
 
 > 统计口径：`find src tests -name '*.gd' | xargs wc -l`
 

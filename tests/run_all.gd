@@ -17,6 +17,7 @@ const CombatTypeSuiteScript := preload("res://tests/suites/combat_type_suite.gd"
 const DamagePayloadContractSuiteScript := preload("res://tests/suites/damage_payload_contract_suite.gd")
 const UltimateFieldSuiteScript := preload("res://tests/suites/ultimate_field_suite.gd")
 const AdapterContractSuiteScript := preload("res://tests/suites/adapter_contract_suite.gd")
+const CompositionContainerContractSuiteScript := preload("res://tests/suites/composition_container_contract_suite.gd")
 const TriggerValidationSuiteScript := preload("res://tests/suites/trigger_validation_suite.gd")
 const PowerBonusRuntimeSuiteScript := preload("res://tests/suites/power_bonus_runtime_suite.gd")
 const PersistentStatStageSuiteScript := preload("res://tests/suites/persistent_stat_stage_suite.gd")
@@ -44,6 +45,7 @@ func _init() -> void:
         DamagePayloadContractSuiteScript.new(),
         UltimateFieldSuiteScript.new(),
         AdapterContractSuiteScript.new(),
+        CompositionContainerContractSuiteScript.new(),
         TriggerValidationSuiteScript.new(),
         PowerBonusRuntimeSuiteScript.new(),
         PersistentStatStageSuiteScript.new(),

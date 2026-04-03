@@ -46,7 +46,7 @@ func _test_gojo_content_and_setup_contract(harness) -> Dictionary:
     var gojo_unit = battle_state.get_side("P1").get_active_unit()
     if gojo_unit == null or gojo_unit.regular_skill_ids != ritual_loadout:
         return harness.fail_result("gojo runtime loadout should mirror setup override")
-    var legal_actions = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
+    var legal_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
     if not legal_actions.legal_skill_ids.has("gojo_reverse_ritual") or legal_actions.legal_skill_ids.has("gojo_murasaki"):
         return harness.fail_result("gojo setup override should expose 反转术式 and hide 茈")
     return harness.pass_result()
@@ -76,8 +76,8 @@ func _test_gojo_ao_hit_contract(harness) -> Dictionary:
     content_index.skills["gojo_ao"].accuracy = 100
     var gojo_unit = battle_state.get_side("P1").get_active_unit()
     var target_unit = battle_state.get_side("P2").get_active_unit()
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_ao"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
@@ -97,8 +97,8 @@ func _test_gojo_ao_miss_contract(harness) -> Dictionary:
     content_index.skills["gojo_ao"].accuracy = 0
     var gojo_unit = battle_state.get_side("P1").get_active_unit()
     var target_unit = battle_state.get_side("P2").get_active_unit()
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_ao"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
@@ -106,7 +106,7 @@ func _test_gojo_ao_miss_contract(harness) -> Dictionary:
         return harness.fail_result("苍 miss 时不应给自己 speed +1")
     if _count_effect_instances(target_unit, "gojo_ao_mark") != 0:
         return harness.fail_result("苍 miss 时不应给目标挂上苍标记")
-    if not _has_event(core.battle_logger.event_log, func(ev):
+    if not _has_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.ACTION_MISS and ev.target_instance_id == target_unit.unit_instance_id
     ):
         return harness.fail_result("苍 miss 时应写出 ACTION_MISS")
@@ -120,8 +120,8 @@ func _test_gojo_aka_hit_contract(harness) -> Dictionary:
     var battle_state = state_payload["battle_state"]
     content_index.skills["gojo_aka"].accuracy = 100
     var target_unit = battle_state.get_side("P2").get_active_unit()
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_aka"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
@@ -140,8 +140,8 @@ func _test_gojo_aka_miss_contract(harness) -> Dictionary:
     var battle_state = state_payload["battle_state"]
     content_index.skills["gojo_aka"].accuracy = 0
     var target_unit = battle_state.get_side("P2").get_active_unit()
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_aka"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
@@ -149,7 +149,7 @@ func _test_gojo_aka_miss_contract(harness) -> Dictionary:
         return harness.fail_result("赫 miss 时不应给目标 speed -1")
     if _count_effect_instances(target_unit, "gojo_aka_mark") != 0:
         return harness.fail_result("赫 miss 时不应给目标挂上赫标记")
-    if not _has_event(core.battle_logger.event_log, func(ev):
+    if not _has_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.ACTION_MISS and ev.target_instance_id == target_unit.unit_instance_id
     ):
         return harness.fail_result("赫 miss 时应写出 ACTION_MISS")
@@ -165,7 +165,7 @@ func _test_gojo_marker_switch_lifecycle_contract(harness) -> Dictionary:
     var gojo_unit = battle_state.get_side("P1").get_active_unit()
     var target_unit = battle_state.get_side("P2").get_active_unit()
     _apply_gojo_double_marks(core, content_index, battle_state, target_unit, gojo_unit.unit_instance_id, gojo_unit.base_speed)
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_wait_command(core, 1, "P1", "P1-A"),
         _build_switch_command(core, 1, "P2", "P2-A", "P2-B"),
     ])
@@ -180,7 +180,7 @@ func _test_gojo_marker_switch_lifecycle_contract(harness) -> Dictionary:
     var gojo_unit_2 = battle_state_2.get_side("P1").get_active_unit()
     var target_unit_2 = battle_state_2.get_side("P2").get_active_unit()
     _apply_gojo_double_marks(core_2, content_index_2, battle_state_2, target_unit_2, gojo_unit_2.unit_instance_id, gojo_unit_2.base_speed)
-    core_2.turn_loop_controller.run_turn(battle_state_2, content_index_2, [
+    core_2.service("turn_loop_controller").run_turn(battle_state_2, content_index_2, [
         _build_switch_command(core_2, 1, "P1", "P1-A", "P1-B"),
         _build_wait_command(core_2, 1, "P2", "P2-A"),
     ])
@@ -196,18 +196,18 @@ func _test_gojo_marker_refresh_contract(harness) -> Dictionary:
     var battle_state = state_payload["battle_state"]
     content_index.skills["gojo_ao"].accuracy = 100
     var target_unit = battle_state.get_side("P2").get_active_unit()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 1, "P1", "P1-A", "gojo_ao"),
         _build_wait_command(core, 1, "P2", "P2-A"),
     ])
     var first_mark = _find_effect_instance(target_unit, "gojo_ao_mark")
     if first_mark == null or first_mark.remaining != 2:
         return harness.fail_result("苍标记首回合施加后应在 turn_end 后剩余 2")
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_wait_command(core, 2, "P1", "P1-A"),
         _build_wait_command(core, 2, "P2", "P2-A"),
     ])
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 3, "P1", "P1-A", "gojo_ao"),
         _build_wait_command(core, 3, "P2", "P2-A"),
     ])

@@ -56,20 +56,20 @@ func _run_charge_loop() -> Dictionary:
 	if kashimo == null or target == null:
 		return {"error": "missing active units for charge loop case"}
 
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_skill_command(core, 1, "P1", "P1-A", "kashimo_raiken"),
 		_support.build_manual_wait_command(core, 1, "P2", "P2-C"),
 	])
 	var turn_one_negative_stacks := _support.count_effect_instances(target, "kashimo_negative_charge_mark")
 
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_skill_command(core, 2, "P1", "P1-A", "kashimo_charge"),
 		_support.build_manual_wait_command(core, 2, "P2", "P2-C"),
 	])
 	var turn_two_positive_stacks := _support.count_effect_instances(kashimo, "kashimo_positive_charge_mark")
 
-	core.battle_logger.reset()
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_skill_command(core, 3, "P1", "P1-A", "kashimo_feedback_strike"),
 		_support.build_manual_wait_command(core, 3, "P2", "P2-C"),
 	])
@@ -77,11 +77,11 @@ func _run_charge_loop() -> Dictionary:
 		"target_public_id": String(target.public_id),
 		"turn1_negative_stacks": turn_one_negative_stacks,
 		"turn2_positive_stacks": turn_two_positive_stacks,
-		"turn3_damage": _harness.extract_damage_from_log(core.battle_logger.event_log, "P1-A"),
+		"turn3_damage": _harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A"),
 		"turn3_target_negative_stacks": _support.count_effect_instances(target, "kashimo_negative_charge_mark"),
 		"turn3_self_positive_stacks": _support.count_effect_instances(kashimo, "kashimo_positive_charge_mark"),
 		"turn3_target_hp": int(target.current_hp),
-		"log_size": core.battle_logger.event_log.size(),
+		"log_size": core.service("battle_logger").event_log.size(),
 	}
 
 func _run_amber_switch_retention() -> Dictionary:
@@ -100,25 +100,25 @@ func _run_amber_switch_retention() -> Dictionary:
 	kashimo.current_mp = kashimo.max_mp
 	kashimo.ultimate_points = kashimo.ultimate_points_cap
 
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_ultimate_command(core, 1, "P1", "P1-A", "kashimo_phantom_beast_amber"),
 		_support.build_manual_wait_command(core, 1, "P2", _active_public_id(battle_state, "P2")),
 	])
 	var hp_after_cast := int(kashimo.current_hp)
 
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_switch_command(core, 2, "P1", "P1-A", "P1-B"),
 		_support.build_manual_wait_command(core, 2, "P2", _active_public_id(battle_state, "P2")),
 	])
 	var hp_after_switch_out := int(kashimo.current_hp)
 
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_switch_command(core, 3, "P1", "P1-B", "P1-A"),
 		_support.build_manual_wait_command(core, 3, "P2", _active_public_id(battle_state, "P2")),
 	])
 	var hp_after_reenter_same_turn := int(kashimo.current_hp)
 
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_wait_command(core, 4, "P1", "P1-A"),
 		_support.build_manual_wait_command(core, 4, "P2", _active_public_id(battle_state, "P2")),
 	])
@@ -150,12 +150,12 @@ func _run_kyokyo_vs_domain() -> Dictionary:
 	if baseline_target == null or baseline_actor == null:
 		return {"error": "missing active units for kyokyo baseline case"}
 	baseline_state.field_state = _build_override_field_state("gojo_unlimited_void_field", baseline_actor.unit_instance_id)
-	baseline_core.battle_logger.reset()
-	baseline_core.turn_loop_controller.run_turn(baseline_state, baseline_content, [
+	baseline_core.service("battle_logger").reset()
+	baseline_core.service("turn_loop_controller").run_turn(baseline_state, baseline_content, [
 		_support.build_manual_wait_command(baseline_core, 1, "P1", "P1-A"),
 		_support.build_manual_skill_command(baseline_core, 1, "P2", "P2-A", "test_kashimo_zero_accuracy_domain_hit"),
 	])
-	var baseline_damage := _harness.extract_damage_from_log(baseline_core.battle_logger.event_log, "P2-A")
+	var baseline_damage := _harness.extract_damage_from_log(baseline_core.service("battle_logger").event_log, "P2-A")
 
 	var kyokyo_loadout := {0: PackedStringArray(["kashimo_raiken", "kashimo_charge", "kashimo_kyokyo_katsura"])}
 	var protected_payload = _build_domain_case_state(sample_factory, 6104, kyokyo_loadout)
@@ -169,17 +169,17 @@ func _run_kyokyo_vs_domain() -> Dictionary:
 	if protected_target == null or protected_actor == null:
 		return {"error": "missing active units for kyokyo protected case"}
 	protected_state.field_state = _build_override_field_state("gojo_unlimited_void_field", protected_actor.unit_instance_id)
-	protected_core.battle_logger.reset()
-	protected_core.turn_loop_controller.run_turn(protected_state, protected_content, [
+	protected_core.service("battle_logger").reset()
+	protected_core.service("turn_loop_controller").run_turn(protected_state, protected_content, [
 		_support.build_manual_skill_command(protected_core, 1, "P1", "P1-A", "kashimo_kyokyo_katsura"),
 		_support.build_manual_skill_command(protected_core, 1, "P2", "P2-A", "test_kashimo_zero_accuracy_domain_hit"),
 	])
 	return {
 		"field_id": String(protected_state.field_state.field_def_id) if protected_state.field_state != null else null,
 		"baseline_damage": baseline_damage,
-		"protected_damage": _harness.extract_damage_from_log(protected_core.battle_logger.event_log, "P2-A"),
+		"protected_damage": _harness.extract_damage_from_log(protected_core.service("battle_logger").event_log, "P2-A"),
 		"nullify_rule_mod_present": _has_rule_mod(protected_target, "nullify_field_accuracy"),
-		"log_size": protected_core.battle_logger.event_log.size(),
+		"log_size": protected_core.service("battle_logger").event_log.size(),
 	}
 
 func _build_domain_case_state(sample_factory, seed: int, p1_regular_skill_overrides: Dictionary = {}) -> Dictionary:

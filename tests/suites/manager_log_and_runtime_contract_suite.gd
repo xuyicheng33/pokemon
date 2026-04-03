@@ -226,8 +226,8 @@ func _test_manager_create_session_initializer_dependency_guard_contract(harness)
 		return harness.fail_result("compose_manager returned null")
 	manager.container_factory = func ():
 		var broken_core = BattleCoreComposerScript.new().compose()
-		if broken_core != null and broken_core.battle_initializer != null:
-			broken_core.battle_initializer.faint_resolver = null
+		if broken_core != null and broken_core.service("battle_initializer") != null:
+			broken_core.service("battle_initializer").faint_resolver = null
 		return broken_core
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
@@ -264,9 +264,9 @@ func _test_manager_create_session_damage_runtime_dependency_guard_contract(harne
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
 	var session = manager._sessions.get(session_id, null)
-	if session == null or session.container == null or session.container.payload_damage_runtime_service == null:
+	if session == null or session.container == null or session.container.service("payload_damage_runtime_service") == null:
 		return harness.fail_result("manager damage runtime dependency guard should expose internal session")
-	session.container.payload_damage_runtime_service.faint_resolver = null
+	session.container.service("payload_damage_runtime_service").faint_resolver = null
 	var failure = _helper.expect_failure_code(
 		manager.run_turn(session_id, []),
 		"run_turn",

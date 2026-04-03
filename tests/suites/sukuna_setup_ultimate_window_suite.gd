@@ -50,7 +50,7 @@ func _test_sukuna_ritual_loadout_first_ultimate_window_contract(harness) -> Dict
 		battle_state,
 		func(turn_index: int):
 			if turn_index <= 3:
-				return core.command_builder.build_command({
+				return core.service("command_builder").build_command({
 					"turn_index": turn_index,
 					"command_type": CommandTypesScript.SKILL,
 					"command_source": "manual",

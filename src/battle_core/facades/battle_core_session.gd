@@ -64,7 +64,7 @@ func _is_ready() -> bool:
 func _get_container_service(service_name: String):
     if container == null:
         return null
-    return container.get(service_name)
+    return container.service(service_name)
 
 func _ok(data) -> Dictionary:
     return {

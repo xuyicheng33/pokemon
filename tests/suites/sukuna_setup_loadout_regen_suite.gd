@@ -67,11 +67,11 @@ func _test_sukuna_matchup_regen_runtime_path(harness) -> Dictionary:
 	if int(sukuna_unit.current_mp) != expected_current_mp:
 		return harness.fail_result("sukuna initial current_mp should reflect base regen plus matchup bonus: expected=%d actual=%d" % [expected_current_mp, int(sukuna_unit.current_mp)])
 	var before_turn_mp: int = sukuna_unit.current_mp
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_wait_command(core, 1, "P1", "P1-A"),
 		_support.build_manual_wait_command(core, 1, "P2", "P2-A"),
 	])
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_wait_command(core, 2, "P1", "P1-A"),
 		_support.build_manual_wait_command(core, 2, "P2", "P2-A"),
 	])

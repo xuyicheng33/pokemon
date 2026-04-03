@@ -259,6 +259,39 @@
 - 这些 helper 不再允许由 owner service 内部 `new()`，也不再允许 `_sync_*dependencies()` 这种手工灌依赖链继续存在。
 - 原因：
 
+### 63. 已证伪的“payload/领域残留实例”问题不进入代码修复面（2026-04-03）
+
+- 本轮审查里已确认不成立的两条问题，统一只记录，不写运行时代码补丁：
+  - `gojo_ao_mark_apply / gojo_aka_mark_apply` 的触发类 effect instance 残留
+  - `kashimo_kyokyo_nullify` 的永久 meta-effect 残留
+- 原因：
+  - 这两类实例当前只是 trigger 路由或长期规则承载物，不构成语义错误，也没有现成回归证明它们导致玩法、快照或生命周期异常。
+  - 若为它们补“清残留”逻辑，反而会在 effect 生命周期里引入新的特殊分支，增加扩角期维护成本。
+- 当前要求：
+  - `.audit/` 结论不直接驱动代码改动。
+  - 只有当 `docs/records/*` 与自动化回归共同证明存在真实运行时问题时，才进入修复面。
+
+### 64. Payload 执行层正式改为“precondition + registry + 单 payload handler”模型（2026-04-03）
+
+- `PayloadExecutor` 当前只保留两类职责：
+  - effect 级 guard：chain depth / dedupe / invalid dependency hard-stop
+  - 调用 `EffectPreconditionService` 与 `PayloadHandlerRegistry` 编排 payload 执行
+- 当前正式 payload 路由固定为“一种 payload script 对应一个 handler”：
+  - `DamagePayload -> PayloadDamageHandler`
+  - `HealPayload -> PayloadHealHandler`
+  - `ResourceModPayload -> PayloadResourceModHandler`
+  - `StatModPayload -> PayloadStatModHandler`
+  - `ApplyFieldPayload -> PayloadApplyFieldHandler`
+  - `ApplyEffectPayload -> PayloadApplyEffectHandler`
+  - `RemoveEffectPayload -> PayloadRemoveEffectHandler`
+  - `RuleModPayload -> PayloadRuleModHandler`
+  - `ForcedReplacePayload -> PayloadForcedReplaceHandler`
+- `payload_damage_runtime_service / payload_resource_runtime_service / payload_stat_mod_runtime_service` 继续保留为真正的业务执行层，不借重构重写稳定数值逻辑。
+- `payload_numeric_handler.gd` 与 `payload_state_handler.gd` 当前已退出正式运行时。
+- 原因：
+  - 旧的“顺序试探两个大 handler”模型会把 payload 路由与业务语义耦在一起；一旦 payload 类型继续增长，单类复杂度和依赖面都会继续上升。
+  - 先把 payload 分发改成注册表声明，再把具体语义拆回单 payload handler，后续扩新 payload 时只需要新增一个 handler 与一条 registry 接线，不需要继续往大类里塞条件分支。
+
 ### 29. 扩角前门禁正式收紧到“warning 清零 + 主流程启动 smoke”（2026-04-02）
 
 - `tests/run_with_gate.sh` 当前除业务断言、suite 可达性、架构与仓库一致性外，还必须额外满足：
@@ -301,7 +334,7 @@
 ### 31. Effects/Lifecycle 受控运行时环只允许保留在 composition 属性注入层（2026-03-31）
 
 - 当前已知受控闭环之一：
-  - `trigger_batch_runner -> payload_executor -> payload_numeric_handler -> faint_resolver -> replacement_service -> trigger_batch_runner`
+  - `trigger_batch_runner -> payload_executor -> payload_handler_registry -> payload_damage_handler -> payload_damage_runtime_service -> faint_resolver -> replacement_service -> trigger_batch_runner`
 - 该闭环当前允许保留，前提是：
   - 只通过 composition root 统一属性注入接线
   - 运行时继续受 `invalid_battle` fail-fast 与 chain depth 守卫保护
@@ -664,18 +697,31 @@
   - 角色 validator 的增长模式和正式角色数量强相关；如果第 4、5 个角色继续从旧文件复制 helper，维护成本会按角色数线性抬升。
   - 先把“公共取 payload / 公共数组断言”收成共享基类，后续角色只需要新增自身机制校验，能把改动面保持在角色差异层。
 
-### 61. Composition 装配当前固定为“单一 service slot 列表 + 静态一致性 gate”双保险（2026-04-02）
+### 61. Composition 装配当前固定为“descriptor 单一真相 + dictionary 容器 API + 静态 gate”三件套（2026-04-03）
 
-- `BattleCoreServiceSpecs` 当前不再维护一份重复的 `SERVICE_SPECS` 全量数组；统一改为：
-  - 一份 `SERVICE_SLOTS`
-  - 一份 `SCRIPT_BY_SLOT`
-- `tests/check_architecture_constraints.sh` 当前追加 `architecture_composition_consistency_gate.py`，固定校验：
-  - `service_slots / script map / container surface` 三处一致
+- `BattleCoreServiceSpecs` 当前正式收口为：
+  - `SERVICE_DESCRIPTORS = [{slot, script}]`
+  - `service_slots()` 与 `script_by_slot()` 只从 descriptors 派生
+- `BattleCoreContainer` 当前正式改成 dictionary-backed 容器，不再声明每个 slot 的显式属性。
+- 当前唯一允许的容器 API 固定为：
+  - `set_service(slot_name, service)`
+  - `service(slot_name)`
+  - `has_service(slot_name)`
+  - `clear_service(slot_name)`
+  - `configure_dispose_specs(...)`
+  - `dispose()`
+- 仓库内 battle core 容器消费者当前统一迁移到：
+  - `core.service("slot")`
+  - `container.service("slot")`
+- `tests/check_architecture_constraints.sh` 当前继续通过 `architecture_composition_consistency_gate.py` 固定校验：
+  - `SERVICE_DESCRIPTORS` 重复与漂移
   - `WIRING_SPECS / RESET_SPECS` 的 owner/source 必须都是已声明服务槽位
-  - 相同 `owner + dependency` 不得重复接线
+  - container API 是否完整
+  - composer 是否继续使用 `container.get/set(...)`
+  - repo 内是否残留 `core.<service> / container.<service>` 旧访问
 - 原因：
-  - composition 真正的维护风险不是“现在不能跑”，而是新增服务时需要手工同时改三四处，长期很容易出现漏接、残留旧槽位或 copy-paste 重复接线。
-  - 先把 slot 列表收成单一真相，再补静态 gate，能把扩新角色或新机制时的装配风险从“靠人记”降成“门禁自动拦”。
+  - 旧的 `SERVICE_SLOTS + SCRIPT_BY_SLOT + BattleCoreContainer 显式 var surface` 会让新增服务时同时改三四处，长期必然继续漂移。
+  - 把描述源压成 descriptors、把容器表面压成统一 API，才能把扩新机制时的装配成本收回到“新增 descriptor + wiring + gate 自动兜底”。
 
 ### 62. RuleMod 写入链的 owner 作用域逻辑下沉到独立 helper；field break 生命周期批次必须尊重显式 chain_context（2026-04-02）
 
@@ -691,3 +737,28 @@
 - 原因：
   - `rule_mod_write_service.gd` 已经接近架构闸门的热点预警线；继续把 owner 校验、owner 落点和 stacking 规则全堆在一处，不利于下一个角色继续扩带 field/unit 混合 rule_mod。
   - field 生命周期链若忽略显式传入的 `chain_context`，以后新增“由旧 field 生命周期派生出新 field / 新 effect”时，很容易把归因、链深和去重键落回错误的系统上下文。
+
+### 63. Payload 执行层当前固定为“前置守卫 + registry 分发 + 单 payload handler”模型（2026-04-03）
+
+- `PayloadExecutor` 当前只保留：
+  - effect guard / chain depth / dedupe
+  - `EffectPreconditionService` 前置守卫
+  - `PayloadHandlerRegistry` 显式路由
+- payload 前置守卫当前统一下沉到 `EffectPreconditionService`：
+  - `required_target_effects`
+  - `required_target_same_owner`
+  - `required_incoming_command_types`
+  - `required_incoming_combat_type_ids`
+- payload 路由当前正式改成“一种 payload script 对应一个 handler”：
+  - `damage / heal / resource_mod / stat_mod`
+  - `apply_field / apply_effect / remove_effect / rule_mod / forced_replace`
+- 既有稳定 runtime 业务执行层继续保留复用：
+  - `payload_damage_runtime_service`
+  - `payload_resource_runtime_service`
+  - `payload_stat_mod_runtime_service`
+- `payload_numeric_handler.gd` 与 `payload_state_handler.gd` 当前已删除，不再保留兼容壳。
+- `PayloadExecutor.execute_payload()` 的未知 payload 语义继续固定为 fail-fast：
+  - 未注册即 `invalid_effect_definition`
+- 原因：
+  - 旧的按顺序试探 handler 会把“前置守卫 / 路由 / 执行”揉在一起，新增 payload 类型时改动面会持续膨胀。
+  - 先把前置守卫独立、再把路由显式注册，后续新增 payload 只需要补一个 handler 与 wiring，不必继续改粗粒度大类。

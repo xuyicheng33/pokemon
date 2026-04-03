@@ -47,17 +47,17 @@ func _test_on_matchup_changed_dedup_path(harness) -> Dictionary:
 	content_index.units["sample_mossaur"].passive_skill_id = passive.id
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 37)
 	var pre_turn_matchup_events: int = 0
-	for ev in core.battle_logger.event_log:
+	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD and ev.trigger_name == "on_matchup_changed" and str(ev.source_instance_id).begins_with("passive_skill:"):
 			pre_turn_matchup_events += 1
 	if pre_turn_matchup_events != 2:
 		return harness.fail_result("initial matchup_changed should trigger exactly once for each active unit")
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
-		core.command_builder.build_command({"turn_index": 1, "command_type": CommandTypesScript.SWITCH, "command_source": "manual", "side_id": "P1", "actor_public_id": "P1-A", "target_public_id": "P1-B"}),
-		core.command_builder.build_command({"turn_index": 1, "command_type": CommandTypesScript.WAIT, "command_source": "manual", "side_id": "P2", "actor_public_id": "P2-A"}),
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		core.service("command_builder").build_command({"turn_index": 1, "command_type": CommandTypesScript.SWITCH, "command_source": "manual", "side_id": "P1", "actor_public_id": "P1-A", "target_public_id": "P1-B"}),
+		core.service("command_builder").build_command({"turn_index": 1, "command_type": CommandTypesScript.WAIT, "command_source": "manual", "side_id": "P2", "actor_public_id": "P2-A"}),
 	])
 	var total_matchup_events: int = 0
-	for ev in core.battle_logger.event_log:
+	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD and ev.trigger_name == "on_matchup_changed" and str(ev.source_instance_id).begins_with("passive_skill:"):
 			total_matchup_events += 1
 	if total_matchup_events != 4:
@@ -118,7 +118,7 @@ func _test_battle_init_replacement_retriggers_matchup_changed(harness) -> Dictio
 	if active_unit == null or active_unit.public_id != "P1-B":
 		return harness.fail_result("battle_init faint window should replace P1 active with bench unit before selection")
 	var matchup_events: int = 0
-	for ev in core.battle_logger.event_log:
+	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD and ev.trigger_name == "on_matchup_changed" and str(ev.source_instance_id).begins_with("passive_skill:"):
 			matchup_events += 1
 	if matchup_events != 4:
@@ -178,8 +178,8 @@ func _test_init_chain_order(harness) -> Dictionary:
 	var enter_effect_idx := -1
 	var battle_init_idx := -1
 	var init_effect_idx := -1
-	for i in range(core.battle_logger.event_log.size()):
-		var ev = core.battle_logger.event_log[i]
+	for i in range(core.service("battle_logger").event_log.size()):
+		var ev = core.service("battle_logger").event_log[i]
 		if enter_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("passive_skill:"):
 			enter_effect_idx = i
 		if battle_init_idx == -1 and ev.event_type == EventTypesScript.SYSTEM_BATTLE_INIT:

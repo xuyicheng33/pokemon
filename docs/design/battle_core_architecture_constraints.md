@@ -29,8 +29,20 @@
 
 - 当前核心允许少量**受控运行时环**，但只允许存在于 composition root 的属性注入图里，不能回退成构造器互相依赖或局部 `new()`。
 - 当前已知受控闭环之一：
-  - `trigger_batch_runner -> payload_executor -> payload_numeric_handler -> faint_resolver -> replacement_service -> trigger_batch_runner`
+  - `trigger_batch_runner -> payload_executor -> payload_handler_registry -> payload_damage_handler -> payload_damage_runtime_service -> faint_resolver -> replacement_service -> trigger_batch_runner`
 - 该闭环当前依赖 fail-fast 守卫与 chain depth 保护保持可控；后续若要重构装配方式，必须先改文档与回归，不能直接改成构造器注入。
+
+Composition 补充约束：
+
+- `BattleCoreServiceSpecs` 只允许维护一份 `SERVICE_DESCRIPTORS` 单一描述源，不再分裂维护 `SERVICE_SLOTS / SCRIPT_BY_SLOT` 双清单。
+- `BattleCoreContainer` 只允许暴露：
+  - `set_service`
+  - `service`
+  - `has_service`
+  - `clear_service`
+  - `configure_dispose_specs`
+  - `dispose`
+- 仓库内对 battle core 容器的服务读取统一使用 `core.service("slot")`；不再依赖 `core.<service>` 显式 slot 属性面。
 
 ## 3. Rule Mod 约束
 

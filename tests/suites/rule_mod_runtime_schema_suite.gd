@@ -61,7 +61,7 @@ func _assert_custom_stacking_schema_failure(harness, write_service, expected_mes
 	payload.decrement_on = "turn_end"
 	payload.stacking = "replace"
 	payload.priority = 1
-	write_service.id_factory = core.id_factory
+	write_service.id_factory = core.service("id_factory")
 	var created = write_service.create_instance(
 		payload,
 		{"scope": "unit", "id": p1_active.unit_instance_id},

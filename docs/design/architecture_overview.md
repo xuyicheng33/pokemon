@@ -39,13 +39,14 @@
 |模块|目录|职责|
 |---|---|---|
 |Runtime|`battle_core/runtime`|`BattleState`、`SideState`、`UnitState` 等运行态对象|
+|Content|`battle_core/content`|内容 `Resource` 类型、快照加载校验与正式角色 content validator|
 |Contracts|`battle_core/contracts`|`QueuedAction`、`ActionResult`、`LogEvent` 等跨模块契约|
 |Commands|`battle_core/commands`|选择、构建、验证指令|
 |Turn|`battle_core/turn`|初始化、回合推进、行动排序|
 |Actions|`battle_core/actions`|执行单次行动与目标锁定|
 |Math|`battle_core/math`|纯计算服务|
 |Lifecycle|`battle_core/lifecycle`|倒下、离场、补位|
-|Effects|`battle_core/effects`|触发、排序、payload 执行、rule mod 接入；`payload_handlers/` 负责按 payload 家族拆分运行时处理|
+|Effects|`battle_core/effects`|触发、排序、effect 前置守卫、payload registry 分发与 rule mod 接入；`payload_handlers/` 负责单 payload handler 与子 runtime service|
 |Passives|`battle_core/passives`|被动技能、被动持有物、field 作为 trigger source 接入|
 |Logging|`battle_core/logging`|日志构造、写入、回放|
 |Facades|`battle_core/facades`|外围稳定入口、公开快照与事件日志公开快照构建|
@@ -73,8 +74,8 @@
 - `shared` 不依赖 `battle_core`。
 - `math` 不写 `BattleState`。
 - `logging` 不改写运行态，只观察并记录。
-- `effects` 只能通过 `PayloadExecutor`、`payload_handlers/*` 与实例服务改写持续效果/field/rule mod。
-- `PayloadExecutor` 只负责 effect 级前置守卫、payload 分派与 handler 编排；具体 payload 语义下沉到 `payload_handlers/` 与其子 runtime service。
+- `effects` 只能通过 `EffectPreconditionService`、`PayloadExecutor`、`PayloadHandlerRegistry`、`payload_handlers/*` 与实例服务改写持续效果/field/rule mod。
+- `PayloadExecutor` 只负责 effect 级 guard、chain depth / dedupe 与调度 registry；具体 payload 语义下沉到单 payload handler 与其子 runtime service。
 - `adapters` 只通过公开 contract 访问核心，不直接拼内部细节。
 - `composition` 负责 new 依赖，但不做业务判断。
 
@@ -90,7 +91,11 @@
   - 挂载 `BattleSandboxRunner`。
 - `src/composition/battle_core_composer.gd`
   - 负责创建 RNG、ID、commands、turn、effects、logging 等服务对象。
-  - 返回一个明确的依赖容器。
+  - 通过 `BattleCoreServiceSpecs.SERVICE_DESCRIPTORS` 驱动装配。
+  - 返回一个 dictionary-backed 的 `BattleCoreContainer`。
+- `src/composition/battle_core_container.gd`
+  - 不再暴露显式 slot 属性。
+  - 统一通过 `set_service(...) / service(...) / has_service(...) / clear_service(...)` 管理内部服务引用。
 
 当前不采用 autoload 主导架构，避免原型期过早引入全局状态污染。
 

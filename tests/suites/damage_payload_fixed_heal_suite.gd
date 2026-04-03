@@ -66,9 +66,9 @@ func _test_fixed_type_resolution(harness) -> Dictionary:
 
     var battle_setup = sample_factory.build_sample_setup()
     var battle_state = _build_initialized_battle(core, content_index, battle_setup, 610)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -76,7 +76,7 @@ func _test_fixed_type_resolution(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -85,7 +85,7 @@ func _test_fixed_type_resolution(harness) -> Dictionary:
             "skill_id": harmless_skill.id,
         }),
     ])
-    var effect_damage_event = _find_effect_damage_event(core.battle_logger.event_log)
+    var effect_damage_event = _find_effect_damage_event(core.service("battle_logger").event_log)
     if effect_damage_event == null or effect_damage_event.value_changes.is_empty():
         return harness.fail_result("missing fixed damage event")
     if abs(int(effect_damage_event.value_changes[0].delta)) != 10:
@@ -147,9 +147,9 @@ func _test_heal_percent_resolution(harness) -> Dictionary:
     var actor = battle_state.get_side("P1").get_active_unit()
     actor.current_hp = max(1, int(floor(float(actor.max_hp) / 2.0)))
     var expected_gain = min(actor.max_hp - actor.current_hp, max(1, int(floor(float(actor.max_hp) * 0.25))))
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -157,7 +157,7 @@ func _test_heal_percent_resolution(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": heal_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -166,7 +166,7 @@ func _test_heal_percent_resolution(harness) -> Dictionary:
             "skill_id": harmless_skill.id,
         }),
     ])
-    for log_event in core.battle_logger.event_log:
+    for log_event in core.service("battle_logger").event_log:
         if log_event.event_type == EventTypesScript.EFFECT_HEAL and not log_event.value_changes.is_empty():
             if int(log_event.value_changes[0].delta) != expected_gain:
                 return harness.fail_result("heal percent delta mismatch")

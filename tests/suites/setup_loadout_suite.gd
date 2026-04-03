@@ -99,12 +99,12 @@ func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
         return harness.fail_result("P1 runtime regular_skill_ids should use setup override")
     if p2_active.regular_skill_ids != content_index.units["sample_tidekit"].skill_ids:
         return harness.fail_result("units without override should keep default loadout")
-    var legal_action_set = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
+    var legal_action_set = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
     if not legal_action_set.legal_skill_ids.has("sample_whiff"):
         return harness.fail_result("override loadout should expose swapped-in skill")
     if legal_action_set.legal_skill_ids.has("sample_pyro_blast"):
         return harness.fail_result("override loadout should hide swapped-out default skill")
-    var public_snapshot = core.public_snapshot_builder.build_public_snapshot(battle_state, content_index)
+    var public_snapshot = core.service("public_snapshot_builder").build_public_snapshot(battle_state, content_index)
     var prebattle_teams: Array = public_snapshot.get("prebattle_public_teams", [])
     if prebattle_teams.size() != 2:
         return harness.fail_result("prebattle_public_teams should expose both sides")
@@ -116,8 +116,8 @@ func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
         return harness.fail_result("public snapshot should expose battle-specific equipped skills")
     if p2_units[0].get("skill_ids", PackedStringArray()) != content_index.units["sample_tidekit"].skill_ids:
         return harness.fail_result("public snapshot should keep default skills for slots without override")
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -125,7 +125,7 @@ func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": "sample_field_call",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",

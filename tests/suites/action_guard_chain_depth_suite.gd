@@ -43,7 +43,7 @@ func _test_invalid_chain_depth_max_guard(harness) -> Dictionary:
 	chain_context.command_type = CommandTypesScript.SKILL
 	chain_context.chain_depth = battle_state.max_chain_depth
 	battle_state.chain_context = chain_context
-	var effect_events = core.trigger_dispatcher.collect_events(
+	var effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
 		content_index,
@@ -56,9 +56,9 @@ func _test_invalid_chain_depth_max_guard(harness) -> Dictionary:
 	)
 	if effect_events.is_empty():
 		return harness.fail_result("failed to build depth guard effect event")
-	core.payload_executor.execute_effect_event(effect_events[0], battle_state, content_index)
-	if core.payload_executor.last_invalid_battle_code != ErrorCodesScript.INVALID_CHAIN_DEPTH:
-		return harness.fail_result("expected invalid_chain_depth on max depth guard, got %s" % str(core.payload_executor.last_invalid_battle_code))
+	core.service("payload_executor").execute_effect_event(effect_events[0], battle_state, content_index)
+	if core.service("payload_executor").last_invalid_battle_code != ErrorCodesScript.INVALID_CHAIN_DEPTH:
+		return harness.fail_result("expected invalid_chain_depth on max depth guard, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
 	return harness.pass_result()
 
 func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
@@ -85,7 +85,7 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 	var chain_context = _support.build_chain_context("test_dedupe_chain", p1_active.unit_instance_id, p2_active.unit_instance_id)
 	chain_context.step_counter = 7
 	battle_state.chain_context = chain_context
-	var effect_events = core.trigger_dispatcher.collect_events(
+	var effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
 		content_index,
@@ -98,11 +98,11 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 	)
 	if effect_events.is_empty():
 		return harness.fail_result("failed to build dedupe guard effect event")
-	core.payload_executor.execute_effect_event(effect_events[0], battle_state, content_index)
-	if core.payload_executor.last_invalid_battle_code != null:
+	core.service("payload_executor").execute_effect_event(effect_events[0], battle_state, content_index)
+	if core.service("payload_executor").last_invalid_battle_code != null:
 		return harness.fail_result("first dedupe event should pass")
 	battle_state.chain_context.step_counter = 7
-	var retriggered_effect_events = core.trigger_dispatcher.collect_events(
+	var retriggered_effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
 		content_index,
@@ -117,9 +117,9 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 		return harness.fail_result("failed to rebuild dedupe guard effect event")
 	if retriggered_effect_events[0].event_id == effect_events[0].event_id:
 		return harness.fail_result("dedupe guard regression needs a fresh effect_event id")
-	core.payload_executor.execute_effect_event(retriggered_effect_events[0], battle_state, content_index)
-	if core.payload_executor.last_invalid_battle_code != ErrorCodesScript.INVALID_CHAIN_DEPTH:
-		return harness.fail_result("expected invalid_chain_depth on dedupe guard, got %s" % str(core.payload_executor.last_invalid_battle_code))
+	core.service("payload_executor").execute_effect_event(retriggered_effect_events[0], battle_state, content_index)
+	if core.service("payload_executor").last_invalid_battle_code != ErrorCodesScript.INVALID_CHAIN_DEPTH:
+		return harness.fail_result("expected invalid_chain_depth on dedupe guard, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
 	return harness.pass_result()
 
 func _test_stacked_effect_instances_same_source_contract(harness) -> Dictionary:
@@ -141,10 +141,10 @@ func _test_stacked_effect_instances_same_source_contract(harness) -> Dictionary:
 	content_index.register_resource(stack_effect)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
-	core.effect_instance_service.create_instance(stack_effect, actor.unit_instance_id, battle_state, "same_stack_source", 1, actor.base_speed)
-	core.effect_instance_service.create_instance(stack_effect, actor.unit_instance_id, battle_state, "same_stack_source", 1, actor.base_speed)
+	core.service("effect_instance_service").create_instance(stack_effect, actor.unit_instance_id, battle_state, "same_stack_source", 1, actor.base_speed)
+	core.service("effect_instance_service").create_instance(stack_effect, actor.unit_instance_id, battle_state, "same_stack_source", 1, actor.base_speed)
 	battle_state.chain_context = _support.build_chain_context("test_same_source_stack_chain", actor.unit_instance_id, target.unit_instance_id)
-	var effect_events = core.effect_instance_dispatcher.collect_trigger_events(
+	var effect_events = core.service("effect_instance_dispatcher").collect_trigger_events(
 		"on_cast",
 		battle_state,
 		content_index,
@@ -153,10 +153,10 @@ func _test_stacked_effect_instances_same_source_contract(harness) -> Dictionary:
 	)
 	if effect_events.size() != 2:
 		return harness.fail_result("expected two stacked effect events for same-source stack coverage")
-	core.payload_executor.execute_effect_event(effect_events[0], battle_state, content_index)
-	if core.payload_executor.last_invalid_battle_code != null:
-		return harness.fail_result("first stacked effect event should pass, got %s" % str(core.payload_executor.last_invalid_battle_code))
-	core.payload_executor.execute_effect_event(effect_events[1], battle_state, content_index)
-	if core.payload_executor.last_invalid_battle_code != null:
-		return harness.fail_result("second same-source stacked effect should not hit dedupe guard, got %s" % str(core.payload_executor.last_invalid_battle_code))
+	core.service("payload_executor").execute_effect_event(effect_events[0], battle_state, content_index)
+	if core.service("payload_executor").last_invalid_battle_code != null:
+		return harness.fail_result("first stacked effect event should pass, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
+	core.service("payload_executor").execute_effect_event(effect_events[1], battle_state, content_index)
+	if core.service("payload_executor").last_invalid_battle_code != null:
+		return harness.fail_result("second same-source stacked effect should not hit dedupe guard, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
 	return harness.pass_result()

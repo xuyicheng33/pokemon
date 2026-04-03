@@ -18,8 +18,8 @@ func _test_invalid_command_payload_hard_failures(harness) -> Dictionary:
 		return harness.fail_result("SampleBattleFactory init failed")
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var unknown_side_state = harness.build_initialized_battle(core, content_index, sample_factory, 111)
-	core.turn_loop_controller.run_turn(unknown_side_state, content_index, [
-		core.command_builder.build_command({
+	core.service("turn_loop_controller").run_turn(unknown_side_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -27,7 +27,7 @@ func _test_invalid_command_payload_hard_failures(harness) -> Dictionary:
 			"actor_public_id": "P1-A",
 			"skill_id": "sample_strike",
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -35,7 +35,7 @@ func _test_invalid_command_payload_hard_failures(harness) -> Dictionary:
 			"actor_public_id": "P2-A",
 			"skill_id": "sample_strike",
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -48,9 +48,9 @@ func _test_invalid_command_payload_hard_failures(harness) -> Dictionary:
 		return harness.fail_result("unknown side command should fail-fast with invalid_command_payload")
 
 	var duplicate_state = harness.build_initialized_battle(core, content_index, sample_factory, 112)
-	core.battle_logger.reset()
-	core.turn_loop_controller.run_turn(duplicate_state, content_index, [
-		core.command_builder.build_command({
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(duplicate_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -58,7 +58,7 @@ func _test_invalid_command_payload_hard_failures(harness) -> Dictionary:
 			"actor_public_id": "P1-A",
 			"skill_id": "sample_strike",
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SWITCH,
 			"command_source": "manual",
@@ -66,7 +66,7 @@ func _test_invalid_command_payload_hard_failures(harness) -> Dictionary:
 			"actor_public_id": "P1-A",
 			"target_public_id": "P1-B",
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -79,9 +79,9 @@ func _test_invalid_command_payload_hard_failures(harness) -> Dictionary:
 		return harness.fail_result("duplicate submit should fail-fast with invalid_command_payload")
 
 	var non_participant_state = harness.build_initialized_battle(core, content_index, sample_factory, 113)
-	core.battle_logger.reset()
-	core.turn_loop_controller.run_turn(non_participant_state, content_index, [
-		core.command_builder.build_command({
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(non_participant_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -89,7 +89,7 @@ func _test_invalid_command_payload_hard_failures(harness) -> Dictionary:
 			"actor_public_id": "P1-B",
 			"skill_id": "sample_strike",
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -113,8 +113,8 @@ func _test_invalid_command_payload_out_of_legal_set(harness) -> Dictionary:
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 214)
 
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
-		core.command_builder.build_command({
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -122,7 +122,7 @@ func _test_invalid_command_payload_out_of_legal_set(harness) -> Dictionary:
 			"actor_public_id": "P1-A",
 			"skill_id": "sample_ultimate_burst",
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",

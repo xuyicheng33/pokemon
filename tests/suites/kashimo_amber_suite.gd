@@ -24,7 +24,7 @@ func _test_kashimo_phantom_beast_amber_persistent_stage_contract(harness) -> Dic
     kashimo.current_mp = kashimo.max_mp
     kashimo.ultimate_points = kashimo.ultimate_points_cap
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_ultimate_command(core, 1, "P1", "P1-A", "kashimo_phantom_beast_amber"),
         _support.build_manual_wait_command(core, 1, "P2", _active_public_id(battle_state, "P2")),
     ])
@@ -39,7 +39,7 @@ func _test_kashimo_phantom_beast_amber_persistent_stage_contract(harness) -> Dic
     if kashimo.ultimate_points != 0:
         return harness.fail_result("amber cast should clear ultimate points")
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_switch_command(core, 2, "P1", "P1-A", "P1-B"),
         _support.build_manual_wait_command(core, 2, "P2", _active_public_id(battle_state, "P2")),
     ])
@@ -50,24 +50,24 @@ func _test_kashimo_phantom_beast_amber_persistent_stage_contract(harness) -> Dic
     if kashimo.current_hp != 98:
         return harness.fail_result("amber self damage should not disappear statefully while benched: expected hp=98 actual=%d" % kashimo.current_hp)
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_switch_command(core, 3, "P1", "P1-B", "P1-A"),
         _support.build_manual_wait_command(core, 3, "P2", _active_public_id(battle_state, "P2")),
     ])
     if kashimo.current_hp != 98:
         return harness.fail_result("amber self damage should stay paused on the same turn the user re-enters: expected=98 actual=%d" % kashimo.current_hp)
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_wait_command(core, 4, "P1", "P1-A"),
         _support.build_manual_wait_command(core, 4, "P2", _active_public_id(battle_state, "P2")),
     ])
     if kashimo.current_hp != 78:
         return harness.fail_result("amber self damage should resume on the next full active turn after re-entry: expected=78 actual=%d" % kashimo.current_hp)
     kashimo.ultimate_points = kashimo.ultimate_points_cap
-    var legal_actions = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
+    var legal_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
     if legal_actions.legal_ultimate_ids.has("kashimo_phantom_beast_amber"):
         return harness.fail_result("amber ultimate lock should deny second ultimate even after refilling points")
 
-    core.leave_service.leave_unit(battle_state, kashimo, "faint", content_index)
+    core.service("leave_service").leave_unit(battle_state, kashimo, "faint", content_index)
     if int(kashimo.persistent_stat_stages.get("attack", 0)) != 0 or int(kashimo.persistent_stat_stages.get("sp_attack", 0)) != 0 or int(kashimo.persistent_stat_stages.get("speed", 0)) != 0:
         return harness.fail_result("persistent stat stages should clear on faint")
     if _has_effect_instance(kashimo, "kashimo_amber_bleed") or _has_rule_mod(kashimo, "action_legality", "ultimate"):

@@ -36,10 +36,10 @@ func _test_same_side_active_domain_recast_block_contract(harness) -> Dictionary:
 		return harness.fail_result("Gojo 首次开领域后应成功立场")
 	gojo_unit.current_mp = gojo_unit.max_mp
 	gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
-	var legal_actions = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
+	var legal_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
 	if legal_actions.legal_ultimate_ids.has("gojo_unlimited_void"):
 		return harness.fail_result("己方领域在场时，己方不应再次施放领域技能")
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_helper.build_ultimate_command(core, 2, "P1", "P1-A", "gojo_unlimited_void"),
 		_helper.build_wait_command(core, 2, "P2", "P2-A"),
 	])
@@ -60,7 +60,7 @@ func _test_active_domain_missing_creator_fails_fast_contract(harness) -> Diction
 	invalid_field.creator = "missing_creator"
 	invalid_field.remaining_turns = 2
 	battle_state.field_state = invalid_field
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_helper.build_wait_command(core, 1, "P1", "P1-A"),
 		_helper.build_wait_command(core, 1, "P2", "P2-A"),
 	])
@@ -81,10 +81,10 @@ func _test_active_domain_missing_creator_legal_actions_fail_fast_contract(harnes
 	invalid_field.creator = ""
 	invalid_field.remaining_turns = 2
 	battle_state.field_state = invalid_field
-	var legal_actions = core.legal_action_service.get_legal_actions(battle_state, "P1", content_index)
+	var legal_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
 	if legal_actions != null:
 		return harness.fail_result("legal_action_service should fail-fast instead of treating broken domain state as no active domain")
-	if core.legal_action_service.last_error_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+	if core.service("legal_action_service").last_error_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
 		return harness.fail_result("broken active domain state should surface invalid_state_corruption in legal_action_service")
 	return harness.pass_result()
 
@@ -101,7 +101,7 @@ func _test_active_field_missing_creator_local_guard_contract(harness) -> Diction
 	invalid_field.creator = ""
 	invalid_field.remaining_turns = 2
 	battle_state.field_state = invalid_field
-	var invalid_code = core.field_service.break_field_if_creator_inactive(
+	var invalid_code = core.service("field_service").break_field_if_creator_inactive(
 		battle_state,
 		content_index,
 		battle_state.chain_context
@@ -143,8 +143,8 @@ func _test_same_side_domain_recast_main_path_fails_fast_contract(harness) -> Dic
 	effect_event.source_order_speed_snapshot = gojo_unit.base_speed
 	effect_event.effect_definition_id = "gojo_apply_domain_field"
 	effect_event.owner_id = gojo_unit.unit_instance_id
-	core.battle_logger.reset()
-	var invalid_code = core.field_apply_service.apply_field(
+	core.service("battle_logger").reset()
+	var invalid_code = core.service("field_apply_service").apply_field(
 		apply_effect,
 		apply_effect.payloads[0],
 		effect_event,
@@ -155,6 +155,6 @@ func _test_same_side_domain_recast_main_path_fails_fast_contract(harness) -> Dic
 		return harness.fail_result("同侧领域重开若进入 field clash 主路径必须 fail-fast 为 invalid_state_corruption")
 	if battle_state.field_state == null or String(battle_state.field_state.instance_id) != before_field_instance_id or String(battle_state.field_state.creator) != before_field_creator:
 		return harness.fail_result("同侧领域重开 fail-fast 后不应刷新 active field 状态")
-	if _helper.find_field_clash_event(core.battle_logger.event_log) != null:
+	if _helper.find_field_clash_event(core.service("battle_logger").event_log) != null:
 		return harness.fail_result("同侧领域重开 fail-fast 后不应写出领域对拼日志")
 	return harness.pass_result()

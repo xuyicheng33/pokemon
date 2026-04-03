@@ -88,8 +88,8 @@ func _test_remove_effect_ambiguity_contract(harness) -> Dictionary:
 
     p1_active.regular_skill_ids[0] = apply_skill.id
     p1_active.base_speed = 999
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -97,7 +97,7 @@ func _test_remove_effect_ambiguity_contract(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": apply_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -114,9 +114,9 @@ func _test_remove_effect_ambiguity_contract(harness) -> Dictionary:
         return harness.fail_result("double apply marker skill should leave two marker instances before remove")
 
     p1_active.regular_skill_ids[0] = remove_skill.id
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -124,7 +124,7 @@ func _test_remove_effect_ambiguity_contract(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": remove_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",

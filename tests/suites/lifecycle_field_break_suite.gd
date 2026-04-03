@@ -21,8 +21,8 @@ func _test_manual_switch_breaks_field_before_replacement_enter(harness) -> Dicti
     _configure_sample_focus_field_break_test(content_index, "test_manual_switch")
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 118)
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -30,7 +30,7 @@ func _test_manual_switch_breaks_field_before_replacement_enter(harness) -> Dicti
             "actor_public_id": "P1-A",
             "skill_id": "sample_field_call",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -44,10 +44,10 @@ func _test_manual_switch_breaks_field_before_replacement_enter(harness) -> Dicti
     var enter_unit = battle_state.get_unit_by_public_id("P1-B")
     if enter_unit == null:
         return harness.fail_result("missing P1-B replacement unit")
-    var log_start: int = core.battle_logger.event_log.size()
+    var log_start: int = core.service("battle_logger").event_log.size()
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SWITCH,
             "command_source": "manual",
@@ -55,7 +55,7 @@ func _test_manual_switch_breaks_field_before_replacement_enter(harness) -> Dicti
             "actor_public_id": "P1-A",
             "target_public_id": "P1-B",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -67,8 +67,8 @@ func _test_manual_switch_breaks_field_before_replacement_enter(harness) -> Dicti
         return harness.fail_result("creator manual switch should break active field before replacement enter")
     var break_idx := -1
     var enter_idx := -1
-    for i in range(log_start, core.battle_logger.event_log.size()):
-        var ev = core.battle_logger.event_log[i]
+    for i in range(log_start, core.service("battle_logger").event_log.size()):
+        var ev = core.service("battle_logger").event_log[i]
         if break_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.source_instance_id == field_instance_id and ev.trigger_name == "field_break":
             break_idx = i
         if enter_idx == -1 and ev.event_type == EventTypesScript.STATE_ENTER and ev.target_instance_id == enter_unit.unit_instance_id:
@@ -93,8 +93,8 @@ func _test_faint_replace_breaks_field_before_replacement_enter(harness) -> Dicti
     _configure_sample_focus_field_break_test(content_index, "test_faint_replace")
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 119)
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -102,7 +102,7 @@ func _test_faint_replace_breaks_field_before_replacement_enter(harness) -> Dicti
             "actor_public_id": "P1-A",
             "skill_id": "sample_field_call",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -118,17 +118,17 @@ func _test_faint_replace_breaks_field_before_replacement_enter(harness) -> Dicti
     if fainted_unit == null or enter_unit == null:
         return harness.fail_result("missing faint replace units")
     fainted_unit.current_hp = 1
-    var log_start: int = core.battle_logger.event_log.size()
+    var log_start: int = core.service("battle_logger").event_log.size()
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
             "side_id": "P1",
             "actor_public_id": "P1-A",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -142,8 +142,8 @@ func _test_faint_replace_breaks_field_before_replacement_enter(harness) -> Dicti
     var break_idx := -1
     var replace_idx := -1
     var enter_idx := -1
-    for i in range(log_start, core.battle_logger.event_log.size()):
-        var ev = core.battle_logger.event_log[i]
+    for i in range(log_start, core.service("battle_logger").event_log.size()):
+        var ev = core.service("battle_logger").event_log[i]
         if break_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.source_instance_id == field_instance_id and ev.trigger_name == "field_break":
             break_idx = i
         if replace_idx == -1 and ev.event_type == EventTypesScript.STATE_REPLACE and ev.target_instance_id == enter_unit.unit_instance_id:

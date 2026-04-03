@@ -26,7 +26,7 @@ func _test_log_contract_semantics(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
-    var replay_output = core.replay_runner.run_replay(sample_factory.build_demo_replay_input(core.command_builder))
+    var replay_output = core.service("replay_runner").run_replay(sample_factory.build_demo_replay_input(core.service("command_builder")))
     if replay_output == null:
         return harness.fail_result("replay output is null")
 
@@ -132,7 +132,7 @@ func _test_apply_effect_lifecycle_chain(harness) -> Dictionary:
     var p2_active = battle_state.get_side("P2").get_active_unit()
     p2_active.current_hp = min(p2_active.max_hp, max(20, p2_active.current_hp))
     var commands: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -140,7 +140,7 @@ func _test_apply_effect_lifecycle_chain(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": dot_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -149,13 +149,13 @@ func _test_apply_effect_lifecycle_chain(harness) -> Dictionary:
             "skill_id": "sample_whiff",
         }),
     ]
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
 
-    var turn_end_event = _find_event(core.battle_logger.event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_END)
+    var turn_end_event = _find_event(core.service("battle_logger").event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_END)
     var apply_event = null
     var tick_event = null
     var remove_event = null
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if apply_event == null and ev.event_type == EventTypesScript.EFFECT_APPLY_EFFECT and String(ev.payload_summary).find(dot_effect.id) != -1:
             apply_event = ev
         if tick_event == null and ev.event_type == EventTypesScript.EFFECT_DAMAGE and ev.trigger_name == "turn_end" and String(ev.payload_summary).find("dot") != -1:
@@ -224,7 +224,7 @@ func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 244)
     var commands_turn_1: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -232,7 +232,7 @@ func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": mark_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -242,7 +242,7 @@ func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
         }),
     ]
     var commands_turn_2: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -250,7 +250,7 @@ func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": mark_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -259,12 +259,12 @@ func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
             "skill_id": "sample_whiff",
         }),
     ]
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands_turn_1)
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands_turn_2)
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands_turn_1)
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands_turn_2)
 
     var target_unit = battle_state.get_side("P2").get_active_unit()
     var apply_events := 0
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type == EventTypesScript.EFFECT_APPLY_EFFECT and String(ev.payload_summary).find(marker_effect.id) != -1:
             apply_events += 1
     if apply_events != 1:
@@ -322,7 +322,7 @@ func _test_rule_mod_none_repeat_skips_log(harness) -> Dictionary:
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 245)
     var commands_turn_1: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -330,7 +330,7 @@ func _test_rule_mod_none_repeat_skips_log(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": mark_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -340,7 +340,7 @@ func _test_rule_mod_none_repeat_skips_log(harness) -> Dictionary:
         }),
     ]
     var commands_turn_2: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -348,7 +348,7 @@ func _test_rule_mod_none_repeat_skips_log(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": mark_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -357,12 +357,12 @@ func _test_rule_mod_none_repeat_skips_log(harness) -> Dictionary:
             "skill_id": "sample_whiff",
         }),
     ]
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands_turn_1)
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands_turn_2)
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands_turn_1)
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands_turn_2)
 
     var target_unit = battle_state.get_side("P2").get_active_unit()
     var apply_events := 0
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and String(ev.payload_summary).find("mp_regen") != -1:
             apply_events += 1
     if apply_events != 1:

@@ -51,6 +51,11 @@ static func build_validator_instances() -> Dictionary:
                 "validators": [],
                 "error": "ContentSnapshotFormalCharacterRegistry[%s] failed to load validator: %s" % [character_id, validator_path],
             }
+        if not (validator_script is Script) or not validator_script.can_instantiate():
+            return {
+                "validators": [],
+                "error": "ContentSnapshotFormalCharacterRegistry[%s] validator is not instantiable: %s" % [character_id, validator_path],
+            }
         var validator_instance = validator_script.new()
         if validator_instance == null:
             return {

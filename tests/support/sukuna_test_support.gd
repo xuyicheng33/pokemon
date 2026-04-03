@@ -41,5 +41,5 @@ func calc_expected_fixed_effect_damage(core, content_index, effect_id: String, t
     var payload = effect_definition.payloads[0]
     var type_effectiveness := 1.0
     if not String(payload.combat_type_id).is_empty():
-        type_effectiveness = core.combat_type_service.calc_effectiveness(String(payload.combat_type_id), target_unit.combat_type_ids)
-    return core.damage_service.apply_final_mod(max(1, int(payload.amount)), type_effectiveness)
+        type_effectiveness = core.service("combat_type_service").calc_effectiveness(String(payload.combat_type_id), target_unit.combat_type_ids)
+    return core.service("damage_service").apply_final_mod(max(1, int(payload.amount)), type_effectiveness)

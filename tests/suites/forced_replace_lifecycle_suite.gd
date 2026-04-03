@@ -133,10 +133,10 @@ func _test_forced_replace_success_chain(harness) -> Dictionary:
 
     var selector := TestReplacementSelector.new()
     selector.next_selection = selected_unit.unit_instance_id
-    core.replacement_service.replacement_selector = selector
+    core.service("replacement_service").replacement_selector = selector
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -144,7 +144,7 @@ func _test_forced_replace_success_chain(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": forced_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -165,8 +165,8 @@ func _test_forced_replace_success_chain(harness) -> Dictionary:
     var state_replace_idx := -1
     var state_enter_idx := -1
     var on_enter_effect_idx := -1
-    for i in range(core.battle_logger.event_log.size()):
-        var ev = core.battle_logger.event_log[i]
+    for i in range(core.service("battle_logger").event_log.size()):
+        var ev = core.service("battle_logger").event_log[i]
         if switch_idx == -1 and ev.event_type == EventTypesScript.STATE_SWITCH and ev.leave_reason == "forced_replace" and ev.source_instance_id == p2_active.unit_instance_id:
             switch_idx = i
             continue
@@ -247,7 +247,7 @@ func _test_forced_replace_preserves_persistent_runtime_contract(harness) -> Dict
     var target = battle_state.get_side("P2").get_active_unit()
     if actor == null or target == null:
         return harness.fail_result("missing active units for forced_replace persistent contract")
-    if core.effect_instance_service.create_instance(
+    if core.service("effect_instance_service").create_instance(
         bench_effect,
         target.unit_instance_id,
         battle_state,
@@ -268,7 +268,7 @@ func _test_forced_replace_preserves_persistent_runtime_contract(harness) -> Dict
     persistent_rule_mod.stacking = "replace"
     persistent_rule_mod.persists_on_switch = true
     persistent_rule_mod.stacking_source_key = "forced_replace_persistent_group"
-    if core.rule_mod_service.create_instance(
+    if core.service("rule_mod_service").create_instance(
         persistent_rule_mod,
         {"scope": "unit", "id": target.unit_instance_id},
         battle_state,
@@ -282,10 +282,10 @@ func _test_forced_replace_preserves_persistent_runtime_contract(harness) -> Dict
         return harness.fail_result("missing selected replacement unit P2-C")
     var selector := TestReplacementSelector.new()
     selector.next_selection = selected_unit.unit_instance_id
-    core.replacement_service.replacement_selector = selector
+    core.service("replacement_service").replacement_selector = selector
     actor.base_speed = 999
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -293,7 +293,7 @@ func _test_forced_replace_preserves_persistent_runtime_contract(harness) -> Dict
             "actor_public_id": "P1-A",
             "skill_id": forced_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",

@@ -56,7 +56,7 @@ func _test_invalid_battle_rule_mod_definition(harness) -> Dictionary:
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 106)
     var commands: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -64,7 +64,7 @@ func _test_invalid_battle_rule_mod_definition(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": invalid_skill.id,
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -73,12 +73,12 @@ func _test_invalid_battle_rule_mod_definition(harness) -> Dictionary:
             "skill_id": "sample_strike",
         }),
     ]
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
     if not battle_state.battle_result.finished:
         return harness.fail_result("invalid_battle should finish battle immediately")
     if battle_state.battle_result.reason != ErrorCodesScript.INVALID_RULE_MOD_DEFINITION:
         return harness.fail_result("invalid_battle reason mismatch: %s" % str(battle_state.battle_result.reason))
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_RULE_MOD_DEFINITION:
             return harness.pass_result()
     return harness.fail_result("invalid_battle log event missing")
@@ -108,11 +108,11 @@ func _test_rule_mod_action_legality_enforced(harness) -> Dictionary:
     deny_payload.decrement_on = "turn_start"
     deny_payload.stacking = "replace"
     deny_payload.priority = 10
-    if core.rule_mod_service.create_instance(deny_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_action_legality_gate", 0, p1_active.base_speed) == null:
+    if core.service("rule_mod_service").create_instance(deny_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_action_legality_gate", 0, p1_active.base_speed) == null:
         return harness.fail_result("failed to create action_legality deny instance")
 
     var commands: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -120,7 +120,7 @@ func _test_rule_mod_action_legality_enforced(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": "sample_strike",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -129,12 +129,12 @@ func _test_rule_mod_action_legality_enforced(harness) -> Dictionary:
             "skill_id": "sample_strike",
         }),
     ]
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
     if not battle_state.battle_result.finished:
         return harness.fail_result("illegal manual command should fail-fast")
     if battle_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
         return harness.fail_result("expected invalid_command_payload, got %s" % str(battle_state.battle_result.reason))
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
             return harness.pass_result()
     return harness.fail_result("missing invalid_battle log for illegal command")

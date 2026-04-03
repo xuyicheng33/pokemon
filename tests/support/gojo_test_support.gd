@@ -73,8 +73,8 @@ func apply_gojo_double_marks(core, content_index, battle_state, target_unit, sou
     var effect_meta := {
         "source_owner_id": resolved_owner_id,
     }
-    core.effect_instance_service.create_instance(content_index.effects["gojo_ao_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed, effect_meta)
-    core.effect_instance_service.create_instance(content_index.effects["gojo_aka_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed, effect_meta)
+    core.service("effect_instance_service").create_instance(content_index.effects["gojo_ao_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed, effect_meta)
+    core.service("effect_instance_service").create_instance(content_index.effects["gojo_aka_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed, effect_meta)
 
 func set_field_state(battle_state, field_id: String, creator_id: String) -> void:
     var field_state = FieldStateScript.new()

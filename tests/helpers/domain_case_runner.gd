@@ -54,7 +54,7 @@ func _run_gojo_domain_success() -> Dictionary:
 	var gojo = battle_state.get_side("P1").get_active_unit()
 	gojo.current_mp = gojo.max_mp
 	gojo.ultimate_points = gojo.ultimate_points_cap
-	core.battle_logger.reset()
+	core.service("battle_logger").reset()
 	_helper.run_turn(
 		core,
 		battle_state,
@@ -65,7 +65,7 @@ func _run_gojo_domain_success() -> Dictionary:
 	return {
 		"field_id": battle_state.field_state.field_def_id if battle_state.field_state != null else null,
 		"gojo_sp_attack_stage": int(gojo.stat_stages.get("sp_attack", 0)),
-		"log_size": core.battle_logger.event_log.size(),
+		"log_size": core.service("battle_logger").event_log.size(),
 	}
 
 func _run_sukuna_domain_break() -> Dictionary:
@@ -78,8 +78,8 @@ func _run_sukuna_domain_break() -> Dictionary:
 	var sukuna = battle_state.get_side("P1").get_active_unit()
 	sukuna.current_mp = sukuna.max_mp
 	sukuna.ultimate_points = sukuna.ultimate_points_cap
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
-		core.command_builder.build_command({
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.ULTIMATE,
 			"command_source": "manual",
@@ -89,9 +89,9 @@ func _run_sukuna_domain_break() -> Dictionary:
 		}),
 		_helper.build_wait_command(core, 1, "P2", "P2-A"),
 	])
-	core.battle_logger.reset()
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
-		core.command_builder.build_command({
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 2,
 			"command_type": CommandTypesScript.SWITCH,
 			"command_source": "manual",
@@ -105,7 +105,7 @@ func _run_sukuna_domain_break() -> Dictionary:
 		"field_id": battle_state.field_state.field_def_id if battle_state.field_state != null else null,
 		"sukuna_attack_stage": int(sukuna.stat_stages.get("attack", 0)),
 		"sukuna_sp_attack_stage": int(sukuna.stat_stages.get("sp_attack", 0)),
-		"log_size": core.battle_logger.event_log.size(),
+		"log_size": core.service("battle_logger").event_log.size(),
 	}
 
 func _run_normal_field_blocked_by_domain() -> Dictionary:
@@ -125,7 +125,7 @@ func _run_normal_field_blocked_by_domain() -> Dictionary:
 		_helper.build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
 		_helper.build_wait_command(core, 1, "P2", "P2-A")
 	)
-	core.battle_logger.reset()
+	core.service("battle_logger").reset()
 	_helper.run_turn(
 		core,
 		battle_state,
@@ -135,8 +135,8 @@ func _run_normal_field_blocked_by_domain() -> Dictionary:
 	)
 	return {
 		"field_id": battle_state.field_state.field_def_id if battle_state.field_state != null else null,
-		"blocked_logged": _helper.has_domain_block_log(core.battle_logger.event_log, "sample_focus_field"),
-		"log_size": core.battle_logger.event_log.size(),
+		"blocked_logged": _helper.has_domain_block_log(core.service("battle_logger").event_log, "sample_focus_field"),
+		"log_size": core.service("battle_logger").event_log.size(),
 	}
 
 func _run_same_turn_dual_domain_clash() -> Dictionary:
@@ -153,7 +153,7 @@ func _run_same_turn_dual_domain_clash() -> Dictionary:
 	gojo.ultimate_points = gojo.ultimate_points_cap
 	sukuna.current_mp = sukuna.max_mp
 	sukuna.ultimate_points = sukuna.ultimate_points_cap
-	core.battle_logger.reset()
+	core.service("battle_logger").reset()
 	_helper.run_turn(
 		core,
 		battle_state,
@@ -163,7 +163,7 @@ func _run_same_turn_dual_domain_clash() -> Dictionary:
 	)
 	return {
 		"field_id": battle_state.field_state.field_def_id if battle_state.field_state != null else null,
-		"clash_logged": _helper.find_field_clash_event(core.battle_logger.event_log) != null,
-		"sukuna_cancelled": _helper.has_action_cancelled_pre_start_on_actor(core.battle_logger.event_log, sukuna.unit_instance_id),
-		"log_size": core.battle_logger.event_log.size(),
+		"clash_logged": _helper.find_field_clash_event(core.service("battle_logger").event_log) != null,
+		"sukuna_cancelled": _helper.has_action_cancelled_pre_start_on_actor(core.service("battle_logger").event_log, sukuna.unit_instance_id),
+		"log_size": core.service("battle_logger").event_log.size(),
 	}

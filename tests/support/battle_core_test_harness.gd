@@ -45,7 +45,7 @@ func build_core() -> Dictionary:
         "public_snapshot_builder",
     ]
     for service_name in required_services:
-        if core.get(service_name) == null:
+        if core.service(service_name) == null:
             return {"error": "missing core service: %s" % service_name}
     _core_pool.append(core)
     return {"core": core}
@@ -96,13 +96,13 @@ func build_loaded_content_index(sample_factory):
     return content_index
 
 func build_initialized_battle(core, content_index, sample_factory, seed: int, battle_setup = null):
-    core.rng_service.reset(seed)
-    core.id_factory.reset()
+    core.service("rng_service").reset(seed)
+    core.service("id_factory").reset()
     var battle_state = BattleStateScript.new()
-    battle_state.battle_id = core.id_factory.next_id("battle")
+    battle_state.battle_id = core.service("id_factory").next_id("battle")
     battle_state.seed = seed
-    battle_state.rng_stream_index = core.rng_service.get_stream_index()
-    core.battle_initializer.initialize_battle(
+    battle_state.rng_stream_index = core.service("rng_service").get_stream_index()
+    core.service("battle_initializer").initialize_battle(
         battle_state,
         content_index,
         battle_setup if battle_setup != null else sample_factory.build_sample_setup()

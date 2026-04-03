@@ -39,7 +39,7 @@ func build_sukuna_vs_sample_state(harness, seed: int) -> Dictionary:
 	}
 
 func run_turn(core, battle_state, content_index, p1_command, p2_command) -> void:
-	core.turn_loop_controller.run_turn(battle_state, content_index, [p1_command, p2_command])
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [p1_command, p2_command])
 
 func build_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
 	return _support.build_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
@@ -155,7 +155,7 @@ func run_tied_domain_clash(harness, seed: int) -> Dictionary:
 	sukuna_unit.current_mp = sukuna_unit.max_mp
 	sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
 	sukuna_unit.base_speed = 999
-	core.battle_logger.reset()
+	core.service("battle_logger").reset()
 	run_turn(
 		core,
 		battle_state,
@@ -163,7 +163,7 @@ func run_tied_domain_clash(harness, seed: int) -> Dictionary:
 		build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
 		build_ultimate_command(core, 1, "P2", "P2-A", "sukuna_fukuma_mizushi")
 	)
-	var clash_event = find_field_clash_event(core.battle_logger.event_log)
+	var clash_event = find_field_clash_event(core.service("battle_logger").event_log)
 	if clash_event == null or clash_event.effect_roll == null:
 		return {"error": "平 MP 领域对拼必须写出带随机值的 clash 日志"}
 	return {

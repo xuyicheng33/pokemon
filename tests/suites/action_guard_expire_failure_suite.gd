@@ -25,19 +25,19 @@ func _test_effect_expire_invalid_terminates_turn_immediately(harness) -> Diction
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	_support.register_ambiguous_remove_content(content_index, "test_effect_expire_invalid", "on_expire")
-	core.effect_instance_service.create_instance(content_index.effects["test_effect_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_marker_source", 1, target.base_speed)
-	core.effect_instance_service.create_instance(content_index.effects["test_effect_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_marker_source", 1, target.base_speed)
-	core.effect_instance_service.create_instance(content_index.effects["test_effect_expire_invalid_parent"], actor.unit_instance_id, battle_state, "test_parent_source", 1, actor.base_speed)
-	core.turn_loop_controller.run_turn(battle_state, content_index, [])
+	core.service("effect_instance_service").create_instance(content_index.effects["test_effect_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_marker_source", 1, target.base_speed)
+	core.service("effect_instance_service").create_instance(content_index.effects["test_effect_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_marker_source", 1, target.base_speed)
+	core.service("effect_instance_service").create_instance(content_index.effects["test_effect_expire_invalid_parent"], actor.unit_instance_id, battle_state, "test_parent_source", 1, actor.base_speed)
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [])
 	if not battle_state.battle_result.finished:
 		return harness.fail_result("invalid effect expire path should terminate battle immediately")
 	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_EFFECT_REMOVE_AMBIGUOUS:
 		return harness.fail_result("invalid effect expire should preserve remove_effect ambiguity code")
 	if battle_state.turn_index != 1:
 		return harness.fail_result("effect expire invalid path must not advance turn index")
-	if core.battle_logger.event_log.is_empty() or core.battle_logger.event_log[-1].event_type != EventTypesScript.SYSTEM_INVALID_BATTLE:
+	if core.service("battle_logger").event_log.is_empty() or core.service("battle_logger").event_log[-1].event_type != EventTypesScript.SYSTEM_INVALID_BATTLE:
 		return harness.fail_result("invalid effect expire should stop with system:invalid_battle as the last event")
-	for log_event in core.battle_logger.event_log:
+	for log_event in core.service("battle_logger").event_log:
 		if log_event.event_type == EventTypesScript.ACTION_CAST:
 			return harness.fail_result("invalid effect expire at turn_start must stop before action selection/execution")
 	return harness.pass_result()
@@ -61,18 +61,18 @@ func _test_field_expire_invalid_terminates_turn_immediately(harness) -> Dictiona
 	invalid_field.creator = actor.unit_instance_id
 	invalid_field.remaining_turns = 1
 	battle_state.field_state = invalid_field
-	core.effect_instance_service.create_instance(content_index.effects["test_field_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_field_marker_source", 1, target.base_speed)
-	core.effect_instance_service.create_instance(content_index.effects["test_field_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_field_marker_source", 1, target.base_speed)
-	core.turn_loop_controller.run_turn(battle_state, content_index, [])
+	core.service("effect_instance_service").create_instance(content_index.effects["test_field_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_field_marker_source", 1, target.base_speed)
+	core.service("effect_instance_service").create_instance(content_index.effects["test_field_expire_invalid_marker"], target.unit_instance_id, battle_state, "test_field_marker_source", 1, target.base_speed)
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [])
 	if not battle_state.battle_result.finished:
 		return harness.fail_result("invalid field expire path should terminate battle immediately")
 	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_EFFECT_REMOVE_AMBIGUOUS:
 		return harness.fail_result("invalid field expire should preserve remove_effect ambiguity code")
 	if battle_state.turn_index != 1:
 		return harness.fail_result("invalid field expire path must not advance turn index")
-	if core.battle_logger.event_log.is_empty() or core.battle_logger.event_log[-1].event_type != EventTypesScript.SYSTEM_INVALID_BATTLE:
+	if core.service("battle_logger").event_log.is_empty() or core.service("battle_logger").event_log[-1].event_type != EventTypesScript.SYSTEM_INVALID_BATTLE:
 		return harness.fail_result("invalid field expire should stop with system:invalid_battle as the last event")
-	for log_event in core.battle_logger.event_log:
+	for log_event in core.service("battle_logger").event_log:
 		if log_event.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE:
 			return harness.fail_result("invalid field expire should stop before writing EFFECT_FIELD_EXPIRE")
 	return harness.pass_result()

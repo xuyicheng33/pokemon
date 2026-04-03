@@ -123,7 +123,7 @@ func _test_field_break_self_owner_contract(harness) -> Dictionary:
 	)
 	if battle_state.field_state == null or battle_state.field_state.field_def_id != "test_self_break_field":
 		return harness.fail_result("自定义 field 应在测试里成功立场")
-	core.battle_logger.reset()
+	core.service("battle_logger").reset()
 	_helper.run_turn(
 		core,
 		battle_state,
@@ -132,7 +132,7 @@ func _test_field_break_self_owner_contract(harness) -> Dictionary:
 		_helper.build_wait_command(core, 2, "P2", "P2-A")
 	)
 	var break_after := -1
-	for log_event in core.battle_logger.event_log:
+	for log_event in core.service("battle_logger").event_log:
 		if log_event.event_type != EventTypesScript.EFFECT_RESOURCE_MOD or log_event.value_changes.is_empty():
 			continue
 		var value_change = log_event.value_changes[0]
@@ -160,8 +160,8 @@ func _test_field_break_transition_preserves_new_field_contract(harness) -> Dicti
 	old_field.creator = actor.unit_instance_id
 	old_field.remaining_turns = 2
 	battle_state.field_state = old_field
-	battle_state.chain_context = core.battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_END)
-	var invalid_code = core.field_service.break_active_field(
+	battle_state.chain_context = core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END)
+	var invalid_code = core.service("field_service").break_active_field(
 		battle_state,
 		content_index,
 		"field_break",
@@ -192,13 +192,13 @@ func _test_field_break_uses_explicit_chain_context_contract(harness) -> Dictiona
 	old_field.creator = actor.unit_instance_id
 	old_field.remaining_turns = 2
 	battle_state.field_state = old_field
-	battle_state.chain_context = core.battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_END)
-	var explicit_chain_context = core.battle_result_service.build_system_chain("system:test_field_break_override")
+	battle_state.chain_context = core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END)
+	var explicit_chain_context = core.service("battle_result_service").build_system_chain("system:test_field_break_override")
 	var capture_dispatcher = CaptureFieldTriggerDispatcher.new()
 	var capture_runner = CaptureFieldTriggerBatchRunner.new()
-	core.field_service.trigger_dispatcher = capture_dispatcher
-	core.field_service.trigger_batch_runner = capture_runner
-	var invalid_code = core.field_service.break_active_field(
+	core.service("field_service").trigger_dispatcher = capture_dispatcher
+	core.service("field_service").trigger_batch_runner = capture_runner
+	var invalid_code = core.service("field_service").break_active_field(
 		battle_state,
 		content_index,
 		"field_break",
@@ -231,8 +231,8 @@ func _test_field_expire_transition_preserves_new_field_contract(harness) -> Dict
 	old_field.creator = actor.unit_instance_id
 	old_field.remaining_turns = 1
 	battle_state.field_state = old_field
-	battle_state.chain_context = core.battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_END)
-	var field_tick_result = core.turn_field_lifecycle_service.apply_turn_end_field_tick(
+	battle_state.chain_context = core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END)
+	var field_tick_result = core.service("turn_field_lifecycle_service").apply_turn_end_field_tick(
 		battle_state,
 		content_index,
 		"test_expire_transition_cause"

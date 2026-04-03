@@ -57,8 +57,8 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
 	kill_p1_active.base_speed = 999
 	var kill_p2_active = kill_state.get_side("P2").get_active_unit()
 	kill_p2_active.current_hp = 1
-	core.turn_loop_controller.run_turn(kill_state, content_index, [
-		core.command_builder.build_command({
+	core.service("turn_loop_controller").run_turn(kill_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -66,7 +66,7 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
 			"actor_public_id": "P1-A",
 			"skill_id": kill_skill.id,
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -76,7 +76,7 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
 		}),
 	])
 	var has_kill_effect_log: bool = false
-	for ev in core.battle_logger.event_log:
+	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.target_instance_id == kill_p1_active.unit_instance_id and str(ev.source_instance_id).begins_with("action_"):
 			has_kill_effect_log = true
 			break
@@ -84,9 +84,9 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
 		return harness.fail_result("effects_on_kill did not trigger on kill")
 
 	var non_kill_state = harness.build_initialized_battle(core, content_index, sample_factory, 110)
-	core.battle_logger.reset()
-	core.turn_loop_controller.run_turn(non_kill_state, content_index, [
-		core.command_builder.build_command({
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(non_kill_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -94,7 +94,7 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
 			"actor_public_id": "P1-A",
 			"skill_id": kill_skill.id,
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -103,7 +103,7 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
 			"skill_id": "sample_strike",
 		}),
 	])
-	for ev in core.battle_logger.event_log:
+	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("action_"):
 			return harness.fail_result("effects_on_kill should not trigger without kill")
 	return harness.pass_result()
@@ -148,8 +148,8 @@ func _test_on_cast_self_faint_keeps_action_chain(harness) -> Dictionary:
 		return harness.fail_result("missing P1 active unit")
 	p1_active.base_speed = 999
 	var actor_unit_id: String = p1_active.unit_instance_id
-	core.turn_loop_controller.run_turn(battle_state, content_index, [
-		core.command_builder.build_command({
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -157,7 +157,7 @@ func _test_on_cast_self_faint_keeps_action_chain(harness) -> Dictionary:
 			"actor_public_id": "P1-A",
 			"skill_id": self_faint_skill.id,
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.SKILL,
 			"command_source": "manual",
@@ -171,8 +171,8 @@ func _test_on_cast_self_faint_keeps_action_chain(harness) -> Dictionary:
 	var faint_idx := -1
 	var replace_idx := -1
 	var action_source_id: String = ""
-	for i in range(core.battle_logger.event_log.size()):
-		var ev = core.battle_logger.event_log[i]
+	for i in range(core.service("battle_logger").event_log.size()):
+		var ev = core.service("battle_logger").event_log[i]
 		if action_source_id.is_empty() and ev.event_type == EventTypesScript.ACTION_CAST and ev.actor_id == actor_unit_id:
 			action_source_id = str(ev.source_instance_id)
 		if self_damage_idx == -1 and ev.event_type == EventTypesScript.EFFECT_DAMAGE and ev.trigger_name == "on_cast" and ev.target_instance_id == actor_unit_id:
@@ -209,7 +209,7 @@ func _test_action_failed_post_start_target_missing(harness) -> Dictionary:
 	var actor = battle_state.get_unit_by_public_id("P1-A")
 	if actor == null:
 		return harness.fail_result("missing P1-A actor")
-	var command = core.command_builder.build_command({
+	var command = core.service("command_builder").build_command({
 		"turn_index": 1,
 		"command_type": CommandTypesScript.SKILL,
 		"command_source": "manual",
@@ -217,16 +217,16 @@ func _test_action_failed_post_start_target_missing(harness) -> Dictionary:
 		"actor_id": actor.unit_instance_id,
 		"skill_id": "sample_strike",
 	})
-	var queued_action = core.action_queue_builder.build_queue([command], battle_state, content_index)[0]
+	var queued_action = core.service("action_queue_builder").build_queue([command], battle_state, content_index)[0]
 	var p2_side = battle_state.get_side("P2")
 	p2_side.clear_active_unit()
 
-	var action_result = core.action_executor.execute_action(queued_action, battle_state, content_index)
+	var action_result = core.service("action_executor").execute_action(queued_action, battle_state, content_index)
 	if action_result.invalid_battle_code != null:
 		return harness.fail_result("target missing at execution start should not raise invalid_battle")
 	if action_result.result_type != "action_failed_post_start":
 		return harness.fail_result("expected action_failed_post_start when target slot missing, got %s" % str(action_result.result_type))
-	for ev in core.battle_logger.event_log:
+	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.ACTION_FAILED_POST_START:
 			return harness.pass_result()
 	return harness.fail_result("missing action_failed_post_start log event")
@@ -244,7 +244,7 @@ func _test_double_faint_reason_preserved(harness) -> Dictionary:
 	for side_state in battle_state.sides:
 		for unit_state in side_state.team_units:
 			unit_state.current_hp = 0
-	core.turn_loop_controller.run_turn(battle_state, content_index, [])
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [])
 	if not battle_state.battle_result.finished:
 		return harness.fail_result("battle should finish when both sides have no available units")
 	if battle_state.battle_result.result_type != "draw":
@@ -269,8 +269,8 @@ func _test_battle_end_system_chain(harness) -> Dictionary:
 		return harness.fail_result("turn_start side missing")
 	for unit_state in turn_start_side.team_units:
 		unit_state.current_hp = 0
-	core.turn_loop_controller.run_turn(turn_start_battle, content_index, [])
-	var turn_start_battle_end = harness.find_last_event(core.battle_logger.event_log, EventTypesScript.RESULT_BATTLE_END)
+	core.service("turn_loop_controller").run_turn(turn_start_battle, content_index, [])
+	var turn_start_battle_end = harness.find_last_event(core.service("battle_logger").event_log, EventTypesScript.RESULT_BATTLE_END)
 	if turn_start_battle_end == null:
 		return harness.fail_result("turn_start battle_end event missing")
 	if turn_start_battle_end.command_type != EventTypesScript.SYSTEM_TURN_START:
@@ -280,13 +280,13 @@ func _test_battle_end_system_chain(harness) -> Dictionary:
 
 	var turn_limit_battle = harness.build_initialized_battle(core, content_index, sample_factory, 262)
 	turn_limit_battle.max_turn = 1
-	core.turn_loop_controller.run_turn(turn_limit_battle, content_index, [])
-	var turn_limit_event = harness.find_last_event(core.battle_logger.event_log, EventTypesScript.SYSTEM_TURN_LIMIT)
+	core.service("turn_loop_controller").run_turn(turn_limit_battle, content_index, [])
+	var turn_limit_event = harness.find_last_event(core.service("battle_logger").event_log, EventTypesScript.SYSTEM_TURN_LIMIT)
 	if turn_limit_event == null:
 		return harness.fail_result("turn_limit event missing")
 	if turn_limit_event.chain_origin != "turn_end":
 		return harness.fail_result("turn_limit chain_origin should be turn_end")
-	var turn_limit_battle_end = harness.find_last_event(core.battle_logger.event_log, EventTypesScript.RESULT_BATTLE_END)
+	var turn_limit_battle_end = harness.find_last_event(core.service("battle_logger").event_log, EventTypesScript.RESULT_BATTLE_END)
 	if turn_limit_battle_end == null:
 		return harness.fail_result("turn_limit battle_end event missing")
 	if turn_limit_battle_end.command_type != EventTypesScript.SYSTEM_TURN_LIMIT:

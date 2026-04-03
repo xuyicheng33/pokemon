@@ -20,8 +20,11 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
         }
     var container = compose_result.get("data", null)
     var battle_seed: int = int(init_payload.get("battle_seed", 0))
-    container.id_factory.reset()
-    container.rng_service.reset(battle_seed)
+    var id_factory = container.service("id_factory")
+    var rng_service = container.service("rng_service")
+    var battle_initializer = container.service("battle_initializer")
+    id_factory.reset()
+    rng_service.reset(battle_seed)
     var content_index = BattleContentIndexScript.new()
     if not content_index.load_snapshot(init_payload["content_snapshot_paths"]):
         container.dispose()
@@ -35,10 +38,10 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
     var battle_state = BattleStateScript.new()
     battle_state.battle_id = session_id
     battle_state.seed = battle_seed
-    battle_state.rng_stream_index = container.rng_service.get_stream_index()
-    if not container.battle_initializer.initialize_battle(battle_state, content_index, init_payload["battle_setup"]):
-        var initializer_error_code = container.battle_initializer.last_error_code
-        var initializer_error_message := String(container.battle_initializer.last_error_message)
+    battle_state.rng_stream_index = rng_service.get_stream_index()
+    if not battle_initializer.initialize_battle(battle_state, content_index, init_payload["battle_setup"]):
+        var initializer_error_code = battle_initializer.last_error_code
+        var initializer_error_message := String(battle_initializer.last_error_message)
         container.dispose()
         return {
             "session": null,
@@ -67,11 +70,12 @@ func run_replay_result(replay_input) -> Dictionary:
     if not bool(compose_result.get("ok", false)):
         return compose_result
     var temp_container = compose_result.get("data", null)
-    var replay_result: Dictionary = temp_container.replay_runner.run_replay_with_context(replay_input)
+    var replay_runner = temp_container.service("replay_runner")
+    var replay_result: Dictionary = replay_runner.run_replay_with_context(replay_input)
     var internal_replay_output = replay_result.get("replay_output", null)
     if internal_replay_output == null:
         var error_result = contract_helper.service_error(
-            temp_container.replay_runner,
+            replay_runner,
             ErrorCodesScript.INVALID_REPLAY_INPUT,
             "BattleCoreManager failed to run replay"
         )

@@ -28,7 +28,7 @@ func _test_persistent_effect_and_rule_mod_survive_manual_switch_contract(harness
     if actor == null or opponent == null:
         return harness.fail_result("missing active units for persistent manual switch contract")
     var effect_definition = resources["persistent_effect"]
-    var persistent_effect = core.effect_instance_service.create_instance(
+    var persistent_effect = core.service("effect_instance_service").create_instance(
         effect_definition,
         actor.unit_instance_id,
         battle_state,
@@ -39,7 +39,7 @@ func _test_persistent_effect_and_rule_mod_survive_manual_switch_contract(harness
     if persistent_effect == null:
         return harness.fail_result("failed to create persistent effect instance")
     var persistent_rule_mod = _build_persistent_rule_mod_payload("test_persistent_group")
-    if core.rule_mod_service.create_instance(
+    if core.service("rule_mod_service").create_instance(
         persistent_rule_mod,
         {"scope": "unit", "id": actor.unit_instance_id},
         battle_state,
@@ -48,8 +48,8 @@ func _test_persistent_effect_and_rule_mod_survive_manual_switch_contract(harness
         actor.base_speed
     ) == null:
         return harness.fail_result("failed to create persistent rule_mod")
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SWITCH,
             "command_source": "manual",
@@ -57,7 +57,7 @@ func _test_persistent_effect_and_rule_mod_survive_manual_switch_contract(harness
             "actor_public_id": "P1-A",
             "target_public_id": "P1-B",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -82,15 +82,15 @@ func _test_persistent_effect_and_rule_mod_survive_manual_switch_contract(harness
         return harness.fail_result("persistent bench effect should not trigger normal turn_end payloads while off-field")
     if int(opponent.current_hp) != int(opponent.max_hp):
         return harness.fail_result("persistent bench effect should not fire expire follow-up before duration ends")
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
             "side_id": "P1",
             "actor_public_id": "P1-B",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 2,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",
@@ -106,13 +106,13 @@ func _test_persistent_effect_and_rule_mod_survive_manual_switch_contract(harness
         return harness.fail_result("persistent bench effect should never trigger normal turn_end payloads while off-field")
     if int(opponent.current_hp) != int(opponent.max_hp):
         return harness.fail_result("persistent bench effect expiry should not run on_expire_effect_ids while off-field")
-    if not _has_event(core.battle_logger.event_log, func(ev):
+    if not _has_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.EFFECT_REMOVE_EFFECT \
             and String(ev.target_instance_id) == String(switched_unit.unit_instance_id) \
             and String(ev.payload_summary).find(String(effect_definition.id)) != -1
     ):
         return harness.fail_result("persistent bench effect expiry should still write remove log")
-    if not _has_event(core.battle_logger.event_log, func(ev):
+    if not _has_event(core.service("battle_logger").event_log, func(ev):
         return ev.event_type == EventTypesScript.EFFECT_RULE_MOD_REMOVE \
             and String(ev.target_instance_id) == String(switched_unit.unit_instance_id)
     ):
@@ -135,7 +135,7 @@ func _test_persistent_effect_and_rule_mod_clear_on_faint_contract(harness) -> Di
     if attacker == null or target == null:
         return harness.fail_result("missing active units for persistent faint contract")
     target.current_hp = 1
-    if core.effect_instance_service.create_instance(
+    if core.service("effect_instance_service").create_instance(
         resources["persistent_effect"],
         target.unit_instance_id,
         battle_state,
@@ -145,7 +145,7 @@ func _test_persistent_effect_and_rule_mod_clear_on_faint_contract(harness) -> Di
     ) == null:
         return harness.fail_result("failed to create faint-side persistent effect instance")
     var persistent_rule_mod = _build_persistent_rule_mod_payload("test_persistent_faint_group")
-    if core.rule_mod_service.create_instance(
+    if core.service("rule_mod_service").create_instance(
         persistent_rule_mod,
         {"scope": "unit", "id": target.unit_instance_id},
         battle_state,
@@ -154,8 +154,8 @@ func _test_persistent_effect_and_rule_mod_clear_on_faint_contract(harness) -> Di
         target.base_speed
     ) == null:
         return harness.fail_result("failed to create faint-side persistent rule_mod")
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
-        core.command_builder.build_command({
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -163,7 +163,7 @@ func _test_persistent_effect_and_rule_mod_clear_on_faint_contract(harness) -> Di
             "actor_public_id": "P1-A",
             "skill_id": "sample_strike",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.WAIT,
             "command_source": "manual",

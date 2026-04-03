@@ -53,7 +53,7 @@ func _test_persistent_stat_stage_switch_and_faint_contract(harness) -> Dictionar
     var actor = battle_state.get_side("P1").get_active_unit()
     if actor == null:
         return harness.fail_result("missing actor for persistent stat switch contract")
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_skill_command(core, 1, "P1", "P1-A", buff_skill.id),
         _support.build_manual_wait_command(core, 1, "P2", "P2-A"),
     ])
@@ -62,7 +62,7 @@ func _test_persistent_stat_stage_switch_and_faint_contract(harness) -> Dictionar
     if actor.get_effective_stage("attack") != 2:
         return harness.fail_result("effective attack stage should include persistent bucket")
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_switch_command(core, 2, "P1", "P1-A", "P1-B"),
         _support.build_manual_wait_command(core, 2, "P2", "P2-A"),
     ])
@@ -71,7 +71,7 @@ func _test_persistent_stat_stage_switch_and_faint_contract(harness) -> Dictionar
     if int(actor.persistent_stat_stages.get("attack", 0)) != 2:
         return harness.fail_result("persistent stat stages should survive manual switch")
 
-    core.leave_service.leave_unit(battle_state, actor, "faint", content_index)
+    core.service("leave_service").leave_unit(battle_state, actor, "faint", content_index)
     if int(actor.persistent_stat_stages.get("attack", 0)) != 0:
         return harness.fail_result("persistent stat stages should clear on faint")
     return harness.pass_result()
@@ -93,24 +93,24 @@ func _test_persistent_stat_stage_effective_read_contract(harness) -> Dictionary:
     actor.persistent_stat_stages["speed"] = 1
     actor.persistent_stat_stages["sp_attack"] = 2
 
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_skill_command(core, 1, "P1", "P1-A", "sample_pyro_blast"),
         _support.build_manual_skill_command(core, 1, "P2", "P2-A", "sample_strike"),
     ])
-    var first_action_actor_id := _find_first_action_actor_id(core.battle_logger.event_log)
+    var first_action_actor_id := _find_first_action_actor_id(core.service("battle_logger").event_log)
     if first_action_actor_id != actor.unit_instance_id:
         return harness.fail_result("persistent speed stage should affect queue order, first actor_id=%s" % first_action_actor_id)
-    var expected_damage: int = core.damage_service.apply_final_mod(
-        core.damage_service.calc_base_damage(
+    var expected_damage: int = core.service("damage_service").apply_final_mod(
+        core.service("damage_service").calc_base_damage(
             battle_state.battle_level,
             int(content_index.skills["sample_pyro_blast"].power),
-            core.stat_calculator.calc_effective_stat(actor.base_sp_attack, 2),
+            core.service("stat_calculator").calc_effective_stat(actor.base_sp_attack, 2),
             target.base_sp_defense
         ),
-        core.combat_type_service.calc_effectiveness("fire", target.combat_type_ids)
+        core.service("combat_type_service").calc_effectiveness("fire", target.combat_type_ids)
     )
-    var actual_damage: int = harness.extract_damage_from_log(core.battle_logger.event_log, "P1-A")
+    var actual_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
     if actual_damage != expected_damage:
         return harness.fail_result("persistent sp_attack stage should affect direct damage: expected=%d actual=%d" % [expected_damage, actual_damage])
     return harness.pass_result()

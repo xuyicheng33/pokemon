@@ -109,11 +109,11 @@ func _test_visibility_mode_runtime_decoupled_contract(harness) -> Dictionary:
 	var stable_state = battle_state.to_stable_dict()
 	if str(stable_state.get("visibility_mode", "")) != "test_custom_visibility_mode":
 		return harness.fail_result("BattleState.to_stable_dict should serialize visibility_mode from runtime field")
-	var public_snapshot = core.public_snapshot_builder.build_public_snapshot(battle_state, content_index)
+	var public_snapshot = core.service("public_snapshot_builder").build_public_snapshot(battle_state, content_index)
 	if str(public_snapshot.get("visibility_mode", "")) != "test_custom_visibility_mode":
 		return harness.fail_result("public snapshot should read visibility_mode from battle_state.visibility_mode")
 	var header_event = null
-	for log_event in core.battle_logger.event_log:
+	for log_event in core.service("battle_logger").event_log:
 		if log_event.event_type == EventTypesScript.SYSTEM_BATTLE_HEADER:
 			header_event = log_event
 			break
@@ -203,9 +203,9 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
 	battle_setup.sides[0].starting_index = 0
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var reference_state = harness.build_initialized_battle(core, content_index, sample_factory, 903, battle_setup)
-	var reference_snapshot = core.public_snapshot_builder.build_public_snapshot(reference_state, content_index)
+	var reference_snapshot = core.service("public_snapshot_builder").build_public_snapshot(reference_state, content_index)
 	var expected_p1_snapshot = _helper.find_side_snapshot(reference_snapshot, "P1")
-	var expected_legal_actions = core.legal_action_service.get_legal_actions(reference_state, "P1", content_index)
+	var expected_legal_actions = core.service("legal_action_service").get_legal_actions(reference_state, "P1", content_index)
 	var init_result = manager.create_session({
 		"battle_seed": 903,
 		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
@@ -258,15 +258,15 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
 	if not bool(after_turn_unwrap.get("ok", false)):
 		return harness.fail_result(str(after_turn_unwrap.get("error", "manager run_turn failed")))
 	var after_turn: Dictionary = after_turn_unwrap.get("data", {})
-	core.turn_loop_controller.run_turn(reference_state, content_index, [
-		core.command_builder.build_command({
+	core.service("turn_loop_controller").run_turn(reference_state, content_index, [
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.WAIT,
 			"command_source": "manual",
 			"side_id": "P1",
 			"actor_public_id": "P1-A",
 		}),
-		core.command_builder.build_command({
+		core.service("command_builder").build_command({
 			"turn_index": 1,
 			"command_type": CommandTypesScript.WAIT,
 			"command_source": "manual",
@@ -274,7 +274,7 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
 			"actor_public_id": "P2-A",
 		}),
 	])
-	var expected_after_snapshot = core.public_snapshot_builder.build_public_snapshot(reference_state, content_index)
+	var expected_after_snapshot = core.service("public_snapshot_builder").build_public_snapshot(reference_state, content_index)
 	var after_snapshot: Dictionary = after_turn.get("public_snapshot", {})
 	var after_p1_snapshot = _helper.find_side_snapshot(after_snapshot, "P1")
 	var expected_after_p1_snapshot = _helper.find_side_snapshot(expected_after_snapshot, "P1")
@@ -309,7 +309,7 @@ func _test_validator_internal_id_backfill_contract(harness) -> Dictionary:
 	var target_unit = battle_state.get_unit_by_public_id("P1-B")
 	if actor_unit == null or target_unit == null:
 		return harness.fail_result("validator backfill test missing units")
-	var command = core.command_builder.build_command({
+	var command = core.service("command_builder").build_command({
 		"turn_index": 1,
 		"command_type": CommandTypesScript.SWITCH,
 		"command_source": "resource_auto",
@@ -317,7 +317,7 @@ func _test_validator_internal_id_backfill_contract(harness) -> Dictionary:
 		"actor_id": actor_unit.unit_instance_id,
 		"target_unit_id": target_unit.unit_instance_id,
 	})
-	if not core.command_validator.validate_command(command, battle_state, content_index):
+	if not core.service("command_validator").validate_command(command, battle_state, content_index):
 		return harness.fail_result("internal switch command using runtime ids should remain valid")
 	if command.actor_public_id != "P1-A" or command.target_public_id != "P1-B":
 		return harness.fail_result("validator should backfill public ids when internal runtime ids are supplied")

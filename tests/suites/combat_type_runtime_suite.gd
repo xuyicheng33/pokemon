@@ -94,12 +94,12 @@ func _test_combat_type_default_and_recoil_paths(harness) -> Dictionary:
         if bench_unit != null:
             bench_unit.current_hp = 0
 
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [])
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [])
 
     var default_damage_found: bool = false
     var recoil_damage_found: bool = false
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type != EventTypesScript.EFFECT_DAMAGE:
             continue
         if String(ev.payload_summary).find("dealt") != -1:
@@ -145,9 +145,9 @@ func _test_recoil_ratio_runtime_config_contract(harness) -> Dictionary:
         var bench_unit = battle_state.get_unit(bench_unit_id)
         if bench_unit != null:
             bench_unit.current_hp = 0
-    core.turn_loop_controller.run_turn(battle_state, content_index, [])
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [])
     var actual_recoil: int = -1
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type != EventTypesScript.EFFECT_DAMAGE:
             continue
         if ev.target_instance_id != p1_active.unit_instance_id:

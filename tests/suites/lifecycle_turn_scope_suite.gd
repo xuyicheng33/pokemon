@@ -78,10 +78,10 @@ func _test_turn_scope_active_and_field(harness) -> Dictionary:
     field_state.source_order_speed_snapshot = p1_active.base_speed
     battle_state.field_state = field_state
 
-    core.turn_loop_controller.run_turn(battle_state, content_index, [])
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [])
     var passive_event_count: int = 0
     var field_event_count: int = 0
-    for ev in core.battle_logger.event_log:
+    for ev in core.service("battle_logger").event_log:
         if ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("passive_skill:"):
             passive_event_count += 1
             if bench_ids.has(ev.target_instance_id):

@@ -55,7 +55,7 @@ func _test_lifecycle_faint_replace_chain(harness) -> Dictionary:
     var p2_active = battle_state.get_side("P2").get_active_unit()
     p2_active.current_hp = 1
     var commands: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -63,7 +63,7 @@ func _test_lifecycle_faint_replace_chain(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "skill_id": "sample_strike",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -72,15 +72,15 @@ func _test_lifecycle_faint_replace_chain(harness) -> Dictionary:
             "skill_id": "sample_strike",
         }),
     ]
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
 
     var faint_idx := -1
     var kill_effect_idx := -1
     var exit_idx := -1
     var replace_idx := -1
     var enter_idx := -1
-    for i in range(core.battle_logger.event_log.size()):
-        var ev = core.battle_logger.event_log[i]
+    for i in range(core.service("battle_logger").event_log.size()):
+        var ev = core.service("battle_logger").event_log[i]
         if faint_idx == -1 and ev.event_type == EventTypesScript.STATE_FAINT:
             faint_idx = i
         if kill_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("passive_skill:"):
@@ -173,7 +173,7 @@ func _test_manual_switch_lifecycle_chain(harness) -> Dictionary:
 
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 108)
     var commands: Array = [
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SWITCH,
             "command_source": "manual",
@@ -181,7 +181,7 @@ func _test_manual_switch_lifecycle_chain(harness) -> Dictionary:
             "actor_public_id": "P1-A",
             "target_public_id": "P1-B",
         }),
-        core.command_builder.build_command({
+        core.service("command_builder").build_command({
             "turn_index": 1,
             "command_type": CommandTypesScript.SKILL,
             "command_source": "manual",
@@ -190,7 +190,7 @@ func _test_manual_switch_lifecycle_chain(harness) -> Dictionary:
             "skill_id": "sample_strike",
         }),
     ]
-    core.turn_loop_controller.run_turn(battle_state, content_index, commands)
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
 
     var switch_idx := -1
     var on_switch_effect_idx := -1
@@ -198,8 +198,8 @@ func _test_manual_switch_lifecycle_chain(harness) -> Dictionary:
     var state_exit_idx := -1
     var state_enter_idx := -1
     var on_enter_effect_idx := -1
-    for i in range(core.battle_logger.event_log.size()):
-        var ev = core.battle_logger.event_log[i]
+    for i in range(core.service("battle_logger").event_log.size()):
+        var ev = core.service("battle_logger").event_log[i]
         if switch_idx == -1 and ev.event_type == EventTypesScript.STATE_SWITCH:
             switch_idx = i
         if on_switch_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("passive_skill:"):
@@ -235,8 +235,8 @@ func _test_replacement_selector_paths(harness) -> Dictionary:
     var legal_selector := TestReplacementSelector.new()
     var chosen_unit_id: String = legal_side.bench_order[1]
     legal_selector.next_selection = chosen_unit_id
-    core.replacement_service.replacement_selector = legal_selector
-    var legal_result: Dictionary = core.replacement_service.resolve_replacement(legal_state, legal_side, "forced_replace")
+    core.service("replacement_service").replacement_selector = legal_selector
+    var legal_result: Dictionary = core.service("replacement_service").resolve_replacement(legal_state, legal_side, "forced_replace")
     if legal_result.get("invalid_code", null) != null:
         return harness.fail_result("legal replacement selection should pass")
     var entered_unit = legal_result.get("entered_unit", null)
@@ -247,8 +247,8 @@ func _test_replacement_selector_paths(harness) -> Dictionary:
     var invalid_side = invalid_state.get_side("P1")
     var invalid_selector := TestReplacementSelector.new()
     invalid_selector.next_selection = "unit_not_in_bench"
-    core.replacement_service.replacement_selector = invalid_selector
-    var invalid_result: Dictionary = core.replacement_service.resolve_replacement(invalid_state, invalid_side, "forced_replace")
+    core.service("replacement_service").replacement_selector = invalid_selector
+    var invalid_result: Dictionary = core.service("replacement_service").resolve_replacement(invalid_state, invalid_side, "forced_replace")
     if invalid_result.get("invalid_code", null) != ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
         return harness.fail_result("invalid replacement target should fail-fast with invalid_replacement_selection")
 
@@ -256,8 +256,8 @@ func _test_replacement_selector_paths(harness) -> Dictionary:
     var empty_side = empty_state.get_side("P1")
     var empty_selector := TestReplacementSelector.new()
     empty_selector.next_selection = null
-    core.replacement_service.replacement_selector = empty_selector
-    var empty_result: Dictionary = core.replacement_service.resolve_replacement(empty_state, empty_side, "faint")
+    core.service("replacement_service").replacement_selector = empty_selector
+    var empty_result: Dictionary = core.service("replacement_service").resolve_replacement(empty_state, empty_side, "faint")
     if empty_result.get("invalid_code", null) != ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
         return harness.fail_result("empty replacement selection should fail-fast with invalid_replacement_selection")
 

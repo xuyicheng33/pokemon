@@ -35,15 +35,15 @@ func _test_kashimo_raiken_negative_charge_contract(harness) -> Dictionary:
     if expected_tick <= 0:
         return harness.fail_result("failed to resolve negative charge expected damage")
     for turn_index in range(1, 4):
-        core.battle_logger.reset()
-        core.turn_loop_controller.run_turn(battle_state, content_index, [
+        core.service("battle_logger").reset()
+        core.service("turn_loop_controller").run_turn(battle_state, content_index, [
             _support.build_manual_skill_command(core, turn_index, "P1", "P1-A", "kashimo_raiken"),
             _support.build_manual_wait_command(core, turn_index, "P2", "P2-C"),
         ])
         var stack_count: int = _support.count_effect_instances(target, "kashimo_negative_charge_mark")
         if stack_count != turn_index:
             return harness.fail_result("raiken should leave %d negative charge stacks after turn %d, actual=%d" % [turn_index, turn_index, stack_count])
-        var tick_deltas: Array[int] = _collect_trigger_damage_deltas(core.battle_logger.event_log, target.unit_instance_id, "turn_end")
+        var tick_deltas: Array[int] = _collect_trigger_damage_deltas(core.service("battle_logger").event_log, target.unit_instance_id, "turn_end")
         if tick_deltas.size() != turn_index:
             return harness.fail_result("negative charge should emit %d turn_end ticks on turn %d, actual=%d" % [turn_index, turn_index, tick_deltas.size()])
         for tick_delta in tick_deltas:
@@ -62,20 +62,20 @@ func _test_kashimo_charge_positive_charge_contract(harness) -> Dictionary:
     if kashimo == null:
         return harness.fail_result("missing kashimo active unit for charge contract")
     for turn_index in range(1, 4):
-        core.turn_loop_controller.run_turn(battle_state, content_index, [
+        core.service("turn_loop_controller").run_turn(battle_state, content_index, [
             _support.build_manual_skill_command(core, turn_index, "P1", "P1-A", "kashimo_charge"),
             _support.build_manual_wait_command(core, turn_index, "P2", "P2-A"),
         ])
     if _support.count_effect_instances(kashimo, "kashimo_positive_charge_mark") != 3:
         return harness.fail_result("charge should leave three positive charge stacks after three casts")
     var mp_before_turn_four: int = kashimo.current_mp
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_wait_command(core, 4, "P1", "P1-A"),
         _support.build_manual_wait_command(core, 4, "P2", "P2-A"),
     ])
     var plus_five_events: int = 0
-    for event in core.battle_logger.event_log:
+    for event in core.service("battle_logger").event_log:
         if event.event_type != EventTypesScript.EFFECT_RESOURCE_MOD:
             continue
         if String(event.trigger_name) != "turn_start" or String(event.target_instance_id) != String(kashimo.unit_instance_id):
@@ -111,30 +111,30 @@ func _test_kashimo_feedback_strike_dynamic_power_and_clear_contract(harness) -> 
     if positive_mark == null or negative_mark == null:
         return harness.fail_result("missing charge mark definitions for feedback strike contract")
     for _i in range(2):
-        if core.effect_instance_service.create_instance(positive_mark, kashimo.unit_instance_id, battle_state, "test_feedback_positive", 0, kashimo.base_speed) == null:
+        if core.service("effect_instance_service").create_instance(positive_mark, kashimo.unit_instance_id, battle_state, "test_feedback_positive", 0, kashimo.base_speed) == null:
             return harness.fail_result("failed to seed positive charges for feedback strike contract")
-        if core.effect_instance_service.create_instance(negative_mark, target.unit_instance_id, battle_state, "test_feedback_negative", 0, kashimo.base_speed) == null:
+        if core.service("effect_instance_service").create_instance(negative_mark, target.unit_instance_id, battle_state, "test_feedback_negative", 0, kashimo.base_speed) == null:
             return harness.fail_result("failed to seed negative charges for feedback strike contract")
     if _support.count_effect_instances(kashimo, "kashimo_positive_charge_mark") != 2:
         return harness.fail_result("feedback strike setup should leave two positive charges before cast")
     if _support.count_effect_instances(target, "kashimo_negative_charge_mark") != 2:
         return harness.fail_result("feedback strike setup should leave two negative charges before cast")
     var expected_power: int = 30 + 12 * 4
-    var expected_damage: int = core.damage_service.apply_final_mod(
-        core.damage_service.calc_base_damage(
+    var expected_damage: int = core.service("damage_service").apply_final_mod(
+        core.service("damage_service").calc_base_damage(
             battle_state.battle_level,
             expected_power,
             kashimo.base_sp_attack,
             target.base_sp_defense
         ),
-        core.combat_type_service.calc_effectiveness("thunder", target.combat_type_ids)
+        core.service("combat_type_service").calc_effectiveness("thunder", target.combat_type_ids)
     )
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_skill_command(core, 1, "P1", "P1-A", "kashimo_feedback_strike"),
         _support.build_manual_wait_command(core, 1, "P2", "P2-C"),
     ])
-    var actual_damage: int = harness.extract_damage_from_log(core.battle_logger.event_log, "P1-A")
+    var actual_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
     if actual_damage != expected_damage:
         return harness.fail_result("feedback strike damage mismatch: expected=%d actual=%d" % [expected_damage, actual_damage])
     if _support.count_effect_instances(kashimo, "kashimo_positive_charge_mark") != 0:
@@ -172,12 +172,12 @@ func _test_kashimo_kyokyo_katsura_nullify_field_accuracy_contract(harness) -> Di
     if baseline_target == null or baseline_actor == null:
         return harness.fail_result("missing active units for kyokyo baseline contract")
     baseline_state.field_state = _build_override_field_state("gojo_unlimited_void_field", baseline_actor.unit_instance_id)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(baseline_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(baseline_state, content_index, [
         _support.build_manual_wait_command(core, 1, "P1", "P1-A"),
         _support.build_manual_skill_command(core, 1, "P2", "P2-A", zero_skill.id),
     ])
-    if harness.extract_damage_from_log(core.battle_logger.event_log, "P2-A") <= 0:
+    if harness.extract_damage_from_log(core.service("battle_logger").event_log, "P2-A") <= 0:
         return harness.fail_result("domain accuracy override should force zero-accuracy skill to hit before kyokyo")
 
     var protected_setup = _support.build_kashimo_setup(sample_factory)
@@ -187,12 +187,12 @@ func _test_kashimo_kyokyo_katsura_nullify_field_accuracy_contract(harness) -> Di
     if protected_target == null or protected_actor == null:
         return harness.fail_result("missing active units for kyokyo protected contract")
     protected_state.field_state = _build_override_field_state("gojo_unlimited_void_field", protected_actor.unit_instance_id)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(protected_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(protected_state, content_index, [
         _support.build_manual_skill_command(core, 1, "P1", "P1-A", "kashimo_kyokyo_katsura"),
         _support.build_manual_skill_command(core, 1, "P2", "P2-A", zero_skill.id),
     ])
-    if harness.extract_damage_from_log(core.battle_logger.event_log, "P2-A") != 0:
+    if harness.extract_damage_from_log(core.service("battle_logger").event_log, "P2-A") != 0:
         return harness.fail_result("kyokyo katsura should restore original miss rate under domain accuracy override")
     return harness.pass_result()
 
@@ -220,12 +220,12 @@ func _test_kashimo_thunder_resist_contract(harness) -> Dictionary:
     baseline_content.units["sample_tidekit"].skill_ids[0] = thunder_skill.id
     baseline_content.units["kashimo_hajime"].passive_skill_id = ""
     var baseline_state = _support.build_battle_state(core, baseline_content, _support.build_kashimo_setup(sample_factory), 806)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(baseline_state, baseline_content, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(baseline_state, baseline_content, [
         _support.build_manual_wait_command(core, 1, "P1", "P1-A"),
         _support.build_manual_skill_command(core, 1, "P2", "P2-A", thunder_skill.id),
     ])
-    var baseline_damage: int = harness.extract_damage_from_log(core.battle_logger.event_log, "P2-A")
+    var baseline_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P2-A")
     if baseline_damage <= 0:
         return harness.fail_result("missing baseline thunder damage against kashimo")
 
@@ -233,13 +233,13 @@ func _test_kashimo_thunder_resist_contract(harness) -> Dictionary:
     resisted_content.register_resource(thunder_skill)
     resisted_content.units["sample_tidekit"].skill_ids[0] = thunder_skill.id
     var resisted_state = _support.build_battle_state(core, resisted_content, _support.build_kashimo_setup(sample_factory), 807)
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(resisted_state, resisted_content, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(resisted_state, resisted_content, [
         _support.build_manual_wait_command(core, 1, "P1", "P1-A"),
         _support.build_manual_skill_command(core, 1, "P2", "P2-A", thunder_skill.id),
     ])
-    var resisted_damage: int = harness.extract_damage_from_log(core.battle_logger.event_log, "P2-A")
-    var expected_resisted_damage: int = core.damage_service.apply_final_mod(baseline_damage, 0.5)
+    var resisted_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P2-A")
+    var expected_resisted_damage: int = core.service("damage_service").apply_final_mod(baseline_damage, 0.5)
     if resisted_damage != expected_resisted_damage:
         return harness.fail_result("kashimo thunder resist mismatch: expected=%d actual=%d baseline=%d" % [expected_resisted_damage, resisted_damage, baseline_damage])
     return harness.pass_result()
@@ -274,8 +274,8 @@ func _test_kashimo_water_leak_counter_contract(harness) -> Dictionary:
         return harness.fail_result("missing active units for water leak contract")
     kashimo.current_hp = 1
     kashimo.current_mp = 20
-    core.battle_logger.reset()
-    core.turn_loop_controller.run_turn(battle_state, content_index, [
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _support.build_manual_wait_command(core, 1, "P1", "P1-A"),
         _support.build_manual_skill_command(core, 1, "P2", "P2-C", water_skill.id),
     ])
@@ -284,7 +284,7 @@ func _test_kashimo_water_leak_counter_contract(harness) -> Dictionary:
     if kashimo.current_mp != 5:
         return harness.fail_result("water leak should reduce kashimo mp by 15 even on lethal hit: expected=5 actual=%d" % kashimo.current_mp)
     var expected_counter_damage: int = _support.calc_expected_fixed_effect_damage(core, content_index, "kashimo_water_leak_counter_listener", attacker)
-    var actual_counter_damage: int = _find_counter_damage(core.battle_logger.event_log, attacker.unit_instance_id)
+    var actual_counter_damage: int = _find_counter_damage(core.service("battle_logger").event_log, attacker.unit_instance_id)
     if actual_counter_damage != expected_counter_damage:
         return harness.fail_result("water leak counter damage mismatch: expected=%d actual=%d" % [expected_counter_damage, actual_counter_damage])
     return harness.pass_result()

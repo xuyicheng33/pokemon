@@ -10,7 +10,9 @@
 |`effect_instance_dispatcher.gd`|按触发点收集持续效果实例 + 回合节点扣减|
 |`trigger_batch_runner.gd`|统一执行单个触发批次（收集 -> 排序 -> 执行）|
 |`effect_queue_service.gd`|对同批次 `EffectEvent` 排序|
-|`payload_executor.gd`|执行 payload 并写日志|
+|`payload_executor.gd`|执行 effect guard、前置守卫与 payload 分派|
+|`effect_precondition_service.gd`|处理 `required_target_*` 与 incoming action 过滤前置守卫|
+|`payload_handler_registry.gd`|声明 payload script 到单 payload handler 的唯一映射|
 |`effect_instance_service.gd`|管理持续效果实例|
 |`rule_mod_service.gd`|`rule_mod` facade，对外维持单入口|
 |`rule_mod_read_service.gd`|`rule_mod` 读取查询（合法性、命中、最终倍率、回蓝）|
@@ -46,7 +48,7 @@
 
 当前完整触发点全集与扩展约束，以 `docs/rules/06_effect_schema_and_extension.md` 第 4 节为权威；本文件不重复维护一份独立触发点清单，避免文档漂移。
 
-## 4. PayloadExecutor
+## 4. Payload 执行模型
 
 当前支持最小 payload：
 
@@ -60,9 +62,23 @@
 - `rule_mod`
 - `forced_replace`
 
-实现状态说明（2026-03-25）：
+当前执行模型：
 
-- `forced_replace` payload 已接线到 `PayloadExecutor`，执行顺序固定为 `on_switch -> on_exit -> leave -> replace -> on_enter`。
+- `PayloadExecutor` 只负责：
+  - effect dedupe / chain depth / missing dependency hard-stop
+  - 调用 `EffectPreconditionService`
+  - 按 `PayloadHandlerRegistry` 分派到单 payload handler
+- registry 当前固定一对一路由：
+  - `damage -> PayloadDamageHandler`
+  - `heal -> PayloadHealHandler`
+  - `resource_mod -> PayloadResourceModHandler`
+  - `stat_mod -> PayloadStatModHandler`
+  - `apply_field -> PayloadApplyFieldHandler`
+  - `apply_effect -> PayloadApplyEffectHandler`
+  - `remove_effect -> PayloadRemoveEffectHandler`
+  - `rule_mod -> PayloadRuleModHandler`
+  - `forced_replace -> PayloadForcedReplaceHandler`
+- `payload_damage_runtime_service / payload_resource_runtime_service / payload_stat_mod_runtime_service` 保留为稳定数值执行层，不借分派重构改语义。
 
 fail-fast 约束：
 
@@ -72,7 +88,7 @@ fail-fast 约束：
 
 effect 级前置约束：
 
-- 当前 `required_target_effects` 已接线到 `PayloadExecutor`。
+- 当前 `required_target_effects / required_target_same_owner / required_incoming_command_types / required_incoming_combat_type_ids` 已统一下沉到 `EffectPreconditionService`。
 - 该前置只允许挂在 `scope=target` 的 effect 上；目标固定读取 `chain_context.target_unit_id`。
 - 若 `required_target_same_owner=true`，则命中的 required effect instance 还必须记录 `meta.source_owner_id == effect_event.owner_id`。
 - 前置不满足时整条 effect 直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
