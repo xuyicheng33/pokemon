@@ -11,12 +11,14 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
+const FormalCharacterValidatorRegistryScript := preload("res://src/battle_core/content/content_snapshot_formal_character_registry.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("content_validation_failures", failures, Callable(self, "_test_content_validation_failures").bind(harness))
 	runner.run_test("content_validation_new_constraints", failures, Callable(self, "_test_content_validation_new_constraints").bind(harness))
 	runner.run_test("formal_character_shared_fire_burst_validation", failures, Callable(self, "_test_formal_character_shared_fire_burst_validation").bind(harness))
+	runner.run_test("formal_character_validator_registry_runtime_contract", failures, Callable(self, "_test_formal_character_validator_registry_runtime_contract").bind(harness))
 	runner.run_test("unsupported_resource_snapshot_fails_fast", failures, Callable(self, "_test_unsupported_resource_snapshot_fails_fast").bind(harness))
 	runner.run_test("on_receive_forbidden_in_content", failures, Callable(self, "_test_on_receive_forbidden_in_content").bind(harness))
 	runner.run_test("battle_format_runtime_constant_validation", failures, Callable(self, "_test_battle_format_runtime_constant_validation").bind(harness))
@@ -241,6 +243,19 @@ func _test_formal_character_shared_fire_burst_validation(harness) -> Dictionary:
 		if str(error_msg).find("formal[sukuna].shared_fire_burst payload mismatch") != -1:
 			return harness.pass_result()
 	return harness.fail_result("formal shared fire burst validation should fail when Sukuna payloads drift")
+
+func _test_formal_character_validator_registry_runtime_contract(harness) -> Dictionary:
+	var registry_result: Dictionary = FormalCharacterValidatorRegistryScript.build_validator_instances()
+	var error_message := String(registry_result.get("error", ""))
+	if not error_message.is_empty():
+		return harness.fail_result("formal character validator registry should load cleanly: %s" % error_message)
+	var validators: Array = registry_result.get("validators", [])
+	if validators.is_empty():
+		return harness.fail_result("formal character validator registry should expose at least one validator")
+	for validator in validators:
+		if validator == null or not validator.has_method("validate"):
+			return harness.fail_result("formal character validator registry returned invalid validator instance")
+	return harness.pass_result()
 
 func _test_unsupported_resource_snapshot_fails_fast(_harness) -> Dictionary:
 	var content_index = BattleContentIndexScript.new()

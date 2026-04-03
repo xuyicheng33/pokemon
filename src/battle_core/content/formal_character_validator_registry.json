@@ -1,0 +1,14 @@
+[
+  {
+    "character_id": "gojo_satoru",
+    "content_validator_script_path": "src/battle_core/content/content_snapshot_formal_gojo_validator.gd"
+  },
+  {
+    "character_id": "sukuna",
+    "content_validator_script_path": "src/battle_core/content/content_snapshot_formal_sukuna_validator.gd"
+  },
+  {
+    "character_id": "kashimo_hajime",
+    "content_validator_script_path": "src/battle_core/content/content_snapshot_formal_kashimo_validator.gd"
+  }
+]

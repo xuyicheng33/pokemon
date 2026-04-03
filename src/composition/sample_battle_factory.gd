@@ -78,6 +78,14 @@ func build_gojo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
+func build_sukuna_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
+    var battle_setup = build_sample_setup(side_regular_skill_overrides)
+    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_tidekit"])
+    battle_setup.sides[0].starting_index = 0
+    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
+    battle_setup.sides[1].starting_index = 0
+    return battle_setup
+
 func build_kashimo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
     var battle_setup = build_sample_setup(side_regular_skill_overrides)
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["kashimo_hajime", "sample_mossaur", "sample_pyron"])

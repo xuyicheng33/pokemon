@@ -6,6 +6,7 @@
     "design_doc": "docs/design/gojo_satoru_design.md",
     "adjustment_doc": "docs/design/gojo_satoru_adjustments.md",
     "suite_path": "tests/suites/gojo_suite.gd",
+    "sample_setup_method": "build_gojo_vs_sample_setup",
     "content_validator_script_path": "src/battle_core/content/content_snapshot_formal_gojo_validator.gd",
     "required_suite_paths": [
       "tests/suites/gojo_setup_and_markers_suite.gd",
@@ -96,6 +97,7 @@
     "design_doc": "docs/design/sukuna_design.md",
     "adjustment_doc": "docs/design/sukuna_adjustments.md",
     "suite_path": "tests/suites/sukuna_suite.gd",
+    "sample_setup_method": "build_sukuna_vs_sample_setup",
     "content_validator_script_path": "src/battle_core/content/content_snapshot_formal_sukuna_validator.gd",
     "required_suite_paths": [
       "tests/suites/sukuna_setup_loadout_regen_suite.gd",
@@ -175,6 +177,7 @@
     "design_doc": "docs/design/kashimo_hajime_design.md",
     "adjustment_doc": "docs/design/kashimo_hajime_adjustments.md",
     "suite_path": "tests/suites/kashimo_suite.gd",
+    "sample_setup_method": "build_kashimo_vs_sample_setup",
     "content_validator_script_path": "src/battle_core/content/content_snapshot_formal_kashimo_validator.gd",
     "required_suite_paths": [
       "tests/suites/kashimo_snapshot_suite.gd",
