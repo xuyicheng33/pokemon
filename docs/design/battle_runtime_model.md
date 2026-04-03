@@ -163,7 +163,7 @@
 |字段|类型|说明|
 |---|---|---|
 |`instance_id`|`String`|实例 ID|
-|`mod_kind`|`String`|`final_mod / mp_regen / action_legality / incoming_accuracy`|
+|`mod_kind`|`String`|`final_mod / mp_regen / action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod`|
 |`mod_op`|`String`|`mul / add / set / allow / deny`|
 |`value`|`Variant`|运算值|
 |`scope`|`String`|生效域（如 `self / field`）|
@@ -178,13 +178,13 @@
 |`source_kind_order`|`int`|来源类型|
 |`source_order_speed_snapshot`|`int`|速度快照|
 |`persists_on_switch`|`bool`|非击倒离场时是否保留该规则修正|
-|`source_stacking_key`|`String`|多来源分组键；当前供 `mp_regen / incoming_accuracy` 使用|
+|`source_stacking_key`|`String`|多来源分组键；当前供 `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 使用|
 |`priority`|`int`|读取顺序优先级|
 
 补充说明：
 
-- `action_legality` 与 `incoming_accuracy` 已是当前运行态 contract 的正式组成部分。
-- `mp_regen / incoming_accuracy` 当前按“来源分组内走 stacking、不同来源组并存”的主线语义运行；`source_stacking_key` 的解析优先级为 `payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
+- `action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 已是当前运行态 contract 的正式组成部分。
+- `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 当前按“来源分组内走 stacking、不同来源组并存”的主线语义运行；`source_stacking_key` 的解析优先级为 `payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
 - `persists_on_switch=true` 的 unit rule mod 在非击倒离场后继续保留；`faint` 仍然清空全部 unit rule mod。
 
 ## 10. 临时状态重置点

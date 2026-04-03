@@ -45,12 +45,12 @@
   - [ ] `character_id / display_name / unit_definition_id`
   - [ ] `design_doc / adjustment_doc`
   - [ ] `suite_path`
-  - [ ] `sample_setup_method`
+  - [ ] `sample_setup_method`（必须与 `SampleBattleFactory` 里的 builder 方法名完全一致）
   - [ ] `required_content_paths`
   - [ ] `required_suite_paths`
   - [ ] `required_test_names`
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
-- [ ] 若补了 `content_validator_script_path`，同步刷新 `src/battle_core/content/formal_character_validator_registry.json`
+- [ ] 若补了 `content_validator_script_path`，同步刷新 `src/battle_core/content/formal_character_validator_registry.json`，并确保 `character_id / content_validator_script_path` 与 docs registry 完全一致
 
 ## 4. 测试最低面
 

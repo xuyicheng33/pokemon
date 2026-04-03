@@ -16,8 +16,55 @@
 - 当前优先级：
   - 先修运行时硬问题，确保坏依赖与重复 rule_mod 不再静默漏报
   - 再补文档与 gate 漂移，确保正式角色交付面、effect schema 与 README 统计一致
-  - 再收 formal registry / runtime validator / manager smoke / repo consistency gate 的边界，降低扩第 4 个角色时的耦合与漏线风险
+- 再收 formal registry / runtime validator / manager smoke / repo consistency gate 的边界，降低扩第 4 个角色时的耦合与漏线风险
   - 每阶段都要完成验证、提交、推送，并在进入下一阶段前把工作区收干净
+
+## 2026-04-03
+
+### 正式角色交付契约收口与 `rule_mod` 热区拆分（已完成）
+
+- 目标：
+  - 修正 formal validator runtime 读取面、formal registry 元数据、文档口径与 gate 之间的漂移
+  - 把 `rule_mod` runtime 热区从单大文件拆回 wrapper + 子 suite 结构
+  - 不改战斗玩法与公开 facade，只收口交付契约、文档和测试组织
+- 范围：
+  - `src/battle_core/content/*`
+  - `src/composition/sample_battle_factory.gd`
+  - `docs/records/formal_character_registry.json`
+  - `docs/design/battle_runtime_model.md`
+  - `docs/design/formal_character_delivery_checklist.md`
+  - `README.md`
+  - `tests/gates/*`
+  - `tests/suites/content_validation_core_suite.gd`
+  - `tests/suites/rule_mod_runtime*.gd`
+- 验收标准：
+  - runtime validator registry 与 docs registry 重新收回“code-side read model + docs 交付面记录”的同一口径
+  - formal registry 显式补齐 `sample_setup_method`，并由 gate 校验对应 `SampleBattleFactory` builder 存在
+  - `battle_runtime_model.md` 的 `RuleModInstance` 说明补齐 `nullify_field_accuracy / incoming_action_final_mod`
+  - `rule_mod` runtime core 热区完成拆分，现有测试名与 reachability 不漂移
+
+#### 当前执行结果
+
+- 已新增 `src/battle_core/content/formal_character_validator_registry.json`，运行时 `ContentSnapshotFormalCharacterRegistry` 现在只读取这份 code-side registry，不再直接读取 `docs/records/formal_character_registry.json`
+- `tests/gates/repo_consistency_formal_character_gate.py` 已改成双向校验 docs registry 与 runtime validator registry 的 `character_id / content_validator_script_path`
+- 已新增 `formal_character_validator_registry_runtime_contract`，直接断言 runtime validator registry 可加载且能实例化 validator
+- 正式角色 registry 已补齐 `sample_setup_method`：
+  - `gojo_satoru -> build_gojo_vs_sample_setup`
+  - `sukuna -> build_sukuna_vs_sample_setup`
+  - `kashimo_hajime -> build_kashimo_vs_sample_setup`
+- 已新增 `SampleBattleFactory.build_sukuna_vs_sample_setup(...)`
+- `repo_consistency_formal_character_gate.py` 已显式校验 `sample_setup_method` 非空且对应 builder 存在，不再用 `unit_definition_id` 的字符串包含兜底
+- `README.md`、`tests/README.md`、`formal_character_delivery_checklist.md` 与 `battle_runtime_model.md` 已同步到当前正式口径
+- `rule_mod_runtime_core_suite.gd` 已改成薄 wrapper，并拆出：
+  - `rule_mod_runtime_core_paths_suite.gd`
+  - `rule_mod_runtime_extension_suite.gd`
+
+#### 当前验证结果
+
+- `git diff --check` 通过
+- `python3 tests/gates/repo_consistency_formal_character_gate.py` 通过
+- `python3 tests/gates/repo_consistency_docs_gate.py` 通过
+- `godot --headless --path . --script tests/run_all.gd` 通过
 
 ## 2026-04-02
 
