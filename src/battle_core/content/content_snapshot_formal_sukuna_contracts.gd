@@ -78,8 +78,45 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"priority": -2,
 			"combat_type_id": "fire",
 			"targeting": "enemy_active_slot",
-		},
-		PackedStringArray(["sukuna_apply_kamado"])
+			"effects_on_hit_ids": PackedStringArray(["sukuna_apply_kamado"]),
+		}
+	)
+	_validate_skill_contract(
+		validator,
+		content_index,
+		errors,
+		"formal[sukuna].reverse_ritual",
+		"sukuna_reverse_ritual",
+		{
+			"display_name": "反转术式",
+			"damage_kind": "none",
+			"power": 0,
+			"accuracy": 100,
+			"mp_cost": 14,
+			"priority": 0,
+			"combat_type_id": "",
+			"targeting": "self",
+			"effects_on_cast_ids": PackedStringArray(["sukuna_reverse_heal"]),
+		}
+	)
+	_validate_skill_contract(
+		validator,
+		content_index,
+		errors,
+		"formal[sukuna].fukuma_mizushi",
+		"sukuna_fukuma_mizushi",
+		{
+			"display_name": "伏魔御厨子",
+			"damage_kind": "special",
+			"power": 68,
+			"accuracy": 100,
+			"mp_cost": 50,
+			"priority": 5,
+			"combat_type_id": "demon",
+			"targeting": "enemy_active_slot",
+			"is_domain_skill": true,
+			"effects_on_hit_ids": PackedStringArray(["sukuna_apply_domain_field"]),
+		}
 	)
 
 func validate_kamado_contract(validator, content_index, errors: Array) -> void:
@@ -154,5 +191,11 @@ func _validate_skill_contract(
 	validator._expect_string(errors, "%s targeting" % label, skill_definition.targeting, String(expected_fields.get("targeting", "")))
 	if expected_fields.has("power_bonus_source"):
 		validator._expect_string(errors, "%s power_bonus_source" % label, skill_definition.power_bonus_source, String(expected_fields.get("power_bonus_source", "")))
+	if expected_fields.has("is_domain_skill"):
+		validator._expect_bool(errors, "%s is_domain_skill" % label, skill_definition.is_domain_skill, bool(expected_fields.get("is_domain_skill", false)))
+	if expected_fields.has("effects_on_cast_ids"):
+		validator._expect_packed_string_array(errors, "%s effects_on_cast_ids" % label, skill_definition.effects_on_cast_ids, expected_fields.get("effects_on_cast_ids", PackedStringArray()))
 	if not expected_effects_on_hit.is_empty():
 		validator._expect_packed_string_array(errors, "%s effects_on_hit_ids" % label, skill_definition.effects_on_hit_ids, expected_effects_on_hit)
+	elif expected_fields.has("effects_on_hit_ids"):
+		validator._expect_packed_string_array(errors, "%s effects_on_hit_ids" % label, skill_definition.effects_on_hit_ids, expected_fields.get("effects_on_hit_ids", PackedStringArray()))

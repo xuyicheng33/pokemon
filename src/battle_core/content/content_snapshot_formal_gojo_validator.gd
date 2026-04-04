@@ -4,6 +4,7 @@ class_name ContentSnapshotFormalGojoValidator
 const GojoContractsScript := preload("res://src/battle_core/content/content_snapshot_formal_gojo_contracts.gd")
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
+const HealPayloadScript := preload("res://src/battle_core/content/heal_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 
@@ -14,6 +15,7 @@ func validate(content_index, errors: Array) -> void:
 	_contracts.validate_core_skill_contract(self, content_index, errors)
 	_contracts.validate_marker_contract(self, content_index, errors)
 	_validate_mugen_contract(content_index, errors)
+	_validate_reverse_ritual_contract(content_index, errors)
 	_validate_murasaki_burst(content_index, errors)
 	_validate_domain_followup(content_index, errors)
 	_validate_domain_buff_contract(content_index, errors)
@@ -42,6 +44,33 @@ func _validate_mugen_contract(content_index, errors: Array) -> void:
 			"scope": "self",
 			"duration_mode": "permanent",
 			"stacking": "none",
+		}
+	)
+
+func _validate_reverse_ritual_contract(content_index, errors: Array) -> void:
+	var label := "formal[gojo].reverse_ritual"
+	var effect_definition = _require_effect(content_index, errors, label, "gojo_reverse_heal")
+	if effect_definition == null:
+		return
+	_expect_string(errors, "%s effect.scope" % label, effect_definition.scope, "self")
+	_expect_string(errors, "%s effect.duration_mode" % label, effect_definition.duration_mode, "permanent")
+	_expect_string(errors, "%s effect.stacking" % label, effect_definition.stacking, "none")
+	_expect_packed_string_array(errors, "%s effect.trigger_names" % label, effect_definition.trigger_names, PackedStringArray(["on_cast"]))
+	var heal_payload = _extract_single_payload(
+		errors,
+		label,
+		"gojo_reverse_heal",
+		effect_definition,
+		HealPayloadScript,
+		"heal"
+	)
+	_expect_payload_shape(
+		errors,
+		"%s effect" % label,
+		heal_payload,
+		{
+			"use_percent": true,
+			"percent": 25,
 		}
 	)
 

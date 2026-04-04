@@ -42,8 +42,8 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"priority": 0,
 			"combat_type_id": "space",
 			"targeting": "enemy_active_slot",
-		},
-		PackedStringArray(["gojo_ao_speed_up", "gojo_ao_mark_apply"])
+			"effects_on_hit_ids": PackedStringArray(["gojo_ao_speed_up", "gojo_ao_mark_apply"]),
+		}
 	)
 	_validate_skill_contract(
 		validator,
@@ -60,8 +60,63 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"priority": 0,
 			"combat_type_id": "psychic",
 			"targeting": "enemy_active_slot",
-		},
-		PackedStringArray(["gojo_aka_slow_down", "gojo_aka_mark_apply"])
+			"effects_on_hit_ids": PackedStringArray(["gojo_aka_slow_down", "gojo_aka_mark_apply"]),
+		}
+	)
+	_validate_skill_contract(
+		validator,
+		content_index,
+		errors,
+		"formal[gojo].murasaki",
+		"gojo_murasaki",
+		{
+			"display_name": "茈",
+			"damage_kind": "special",
+			"power": 64,
+			"accuracy": 90,
+			"mp_cost": 24,
+			"priority": -1,
+			"combat_type_id": "space",
+			"targeting": "enemy_active_slot",
+			"effects_on_hit_ids": PackedStringArray(["gojo_murasaki_conditional_burst"]),
+		}
+	)
+	_validate_skill_contract(
+		validator,
+		content_index,
+		errors,
+		"formal[gojo].reverse_ritual",
+		"gojo_reverse_ritual",
+		{
+			"display_name": "反转术式",
+			"damage_kind": "none",
+			"power": 0,
+			"accuracy": 100,
+			"mp_cost": 14,
+			"priority": 0,
+			"combat_type_id": "",
+			"targeting": "self",
+			"effects_on_cast_ids": PackedStringArray(["gojo_reverse_heal"]),
+		}
+	)
+	_validate_skill_contract(
+		validator,
+		content_index,
+		errors,
+		"formal[gojo].unlimited_void",
+		"gojo_unlimited_void",
+		{
+			"display_name": "无量空处",
+			"damage_kind": "special",
+			"power": 48,
+			"accuracy": 100,
+			"mp_cost": 50,
+			"priority": 5,
+			"combat_type_id": "space",
+			"targeting": "enemy_active_slot",
+			"is_domain_skill": true,
+			"effects_on_hit_ids": PackedStringArray(["gojo_apply_domain_field"]),
+		}
 	)
 
 func validate_marker_contract(validator, content_index, errors: Array) -> void:
@@ -74,8 +129,7 @@ func _validate_skill_contract(
 	errors: Array,
 	label: String,
 	skill_id: String,
-	expected_fields: Dictionary,
-	expected_effects_on_hit: PackedStringArray
+	expected_fields: Dictionary
 ) -> void:
 	var skill_definition = validator._require_skill(content_index, errors, label, skill_id)
 	if skill_definition == null:
@@ -88,7 +142,12 @@ func _validate_skill_contract(
 	validator._expect_int(errors, "%s priority" % label, skill_definition.priority, int(expected_fields.get("priority", 0)))
 	validator._expect_string(errors, "%s combat_type_id" % label, skill_definition.combat_type_id, String(expected_fields.get("combat_type_id", "")))
 	validator._expect_string(errors, "%s targeting" % label, skill_definition.targeting, String(expected_fields.get("targeting", "")))
-	validator._expect_packed_string_array(errors, "%s effects_on_hit_ids" % label, skill_definition.effects_on_hit_ids, expected_effects_on_hit)
+	if expected_fields.has("is_domain_skill"):
+		validator._expect_bool(errors, "%s is_domain_skill" % label, skill_definition.is_domain_skill, bool(expected_fields.get("is_domain_skill", false)))
+	if expected_fields.has("effects_on_cast_ids"):
+		validator._expect_packed_string_array(errors, "%s effects_on_cast_ids" % label, skill_definition.effects_on_cast_ids, expected_fields.get("effects_on_cast_ids", PackedStringArray()))
+	if expected_fields.has("effects_on_hit_ids"):
+		validator._expect_packed_string_array(errors, "%s effects_on_hit_ids" % label, skill_definition.effects_on_hit_ids, expected_fields.get("effects_on_hit_ids", PackedStringArray()))
 
 func _validate_marker_effect(
 	validator,

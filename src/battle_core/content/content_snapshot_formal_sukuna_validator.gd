@@ -5,6 +5,7 @@ const SukunaContractsScript := preload("res://src/battle_core/content/content_sn
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
+const HealPayloadScript := preload("res://src/battle_core/content/heal_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 
@@ -14,10 +15,38 @@ func validate(content_index, errors: Array) -> void:
 	_contracts.validate_unit_contract(self, content_index, errors)
 	_contracts.validate_core_skill_contract(self, content_index, errors)
 	_contracts.validate_kamado_contract(self, content_index, errors)
+	_validate_reverse_ritual_contract(content_index, errors)
 	_validate_domain_contract(content_index, errors)
 	_contracts.validate_teach_love_contract(self, content_index, errors)
 	_validate_matching_damage_payloads(
 		content_index, errors, "formal[sukuna].shared_fire_burst", PackedStringArray(["sukuna_kamado_mark", "sukuna_kamado_explode", "sukuna_domain_expire_burst"])
+	)
+
+func _validate_reverse_ritual_contract(content_index, errors: Array) -> void:
+	var label := "formal[sukuna].reverse_ritual"
+	var effect_definition = _require_effect(content_index, errors, label, "sukuna_reverse_heal")
+	if effect_definition == null:
+		return
+	_expect_string(errors, "%s effect.scope" % label, effect_definition.scope, "self")
+	_expect_string(errors, "%s effect.duration_mode" % label, effect_definition.duration_mode, "permanent")
+	_expect_string(errors, "%s effect.stacking" % label, effect_definition.stacking, "none")
+	_expect_packed_string_array(errors, "%s effect.trigger_names" % label, effect_definition.trigger_names, PackedStringArray(["on_cast"]))
+	var heal_payload = _extract_single_payload(
+		errors,
+		label,
+		"sukuna_reverse_heal",
+		effect_definition,
+		HealPayloadScript,
+		"heal"
+	)
+	_expect_payload_shape(
+		errors,
+		"%s effect" % label,
+		heal_payload,
+		{
+			"use_percent": true,
+			"percent": 25,
+		}
 	)
 
 func _validate_domain_contract(content_index, errors: Array) -> void:

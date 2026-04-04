@@ -7,7 +7,9 @@ const EffectDefinitionScript := preload("res://src/battle_core/content/effect_de
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("extension_validation_contract", failures, Callable(self, "_test_extension_validation_contract").bind(harness))
     runner.run_test("formal_gojo_validator_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_bad_case_contract").bind(harness))
+    runner.run_test("formal_gojo_validator_reverse_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_reverse_bad_case_contract").bind(harness))
     runner.run_test("formal_sukuna_validator_bad_case_contract", failures, Callable(self, "_test_formal_sukuna_validator_bad_case_contract").bind(harness))
+    runner.run_test("formal_sukuna_validator_reverse_bad_case_contract", failures, Callable(self, "_test_formal_sukuna_validator_reverse_bad_case_contract").bind(harness))
     runner.run_test("formal_kashimo_validator_bad_case_contract", failures, Callable(self, "_test_formal_kashimo_validator_bad_case_contract").bind(harness))
     runner.run_test("formal_kashimo_validator_kyokyo_bad_case_contract", failures, Callable(self, "_test_formal_kashimo_validator_kyokyo_bad_case_contract").bind(harness))
 
@@ -200,6 +202,20 @@ func _test_formal_gojo_validator_bad_case_contract(harness) -> Dictionary:
         return harness.fail_result("gojo formal validator should fail-fast when ao power drifts")
     return harness.pass_result()
 
+func _test_formal_gojo_validator_reverse_bad_case_contract(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var gojo_reverse_ritual = content_index.skills.get("gojo_reverse_ritual", null)
+    if gojo_reverse_ritual == null:
+        return harness.fail_result("missing gojo_reverse_ritual")
+    gojo_reverse_ritual.mp_cost = 15
+    var errors: Array = content_index.validate_snapshot()
+    if not _has_error(errors, "formal[gojo].reverse_ritual mp_cost mismatch: expected 14 got 15"):
+        return harness.fail_result("gojo formal validator should fail-fast when reverse_ritual mp_cost drifts")
+    return harness.pass_result()
+
 func _test_formal_sukuna_validator_bad_case_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
@@ -212,6 +228,20 @@ func _test_formal_sukuna_validator_bad_case_contract(harness) -> Dictionary:
     var errors: Array = content_index.validate_snapshot()
     if not _has_error(errors, "formal[sukuna].kai priority mismatch: expected 1 got 0"):
         return harness.fail_result("sukuna formal validator should fail-fast when kai priority drifts")
+    return harness.pass_result()
+
+func _test_formal_sukuna_validator_reverse_bad_case_contract(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var sukuna_reverse_ritual = content_index.skills.get("sukuna_reverse_ritual", null)
+    if sukuna_reverse_ritual == null:
+        return harness.fail_result("missing sukuna_reverse_ritual")
+    sukuna_reverse_ritual.mp_cost = 15
+    var errors: Array = content_index.validate_snapshot()
+    if not _has_error(errors, "formal[sukuna].reverse_ritual mp_cost mismatch: expected 14 got 15"):
+        return harness.fail_result("sukuna formal validator should fail-fast when reverse_ritual mp_cost drifts")
     return harness.pass_result()
 
 func _test_formal_kashimo_validator_bad_case_contract(harness) -> Dictionary:
