@@ -910,3 +910,16 @@
 - 原因：
   - 双源 registry 会把角色接入动作拆成两份人工同步点，最容易在扩角时形成“运行时能过、门禁没锁”或“门禁在锁一份已不被运行时读取的文件”这两类伪一致性。
   - 把 suite 注册链也挂回同一份 registry，后续扩角时就能同时锁住“资源在不在”和“测试有没有真的接进执行树”。
+
+### 73. 审查记录里的旧 SCC 口径要显式标成历史态；Gojo formal validator 的领域校验拆成独立 helper（2026-04-04）
+
+- `review_2026-04-04_foundation_stabilization_audit.md` 当前继续保留“当时审查发现过受控 SCC”的历史信息，但正文必须明确：
+  - 那是审查起点，不是当前仓库现状
+  - 当前正式实现与 gate 口径都以 strict DAG 为准
+- `ContentSnapshotFormalGojoValidator` 当前把领域 followup / buff / stat rollback 校验拆到独立 `content_snapshot_formal_gojo_domain_contracts.gd`：
+  - 保留原 validator 作为编排入口
+  - 继续复用 base validator 的 `_require_* / _expect_* / _extract_single_payload()` helper
+  - 避免单文件继续贴近 250 行架构复核阈值
+- 原因：
+  - 审查记录若继续把“允许 1 个 SCC”写成现在时，会直接和 gate、设计文档、当前代码相互打架。
+  - Gojo formal validator 已逼近 220 行预警区，先按领域子域拆开，比等到越过 250 行再补救更省成本。

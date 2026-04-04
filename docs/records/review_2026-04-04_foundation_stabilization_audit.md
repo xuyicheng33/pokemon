@@ -12,7 +12,7 @@
 - 本轮确认并收口的真实问题有 6 类：
   1. passive trigger source 在 `collect_events()` 阶段抛出的 `invalid_battle` 之前会被静默吞掉。
   2. facade / orchestrator 侧仍有一批跨模块错误读取依赖 `get("last_*")` 这类脆弱字符串通道。
-  3. runtime wiring 图并不是严格 DAG；它一直存在一个受控 SCC，只是之前缺少机器门禁和正式文档口径。
+  3. runtime wiring 图在本次审查起点并不是严格 DAG；它当时存在一个受控 SCC，只是之前缺少机器门禁和正式文档口径，后续整改已收口回 strict DAG。
   4. session / replay 会重复整量重载相同 `content_snapshot_paths`，对后续扩角和批量回放都不友好。
   5. replay 每回合都线性扫描整条 `command_stream`，会把批量回放成本无谓放大。
   6. Kashimo 设计稿里的部分资源粒度描述已经与现状实现漂移。
@@ -62,18 +62,18 @@
   - `TriggerBatchRunner`
 - 为了兼容测试替身，pluggable dependency 边界保留了“优先显式 getter，旧 mock 只在局部 helper 里兼容 `last_invalid_battle_code`”的过渡策略；正式服务之间不再继续新增裸 `get("last_*")` 读取。
 
-### 3. runtime wiring 图正式改成“受控 SCC + gate”口径
+### 3. runtime wiring 图当时的受控 SCC 已在后续整改里收口为 strict DAG
 
-- 当前 runtime wiring 图存在且只允许存在 1 个登记过的 SCC，不再把它误写成“严格 DAG”。
+- 本次审查落点里，runtime wiring 图当时存在且只允许存在 1 个登记过的 SCC；后续整改已删除该闭环，当前仓库正式口径以 strict DAG 为准。
 - 新增 `tests/gates/architecture_wiring_graph_gate.py`：
   - 直接解析 `WIRING_SPECS`
   - 用 strongly connected component 校验 runtime wiring 图
-  - 只允许当前登记的 13 节点 SCC
+  - 当前正式要求发现任意 SCC 都直接失败
   - 自带 synthetic SCC 自检，防止 gate 自己失效
 - 这意味着以后只要：
   - 新增一个 runtime SCC
-  - 扩大现有 SCC 成员
-  - 把现有 SCC 拆成新的未登记闭环
+  - 把旧闭环重新带回 wiring
+  - 让任何服务形成新的未登记闭环
   - 架构 gate 都会直接失败
 
 ### 4. 内容加载路径已为扩角 / 批量回放做缓存准备
@@ -96,7 +96,7 @@
 
 - `architecture_overview.md` / `battle_core_architecture_constraints.md` 现在明确区分：
   - 静态 import 面保持单向
-  - runtime wiring 允许受控 SCC
+  - runtime wiring 当前必须保持 strict DAG
 - `log_and_replay_contract.md` 已补齐：
   - `ContentSnapshotCache`
   - replay 按 `turn_index` 预分组

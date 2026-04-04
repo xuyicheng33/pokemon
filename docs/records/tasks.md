@@ -21,6 +21,39 @@
 
 ## 2026-04-04
 
+### 审查收口：SCC 口径统一与 Gojo formal validator 拆分（已完成）
+
+- 目标：
+  - 把仓库里“runtime wiring 允许受控 SCC”的旧审查表述改成明确历史态，避免继续和当前 strict DAG gate 打架
+  - 在不改 Gojo 正式角色语义的前提下，把 formal validator 的领域校验拆成独立 helper，收回文件尺寸预警
+- 范围：
+  - `src/battle_core/content/content_snapshot_formal_gojo_validator.gd`
+  - `src/battle_core/content/content_snapshot_formal_gojo_domain_contracts.gd`
+  - `docs/records/review_2026-04-04_foundation_stabilization_audit.md`
+  - `docs/records/decisions.md`
+  - `docs/records/tasks.md`
+  - `README.md`
+- 验收标准：
+  - 审查记录正文必须明确“受控 SCC”是历史整改起点，当前实现以 strict DAG 为准
+  - Gojo formal validator 仍通过 formal character 与全量测试回归
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `godot --headless --path . --script tests/run_all.gd`
+
+#### 当前执行结果
+
+- 已完成：
+  - `review_2026-04-04_foundation_stabilization_audit.md` 已把旧 SCC 口径改成“当时问题 + 当前已收口为 strict DAG”
+  - `ContentSnapshotFormalGojoValidator` 已只保留编排与非领域断言
+  - 新增 `content_snapshot_formal_gojo_domain_contracts.gd`，承接 `gojo_apply_domain_field / gojo_unlimited_void_field / gojo_domain_*` 的领域校验
+  - `docs/records/decisions.md` 已补这次文档收口与拆分决策
+
+#### 当前验证结果
+
+- `bash tests/check_architecture_constraints.sh` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+- `godot --headless --path . --script tests/run_all.gd` 通过
+
 ### 正式角色扩展前整合：批次 1 共享机制硬约束收口（已完成）
 
 - 目标：
