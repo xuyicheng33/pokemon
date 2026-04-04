@@ -131,7 +131,6 @@ func validate_charge_separation_effects(validator, content_index, errors: Array)
 	_validate_thunder_resist(validator, content_index, errors)
 	_validate_water_leak_self(validator, content_index, errors)
 	_validate_water_leak_counter(validator, content_index, errors)
-
 func _validate_skill_contract(
 	validator,
 	content_index,
@@ -159,7 +158,6 @@ func _validate_skill_contract(
 		validator._expect_packed_string_array(errors, "%s effects_on_cast_ids" % label, skill_definition.effects_on_cast_ids, expected_fields.get("effects_on_cast_ids", PackedStringArray()))
 	if expected_fields.has("effects_on_hit_ids"):
 		validator._expect_packed_string_array(errors, "%s effects_on_hit_ids" % label, skill_definition.effects_on_hit_ids, expected_fields.get("effects_on_hit_ids", PackedStringArray()))
-
 func _validate_thunder_resist(validator, content_index, errors: Array) -> void:
 	var label := "formal[kashimo].thunder_resist"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_thunder_resist")
