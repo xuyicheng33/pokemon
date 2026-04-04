@@ -3,7 +3,6 @@ class_name BattleSandboxRunner
 
 const BattleCoreComposerScript := preload("res://src/composition/battle_core_composer.gd")
 const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_factory.gd")
-const BattleUIViewModelBuilderScript := preload("res://src/adapters/battle_ui_view_model_builder.gd")
 const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
@@ -15,22 +14,11 @@ func _ready() -> void:
     manager = composer.compose_manager()
     var sample_factory: Variant = SampleBattleFactoryScript.new()
     var demo_mode := _resolve_demo_mode()
-    print("Battle sandbox starting demo=%s" % demo_mode)
     var replay_input = _build_replay_input_for_demo_mode(sample_factory, demo_mode)
     var replay_envelope: Dictionary = manager.run_replay(replay_input)
     if not bool(replay_envelope.get("ok", false)):
         push_error("Battle sandbox replay failed: %s" % str(replay_envelope.get("error_message", "unknown error")))
         return
-    var replay_result: Dictionary = replay_envelope.get("data", {})
-    var replay_output = replay_result["replay_output"]
-    var view_model = BattleUIViewModelBuilderScript.new().build_view_model(replay_result["public_snapshot"])
-    print("Battle sandbox ready: %s demo=%s hash=%s events=%d phase=%s" % [
-        view_model["battle_id"],
-        demo_mode,
-        replay_output.final_state_hash.substr(0, 12),
-        replay_output.event_log.size(),
-        view_model["phase"],
-    ])
 
 func _resolve_demo_mode() -> String:
     # Lightweight mode switch:

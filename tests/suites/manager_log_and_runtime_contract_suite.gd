@@ -1,21 +1,20 @@
 extends RefCounted
 class_name ManagerLogAndRuntimeContractSuite
 
-const BattleCoreComposerScript := preload("res://src/composition/battle_core_composer.gd")
+const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_core_manager.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
-const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
 
 var _helper = ManagerContractTestHelperScript.new()
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("event_log_snapshot_public_contract", failures, Callable(self, "_test_event_log_snapshot_public_contract").bind(harness))
-	runner.run_test("manager_invalid_runtime_read_contract", failures, Callable(self, "_test_manager_invalid_runtime_read_contract").bind(harness))
+	runner.run_test("manager_invalid_session_read_contract", failures, Callable(self, "_test_manager_invalid_session_read_contract").bind(harness))
 	runner.run_test("manager_run_turn_invalid_envelope_contract", failures, Callable(self, "_test_manager_run_turn_invalid_envelope_contract").bind(harness))
-	runner.run_test("manager_create_session_initializer_dependency_guard_contract", failures, Callable(self, "_test_manager_create_session_initializer_dependency_guard_contract").bind(harness))
-	runner.run_test("manager_create_session_damage_runtime_dependency_guard_contract", failures, Callable(self, "_test_manager_create_session_damage_runtime_dependency_guard_contract").bind(harness))
+	runner.run_test("manager_unconfigured_dependency_guard_contract", failures, Callable(self, "_test_manager_unconfigured_dependency_guard_contract").bind(harness))
+	runner.run_test("manager_event_log_negative_from_index_contract", failures, Callable(self, "_test_manager_event_log_negative_from_index_contract").bind(harness))
 	runner.run_test("manager_disposed_request_guard_contract", failures, Callable(self, "_test_manager_disposed_request_guard_contract").bind(harness))
 
 func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
@@ -115,63 +114,6 @@ func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
-func _test_manager_invalid_runtime_read_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
-	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
-	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
-	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var invalid_cases := [
-		{
-			"label": "empty_creator",
-			"field_def_id": "gojo_unlimited_void_field",
-			"creator": "",
-		},
-		{
-			"label": "missing_field_definition",
-			"field_def_id": "missing_domain_field_definition",
-			"creator_mode": "active_p1",
-		},
-	]
-	for case_index in invalid_cases.size():
-		var invalid_case: Dictionary = invalid_cases[case_index]
-		var init_result = manager.create_session({
-			"battle_seed": 305 + case_index,
-			"content_snapshot_paths": sample_factory.content_snapshot_paths(),
-			"battle_setup": sample_factory.build_gojo_vs_sukuna_setup(),
-		})
-		var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
-		if not bool(init_unwrap.get("ok", false)):
-			return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
-		var session_id: String = str(init_unwrap.get("data", {}).get("session_id", ""))
-		var session = manager._debug_session(session_id)
-		if session == null:
-			return harness.fail_result("manager invalid runtime read test missing internal session")
-		var creator := String(invalid_case.get("creator", ""))
-		if String(invalid_case.get("creator_mode", "")) == "active_p1":
-			var active_unit = session.battle_state.get_side("P1").get_active_unit()
-			if active_unit == null:
-				return harness.fail_result("manager invalid runtime read test missing active unit")
-			creator = String(active_unit.unit_instance_id)
-		session.battle_state.field_state = _build_invalid_field_state(
-			String(invalid_case.get("field_def_id", "")),
-			creator,
-			"manager_invalid_runtime_%s" % String(invalid_case.get("label", "unknown"))
-		)
-		for check in _build_invalid_runtime_checks(manager, session_id):
-			var failure = _helper.expect_failure_code(
-				check["envelope"],
-				"%s %s" % [String(invalid_case.get("label", "")), String(check.get("label", ""))],
-				ErrorCodesScript.INVALID_STATE_CORRUPTION,
-				"runtime state invalid"
-			)
-			if not bool(failure.get("ok", false)):
-				return harness.fail_result(str(failure.get("error", "manager invalid runtime read contract failed")))
-	manager.dispose()
-	return harness.pass_result()
-
 func _test_manager_run_turn_invalid_envelope_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
 	if manager_payload.has("error"):
@@ -212,24 +154,47 @@ func _test_manager_run_turn_invalid_envelope_contract(harness) -> Dictionary:
 	)
 	if not bool(failure.get("ok", false)):
 		return harness.fail_result(str(failure.get("error", "manager run_turn invalid envelope contract failed")))
-	var close_result = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
-	if not bool(close_result.get("ok", false)):
-		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
-func _test_manager_create_session_initializer_dependency_guard_contract(harness) -> Dictionary:
-	var composer = BattleCoreComposerScript.new()
-	if composer == null:
-		return harness.fail_result("BattleCoreComposer init failed")
-	var manager = composer.compose_manager()
-	if manager == null:
-		return harness.fail_result("compose_manager returned null")
-	manager._override_container_factory_for_test(func ():
-		var broken_core = BattleCoreComposerScript.new().compose()
-		if broken_core != null and broken_core.service("battle_initializer") != null:
-			broken_core.service("battle_initializer").faint_resolver = null
-		return broken_core
-	)
+func _test_manager_invalid_session_read_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var init_result = manager.create_session({
+		"battle_seed": 307,
+		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"battle_setup": sample_factory.build_sample_setup(),
+	})
+	var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
+	if not bool(init_unwrap.get("ok", false)):
+		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
+	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
+	if not bool(close_unwrap.get("ok", false)):
+		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
+	var checks := [
+		{"label": "get_legal_actions", "envelope": manager.get_legal_actions(session_id, "P1")},
+		{"label": "get_public_snapshot", "envelope": manager.get_public_snapshot(session_id)},
+		{"label": "get_event_log_snapshot", "envelope": manager.get_event_log_snapshot(session_id)},
+		{"label": "run_turn", "envelope": manager.run_turn(session_id, [])},
+	]
+	for check in checks:
+		var failure = _helper.expect_failure_code(
+			check["envelope"],
+			String(check.get("label", "")),
+			ErrorCodesScript.INVALID_SESSION,
+			"unknown battle session"
+		)
+		if not bool(failure.get("ok", false)):
+			return harness.fail_result(str(failure.get("error", "manager invalid session read contract failed")))
+	return harness.pass_result()
+
+func _test_manager_unconfigured_dependency_guard_contract(harness) -> Dictionary:
+	var manager = BattleCoreManagerScript.new()
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
@@ -241,14 +206,13 @@ func _test_manager_create_session_initializer_dependency_guard_contract(harness)
 		}),
 		"create_session",
 		ErrorCodesScript.INVALID_COMPOSITION,
-		"BattleInitializer missing dependency: faint_resolver"
+		"missing dependency"
 	)
-	manager.dispose()
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "manager create_session initializer dependency guard contract failed")))
+		return harness.fail_result(str(failure.get("error", "manager unconfigured dependency guard contract failed")))
 	return harness.pass_result()
 
-func _test_manager_create_session_damage_runtime_dependency_guard_contract(harness) -> Dictionary:
+func _test_manager_event_log_negative_from_index_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
 	if manager_payload.has("error"):
 		return harness.fail_result(str(manager_payload["error"]))
@@ -264,21 +228,17 @@ func _test_manager_create_session_damage_runtime_dependency_guard_contract(harne
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
-	var session = manager._debug_session(session_id)
-	if session == null or session.container == null or session.container.service("payload_damage_runtime_service") == null:
-		return harness.fail_result("manager damage runtime dependency guard should expose internal session")
-	session.container.service("payload_damage_runtime_service").faint_resolver = null
 	var failure = _helper.expect_failure_code(
-		manager.run_turn(session_id, []),
-		"run_turn",
-		ErrorCodesScript.INVALID_STATE_CORRUPTION,
-		"invalid battle"
+		manager.get_event_log_snapshot(session_id, -1),
+		"get_event_log_snapshot",
+		ErrorCodesScript.INVALID_MANAGER_REQUEST,
+		"from_index >= 0"
 	)
-	var close_result = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
-	if not bool(close_result.get("ok", false)):
-		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
+	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
+	if not bool(close_unwrap.get("ok", false)):
+		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "manager damage runtime dependency guard contract failed")))
+		return harness.fail_result(str(failure.get("error", "manager event log negative from_index contract failed")))
 	return harness.pass_result()
 
 func _test_manager_disposed_request_guard_contract(harness) -> Dictionary:
@@ -303,37 +263,3 @@ func _test_manager_disposed_request_guard_contract(harness) -> Dictionary:
 	if not bool(failure.get("ok", false)):
 		return harness.fail_result(str(failure.get("error", "disposed manager guard contract failed")))
 	return harness.pass_result()
-
-func _build_invalid_field_state(field_def_id: String, creator: String, label: String):
-	var invalid_field = FieldStateScript.new()
-	invalid_field.field_def_id = field_def_id
-	invalid_field.instance_id = "test_%s_field" % label
-	invalid_field.creator = creator
-	invalid_field.remaining_turns = 2
-	return invalid_field
-
-func _build_invalid_runtime_checks(manager, session_id: String) -> Array:
-	return [
-		{"label": "get_legal_actions", "envelope": manager.get_legal_actions(session_id, "P1")},
-		{"label": "get_public_snapshot", "envelope": manager.get_public_snapshot(session_id)},
-		{"label": "get_event_log_snapshot", "envelope": manager.get_event_log_snapshot(session_id)},
-		{
-			"label": "run_turn",
-			"envelope": manager.run_turn(session_id, [
-				manager.build_command({
-					"turn_index": 1,
-					"command_type": CommandTypesScript.WAIT,
-					"command_source": "manual",
-					"side_id": "P1",
-					"actor_public_id": "P1-A",
-				}),
-				manager.build_command({
-					"turn_index": 1,
-					"command_type": CommandTypesScript.WAIT,
-					"command_source": "manual",
-					"side_id": "P2",
-					"actor_public_id": "P2-A",
-				}),
-			]),
-		},
-	]

@@ -61,7 +61,7 @@ func build_manager() -> Dictionary:
     if not missing_dependency.is_empty():
         return {"error": "missing manager port: %s" % missing_dependency}
     _manager_pool.append(manager)
-    return {"manager": manager}
+    return {"manager": manager, "composer": composer}
 
 func dispose_core_pool() -> void:
     for core in _core_pool:

@@ -94,6 +94,14 @@ func build_kashimo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
+func build_passive_item_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
+    var battle_setup = build_sample_setup(side_regular_skill_overrides)
+    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sample_pyron_charm", "sample_mossaur", "sample_tidekit"])
+    battle_setup.sides[0].starting_index = 0
+    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"])
+    battle_setup.sides[1].starting_index = 0
+    return battle_setup
+
 func build_demo_replay_input(command_port, side_regular_skill_overrides: Dictionary = {}):
     if command_port == null or not command_port.has_method("build_command"):
         return null
@@ -133,6 +141,32 @@ func build_demo_replay_input(command_port, side_regular_skill_overrides: Diction
             "side_id": "P2",
             "actor_public_id": "P2-A",
             "skill_id": "sample_whiff",
+        })),
+    ]
+    return replay_input
+
+func build_passive_item_demo_replay_input(command_port):
+    if command_port == null or not command_port.has_method("build_command"):
+        return null
+    var replay_input = ReplayInputScript.new()
+    replay_input.battle_seed = 1901
+    replay_input.content_snapshot_paths = content_snapshot_paths()
+    replay_input.battle_setup = build_passive_item_vs_sample_setup()
+    replay_input.command_stream = [
+        _resolve_command_data(command_port.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": "P1-A",
+            "skill_id": "sample_strike",
+        })),
+        _resolve_command_data(command_port.build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.WAIT,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": "P2-A",
         })),
     ]
     return replay_input

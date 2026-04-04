@@ -49,12 +49,17 @@ func compose():
 func compose_manager():
     last_error_code = null
     last_error_message = ""
+    var factory_port = ContainerFactoryPort.new()
+    factory_port.composer = self
+    return compose_manager_with_factory(Callable(factory_port, "build_container"), factory_port)
+
+func compose_manager_with_factory(container_factory: Callable, container_factory_owner = null):
+    last_error_code = null
+    last_error_message = ""
     var manager = BattleCoreManagerScript.new()
     if manager == null:
         _fail("compose_manager requires manager")
         return null
-    var factory_port = ContainerFactoryPort.new()
-    factory_port.composer = self
     var command_id_factory = _new_service_instance("id_factory")
     if command_id_factory == null:
         return null
@@ -65,11 +70,11 @@ func compose_manager():
     if public_snapshot_builder == null:
         return null
     manager._configure_core_ports(
-        Callable(factory_port, "build_container"),
+        container_factory,
         command_builder,
         command_id_factory,
         public_snapshot_builder,
-        factory_port
+        container_factory_owner
     )
     return manager
 

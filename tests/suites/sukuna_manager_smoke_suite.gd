@@ -30,18 +30,6 @@ func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
-	var session = manager._debug_session(session_id)
-	if session == null:
-		return harness.fail_result("sukuna manager smoke missing internal session")
-	var sukuna_unit = session.battle_state.get_side("P1").get_active_unit()
-	if sukuna_unit == null:
-		return harness.fail_result("sukuna manager smoke missing active sukuna")
-	sukuna_unit.current_hp = max(1, int(floor(float(sukuna_unit.max_hp) * 0.5)))
-	var before_hp := int(sukuna_unit.current_hp)
-	var expected_gain: int = min(
-		int(sukuna_unit.max_hp) - before_hp,
-		max(1, int(floor(float(sukuna_unit.max_hp) * 0.25)))
-	)
 	var legal_actions_unwrap = _helper.unwrap_ok(manager.get_legal_actions(session_id, "P1"), "get_legal_actions")
 	if not bool(legal_actions_unwrap.get("ok", false)):
 		return harness.fail_result(str(legal_actions_unwrap.get("error", "manager get_legal_actions failed")))
@@ -52,8 +40,44 @@ func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
 		return harness.fail_result("sukuna manager smoke should expose reverse ritual in legal actions")
 	if legal_actions.legal_skill_ids.has("sukuna_hiraku"):
 		return harness.fail_result("sukuna manager smoke should hide hiraku after loadout override")
-	var ritual_command_unwrap = _helper.unwrap_ok(manager.build_command({
+	var wait_p1_unwrap = _helper.unwrap_ok(manager.build_command({
 		"turn_index": 1,
+		"command_type": CommandTypesScript.WAIT,
+		"command_source": "manual",
+		"side_id": "P1",
+		"actor_public_id": "P1-A",
+	}), "build_command(wait_p1)")
+	if not bool(wait_p1_unwrap.get("ok", false)):
+		return harness.fail_result(str(wait_p1_unwrap.get("error", "manager build_command failed")))
+	var strike_p2_unwrap = _helper.unwrap_ok(manager.build_command({
+		"turn_index": 1,
+		"command_type": CommandTypesScript.SKILL,
+		"command_source": "manual",
+		"side_id": "P2",
+		"actor_public_id": "P2-A",
+		"skill_id": "sample_strike",
+	}), "build_command(sample_strike)")
+	if not bool(strike_p2_unwrap.get("ok", false)):
+		return harness.fail_result(str(strike_p2_unwrap.get("error", "manager build_command failed")))
+	var setup_turn_unwrap = _helper.unwrap_ok(manager.run_turn(session_id, [
+		wait_p1_unwrap.get("data", null),
+		strike_p2_unwrap.get("data", null),
+	]), "run_turn_setup")
+	if not bool(setup_turn_unwrap.get("ok", false)):
+		return harness.fail_result(str(setup_turn_unwrap.get("error", "manager setup run_turn failed")))
+	var damaged_snapshot_unwrap = _helper.unwrap_ok(manager.get_public_snapshot(session_id), "get_public_snapshot_after_damage")
+	if not bool(damaged_snapshot_unwrap.get("ok", false)):
+		return harness.fail_result(str(damaged_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
+	var damaged_actor_snapshot := _find_unit_snapshot(damaged_snapshot_unwrap.get("data", {}), "P1", "P1-A")
+	if damaged_actor_snapshot.is_empty():
+		return harness.fail_result("sukuna manager smoke missing actor snapshot after setup turn")
+	var before_hp := int(damaged_actor_snapshot.get("current_hp", -1))
+	var max_hp := int(damaged_actor_snapshot.get("max_hp", -1))
+	if before_hp <= 0 or max_hp <= 0 or before_hp >= max_hp:
+		return harness.fail_result("sukuna manager smoke setup turn should leave actor damaged but alive")
+	var expected_gain: int = min(max_hp - before_hp, max(1, int(floor(float(max_hp) * 0.25))))
+	var ritual_command_unwrap = _helper.unwrap_ok(manager.build_command({
+		"turn_index": 2,
 		"command_type": CommandTypesScript.SKILL,
 		"command_source": "manual",
 		"side_id": "P1",
@@ -63,7 +87,7 @@ func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
 	if not bool(ritual_command_unwrap.get("ok", false)):
 		return harness.fail_result(str(ritual_command_unwrap.get("error", "manager build_command failed")))
 	var wait_command_unwrap = _helper.unwrap_ok(manager.build_command({
-		"turn_index": 1,
+		"turn_index": 2,
 		"command_type": CommandTypesScript.WAIT,
 		"command_source": "manual",
 		"side_id": "P2",
@@ -77,11 +101,6 @@ func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
 	]), "run_turn")
 	if not bool(run_turn_unwrap.get("ok", false)):
 		return harness.fail_result(str(run_turn_unwrap.get("error", "manager run_turn failed")))
-	if int(sukuna_unit.current_hp) - before_hp != expected_gain:
-		return harness.fail_result("sukuna manager smoke heal delta mismatch: expected %d got %d" % [
-			expected_gain,
-			int(sukuna_unit.current_hp) - before_hp,
-		])
 	var public_snapshot_unwrap = _helper.unwrap_ok(manager.get_public_snapshot(session_id), "get_public_snapshot")
 	if not bool(public_snapshot_unwrap.get("ok", false)):
 		return harness.fail_result(str(public_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))

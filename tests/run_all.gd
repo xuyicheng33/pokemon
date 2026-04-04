@@ -21,6 +21,8 @@ const CompositionContainerContractSuiteScript := preload("res://tests/suites/com
 const TriggerValidationSuiteScript := preload("res://tests/suites/trigger_validation_suite.gd")
 const PowerBonusRuntimeSuiteScript := preload("res://tests/suites/power_bonus_runtime_suite.gd")
 const PersistentStatStageSuiteScript := preload("res://tests/suites/persistent_stat_stage_suite.gd")
+const PassiveItemContractSuiteScript := preload("res://tests/suites/passive_item_contract_suite.gd")
+const ContentSnapshotCacheComposerSuiteScript := preload("res://tests/suites/content_snapshot_cache_composer_suite.gd")
 const FormalCharacterRegistryScript := preload("res://tests/support/formal_character_registry.gd")
 
 var _harness
@@ -49,6 +51,8 @@ func _init() -> void:
         TriggerValidationSuiteScript.new(),
         PowerBonusRuntimeSuiteScript.new(),
         PersistentStatStageSuiteScript.new(),
+        ContentSnapshotCacheComposerSuiteScript.new(),
+        PassiveItemContractSuiteScript.new(),
     ]
     suites.append_array(FormalCharacterRegistryScript.new().build_suite_instances())
     for suite in suites:

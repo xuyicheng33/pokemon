@@ -60,6 +60,8 @@ ctx.require_contains("tests/run_all.gd", 'const ExtensionContractSuiteScript := 
 ctx.require_contains("tests/run_all.gd", "ExtensionContractSuiteScript.new()", "extension suite execution")
 ctx.require_contains("tests/run_all.gd", 'const UltimateFieldSuiteScript := preload("res://tests/suites/ultimate_field_suite.gd")', "ultimate field suite registration")
 ctx.require_contains("tests/run_all.gd", "UltimateFieldSuiteScript.new()", "ultimate field suite execution")
+ctx.require_contains("tests/run_all.gd", 'const PassiveItemContractSuiteScript := preload("res://tests/suites/passive_item_contract_suite.gd")', "passive item suite registration")
+ctx.require_contains("tests/run_all.gd", "PassiveItemContractSuiteScript.new()", "passive item suite execution")
 ctx.require_contains("tests/run_all.gd", 'const FormalCharacterRegistryScript := preload("res://tests/support/formal_character_registry.gd")', "formal character registry loader")
 ctx.require_contains("tests/run_all.gd", "FormalCharacterRegistryScript.new().build_suite_instances()", "formal character suite expansion")
 ctx.require_contains("tests/support/formal_character_registry.gd", 'const REGISTRY_PATH := "res://docs/records/formal_character_registry.json"', "formal character registry path")
@@ -119,16 +121,41 @@ ctx.require_contains("README.md", "check_suite_reachability.sh", "README suite r
 ctx.require_absent("README.md", "policy_decision_suite.gd", "removed auto-selection regression workflow")
 ctx.require_absent("README.md", "gojo_sukuna_batch_probe.gd", "removed batch simulation workflow")
 
+for needle, label in [
+    ("func _override_container_factory_for_test", "manager test-only hook"),
+    ("func _replace_public_snapshot_builder_for_test", "manager test-only hook"),
+    ("func _inject_session_for_test", "manager test-only hook"),
+    ("func _debug_session", "manager test-only hook"),
+    ("func _shared_content_snapshot_cache_for_test", "manager test-only hook"),
+]:
+    ctx.require_absent("src/battle_core/facades/battle_core_manager.gd", needle, label)
+
+for rel_path in [
+    "tests/suites/gojo_manager_smoke_suite.gd",
+    "tests/suites/sukuna_manager_smoke_suite.gd",
+    "tests/suites/content_snapshot_cache_suite.gd",
+    "tests/suites/manager_facade_internal_contract_suite.gd",
+    "tests/suites/manager_log_and_runtime_contract_suite.gd",
+]:
+    for needle, label in [
+        ("_debug_session", "manager internal debug access"),
+        ("_override_container_factory_for_test", "manager internal factory override"),
+        ("_replace_public_snapshot_builder_for_test", "manager internal snapshot override"),
+        ("_inject_session_for_test", "manager internal session injection"),
+        ("_shared_content_snapshot_cache_for_test", "manager internal cache access"),
+    ]:
+        ctx.require_absent(rel_path, needle, label)
+
 ctx.require_contains("tests/README.md", "domain_case_runner.gd", "tests fixed domain case runner doc")
 ctx.require_contains("tests/README.md", "formal_character_registry.json", "tests formal character registry doc")
 ctx.require_contains("tests/README.md", "check_suite_reachability.sh", "tests suite reachability gate doc")
-ctx.require_contains("tests/README.md", "architecture_wiring_graph_gate.py", "tests wiring SCC gate doc")
+ctx.require_contains("tests/README.md", "architecture_wiring_graph_gate.py", "tests wiring DAG gate doc")
 ctx.require_contains("tests/README.md", "required_suite_paths", "tests registry suite anchor doc")
 ctx.require_contains("tests/README.md", "required_test_names", "tests registry test anchor doc")
 ctx.require_contains("tests/replay_cases/domain_cases.md", "CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd", "domain case runner command")
 ctx.require_absent("tests/README.md", "policy_decision_suite.gd", "removed auto-selection suite doc")
 ctx.require_absent("tests/README.md", "gojo_sukuna_batch_probe.gd", "removed batch simulation doc")
 ctx.require_contains("tests/run_with_gate.sh", "check_suite_reachability.sh", "suite reachability gate wiring")
-ctx.require_contains("tests/check_architecture_constraints.sh", "architecture_wiring_graph_gate.py", "runtime wiring SCC gate wiring")
+ctx.require_contains("tests/check_architecture_constraints.sh", "architecture_wiring_graph_gate.py", "runtime wiring DAG gate wiring")
 
 ctx.finish("surface wiring, regression anchors, and README/test docs are aligned")

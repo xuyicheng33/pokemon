@@ -10,9 +10,9 @@ var _helper = ManagerContractTestHelperScript.new()
 var _event_log_public_snapshot_builder = EventLogPublicSnapshotBuilderScript.new()
 
 func register_tests(runner, failures: Array[String], harness) -> void:
-	runner.run_test("content_snapshot_cache_session_and_replay_contract", failures, Callable(self, "_test_content_snapshot_cache_session_and_replay_contract").bind(harness))
+	runner.run_test("content_snapshot_cache_manager_black_box_contract", failures, Callable(self, "_test_content_snapshot_cache_manager_black_box_contract").bind(harness))
 
-func _test_content_snapshot_cache_session_and_replay_contract(harness) -> Dictionary:
+func _test_content_snapshot_cache_manager_black_box_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
 	if manager_payload.has("error"):
 		return harness.fail_result(str(manager_payload["error"]))
@@ -24,10 +24,6 @@ func _test_content_snapshot_cache_session_and_replay_contract(harness) -> Dictio
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var cache = manager._shared_content_snapshot_cache_for_test()
-	if cache == null:
-		return harness.fail_result("shared content snapshot cache should be available")
-	cache.clear()
 
 	var content_snapshot_paths = sample_factory.content_snapshot_paths()
 	var battle_setup = sample_factory.build_sample_setup()
@@ -61,11 +57,6 @@ func _test_content_snapshot_cache_session_and_replay_contract(harness) -> Dictio
 		return harness.fail_result("content snapshot cache must preserve initial event log snapshot semantics")
 	if int(event_log_snapshot.get("total_size", -1)) != baseline_event_snapshots.size():
 		return harness.fail_result("initial event log snapshot total_size must match baseline")
-	var session_stats: Dictionary = cache.stats()
-	if int(session_stats.get("misses", -1)) != 1 or int(session_stats.get("hits", -1)) != 0 or int(session_stats.get("size", -1)) != 1:
-		return harness.fail_result("first create_session should warm exactly one content snapshot cache entry")
-	if bool(session_stats.get("last_cache_hit", true)):
-		return harness.fail_result("first create_session should be a cache miss")
 
 	var baseline_replay_input = sample_factory.build_demo_replay_input(core.service("command_builder"))
 	if baseline_replay_input == null:
@@ -94,11 +85,6 @@ func _test_content_snapshot_cache_session_and_replay_contract(harness) -> Dictio
 		return harness.fail_result("content snapshot cache must preserve replay final_state_hash")
 	if _stable_log_array(cached_replay_output.event_log) != _stable_log_array(baseline_replay_output.event_log):
 		return harness.fail_result("content snapshot cache must preserve replay event log semantics")
-	var replay_stats: Dictionary = cache.stats()
-	if int(replay_stats.get("misses", -1)) != 1 or int(replay_stats.get("hits", -1)) != 1 or int(replay_stats.get("size", -1)) != 1:
-		return harness.fail_result("run_replay should reuse the warmed content snapshot cache entry")
-	if not bool(replay_stats.get("last_cache_hit", false)):
-		return harness.fail_result("run_replay should report a cache hit after create_session warmed the cache")
 	return harness.pass_result()
 
 func _clone_replay_input(replay_input) -> ReplayInputScript:

@@ -191,19 +191,6 @@ func _configure_core_ports(container_factory: Callable, command_builder, command
     _container_factory_owner = container_factory_owner
     if _command_builder != null:
         _command_builder.id_factory = _command_id_factory
-func _override_container_factory_for_test(container_factory: Callable, container_factory_owner = null) -> void:
-    _container_factory = container_factory
-    _container_factory_owner = container_factory_owner
-func _replace_public_snapshot_builder_for_test(public_snapshot_builder) -> void:
-    _public_snapshot_builder = public_snapshot_builder
-func _inject_session_for_test(session_id: String, session) -> void:
-    _sessions[session_id] = session
-func _debug_session(session_id: String):
-    return _sessions.get(session_id, null)
-func _shared_content_snapshot_cache_for_test():
-    if _container_factory_owner == null or _container_factory_owner.composer == null:
-        return null
-    return _container_factory_owner.composer.shared_content_snapshot_cache()
 func _validate_core_dependencies_result():
     if _disposed:
         return _contract_helper.error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "BattleCoreManager is disposed")
