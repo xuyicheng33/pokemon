@@ -1,6 +1,7 @@
 extends RefCounted
 class_name PassiveFailFastTestSupport
 
+const FieldDefinitionScript := preload("res://src/battle_core/content/field_definition.gd")
 const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/passive_skill_definition.gd")
 const PassiveItemDefinitionScript := preload("res://src/battle_core/content/passive_item_definition.gd")
 
@@ -33,3 +34,13 @@ func register_invalid_passive_item(
 	var unit_definition = content_index.units.get(unit_definition_id, null)
 	if unit_definition != null:
 		unit_definition.passive_item_id = passive_id
+
+func register_invalid_field(
+	content_index,
+	field_id: String = "test_invalid_field"
+) -> void:
+	var field_definition = FieldDefinitionScript.new()
+	field_definition.id = field_id
+	field_definition.display_name = "Invalid Field"
+	field_definition.effect_ids = PackedStringArray(["missing_%s_effect" % field_id])
+	content_index.register_resource(field_definition)

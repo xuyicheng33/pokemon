@@ -7,7 +7,6 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var trigger_dispatcher
-var trigger_batch_runner
 var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:
@@ -16,8 +15,6 @@ func invalid_battle_code() -> Variant:
 func resolve_missing_dependency() -> String:
     if trigger_dispatcher == null:
         return "trigger_dispatcher"
-    if trigger_batch_runner == null:
-        return "trigger_batch_runner"
     return ""
 
 func collect_trigger_events(trigger_name: String, battle_state, content_index, chain_context) -> Array:
@@ -26,12 +23,14 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, c
         return []
     var field_definition = content_index.fields.get(battle_state.field_state.field_def_id)
     if field_definition == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
         return []
     var effect_ids: PackedStringArray = PackedStringArray()
     for effect_id in field_definition.effect_ids:
         var effect_definition = content_index.effects.get(effect_id)
         if effect_definition == null:
-            continue
+            last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+            return []
         if not effect_definition.trigger_names.has(trigger_name):
             continue
         effect_ids.append(effect_id)
@@ -82,7 +81,12 @@ func collect_lifecycle_effect_events(
     last_invalid_battle_code = _read_trigger_dispatcher_invalid_battle_code()
     return effect_events
 
-func break_field_if_creator_inactive(battle_state, content_index, chain_context) -> Variant:
+func break_field_if_creator_inactive(
+    battle_state,
+    content_index,
+    chain_context,
+    execute_trigger_batch: Callable = Callable()
+) -> Variant:
     if battle_state.field_state == null:
         return null
     var creator_id := String(battle_state.field_state.creator)
@@ -91,15 +95,28 @@ func break_field_if_creator_inactive(battle_state, content_index, chain_context)
     var creator_unit = battle_state.get_unit(creator_id)
     if creator_unit != null and creator_unit.current_hp > 0 and creator_unit.leave_state == LeaveStatesScript.ACTIVE:
         return null
-    return break_active_field(battle_state, content_index, "field_break", chain_context)
+    return break_active_field(
+        battle_state,
+        content_index,
+        "field_break",
+        chain_context,
+        execute_trigger_batch
+    )
 
-func break_active_field(battle_state, content_index, trigger_name: String, chain_context) -> Variant:
+func break_active_field(
+    battle_state,
+    content_index,
+    trigger_name: String,
+    chain_context,
+    execute_trigger_batch: Callable = Callable()
+) -> Variant:
     if battle_state.field_state == null:
         return null
-    if trigger_batch_runner == null:
-        return ErrorCodesScript.INVALID_STATE_CORRUPTION
     var current_field_state = battle_state.field_state
     var field_definition = get_field_definition_for_state(current_field_state, content_index)
+    if field_definition == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return ErrorCodesScript.INVALID_STATE_CORRUPTION
     if field_definition != null and not field_definition.on_break_effect_ids.is_empty():
         var break_events: Array = collect_lifecycle_effect_events(
             trigger_name,
@@ -110,7 +127,10 @@ func break_active_field(battle_state, content_index, trigger_name: String, chain
             chain_context
         )
         if not break_events.is_empty():
-            var break_invalid_code = trigger_batch_runner.execute_trigger_batch(
+            if not execute_trigger_batch.is_valid():
+                last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+                return ErrorCodesScript.INVALID_STATE_CORRUPTION
+            var break_invalid_code = execute_trigger_batch.call(
                 "__field_break__",
                 battle_state,
                 content_index,

@@ -7,7 +7,6 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var field_service
 var trigger_dispatcher
-var trigger_batch_runner
 var id_factory
 var context_resolver
 var last_invalid_battle_code: Variant = null
@@ -20,8 +19,6 @@ func resolve_missing_dependency() -> String:
 		return "field_service"
 	if trigger_dispatcher == null:
 		return "trigger_dispatcher"
-	if trigger_batch_runner == null:
-		return "trigger_batch_runner"
 	if id_factory == null:
 		return "id_factory"
 	if context_resolver == null:
@@ -43,9 +40,19 @@ func create_field_state(effect_definition, payload, effect_event):
 	field_state.source_order_speed_snapshot = effect_event.source_order_speed_snapshot
 	return field_state
 
-func execute_field_effects(trigger_name: String, field_state, battle_state, content_index, chain_context) -> Variant:
+func execute_field_effects(
+	trigger_name: String,
+	field_state,
+	battle_state,
+	content_index,
+	chain_context,
+	execute_trigger_batch: Callable = Callable()
+) -> Variant:
 	var field_definition = field_service.get_field_definition_for_state(field_state, content_index)
-	if field_definition == null or field_definition.effect_ids.is_empty():
+	if field_definition == null:
+		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+		return last_invalid_battle_code
+	if field_definition.effect_ids.is_empty():
 		return null
 	var effect_events: Array = field_service.collect_lifecycle_effect_events(
 		trigger_name,
@@ -57,7 +64,10 @@ func execute_field_effects(trigger_name: String, field_state, battle_state, cont
 	)
 	if effect_events.is_empty():
 		return null
-	return trigger_batch_runner.execute_trigger_batch(
+	if not execute_trigger_batch.is_valid():
+		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+		return ErrorCodesScript.INVALID_STATE_CORRUPTION
+	return execute_trigger_batch.call(
 		"__field_%s__" % trigger_name,
 		battle_state,
 		content_index,
@@ -66,7 +76,13 @@ func execute_field_effects(trigger_name: String, field_state, battle_state, cont
 		effect_events
 	)
 
-func execute_success_effects(effect_ids: PackedStringArray, effect_event, battle_state, content_index) -> Variant:
+func execute_success_effects(
+	effect_ids: PackedStringArray,
+	effect_event,
+	battle_state,
+	content_index,
+	execute_trigger_batch: Callable = Callable()
+) -> Variant:
 	if effect_ids.is_empty():
 		return null
 	var success_events = trigger_dispatcher.collect_events(
@@ -85,7 +101,10 @@ func execute_success_effects(effect_ids: PackedStringArray, effect_event, battle
 		return trigger_invalid_code
 	if success_events.is_empty():
 		return null
-	return trigger_batch_runner.execute_trigger_batch(
+	if not execute_trigger_batch.is_valid():
+		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+		return ErrorCodesScript.INVALID_STATE_CORRUPTION
+	return execute_trigger_batch.call(
 		"__field_apply_success__",
 		battle_state,
 		content_index,
@@ -103,7 +122,12 @@ func defer_success_effects(field_state, effect_ids: PackedStringArray, effect_ev
 	field_state.pending_success_source_order_speed_snapshot = int(effect_event.source_order_speed_snapshot)
 	field_state.pending_success_chain_context = effect_event.chain_context.copy_shallow() if effect_event.chain_context != null else null
 
-func execute_pending_success_effects(field_state, battle_state, content_index) -> Variant:
+func execute_pending_success_effects(
+	field_state,
+	battle_state,
+	content_index,
+	execute_trigger_batch: Callable = Callable()
+) -> Variant:
 	if field_state == null or field_state.pending_success_effect_ids.is_empty():
 		return null
 	var success_events = trigger_dispatcher.collect_events(
@@ -124,7 +148,10 @@ func execute_pending_success_effects(field_state, battle_state, content_index) -
 	clear_pending_success_effects(field_state)
 	if success_events.is_empty():
 		return null
-	return trigger_batch_runner.execute_trigger_batch(
+	if not execute_trigger_batch.is_valid():
+		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+		return ErrorCodesScript.INVALID_STATE_CORRUPTION
+	return execute_trigger_batch.call(
 		"__field_apply_success__",
 		battle_state,
 		content_index,

@@ -3,6 +3,7 @@ class_name TurnFieldLifecycleService
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var field_service
@@ -53,7 +54,8 @@ func break_field_if_creator_inactive(battle_state, content_index) -> bool:
     var invalid_code = field_service.break_field_if_creator_inactive(
         battle_state,
         content_index,
-        battle_state.chain_context
+        battle_state.chain_context,
+        Callable(trigger_batch_runner, "execute_trigger_batch")
     )
     if invalid_code == null:
         return false
@@ -65,7 +67,8 @@ func break_active_field(battle_state, content_index, trigger_name: String) -> bo
         battle_state,
         content_index,
         trigger_name,
-        battle_state.chain_context
+        battle_state.chain_context,
+        Callable(trigger_batch_runner, "execute_trigger_batch")
     )
     if invalid_code == null:
         return false
@@ -80,6 +83,12 @@ func apply_turn_end_field_tick(battle_state, content_index, cause_event_id: Stri
         }
     var current_field_state = battle_state.field_state
     var field_definition = field_service.get_field_definition_for_state(current_field_state, content_index)
+    if field_definition == null:
+        battle_result_service.terminate_invalid_battle(battle_state, ErrorCodesScript.INVALID_STATE_CORRUPTION)
+        return {
+            "field_change": null,
+            "terminated": true,
+        }
     var field_change = FieldChangeScript.new()
     field_change.change_kind = "tick"
     field_change.before_field_id = current_field_state.field_def_id
