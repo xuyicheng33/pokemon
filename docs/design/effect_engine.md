@@ -92,6 +92,7 @@ effect 级前置约束：
 - 该前置只允许挂在 `scope=target` 的 effect 上；目标固定读取 `chain_context.target_unit_id`。
 - 若 `required_target_same_owner=true`，则命中的 required effect instance 还必须记录 `meta.source_owner_id == effect_event.owner_id`。
 - 前置不满足时整条 effect 直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
+- `scope=action_actor` 只允许用于 `on_receive_action_hit`；相关单位目标固定读取 `chain_context.action_actor_id`。
 
 ## 5. RuleMod 子域
 
@@ -107,6 +108,8 @@ effect 级前置约束：
 - `mp_regen`：`turn_start` MP 回复值。
 - `action_legality`：技能 / 奥义 / 换人合法性正式读取点；`wait` 不受影响。
 - `incoming_accuracy`：目标侧命中干扰读取点；在 field 覆盖后、命中 roll 前参与计算。
+- `nullify_field_accuracy`：目标侧“忽略领域附加必中”读取点；不影响技能原生命中率。
+- `incoming_action_final_mod`：目标侧来袭行动最终倍率读取点；当前支持按来袭动作类型与属性过滤。
 
 ### 5.3 生命周期
 

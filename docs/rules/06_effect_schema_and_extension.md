@@ -23,7 +23,7 @@
 |---|---|
 |`id`|唯一标识|
 |`display_name`|效果名|
-|`scope`|`self / target / field`|
+|`scope`|`self / target / field / action_actor`|
 |`duration_mode`|当前只允许 `turns / permanent`|
 |`duration`|持续值；`turns` 模式必填|
 |`decrement_on`|`turn_start / turn_end`；仅 `turns` 模式必填|
@@ -45,11 +45,14 @@
 2. `required_target_effects` 只允许挂在 `scope=target` 的 effect 上；加载期必须校验非空项、去重和引用存在性。
 3. `required_target_same_owner = true` 时，前置除检查目标持有这些 effect 外，还必须校验这些 effect instance 记录的 `meta.source_owner_id` 与当前 effect owner 一致。
 4. `required_incoming_command_types / required_incoming_combat_type_ids` 只允许声明在 `trigger_names` 包含 `on_receive_action_hit` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
-5. 若目标前置或来袭动作过滤不满足，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
-6. `max_stacks` 只允许和 `stacking=stack` 一起出现；`-1` 表示不设上限，正整数表示最多并行层数。
-7. `persists_on_switch=true` 的 unit effect 在非击倒离场后继续保留，但 bench 上只继续倒计时，不参与普通 `turn_start / turn_end` trigger batch。
-8. 若 owner 在执行阶段中途重新上场，则这些持久 effect 在“同回合重上场当回合”仍继续暂停普通 `turn_start / turn_end` trigger batch；从下一整回合起恢复。
-9. 上述 bench 持久 effect 若在板凳上到期，只移除并写正常 remove log；当前不派发 `on_expire_effect_ids`。
+5. `scope=action_actor` 只允许用于 `trigger_names = [on_receive_action_hit]` 的 effect；该作用域的单位目标固定读取 `ChainContext.action_actor_id`。
+6. `apply_field` payload requires `scope=field`；当前不允许把 `apply_field` 挂在 `self / target / action_actor` effect 上。
+7. `damage / heal / resource_mod / stat_mod / apply_effect / remove_effect` 只允许 `scope=self / target / action_actor`；`scope=field` 会在加载期直接判非法，避免运行时静默 no-op。
+8. 若目标前置或来袭动作过滤不满足，整条 effect 在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
+9. `max_stacks` 只允许和 `stacking=stack` 一起出现；`-1` 表示不设上限，正整数表示最多并行层数。
+10. `persists_on_switch=true` 的 unit effect 在非击倒离场后继续保留，但 bench 上只继续倒计时，不参与普通 `turn_start / turn_end` trigger batch。
+11. 若 owner 在执行阶段中途重新上场，则这些持久 effect 在“同回合重上场当回合”仍继续暂停普通 `turn_start / turn_end` trigger batch；从下一整回合起恢复。
+12. 上述 bench 持久 effect 若在板凳上到期，只移除并写正常 remove log；当前不派发 `on_expire_effect_ids`。
 
 ## 3. `EffectInstance`
 

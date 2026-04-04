@@ -67,6 +67,8 @@
 |`skill_id`|`Variant`|若当前链由技能或奥义触发，则记录对应 skill id|
 |`target_unit_id`|`Variant`|当前链锁定的目标单位实例 ID|
 |`target_slot`|`Variant`|当前链目标槽位|
+|`action_actor_id`|`Variant`|来袭动作的施法者实例 ID；`on_receive_action_hit` / `scope=action_actor` 读取这个字段|
+|`action_combat_type_id`|`Variant`|来袭技能或奥义的 `combat_type_id` 快照；供受击前置与来袭伤害修正读取|
 |`chain_depth`|`int`|当前 effect 递归深度；超过 `max_chain_depth` 必须 fail-fast|
 |`effect_dedupe_keys`|`Dictionary`|同链 effect 递归防抖键集合；当前按稳定语义键去重，避免递归重派发死循环|
 |`defer_field_apply_success`|`bool`|同回合双开领域时，先手领域若仍需等待对拼结果，则先延后 `field_apply_success` 附带效果|
@@ -74,6 +76,7 @@
 补充说明：
 
 - `effect_dedupe_keys` 当前用于拦截“同链、同语义”的 effect 重复派发；它不等于全局去重，不得跨链复用。
+- `action_actor_id / action_combat_type_id` 是 `on_receive_action_hit` 链的正式上下文字段；禁止再从日志或外层命令对象反推。
 - `copy_shallow()` 必须复制 `effect_dedupe_keys` 与当前链关键定位字段，保证派生链不会共享同一个可变字典实例。
 
 ## 5. SideState

@@ -126,7 +126,7 @@
 |---|---|---|
 |`id`|`String`|效果 ID|
 |`display_name`|`String`|显示名|
-|`scope`|`String`|`self / target / field`|
+|`scope`|`String`|`self / target / field / action_actor`|
 |`duration_mode`|`String`|`turns / permanent`|
 |`duration`|`int`|持续值|
 |`decrement_on`|`String`|`turn_start / turn_end`（仅 `turns`）|
@@ -147,7 +147,10 @@
 - `required_target_effects` 只允许出现在 `scope=target` 的 effect 上。
 - `required_target_same_owner=true` 时，前置检查除“目标持有这些 effect”外，还要求这些 effect instance 的 `meta.source_owner_id` 与当前 effect owner 一致。
 - `required_incoming_command_types / required_incoming_combat_type_ids` 只允许出现在 `trigger_names` 包含 `on_receive_action_hit` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
+- `scope=action_actor` 只允许用于 `trigger_names = [on_receive_action_hit]` 的 effect；该作用域的单位目标固定读取 `ChainContext.action_actor_id`。
 - `max_stacks` 只允许和 `stacking=stack` 一起声明；`-1` 表示不封顶，正整数表示硬上限。
+- `apply_field` payload requires `scope=field`；当前不允许把 `apply_field` 挂在 `self / target / action_actor` effect 上。
+- `damage / heal / resource_mod / stat_mod / apply_effect / remove_effect` 只允许 `scope=self / target / action_actor`；`scope=field` 会在加载期直接判非法，避免运行时静默 no-op。
 - 若目标前置或来袭动作过滤不满足，整条 effect 会在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 
 ### 3.6 FieldDefinition
