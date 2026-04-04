@@ -15,6 +15,9 @@ class CaptureFieldTriggerDispatcher:
 	var captured_chain_context = null
 	var last_invalid_battle_code: Variant = null
 
+	func invalid_battle_code() -> Variant:
+		return last_invalid_battle_code
+
 	func collect_events(
 		_trigger_name: String,
 		_battle_state,

@@ -25,7 +25,7 @@ func is_domain_command(command, content_index) -> bool:
         last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
         return false
     var result: bool = domain_clash_orchestrator.is_domain_command(command, content_index)
-    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
     return result
 
 func resolve_active_domain_creator_side_id(battle_state, content_index) -> String:
@@ -34,7 +34,7 @@ func resolve_active_domain_creator_side_id(battle_state, content_index) -> Strin
         last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
         return ""
     var creator_side_id: String = domain_clash_orchestrator.resolve_active_domain_creator_side_id(battle_state, content_index)
-    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
     return creator_side_id
 
 func is_side_domain_recast_blocked(battle_state, side_id: String, content_index) -> bool:
@@ -42,7 +42,7 @@ func is_side_domain_recast_blocked(battle_state, side_id: String, content_index)
         last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
         return false
     var blocked: bool = domain_clash_orchestrator.is_side_domain_recast_blocked(battle_state, side_id, content_index)
-    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
     return blocked
 
 func is_domain_command_blocked_by_active_side_domain(command, battle_state, content_index) -> bool:
@@ -50,7 +50,7 @@ func is_domain_command_blocked_by_active_side_domain(command, battle_state, cont
         last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
         return false
     var blocked: bool = domain_clash_orchestrator.is_domain_command_blocked_by_active_side_domain(command, battle_state, content_index)
-    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
     return blocked
 
 func can_bypass_domain_recast_for_clash(queued_action, command, battle_state, content_index) -> bool:
@@ -63,5 +63,5 @@ func can_bypass_domain_recast_for_clash(queued_action, command, battle_state, co
         battle_state,
         content_index
     )
-    last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
     return bypass

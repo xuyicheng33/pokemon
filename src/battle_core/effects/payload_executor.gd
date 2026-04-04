@@ -61,8 +61,9 @@ func execute_payload(payload, effect_definition, effect_event, battle_state, con
 func _capture_handler_invalid_code(handler) -> void:
     if handler == null:
         return
-    if handler.last_invalid_battle_code != null:
-        last_invalid_battle_code = handler.last_invalid_battle_code
+    var invalid_code = handler.invalid_battle_code()
+    if invalid_code != null:
+        last_invalid_battle_code = invalid_code
 
 func _resolve_handler_missing(handler) -> String:
     if handler == null:

@@ -17,6 +17,12 @@ var last_apply_skipped: bool = false
 var _rule_mod_schema = RuleModSchemaScript.new()
 var _owner_scope_service = RuleModOwnerScopeServiceScript.new()
 
+func error_state() -> Dictionary:
+	return {
+		"code": last_error_code,
+		"message": last_error_message,
+	}
+
 func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = ""):
 	last_error_code = null
 	last_error_message = ""
@@ -24,8 +30,9 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
 	if not _validate_rule_mod_payload(rule_mod_payload):
 		return null
 	if not _owner_scope_service.validate_owner_ref(owner_ref, rule_mod_payload.scope, battle_state):
-		last_error_code = _owner_scope_service.last_error_code
-		last_error_message = _owner_scope_service.last_error_message
+		var owner_error_state: Dictionary = _owner_scope_service.error_state()
+		last_error_code = owner_error_state.get("code", null)
+		last_error_message = String(owner_error_state.get("message", ""))
 		return null
 	var owner_instances: Array = _owner_scope_service.get_owner_instances(battle_state, owner_ref)
 	var resolved_source_stacking_key := _resolve_source_stacking_key(rule_mod_payload, source_stacking_token, source_instance_id)

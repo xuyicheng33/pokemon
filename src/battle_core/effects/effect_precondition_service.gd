@@ -6,6 +6,9 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
 	return ""
 

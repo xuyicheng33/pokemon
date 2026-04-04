@@ -13,6 +13,9 @@ var stat_calculator
 var domain_clash_orchestrator
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+    return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
     if id_factory == null:
         return "id_factory"
@@ -56,8 +59,8 @@ func build_queue(commands: Array, battle_state, content_index) -> Array:
     for queue_index in range(queued_actions.size()):
         queued_actions[queue_index].queue_index = queue_index
     domain_clash_orchestrator.mark_domain_clash_protection(queued_actions, content_index)
-    if domain_clash_orchestrator.last_invalid_battle_code != null:
-        last_invalid_battle_code = domain_clash_orchestrator.last_invalid_battle_code
+    if domain_clash_orchestrator.invalid_battle_code() != null:
+        last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
         return []
     return queued_actions
 

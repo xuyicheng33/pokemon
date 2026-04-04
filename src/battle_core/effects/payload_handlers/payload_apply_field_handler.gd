@@ -6,6 +6,9 @@ const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_fi
 var last_invalid_battle_code: Variant = null
 var field_apply_service
 
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
 	if field_apply_service == null:
 		return "field_apply_service"

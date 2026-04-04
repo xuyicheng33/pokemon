@@ -14,6 +14,9 @@ var effect_event_helper
 
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
 	if battle_logger == null:
 		return "battle_logger"
@@ -37,8 +40,9 @@ func execute(payload, _effect_definition, effect_event, battle_state, _content_i
 	if owner_ref == null:
 		return
 	var resolved_value = rule_mod_value_resolver.resolve_value(payload, effect_event, battle_state)
-	if rule_mod_value_resolver.last_error_code != null:
-		last_invalid_battle_code = rule_mod_value_resolver.last_error_code
+	var resolver_error_state: Dictionary = rule_mod_value_resolver.error_state()
+	if resolver_error_state.get("code", null) != null:
+		last_invalid_battle_code = resolver_error_state.get("code", null)
 		return
 	var created_instance = rule_mod_service.create_instance(
 		payload,
@@ -51,7 +55,8 @@ func execute(payload, _effect_definition, effect_event, battle_state, _content_i
 		String(effect_event.effect_definition_id)
 	)
 	if created_instance == null:
-		last_invalid_battle_code = rule_mod_service.last_error_code if rule_mod_service != null else ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+		var rule_mod_error_state: Dictionary = rule_mod_service.error_state() if rule_mod_service != null else {}
+		last_invalid_battle_code = rule_mod_error_state.get("code", ErrorCodesScript.INVALID_RULE_MOD_DEFINITION)
 		return
 	if rule_mod_service.last_apply_skipped:
 		return

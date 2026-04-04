@@ -114,8 +114,8 @@ func execute_forced_replace(battle_state, content_index, target_unit_id: String,
 
     side_state.bench_order.append(target_unit.unit_instance_id)
     leave_service.leave_unit(battle_state, target_unit, "forced_replace", content_index)
-    if leave_service != null and leave_service.last_invalid_battle_code != null:
-        return {"replaced": false, "entered_unit": null, "invalid_code": leave_service.last_invalid_battle_code}
+    if leave_service.invalid_battle_code() != null:
+        return {"replaced": false, "entered_unit": null, "invalid_code": leave_service.invalid_battle_code()}
     var field_break_invalid_code = field_service.break_field_if_creator_inactive(
         battle_state,
         content_index,

@@ -31,8 +31,8 @@ func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String,
         queued_action.speed_snapshot,
         battle_state.chain_context
     )
-    if trigger_dispatcher.last_invalid_battle_code != null:
-        result.invalid_battle_code = trigger_dispatcher.last_invalid_battle_code
+    if trigger_dispatcher.invalid_battle_code() != null:
+        result.invalid_battle_code = trigger_dispatcher.invalid_battle_code()
         return
     if effect_events.is_empty():
         return
@@ -41,8 +41,8 @@ func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String,
     battle_state.rng_stream_index = rng_service.get_stream_index()
     for effect_event in sorted_events:
         payload_executor.execute_effect_event(effect_event, battle_state, content_index)
-        if payload_executor.last_invalid_battle_code != null:
-            result.invalid_battle_code = payload_executor.last_invalid_battle_code
+        if payload_executor.invalid_battle_code() != null:
+            result.invalid_battle_code = payload_executor.invalid_battle_code()
             break
         result.generated_effects.append(effect_event)
     battle_state.pending_effect_queue.clear()

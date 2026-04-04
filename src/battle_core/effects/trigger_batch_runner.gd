@@ -110,19 +110,7 @@ func _capture_trigger_source_invalid_code(source_service) -> bool:
 func _read_invalid_battle_code(source_service) -> Variant:
     if source_service == null:
         return null
-    if source_service.has_method("invalid_battle_code"):
-        return source_service.invalid_battle_code()
-    if _has_property(source_service, "last_invalid_battle_code"):
-        return source_service.get("last_invalid_battle_code")
-    return null
-
-func _has_property(target, property_name: String) -> bool:
-    if target == null:
-        return false
-    for property_info in target.get_property_list():
-        if String(property_info.get("name", "")) == property_name:
-            return true
-    return false
+    return source_service.invalid_battle_code()
 
 func resolve_missing_dependency() -> String:
     if passive_skill_service == null:

@@ -46,8 +46,9 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 			battle_state,
 			content_index
 		)
-		if domain_clash_orchestrator.last_invalid_battle_code != null:
-			return domain_clash_orchestrator.last_invalid_battle_code
+		var clash_invalid_code = domain_clash_orchestrator.invalid_battle_code()
+		if clash_invalid_code != null:
+			return clash_invalid_code
 		if bool(conflict_result.get("blocked", false)):
 			field_apply_log_service.log_field_blocked_by_active_domain(before_field, payload, effect_event, battle_state)
 			return null
@@ -70,7 +71,8 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 				return break_invalid_code
 	var field_state = field_apply_effect_runner.create_field_state(effect_definition, payload, effect_event)
 	if field_state == null:
-		return field_apply_effect_runner.last_invalid_battle_code if field_apply_effect_runner.last_invalid_battle_code != null else ErrorCodesScript.INVALID_STATE_CORRUPTION
+		var field_invalid_code = field_apply_effect_runner.invalid_battle_code()
+		return field_invalid_code if field_invalid_code != null else ErrorCodesScript.INVALID_STATE_CORRUPTION
 	battle_state.field_state = field_state
 	field_apply_log_service.log_apply_field(before_field, field_state, effect_event, battle_state)
 	var field_apply_invalid_code = field_apply_effect_runner.execute_field_effects(

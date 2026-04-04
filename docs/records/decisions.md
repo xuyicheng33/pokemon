@@ -843,3 +843,18 @@
 - 原因：
   - 旧的每回合整表扫描方式会把批量回放成本线性放大。
   - 先按回合索引收口，才能在后续 replay case 增长时维持可接受的基础成本。
+
+### 69. manager raw port 与跨服务错误读取统一走显式边界（2026-04-04）
+
+- `BattleCoreManager` 的 `container_factory / command_builder / command_id_factory / public_snapshot_builder` 只允许作为内部装配端口存在，不再作为 facade raw field 暴露给外围或测试。
+- `BattleCoreComposer` 统一通过 `_configure_core_ports(...)` 装配 manager。
+- manager 相关测试若确实需要观察内部会话或替换端口，只允许走显式 `_debug_* / *_for_test` 入口，不再散落着直接摸 raw field。
+- 正式服务之间读取错误状态时：
+  - `invalid_battle` 统一走 `invalid_battle_code()`
+  - 普通错误统一走 `error_state()`
+- 明确禁止：
+  - 跨对象直读 `last_invalid_battle_code / last_error_code`
+  - 再引入 `get("last_*")`、`_has_property()` 这类字符串通道兼容回退
+- 原因：
+  - facade 如果继续暴露 raw port，测试和新代码会再次把装配细节当成稳定接口。
+  - 错误传播如果继续混用字段直读和字符串回退，会把 fail-fast 边界重新变脆。

@@ -13,6 +13,9 @@ var effect_event_helper
 
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
 	if battle_logger == null:
 		return "battle_logger"

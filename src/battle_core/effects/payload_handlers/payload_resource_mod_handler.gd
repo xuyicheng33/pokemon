@@ -6,6 +6,9 @@ const ResourceModPayloadScript := preload("res://src/battle_core/content/resourc
 var last_invalid_battle_code: Variant = null
 var payload_resource_runtime_service
 
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
 	if payload_resource_runtime_service == null:
 		return "payload_resource_runtime_service"

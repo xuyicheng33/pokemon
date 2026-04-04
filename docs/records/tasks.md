@@ -78,7 +78,92 @@
 #### 当前验证结果
 
 - `godot --headless --path . --script tests/run_all.gd` 通过
+
+### 基础稳定化收口：manager 边界与错误读取统一（已完成）
+
+- 目标：
+  - 收紧 `BattleCoreManager` 的 raw port 暴露面，并把正式服务间残留的 `last_*` 直读 / property fallback 统一切回显式 getter
+- 范围：
+  - `src/battle_core/facades/*`
+  - `src/composition/battle_core_composer.gd`
+  - `src/battle_core/actions/*`
+  - `src/battle_core/turn/*`
+  - `src/battle_core/lifecycle/*`
+  - `src/battle_core/passives/*`
+  - `src/battle_core/effects/*`
+  - `tests/suites/*manager*`
+  - `tests/suites/composition_container_contract_suite.gd`
+  - `tests/suites/content_snapshot_cache_suite.gd`
+  - `tests/suites/field_lifecycle_contract_suite.gd`
+  - `tests/support/battle_core_test_harness.gd`
+  - `README.md`
+- 验收标准：
+  - `BattleCoreManager` 不再暴露 `container_factory / command_builder / command_id_factory / public_snapshot_builder` 这组 raw port 字段
+  - manager 相关测试不再直接摸 raw port，内部访问改走明确的 debug/test 入口
+  - 正式服务间不再保留 `last_invalid_battle_code / last_error_code` 跨对象直读，也不再保留 `get("last_*")` / `_has_property()` 兼容回退
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `BattleCoreManager` raw port 已改为私有字段，composer 改走 `_configure_core_ports(...)`
+  - manager 相关测试已改为使用 `_debug_session / _inject_session_for_test / _override_container_factory_for_test / _replace_public_snapshot_builder_for_test / _shared_content_snapshot_cache_for_test`
+  - `composer_build_manager_contract` 已新增回归，锁 `container_factory / command_builder / command_id_factory / public_snapshot_builder` 不得重新暴露成 manager raw port 字段
+  - 正式服务间残留的 `last_*` 直读与 property fallback 已收口为 `invalid_battle_code()` / `error_state()`
+  - `payload_executor` 与各 payload handler 的错误读取口径已统一
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
 - `bash tests/check_architecture_constraints.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
+
+### 审查收口补修（已完成）
+
+- 目标：
+  - 把 2026-04-04 审查里剩余的真实问题分批修完，不再只停留在报告
+  - 收口 `Kashimo` formal validator 覆盖缺口、共享 schema/规则文档漂移、`BattleCoreManager` facade 边界过宽、跨模块错误读取残留
+  - 每批修完都保持 gate 可复查，最后保证可提交、可推送、工作区可收干净
+- 范围：
+  - `src/battle_core/content/*`
+  - `src/battle_core/facades/*`
+  - `src/battle_core/actions/*`
+  - `src/battle_core/turn/*`
+  - `src/battle_core/lifecycle/*`
+  - `src/battle_core/passives/*`
+  - `src/battle_core/effects/*`
+  - `src/composition/battle_core_composer.gd`
+  - `tests/suites/*`
+  - `tests/support/*`
+  - `tests/gates/*`
+  - `docs/design/*`
+  - `docs/rules/*`
+  - `README.md`
+- 验收标准：
+  - `kashimo_kyokyo_katsura` 与相关资源漂移必须被 formal validator fail-fast 拦住
+  - schema / rules / architecture wording 与 gate 必须回到当前实现口径
+  - `BattleCoreManager` 测试不再直接依赖公开端口字段和 `_sessions / _container_factory_owner`
+  - 正式服务之间不再继续读 `last_invalid_battle_code / last_error_code` 或 property fallback
+  - `bash tests/run_with_gate.sh` 全绿
+
+#### 当前执行结果
+
+- 已完成（批次 A：Kashimo formal validator 与文档/gate 收口）：
+  - 新增 `content_snapshot_formal_kashimo_contracts.gd`，把 unit / skill / passive / water leak wiring / `kyokyo` / `feedback_strike` / `amber` 的静态合约补齐到加载期 fail-fast
+  - `extension_validation_contract_suite.gd` 已新增 `formal_kashimo_validator_kyokyo_bad_case_contract`
+  - `battle_content_schema.md`、`06_effect_schema_and_extension.md`、`battle_core_architecture_constraints.md` 与 `repo_consistency_docs_gate.py` 已补齐 `effect_stack_sum`、`power_bonus_*`、`retention_mode`、`persistent_stat_stages` 与架构口径
+- 已完成（批次 B：BattleCoreManager facade 边界收口）：
+  - `BattleCoreManager` 的 runtime ports 已改成内部字段，由 composer 统一走 `_configure_core_ports(...)` 装配
+  - 测试侧现在只通过显式 test hook 访问内部 session / shared cache / snapshot builder override，不再直接摸公开端口变量和 `_sessions`
+  - `BattleCoreManager` 文件保持在 250 行 gate 阈值以内，避免这轮收口本身引入新的大文件警告
+- 已完成（批次 C：跨模块错误读取显式化补齐）：
+  - `ActionQueueBuilder`、`LeaveService`、`EffectInstanceService`、`FieldApplyConflictService`、`FieldApplyEffectRunner`、`DomainClashOrchestrator` 已补齐显式 getter
+  - `TurnLoopController`、`ReplacementService`、`FaintLeaveReplacementService`、`DomainLegalityService`、`FieldApplyService`、`PayloadApplyEffectHandler` 等调用点已切到 `invalid_battle_code()`
+  - `PayloadRuleModHandler` 已改成统一读取 `rule_mod_value_resolver.error_state()` / `rule_mod_service.error_state()`
+  - `TriggerBatchRunner`、`PassiveSkillService`、`PassiveItemService`、`FieldService` 已删除 property fallback，不再走 `get("last_*")`
+
+#### 当前验证结果
+
 - `bash tests/run_with_gate.sh` 通过
 
 ## 2026-04-03

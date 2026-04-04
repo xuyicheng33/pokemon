@@ -9,6 +9,9 @@ var id_factory
 var last_invalid_battle_code: Variant = null
 var last_apply_skipped: bool = false
 
+func invalid_battle_code() -> Variant:
+    return last_invalid_battle_code
+
 func create_instance(effect_definition, owner_id: String, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, meta: Dictionary = {}):
     last_invalid_battle_code = null
     last_apply_skipped = false

@@ -6,6 +6,9 @@ const DamagePayloadScript := preload("res://src/battle_core/content/damage_paylo
 var last_invalid_battle_code: Variant = null
 var payload_damage_runtime_service
 
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
 	if payload_damage_runtime_service == null:
 		return "payload_damage_runtime_service"

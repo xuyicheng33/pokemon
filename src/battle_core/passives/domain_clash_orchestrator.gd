@@ -8,6 +8,9 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var field_apply_conflict_service
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
 	if field_apply_conflict_service == null:
 		return "field_apply_conflict_service"
@@ -104,8 +107,9 @@ func resolve_field_conflict(before_field, challenger_field_definition, effect_ev
 		challenger_field_definition,
 		incumbent_field_definition
 	)
-	if field_apply_conflict_service.last_invalid_battle_code != null:
-		last_invalid_battle_code = field_apply_conflict_service.last_invalid_battle_code
+	var conflict_invalid_code = field_apply_conflict_service.invalid_battle_code()
+	if conflict_invalid_code != null:
+		last_invalid_battle_code = conflict_invalid_code
 		return {}
 	if blocked_by_domain:
 		return {
@@ -117,8 +121,9 @@ func resolve_field_conflict(before_field, challenger_field_definition, effect_ev
 		challenger_field_definition,
 		incumbent_field_definition
 	)
-	if field_apply_conflict_service.last_invalid_battle_code != null:
-		last_invalid_battle_code = field_apply_conflict_service.last_invalid_battle_code
+	conflict_invalid_code = field_apply_conflict_service.invalid_battle_code()
+	if conflict_invalid_code != null:
+		last_invalid_battle_code = conflict_invalid_code
 		return {}
 	if not should_resolve_clash:
 		return {

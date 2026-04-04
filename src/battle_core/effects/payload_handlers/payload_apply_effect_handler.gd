@@ -13,6 +13,9 @@ var effect_event_helper
 
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
 	if battle_logger == null:
 		return "battle_logger"
@@ -48,8 +51,9 @@ func execute(payload, effect_definition, effect_event, battle_state, content_ind
 			"source_owner_id": String(effect_event.owner_id),
 		}
 	)
-	if effect_instance_service.last_invalid_battle_code != null:
-		last_invalid_battle_code = effect_instance_service.last_invalid_battle_code
+	var effect_invalid_code = effect_instance_service.invalid_battle_code()
+	if effect_invalid_code != null:
+		last_invalid_battle_code = effect_invalid_code
 		return
 	if effect_instance_service.last_apply_skipped:
 		return

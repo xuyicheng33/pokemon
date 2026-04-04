@@ -196,16 +196,4 @@ func _remove_field_rule_mods_for_instance(battle_state, field_instance_id: Strin
 func _read_trigger_dispatcher_invalid_battle_code() -> Variant:
     if trigger_dispatcher == null:
         return null
-    if trigger_dispatcher.has_method("invalid_battle_code"):
-        return trigger_dispatcher.invalid_battle_code()
-    if _has_property(trigger_dispatcher, "last_invalid_battle_code"):
-        return trigger_dispatcher.get("last_invalid_battle_code")
-    return null
-
-func _has_property(target, property_name: String) -> bool:
-    if target == null:
-        return false
-    for property_info in target.get_property_list():
-        if String(property_info.get("name", "")) == property_name:
-            return true
-    return false
+    return trigger_dispatcher.invalid_battle_code()

@@ -82,8 +82,8 @@ func _build_action_queue_result(battle_state, content_index, commands: Array) ->
         return {"ok": false}
     battle_state.phase = BattlePhasesScript.QUEUE_LOCK
     var action_queue = action_queue_builder.build_queue(locked_commands, battle_state, content_index)
-    if action_queue_builder.last_invalid_battle_code != null:
-        battle_result_service.terminate_invalid_battle(battle_state, str(action_queue_builder.last_invalid_battle_code))
+    if action_queue_builder.invalid_battle_code() != null:
+        battle_result_service.terminate_invalid_battle(battle_state, str(action_queue_builder.invalid_battle_code()))
         return {"ok": false}
     return {
         "ok": true,

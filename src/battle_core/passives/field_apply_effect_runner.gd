@@ -12,6 +12,9 @@ var id_factory
 var context_resolver
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
 	if field_service == null:
 		return "field_service"
@@ -77,8 +80,9 @@ func execute_success_effects(effect_ids: PackedStringArray, effect_event, battle
 		effect_event.source_order_speed_snapshot,
 		effect_event.chain_context
 	)
-	if trigger_dispatcher.last_invalid_battle_code != null:
-		return trigger_dispatcher.last_invalid_battle_code
+	var trigger_invalid_code = trigger_dispatcher.invalid_battle_code()
+	if trigger_invalid_code != null:
+		return trigger_invalid_code
 	if success_events.is_empty():
 		return null
 	return trigger_batch_runner.execute_trigger_batch(
@@ -113,9 +117,10 @@ func execute_pending_success_effects(field_state, battle_state, content_index) -
 		field_state.pending_success_source_order_speed_snapshot,
 		field_state.pending_success_chain_context
 	)
-	if trigger_dispatcher.last_invalid_battle_code != null:
+	var trigger_invalid_code = trigger_dispatcher.invalid_battle_code()
+	if trigger_invalid_code != null:
 		clear_pending_success_effects(field_state)
-		return trigger_dispatcher.last_invalid_battle_code
+		return trigger_invalid_code
 	clear_pending_success_effects(field_state)
 	if success_events.is_empty():
 		return null

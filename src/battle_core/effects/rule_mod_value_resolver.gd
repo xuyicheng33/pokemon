@@ -7,6 +7,12 @@ const UnitBstHelperScript := preload("res://src/shared/unit_bst_helper.gd")
 
 var last_error_code: Variant = null
 
+func error_state() -> Dictionary:
+    return {
+        "code": last_error_code,
+        "message": "",
+    }
+
 func resolve_value(rule_mod_payload, effect_event, battle_state):
     last_error_code = null
     if rule_mod_payload == null:
