@@ -889,6 +889,21 @@
   - 第 4 个正式角色若继续踩隐式白名单、散落 owner meta 约定、effect/rule_mod refresh 语义分叉，后续回归和扩角成本会快速失控。
   - 先把共享底座 contract 写死，后续角色只需要消费稳定能力，不再一边扩角一边猜历史约定。
 
+### 72. formal character 交付面当前只允许保留 docs-side registry 一个权威源（2026-04-04）
+
+- `docs/records/formal_character_registry.json` 当前正式成为唯一权威源。
+- 已删除 `src/battle_core/content/formal_character_validator_registry.json`：
+  - 运行时不再维护额外 code-side validator read model
+  - repo consistency gate 也不再做 docs/code 双源对齐
+- `ContentSnapshotFormalCharacterRegistry` 当前直接读取 docs-side registry，并从角色条目里的可选 `content_validator_script_path` 动态装配 validator。
+- `content_validator_script_path` 继续保持可选字段：
+  - 条目未声明时，运行时直接跳过该角色的 shared validator
+  - 条目声明时，gate 仍需校验路径存在且可加载
+- `required_suite_paths` 当前正式要求能从 `tests/run_all.gd` 通过 formal wrapper suite 树走到；不允许只在 registry 里挂名字、却没有真正接进 wrapper preload 链。
+- 原因：
+  - 双份 registry 的唯一价值只剩“互相对齐”，维护成本和漂移风险都高于收益。
+  - 把正式角色交付面压回单一 registry 后，新角色接入只需要维护一份清单，gate 也能围绕这一个源做完整性检查。
+
 ### 72. 正式角色交付面重新收口为 docs-side 单一 registry；suite 注册链一致性也归它约束（2026-04-04）
 
 - `docs/records/formal_character_registry.json` 当前重新明确为正式角色交付面的唯一权威源：
