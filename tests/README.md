@@ -30,7 +30,7 @@
 - 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback。
 - 正式角色 wrapper 统一登记在 `docs/records/formal_character_registry.json`，由 `tests/run_all.gd` 自动加载。
 - 正式角色注册表除 `suite_path` 外，还要显式登记 `sample_setup_method / required_suite_paths / required_test_names`，把样例构局入口、角色 suite 子树与关键回归锚点一并固定下来。
-- 若 formal registry 条目声明了 `content_validator_script_path`，则 `src/battle_core/content/formal_character_validator_registry.json` 必须同步登记同角色同路径，repo consistency gate 会双向校验。
+- 若 formal registry 条目声明了 `content_validator_script_path`，则运行时与 repo consistency gate 都只读取 `docs/records/formal_character_registry.json` 这一份单一 registry。
 - 正式角色的 `required_suite_paths` 可以同时挂角色专属子套件与共享 suite；例如 `gojo_snapshot_suite.gd` / `sukuna_snapshot_suite.gd` 用来锁资源快照，`ultimate_field_suite.gd` 用来把共享领域回归正式挂回角色交付面。
 - `check_suite_reachability.sh` 只把 `run_all.gd` 和注册表里的 wrapper 当作入口；`required_suite_paths` 必须真的能从这些入口沿 `preload(...)` 子树走到，不能靠注册表直接兜底。
 - manager smoke 与 manager public contract 现在不允许再通过 `_debug_session` 之类私有钩子钻进内部 session。

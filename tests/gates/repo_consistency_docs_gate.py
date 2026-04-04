@@ -24,7 +24,8 @@ ctx.require_contains("docs/design/battle_content_schema.md", "effect_stack_sum",
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_effect_ids", "schema power bonus self effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
-ctx.require_contains("docs/design/battle_content_schema.md", "formal_character_validator_registry.json", "schema runtime validator registry wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "docs/records/formal_character_registry.json", "schema runtime validator registry wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "content_validator_script_path", "schema formal character validator path wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "nullify_field_accuracy", "schema field accuracy nullify contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "incoming_action_final_mod", "schema incoming action final mod contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "required_incoming_command_types", "schema incoming action command filter contract")
@@ -35,7 +36,7 @@ ctx.require_contains("docs/design/battle_content_schema.md", "damage / heal / re
 ctx.require_contains("docs/design/battle_content_schema.md", "retention_mode", "schema stat retention contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "persistent_stat_stages", "schema persistent stat stage contract")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "sample_setup_method", "formal character setup method checklist wording")
-ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "formal_character_validator_registry.json", "formal character validator registry checklist wording")
+ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "content_validator_script_path", "formal character validator registry checklist wording")
 ctx.require_contains("docs/design/kashimo_hajime_design.md", "kashimo_manager_smoke_suite.gd", "kashimo manager smoke delivery doc")
 ctx.require_contains("docs/design/kashimo_hajime_design.md", "tests/replay_cases/kashimo_cases.md", "kashimo fixed case delivery doc")
 ctx.require_contains("docs/design/kashimo_hajime_design.md", "kashimo_apply_water_leak_listeners", "kashimo water leak listener entry doc")
@@ -105,8 +106,15 @@ ctx.require_contains("docs/records/decisions.md", "跨模块用户可见错误�
 ctx.require_contains("docs/records/decisions.md", "Runtime wiring 图重新收口为严格 DAG", "runtime DAG decision wording")
 ctx.require_contains("docs/records/decisions.md", "composer 级共享 cache + 每次 fresh index", "content snapshot cache decision wording")
 ctx.require_contains("docs/records/review_2026-04-04_foundation_stabilization_audit.md", "基础稳定化审查记录", "foundation stabilization review record")
-ctx.require_contains("README.md", "formal_character_validator_registry.json", "README runtime validator registry doc")
+ctx.require_contains("README.md", "content_validator_script_path", "README runtime validator registry doc")
 ctx.require_contains("tests/check_architecture_constraints.sh", "ARCH_GATE_WARNING", "architecture warning marker")
+for rel_path in [
+    "README.md",
+    "tests/README.md",
+    "docs/design/formal_character_delivery_checklist.md",
+    "docs/design/battle_content_schema.md",
+]:
+    ctx.require_absent(rel_path, "formal_character_validator_registry.json", "removed code-side validator registry wording")
 
 stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",

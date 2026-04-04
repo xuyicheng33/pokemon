@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ContentSnapshotFormalCharacterRegistry
 
-const REGISTRY_PATH := "res://src/battle_core/content/formal_character_validator_registry.json"
+const REGISTRY_PATH := "res://docs/records/formal_character_registry.json"
 const CHARACTER_ID_KEY := "character_id"
 const VALIDATOR_SCRIPT_PATH_KEY := "content_validator_script_path"
 
@@ -40,10 +40,7 @@ static func build_validator_instances() -> Dictionary:
         seen_character_ids[character_id] = true
         var validator_path := String(raw_entry.get(VALIDATOR_SCRIPT_PATH_KEY, "")).strip_edges()
         if validator_path.is_empty():
-            return {
-                "validators": [],
-                "error": "ContentSnapshotFormalCharacterRegistry[%s] missing %s" % [character_id, VALIDATOR_SCRIPT_PATH_KEY],
-            }
+            continue
         var resolved_path := validator_path if validator_path.begins_with("res://") else "res://%s" % validator_path
         var validator_script = load(resolved_path)
         if validator_script == null:

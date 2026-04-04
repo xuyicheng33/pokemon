@@ -160,6 +160,7 @@
 
 - `persists_on_switch=true` 的 unit effect 在非击倒离场后继续挂在 owner 身上；owner 位于 bench 时，该实例只继续扣减 `remaining`，不参与普通 `turn_start / turn_end` trigger batch。
 - 这类 bench 持久 effect 若在板凳上到期，当前只移除并写正常 remove log，不派发 `on_expire_effect_ids`。
+- `stacking=refresh` 的 effect 当前固定保留同一 runtime instance，并同步刷新 `remaining / source_instance_id / source_kind_order / source_order_speed_snapshot / meta`。
 
 ## 9. RuleModInstance
 
@@ -187,8 +188,10 @@
 补充说明：
 
 - `action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 已是当前运行态 contract 的正式组成部分。
+- `action_legality` 当前显式只管理 `skill / ultimate / switch`；`wait / resource_forced_default / surrender` 永远不进入其封禁面。
 - `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 当前按“来源分组内走 stacking、不同来源组并存”的主线语义运行；`source_stacking_key` 的解析优先级为 `payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
 - `persists_on_switch=true` 的 unit rule mod 在非击倒离场后继续保留；`faint` 仍然清空全部 unit rule mod。
+- `stacking=refresh` 的 rule mod 当前固定保留同一 runtime instance，并同步刷新 `remaining / source_instance_id / source_kind_order / source_order_speed_snapshot`。
 
 ## 10. 临时状态重置点
 

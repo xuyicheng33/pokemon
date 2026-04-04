@@ -34,6 +34,11 @@
   - `src/battle_core/effects/rule_mod_read_service.gd`
   - `src/battle_core/effects/rule_mod_service.gd`
   - `src/battle_core/effects/rule_mod_write_service.gd`
+  - `docs/rules/06_effect_schema_and_extension.md`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/battle_runtime_model.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
   - `tests/suites/action_legality_contract_suite.gd`
   - `tests/suites/extension_targeting_accuracy_suite.gd`
   - `tests/suites/on_receive_action_hit_suite.gd`
@@ -60,6 +65,7 @@
     - `source_kind_order`
     - `source_order_speed_snapshot`
     - effect `meta`
+  - `docs/rules/06_effect_schema_and_extension.md`、`docs/design/battle_content_schema.md`、`docs/design/battle_runtime_model.md` 已同步到新的 managed action / owner helper / refresh 语义
   - 已补共享回归：
     - `action_legality_managed_action_matrix_contract`
     - `action_legality_unknown_action_type_reports_contract`
@@ -67,6 +73,42 @@
     - `effect_refresh_updates_source_metadata_contract`
     - `rule_mod_refresh_updates_source_metadata_contract`
   - `README.md` GDScript 行数统计已同步到当前仓库状态
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
+### 正式角色扩展前整合：批次 2 formal registry 单一权威源收口（已完成）
+
+- 目标：
+  - 把正式角色交付面从“docs registry + code-side validator registry”双源维护，收口成 `docs/records/formal_character_registry.json` 单一权威源
+- 范围：
+  - `src/battle_core/content/content_snapshot_formal_character_registry.gd`
+  - `src/battle_core/content/formal_character_validator_registry.json`（删除）
+  - `tests/gates/repo_consistency_formal_character_gate.py`
+  - `tests/gates/repo_consistency_docs_gate.py`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/formal_character_delivery_checklist.md`
+  - `tests/README.md`
+  - `README.md`
+- 验收标准：
+  - 运行时 formal validator 注册只读取 `docs/records/formal_character_registry.json`
+  - `src/battle_core/content/formal_character_validator_registry.json` 删除后，gate 与文档不再依赖它
+  - `required_suite_paths` 与 `tests/run_all.gd` 的 wrapper / preload 注册链一致性可被 formal gate 检查
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `ContentSnapshotFormalCharacterRegistry` 已改为直接读取 `docs/records/formal_character_registry.json`
+  - 已删除 `src/battle_core/content/formal_character_validator_registry.json`
+  - `repo_consistency_formal_character_gate.py` 已删除 docs/code 双源对齐逻辑，改为围绕 docs-side registry 检查：
+    - `content_validator_script_path` 路径存在性
+    - `sample_setup_method` 与 `SampleBattleFactory` builder 一致
+    - `required_suite_paths / required_test_names / required_content_paths` 一致
+    - `required_suite_paths` 必须能从 `tests/run_all.gd` + wrapper preload 子树真实到达
+  - `README.md`、`battle_content_schema.md`、`formal_character_delivery_checklist.md`、`tests/README.md` 已统一改成单一 registry 口径
+  - `repo_consistency_docs_gate.py` 已同步改查 docs-side registry 与 `content_validator_script_path` 文案，不再要求 code-side registry 词条
 
 #### 当前验证结果
 
@@ -1920,59 +1962,3 @@
 #### 当前验证结果
 
 - `godot --headless --path . --script tests/run_all.gd` 通过
-
-### 正式角色扩展前整合 Batch 1：共享机制硬约束收口（已完成）
-
-- 目标：
-  - 把后续扩角会复用的共享机制隐式契约收口到显式、可回归的状态
-- 范围：
-  - `src/battle_core/content/content_schema.gd`
-  - `src/battle_core/effects/effect_*`
-  - `src/battle_core/effects/payload_handlers/payload_apply_effect_handler.gd`
-  - `src/battle_core/effects/rule_mod_*`
-  - `tests/suites/action_legality_contract_suite.gd`
-  - `tests/suites/extension_targeting_accuracy_suite.gd`
-  - `tests/suites/rule_mod_runtime_core_paths_suite.gd`
-  - `tests/suites/on_receive_action_hit_suite.gd`
-  - `tests/support/gojo_test_support.gd`
-  - `README.md`
-  - `docs/records/tasks.md`
-  - `docs/records/decisions.md`
-- 验收标准：
-  - `action_legality` 改为显式受管控动作白名单口径，`deny all` 仍不封 `wait / resource_forced_default / surrender`
-  - `required_target_same_owner` 的 owner 归因统一走 helper，缺失 owner 归因时不能静默成功
-  - effect / rule_mod 的 `refresh` 统一为“同实例续命并更新来源元数据”
-  - `tests/run_with_gate.sh` 通过
-
-#### 当前执行结果
-
-- 已完成：
-  - `ContentSchema` 新增共享动作分层常量：
-    - `MANAGED_ACTION_TYPES`
-    - `ALWAYS_ALLOWED_ACTION_TYPES`
-  - `RuleModReadService` 现在显式区分：
-    - 永远不受 `action_legality` 管控的动作
-    - 受管控动作类型的匹配 token
-    - 未知动作类型的显式报错
-  - 新增 `src/battle_core/effects/effect_source_meta_helper.gd`
-    - 统一生成 `meta.source_owner_id`
-    - 统一读取 / 校验 `source_owner_id`
-  - `PayloadApplyEffectHandler`、`GojoTestSupport`、`on_receive_action_hit_suite` 已切到 owner meta helper
-  - `EffectPreconditionService` 在 `required_target_same_owner=true` 且 marker 缺少 owner 归因时，改为显式报 `invalid_state_corruption`
-  - `EffectInstanceService.STACKING_REFRESH` 现在会同步刷新：
-    - `remaining`
-    - `source_instance_id`
-    - `source_kind_order`
-    - `source_order_speed_snapshot`
-    - `meta`
-  - `RuleModWriteService` 的 `refresh` 路径现在会同步刷新来源三件套，并显式保持 `last_apply_skipped = false`
-  - 已补共享回归：
-    - `action_legality_managed_action_matrix_contract`
-    - `action_legality_unknown_action_type_reports_contract`
-    - `required_target_same_owner_missing_owner_contract`
-    - `effect_refresh_updates_source_metadata_contract`
-    - `rule_mod_refresh_updates_source_metadata_contract`
-
-#### 当前验证结果
-
-- `bash tests/run_with_gate.sh` 通过

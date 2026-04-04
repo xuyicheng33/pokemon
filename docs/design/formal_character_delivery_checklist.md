@@ -50,7 +50,7 @@
   - [ ] `required_suite_paths`
   - [ ] `required_test_names`
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
-- [ ] 若补了 `content_validator_script_path`，同步刷新 `src/battle_core/content/formal_character_validator_registry.json`，并确保 `character_id / content_validator_script_path` 与 docs registry 完全一致
+- [ ] 若补了 `content_validator_script_path`，直接登记在 `docs/records/formal_character_registry.json` 对应角色条目里；运行时与 repo consistency gate 都只认这一个单一 registry
 
 ## 4. 测试最低面
 

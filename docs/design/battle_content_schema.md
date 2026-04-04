@@ -145,13 +145,14 @@
 补充语义：
 
 - `required_target_effects` 只允许出现在 `scope=target` 的 effect 上。
-- `required_target_same_owner=true` 时，前置检查除“目标持有这些 effect”外，还要求这些 effect instance 的 `meta.source_owner_id` 与当前 effect owner 一致。
+- `required_target_same_owner=true` 时，前置检查除“目标持有这些 effect”外，还要求这些 effect instance 的 `meta.source_owner_id` 与当前 effect owner 一致；该字段当前统一通过 owner helper 生成/读取，缺失时运行时直接按 `invalid_state_corruption` 处理。
 - `required_incoming_command_types / required_incoming_combat_type_ids` 只允许出现在 `trigger_names` 包含 `on_receive_action_hit` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
 - `scope=action_actor` 只允许用于 `trigger_names = [on_receive_action_hit]` 的 effect；该作用域的单位目标固定读取 `ChainContext.action_actor_id`。
 - `max_stacks` 只允许和 `stacking=stack` 一起声明；`-1` 表示不封顶，正整数表示硬上限。
 - `apply_field` payload requires `scope=field`；当前不允许把 `apply_field` 挂在 `self / target / action_actor` effect 上。
 - `damage / heal / resource_mod / stat_mod / apply_effect / remove_effect` 只允许 `scope=self / target / action_actor`；`scope=field` 会在加载期直接判非法，避免运行时静默 no-op。
 - 若目标前置或来袭动作过滤不满足，整条 effect 会在 payload 循环前直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
+- `stacking=refresh` 的正式语义固定为：保留同一 runtime instance，重置持续时间，并刷新来源元数据；effect 额外刷新 `meta`。
 
 ### 3.6 FieldDefinition
 
@@ -252,13 +253,14 @@
 补充约束：
 
 - `mod_kind` 当前实现白名单以 `docs/rules/06_effect_schema_and_extension.md` 为准，当前包含 `final_mod / mp_regen / action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod`。
-- `action_legality` 是当前覆盖技能 / 奥义 / 换人的正式合法性读取点；`wait` 不受其影响。
+- `action_legality` 是当前覆盖技能 / 奥义 / 换人的正式合法性读取点；当前显式 managed action 白名单固定为 `skill / ultimate / switch`，`wait / resource_forced_default / surrender` 永不受其影响。
 - `matchup_bst_gap_band` 当前按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值，`max_mp` 视为正式第七维。
 - `incoming_accuracy.value` 当前要求为 `int`，并且禁止 `dynamic_value_formula`。
 - `nullify_field_accuracy.value` 当前要求为 `bool`，语义固定为“忽略领域附加必中，不影响技能原生命中率”。
 - `incoming_action_final_mod.value` 当前要求为数值；`required_incoming_command_types / required_incoming_combat_type_ids` 也只允许挂在这一类 rule_mod 上。
 - `persists_on_switch=true` 的 rule_mod 只允许 `scope=self/target`；`field` scope 非法。
 - `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 当前正式支持多来源并存；来源分组优先级固定为 `stacking_source_key -> effect_definition_id -> source_instance_id`，同来源组内继续按 `none / refresh / replace` 处理。
+- `refresh` 的正式语义固定为“同实例续命并刷新来源元数据”；当前 effect / rule_mod 两条链保持一致，不再允许出现一边只续命、一边还改来源的分叉口径。
 
 实现状态说明（2026-03-25）：
 
@@ -291,7 +293,7 @@
 - `required_incoming_command_types / required_incoming_combat_type_ids` 的加载期校验固定包含：只允许 `on_receive_action_hit` effect 使用、不得含空项、动作类型只允许 `skill / ultimate`、属性过滤必须命中已注册 `combat_type`。
 - field 校验覆盖：`field_kind in {normal, domain}`、`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
 - payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`StatModPayload.retention_mode in {normal, persist_on_switch}`、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
-- 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；运行时只读取 `src/battle_core/content/formal_character_validator_registry.json` 里的 `content_validator_script_path`，并由 repo consistency gate 校验它与 `docs/records/formal_character_registry.json` 的正式交付面记录保持一致。
+- 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；运行时直接读取 `docs/records/formal_character_registry.json` 里的可选 `content_validator_script_path`，并由 repo consistency gate 校验该单一 registry 的字段完整性、suite 注册链与文档锚点一致性。
 - 内容快照校验失败直接 fail-fast，不进入运行态。
 
 ## 7. 运行前校验（BattleSetup）

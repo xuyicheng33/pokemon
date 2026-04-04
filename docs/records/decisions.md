@@ -889,25 +889,24 @@
   - 第 4 个正式角色若继续踩隐式白名单、散落 owner meta 约定、effect/rule_mod refresh 语义分叉，后续回归和扩角成本会快速失控。
   - 先把共享底座 contract 写死，后续角色只需要消费稳定能力，不再一边扩角一边猜历史约定。
 
-### 71. 正式角色扩展前，先把共享机制 contract 收口成显式白名单与统一 refresh 语义（2026-04-04）
+### 72. 正式角色交付面重新收口为 docs-side 单一 registry；suite 注册链一致性也归它约束（2026-04-04）
 
-- `action_legality` 当前正式口径固定为两层：
-  - `MANAGED_ACTION_TYPES = skill / ultimate / switch`
-  - `wait / resource_forced_default / surrender` 永远不受 `action_legality` 封禁
-- `deny all` 的正式语义固定为：
-  - 封禁全部受管控动作类型
-  - 不影响 `wait / resource_forced_default / surrender`
-- 对未知受管控动作类型：
-  - 不再静默走 `_ -> false`
-  - 必须返回显式错误状态
-- `required_target_same_owner` 当前统一依赖 `effect_source_meta_helper.gd` 生成 / 读取 `meta.source_owner_id`
-- 若 same-owner 守卫读取到缺失的 `source_owner_id`：
-  - 不允许静默成功
-  - 运行时直接按 `invalid_state_corruption` 处理
-- effect instance 与 rule mod 的 `refresh` 语义当前统一固定为：
-  - 保留同一 runtime instance
-  - 重置持续时间
-  - 刷新来源元数据（`source_instance_id / source_kind_order / source_order_speed_snapshot`）
-  - effect 路径额外刷新 `meta`
+- `docs/records/formal_character_registry.json` 当前重新明确为正式角色交付面的唯一权威源：
+  - 设计稿 / 调整记录
+  - wrapper suite
+  - `sample_setup_method`
+  - `required_content_paths`
+  - `required_suite_paths`
+  - `required_test_names`
+  - 可选 `content_validator_script_path`
+- `ContentSnapshotFormalCharacterRegistry` 运行时当前直接读取这份 docs-side registry；`src/battle_core/content/formal_character_validator_registry.json` 已删除，不再保留 code-side read model。
+- repo consistency gate 当前围绕这一个 registry 检查：
+  - 字段完整性
+  - validator 路径存在且可加载
+  - `SampleBattleFactory` builder 对应关系
+  - `required_suite_paths` 必须能从 `tests/run_all.gd` 与 wrapper `preload(...)` 子树真实到达
+  - `required_test_names / required_content_paths / design_needles / adjustment_needles` 一致
+- README、接入 checklist 与 schema 文档当前都统一引用 docs-side registry，不再把 code-side registry 当成人工维护入口。
 - 原因：
-  - 这些 contract 之后会被第 4 个正式角色和后续共享机制直接复用，若继续靠散落约定维持，只会把问题拖到扩角时集中爆炸。
+  - 双源 registry 会把角色接入动作拆成两份人工同步点，最容易在扩角时形成“运行时能过、门禁没锁”或“门禁在锁一份已不被运行时读取的文件”这两类伪一致性。
+  - 把 suite 注册链也挂回同一份 registry，后续扩角时就能同时锁住“资源在不在”和“测试有没有真的接进执行树”。

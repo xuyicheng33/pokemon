@@ -43,7 +43,7 @@
 
 1. 当前 schema 仍然没有通用 `conditions` 字段；effect 级前置目前只开放 `required_target_effects` 与 `on_receive_action_hit` 下的来袭动作过滤。
 2. `required_target_effects` 只允许挂在 `scope=target` 的 effect 上；加载期必须校验非空项、去重和引用存在性。
-3. `required_target_same_owner = true` 时，前置除检查目标持有这些 effect 外，还必须校验这些 effect instance 记录的 `meta.source_owner_id` 与当前 effect owner 一致。
+3. `required_target_same_owner = true` 时，前置除检查目标持有这些 effect 外，还必须通过统一 owner helper 读取这些 effect instance 记录的 `meta.source_owner_id`，并校验它与当前 effect owner 一致；若命中的 required effect instance 缺失该字段，运行时直接按 `invalid_state_corruption` 处理。
 4. `required_incoming_command_types / required_incoming_combat_type_ids` 只允许声明在 `trigger_names` 包含 `on_receive_action_hit` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
 5. `scope=action_actor` 只允许用于 `trigger_names = [on_receive_action_hit]` 的 effect；该作用域的单位目标固定读取 `ChainContext.action_actor_id`。
 6. `apply_field` payload requires `scope=field`；当前不允许把 `apply_field` 挂在 `self / target / action_actor` effect 上。
@@ -72,8 +72,9 @@
 补充规则：
 
 1. `apply_effect` 创建实例时，必须把当下根来源的 `source_instance_id / source_kind_order / source_order_speed_snapshot` 一并复制进实例。
-2. 当前主线还会把稳定来源 owner 写入 `meta.source_owner_id`，供 `required_target_same_owner` 这类前置守卫读取。
+2. 当前主线统一通过 `EffectSourceMetaHelper` 把稳定来源 owner 写入 `meta.source_owner_id`，供 `required_target_same_owner` 这类前置守卫读取。
 3. 持续效果后续触发时继续沿用创建时复制下来的根来源排序元数据，不因 owner 改变而重算来源类型。
+4. `stacking=refresh` 的正式语义固定为“保留同一 runtime instance，刷新 `remaining`，并同步刷新 `source_instance_id / source_kind_order / source_order_speed_snapshot / meta`”。
 
 ## 4. 当前基线触发点
 
@@ -177,7 +178,7 @@
 补充规则：
 
 1. `rule_mod` 必须显式声明 `decrement_on`；否则按 `invalid_battle` 处理。
-2. `action_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段。
+2. `action_legality` 只允许修改“是否可用”，不得改写 `priority / targeting / mp_cost` 等基础字段；当前正式只管理 `skill / ultimate / switch`，`wait / resource_forced_default / surrender` 永远不受其封禁。
 3. 动态值公式当前只允许用于“owner 为单位”的数值型 `rule_mod`（即当前只开放 `self / target`，不开放 `field`），且运行时求值不得回写共享内容资源。
 4. 若未来需要 field 作用域的动态公式，必须先补明确定义、校验和运行时语义，不能复用当前 `matchup_bst_gap_band` 口径。
 5. `incoming_accuracy` 当前要求 `value` 为整数，并且禁止 `dynamic_value_formula`。
@@ -231,6 +232,7 @@
    - `action_legality`：在基础式上额外加入 `value`
 5. `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 的 `source_stacking_key` 解析优先级固定为：`payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
 6. 同键下的 `none / refresh / replace` 语义不变；不同来源组不互相折叠，读取顺序继续沿用现有全局排序链。
+7. `refresh` 的正式语义固定为“同实例续命并更新来源元数据”；当前 `effect` 与 `rule_mod` 不允许再出现语义分叉。
 
 ### 5.4 `rule_mod` 边界冻结（架构强约束）
 
@@ -246,7 +248,7 @@
 |模式|说明|
 |---|---|
 |`none`|重复施加无效|
-|`refresh`|刷新持续时间|
+|`refresh`|保留同一实例，刷新持续时间与来源元数据|
 |`replace`|新实例替换旧实例|
 |`stack`|创建并保留并行实例；每层独立持有 `remaining` 与触发次数|
 

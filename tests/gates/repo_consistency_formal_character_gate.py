@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 
@@ -12,29 +13,30 @@ ctx = GateContext()
 formal_character_registry = ctx.load_json_array("docs/records/formal_character_registry.json", "formal character registry")
 if not formal_character_registry:
     ctx.failures.append("docs/records/formal_character_registry.json must list at least one formal character")
-runtime_validator_registry = ctx.load_json_array(
-    "src/battle_core/content/formal_character_validator_registry.json",
-    "formal character validator registry",
-)
 
 sample_factory_text = ctx.read_text("src/composition/sample_battle_factory.gd")
-docs_validator_paths: dict[str, str] = {}
-runtime_validator_paths: dict[str, str] = {}
+run_all_text = ctx.read_text("tests/run_all.gd")
+suite_preload_pattern = re.compile(r'preload\("res://(tests/suites/[^"]+\.gd)"\)')
 seen_formal_characters: set[str] = set()
+reachable_suite_paths: set[str] = set()
+pending_suite_paths: list[str] = suite_preload_pattern.findall(run_all_text)
 
-for entry in runtime_validator_registry:
-    character_id = str(entry.get("character_id", ""))
-    content_validator_script_path = str(entry.get("content_validator_script_path", ""))
-    if character_id == "":
-        ctx.failures.append("src/battle_core/content/formal_character_validator_registry.json missing character_id")
+for entry in formal_character_registry:
+    if not isinstance(entry, dict):
         continue
-    if character_id in runtime_validator_paths:
-        ctx.failures.append(f"runtime validator registry duplicated character_id: {character_id}")
-    runtime_validator_paths[character_id] = content_validator_script_path
-    if content_validator_script_path == "":
-        ctx.failures.append(f"runtime validator registry[{character_id}] missing content_validator_script_path")
-    else:
-        ctx.require_exists(content_validator_script_path, f"{character_id} runtime validator script")
+    suite_path = str(entry.get("suite_path", ""))
+    if suite_path != "":
+        pending_suite_paths.append(suite_path)
+
+while pending_suite_paths:
+    suite_path = pending_suite_paths.pop()
+    if suite_path in reachable_suite_paths:
+        continue
+    if not Path(suite_path).exists():
+        continue
+    reachable_suite_paths.add(suite_path)
+    for child_suite in suite_preload_pattern.findall(ctx.read_text(suite_path)):
+        pending_suite_paths.append(child_suite)
 
 for entry in formal_character_registry:
     character_id = str(entry.get("character_id", ""))
@@ -76,7 +78,6 @@ for entry in formal_character_registry:
     elif f"func {sample_setup_method}(" not in sample_factory_text:
         ctx.failures.append(f"src/composition/sample_battle_factory.gd missing sample setup builder: {sample_setup_method}")
     if content_validator_script_path != "":
-        docs_validator_paths[character_id] = content_validator_script_path
         ctx.require_exists(content_validator_script_path, f"{character_id} content validator script")
     if not isinstance(required_suite_paths, list) or not required_suite_paths:
         ctx.failures.append(f"formal character registry[{character_id}] missing required_suite_paths")
@@ -84,6 +85,10 @@ for entry in formal_character_registry:
         for rel_path in required_suite_paths:
             ctx.require_exists(str(rel_path), f"{character_id} required suite")
             suite_scope_paths.append(str(rel_path))
+            if str(rel_path) not in reachable_suite_paths:
+                ctx.failures.append(
+                    f"formal character registry[{character_id}] required_suite_path is not reachable from tests/run_all.gd wrapper tree: {rel_path}"
+                )
     if not isinstance(required_test_names, list) or not required_test_names:
         ctx.failures.append(f"formal character registry[{character_id}] missing required_test_names")
     else:
@@ -108,20 +113,5 @@ for entry in formal_character_registry:
     elif adjustment_doc != "":
         for needle in adjustment_needles:
             ctx.require_contains(adjustment_doc, str(needle), f"{character_id} adjustment anchor")
-
-for character_id, docs_path in docs_validator_paths.items():
-    runtime_path = runtime_validator_paths.get(character_id, "")
-    if runtime_path == "":
-        ctx.failures.append(f"runtime validator registry missing character: {character_id}")
-        continue
-    if runtime_path != docs_path:
-        ctx.failures.append(
-            "validator registry path mismatch for %s: docs=%s runtime=%s"
-            % (character_id, docs_path, runtime_path)
-        )
-
-for character_id in runtime_validator_paths:
-    if character_id not in docs_validator_paths:
-        ctx.failures.append(f"runtime validator registry contains undeclared character: {character_id}")
 
 ctx.finish("formal character registry, suite tree, and asset delivery surface are aligned")
