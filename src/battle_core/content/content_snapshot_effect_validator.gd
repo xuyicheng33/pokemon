@@ -2,6 +2,13 @@ extends RefCounted
 class_name ContentSnapshotEffectValidator
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
+const HealPayloadScript := preload("res://src/battle_core/content/heal_payload.gd")
+const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
+const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
+const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
+const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
+const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 
 func validate(content_index, errors: Array, payload_validator) -> void:
@@ -31,12 +38,67 @@ func validate(content_index, errors: Array, payload_validator) -> void:
                 errors.append("effect[%s].max_stacks must be positive or -1 for stack effects, got %d" % [effect_id, int(effect_definition.max_stacks)])
         elif int(effect_definition.max_stacks) != -1:
             errors.append("effect[%s].max_stacks only allowed when stacking=stack, got %d" % [effect_id, int(effect_definition.max_stacks)])
+        _validate_action_actor_scope_contract(errors, effect_id, effect_definition)
         _validate_required_target_effects(content_index, errors, effect_id, effect_definition)
         _validate_incoming_action_filters(content_index, errors, effect_id, effect_definition)
         _validate_persistent_rule_mod_contract(errors, effect_id, effect_definition)
         payload_validator.validate_effect_refs(errors, "effect[%s].on_expire_effect_ids" % effect_id, effect_definition.on_expire_effect_ids, content_index.effects)
         for payload in effect_definition.payloads:
             payload_validator.validate_payload(errors, effect_id, payload, content_index)
+            _validate_payload_scope_contract(errors, effect_id, effect_definition, payload)
+
+func _validate_action_actor_scope_contract(errors: Array, effect_id: String, effect_definition) -> void:
+    if String(effect_definition.scope) != "action_actor":
+        return
+    if effect_definition.trigger_names.is_empty():
+        errors.append("effect[%s].scope action_actor only allowed for on_receive_action_hit" % effect_id)
+        return
+    for trigger_name in effect_definition.trigger_names:
+        if String(trigger_name) != ContentSchemaScript.TRIGGER_ON_RECEIVE_ACTION_HIT:
+            errors.append("effect[%s].scope action_actor only allowed for on_receive_action_hit" % effect_id)
+            return
+
+func _validate_payload_scope_contract(errors: Array, effect_id: String, effect_definition, payload) -> void:
+    if payload == null:
+        return
+    if payload is ApplyFieldPayloadScript:
+        if String(effect_definition.scope) != "field":
+            errors.append("effect[%s].apply_field requires scope=field" % effect_id)
+        return
+    if _uses_effect_scope_unit_target(payload) and String(effect_definition.scope) == "field":
+        errors.append(
+            "effect[%s].%s requires scope=self/target/action_actor" % [
+                effect_id,
+                _resolve_payload_scope_label(payload),
+            ]
+        )
+
+func _uses_effect_scope_unit_target(payload) -> bool:
+    return payload is DamagePayloadScript \
+        or payload is HealPayloadScript \
+        or payload is ResourceModPayloadScript \
+        or payload is StatModPayloadScript \
+        or payload is ApplyEffectPayloadScript \
+        or payload is RemoveEffectPayloadScript
+
+func _resolve_payload_scope_label(payload) -> String:
+    if payload is DamagePayloadScript:
+        return "damage"
+    if payload is HealPayloadScript:
+        return "heal"
+    if payload is ResourceModPayloadScript:
+        return "resource_mod"
+    if payload is StatModPayloadScript:
+        return "stat_mod"
+    if payload is ApplyFieldPayloadScript:
+        return "apply_field"
+    if payload is ApplyEffectPayloadScript:
+        return "apply_effect"
+    if payload is RemoveEffectPayloadScript:
+        return "remove_effect"
+    if payload is RuleModPayloadScript:
+        return "rule_mod"
+    return String(payload.payload_type if payload != null else "payload")
 
 func _validate_required_target_effects(content_index, errors: Array, effect_id: String, effect_definition) -> void:
     if effect_definition.required_target_effects.is_empty():

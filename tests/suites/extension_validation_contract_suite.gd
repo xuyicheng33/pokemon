@@ -3,6 +3,13 @@ class_name ExtensionValidationContractSuite
 
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
+const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
+const HealPayloadScript := preload("res://src/battle_core/content/heal_payload.gd")
+const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
+const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
+const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
+const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
+const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("extension_validation_contract", failures, Callable(self, "_test_extension_validation_contract").bind(harness))
@@ -165,6 +172,100 @@ func _test_extension_validation_contract(harness) -> Dictionary:
     bad_required_same_owner_missing.required_target_same_owner = true
     content_index.register_resource(bad_required_same_owner_missing)
 
+    var bad_action_actor_payload = DamagePayloadScript.new()
+    bad_action_actor_payload.payload_type = "damage"
+    bad_action_actor_payload.amount = 10
+    bad_action_actor_payload.use_formula = false
+    var bad_action_actor_effect = EffectDefinitionScript.new()
+    bad_action_actor_effect.id = "test_bad_action_actor_trigger"
+    bad_action_actor_effect.display_name = "Bad Action Actor Trigger"
+    bad_action_actor_effect.scope = "action_actor"
+    bad_action_actor_effect.trigger_names = PackedStringArray(["on_hit"])
+    bad_action_actor_effect.payloads.append(bad_action_actor_payload)
+    content_index.register_resource(bad_action_actor_effect)
+
+    var bad_field_damage_payload = DamagePayloadScript.new()
+    bad_field_damage_payload.payload_type = "damage"
+    bad_field_damage_payload.amount = 10
+    bad_field_damage_payload.use_formula = false
+    var bad_field_damage_effect = EffectDefinitionScript.new()
+    bad_field_damage_effect.id = "test_bad_field_damage"
+    bad_field_damage_effect.display_name = "Bad Field Damage"
+    bad_field_damage_effect.scope = "field"
+    bad_field_damage_effect.trigger_names = PackedStringArray(["on_hit"])
+    bad_field_damage_effect.payloads.append(bad_field_damage_payload)
+    content_index.register_resource(bad_field_damage_effect)
+
+    var bad_field_heal_payload = HealPayloadScript.new()
+    bad_field_heal_payload.payload_type = "heal"
+    bad_field_heal_payload.amount = 10
+    var bad_field_heal_effect = EffectDefinitionScript.new()
+    bad_field_heal_effect.id = "test_bad_field_heal"
+    bad_field_heal_effect.display_name = "Bad Field Heal"
+    bad_field_heal_effect.scope = "field"
+    bad_field_heal_effect.trigger_names = PackedStringArray(["on_hit"])
+    bad_field_heal_effect.payloads.append(bad_field_heal_payload)
+    content_index.register_resource(bad_field_heal_effect)
+
+    var bad_field_resource_payload = ResourceModPayloadScript.new()
+    bad_field_resource_payload.payload_type = "resource_mod"
+    bad_field_resource_payload.resource_key = "mp"
+    bad_field_resource_payload.amount = 3
+    var bad_field_resource_effect = EffectDefinitionScript.new()
+    bad_field_resource_effect.id = "test_bad_field_resource_mod"
+    bad_field_resource_effect.display_name = "Bad Field Resource"
+    bad_field_resource_effect.scope = "field"
+    bad_field_resource_effect.trigger_names = PackedStringArray(["on_hit"])
+    bad_field_resource_effect.payloads.append(bad_field_resource_payload)
+    content_index.register_resource(bad_field_resource_effect)
+
+    var bad_field_stat_payload = StatModPayloadScript.new()
+    bad_field_stat_payload.payload_type = "stat_mod"
+    bad_field_stat_payload.stat_name = "speed"
+    bad_field_stat_payload.stage_delta = 1
+    bad_field_stat_payload.retention_mode = "normal"
+    var bad_field_stat_effect = EffectDefinitionScript.new()
+    bad_field_stat_effect.id = "test_bad_field_stat_mod"
+    bad_field_stat_effect.display_name = "Bad Field Stat Mod"
+    bad_field_stat_effect.scope = "field"
+    bad_field_stat_effect.trigger_names = PackedStringArray(["on_hit"])
+    bad_field_stat_effect.payloads.append(bad_field_stat_payload)
+    content_index.register_resource(bad_field_stat_effect)
+
+    var bad_field_apply_effect_payload = ApplyEffectPayloadScript.new()
+    bad_field_apply_effect_payload.payload_type = "apply_effect"
+    bad_field_apply_effect_payload.effect_definition_id = marker_effect.id
+    var bad_field_apply_effect_effect = EffectDefinitionScript.new()
+    bad_field_apply_effect_effect.id = "test_bad_field_apply_effect"
+    bad_field_apply_effect_effect.display_name = "Bad Field Apply Effect"
+    bad_field_apply_effect_effect.scope = "field"
+    bad_field_apply_effect_effect.trigger_names = PackedStringArray(["on_hit"])
+    bad_field_apply_effect_effect.payloads.append(bad_field_apply_effect_payload)
+    content_index.register_resource(bad_field_apply_effect_effect)
+
+    var bad_field_remove_effect_payload = RemoveEffectPayloadScript.new()
+    bad_field_remove_effect_payload.payload_type = "remove_effect"
+    bad_field_remove_effect_payload.effect_definition_id = marker_effect.id
+    bad_field_remove_effect_payload.remove_mode = "single"
+    var bad_field_remove_effect = EffectDefinitionScript.new()
+    bad_field_remove_effect.id = "test_bad_field_remove_effect"
+    bad_field_remove_effect.display_name = "Bad Field Remove Effect"
+    bad_field_remove_effect.scope = "field"
+    bad_field_remove_effect.trigger_names = PackedStringArray(["on_hit"])
+    bad_field_remove_effect.payloads.append(bad_field_remove_effect_payload)
+    content_index.register_resource(bad_field_remove_effect)
+
+    var bad_non_field_apply_field_payload = ApplyFieldPayloadScript.new()
+    bad_non_field_apply_field_payload.payload_type = "apply_field"
+    bad_non_field_apply_field_payload.field_definition_id = "sample_focus_field"
+    var bad_non_field_apply_field_effect = EffectDefinitionScript.new()
+    bad_non_field_apply_field_effect.id = "test_bad_non_field_apply_field"
+    bad_non_field_apply_field_effect.display_name = "Bad Non Field Apply Field"
+    bad_non_field_apply_field_effect.scope = "self"
+    bad_non_field_apply_field_effect.trigger_names = PackedStringArray(["on_hit"])
+    bad_non_field_apply_field_effect.payloads.append(bad_non_field_apply_field_payload)
+    content_index.register_resource(bad_non_field_apply_field_effect)
+
     var errors: Array = content_index.validate_snapshot()
     var needles := [
         "effect[test_bad_action_legality].rule_mod invalid: action_legality value missing skill: missing_skill_id",
@@ -182,6 +283,14 @@ func _test_extension_validation_contract(harness) -> Dictionary:
         "effect[test_bad_required_same_owner_scope].required_target_effects requires scope=target",
         "effect[test_bad_required_same_owner_scope].required_target_same_owner requires scope=target",
         "effect[test_bad_required_same_owner_missing].required_target_same_owner requires required_target_effects",
+        "effect[test_bad_action_actor_trigger].scope action_actor only allowed for on_receive_action_hit",
+        "effect[test_bad_field_damage].damage requires scope=self/target/action_actor",
+        "effect[test_bad_field_heal].heal requires scope=self/target/action_actor",
+        "effect[test_bad_field_resource_mod].resource_mod requires scope=self/target/action_actor",
+        "effect[test_bad_field_stat_mod].stat_mod requires scope=self/target/action_actor",
+        "effect[test_bad_field_apply_effect].apply_effect requires scope=self/target/action_actor",
+        "effect[test_bad_field_remove_effect].remove_effect requires scope=self/target/action_actor",
+        "effect[test_bad_non_field_apply_field].apply_field requires scope=field",
     ]
     for needle in needles:
         if not _has_error(errors, needle):
