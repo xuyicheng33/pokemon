@@ -14,6 +14,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("kashimo_kyokyo_katsura_nullify_field_accuracy_contract", failures, Callable(self, "_test_kashimo_kyokyo_katsura_nullify_field_accuracy_contract").bind(harness))
     runner.run_test("kashimo_thunder_resist_contract", failures, Callable(self, "_test_kashimo_thunder_resist_contract").bind(harness))
     runner.run_test("kashimo_water_leak_counter_contract", failures, Callable(self, "_test_kashimo_water_leak_counter_contract").bind(harness))
+    runner.run_test("kashimo_water_leak_ultimate_counter_contract", failures, Callable(self, "_test_kashimo_water_leak_ultimate_counter_contract").bind(harness))
 
 func _test_kashimo_raiken_negative_charge_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -287,6 +288,50 @@ func _test_kashimo_water_leak_counter_contract(harness) -> Dictionary:
     var actual_counter_damage: int = _find_counter_damage(core.service("battle_logger").event_log, attacker.unit_instance_id)
     if actual_counter_damage != expected_counter_damage:
         return harness.fail_result("water leak counter damage mismatch: expected=%d actual=%d" % [expected_counter_damage, actual_counter_damage])
+    return harness.pass_result()
+
+func _test_kashimo_water_leak_ultimate_counter_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var water_ultimate = SkillDefinitionScript.new()
+    water_ultimate.id = "test_kashimo_incoming_water_ultimate"
+    water_ultimate.display_name = "Incoming Water Ultimate"
+    water_ultimate.damage_kind = "special"
+    water_ultimate.power = 40
+    water_ultimate.accuracy = 100
+    water_ultimate.mp_cost = 0
+    water_ultimate.priority = 0
+    water_ultimate.targeting = "enemy_active_slot"
+    water_ultimate.combat_type_id = "water"
+    content_index.register_resource(water_ultimate)
+    content_index.units["sample_mossaur"].ultimate_skill_id = water_ultimate.id
+    var battle_setup = _support.build_kashimo_setup(sample_factory)
+    battle_setup.sides[1].starting_index = 2
+    var battle_state = _support.build_battle_state(core, content_index, battle_setup, 809)
+    var kashimo = battle_state.get_side("P1").get_active_unit()
+    var attacker = battle_state.get_side("P2").get_active_unit()
+    if kashimo == null or attacker == null:
+        return harness.fail_result("missing active units for water leak ultimate contract")
+    kashimo.current_mp = 20
+    attacker.current_mp = attacker.max_mp
+    attacker.ultimate_points = attacker.ultimate_points_cap
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        _support.build_manual_wait_command(core, 1, "P1", "P1-A"),
+        _support.build_manual_ultimate_command(core, 1, "P2", "P2-C", water_ultimate.id),
+    ])
+    if kashimo.current_mp != 5:
+        return harness.fail_result("water leak should still reduce kashimo mp by 15 when hit by a water ultimate: expected=5 actual=%d" % kashimo.current_mp)
+    var expected_counter_damage: int = _support.calc_expected_fixed_effect_damage(core, content_index, "kashimo_water_leak_counter_listener", attacker)
+    var actual_counter_damage: int = _find_counter_damage(core.service("battle_logger").event_log, attacker.unit_instance_id)
+    if actual_counter_damage != expected_counter_damage:
+        return harness.fail_result("water leak counter damage should also trigger on water ultimate hit: expected=%d actual=%d" % [expected_counter_damage, actual_counter_damage])
     return harness.pass_result()
 
 func _build_kashimo_state(harness, seed: int) -> Dictionary:

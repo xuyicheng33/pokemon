@@ -114,6 +114,76 @@
 
 - `bash tests/run_with_gate.sh` 通过
 
+### 正式角色扩展前整合：批次 3 角色级最小 contract 补强（已完成）
+
+- 目标：
+  - 只补 Gojo / Kashimo / Sukuna 里会直接复用到后续扩角的脆弱 contract，不做角色级大扫除
+- 范围：
+  - `tests/suites/gojo_setup_and_markers_suite.gd`
+  - `tests/suites/gojo_unlimited_void_suite.gd`
+  - `tests/suites/kashimo_runtime_suite.gd`
+  - `docs/records/formal_character_registry.json`
+  - `docs/records/tasks.md`
+  - `README.md`
+- 验收标准：
+  - Gojo 明确锁住：same-owner 负向路径、action_lock deny all but wait、marker refresh 来源元数据刷新
+  - Kashimo 明确补齐：`on_receive_action_hit` 对水系奥义命中边界
+  - Sukuna 不新增大块 runtime 测试，只保持 registry / 文档锚点清晰
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - Gojo：
+    - 继续沿用已存在的 `gojo_murasaki_same_owner_contract` 作为 same-owner 负向断言
+    - 新增 `gojo_unlimited_void_action_lock_wait_contract`，直接锁住 `gojo_domain_action_lock = deny all but wait`
+    - 扩充 `gojo_marker_refresh_contract`，现在会额外断言 refresh 后 `source_instance_id / source_order_speed_snapshot / meta.source_owner_id` 都刷新到新来源
+  - Kashimo：
+    - 保持现有 `kashimo_phantom_beast_amber_persistent_stage_contract` 继续覆盖三件套同步存续、跨换人保留、同回合重上场暂停、下一整回合恢复与 ultimate lock
+    - 新增 `kashimo_water_leak_ultimate_counter_contract`，补齐 `on_receive_action_hit` 对“主动水系奥义命中”边界
+  - Sukuna：
+    - 本批未新增 runtime suite；formal registry / 单源文档口径继续沿用批次 2 收口后的结果
+  - `docs/records/formal_character_registry.json` 已把新加的 Gojo / Kashimo 正式回归锚点补回 `required_test_names`
+  - `README.md` GDScript 行数统计已同步到当前仓库状态
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
+### 正式角色扩展前整合：批次 3 角色级最小 contract 补强（已完成）
+
+- 目标：
+  - 只补第 4 角色接入时会复用的脆弱角色级 contract，不做 Gojo / Kashimo / Sukuna 的角色级大扫除
+- 范围：
+  - `tests/suites/gojo_setup_and_markers_suite.gd`
+  - `tests/suites/gojo_unlimited_void_suite.gd`
+  - `tests/suites/kashimo_runtime_suite.gd`
+  - `docs/records/formal_character_registry.json`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - Gojo 的 `required_target_same_owner` 负向、`deny all but wait`、mark refresh 来源元数据三块 contract 都有角色级断言
+  - Kashimo 的水中外泄至少补上“主动奥义命中也会触发”边界，不重复已有琥珀生命周期断言
+  - Sukuna 若未暴露 shared mechanism 断点，则不新增 runtime suite
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - Gojo：
+    - 继续保留 `gojo_murasaki_same_owner_contract` 作为 `required_target_same_owner` 负向回归
+    - `gojo_unlimited_void_suite.gd` 已新增 `gojo_unlimited_void_action_lock_wait_contract`，直接锁 `gojo_domain_action_lock` 的 “deny all but wait” 角色级语义
+    - `gojo_marker_refresh_contract` 已补来源元数据断言，固定锁 `source_instance_id / source_order_speed_snapshot / meta.source_owner_id` refresh 后都会更新
+  - Kashimo：
+    - 复核后保留现有 `kashimo_phantom_beast_amber_persistent_stage_contract` 作为三件套同步、跨换人保留、同回合重上场暂停、下一整回合恢复的统一生命周期回归
+    - `kashimo_runtime_suite.gd` 已新增 `kashimo_water_leak_ultimate_counter_contract`，补齐 `on_receive_action_hit` 对主动奥义命中的边界
+  - Sukuna：
+    - 本轮未暴露新的 shared mechanism 断点，因此不新增 runtime 测试；formal registry 继续保持现有锚点
+  - `docs/records/formal_character_registry.json` 已同步挂住新的 Gojo / Kashimo required test anchors
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### 共享 schema 收口与 effect validator 硬化（已完成）
 
 - 目标：

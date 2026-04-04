@@ -8,6 +8,7 @@ var _support = GojoTestSupportScript.new()
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("gojo_unlimited_void_runtime_contract", failures, Callable(self, "_test_gojo_unlimited_void_runtime_contract").bind(harness))
+	runner.run_test("gojo_unlimited_void_action_lock_wait_contract", failures, Callable(self, "_test_gojo_unlimited_void_action_lock_wait_contract").bind(harness))
 	runner.run_test("gojo_unlimited_void_cancelled_pre_start_contract", failures, Callable(self, "_test_gojo_unlimited_void_cancelled_pre_start_contract").bind(harness))
 	runner.run_test("gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract", failures, Callable(self, "_test_gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract").bind(harness))
 
@@ -46,6 +47,39 @@ func _test_gojo_unlimited_void_runtime_contract(harness) -> Dictionary:
 	var hit_info = core.service("action_cast_service").resolve_hit(hit_command, content_index.skills["gojo_ao"], target_unit, battle_state, content_index)
 	if hit_info.get("hit_roll", "not-null") != null or abs(float(hit_info.get("hit_rate", -1.0)) - 1.0) > 0.0001:
 		return harness.fail_result("无量空处领域内 creator_accuracy_override 应让 Gojo 的技能必中")
+	return harness.pass_result()
+
+func _test_gojo_unlimited_void_action_lock_wait_contract(harness) -> Dictionary:
+	var state_payload = _support.build_gojo_vs_sample_state(harness, 1217)
+	if state_payload.has("error"):
+		return harness.fail_result(str(state_payload["error"]))
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var gojo_unit = battle_state.get_side("P1").get_active_unit()
+	var target_unit = battle_state.get_side("P2").get_active_unit()
+	if gojo_unit == null or target_unit == null:
+		return harness.fail_result("missing active units for unlimited void wait contract")
+	var lock_effect = content_index.effects.get("gojo_domain_action_lock", null)
+	if lock_effect == null or lock_effect.payloads.is_empty():
+		return harness.fail_result("missing gojo_domain_action_lock effect definition")
+	var lock_payload = lock_effect.payloads[0]
+	if core.service("rule_mod_service").create_instance(
+		lock_payload,
+		{"scope": "unit", "id": target_unit.unit_instance_id},
+		battle_state,
+		"test_gojo_domain_action_lock_wait",
+		0,
+		gojo_unit.base_speed
+	) == null:
+		return harness.fail_result("failed to apply gojo domain action lock payload directly")
+	var legal_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P2", content_index)
+	if legal_actions == null:
+		return harness.fail_result("failed to resolve legal actions under gojo domain action lock")
+	if not legal_actions.wait_allowed or legal_actions.forced_command_type != "":
+		return harness.fail_result("gojo domain action lock should still leave wait available")
+	if not legal_actions.legal_skill_ids.is_empty() or not legal_actions.legal_ultimate_ids.is_empty() or not legal_actions.legal_switch_target_public_ids.is_empty():
+		return harness.fail_result("gojo domain action lock should deny skills, ultimates, and switches while keeping wait")
 	return harness.pass_result()
 
 func _test_gojo_unlimited_void_cancelled_pre_start_contract(harness) -> Dictionary:

@@ -203,10 +203,16 @@ func _test_gojo_marker_refresh_contract(harness) -> Dictionary:
     var first_mark = _find_effect_instance(target_unit, "gojo_ao_mark")
     if first_mark == null or first_mark.remaining != 2:
         return harness.fail_result("苍标记首回合施加后应在 turn_end 后剩余 2")
+    var first_source_instance_id := String(first_mark.source_instance_id)
+    var first_source_speed_snapshot := int(first_mark.source_order_speed_snapshot)
+    if String(first_mark.meta.get("source_owner_id", "")) != String(battle_state.get_side("P1").get_active_unit().unit_instance_id):
+        return harness.fail_result("苍标记初次施加时应写入当前 Gojo 的 source_owner_id")
     core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_wait_command(core, 2, "P1", "P1-A"),
         _build_wait_command(core, 2, "P2", "P2-A"),
     ])
+    var gojo_unit = battle_state.get_side("P1").get_active_unit()
+    gojo_unit.base_speed = 321
     core.service("turn_loop_controller").run_turn(battle_state, content_index, [
         _build_skill_command(core, 3, "P1", "P1-A", "gojo_ao"),
         _build_wait_command(core, 3, "P2", "P2-A"),
@@ -216,6 +222,12 @@ func _test_gojo_marker_refresh_contract(harness) -> Dictionary:
         return harness.fail_result("苍标记 refresh 语义下不应并行出第二层同名标记")
     if refreshed_mark == null or refreshed_mark.remaining != 2:
         return harness.fail_result("苍标记 refresh 后应重置持续时间，而不是继续沿用旧剩余回合")
+    if String(refreshed_mark.source_instance_id) == first_source_instance_id:
+        return harness.fail_result("苍标记 refresh 后应刷新来源 source_instance_id")
+    if int(refreshed_mark.source_order_speed_snapshot) == first_source_speed_snapshot:
+        return harness.fail_result("苍标记 refresh 后应刷新来源速度快照")
+    if String(refreshed_mark.meta.get("source_owner_id", "")) != String(gojo_unit.unit_instance_id):
+        return harness.fail_result("苍标记 refresh 后应继续保留当前 Gojo 的 source_owner_id")
     return harness.pass_result()
 
 func _build_gojo_vs_sample_state(harness, seed: int) -> Dictionary:
