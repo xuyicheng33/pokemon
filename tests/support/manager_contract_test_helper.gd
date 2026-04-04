@@ -1,6 +1,8 @@
 extends RefCounted
 class_name ManagerContractTestHelper
 
+const EventTypesScript := preload("res://src/shared/event_types.gd")
+
 func validate_snapshot_shape(public_snapshot: Dictionary) -> String:
 	if typeof(public_snapshot.get("sides", null)) != TYPE_ARRAY:
 		return "missing sides"
@@ -35,6 +37,21 @@ func find_side_snapshot(public_snapshot: Dictionary, side_id: String) -> Diction
 		if str(side_snapshot.get("side_id", "")) == side_id:
 			return side_snapshot
 	return {}
+
+func find_unit_snapshot(public_snapshot: Dictionary, side_id: String, public_id: String) -> Dictionary:
+	for side_snapshot in public_snapshot.get("sides", []):
+		if String(side_snapshot.get("side_id", "")) != side_id:
+			continue
+		for unit_snapshot in side_snapshot.get("team_units", []):
+			if String(unit_snapshot.get("public_id", "")) == public_id:
+				return unit_snapshot
+	return {}
+
+func unit_snapshot_has_effect(unit_snapshot: Dictionary, effect_id: String) -> bool:
+	for effect_snapshot in unit_snapshot.get("effect_instances", []):
+		if String(effect_snapshot.get("effect_definition_id", "")) == effect_id:
+			return true
+	return false
 
 func contains_key_recursive(value, expected_key: String) -> bool:
 	if typeof(value) == TYPE_DICTIONARY:
@@ -74,6 +91,33 @@ func contains_any_key_recursive(value, keys: PackedStringArray) -> bool:
 		for element in value:
 			if contains_any_key_recursive(element, keys):
 				return true
+	return false
+
+func contains_runtime_id_leak(value) -> bool:
+	return contains_any_key_recursive(value, PackedStringArray([
+		"actor_id",
+		"source_instance_id",
+		"target_instance_id",
+		"killer_id",
+		"entity_id",
+	])) or contains_private_instance_id_key(value)
+
+func event_log_has_public_heal(events: Array, public_id: String) -> bool:
+	for event_snapshot in events:
+		if String(event_snapshot.get("event_type", "")) != EventTypesScript.EFFECT_HEAL:
+			continue
+		for value_change in event_snapshot.get("value_changes", []):
+			if String(value_change.get("entity_public_id", "")) == public_id:
+				return true
+	return false
+
+func event_log_has_public_action_cast(events: Array, actor_public_id: String, actor_definition_id: String) -> bool:
+	for event_snapshot in events:
+		if String(event_snapshot.get("event_type", "")) != EventTypesScript.ACTION_CAST:
+			continue
+		if String(event_snapshot.get("actor_public_id", "")) == actor_public_id \
+		and String(event_snapshot.get("actor_definition_id", "")) == actor_definition_id:
+			return true
 	return false
 
 func unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:

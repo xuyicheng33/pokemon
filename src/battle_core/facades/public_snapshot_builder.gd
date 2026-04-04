@@ -68,8 +68,25 @@ func _build_public_unit_snapshot(side_state, unit_state) -> Dictionary:
             "effect_definition_id": effect_instance.def_id,
             "remaining": effect_instance.remaining,
             "persists_on_switch": effect_instance.persists_on_switch,
+            "__sort_instance_id": effect_instance.instance_id,
         })
-    effect_summaries.sort_custom(func(left, right): return String(left.get("effect_definition_id", "")) < String(right.get("effect_definition_id", "")))
+    effect_summaries.sort_custom(func(left, right):
+        var left_def := String(left.get("effect_definition_id", ""))
+        var right_def := String(right.get("effect_definition_id", ""))
+        if left_def != right_def:
+            return left_def < right_def
+        var left_remaining := int(left.get("remaining", 0))
+        var right_remaining := int(right.get("remaining", 0))
+        if left_remaining != right_remaining:
+            return left_remaining < right_remaining
+        var left_persist := int(bool(left.get("persists_on_switch", false)))
+        var right_persist := int(bool(right.get("persists_on_switch", false)))
+        if left_persist != right_persist:
+            return left_persist < right_persist
+        return String(left.get("__sort_instance_id", "")) < String(right.get("__sort_instance_id", ""))
+    )
+    for effect_summary in effect_summaries:
+        effect_summary.erase("__sort_instance_id")
     return {
         "public_id": unit_state.public_id,
         "definition_id": unit_state.definition_id,

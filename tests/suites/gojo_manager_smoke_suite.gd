@@ -2,7 +2,6 @@ extends RefCounted
 class_name GojoManagerSmokeSuite
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
-const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
 
 var _helper = ManagerContractTestHelperScript.new()
@@ -66,7 +65,7 @@ func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 	if not bool(damaged_snapshot_unwrap.get("ok", false)):
 		return harness.fail_result(str(damaged_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
 	var damaged_snapshot: Dictionary = damaged_snapshot_unwrap.get("data", {})
-	var damaged_actor_snapshot := _find_unit_snapshot(damaged_snapshot, "P1", "P1-A")
+	var damaged_actor_snapshot := _helper.find_unit_snapshot(damaged_snapshot, "P1", "P1-A")
 	if damaged_actor_snapshot.is_empty():
 		return harness.fail_result("gojo manager smoke missing actor public snapshot after damage")
 	var damaged_hp := int(damaged_actor_snapshot.get("current_hp", -1))
@@ -105,7 +104,7 @@ func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 	var shape_error := _helper.validate_snapshot_shape(public_snapshot)
 	if not shape_error.is_empty():
 		return harness.fail_result("gojo manager smoke public snapshot malformed: %s" % shape_error)
-	var actor_snapshot := _find_unit_snapshot(public_snapshot, "P1", "P1-A")
+	var actor_snapshot := _helper.find_unit_snapshot(public_snapshot, "P1", "P1-A")
 	if actor_snapshot.is_empty():
 		return harness.fail_result("gojo manager smoke missing actor public snapshot")
 	if int(actor_snapshot.get("current_hp", -1)) <= damaged_hp:
@@ -117,38 +116,11 @@ func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 	var events: Array = event_log_snapshot.get("events", [])
 	if events.is_empty():
 		return harness.fail_result("gojo manager smoke event log should not be empty after run_turn")
-	if _contains_runtime_id_leak(events):
+	if _helper.contains_runtime_id_leak(events):
 		return harness.fail_result("gojo manager smoke event log must stay public-safe")
-	if not _has_public_heal(events, "P1-A"):
+	if not _helper.event_log_has_public_heal(events, "P1-A"):
 		return harness.fail_result("gojo manager smoke event log should expose heal on P1-A")
 	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
 	if not bool(close_unwrap.get("ok", false)):
 		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()
-
-func _find_unit_snapshot(public_snapshot: Dictionary, side_id: String, public_id: String) -> Dictionary:
-	for side_snapshot in public_snapshot.get("sides", []):
-		if String(side_snapshot.get("side_id", "")) != side_id:
-			continue
-		for unit_snapshot in side_snapshot.get("team_units", []):
-			if String(unit_snapshot.get("public_id", "")) == public_id:
-				return unit_snapshot
-	return {}
-
-func _contains_runtime_id_leak(value) -> bool:
-	return _helper.contains_any_key_recursive(value, PackedStringArray([
-		"actor_id",
-		"source_instance_id",
-		"target_instance_id",
-		"killer_id",
-		"entity_id",
-	])) or _helper.contains_private_instance_id_key(value)
-
-func _has_public_heal(events: Array, public_id: String) -> bool:
-	for event_snapshot in events:
-		if String(event_snapshot.get("event_type", "")) != EventTypesScript.EFFECT_HEAL:
-			continue
-		for value_change in event_snapshot.get("value_changes", []):
-			if String(value_change.get("entity_public_id", "")) == public_id:
-				return true
-	return false

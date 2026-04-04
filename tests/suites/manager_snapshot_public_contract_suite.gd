@@ -3,6 +3,11 @@ class_name ManagerSnapshotPublicContractSuite
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const PlayerSelectionAdapterScript := preload("res://src/adapters/player_selection_adapter.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
+const SideStateScript := preload("res://src/battle_core/runtime/side_state.gd")
+const UnitStateScript := preload("res://src/battle_core/runtime/unit_state.gd")
+const EffectInstanceScript := preload("res://src/battle_core/runtime/effect_instance.gd")
+const PublicSnapshotBuilderScript := preload("res://src/battle_core/facades/public_snapshot_builder.gd")
 const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
 var _helper = ManagerContractTestHelperScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
@@ -13,6 +18,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("initial_selection_mp_contract", failures, Callable(self, "_test_initial_selection_mp_contract").bind(harness))
 	runner.run_test("selection_adapters_public_id_contract", failures, Callable(self, "_test_selection_adapters_public_id_contract").bind(harness))
 	runner.run_test("validator_internal_id_backfill_contract", failures, Callable(self, "_test_validator_internal_id_backfill_contract").bind(harness))
+	runner.run_test("public_snapshot_effect_instance_order_contract", failures, Callable(self, "_test_public_snapshot_effect_instance_order_contract"))
 
 func _test_full_open_public_snapshot_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
@@ -150,6 +156,69 @@ func _test_battle_format_runtime_constants_copy_contract(harness) -> Dictionary:
 	if not is_equal_approx(float(stable_state.get("domain_clash_tie_threshold", -1.0)), 0.25):
 		return harness.fail_result("BattleState.to_stable_dict should serialize domain_clash_tie_threshold")
 	return harness.pass_result()
+
+func _test_public_snapshot_effect_instance_order_contract() -> Dictionary:
+	var battle_state = BattleStateScript.new()
+	battle_state.battle_id = "snapshot_sort_contract"
+	battle_state.turn_index = 3
+	battle_state.phase = "selection"
+	battle_state.visibility_mode = "prototype_full_open"
+	var side_state = SideStateScript.new()
+	side_state.side_id = "P1"
+	var unit_state = UnitStateScript.new()
+	unit_state.unit_instance_id = "unit_p1_a"
+	unit_state.public_id = "P1-A"
+	unit_state.definition_id = "sample_pyron"
+	unit_state.display_name = "Sample Pyron"
+	unit_state.max_hp = 100
+	unit_state.current_hp = 100
+	unit_state.max_mp = 10
+	unit_state.current_mp = 10
+	unit_state.combat_type_ids = PackedStringArray(["fire"])
+	unit_state.effect_instances = [
+		_build_public_effect_instance("effect_02", "duplicate_mark", 1, false),
+		_build_public_effect_instance("effect_04", "duplicate_mark", 2, true),
+		_build_public_effect_instance("effect_01", "duplicate_mark", 1, false),
+		_build_public_effect_instance("effect_03", "alpha_mark", 2, false),
+	]
+	side_state.team_units.append(unit_state)
+	side_state.active_slots["active_0"] = unit_state.unit_instance_id
+	battle_state.sides.append(side_state)
+	var builder = PublicSnapshotBuilderScript.new()
+	var public_snapshot: Dictionary = builder.build_public_snapshot(battle_state)
+	var unit_snapshot := _helper.find_unit_snapshot(public_snapshot, "P1", "P1-A")
+	if unit_snapshot.is_empty():
+		return {"ok": false, "error": "public snapshot should expose the synthetic unit"}
+	var effect_instances: Array = unit_snapshot.get("effect_instances", [])
+	if effect_instances.size() != 4:
+		return {"ok": false, "error": "public snapshot should expose all synthetic effect instances"}
+	var actual_rows: Array[String] = []
+	for effect_snapshot in effect_instances:
+		actual_rows.append("%s|%d|%d" % [
+			String(effect_snapshot.get("effect_definition_id", "")),
+			int(effect_snapshot.get("remaining", -1)),
+			int(bool(effect_snapshot.get("persists_on_switch", false))),
+		])
+	var expected_rows: Array[String] = [
+		"alpha_mark|2|0",
+		"duplicate_mark|1|0",
+		"duplicate_mark|1|0",
+		"duplicate_mark|2|1",
+	]
+	if actual_rows != expected_rows:
+		return {
+			"ok": false,
+			"error": "public snapshot effect_instances should sort by definition/remaining/persist flag before instance tie-break",
+		}
+	return {"ok": true}
+
+func _build_public_effect_instance(instance_id: String, definition_id: String, remaining: int, persists_on_switch: bool):
+	var effect_instance = EffectInstanceScript.new()
+	effect_instance.instance_id = instance_id
+	effect_instance.def_id = definition_id
+	effect_instance.remaining = remaining
+	effect_instance.persists_on_switch = persists_on_switch
+	return effect_instance
 
 func _test_legal_action_public_id_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()

@@ -21,6 +21,53 @@
 
 ## 2026-04-04
 
+### 共享 schema 收口与 effect validator 硬化（已完成）
+
+- 目标：
+  - 收口 `action_actor` / `ChainContext` / `rule_mod` 读取点相关文档漂移，避免设计稿继续落后于正式实现
+  - 把“内容能加载但运行时静默 no-op”的 effect scope / payload 组合改成加载期直接 fail-fast
+  - 顺手抽掉角色 manager smoke suite 里的重复 helper，并固定公开快照里 effect stack 的稳定排序
+- 范围：
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/effect_engine.md`
+  - `docs/design/battle_runtime_model.md`
+  - `docs/rules/06_effect_schema_and_extension.md`
+  - `src/battle_core/content/content_snapshot_effect_validator.gd`
+  - `src/battle_core/facades/public_snapshot_builder.gd`
+  - `tests/suites/extension_validation_contract_suite.gd`
+  - `tests/suites/manager_snapshot_public_contract_suite.gd`
+  - `tests/suites/gojo_manager_smoke_suite.gd`
+  - `tests/suites/sukuna_manager_smoke_suite.gd`
+  - `tests/suites/kashimo_manager_smoke_suite.gd`
+  - `tests/support/manager_contract_test_helper.gd`
+  - `tests/gates/repo_consistency_docs_gate.py`
+  - `README.md`
+- 验收标准：
+  - docs gate 必须明确覆盖 `action_actor`、`action_actor_id / action_combat_type_id`、`nullify_field_accuracy`、`incoming_action_final_mod`
+  - `action_actor + 非 on_receive_action_hit`、`field + unit-target payload`、`非 field + apply_field` 必须在 `validate_snapshot()` 直接报错
+  - manager smoke suite 的公开快照/事件日志黑盒检查 helper 不再三份复制
+  - `public_snapshot.effect_instances` 排序稳定，且不新增公开字段
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `battle_content_schema.md`、`06_effect_schema_and_extension.md`、`effect_engine.md`、`battle_runtime_model.md` 已补齐 `action_actor` 作用域、`ChainContext.action_actor_id / action_combat_type_id`、`nullify_field_accuracy`、`incoming_action_final_mod` 与 scope/payload 兼容约束
+  - `repo_consistency_docs_gate.py` 已补对应静态检查，防止后续文档再次回漂
+  - `ContentSnapshotEffectValidator` 已新增：
+    - `scope=action_actor` 只能用于 `on_receive_action_hit`
+    - `apply_field` 必须配 `scope=field`
+    - `damage / heal / resource_mod / stat_mod / apply_effect / remove_effect` 不得配 `scope=field`
+  - `extension_validation_contract_suite.gd` 已补负向回归，固定坏组合必须在加载期 fail-fast
+  - `ManagerContractTestHelper` 已吸收三个 manager smoke suite 共有的 unit snapshot / runtime id leak / public heal / public cast 检查
+  - `BattleCorePublicSnapshotBuilder` 已把 `effect_instances` 排序收口为 `effect_definition_id -> remaining -> persists_on_switch -> instance_id`
+  - `manager_snapshot_public_contract_suite.gd` 已补公开快照 effect 顺序 contract
+  - `README.md` 的 GDScript 行数统计已同步到当前仓库状态
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### manager 黑盒边界收口与 passive item 最小正式闭环（已完成）
 
 - 目标：
