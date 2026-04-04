@@ -20,11 +20,17 @@ ctx.require_contains("docs/design/battle_content_schema.md", "required_target_ef
 ctx.require_contains("docs/design/battle_content_schema.md", "required_target_same_owner", "schema effect same-owner precondition contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "action_legality", "schema action legality contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "incoming_accuracy", "schema incoming accuracy contract")
+ctx.require_contains("docs/design/battle_content_schema.md", "effect_stack_sum", "schema effect stack sum contract")
+ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_effect_ids", "schema power bonus self effect ids contract")
+ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
+ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "formal_character_validator_registry.json", "schema runtime validator registry wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "nullify_field_accuracy", "schema field accuracy nullify contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "incoming_action_final_mod", "schema incoming action final mod contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "required_incoming_command_types", "schema incoming action command filter contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "required_incoming_combat_type_ids", "schema incoming action combat type filter contract")
+ctx.require_contains("docs/design/battle_content_schema.md", "retention_mode", "schema stat retention contract")
+ctx.require_contains("docs/design/battle_content_schema.md", "persistent_stat_stages", "schema persistent stat stage contract")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "sample_setup_method", "formal character setup method checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "formal_character_validator_registry.json", "formal character validator registry checklist wording")
 ctx.require_contains("docs/design/kashimo_hajime_design.md", "kashimo_manager_smoke_suite.gd", "kashimo manager smoke delivery doc")
@@ -63,6 +69,8 @@ ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "required_t
 ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "required_target_same_owner", "rules effect same-owner precondition contract")
 ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "max_stacks", "rules stack cap contract")
 ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "on_receive_action_hit", "rules incoming action trigger contract")
+ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "retention_mode", "rules stat retention contract")
+ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "persistent_stat_stages", "rules persistent stat stage contract")
 ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "action_legality", "rules action legality contract")
 ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "incoming_accuracy", "rules incoming accuracy contract")
 ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "nullify_field_accuracy", "rules field accuracy nullify contract")
@@ -95,6 +103,8 @@ stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",
     "当前 schema 不单独编码",
     "写死在 README 与内容说明文档里",
+    "当前允许空串或 `mp_diff_clamped`",
+    "只开放空串与 `mp_diff_clamped`",
 ]
 for rel_path in [
     "README.md",

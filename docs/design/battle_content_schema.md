@@ -88,7 +88,10 @@
 |`mp_cost`|`int`|MP 消耗|
 |`priority`|`int`|行动优先级|
 |`combat_type_id`|`String`|技能战斗属性；空串表示无属性|
-|`power_bonus_source`|`String`|额外威力来源；当前允许空串或 `mp_diff_clamped`|
+|`power_bonus_source`|`String`|额外威力来源；当前允许空串、`mp_diff_clamped` 或 `effect_stack_sum`|
+|`power_bonus_self_effect_ids`|`PackedStringArray`|`effect_stack_sum` 时统计自身 effect 层数的定义 ID 列表|
+|`power_bonus_target_effect_ids`|`PackedStringArray`|`effect_stack_sum` 时统计目标 effect 层数的定义 ID 列表|
+|`power_bonus_per_stack`|`int`|`effect_stack_sum` 时每层额外增加的威力|
 |`targeting`|`String`|`enemy_active_slot / self / field`|
 |`is_domain_skill`|`bool`|是否属于领域技能；用于合法性与领域冲突规则|
 |`effects_on_cast_ids`|`PackedStringArray`|施放触发效果 ID|
@@ -197,6 +200,14 @@
 
 当前这些 payload 已接入运行时结算链；内容层负责声明，运行时负责统一调度与执行。
 
+`StatModPayload` 当前额外包含：
+
+|字段|类型|说明|
+|---|---|---|
+|`stat_name`|`String`|能力项；当前只允许 `attack / defense / sp_attack / sp_defense / speed`|
+|`stage_delta`|`int`|能力阶段变化量|
+|`retention_mode`|`String`|`normal / persist_on_switch`；后者写入 `UnitState.persistent_stat_stages` 并跨非击倒离场保留|
+
 ### 4.4 ApplyFieldPayload
 
 |字段|类型|说明|
@@ -265,7 +276,8 @@
 - `UnitDefinition.candidate_skill_ids` 为空时表示没有额外候选池；非空时必须满足：长度至少 3、不能重复、不能含空串、必须命中已注册常规技能、必须完整包含默认 `skill_ids`、不得包含 `ultimate_skill_id`。
 - `UnitDefinition.ultimate_points_required / ultimate_points_cap / ultimate_point_gain_on_regular_skill_cast` 必须 `>= 0`，且 `ultimate_points_cap >= ultimate_points_required`；没有 `ultimate_skill_id` 的单位不得声明非零奥义点配置。
 - `SkillDefinition.combat_type_id` 可为空；非空时必须命中已注册 `combat_type`。
-- `SkillDefinition.power_bonus_source` 当前只允许 `PowerBonusResolver` 已注册的来源；正式主线现阶段只开放空串与 `mp_diff_clamped`。
+- `SkillDefinition.power_bonus_source` 当前只允许 `PowerBonusResolver` 已注册的来源；正式主线现阶段开放空串、`mp_diff_clamped` 与 `effect_stack_sum`。
+- `SkillDefinition.power_bonus_source = effect_stack_sum` 时，`power_bonus_self_effect_ids / power_bonus_target_effect_ids` 至少有一侧非空，且 `power_bonus_per_stack > 0`。
 - `BattleFormatConfig.default_recoil_ratio / domain_clash_tie_threshold` 必须落在 `0.0..1.0`。
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
@@ -275,7 +287,7 @@
 - `required_target_effects` 的加载期校验固定包含：非空项、去重、引用存在性、以及 `scope=target` 约束；若 `required_target_same_owner=true`，则同时要求 `required_target_effects` 非空且 effect `scope=target`。
 - `required_incoming_command_types / required_incoming_combat_type_ids` 的加载期校验固定包含：只允许 `on_receive_action_hit` effect 使用、不得含空项、动作类型只允许 `skill / ultimate`、属性过滤必须命中已注册 `combat_type`。
 - field 校验覆盖：`field_kind in {normal, domain}`、`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
-- payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
+- payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`StatModPayload.retention_mode in {normal, persist_on_switch}`、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
 - 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；运行时只读取 `src/battle_core/content/formal_character_validator_registry.json` 里的 `content_validator_script_path`，并由 repo consistency gate 校验它与 `docs/records/formal_character_registry.json` 的正式交付面记录保持一致。
 - 内容快照校验失败直接 fail-fast，不进入运行态。
 

@@ -8,8 +8,8 @@
 |层级|内容|允许依赖|禁止依赖|
 |---|---|---|---|
 |L1|`content / contracts / runtime / shared constants`|仅本层|上层服务与外围层|
-|L2|纯领域服务（math、排序、合法性判定、实例管理）|L1|L3-L6|
-|L3|子系统协调器（effects、lifecycle、commands）|L1-L2|L4-L6|
+|L2|纯领域服务（`commands / math`、排序、合法性判定、实例管理）|L1|L3-L6|
+|L3|子系统协调器（effects、lifecycle）|L1-L2|L4-L6|
 |L4|orchestrators（回合阶段编排）|L1-L3|L5-L6 的实现细节|
 |L5|facades（核心稳定入口）|L1-L4|外围对象图细节|
 |L6|外围层（adapters / scenes / sandbox / boot）|L5 或显式 contract|直接进核心内部服务图与 runtime 细节|
@@ -117,7 +117,7 @@ Composition 补充约束：
 若超阈值仍不拆，必须同时满足：
 
 - 在 `docs/records/decisions.md` 写明“为何仍合理 + 预计何时拆分”。
-- 在架构闸门 allowlist 里写明该文件的临时 `max_lines` 上限，超限直接 gate fail。
+- 在架构闸门的 `size_review_rules` allowlist 里写明该文件的临时 `max_lines` 上限，超限直接 gate fail。
 
 ### 4.3 `assert()` 与 fail-fast 边界
 
