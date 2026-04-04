@@ -5,7 +5,6 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var leave_service
 var replacement_service
-var field_service
 
 func resolve_missing_dependency() -> String:
     if leave_service == null:
@@ -20,12 +19,6 @@ func resolve_missing_dependency() -> String:
         var replacement_missing := str(replacement_service.resolve_missing_dependency())
         if not replacement_missing.is_empty():
             return "replacement_service.%s" % replacement_missing
-    if field_service == null:
-        return "field_service"
-    if field_service.has_method("resolve_missing_dependency"):
-        var field_missing := str(field_service.resolve_missing_dependency())
-        if not field_missing.is_empty():
-            return "field_service.%s" % field_missing
     return ""
 
 func collect_pending_fainted_units(battle_state) -> Array:
@@ -40,22 +33,11 @@ func collect_pending_fainted_units(battle_state) -> Array:
             fainted_units.append(active_unit)
     return fainted_units
 
-func resolve_fainted_units_leave(battle_state, content_index, fainted_units: Array, execute_trigger_batch: Callable) -> Variant:
-    var fainted_unit_ids: Array = collect_unit_ids(fainted_units)
-    var on_exit_invalid_code = execute_trigger_batch.call("on_exit", battle_state, content_index, fainted_unit_ids)
-    if on_exit_invalid_code != null:
-        return on_exit_invalid_code
+func resolve_fainted_units_leave(battle_state, content_index, fainted_units: Array) -> Variant:
     for fainted_unit in fainted_units:
         leave_service.leave_unit(battle_state, fainted_unit, "faint", content_index)
         if leave_service.invalid_battle_code() != null:
             return leave_service.invalid_battle_code()
-    var field_break_invalid_code = field_service.break_field_if_creator_inactive(
-        battle_state,
-        content_index,
-        battle_state.chain_context
-    )
-    if field_break_invalid_code != null:
-        return field_break_invalid_code
     return null
 
 func resolve_faint_replacements(battle_state) -> Dictionary:

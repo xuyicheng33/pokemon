@@ -13,8 +13,8 @@
 |`field_apply_context_resolver.gd`|统一解析 field creator 与公开日志里要用到的显示 ID|
 |`field_apply_conflict_service.gd`|负责领域对拼数值判定、普通 field 被领域阻断与平 MP tie-break 结果生成|
 |`field_apply_log_service.gd`|负责 field 对拼、阻断与落地日志|
-|`field_apply_effect_runner.gd`|负责创建 field state、跑 `field_apply` / `field_apply_success` / deferred success 链|
-|`field_service.gd`|收集 field `EffectEvent`、处理自然到期扣减与 creator 离场后的提前打断|
+|`field_apply_effect_runner.gd`|负责创建 field state，并为 `field_apply` / `field_apply_success` / deferred success 链收集事件；真正 batch 执行权仍在 `trigger_batch_runner`|
+|`field_service.gd`|收集 field `EffectEvent`、处理自然到期扣减，并协调 creator 离场后的提前打断|
 
 ## 2. 接入原则
 
@@ -74,7 +74,7 @@
 
 - 若场上有 field，按触发点产出 field 事件。
 - `tick_turn_end()` 在回合末扣减剩余回合并返回是否到期。
-- `break_field_if_creator_inactive()` 在 creator 离场、倒下或被强制换下后，负责执行提前打断。
+- `break_field_if_creator_inactive()` 在 creator 离场、倒下或被强制换下后，负责收集并协调提前打断；真正 trigger batch 执行权由调用方显式透传。
 
 说明：
 

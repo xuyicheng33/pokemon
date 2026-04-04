@@ -126,3 +126,8 @@ func execute_lifecycle_trigger_batch(trigger_name: String, battle_state, content
         owner_unit_ids,
         battle_state.chain_context
     )
+
+func trigger_batch_executor() -> Callable:
+    if trigger_batch_runner == null:
+        return Callable()
+    return Callable(trigger_batch_runner, "execute_trigger_batch")

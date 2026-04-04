@@ -7,7 +7,7 @@ var damage_service
 var combat_type_service
 var stat_calculator
 var rule_mod_service
-var faint_resolver
+var faint_killer_attribution_service
 var action_log_service
 var power_bonus_resolver
 
@@ -20,8 +20,8 @@ func resolve_missing_dependency() -> String:
         return "stat_calculator"
     if rule_mod_service == null:
         return "rule_mod_service"
-    if faint_resolver == null:
-        return "faint_resolver"
+    if faint_killer_attribution_service == null:
+        return "faint_killer_attribution_service"
     if action_log_service == null:
         return "action_log_service"
     if power_bonus_resolver == null:
@@ -103,9 +103,9 @@ func apply_default_recoil(queued_action, actor, battle_state, cause_event_id: St
     )
 
 func _record_fatal_damage(battle_state, target_unit_id: String, before_hp: int, after_hp: int, killer_unit_id: Variant, source_instance_id: String, priority: int, source_order_speed_snapshot: int, cause_event_step_id: int, source_kind_order_active_skill: int) -> void:
-    if faint_resolver == null:
+    if faint_killer_attribution_service == null:
         return
-    faint_resolver.record_fatal_damage(
+    faint_killer_attribution_service.record_fatal_damage(
         battle_state,
         target_unit_id,
         before_hp,

@@ -168,7 +168,8 @@ func _test_field_break_transition_preserves_new_field_contract(harness) -> Dicti
 		battle_state,
 		content_index,
 		"field_break",
-		battle_state.chain_context
+		battle_state.chain_context,
+		Callable(core.service("trigger_batch_runner"), "execute_trigger_batch")
 	)
 	if invalid_code != null:
 		return harness.fail_result("field_break transition should stay valid, got %s" % str(invalid_code))
@@ -200,12 +201,12 @@ func _test_field_break_uses_explicit_chain_context_contract(harness) -> Dictiona
 	var capture_dispatcher = CaptureFieldTriggerDispatcher.new()
 	var capture_runner = CaptureFieldTriggerBatchRunner.new()
 	core.service("field_service").trigger_dispatcher = capture_dispatcher
-	core.service("field_service").trigger_batch_runner = capture_runner
 	var invalid_code = core.service("field_service").break_active_field(
 		battle_state,
 		content_index,
 		"field_break",
-		explicit_chain_context
+		explicit_chain_context,
+		Callable(capture_runner, "execute_trigger_batch")
 	)
 	if invalid_code != null:
 		return harness.fail_result("field_break explicit chain_context should stay valid, got %s" % str(invalid_code))

@@ -95,8 +95,8 @@ func _test_payload_executor_handler_missing_dependency_propagation_contract(harn
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1318)
 
-	core.service("payload_damage_runtime_service").faint_resolver = null
-	var expected_missing := "payload_handler_registry.payload_damage_handler.payload_damage_runtime_service.faint_resolver"
+	core.service("payload_damage_runtime_service").faint_killer_attribution_service = null
+	var expected_missing := "payload_handler_registry.payload_damage_handler.payload_damage_runtime_service.faint_killer_attribution_service"
 	if core.service("payload_executor").resolve_missing_dependency() != expected_missing:
 		return harness.fail_result("payload executor missing dependency path mismatch: expected=%s actual=%s" % [
 			expected_missing,

@@ -27,24 +27,9 @@
 
 补充说明：
 
-- 静态 import 面必须继续维持分层单向；“静态 import 干净”不等于 runtime wiring 图必须严格 DAG。
-- 当前核心允许少量**受控运行时环**，但只允许存在于 composition root 的属性注入图里，不能回退成构造器互相依赖或局部 `new()`。
-- 当前 runtime wiring 图固定只允许 1 个登记过的 allowlisted SCC：
-  - `faint_leave_replacement_service`
-  - `faint_resolver`
-  - `field_apply_effect_runner`
-  - `field_apply_service`
-  - `field_service`
-  - `payload_apply_field_handler`
-  - `payload_damage_handler`
-  - `payload_damage_runtime_service`
-  - `payload_executor`
-  - `payload_forced_replace_handler`
-  - `payload_handler_registry`
-  - `replacement_service`
-  - `trigger_batch_runner`
-- 以后若新增 SCC、扩大成员，或把这组闭环拆成新的未登记结构，`architecture_wiring_graph_gate.py` 必须直接失败。
-- 该受控 SCC 当前依赖 fail-fast 守卫与 chain depth 保护保持可控；后续若要重构装配方式，必须先改文档与回归，不能直接改成构造器注入。
+- 静态 import 面必须继续维持分层单向；runtime wiring 图当前也必须保持 strict DAG。
+- 当前禁止在 composition root 的属性注入图里保留任何 SCC；若新增闭环，`architecture_wiring_graph_gate.py` 必须直接失败。
+- 若后续机制扩展又逼出新的 runtime 环，必须先补设计文档、决策记录与回归，再做新的装配方案评审；不能把闭环偷偷塞回 wiring。
 
 Composition 补充约束：
 
@@ -166,4 +151,4 @@ Composition 补充约束：
 - `src/adapters` 与 `scenes` 不得 import `battle_core` 内部服务实现；允许范围固定为 `facades/*`、`contracts/*` 与 `commands/command_types.gd`。
 - `src/adapters` 与 `scenes` 若 import `battle_core/commands/*`，只允许 `commands/command_types.gd`，其他命令实现一律禁止。
 - 大文件闸门必须覆盖 `src/battle_core` 与 `src/composition`；若出现超阈值文件，必须同时有 allowlist 临时上限与决策记录。
-- runtime wiring 图必须额外经过 `tests/gates/architecture_wiring_graph_gate.py` 校验，只允许当前登记的受控 SCC。
+- runtime wiring 图必须额外经过 `tests/gates/architecture_wiring_graph_gate.py` 校验，并保持严格无环。

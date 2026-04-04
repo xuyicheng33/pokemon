@@ -33,7 +33,7 @@
 - 外围层（`composition/adapters/scenes`）不得直接依赖 `battle_core/runtime/*`。
 - `adapters/scenes` 只能依赖 facade、公开 contract，或输入枚举常量 `commands/command_types.gd`；不得直接连 `actions/effects/lifecycle/logging/math/passives/turn/content` 等内部服务实现。
 - 外围只能通过 facade 与公开 contract 调核心。
-- 静态 import 面必须保持分层单向；这不等于 runtime wiring 图必须是 DAG。当前 runtime 属性注入图允许保留登记过的受控 SCC，并由架构 gate 固定校验。
+- 静态 import 面必须保持分层单向；runtime 属性注入图当前也必须保持 strict DAG，并由 `architecture_wiring_graph_gate.py` 固定校验。
 
 ## 3. 模块拆分
 

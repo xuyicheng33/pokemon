@@ -61,10 +61,15 @@ func execute_switch_action(queued_action, battle_state, content_index):
         return result
     side_state.bench_order.append(actor.unit_instance_id)
     leave_service.leave_unit(battle_state, actor, "manual_switch", content_index)
+    if leave_service.invalid_battle_code() != null:
+        result.result_type = "invalid_battle"
+        result.invalid_battle_code = leave_service.invalid_battle_code()
+        return result
     var field_break_invalid_code = field_service.break_field_if_creator_inactive(
         battle_state,
         content_index,
-        battle_state.chain_context
+        battle_state.chain_context,
+        action_cast_service.trigger_batch_executor()
     )
     if field_break_invalid_code != null:
         result.result_type = "invalid_battle"

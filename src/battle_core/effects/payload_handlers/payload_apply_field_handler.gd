@@ -18,10 +18,17 @@ func resolve_missing_dependency() -> String:
 			return "field_apply_service.%s" % missing_dependency
 	return ""
 
-func execute(payload, effect_definition, effect_event, battle_state, content_index) -> void:
+func execute(payload, effect_definition, effect_event, battle_state, content_index, execute_trigger_batch: Callable = Callable()) -> void:
 	last_invalid_battle_code = null
 	if not payload is ApplyFieldPayloadScript:
 		return
-	var invalid_code = field_apply_service.apply_field(effect_definition, payload, effect_event, battle_state, content_index)
+	var invalid_code = field_apply_service.apply_field(
+		effect_definition,
+		payload,
+		effect_event,
+		battle_state,
+		content_index,
+		execute_trigger_batch
+	)
 	if invalid_code != null:
 		last_invalid_battle_code = invalid_code

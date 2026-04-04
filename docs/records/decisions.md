@@ -794,29 +794,20 @@
   - 这些字符串通道最容易在扩 helper、换 mock、改字段名时悄悄失效。
   - 先把 façade / orchestrator 侧最危险的读取点改成显式方法，能明显降低“接口没断言、运行到半截才炸”的概率。
 
-### 66. Runtime wiring 图不是严格 DAG；当前正式口径是“静态 import 单向 + 单一 allowlisted SCC + gate 强校验”（2026-04-04）
+### 66. Runtime wiring 图重新收口为严格 DAG；trigger batch 执行权改为显式透传（2026-04-04）
 
 - 当前架构文档正式口径改为：
   - 静态 import 面必须单向、干净
-  - runtime 属性注入图允许保留 1 个登记过的 SCC
-- 新增 `tests/gates/architecture_wiring_graph_gate.py` 后，当前唯一允许的 runtime SCC 固定为：
-  - `faint_leave_replacement_service`
-  - `faint_resolver`
-  - `field_apply_effect_runner`
-  - `field_apply_service`
-  - `field_service`
-  - `payload_apply_field_handler`
-  - `payload_damage_handler`
-  - `payload_damage_runtime_service`
-  - `payload_executor`
-  - `payload_forced_replace_handler`
-  - `payload_handler_registry`
-  - `replacement_service`
-  - `trigger_batch_runner`
-- 以后若新增 SCC、扩大成员或拆成新的未登记闭环，architecture gate 必须直接失败。
+  - runtime 属性注入图也必须保持严格 DAG
+- 本次拆环的正式落点：
+  - `FieldService`、`FieldApplyEffectRunner`、`ReplacementService` 不再通过属性注入直接持有 `trigger_batch_runner`
+  - 需要递归执行 trigger batch 的路径改为显式透传 `Callable(trigger_batch_runner, "execute_trigger_batch")`
+  - `PayloadDamageRuntimeService` 与 `ActionCastDirectDamagePipeline` 只记录 fatal damage attribution，不再直接依赖 `FaintResolver`
+  - `FaintResolver` / `FaintLeaveReplacementService` 的 helper 边界继续瘦身，不再把 `field_service / replacement_service / trigger_dispatcher` 这类非必须依赖继续挂在 resolver 上
+- `tests/gates/architecture_wiring_graph_gate.py` 现在固定要求 runtime wiring 图无 SCC；只要出现闭环，gate 必须直接失败。
 - 原因：
-  - 把当前 wiring 误写成“严格 DAG”只会继续误导后续审查。
-  - 真正有约束力的说法应该是：静态依赖保持单向，runtime wiring 允许且只允许这一组受控 SCC。
+  - 之前把 wiring 环登记成 allowlist，只是在把真实耦合固化进 composition root。
+  - 现在把执行权收回单点 runner，并把递归 batch 依赖改成显式参数，才能让 wiring 图、文档口径和真实实现重新对齐。
 
 ### 67. 内容快照当前采用“composer 级共享 cache + 每次 fresh index”策略（2026-04-04）
 
@@ -858,3 +849,20 @@
 - 原因：
   - facade 如果继续暴露 raw port，测试和新代码会再次把装配细节当成稳定接口。
   - 错误传播如果继续混用字段直读和字符串回退，会把 fail-fast 边界重新变脆。
+
+### 70. manager smoke 与 manager public contract 回归必须保持黑盒；被动持有物主线至少保留 1 个正式样例（2026-04-04）
+
+- manager 相关正式回归当前固定分成两层：
+  - 黑盒 facade 回归：只允许走 `create_session / get_legal_actions / build_command / run_turn / get_public_snapshot / get_event_log_snapshot / close_session / run_replay`
+  - 白盒内核回归：若需要直看 runtime / container，统一留在 harness + core service 侧，不得再借 manager 私有钩子穿透
+- 明确禁止：
+  - 在 `BattleCoreManager` 上重新引入 `_debug_session`、`_inject_session_for_test`、`_override_container_factory_for_test`、`_replace_public_snapshot_builder_for_test`、`_shared_content_snapshot_cache_for_test`
+  - manager smoke 通过内部 session 改 runtime / content 再回头验证 facade
+- 被动持有物当前正式要求至少保留 1 个最小样例闭环：
+  - 有正式 `.tres` 资源
+  - 有 runtime 回归
+  - 有 manager 黑盒回归
+  - 有 replay 黑盒回归
+- 原因：
+  - manager 黑盒面如果继续夹带私有钩子，测试通过也不能证明外围 contract 稳定。
+  - 被动持有物若始终只有引擎框架、没有正式样例，仓库会持续高估当前 prototype 的功能完整度。

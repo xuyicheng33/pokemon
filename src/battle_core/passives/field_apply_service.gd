@@ -32,7 +32,14 @@ func resolve_missing_dependency() -> String:
 		return "field_apply_effect_runner.%s" % effect_missing
 	return ""
 
-func apply_field(effect_definition, payload, effect_event, battle_state, content_index) -> Variant:
+func apply_field(
+	effect_definition,
+	payload,
+	effect_event,
+	battle_state,
+	content_index,
+	execute_trigger_batch: Callable = Callable()
+) -> Variant:
 	if effect_definition == null or payload == null or effect_event == null:
 		return ErrorCodesScript.INVALID_STATE_CORRUPTION
 	var challenger_field_definition = content_index.fields.get(payload.field_definition_id)
@@ -56,7 +63,12 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 		if not clash_result.is_empty():
 			field_apply_log_service.log_field_clash(clash_result, before_field, payload, effect_event, battle_state)
 			if not bool(clash_result.get("challenger_won", false)):
-				var release_invalid_code = field_apply_effect_runner.execute_pending_success_effects(before_field, battle_state, content_index)
+				var release_invalid_code = field_apply_effect_runner.execute_pending_success_effects(
+					before_field,
+					battle_state,
+					content_index,
+					execute_trigger_batch
+				)
 				if release_invalid_code != null:
 					return release_invalid_code
 				return null
@@ -65,7 +77,8 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 				battle_state,
 				content_index,
 				"field_break",
-				effect_event.chain_context
+				effect_event.chain_context,
+				execute_trigger_batch
 			)
 			if break_invalid_code != null:
 				return break_invalid_code
@@ -80,14 +93,21 @@ func apply_field(effect_definition, payload, effect_event, battle_state, content
 		field_state,
 		battle_state,
 		content_index,
-		effect_event.chain_context
+		effect_event.chain_context,
+		execute_trigger_batch
 	)
 	if field_apply_invalid_code != null:
 		return field_apply_invalid_code
 	if _should_defer_success_effects(challenger_field_definition, payload, effect_event):
 		field_apply_effect_runner.defer_success_effects(field_state, payload.on_success_effect_ids, effect_event)
 		return null
-	return field_apply_effect_runner.execute_success_effects(payload.on_success_effect_ids, effect_event, battle_state, content_index)
+	return field_apply_effect_runner.execute_success_effects(
+		payload.on_success_effect_ids,
+		effect_event,
+		battle_state,
+		content_index,
+		execute_trigger_batch
+	)
 
 func _should_defer_success_effects(field_definition, payload, effect_event) -> bool:
 	if field_definition == null or payload == null or effect_event == null or effect_event.chain_context == null:

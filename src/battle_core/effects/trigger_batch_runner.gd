@@ -43,7 +43,12 @@ func execute_trigger_batch(
     var sorted_events = effect_queue_service.sort_events(effect_events, rng_service)
     battle_state.rng_stream_index = rng_service.get_stream_index()
     for effect_event in sorted_events:
-        payload_executor.execute_effect_event(effect_event, battle_state, content_index)
+        payload_executor.execute_effect_event(
+            effect_event,
+            battle_state,
+            content_index,
+            Callable(self, "execute_trigger_batch")
+        )
         if payload_executor.invalid_battle_code() != null:
             battle_state.pending_effect_queue.clear()
             return payload_executor.invalid_battle_code()

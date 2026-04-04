@@ -29,7 +29,6 @@ func validate_unit_contract(validator, content_index, errors: Array) -> void:
 	validator._expect_packed_string_array(errors, "%s candidate_skill_ids" % label, unit_definition.candidate_skill_ids, PackedStringArray(["kashimo_raiken", "kashimo_charge", "kashimo_feedback_strike", "kashimo_kyokyo_katsura"]))
 	validator._expect_string(errors, "%s ultimate_skill_id" % label, unit_definition.ultimate_skill_id, "kashimo_phantom_beast_amber")
 	validator._expect_string(errors, "%s passive_skill_id" % label, unit_definition.passive_skill_id, "kashimo_charge_separation")
-
 func validate_core_skill_contract(validator, content_index, errors: Array) -> void:
 	_validate_skill_contract(
 		validator,
@@ -84,14 +83,12 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"effects_on_cast_ids": PackedStringArray(["kashimo_amber_self_transform"]),
 		}
 	)
-
 func validate_charge_separation_contract(validator, content_index, errors: Array) -> void:
 	var label := "formal[kashimo].charge_separation"
 	var passive_definition = validator._require_passive_skill(content_index, errors, label, "kashimo_charge_separation")
 	if passive_definition != null:
 		validator._expect_packed_string_array(errors, "%s passive.trigger_names" % label, passive_definition.trigger_names, PackedStringArray(["on_enter"]))
 		validator._expect_packed_string_array(errors, "%s passive.effect_ids" % label, passive_definition.effect_ids, PackedStringArray(["kashimo_thunder_resist", "kashimo_apply_water_leak_listeners"]))
-
 func validate_feedback_strike_contract(validator, content_index, errors: Array) -> void:
 	var label := "formal[kashimo].feedback_strike"
 	var skill_definition = validator._require_skill(content_index, errors, label, "kashimo_feedback_strike")
@@ -101,7 +98,6 @@ func validate_feedback_strike_contract(validator, content_index, errors: Array) 
 	validator._expect_packed_string_array(errors, "%s power_bonus_self_effect_ids" % label, skill_definition.power_bonus_self_effect_ids, PackedStringArray(["kashimo_positive_charge_mark"]))
 	validator._expect_packed_string_array(errors, "%s power_bonus_target_effect_ids" % label, skill_definition.power_bonus_target_effect_ids, PackedStringArray(["kashimo_negative_charge_mark"]))
 	validator._expect_int(errors, "%s power_bonus_per_stack" % label, skill_definition.power_bonus_per_stack, 12)
-
 func validate_kyokyo_contract(validator, content_index, errors: Array) -> void:
 	var label := "formal[kashimo].kyokyo"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_kyokyo_nullify")
@@ -128,7 +124,6 @@ func validate_kyokyo_contract(validator, content_index, errors: Array) -> void:
 			"priority": 10,
 		}
 	)
-
 func validate_charge_separation_effects(validator, content_index, errors: Array) -> void:
 	_validate_apply_water_leak_listeners(validator, content_index, errors)
 	_validate_thunder_resist(validator, content_index, errors)

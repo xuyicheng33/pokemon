@@ -11,15 +11,95 @@
 
 ## 当前阶段
 
-- 阶段目标：按“基础稳定化整改路线图”先收口 passive fail-fast、错误读取通道、runtime wiring SCC、content cache 与 replay 索引，再继续扩正式角色与批量回放。
+- 阶段目标：按“基础稳定化整改路线图”先收口 passive fail-fast、错误读取通道、runtime wiring DAG、content cache 与 replay 索引，再继续扩正式角色与批量回放。
 - 当前不做：Gojo / Sukuna / Kashimo 数值平衡调整、新角色扩角、现有角色机制重设计、整仓库 DI 重写。
 - 当前优先级：
   - 先保证 `invalid_battle` 与用户可见错误不再通过字符串通道静默漏报
-  - 再把 runtime wiring 受控 SCC、content cache 与 replay 索引做成 gate 和回归
+  - 再把 runtime wiring DAG、content cache 与 replay 索引做成 gate 和回归
   - 同步把审查记录、设计稿与 README 口径写回仓库，避免“严格 DAG / 完全对齐”这类过度结论继续扩散
   - 每阶段都要完成验证、提交、推送，并在进入下一阶段前把工作区收干净
 
 ## 2026-04-04
+
+### manager 黑盒边界收口与 passive item 最小正式闭环（已完成）
+
+- 目标：
+  - 去掉 `BattleCoreManager` 的测试专用私有钩子，把 manager smoke 和 manager public contract 收回黑盒边界
+  - 补一个最小正式 passive item 样例，把被动持有物从“只有框架”推进到“资源 + runtime + manager + replay”闭环
+- 范围：
+  - `src/battle_core/facades/*`
+  - `src/composition/sample_battle_factory.gd`
+  - `content/passive_items/*`
+  - `content/effects/*`
+  - `content/units/*`
+  - `tests/suites/*manager*`
+  - `tests/suites/content_snapshot_cache_suite.gd`
+  - `tests/suites/content_snapshot_cache_composer_suite.gd`
+  - `tests/suites/passive_item_contract_suite.gd`
+  - `tests/run_all.gd`
+  - `tests/gates/repo_consistency_surface_gate.py`
+  - `README.md`
+  - `content/README.md`
+  - `tests/README.md`
+- 验收标准：
+  - manager 侧不再保留 `_debug_session`、`_inject_session_for_test`、`_override_container_factory_for_test`、`_replace_public_snapshot_builder_for_test`、`_shared_content_snapshot_cache_for_test`
+  - Gojo / Sukuna manager smoke 不再钻内部 session
+  - 新增 passive item 正式样例资源、黑盒 manager 回归与 replay 回归
+  - `godot --headless --path . --script tests/run_all.gd`、`bash tests/check_repo_consistency.sh`、`bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `BattleCoreManager` 已删除 5 个测试专用私有钩子
+  - `content_snapshot_cache_suite.gd` 已改成只保留 manager 黑盒语义断言；cache stats 另拆到 `content_snapshot_cache_composer_suite.gd`
+  - `gojo_manager_smoke_suite.gd`、`sukuna_manager_smoke_suite.gd` 已改成纯 facade 主路径
+  - `manager_facade_internal_contract_suite.gd`、`manager_log_and_runtime_contract_suite.gd` 已改成不依赖 manager 私有钩子的公开 contract 回归
+  - 已新增最小正式 passive item 样例：
+    - `content/passive_items/sample_attack_charm.tres`
+    - `content/effects/sample_attack_charm_bonus.tres`
+    - `content/units/sample_pyron_charm.tres`
+  - `SampleBattleFactory` 已新增 passive item 专用 setup / replay builder
+  - 已新增 `tests/suites/passive_item_contract_suite.gd`
+  - `repo_consistency_surface_gate.py` 已补“manager 私有钩子不得回流”的静态检查
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
+
+### runtime wiring DAG 收口与生命周期边界再瘦身（已完成）
+
+- 目标：
+  - 把残余 runtime wiring 闭环真正拆掉，让 `architecture_wiring_graph_gate.py` 回到严格 DAG 口径
+  - 继续收窄 `faint` / `forced_replace` / `fatal damage attribution` 的职责边界
+- 范围：
+  - `src/battle_core/actions/action_cast_direct_damage_pipeline.gd`
+  - `src/battle_core/lifecycle/faint_resolver.gd`
+  - `src/battle_core/lifecycle/faint_leave_replacement_service.gd`
+  - `src/composition/battle_core_wiring_specs.gd`
+  - `tests/gates/architecture_wiring_graph_gate.py`
+  - `docs/design/*`
+  - `docs/records/*`
+- 验收标准：
+  - runtime wiring 图无 SCC，`python3 tests/gates/architecture_wiring_graph_gate.py` 直接通过
+  - `PayloadDamageRuntimeService` 与行动直伤链只记录 fatal damage attribution，不再依赖 `FaintResolver`
+  - `FaintLeaveReplacementService` 不再自己持有 field break 依赖，也不在 helper 内直接跑 `on_exit / field_break` batch
+  - `godot --headless --path . --script tests/run_all.gd` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `ActionCastDirectDamagePipeline` 已切到 `faint_killer_attribution_service`
+  - `FaintResolver` 已删掉 `leave_service / replacement_service / field_service / trigger_dispatcher` 这组多余属性注入，专注于 faint window 编排
+  - `FaintLeaveReplacementService` 已收口成“击倒离场 + 补位 helper”，不再自己跑 `on_exit / field_break`
+  - `battle_core_wiring_specs.gd` 已清掉对应陈旧依赖边
+  - `architecture_wiring_graph_gate.py` 当前已恢复成严格 DAG gate，运行时 wiring 图无环
+
+#### 当前验证结果
+
+- `python3 tests/gates/architecture_wiring_graph_gate.py` 通过
+- `godot --headless --path . --script tests/run_all.gd` 通过
 
 ### 基础稳定化整改路线图（已完成）
 
@@ -41,7 +121,7 @@
   - `README.md`
 - 验收标准：
   - passive skill / passive item 的坏 trigger source 必须走 `invalid_battle`，不能静默失效
-  - runtime wiring 图必须由 SCC allowlist gate 明确约束，不再口头写成“严格 DAG”
+  - runtime wiring 图必须真的恢复成 strict DAG，并由 gate 明确约束
   - 同一组 `content_snapshot_paths` 的 session / replay 要命中 cache，且 public snapshot、event log、`final_state_hash` 与 baseline 一致
   - replay 预分组前后必须保持 event log 与 `final_state_hash` 一致
   - `bash tests/run_with_gate.sh` 全绿
@@ -59,14 +139,14 @@
   - 当前跨模块 `invalid_battle` 读取统一收口到 `invalid_battle_code()`
   - `BattleCoreManagerContractHelper`、`BattleCoreSession`、`TriggerBatchRunner` 与 `ReplayRunner -> BattleInitializer` 已切到显式读取
   - pluggable mock 只在局部 helper 里保留兼容 fallback，不再把动态 `get("last_*")` 继续扩散到正式主路径
-- 已完成（任务 C：runtime wiring SCC gate）：
+- 已完成（任务 C：runtime wiring DAG gate）：
   - 已新增 `tests/gates/architecture_wiring_graph_gate.py`
   - `tests/check_architecture_constraints.sh` 已接入该 gate
-  - 当前 runtime wiring 图正式收口为“静态 import 单向 + 单一 allowlisted SCC”
+  - 当前 runtime wiring 图正式收口为“静态 import 单向 + strict DAG”
 - 已完成（任务 D：审查记录与文档落盘）：
   - 已新增正式审查记录：`docs/records/review_2026-04-04_foundation_stabilization_audit.md`
   - `architecture_overview.md`、`battle_core_architecture_constraints.md`、`log_and_replay_contract.md`、`kashimo_hajime_design.md`、`README.md`、`tests/README.md` 已同步到当前实现口径
-  - `decisions.md` 已补充 passive fail-fast / 显式错误读取 / runtime SCC allowlist / content cache / replay 索引的正式决策
+  - `decisions.md` 已补充 passive fail-fast / 显式错误读取 / runtime wiring DAG / content cache / replay 索引的正式决策
 - 已完成（任务 E：content cache）：
   - 已新增 composer 级共享 `ContentSnapshotCache`
   - session / replay 现在都先从 cache 取“已加载且已校验”的资源数组，再深复制构造 fresh `BattleContentIndex`

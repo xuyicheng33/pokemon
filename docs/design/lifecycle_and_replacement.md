@@ -11,7 +11,7 @@
 |`faint_resolver.gd`|处理 `fainted_pending_leave` 窗口与触发批次|
 |`faint_killer_attribution_service.gd`|记录致死来源、解析击杀归属并收集行动链 `on_kill` 事件|
 |`faint_leave_replacement_service.gd`|收口击倒离场、creator 打断与补位主链的 helper|
-|`replacement_service.gd`|处理强制换下/补位目标合法性并执行入场|
+|`replacement_service.gd`|处理强制换下/补位目标合法性并执行入场；递归 trigger batch 通过显式 runner callable 透传|
 |`replacement_selector.gd`|系统替补选择接口，返回合法 bench 目标的 `unit_instance_id`|
 |`default_replacement_selector.gd`|默认系统替补策略实现（从合法候选中确定目标）|
 |`field_service.gd`|field 子域服务；本文件只引用其 creator 离场后的提前打断辅助|
@@ -59,6 +59,7 @@ fail-fast：任一批次产生 invalid code，立即返回上层终止战斗。
 实现状态说明（2026-03-25）：
 
 - `forced_replace` 生命周期链已收口为 `on_switch -> on_exit -> leave -> field_break(若 creator 离场) -> replace -> on_enter`。
+- 其中递归 `on_switch / on_exit / field_break / on_enter` batch 不再靠属性注入持有 `trigger_batch_runner`，而是由外层显式透传执行权。
 
 ## 4.1 手动换人与强制换下顺序
 

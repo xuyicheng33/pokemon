@@ -48,41 +48,106 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     )
     if domain_legality_service.invalid_battle_code() != null:
         return _fail_invalid_state("LegalActionService detected invalid active field runtime while resolving domain legality")
+    var cast_flags := _collect_cast_action_flags(
+        battle_state,
+        actor,
+        unit_definition,
+        content_index,
+        side_domain_recast_blocked,
+        legal_action_set
+    )
+    has_non_mp_blocked_option = bool(cast_flags["has_non_mp_blocked_option"])
+    has_any_skill_or_ultimate_option = bool(cast_flags["has_any_skill_or_ultimate_option"])
+    var switch_flags := _collect_switch_action_flags(battle_state, side_state, actor, legal_action_set)
+    if bool(switch_flags["has_non_mp_blocked_option"]):
+        has_non_mp_blocked_option = true
+    _finalize_wait_and_forced_default(
+        legal_action_set,
+        has_any_skill_or_ultimate_option,
+        bool(switch_flags["has_legal_switch"]),
+        has_non_mp_blocked_option
+    )
+    return legal_action_set
+
+func _collect_cast_action_flags(
+    battle_state,
+    actor,
+    unit_definition,
+    content_index,
+    side_domain_recast_blocked: bool,
+    legal_action_set
+) -> Dictionary:
+    var has_non_mp_blocked_option := false
+    var has_any_skill_or_ultimate_option := false
     for skill_id in actor.regular_skill_ids:
-        var skill_definition = content_index.skills.get(skill_id)
-        if skill_definition == null:
-            continue
-        var blocked_by_side_domain: bool = side_domain_recast_blocked and content_index.is_domain_skill(skill_id)
-        var can_pay_mp: bool = actor.current_mp >= skill_definition.mp_cost
-        var allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
+        var skill_resolution := _resolve_skill_legality(
             battle_state,
-            actor.unit_instance_id,
-            CommandTypesScript.SKILL,
-            skill_id
+            actor,
+            skill_id,
+            content_index,
+            side_domain_recast_blocked
         )
-        if can_pay_mp and allowed_by_rule_mod and not blocked_by_side_domain:
+        if bool(skill_resolution["is_legal"]):
             legal_action_set.legal_skill_ids.append(skill_id)
             has_any_skill_or_ultimate_option = true
             continue
-        if blocked_by_side_domain or not allowed_by_rule_mod:
+        if bool(skill_resolution["blocked_non_mp"]):
             has_non_mp_blocked_option = true
-    if not unit_definition.ultimate_skill_id.is_empty():
-        var ultimate_definition = content_index.skills.get(unit_definition.ultimate_skill_id)
-        if ultimate_definition != null:
-            var blocked_ultimate_by_side_domain: bool = side_domain_recast_blocked and content_index.is_domain_skill(unit_definition.ultimate_skill_id)
-            var can_pay_ultimate_mp: bool = actor.current_mp >= ultimate_definition.mp_cost
-            var has_ultimate_points: bool = actor.ultimate_points >= actor.ultimate_points_required
-            var ultimate_allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
-                battle_state,
-                actor.unit_instance_id,
-                CommandTypesScript.ULTIMATE,
-                unit_definition.ultimate_skill_id
-            )
-            if can_pay_ultimate_mp and has_ultimate_points and ultimate_allowed_by_rule_mod and not blocked_ultimate_by_side_domain:
-                has_any_skill_or_ultimate_option = true
-                legal_action_set.legal_ultimate_ids.append(unit_definition.ultimate_skill_id)
-            elif blocked_ultimate_by_side_domain or not ultimate_allowed_by_rule_mod:
-                has_non_mp_blocked_option = true
+    var ultimate_resolution := _resolve_ultimate_legality(
+        battle_state,
+        actor,
+        unit_definition,
+        content_index,
+        side_domain_recast_blocked
+    )
+    if bool(ultimate_resolution["is_legal"]):
+        has_any_skill_or_ultimate_option = true
+        legal_action_set.legal_ultimate_ids.append(unit_definition.ultimate_skill_id)
+    elif bool(ultimate_resolution["blocked_non_mp"]):
+        has_non_mp_blocked_option = true
+    return {
+        "has_non_mp_blocked_option": has_non_mp_blocked_option,
+        "has_any_skill_or_ultimate_option": has_any_skill_or_ultimate_option,
+    }
+
+func _resolve_skill_legality(battle_state, actor, skill_id: String, content_index, side_domain_recast_blocked: bool) -> Dictionary:
+    var skill_definition = content_index.skills.get(skill_id)
+    if skill_definition == null:
+        return {"is_legal": false, "blocked_non_mp": false}
+    var blocked_by_side_domain: bool = side_domain_recast_blocked and content_index.is_domain_skill(skill_id)
+    var allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
+        battle_state,
+        actor.unit_instance_id,
+        CommandTypesScript.SKILL,
+        skill_id
+    )
+    return {
+        "is_legal": actor.current_mp >= skill_definition.mp_cost and allowed_by_rule_mod and not blocked_by_side_domain,
+        "blocked_non_mp": blocked_by_side_domain or not allowed_by_rule_mod,
+    }
+
+func _resolve_ultimate_legality(battle_state, actor, unit_definition, content_index, side_domain_recast_blocked: bool) -> Dictionary:
+    if unit_definition == null or unit_definition.ultimate_skill_id.is_empty():
+        return {"is_legal": false, "blocked_non_mp": false}
+    var ultimate_definition = content_index.skills.get(unit_definition.ultimate_skill_id)
+    if ultimate_definition == null:
+        return {"is_legal": false, "blocked_non_mp": false}
+    var blocked_by_side_domain: bool = side_domain_recast_blocked and content_index.is_domain_skill(unit_definition.ultimate_skill_id)
+    var allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
+        battle_state,
+        actor.unit_instance_id,
+        CommandTypesScript.ULTIMATE,
+        unit_definition.ultimate_skill_id
+    )
+    return {
+        "is_legal": actor.current_mp >= ultimate_definition.mp_cost \
+            and actor.ultimate_points >= actor.ultimate_points_required \
+            and allowed_by_rule_mod \
+            and not blocked_by_side_domain,
+        "blocked_non_mp": blocked_by_side_domain or not allowed_by_rule_mod,
+    }
+
+func _collect_switch_action_flags(battle_state, side_state, actor, legal_action_set) -> Dictionary:
     var switch_allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
         battle_state,
         actor.unit_instance_id,
@@ -90,12 +155,26 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     )
     for bench_unit_id in side_state.bench_order:
         var bench_unit = battle_state.get_unit(bench_unit_id)
+        if bench_unit != null and bench_unit.current_hp > 0 and switch_allowed_by_rule_mod:
+            legal_action_set.legal_switch_target_public_ids.append(bench_unit.public_id)
+    return {
+        "has_legal_switch": not legal_action_set.legal_switch_target_public_ids.is_empty(),
+        "has_non_mp_blocked_option": not switch_allowed_by_rule_mod and _has_alive_bench_unit(battle_state, side_state),
+    }
+
+func _has_alive_bench_unit(battle_state, side_state) -> bool:
+    for bench_unit_id in side_state.bench_order:
+        var bench_unit = battle_state.get_unit(bench_unit_id)
         if bench_unit != null and bench_unit.current_hp > 0:
-            if switch_allowed_by_rule_mod:
-                legal_action_set.legal_switch_target_public_ids.append(bench_unit.public_id)
-            else:
-                has_non_mp_blocked_option = true
-    var has_legal_switch: bool = not legal_action_set.legal_switch_target_public_ids.is_empty()
+            return true
+    return false
+
+func _finalize_wait_and_forced_default(
+    legal_action_set,
+    has_any_skill_or_ultimate_option: bool,
+    has_legal_switch: bool,
+    has_non_mp_blocked_option: bool
+) -> void:
     var has_any_legal_manual_option: bool = has_any_skill_or_ultimate_option or has_legal_switch
     legal_action_set.wait_allowed = has_any_legal_manual_option or has_non_mp_blocked_option
     if not legal_action_set.wait_allowed \
@@ -103,7 +182,6 @@ func get_legal_actions(battle_state, side_id: String, content_index):
     and legal_action_set.legal_switch_target_public_ids.is_empty() \
     and legal_action_set.legal_ultimate_ids.is_empty():
         legal_action_set.forced_command_type = CommandTypesScript.RESOURCE_FORCED_DEFAULT
-    return legal_action_set
 
 func _is_action_legal_with_rule_mod(battle_state, actor_id: String, action_type: String, skill_id: String = "") -> bool:
     if rule_mod_service == null:

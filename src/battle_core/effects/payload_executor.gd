@@ -24,7 +24,12 @@ func resolve_missing_dependency() -> String:
         return "payload_handler_registry.%s" % registry_missing
     return ""
 
-func execute_effect_event(effect_event, battle_state, content_index) -> void:
+func execute_effect_event(
+    effect_event,
+    battle_state,
+    content_index,
+    execute_trigger_batch: Callable = Callable()
+) -> void:
     last_invalid_battle_code = null
     var missing_dependency := resolve_missing_dependency()
     if not missing_dependency.is_empty():
@@ -42,18 +47,39 @@ func execute_effect_event(effect_event, battle_state, content_index) -> void:
         _leave_effect_guard(battle_state)
         return
     for payload in effect_definition.payloads:
-        execute_payload(payload, effect_definition, effect_event, battle_state, content_index)
+        execute_payload(
+            payload,
+            effect_definition,
+            effect_event,
+            battle_state,
+            content_index,
+            execute_trigger_batch
+        )
         if last_invalid_battle_code != null:
             _leave_effect_guard(battle_state)
             return
     _leave_effect_guard(battle_state)
 
-func execute_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
+func execute_payload(
+    payload,
+    effect_definition,
+    effect_event,
+    battle_state,
+    content_index,
+    execute_trigger_batch: Callable = Callable()
+) -> void:
     var handler = payload_handler_registry.handler_for(payload)
     if handler == null:
         last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
         return
-    handler.execute(payload, effect_definition, effect_event, battle_state, content_index)
+    handler.execute(
+        payload,
+        effect_definition,
+        effect_event,
+        battle_state,
+        content_index,
+        execute_trigger_batch
+    )
     _capture_handler_invalid_code(handler)
     if last_invalid_battle_code != null:
         return

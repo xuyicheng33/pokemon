@@ -10,29 +10,6 @@ ROOT = Path(__file__).resolve().parents[2]
 SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_service_specs.gd"
 WIRING_SPECS_PATH = ROOT / "src/composition/battle_core_wiring_specs.gd"
 
-ALLOWED_RUNTIME_SCCS = {
-    tuple(
-        sorted(
-            [
-                "faint_leave_replacement_service",
-                "faint_resolver",
-                "field_apply_effect_runner",
-                "field_apply_service",
-                "field_service",
-                "payload_apply_field_handler",
-                "payload_damage_handler",
-                "payload_damage_runtime_service",
-                "payload_executor",
-                "payload_forced_replace_handler",
-                "payload_handler_registry",
-                "replacement_service",
-                "trigger_batch_runner",
-            ]
-        )
-    ),
-}
-
-
 def fail(message: str, details: list[str] | None = None) -> None:
     print(f"ARCH_GATE_FAILED: {message}", file=sys.stderr)
     for detail in details or []:
@@ -111,13 +88,8 @@ def extract_runtime_sccs(graph: dict[str, set[str]]) -> set[tuple[str, ...]]:
     return runtime_sccs
 
 
-def validate_runtime_sccs(runtime_sccs: set[tuple[str, ...]]) -> tuple[list[str], list[str]]:
-    unexpected = sorted(runtime_sccs - ALLOWED_RUNTIME_SCCS)
-    missing = sorted(ALLOWED_RUNTIME_SCCS - runtime_sccs)
-    return (
-        ["{" + ", ".join(component) + "}" for component in unexpected],
-        ["{" + ", ".join(component) + "}" for component in missing],
-    )
+def format_runtime_sccs(runtime_sccs: set[tuple[str, ...]]) -> list[str]:
+    return ["{" + ", ".join(component) + "}" for component in sorted(runtime_sccs)]
 
 
 def run_self_test() -> None:
@@ -125,9 +97,9 @@ def run_self_test() -> None:
         "__self_test_a__": {"__self_test_b__"},
         "__self_test_b__": {"__self_test_a__"},
     }
-    unexpected, missing = validate_runtime_sccs(extract_runtime_sccs(graph))
-    if not unexpected or not missing:
-        fail("wiring SCC gate self-test did not detect a synthetic unallowlisted SCC")
+    runtime_sccs = extract_runtime_sccs(graph)
+    if not runtime_sccs:
+        fail("wiring DAG gate self-test did not detect a synthetic cycle")
 
 
 def main() -> None:
@@ -143,14 +115,11 @@ def main() -> None:
         fail("runtime wiring graph references unknown services", unknown_nodes)
 
     runtime_sccs = extract_runtime_sccs(build_graph(service_slots, edges))
-    unexpected, missing = validate_runtime_sccs(runtime_sccs)
-    if unexpected:
-        fail("runtime wiring graph introduced an unallowlisted SCC", unexpected)
-    if missing:
-        fail("runtime wiring graph no longer matches the recorded SCC allowlist", missing)
+    if runtime_sccs:
+        fail("runtime wiring graph must be acyclic", format_runtime_sccs(runtime_sccs))
 
     run_self_test()
-    print("ARCH_GATE_PASSED: runtime wiring graph only contains the recorded SCC allowlist")
+    print("ARCH_GATE_PASSED: runtime wiring graph is acyclic")
 
 
 if __name__ == "__main__":

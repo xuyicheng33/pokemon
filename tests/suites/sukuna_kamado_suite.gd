@@ -215,7 +215,9 @@ func _test_sukuna_kamado_forced_replace_on_exit_path(harness) -> Dictionary:
     var replace_result: Dictionary = core.service("replacement_service").execute_forced_replace(
         battle_state,
         content_index,
-        target_unit.unit_instance_id
+        target_unit.unit_instance_id,
+        "forced_replace",
+        Callable(core.service("trigger_batch_runner"), "execute_trigger_batch")
     )
     if replace_result.get("invalid_code", null) != null:
         return harness.fail_result("forced_replace should not fail after kamado apply")

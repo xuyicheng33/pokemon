@@ -11,7 +11,7 @@ var damage_service
 var combat_type_service
 var stat_calculator
 var rule_mod_service
-var faint_resolver
+var faint_killer_attribution_service
 var target_helper
 var effect_event_helper
 
@@ -28,8 +28,8 @@ func resolve_missing_dependency() -> String:
         return "stat_calculator"
     if rule_mod_service == null:
         return "rule_mod_service"
-    if faint_resolver == null:
-        return "faint_resolver"
+    if faint_killer_attribution_service == null:
+        return "faint_killer_attribution_service"
     if target_helper == null:
         return "target_helper"
     if effect_event_helper == null:
@@ -120,7 +120,7 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
     )
     battle_logger.append_event(log_event)
     if is_damage_event:
-        faint_resolver.record_fatal_damage(
+        faint_killer_attribution_service.record_fatal_damage(
             battle_state,
             target_unit.unit_instance_id,
             before_value,

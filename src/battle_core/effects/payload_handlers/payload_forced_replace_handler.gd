@@ -19,7 +19,7 @@ func resolve_missing_dependency() -> String:
         return "target_helper"
     return ""
 
-func execute(payload, _effect_definition, effect_event, battle_state, content_index) -> void:
+func execute(payload, _effect_definition, effect_event, battle_state, content_index, execute_trigger_batch: Callable = Callable()) -> void:
     last_invalid_battle_code = null
     if not payload is ForcedReplacePayloadScript:
         return
@@ -36,7 +36,8 @@ func execute(payload, _effect_definition, effect_event, battle_state, content_in
         battle_state,
         content_index,
         target_unit.unit_instance_id,
-        selector_reason
+        selector_reason,
+        execute_trigger_batch
     )
     var invalid_code = replacement_result.get("invalid_code", null)
     if invalid_code != null:
