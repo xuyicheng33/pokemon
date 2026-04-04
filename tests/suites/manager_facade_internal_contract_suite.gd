@@ -79,10 +79,10 @@ func _test_manager_uses_session_internal_facade_contract(harness) -> Dictionary:
 	if manager_payload.has("error"):
 		return harness.fail_result(str(manager_payload["error"]))
 	var manager = manager_payload["manager"]
-	manager.public_snapshot_builder = FakePublicSnapshotBuilder.new()
+	manager._replace_public_snapshot_builder_for_test(FakePublicSnapshotBuilder.new())
 
 	var fake_session = FakeSession.new()
-	manager._sessions["session_fake"] = fake_session
+	manager._inject_session_for_test("session_fake", fake_session)
 
 	var snapshot_unwrap = _helper.unwrap_ok(manager.get_public_snapshot("session_fake"), "get_public_snapshot")
 	if not bool(snapshot_unwrap.get("ok", false)):

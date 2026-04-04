@@ -57,19 +57,9 @@ func build_manager() -> Dictionary:
     var manager = composer.compose_manager()
     if manager == null:
         return {"error": "compose_manager returned null"}
-    var required_ports: Array[String] = [
-        "container_factory",
-        "command_builder",
-        "command_id_factory",
-        "public_snapshot_builder",
-    ]
-    for port_name in required_ports:
-        if port_name == "container_factory":
-            if not manager.container_factory.is_valid():
-                return {"error": "missing manager port: %s" % port_name}
-            continue
-        if manager.get(port_name) == null:
-            return {"error": "missing manager port: %s" % port_name}
+    var missing_dependency := String(manager.resolve_missing_dependency())
+    if not missing_dependency.is_empty():
+        return {"error": "missing manager port: %s" % missing_dependency}
     _manager_pool.append(manager)
     return {"manager": manager}
 

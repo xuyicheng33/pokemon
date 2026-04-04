@@ -24,9 +24,7 @@ func _test_content_snapshot_cache_session_and_replay_contract(harness) -> Dictio
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	if manager._container_factory_owner == null or manager._container_factory_owner.composer == null:
-		return harness.fail_result("manager should keep composer-backed container factory owner for shared content cache")
-	var cache = manager._container_factory_owner.composer.shared_content_snapshot_cache()
+	var cache = manager._shared_content_snapshot_cache_for_test()
 	if cache == null:
 		return harness.fail_result("shared content snapshot cache should be available")
 	cache.clear()

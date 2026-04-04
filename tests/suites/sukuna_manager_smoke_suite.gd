@@ -30,7 +30,7 @@ func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
-	var session = manager._sessions.get(session_id, null)
+	var session = manager._debug_session(session_id)
 	if session == null:
 		return harness.fail_result("sukuna manager smoke missing internal session")
 	var sukuna_unit = session.battle_state.get_side("P1").get_active_unit()

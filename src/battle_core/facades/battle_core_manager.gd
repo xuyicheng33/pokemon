@@ -7,10 +7,10 @@ const BattleCoreManagerContractHelperScript := preload("res://src/battle_core/fa
 const BattleCoreManagerContainerServiceScript := preload("res://src/battle_core/facades/battle_core_manager_container_service.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var container_factory: Callable = Callable()
-var command_builder
-var command_id_factory
-var public_snapshot_builder
+var _container_factory: Callable = Callable()
+var _command_builder = null
+var _command_id_factory = null
+var _public_snapshot_builder = null
 var _container_factory_owner = null
 
 var _sessions: Dictionary = {}
@@ -56,10 +56,10 @@ func build_command(input_payload: Dictionary) -> Dictionary:
         return dependency_error
     if input_payload == null:
         return _contract_helper.error(ErrorCodesScript.INVALID_COMMAND_PAYLOAD, "BattleCoreManager.build_command requires input payload")
-    var command = command_builder.build_command(input_payload)
+    var command = _command_builder.build_command(input_payload)
     if command == null:
         return _contract_helper.service_error(
-            command_builder,
+            _command_builder,
             ErrorCodesScript.INVALID_COMMAND_PAYLOAD,
             "BattleCoreManager failed to build command"
         )
@@ -88,7 +88,7 @@ func run_turn(session_id: String, commands: Array) -> Dictionary:
     var turn_failure = _contract_helper.resolve_turn_failure_result(session)
     if turn_failure != null:
         return turn_failure
-    return _contract_helper.ok({"session_id": session_id, "public_snapshot": public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index)})
+    return _contract_helper.ok({"session_id": session_id, "public_snapshot": _public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index)})
 
 func get_public_snapshot(session_id: String) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
@@ -101,7 +101,7 @@ func get_public_snapshot(session_id: String) -> Dictionary:
     var runtime_error = _contract_helper.validate_session_runtime_result(session)
     if runtime_error != null:
         return runtime_error
-    return _contract_helper.ok(public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index))
+    return _contract_helper.ok(_public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index))
 
 func get_event_log_snapshot(session_id: String, from_index: int = 0) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
@@ -160,41 +160,59 @@ func dispose() -> void:
         if session != null and session.has_method("dispose"):
             session.dispose()
     _sessions.clear()
-    if command_builder != null:
-        command_builder.id_factory = null
+    if _command_builder != null:
+        _command_builder.id_factory = null
     _disposed = true
-    container_factory = Callable()
+    _container_factory = Callable()
     _container_factory_owner = null
-    command_builder = null
-    command_id_factory = null
-    public_snapshot_builder = null
+    _command_builder = null
+    _command_id_factory = null
+    _public_snapshot_builder = null
     _event_log_public_snapshot_builder = null
     _container_service = null
 
 func resolve_missing_dependency() -> String:
-    if not container_factory.is_valid():
+    if not _container_factory.is_valid():
         return "container_factory"
-    if command_builder == null:
+    if _command_builder == null:
         return "command_builder"
-    if command_id_factory == null:
+    if _command_id_factory == null:
         return "command_id_factory"
-    if public_snapshot_builder == null:
+    if _public_snapshot_builder == null:
         return "public_snapshot_builder"
     if _event_log_public_snapshot_builder == null:
         return "event_log_public_snapshot_builder"
     return ""
-
+func _configure_core_ports(container_factory: Callable, command_builder, command_id_factory, public_snapshot_builder, container_factory_owner = null) -> void:
+    _container_factory = container_factory
+    _command_builder = command_builder
+    _command_id_factory = command_id_factory
+    _public_snapshot_builder = public_snapshot_builder
+    _container_factory_owner = container_factory_owner
+    if _command_builder != null:
+        _command_builder.id_factory = _command_id_factory
+func _override_container_factory_for_test(container_factory: Callable, container_factory_owner = null) -> void:
+    _container_factory = container_factory
+    _container_factory_owner = container_factory_owner
+func _replace_public_snapshot_builder_for_test(public_snapshot_builder) -> void:
+    _public_snapshot_builder = public_snapshot_builder
+func _inject_session_for_test(session_id: String, session) -> void:
+    _sessions[session_id] = session
+func _debug_session(session_id: String):
+    return _sessions.get(session_id, null)
+func _shared_content_snapshot_cache_for_test():
+    if _container_factory_owner == null or _container_factory_owner.composer == null:
+        return null
+    return _container_factory_owner.composer.shared_content_snapshot_cache()
 func _validate_core_dependencies_result():
     if _disposed:
         return _contract_helper.error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "BattleCoreManager is disposed")
     return _contract_helper.dependency_error(resolve_missing_dependency())
-
 func _sync_container_service() -> void:
-    _container_service.container_factory = container_factory
+    _container_service.container_factory = _container_factory
     _container_service.contract_helper = _contract_helper
-    _container_service.public_snapshot_builder = public_snapshot_builder
+    _container_service.public_snapshot_builder = _public_snapshot_builder
     _container_service.container_factory_owner = _container_factory_owner
-
 func _next_session_id() -> String:
     _session_seq += 1
     return "session_%d" % _session_seq

@@ -68,8 +68,10 @@ func _test_composer_build_manager_contract(harness) -> Dictionary:
 	if manager_payload.has("error"):
 		return harness.fail_result(str(manager_payload["error"]))
 	var manager = manager_payload["manager"]
-	if not manager.container_factory.is_valid():
-		return harness.fail_result("compose_manager should keep container_factory valid")
-	if manager.command_builder == null or manager.command_id_factory == null or manager.public_snapshot_builder == null:
-		return harness.fail_result("compose_manager should keep public ports wired")
+	if not String(manager.resolve_missing_dependency()).is_empty():
+		return harness.fail_result("compose_manager should keep manager ports wired")
+	for property_info in manager.get_property_list():
+		var property_name := String(property_info.get("name", ""))
+		if property_name == "container_factory" or property_name == "command_builder" or property_name == "command_id_factory" or property_name == "public_snapshot_builder":
+			return harness.fail_result("compose_manager should keep raw manager ports private")
 	return harness.pass_result()

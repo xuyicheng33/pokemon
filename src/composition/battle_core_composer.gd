@@ -55,18 +55,22 @@ func compose_manager():
         return null
     var factory_port = ContainerFactoryPort.new()
     factory_port.composer = self
-    manager._container_factory_owner = factory_port
-    manager.container_factory = Callable(factory_port, "build_container")
-    manager.command_id_factory = _new_service_instance("id_factory")
-    if manager.command_id_factory == null:
+    var command_id_factory = _new_service_instance("id_factory")
+    if command_id_factory == null:
         return null
-    manager.command_builder = _new_service_instance("command_builder")
-    if manager.command_builder == null:
+    var command_builder = _new_service_instance("command_builder")
+    if command_builder == null:
         return null
-    manager.command_builder.id_factory = manager.command_id_factory
-    manager.public_snapshot_builder = _new_service_instance("public_snapshot_builder")
-    if manager.public_snapshot_builder == null:
+    var public_snapshot_builder = _new_service_instance("public_snapshot_builder")
+    if public_snapshot_builder == null:
         return null
+    manager._configure_core_ports(
+        Callable(factory_port, "build_container"),
+        command_builder,
+        command_id_factory,
+        public_snapshot_builder,
+        factory_port
+    )
     return manager
 
 func _instantiate_services(container) -> bool:

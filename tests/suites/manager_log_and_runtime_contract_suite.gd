@@ -146,7 +146,7 @@ func _test_manager_invalid_runtime_read_contract(harness) -> Dictionary:
 		if not bool(init_unwrap.get("ok", false)):
 			return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 		var session_id: String = str(init_unwrap.get("data", {}).get("session_id", ""))
-		var session = manager._sessions.get(session_id, null)
+		var session = manager._debug_session(session_id)
 		if session == null:
 			return harness.fail_result("manager invalid runtime read test missing internal session")
 		var creator := String(invalid_case.get("creator", ""))
@@ -224,11 +224,12 @@ func _test_manager_create_session_initializer_dependency_guard_contract(harness)
 	var manager = composer.compose_manager()
 	if manager == null:
 		return harness.fail_result("compose_manager returned null")
-	manager.container_factory = func ():
+	manager._override_container_factory_for_test(func ():
 		var broken_core = BattleCoreComposerScript.new().compose()
 		if broken_core != null and broken_core.service("battle_initializer") != null:
 			broken_core.service("battle_initializer").faint_resolver = null
 		return broken_core
+	)
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
@@ -263,7 +264,7 @@ func _test_manager_create_session_damage_runtime_dependency_guard_contract(harne
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
-	var session = manager._sessions.get(session_id, null)
+	var session = manager._debug_session(session_id)
 	if session == null or session.container == null or session.container.service("payload_damage_runtime_service") == null:
 		return harness.fail_result("manager damage runtime dependency guard should expose internal session")
 	session.container.service("payload_damage_runtime_service").faint_resolver = null
