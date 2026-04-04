@@ -122,11 +122,13 @@ ctx.require_absent("README.md", "gojo_sukuna_batch_probe.gd", "removed batch sim
 ctx.require_contains("tests/README.md", "domain_case_runner.gd", "tests fixed domain case runner doc")
 ctx.require_contains("tests/README.md", "formal_character_registry.json", "tests formal character registry doc")
 ctx.require_contains("tests/README.md", "check_suite_reachability.sh", "tests suite reachability gate doc")
+ctx.require_contains("tests/README.md", "architecture_wiring_graph_gate.py", "tests wiring SCC gate doc")
 ctx.require_contains("tests/README.md", "required_suite_paths", "tests registry suite anchor doc")
 ctx.require_contains("tests/README.md", "required_test_names", "tests registry test anchor doc")
 ctx.require_contains("tests/replay_cases/domain_cases.md", "CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd", "domain case runner command")
 ctx.require_absent("tests/README.md", "policy_decision_suite.gd", "removed auto-selection suite doc")
 ctx.require_absent("tests/README.md", "gojo_sukuna_batch_probe.gd", "removed batch simulation doc")
 ctx.require_contains("tests/run_with_gate.sh", "check_suite_reachability.sh", "suite reachability gate wiring")
+ctx.require_contains("tests/check_architecture_constraints.sh", "architecture_wiring_graph_gate.py", "runtime wiring SCC gate wiring")
 
 ctx.finish("surface wiring, regression anchors, and README/test docs are aligned")
