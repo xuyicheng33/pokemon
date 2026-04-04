@@ -202,6 +202,7 @@ const WIRING_SPECS := [
     {"owner": "replay_runner", "dependency": "battle_logger", "source": "battle_logger"},
     {"owner": "replay_runner", "dependency": "id_factory", "source": "id_factory"},
     {"owner": "replay_runner", "dependency": "rng_service", "source": "rng_service"},
+    {"owner": "replay_runner", "dependency": "content_snapshot_cache", "source": "content_snapshot_cache"},
 ]
 
 const RESET_SPECS := [

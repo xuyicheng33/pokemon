@@ -8,6 +8,12 @@ var id_factory
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
+func error_state() -> Dictionary:
+    return {
+        "code": last_error_code,
+        "message": last_error_message,
+    }
+
 func resolve_missing_dependency() -> String:
     if id_factory == null:
         return "id_factory"

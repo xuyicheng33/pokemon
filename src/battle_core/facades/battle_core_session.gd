@@ -85,9 +85,10 @@ func _error(error_code: String, error_message: String) -> Dictionary:
 func _service_error(service, fallback_code: String, fallback_message: String) -> Dictionary:
     var resolved_code: String = fallback_code
     var resolved_message: String = fallback_message
-    if service != null:
-        var service_error_code = service.get("last_error_code")
-        var raw_service_error_message = service.get("last_error_message")
+    if service != null and service.has_method("error_state"):
+        var state: Dictionary = service.error_state()
+        var service_error_code = state.get("code", null)
+        var raw_service_error_message = state.get("message", "")
         var service_error_message := "" if raw_service_error_message == null else str(raw_service_error_message)
         if service_error_code != null:
             resolved_code = str(service_error_code)

@@ -10,6 +10,9 @@ var trigger_dispatcher
 var trigger_batch_runner
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+    return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
     if trigger_dispatcher == null:
         return "trigger_dispatcher"
@@ -45,7 +48,7 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, c
         battle_state.field_state.source_order_speed_snapshot,
         chain_context
     )
-    last_invalid_battle_code = trigger_dispatcher.last_invalid_battle_code
+    last_invalid_battle_code = _read_trigger_dispatcher_invalid_battle_code()
     return effect_events
 
 func get_field_definition_for_state(field_state, content_index):
@@ -76,7 +79,7 @@ func collect_lifecycle_effect_events(
         field_state.source_order_speed_snapshot,
         lifecycle_chain_context
     )
-    last_invalid_battle_code = trigger_dispatcher.last_invalid_battle_code
+    last_invalid_battle_code = _read_trigger_dispatcher_invalid_battle_code()
     return effect_events
 
 func break_field_if_creator_inactive(battle_state, content_index, chain_context) -> Variant:
@@ -189,3 +192,20 @@ func _remove_field_rule_mods_for_instance(battle_state, field_instance_id: Strin
             continue
         keep_instances.append(rule_mod_instance)
     battle_state.field_rule_mod_instances = keep_instances
+
+func _read_trigger_dispatcher_invalid_battle_code() -> Variant:
+    if trigger_dispatcher == null:
+        return null
+    if trigger_dispatcher.has_method("invalid_battle_code"):
+        return trigger_dispatcher.invalid_battle_code()
+    if _has_property(trigger_dispatcher, "last_invalid_battle_code"):
+        return trigger_dispatcher.get("last_invalid_battle_code")
+    return null
+
+func _has_property(target, property_name: String) -> bool:
+    if target == null:
+        return false
+    for property_info in target.get_property_list():
+        if String(property_info.get("name", "")) == property_name:
+            return true
+    return false

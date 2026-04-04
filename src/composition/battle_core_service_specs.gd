@@ -4,6 +4,7 @@ class_name BattleCoreServiceSpecs
 const SERVICE_DESCRIPTORS := [
 	{"slot": "id_factory", "script": preload("res://src/shared/id_factory.gd")},
 	{"slot": "rng_service", "script": preload("res://src/shared/rng_service.gd")},
+	{"slot": "content_snapshot_cache", "script": preload("res://src/battle_core/content/content_snapshot_cache.gd")},
 	{"slot": "legal_action_service", "script": preload("res://src/battle_core/commands/legal_action_service.gd")},
 	{"slot": "domain_legality_service", "script": preload("res://src/battle_core/commands/domain_legality_service.gd")},
 	{"slot": "command_builder", "script": preload("res://src/battle_core/commands/command_builder.gd")},

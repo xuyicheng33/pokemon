@@ -31,6 +31,12 @@ var _phase_service = BattleInitializerPhaseServiceScript.new()
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
+func error_state() -> Dictionary:
+    return {
+        "code": last_error_code,
+        "message": last_error_message,
+    }
+
 func initialize_battle(battle_state, content_index, battle_setup) -> bool:
     last_error_code = null
     last_error_message = ""
@@ -126,9 +132,10 @@ func _build_side_states(battle_state, battle_setup, format_config, content_index
     for side_setup in battle_setup.sides:
         var side_state = _state_builder.build_side_state(side_setup, format_config, content_index, id_factory, public_id_allocator)
         if side_state == null:
+            var state_builder_error: Dictionary = _state_builder.error_state()
             return _fail(
-                _state_builder.last_error_code if _state_builder.last_error_code != null else ErrorCodesScript.INVALID_BATTLE_SETUP,
-                _state_builder.last_error_message if not _state_builder.last_error_message.is_empty() else "BattleInitializerStateBuilder failed"
+                state_builder_error.get("code", ErrorCodesScript.INVALID_BATTLE_SETUP),
+                String(state_builder_error.get("message", "BattleInitializerStateBuilder failed"))
             )
         battle_state.sides.append(side_state)
     return true

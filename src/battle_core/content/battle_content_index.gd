@@ -31,23 +31,42 @@ func clear() -> void:
     last_error_message = ""
 
 func load_snapshot(content_snapshot_paths: PackedStringArray) -> bool:
-    clear()
+    var resources: Array = []
     for path in content_snapshot_paths:
         var resource = ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_IGNORE)
         if resource == null:
             last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
             last_error_message = "Missing content resource: %s" % path
             return false
+        resources.append(resource)
+    return load_resources(resources)
+
+func load_resources(resources: Array, run_validation: bool = true) -> bool:
+    clear()
+    for resource in resources:
+        if resource == null:
+            last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
+            last_error_message = "Missing content resource in loaded resource list"
+            return false
         if not _registry.register_resource(self, resource):
             last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
-            last_error_message = _registry.last_error_message if not _registry.last_error_message.is_empty() else "Unsupported content resource: %s" % path
+            var resource_label: String = resource.resource_path if not String(resource.resource_path).is_empty() else "<memory:%s>" % resource
+            last_error_message = _registry.last_error_message if not _registry.last_error_message.is_empty() else "Unsupported content resource: %s" % resource_label
             return false
+    if not run_validation:
+        return true
     var errors = validate_snapshot()
     if not errors.is_empty():
         last_error_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
         last_error_message = "Content validation failed:\n%s" % "\n".join(errors)
         return false
     return true
+
+func error_state() -> Dictionary:
+    return {
+        "code": last_error_code,
+        "message": last_error_message,
+    }
 
 func register_resource(resource: Resource) -> bool:
     return _registry.register_resource(self, resource)

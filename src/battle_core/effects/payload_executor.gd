@@ -8,6 +8,9 @@ var payload_handler_registry
 
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+    return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
     if effect_precondition_service == null:
         return "effect_precondition_service"

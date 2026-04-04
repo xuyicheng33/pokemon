@@ -19,6 +19,18 @@ class ContainerFactoryPort:
 
 var last_error_code: Variant = null
 var last_error_message: String = ""
+var _shared_content_snapshot_cache = null
+
+func error_state() -> Dictionary:
+    return {
+        "code": last_error_code,
+        "message": last_error_message,
+    }
+
+func shared_content_snapshot_cache():
+    if _shared_content_snapshot_cache == null:
+        _shared_content_snapshot_cache = _new_service_instance("content_snapshot_cache")
+    return _shared_content_snapshot_cache
 
 func compose():
     last_error_code = null
@@ -62,6 +74,12 @@ func _instantiate_services(container) -> bool:
         var script_ref = ServiceSpecsScript.script_by_slot(slot_name)
         if script_ref == null:
             return _fail("Unknown service slot: %s" % str(slot_name))
+        if slot_name == "content_snapshot_cache":
+            var shared_cache = shared_content_snapshot_cache()
+            if shared_cache == null:
+                return _fail("Failed to build shared content_snapshot_cache")
+            container.set_service(slot_name, shared_cache)
+            continue
         container.set_service(slot_name, script_ref.new())
     return true
 

@@ -10,6 +10,12 @@ var domain_legality_service
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
+func error_state() -> Dictionary:
+    return {
+        "code": last_error_code,
+        "message": last_error_message,
+    }
+
 func resolve_missing_dependency() -> String:
     if rule_mod_service == null:
         return "rule_mod_service"
@@ -40,7 +46,7 @@ func get_legal_actions(battle_state, side_id: String, content_index):
         side_id,
         content_index
     )
-    if domain_legality_service.last_invalid_battle_code != null:
+    if domain_legality_service.invalid_battle_code() != null:
         return _fail_invalid_state("LegalActionService detected invalid active field runtime while resolving domain legality")
     for skill_id in actor.regular_skill_ids:
         var skill_definition = content_index.skills.get(skill_id)

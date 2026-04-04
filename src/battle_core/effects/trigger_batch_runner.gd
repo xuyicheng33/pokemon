@@ -12,6 +12,9 @@ var payload_executor
 var rng_service
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+    return last_invalid_battle_code
+
 func execute_trigger_batch(
     trigger_name: String,
     battle_state,
@@ -41,9 +44,9 @@ func execute_trigger_batch(
     battle_state.rng_stream_index = rng_service.get_stream_index()
     for effect_event in sorted_events:
         payload_executor.execute_effect_event(effect_event, battle_state, content_index)
-        if payload_executor.last_invalid_battle_code != null:
+        if payload_executor.invalid_battle_code() != null:
             battle_state.pending_effect_queue.clear()
-            return payload_executor.last_invalid_battle_code
+            return payload_executor.invalid_battle_code()
     battle_state.pending_effect_queue.clear()
     return null
 
@@ -64,6 +67,8 @@ func collect_trigger_events(
         owner_unit_ids,
         chain_context
     ))
+    if _capture_trigger_source_invalid_code(passive_skill_service):
+        return []
     effect_events.append_array(passive_item_service.collect_trigger_events(
         trigger_name,
         battle_state,
@@ -71,6 +76,8 @@ func collect_trigger_events(
         owner_unit_ids,
         chain_context
     ))
+    if _capture_trigger_source_invalid_code(passive_item_service):
+        return []
     effect_events.append_array(effect_instance_dispatcher.collect_trigger_events(
         trigger_name,
         battle_state,
@@ -78,8 +85,7 @@ func collect_trigger_events(
         owner_unit_ids,
         chain_context
     ))
-    if effect_instance_dispatcher.last_invalid_battle_code != null:
-        last_invalid_battle_code = effect_instance_dispatcher.last_invalid_battle_code
+    if _capture_trigger_source_invalid_code(effect_instance_dispatcher):
         return []
     effect_events.append_array(field_service.collect_trigger_events(
         trigger_name,
@@ -87,11 +93,36 @@ func collect_trigger_events(
         content_index,
         chain_context
     ))
-    if field_service.get("last_invalid_battle_code") != null:
-        last_invalid_battle_code = field_service.get("last_invalid_battle_code")
+    if _capture_trigger_source_invalid_code(field_service):
         return []
     effect_events.append_array(extra_effect_events)
     return effect_events
+
+func _capture_trigger_source_invalid_code(source_service) -> bool:
+    if source_service == null:
+        return false
+    var invalid_code = _read_invalid_battle_code(source_service)
+    if invalid_code == null:
+        return false
+    last_invalid_battle_code = invalid_code
+    return true
+
+func _read_invalid_battle_code(source_service) -> Variant:
+    if source_service == null:
+        return null
+    if source_service.has_method("invalid_battle_code"):
+        return source_service.invalid_battle_code()
+    if _has_property(source_service, "last_invalid_battle_code"):
+        return source_service.get("last_invalid_battle_code")
+    return null
+
+func _has_property(target, property_name: String) -> bool:
+    if target == null:
+        return false
+    for property_info in target.get_property_list():
+        if String(property_info.get("name", "")) == property_name:
+            return true
+    return false
 
 func resolve_missing_dependency() -> String:
     if passive_skill_service == null:

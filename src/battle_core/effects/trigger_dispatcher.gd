@@ -7,6 +7,9 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var id_factory
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+    return last_invalid_battle_code
+
 func collect_events(trigger_name: String, _battle_state, content_index, effect_ids: PackedStringArray, owner_id: String, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, chain_context) -> Array:
     last_invalid_battle_code = null
     var effect_events: Array = []

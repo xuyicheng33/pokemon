@@ -8,6 +8,9 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var domain_clash_orchestrator
 var last_invalid_battle_code: Variant = null
 
+func invalid_battle_code() -> Variant:
+    return last_invalid_battle_code
+
 func resolve_missing_dependency() -> String:
     if domain_clash_orchestrator == null:
         return "domain_clash_orchestrator"
