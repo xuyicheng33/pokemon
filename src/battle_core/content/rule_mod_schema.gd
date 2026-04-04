@@ -39,6 +39,8 @@ func validate_payload(rule_mod_payload, content_index = null) -> Array:
         ContentSchemaScript.RULE_MOD_MP_REGEN:
             if rule_mod_payload.mod_op != "add" and rule_mod_payload.mod_op != "set":
                 errors.append("mod_op %s" % rule_mod_payload.mod_op)
+            if typeof(rule_mod_payload.value) != TYPE_INT:
+                errors.append("mp_regen value must be int")
         ContentSchemaScript.RULE_MOD_ACTION_LEGALITY:
             if rule_mod_payload.mod_op != "allow" and rule_mod_payload.mod_op != "deny":
                 errors.append("mod_op %s" % rule_mod_payload.mod_op)
@@ -98,12 +100,24 @@ func _validate_dynamic_value_schema(errors: Array, rule_mod_payload) -> void:
         errors.append("dynamic_value_outputs must not be empty")
     if dynamic_thresholds.size() != dynamic_outputs.size():
         errors.append("dynamic_value_thresholds/dynamic_value_outputs size mismatch")
+    if String(rule_mod_payload.mod_kind) == ContentSchemaScript.RULE_MOD_MP_REGEN:
+        for output_value in dynamic_outputs:
+            if not _is_integral_number(output_value):
+                errors.append("mp_regen dynamic_value_outputs must be int-valued")
+                break
+        if not _is_integral_number(rule_mod_payload.dynamic_value_default):
+            errors.append("mp_regen dynamic_value_default must be int-valued")
     var previous_threshold: Variant = null
     for threshold in dynamic_thresholds:
         if previous_threshold != null and int(threshold) <= int(previous_threshold):
             errors.append("dynamic_value_thresholds must be strictly ascending")
             break
         previous_threshold = threshold
+
+func _is_integral_number(value) -> bool:
+    if typeof(value) != TYPE_INT and typeof(value) != TYPE_FLOAT:
+        return false
+    return is_equal_approx(float(value), float(int(value)))
 
 func _validate_incoming_action_filters(errors: Array, rule_mod_payload, content_index) -> void:
     var command_filters: PackedStringArray = rule_mod_payload.required_incoming_command_types

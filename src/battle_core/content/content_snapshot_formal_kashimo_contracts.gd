@@ -104,7 +104,9 @@ func validate_kyokyo_contract(validator, content_index, errors: Array) -> void:
 	if effect_definition == null:
 		return
 	validator._expect_string(errors, "%s effect.scope" % label, effect_definition.scope, "self")
-	validator._expect_string(errors, "%s effect.duration_mode" % label, effect_definition.duration_mode, "permanent")
+	validator._expect_string(errors, "%s effect.duration_mode" % label, effect_definition.duration_mode, "turns")
+	validator._expect_int(errors, "%s effect.duration" % label, effect_definition.duration, 3)
+	validator._expect_string(errors, "%s effect.decrement_on" % label, effect_definition.decrement_on, "turn_end")
 	validator._expect_string(errors, "%s effect.stacking" % label, effect_definition.stacking, "none")
 	validator._expect_packed_string_array(errors, "%s effect.trigger_names" % label, effect_definition.trigger_names, PackedStringArray(["on_cast"]))
 	var payload = validator._extract_single_payload(errors, label, "kashimo_kyokyo_nullify", effect_definition, RuleModPayloadScript, "rule_mod")

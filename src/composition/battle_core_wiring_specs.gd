@@ -12,7 +12,6 @@ const WIRING_SPECS := [
     {"owner": "battle_initializer", "dependency": "trigger_batch_runner", "source": "trigger_batch_runner"},
     {"owner": "battle_initializer", "dependency": "battle_logger", "source": "battle_logger"},
     {"owner": "battle_initializer", "dependency": "log_event_builder", "source": "log_event_builder"},
-    {"owner": "battle_initializer", "dependency": "public_snapshot_builder", "source": "public_snapshot_builder"},
     {"owner": "battle_initializer", "dependency": "combat_type_service", "source": "combat_type_service"},
     {"owner": "battle_initializer", "dependency": "mp_service", "source": "mp_service"},
     {"owner": "battle_initializer", "dependency": "rule_mod_service", "source": "rule_mod_service"},

@@ -40,6 +40,9 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
 	if last_error_code != null:
 		return null
 	var existing_instance = _find_existing(owner_instances, stacking_key)
+	var runtime_value = _resolve_runtime_value(rule_mod_payload, resolved_value)
+	if last_error_code != null:
+		return null
 	match rule_mod_payload.stacking:
 		ContentSchemaScript.STACKING_NONE:
 			if existing_instance != null:
@@ -48,7 +51,7 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
 		ContentSchemaScript.STACKING_REFRESH:
 			if existing_instance != null:
 				existing_instance.remaining = rule_mod_payload.duration if rule_mod_payload.duration_mode == "turns" else -1
-				existing_instance.value = resolved_value if resolved_value != null else rule_mod_payload.value
+				existing_instance.value = runtime_value
 				existing_instance.persists_on_switch = bool(rule_mod_payload.persists_on_switch)
 				existing_instance.source_instance_id = source_instance_id
 				existing_instance.source_kind_order = source_kind_order
@@ -65,7 +68,7 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
 	rule_mod_instance.instance_id = id_factory.next_id("rule_mod")
 	rule_mod_instance.mod_kind = rule_mod_payload.mod_kind
 	rule_mod_instance.mod_op = rule_mod_payload.mod_op
-	rule_mod_instance.value = resolved_value if resolved_value != null else rule_mod_payload.value
+	rule_mod_instance.value = runtime_value
 	rule_mod_instance.scope = rule_mod_payload.scope
 	rule_mod_instance.duration_mode = rule_mod_payload.duration_mode
 	rule_mod_instance.owner_scope = owner_ref["scope"]
@@ -150,7 +153,7 @@ func _resolve_stacking_value_token(rule_mod_payload) -> String:
 		if action_value == ContentSchemaScript.ACTION_LEGALITY_ALL \
 		or action_value == ContentSchemaScript.ACTION_LEGALITY_SKILL \
 		or action_value == ContentSchemaScript.ACTION_LEGALITY_ULTIMATE \
-		or action_value == ContentSchemaScript.ACTION_LEGALITY_SWITCH:
+			or action_value == ContentSchemaScript.ACTION_LEGALITY_SWITCH:
 			return "action:%s" % action_value
 		return "skill:%s" % action_value
 	return str(rule_mod_payload.value)
@@ -163,3 +166,18 @@ func _resolve_source_stacking_key(rule_mod_payload, source_stacking_token: Strin
 	if not provided_key.is_empty():
 		return provided_key
 	return str(source_instance_id)
+
+func _resolve_runtime_value(rule_mod_payload, resolved_value):
+	var runtime_value = resolved_value if resolved_value != null else rule_mod_payload.value
+	match String(rule_mod_payload.mod_kind):
+		ContentSchemaScript.RULE_MOD_MP_REGEN, ContentSchemaScript.RULE_MOD_INCOMING_ACCURACY:
+			if typeof(runtime_value) != TYPE_INT and typeof(runtime_value) != TYPE_FLOAT:
+				last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+				last_error_message = "%s runtime value must be int" % String(rule_mod_payload.mod_kind)
+				return null
+			if not is_equal_approx(float(runtime_value), float(int(runtime_value))):
+				last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
+				last_error_message = "%s runtime value must be int" % String(rule_mod_payload.mod_kind)
+				return null
+			return int(runtime_value)
+	return runtime_value

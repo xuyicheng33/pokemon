@@ -19,7 +19,6 @@ var faint_resolver
 var trigger_batch_runner
 var battle_logger
 var log_event_builder
-var public_snapshot_builder
 var combat_type_service
 var mp_service
 var rule_mod_service
@@ -80,9 +79,6 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
 func _prepare_battle_state(battle_state, content_index, battle_setup):
     if battle_setup == null:
         _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup is required")
-        return null
-    if public_snapshot_builder == null:
-        _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires public_snapshot_builder")
         return null
     if combat_type_service == null:
         _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires combat_type_service")
@@ -146,7 +142,6 @@ func _sync_phase_service() -> void:
     _phase_service.trigger_batch_runner = trigger_batch_runner
     _phase_service.battle_logger = battle_logger
     _phase_service.log_event_builder = log_event_builder
-    _phase_service.public_snapshot_builder = public_snapshot_builder
     _phase_service.mp_service = mp_service
     _phase_service.rule_mod_service = rule_mod_service
     _phase_service.battle_result_service = battle_result_service
@@ -165,8 +160,6 @@ func _resolve_local_missing_dependency() -> String:
         return "battle_logger"
     if log_event_builder == null:
         return "log_event_builder"
-    if public_snapshot_builder == null:
-        return "public_snapshot_builder"
     if combat_type_service == null:
         return "combat_type_service"
     if mp_service == null:

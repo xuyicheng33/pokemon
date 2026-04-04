@@ -171,7 +171,7 @@
 |`persists_on_switch`|可选，默认 `false`；仅允许 `self / target` 的 unit rule mod 声明|
 |`stacking_source_key`|可选；用于 `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 的来源分组|
 |`dynamic_value_formula`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`（按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值）|
-|`dynamic_value_thresholds / dynamic_value_outputs / dynamic_value_default`|动态求值所需阈值、输出和值兜底|
+|`dynamic_value_thresholds / dynamic_value_outputs / dynamic_value_default`|动态求值所需阈值、输出和值兜底；`mp_regen` 当前要求这些输出和默认值都是整数值|
 |`required_incoming_command_types`|可选；仅 `incoming_action_final_mod` 可声明，当前只允许 `skill / ultimate`|
 |`required_incoming_combat_type_ids`|可选；仅 `incoming_action_final_mod` 可声明，运行时只匹配列出的来袭属性 ID|
 
@@ -182,12 +182,13 @@
 3. 动态值公式当前只允许用于“owner 为单位”的数值型 `rule_mod`（即当前只开放 `self / target`，不开放 `field`），且运行时求值不得回写共享内容资源。
 4. 若未来需要 field 作用域的动态公式，必须先补明确定义、校验和运行时语义，不能复用当前 `matchup_bst_gap_band` 口径。
 5. `incoming_accuracy` 当前要求 `value` 为整数，并且禁止 `dynamic_value_formula`。
-6. `nullify_field_accuracy` 当前要求 `value` 为 `bool`，并且禁止 `dynamic_value_formula`；当前语义固定为“忽略领域附加必中，不改技能原生命中率”。
-7. `incoming_action_final_mod` 当前要求 `value` 为数值，并且禁止 `dynamic_value_formula`；其过滤字段 `required_incoming_command_types / required_incoming_combat_type_ids` 也只允许挂在这一类 rule_mod 上。
-8. 若 `incoming_action_final_mod.required_incoming_command_types` 非空，当前只允许 `skill / ultimate`；不得声明 `wait / switch / surrender`。
-9. `required_incoming_combat_type_ids` 若非空，加载期必须校验每个 `combat_type_id` 都已在内容快照里注册。
-10. `persists_on_switch=true` 只允许声明在 `scope=self/target` 且 owner 为单位的 rule mod 上；`field` scope 禁止这样声明。
-11. 若 `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 需要多来源并存，来源分组优先级固定为：
+6. `mp_regen` 当前要求 `value` 为整数；若声明 `dynamic_value_formula`，`dynamic_value_outputs / dynamic_value_default` 也必须全部是整数值，运行时遇到非整数结果必须直接 fail-fast。
+7. `nullify_field_accuracy` 当前要求 `value` 为 `bool`，并且禁止 `dynamic_value_formula`；当前语义固定为“忽略领域附加必中，不改技能原生命中率”。
+8. `incoming_action_final_mod` 当前要求 `value` 为数值，并且禁止 `dynamic_value_formula`；其过滤字段 `required_incoming_command_types / required_incoming_combat_type_ids` 也只允许挂在这一类 rule_mod 上。
+9. 若 `incoming_action_final_mod.required_incoming_command_types` 非空，当前只允许 `skill / ultimate`；不得声明 `wait / switch / surrender`。
+10. `required_incoming_combat_type_ids` 若非空，加载期必须校验每个 `combat_type_id` 都已在内容快照里注册。
+11. `persists_on_switch=true` 只允许声明在 `scope=self/target` 且 owner 为单位的 rule mod 上；`field` scope 禁止这样声明。
+12. 若 `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 需要多来源并存，来源分组优先级固定为：
    - `payload.stacking_source_key`
    - 否则当前 effect definition id
    - 再兜底到 `source_instance_id`

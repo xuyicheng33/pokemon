@@ -4,6 +4,7 @@ class_name BattleInitializerPhaseService
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
+const BattleHeaderSnapshotBuilderScript := preload("res://src/battle_core/turn/battle_header_snapshot_builder.gd")
 
 const INIT_PHASE_CONTINUE := 0
 const INIT_PHASE_STOP := 1
@@ -14,7 +15,6 @@ var faint_resolver
 var trigger_batch_runner
 var battle_logger
 var log_event_builder
-var public_snapshot_builder
 var mp_service
 var rule_mod_service
 var battle_result_service
@@ -37,8 +37,6 @@ func resolve_missing_dependency() -> String:
         return "battle_logger"
     if log_event_builder == null:
         return "log_event_builder"
-    if public_snapshot_builder == null:
-        return "public_snapshot_builder"
     if mp_service == null:
         return "mp_service"
     if rule_mod_service == null:
@@ -62,7 +60,7 @@ func append_battle_header_event(battle_state, content_index) -> void:
         battle_state,
         {
             "source_instance_id": EventTypesScript.SYSTEM_BATTLE_HEADER,
-            "header_snapshot": public_snapshot_builder.build_header_snapshot(battle_state, content_index),
+            "header_snapshot": BattleHeaderSnapshotBuilderScript.build_header_snapshot(battle_state, content_index),
             "payload_summary": "battle header",
         }
     ))

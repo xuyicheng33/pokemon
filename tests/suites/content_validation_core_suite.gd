@@ -189,6 +189,7 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
 	content_index.register_resource(ultimate_duplicate_unit)
 	content_index.register_resource(_build_dynamic_formula_effect("invalid_dynamic_formula_effect", "self", PackedInt32Array([20, 10]), PackedFloat32Array([5.0])))
 	content_index.register_resource(_build_dynamic_formula_effect("invalid_field_dynamic_formula_effect", "field", PackedInt32Array([20]), PackedFloat32Array([5.0])))
+	content_index.register_resource(_build_dynamic_formula_effect("invalid_mp_regen_fractional_dynamic_effect", "self", PackedInt32Array([20]), PackedFloat32Array([5.5]), 1.5))
 	var snapshot_errors: Array = content_index.validate_snapshot()
 	if snapshot_errors.is_empty():
 		return harness.fail_result("new content constraints should report validation failures")
@@ -198,6 +199,7 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
 	var has_ultimate_in_regular_error := false
 	var has_dynamic_formula_error := false
 	var has_dynamic_formula_scope_error := false
+	var has_mp_regen_integral_error := false
 	for error_msg in snapshot_errors:
 		var msg := str(error_msg)
 		has_regular_priority_error = has_regular_priority_error or msg.find("used in unit.skill_ids must have priority in -2..2") != -1
@@ -206,7 +208,8 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
 		has_ultimate_in_regular_error = has_ultimate_in_regular_error or msg.find("used as ultimate must not appear in any unit.skill_ids") != -1
 		has_dynamic_formula_error = has_dynamic_formula_error or msg.find("dynamic_value_thresholds/dynamic_value_outputs size mismatch") != -1 or msg.find("dynamic_value_thresholds must be strictly ascending") != -1
 		has_dynamic_formula_scope_error = has_dynamic_formula_scope_error or msg.find("dynamic value formula is not allowed for field scope") != -1
-	if not (has_regular_priority_error and has_ultimate_priority_error and has_slot_error and has_ultimate_in_regular_error and has_dynamic_formula_error and has_dynamic_formula_scope_error):
+		has_mp_regen_integral_error = has_mp_regen_integral_error or msg.find("mp_regen dynamic_value_outputs must be int-valued") != -1 or msg.find("mp_regen dynamic_value_default must be int-valued") != -1
+	if not (has_regular_priority_error and has_ultimate_priority_error and has_slot_error and has_ultimate_in_regular_error and has_dynamic_formula_error and has_dynamic_formula_scope_error and has_mp_regen_integral_error):
 		return harness.fail_result("new content validation constraints missing expected failures")
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
@@ -312,7 +315,7 @@ func _test_battle_format_runtime_constant_validation(harness) -> Dictionary:
 		return harness.fail_result("battle format runtime constant validation should report both range errors")
 	return harness.pass_result()
 
-func _build_dynamic_formula_effect(effect_id: String, scope: String, thresholds: PackedInt32Array, outputs: PackedFloat32Array):
+func _build_dynamic_formula_effect(effect_id: String, scope: String, thresholds: PackedInt32Array, outputs: PackedFloat32Array, dynamic_default: float = 0.0):
 	var payload = RuleModPayloadScript.new()
 	payload.mod_kind = "mp_regen"
 	payload.mod_op = "set"
@@ -324,6 +327,7 @@ func _build_dynamic_formula_effect(effect_id: String, scope: String, thresholds:
 	payload.dynamic_value_formula = ContentSchemaScript.RULE_MOD_VALUE_FORMULA_MATCHUP_BST_GAP_BAND
 	payload.dynamic_value_thresholds = thresholds
 	payload.dynamic_value_outputs = outputs
+	payload.dynamic_value_default = dynamic_default
 	var effect = EffectDefinitionScript.new()
 	effect.id = effect_id
 	effect.scope = scope

@@ -19,6 +19,64 @@
   - 同步把审查记录、设计稿与 README 口径写回仓库，避免“严格 DAG / 完全对齐”这类过度结论继续扩散
   - 每阶段都要完成验证、提交、推送，并在进入下一阶段前把工作区收干净
 
+## 2026-04-05
+
+### 审查问题修复收口：header snapshot 分层、kyokyo 持续时间与 mp_regen 整数 contract（已完成）
+
+- 目标：
+  - 把 `turn -> facades/public_snapshot_builder` 的 header snapshot 依赖拆掉，收回分层口径
+  - 统一 `kashimo_kyokyo_nullify` 的外层 effect 持续时间语义，消除资源/validator/设计稿漂移
+  - 把 `mp_regen` 的动态值 contract 收紧到显式整数，禁止继续靠 `int()` 静默截断
+- 范围：
+  - `src/battle_core/turn/battle_header_snapshot_builder.gd`
+  - `src/battle_core/turn/battle_initializer.gd`
+  - `src/battle_core/turn/battle_initializer_phase_service.gd`
+  - `src/battle_core/facades/public_snapshot_builder.gd`
+  - `src/composition/battle_core_wiring_specs.gd`
+  - `content/effects/kashimo/kashimo_kyokyo_nullify.tres`
+  - `src/battle_core/content/content_snapshot_formal_kashimo_contracts.gd`
+  - `src/battle_core/content/rule_mod_schema.gd`
+  - `src/battle_core/effects/rule_mod_write_service.gd`
+  - `tests/suites/kashimo_snapshot_suite.gd`
+  - `tests/suites/content_validation_core_suite.gd`
+  - `tests/suites/rule_mod_runtime_extension_suite.gd`
+  - `docs/design/kashimo_hajime_design.md`
+  - `docs/design/battle_content_schema.md`
+  - `docs/rules/06_effect_schema_and_extension.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `BattleInitializer` 不再依赖 `public_snapshot_builder`
+  - `kashimo_kyokyo_nullify` 外层 effect 明确为 `turns=3 / turn_end`
+  - `mp_regen` 的非整数动态输出在内容校验期和运行时都必须 fail-fast
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成：
+  - 已新增 `BattleHeaderSnapshotBuilder`，`battle_header` 快照构建不再走 facade helper 注入
+  - `battle_initializer` 与 wiring specs 已去掉 `public_snapshot_builder` 依赖
+  - `kashimo_kyokyo_nullify` 外层 effect 已改成 `turns=3 / decrement_on=turn_end`
+  - formal contract、snapshot suite 与设计稿已同步到新的 `kyokyo` 口径
+  - `RuleModSchema` 已新增 `mp_regen value must be int` 与动态输出/默认值整数约束
+  - `RuleModWriteService` 已补 runtime value 整数校验，非整数直接上浮 `invalid_rule_mod_definition`
+  - 已新增回归：
+    - `mp_regen_runtime_value_must_be_int_contract`
+    - content validation 对 `mp_regen` 非整数动态输出/默认值的 fail-fast 断言
+  - `README.md` 代码规模统计已同步到当前仓库实测值，恢复 repo consistency gate
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/check_architecture_constraints.sh` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+- `bash tests/check_suite_reachability.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
+
 ## 2026-04-04
 
 ### 审查收口：SCC 口径统一与 Gojo formal validator 拆分（已完成）

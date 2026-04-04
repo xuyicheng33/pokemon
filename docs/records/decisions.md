@@ -125,6 +125,15 @@
   - `RuntimeGuardService` 在每回合入口统一拦截这类坏状态，直接返回 `invalid_state_corruption`
   - `FieldApplyConflictService` 额外保留本地防御，不再把缺失 creator 降级成 `-1 MP` 继续参与领域对拼
 
+### 13.1 扩角前再收口三处高频漂移（2026-04-05）
+
+- `battle_header` 的公开快照构建不再从 `turn` 层直接依赖 `facades/public_snapshot_builder`；当前统一改为 `BattleHeaderSnapshotBuilder` 静态 helper，避免 L4 再借 facade helper 取 header snapshot。
+- `kashimo_kyokyo_nullify` 的外层 `EffectDefinition` 现已和设计稿统一为 `duration_mode=turns / duration=3 / decrement_on=turn_end`；不再保留“外层 permanent、内层 3 回合”的双口径。
+- `mp_regen` 的动态求值 contract 当前正式收紧为“整数值 only”：
+  - 内容校验期必须拦截非整数 `value`
+  - `dynamic_value_outputs / dynamic_value_default` 对 `mp_regen` 也必须保持整数值
+  - 运行时若仍拿到非整数结果，必须直接 `invalid_rule_mod_definition`
+
 ### 14. 扩角前规范整合口径正式收紧（2026-03-30）
 
 - manager 对外事件日志改为白名单公开快照：
@@ -261,11 +270,10 @@
 
 ### 63. 已证伪的“payload/领域残留实例”问题不进入代码修复面（2026-04-03）
 
-- 本轮审查里已确认不成立的两条问题，统一只记录，不写运行时代码补丁：
+- 本轮审查里已确认不成立、且当前继续只记录不补运行时代码的一条问题：
   - `gojo_ao_mark_apply / gojo_aka_mark_apply` 的触发类 effect instance 残留
-  - `kashimo_kyokyo_nullify` 的永久 meta-effect 残留
 - 原因：
-  - 这两类实例当前只是 trigger 路由或长期规则承载物，不构成语义错误，也没有现成回归证明它们导致玩法、快照或生命周期异常。
+  - 这类实例当前只是 trigger 路由承载物，不构成语义错误，也没有现成回归证明它们导致玩法、快照或生命周期异常。
   - 若为它们补“清残留”逻辑，反而会在 effect 生命周期里引入新的特殊分支，增加扩角期维护成本。
 - 当前要求：
   - `.audit/` 结论不直接驱动代码改动。

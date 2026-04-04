@@ -8,6 +8,7 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("nullify_field_accuracy_runtime_contract", failures, Callable(self, "_test_nullify_field_accuracy_runtime_contract").bind(harness))
     runner.run_test("incoming_action_final_mod_runtime_contract", failures, Callable(self, "_test_incoming_action_final_mod_runtime_contract").bind(harness))
+    runner.run_test("mp_regen_runtime_value_must_be_int_contract", failures, Callable(self, "_test_mp_regen_runtime_value_must_be_int_contract").bind(harness))
 
 func _test_nullify_field_accuracy_runtime_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -206,6 +207,45 @@ func _test_incoming_action_final_mod_runtime_contract(harness) -> Dictionary:
     var fire_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
     if fire_damage <= 0:
         return harness.fail_result("missing fire damage for incoming_action_final_mod mismatch case")
+    return harness.pass_result()
+
+func _test_mp_regen_runtime_value_must_be_int_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 734)
+    var target = battle_state.get_side("P1").get_active_unit()
+    if target == null:
+        return harness.fail_result("missing active unit for mp_regen int contract")
+    var mp_regen_payload = RuleModPayloadScript.new()
+    mp_regen_payload.payload_type = "rule_mod"
+    mp_regen_payload.mod_kind = "mp_regen"
+    mp_regen_payload.mod_op = "add"
+    mp_regen_payload.value = 0
+    mp_regen_payload.scope = "self"
+    mp_regen_payload.duration_mode = "turns"
+    mp_regen_payload.duration = 1
+    mp_regen_payload.decrement_on = "turn_start"
+    mp_regen_payload.stacking = "replace"
+    var created_instance = core.service("rule_mod_service").create_instance(
+        mp_regen_payload,
+        {"scope": "unit", "id": target.unit_instance_id},
+        battle_state,
+        "test_fractional_mp_regen",
+        0,
+        target.base_speed,
+        7.5
+    )
+    if created_instance != null:
+        return harness.fail_result("mp_regen runtime value should fail-fast on fractional value")
+    var error_state: Dictionary = core.service("rule_mod_service").error_state()
+    if String(error_state.get("code", "")) != "invalid_rule_mod_definition":
+        return harness.fail_result("fractional mp_regen runtime value should report invalid_rule_mod_definition")
     return harness.pass_result()
 
 func _build_direct_skill(skill_id: String, accuracy: int, combat_type_id: String):

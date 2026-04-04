@@ -254,7 +254,7 @@
 
 | 资源 | 语义 |
 |------|------|
-| `kashimo_kyokyo_nullify` | `scope=self`；持续 3 次 `turn_end`；`stacking=refresh`；语义为“忽略领域附加必中，只读技能原始命中率” |
+| `kashimo_kyokyo_nullify` | `scope=self`；外层 effect 持续 3 次 `turn_end`；其 `rule_mod` 语义按 `stacking=refresh` 续命；整体语义为“忽略领域附加必中，只读技能原始命中率” |
 
 ### 2.5 幻兽琥珀（奥义）
 
