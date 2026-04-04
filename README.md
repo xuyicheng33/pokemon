@@ -114,7 +114,7 @@ tests/run_with_gate.sh
 - suite 可达性检查通过（`tests/check_suite_reachability.sh`）
 - 无引擎级错误（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
 - 架构约束检查通过（`tests/check_architecture_constraints.sh`）
-  - 当前额外包含 composition `SERVICE_DESCRIPTORS / container API / wiring_specs` 一致性检查，以及 runtime wiring SCC allowlist 检查
+  - 当前额外包含 composition `SERVICE_DESCRIPTORS / container API / wiring_specs` 一致性检查，以及 runtime wiring DAG 检查
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
   - 当前会聚合 `tests/gates/repo_consistency_surface_gate.py`、`tests/gates/repo_consistency_formal_character_gate.py`、`tests/gates/repo_consistency_docs_gate.py`
 
@@ -203,6 +203,7 @@ tests/run_with_gate.sh
 - `宿傩`：默认技能组 `解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`），奥义 `伏魔御厨子`，被动 `教会你爱的是...`，候选技能池 `candidate_skill_ids = 解 / 捌 / 开 / 反转术式`，奥义点 `required=3 / cap=3 / regular skill cast +1`；MP 回复按“基础 `12` + 对位追加值”结算
 - `Kashimo`：默认技能组 `雷拳 / 蓄电 / 回授电击`（`kashimo_raiken / kashimo_charge / kashimo_feedback_strike`），候选技能池 `candidate_skill_ids = 雷拳 / 蓄电 / 回授电击 / 弥虚葛笼`，奥义 `幻兽琥珀`，被动 `电荷分离`，奥义点 `required=3 / cap=3 / regular skill cast +1`
 - `poison` 已作为正式 `combat_type` 接入主线；仓库内同时保留独立样例技能 `sample_poison_sting` 与对应 runtime suite，用来验证它不是鹿紫云专属的临时标签
+- prototype 额外内置一个最小正式 passive item 样例：`sample_attack_charm` 绑定到 `sample_pyron_charm`，用于锁被动持有物的内容加载、公开快照、manager 黑盒与 replay 主路径
 - 赛前覆盖：`SideSetup.regular_skill_loadout_overrides` 可把候选常规技能换入本场装配；未提供覆盖时，行为等价于使用默认 `skill_ids`
 - 公开快照：`prebattle_public_teams[*].units[*].skill_ids` 只公开本场实际已装备的常规技能，不公开候选池全集
 
@@ -244,11 +245,11 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-04）
 
-- `src/**/*.gd`：`11984` 行
-- `tests/**/*.gd`：`14807` 行
-- GDScript 合计：`26791` 行
+- `src/**/*.gd`：`12314` 行
+- `tests/**/*.gd`：`15119` 行
+- GDScript 合计：`27433` 行
 
-> 统计口径：`find src tests -name '*.gd' | xargs wc -l`
+> 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 
 ## 11. 后续扩展建议（进入角色设计前）
 
