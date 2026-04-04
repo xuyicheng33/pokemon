@@ -2,8 +2,19 @@ extends RefCounted
 class_name RuleModReadService
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+
+var last_error_code: Variant = null
+var last_error_message: String = ""
+
+func error_state() -> Dictionary:
+    return {
+        "code": last_error_code,
+        "message": last_error_message,
+    }
 
 func get_final_multiplier(battle_state, owner_id: String) -> float:
+    _reset_error_state()
     if battle_state.get_unit(owner_id) == null:
         return 1.0
     var final_multiplier: float = 1.0
@@ -21,6 +32,7 @@ func get_final_multiplier(battle_state, owner_id: String) -> float:
     return final_multiplier
 
 func resolve_mp_regen_value(battle_state, owner_id: String, base_regen: int) -> int:
+    _reset_error_state()
     if battle_state.get_unit(owner_id) == null:
         return max(0, base_regen)
     var regen_value: int = base_regen
@@ -36,21 +48,28 @@ func resolve_mp_regen_value(battle_state, owner_id: String, base_regen: int) -> 
     return max(0, regen_value)
 
 func is_action_allowed(battle_state, owner_id: String, action_type: String, skill_id: String = "") -> bool:
+    _reset_error_state()
     if battle_state.get_unit(owner_id) == null:
         return false
-    if action_type == "wait" or action_type == "resource_forced_default" or action_type == "surrender":
+    if _is_always_allowed_action_type(action_type):
         return true
+    if not _is_managed_action_type(action_type):
+        _fail_unsupported_action_type(action_type)
+        return false
     var allowed: bool = true
     var ordered_instances: Array = _sorted_active_instances_for_read(battle_state, owner_id)
     for rule_mod_instance in ordered_instances:
         if rule_mod_instance.mod_kind != ContentSchemaScript.RULE_MOD_ACTION_LEGALITY:
             continue
         if not _action_legality_matches(rule_mod_instance, action_type, skill_id):
+            if last_error_code != null:
+                return false
             continue
         allowed = rule_mod_instance.mod_op == "allow"
     return allowed
 
 func resolve_incoming_accuracy(battle_state, owner_id: String, base_accuracy: int) -> int:
+    _reset_error_state()
     if battle_state.get_unit(owner_id) == null:
         return clamp(base_accuracy, 0, 99)
     var resolved_accuracy: int = base_accuracy
@@ -66,6 +85,7 @@ func resolve_incoming_accuracy(battle_state, owner_id: String, base_accuracy: in
     return clamp(resolved_accuracy, 0, 99)
 
 func has_nullify_field_accuracy(battle_state, owner_id: String) -> bool:
+    _reset_error_state()
     if battle_state.get_unit(owner_id) == null:
         return false
     var is_enabled := false
@@ -78,6 +98,7 @@ func has_nullify_field_accuracy(battle_state, owner_id: String) -> bool:
     return is_enabled
 
 func resolve_incoming_action_final_multiplier(battle_state, owner_id: String, command_type: String, combat_type_id: String) -> float:
+    _reset_error_state()
     if battle_state.get_unit(owner_id) == null:
         return 1.0
     var final_multiplier: float = 1.0
@@ -125,20 +146,52 @@ func _sort_rule_mods(left, right) -> bool:
 
 func _action_legality_matches(rule_mod_instance, action_type: String, skill_id: String) -> bool:
     var value := String(rule_mod_instance.value).strip_edges()
-    match action_type:
-        "skill":
-            return value == ContentSchemaScript.ACTION_LEGALITY_ALL \
-                or value == ContentSchemaScript.ACTION_LEGALITY_SKILL \
-                or value == skill_id
-        "ultimate":
-            return value == ContentSchemaScript.ACTION_LEGALITY_ALL \
-                or value == ContentSchemaScript.ACTION_LEGALITY_ULTIMATE \
-                or value == skill_id
-        "switch":
-            return value == ContentSchemaScript.ACTION_LEGALITY_ALL \
-                or value == ContentSchemaScript.ACTION_LEGALITY_SWITCH
+    var match_tokens := _build_action_legality_match_tokens(action_type, skill_id)
+    if last_error_code != null:
+        return false
+    return match_tokens.has(value)
+
+func _build_action_legality_match_tokens(action_type: String, skill_id: String) -> PackedStringArray:
+    if not _is_managed_action_type(action_type):
+        _fail_unsupported_action_type(action_type)
+        return PackedStringArray()
+    var match_tokens := PackedStringArray()
+    match String(action_type):
+        ContentSchemaScript.ACTION_LEGALITY_SKILL:
+            match_tokens = PackedStringArray([
+                ContentSchemaScript.ACTION_LEGALITY_ALL,
+                ContentSchemaScript.ACTION_LEGALITY_SKILL,
+            ])
+        ContentSchemaScript.ACTION_LEGALITY_ULTIMATE:
+            match_tokens = PackedStringArray([
+                ContentSchemaScript.ACTION_LEGALITY_ALL,
+                ContentSchemaScript.ACTION_LEGALITY_ULTIMATE,
+            ])
+        ContentSchemaScript.ACTION_LEGALITY_SWITCH:
+            match_tokens = PackedStringArray([
+                ContentSchemaScript.ACTION_LEGALITY_ALL,
+                ContentSchemaScript.ACTION_LEGALITY_SWITCH,
+            ])
         _:
-            return false
+            _fail_unsupported_action_type(action_type)
+            return PackedStringArray()
+    if String(action_type) != ContentSchemaScript.ACTION_LEGALITY_SWITCH and not skill_id.is_empty():
+        match_tokens.append(skill_id)
+    return match_tokens
+
+func _is_managed_action_type(action_type: String) -> bool:
+    return ContentSchemaScript.MANAGED_ACTION_TYPES.has(String(action_type))
+
+func _is_always_allowed_action_type(action_type: String) -> bool:
+    return ContentSchemaScript.ALWAYS_ALLOWED_ACTION_TYPES.has(String(action_type))
+
+func _reset_error_state() -> void:
+    last_error_code = null
+    last_error_message = ""
+
+func _fail_unsupported_action_type(action_type: String) -> void:
+    last_error_code = ErrorCodesScript.INVALID_COMMAND_PAYLOAD
+    last_error_message = "unsupported action_legality action_type: %s" % String(action_type)
 
 func _incoming_action_filters_match(rule_mod_instance, command_type: String, combat_type_id: String) -> bool:
     var command_filters: PackedStringArray = rule_mod_instance.required_incoming_command_types

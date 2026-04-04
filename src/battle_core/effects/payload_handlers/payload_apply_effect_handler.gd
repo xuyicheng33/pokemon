@@ -3,6 +3,7 @@ class_name PayloadApplyEffectHandler
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
+const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/effect_source_meta_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_logger
@@ -47,9 +48,7 @@ func execute(payload, effect_definition, effect_event, battle_state, content_ind
 		effect_event.source_instance_id,
 		effect_event.source_kind_order,
 		effect_event.source_order_speed_snapshot,
-		{
-			"source_owner_id": String(effect_event.owner_id),
-		}
+		EffectSourceMetaHelperScript.build_meta(String(effect_event.owner_id))
 	)
 	var effect_invalid_code = effect_instance_service.invalid_battle_code()
 	if effect_invalid_code != null:

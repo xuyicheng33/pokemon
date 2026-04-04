@@ -866,3 +866,48 @@
 - 原因：
   - manager 黑盒面如果继续夹带私有钩子，测试通过也不能证明外围 contract 稳定。
   - 被动持有物若始终只有引擎框架、没有正式样例，仓库会持续高估当前 prototype 的功能完整度。
+
+### 71. 扩角前共享机制 contract 先收口为“显式 managed action 白名单 + owner helper + refresh 统一来源语义”（2026-04-04）
+
+- `action_legality` 当前正式只管理三类动作：
+  - `skill`
+  - `ultimate`
+  - `switch`
+- `wait / resource_forced_default / surrender` 永远不受 `action_legality` 管控；`deny all` 的正式语义只表示“封禁全部受管控动作类型”。
+- 若调用侧把未知动作类型送进 `action_legality` 读取链，当前必须显式报 `invalid_command_payload` 错误状态；明确禁止继续靠默认 `_ -> false` 静默吞掉。
+- `required_target_same_owner` 当前统一依赖 `EffectSourceMetaHelper` 生成 / 读取 `meta.source_owner_id`：
+  - 允许继续把 owner 归因放在 effect instance `meta` 中
+  - 不把 `source_owner_id` 升成 `EffectInstanceService.create_instance()` 的新显式参数
+  - 若命中的 required effect instance 缺失 `source_owner_id`，运行时直接视为 `invalid_state_corruption`
+- effect instance 与 rule_mod instance 的 `refresh` 语义当前统一固定为：
+  - 继续复用同一个 runtime instance
+  - 刷新持续时间
+  - 同步刷新 `source_instance_id / source_kind_order / source_order_speed_snapshot`
+  - effect 侧同时刷新 `meta`
+  - `last_apply_skipped` 必须保持 `false`
+- 原因：
+  - 第 4 个正式角色若继续踩隐式白名单、散落 owner meta 约定、effect/rule_mod refresh 语义分叉，后续回归和扩角成本会快速失控。
+  - 先把共享底座 contract 写死，后续角色只需要消费稳定能力，不再一边扩角一边猜历史约定。
+
+### 71. 正式角色扩展前，先把共享机制 contract 收口成显式白名单与统一 refresh 语义（2026-04-04）
+
+- `action_legality` 当前正式口径固定为两层：
+  - `MANAGED_ACTION_TYPES = skill / ultimate / switch`
+  - `wait / resource_forced_default / surrender` 永远不受 `action_legality` 封禁
+- `deny all` 的正式语义固定为：
+  - 封禁全部受管控动作类型
+  - 不影响 `wait / resource_forced_default / surrender`
+- 对未知受管控动作类型：
+  - 不再静默走 `_ -> false`
+  - 必须返回显式错误状态
+- `required_target_same_owner` 当前统一依赖 `effect_source_meta_helper.gd` 生成 / 读取 `meta.source_owner_id`
+- 若 same-owner 守卫读取到缺失的 `source_owner_id`：
+  - 不允许静默成功
+  - 运行时直接按 `invalid_state_corruption` 处理
+- effect instance 与 rule mod 的 `refresh` 语义当前统一固定为：
+  - 保留同一 runtime instance
+  - 重置持续时间
+  - 刷新来源元数据（`source_instance_id / source_kind_order / source_order_speed_snapshot`）
+  - effect 路径额外刷新 `meta`
+- 原因：
+  - 这些 contract 之后会被第 4 个正式角色和后续共享机制直接复用，若继续靠散落约定维持，只会把问题拖到扩角时集中爆炸。

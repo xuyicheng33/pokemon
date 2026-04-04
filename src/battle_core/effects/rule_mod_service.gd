@@ -11,10 +11,11 @@ var _read_service = RuleModReadServiceScript.new()
 var _write_service = RuleModWriteServiceScript.new()
 
 func error_state() -> Dictionary:
+    var read_error_state: Dictionary = _read_service.error_state()
     var write_error_state: Dictionary = _write_service.error_state()
     return {
         "code": last_error_code,
-        "message": write_error_state.get("message", ""),
+        "message": String(read_error_state.get("message", write_error_state.get("message", ""))),
     }
 
 func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = ""):
@@ -42,7 +43,10 @@ func resolve_mp_regen_value(battle_state, owner_id: String, base_regen: int) -> 
     return _read_service.resolve_mp_regen_value(battle_state, owner_id, base_regen)
 
 func is_action_allowed(battle_state, owner_id: String, action_type: String, skill_id: String = "") -> bool:
-    return _read_service.is_action_allowed(battle_state, owner_id, action_type, skill_id)
+    var is_allowed := _read_service.is_action_allowed(battle_state, owner_id, action_type, skill_id)
+    var read_error_state: Dictionary = _read_service.error_state()
+    last_error_code = read_error_state.get("code", null)
+    return is_allowed
 
 func resolve_incoming_accuracy(battle_state, owner_id: String, base_accuracy: int) -> int:
     return _read_service.resolve_incoming_accuracy(battle_state, owner_id, base_accuracy)

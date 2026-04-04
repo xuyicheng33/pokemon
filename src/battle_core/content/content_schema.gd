@@ -37,5 +37,15 @@ const ACTION_LEGALITY_ALL := "all"
 const ACTION_LEGALITY_SKILL := "skill"
 const ACTION_LEGALITY_ULTIMATE := "ultimate"
 const ACTION_LEGALITY_SWITCH := "switch"
+static var MANAGED_ACTION_TYPES := PackedStringArray([
+	ACTION_LEGALITY_SKILL,
+	ACTION_LEGALITY_ULTIMATE,
+	ACTION_LEGALITY_SWITCH,
+])
+static var ALWAYS_ALLOWED_ACTION_TYPES := PackedStringArray([
+	"wait",
+	"resource_forced_default",
+	"surrender",
+])
 
 const RULE_MOD_VALUE_FORMULA_MATCHUP_BST_GAP_BAND := "matchup_bst_gap_band"

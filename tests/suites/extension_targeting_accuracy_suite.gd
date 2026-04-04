@@ -2,15 +2,21 @@ extends RefCounted
 class_name ExtensionTargetingAccuracySuite
 
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
+const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
+const EffectEventScript := preload("res://src/battle_core/contracts/effect_event.gd")
+const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/effect_source_meta_helper.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("required_target_effects_contract", failures, Callable(self, "_test_required_target_effects_contract").bind(harness))
     runner.run_test("required_target_same_owner_contract", failures, Callable(self, "_test_required_target_same_owner_contract").bind(harness))
+    runner.run_test("required_target_same_owner_missing_owner_contract", failures, Callable(self, "_test_required_target_same_owner_missing_owner_contract").bind(harness))
+    runner.run_test("effect_refresh_updates_source_metadata_contract", failures, Callable(self, "_test_effect_refresh_updates_source_metadata_contract").bind(harness))
     runner.run_test("incoming_accuracy_contract", failures, Callable(self, "_test_incoming_accuracy_contract").bind(harness))
 func _test_required_target_effects_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -174,7 +180,7 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
         "test_required_same_owner_source",
         0,
         mismatched_p2.base_speed,
-        {"source_owner_id": "other_owner"}
+        EffectSourceMetaHelperScript.build_meta("other_owner")
     )
     core.service("battle_logger").reset()
     core.service("turn_loop_controller").run_turn(mismatched_state, content_index, [
@@ -209,7 +215,7 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
         "test_required_same_owner_source",
         0,
         matched_p2.base_speed,
-        {"source_owner_id": matched_p1.unit_instance_id}
+        EffectSourceMetaHelperScript.build_meta(matched_p1.unit_instance_id)
     )
     core.service("battle_logger").reset()
     core.service("turn_loop_controller").run_turn(matched_state, content_index, [
@@ -231,6 +237,120 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
     ])
     if int(matched_p2.stat_stages.get("speed", 0)) != -1:
         return harness.fail_result("required_target_same_owner should allow payloads once marker source owner matches current effect owner")
+    return harness.pass_result()
+
+func _test_required_target_same_owner_missing_owner_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 912)
+    var actor = battle_state.get_side("P1").get_active_unit()
+    var target = battle_state.get_side("P2").get_active_unit()
+    if actor == null or target == null:
+        return harness.fail_result("missing active units for same-owner missing owner contract")
+
+    var marker_effect = EffectDefinitionScript.new()
+    marker_effect.id = "test_required_same_owner_missing_marker"
+    marker_effect.display_name = "Required Same Owner Missing Marker"
+    marker_effect.scope = "self"
+    marker_effect.duration_mode = "turns"
+    marker_effect.duration = 2
+    marker_effect.decrement_on = "turn_end"
+    marker_effect.stacking = "replace"
+    content_index.register_resource(marker_effect)
+
+    var conditional_effect = EffectDefinitionScript.new()
+    conditional_effect.id = "test_required_same_owner_missing_effect"
+    conditional_effect.display_name = "Required Same Owner Missing Effect"
+    conditional_effect.scope = "target"
+    conditional_effect.required_target_effects = PackedStringArray([marker_effect.id])
+    conditional_effect.required_target_same_owner = true
+    if core.service("effect_instance_service").create_instance(
+        marker_effect,
+        target.unit_instance_id,
+        battle_state,
+        "test_required_same_owner_missing_source",
+        0,
+        actor.base_speed
+    ) == null:
+        return harness.fail_result("failed to seed same-owner marker without owner meta")
+
+    var effect_event = EffectEventScript.new()
+    effect_event.owner_id = actor.unit_instance_id
+    var chain_context = ChainContextScript.new()
+    chain_context.target_unit_id = target.unit_instance_id
+    effect_event.chain_context = chain_context
+
+    var precondition_service = core.service("effect_precondition_service")
+    if precondition_service.passes_effect_preconditions(conditional_effect, effect_event, battle_state):
+        return harness.fail_result("required_target_same_owner should not silently pass when marker owner meta is missing")
+    if precondition_service.invalid_battle_code() != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+        return harness.fail_result("required_target_same_owner missing owner meta should report invalid_state_corruption")
+    return harness.pass_result()
+
+func _test_effect_refresh_updates_source_metadata_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 913)
+    var target = battle_state.get_side("P2").get_active_unit()
+    if target == null:
+        return harness.fail_result("missing target unit for effect refresh metadata contract")
+
+    var refresh_effect = EffectDefinitionScript.new()
+    refresh_effect.id = "test_effect_refresh_metadata"
+    refresh_effect.display_name = "Effect Refresh Metadata"
+    refresh_effect.scope = "self"
+    refresh_effect.duration_mode = "turns"
+    refresh_effect.duration = 3
+    refresh_effect.decrement_on = "turn_end"
+    refresh_effect.stacking = "refresh"
+
+    var effect_instance_service = core.service("effect_instance_service")
+    var first_meta := EffectSourceMetaHelperScript.build_meta("owner_a", {"tag": "first"})
+    var first_instance = effect_instance_service.create_instance(
+        refresh_effect,
+        target.unit_instance_id,
+        battle_state,
+        "first_source",
+        1,
+        80,
+        first_meta
+    )
+    if first_instance == null:
+        return harness.fail_result("failed to create first refreshable effect instance")
+    first_instance.remaining = 1
+    var refreshed_instance = effect_instance_service.create_instance(
+        refresh_effect,
+        target.unit_instance_id,
+        battle_state,
+        "second_source",
+        2,
+        120,
+        EffectSourceMetaHelperScript.build_meta("owner_b", {"tag": "second"})
+    )
+    if refreshed_instance == null:
+        return harness.fail_result("failed to refresh effect instance")
+    if refreshed_instance != first_instance:
+        return harness.fail_result("effect refresh should keep the same runtime instance")
+    if effect_instance_service.last_apply_skipped:
+        return harness.fail_result("effect refresh should not be marked as skipped")
+    if refreshed_instance.remaining != 3:
+        return harness.fail_result("effect refresh should reset remaining turns")
+    if refreshed_instance.source_instance_id != "second_source" or refreshed_instance.source_kind_order != 2 or refreshed_instance.source_order_speed_snapshot != 120:
+        return harness.fail_result("effect refresh should update source identity and order metadata")
+    if String(refreshed_instance.meta.get("source_owner_id", "")) != "owner_b" or String(refreshed_instance.meta.get("tag", "")) != "second":
+        return harness.fail_result("effect refresh should replace source owner and meta payload")
     return harness.pass_result()
 
 func _test_incoming_accuracy_contract(harness) -> Dictionary:

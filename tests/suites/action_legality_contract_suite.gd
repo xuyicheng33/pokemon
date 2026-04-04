@@ -6,9 +6,12 @@ const EffectDefinitionScript := preload("res://src/battle_core/content/effect_de
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("action_legality_contract", failures, Callable(self, "_test_action_legality_contract").bind(harness))
+    runner.run_test("action_legality_managed_action_matrix_contract", failures, Callable(self, "_test_action_legality_managed_action_matrix_contract").bind(harness))
+    runner.run_test("action_legality_unknown_action_type_reports_contract", failures, Callable(self, "_test_action_legality_unknown_action_type_reports_contract").bind(harness))
 func _test_action_legality_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
     if core_payload.has("error"):
@@ -39,6 +42,10 @@ func _test_action_legality_contract(harness) -> Dictionary:
     var denied_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
     if denied_actions.wait_allowed != true or denied_actions.forced_command_type != "":
         return harness.fail_result("deny all should leave wait legal and must not fall back to resource_forced_default")
+    if not core.service("rule_mod_service").is_action_allowed(battle_state, p1_active.unit_instance_id, CommandTypesScript.RESOURCE_FORCED_DEFAULT):
+        return harness.fail_result("resource_forced_default should stay outside action_legality control")
+    if not core.service("rule_mod_service").is_action_allowed(battle_state, p1_active.unit_instance_id, CommandTypesScript.SURRENDER):
+        return harness.fail_result("surrender should stay outside action_legality control")
     if not denied_actions.legal_skill_ids.is_empty() or not denied_actions.legal_ultimate_ids.is_empty() or not denied_actions.legal_switch_target_public_ids.is_empty():
         return harness.fail_result("deny all should block skills, ultimates, and switches")
 
@@ -152,6 +159,124 @@ func _test_action_legality_contract(harness) -> Dictionary:
             and ev.actor_id == queue_lock_p2.unit_instance_id
     ):
         return harness.fail_result("locked queued action must not reach ACTION_CAST")
+    return harness.pass_result()
+
+func _test_action_legality_managed_action_matrix_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+
+    var matrix_cases := [
+        {
+            "seed": 920,
+            "value": "skill",
+            "action_type": CommandTypesScript.SKILL,
+            "skill_id": "sample_strike",
+            "expected": false,
+            "label": "deny skill should block regular skills",
+        },
+        {
+            "seed": 921,
+            "value": "skill",
+            "action_type": CommandTypesScript.ULTIMATE,
+            "skill_id": "sample_ultimate_burst",
+            "expected": true,
+            "label": "deny skill should not block ultimates",
+        },
+        {
+            "seed": 922,
+            "value": "ultimate",
+            "action_type": CommandTypesScript.ULTIMATE,
+            "skill_id": "sample_ultimate_burst",
+            "expected": false,
+            "label": "deny ultimate should block ultimates",
+        },
+        {
+            "seed": 923,
+            "value": "ultimate",
+            "action_type": CommandTypesScript.SKILL,
+            "skill_id": "sample_strike",
+            "expected": true,
+            "label": "deny ultimate should not block regular skills",
+        },
+        {
+            "seed": 924,
+            "value": "switch",
+            "action_type": CommandTypesScript.SWITCH,
+            "skill_id": "",
+            "expected": false,
+            "label": "deny switch should block switches",
+        },
+        {
+            "seed": 925,
+            "value": "sample_strike",
+            "action_type": CommandTypesScript.SKILL,
+            "skill_id": "sample_strike",
+            "expected": false,
+            "label": "deny specific skill should block matching skill only",
+        },
+        {
+            "seed": 926,
+            "value": "sample_strike",
+            "action_type": CommandTypesScript.SKILL,
+            "skill_id": "sample_field_call",
+            "expected": true,
+            "label": "deny specific skill should not block other skills",
+        },
+    ]
+    for matrix_case in matrix_cases:
+        var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, int(matrix_case["seed"]))
+        var actor = battle_state.get_side("P1").get_active_unit()
+        var deny_payload = RuleModPayloadScript.new()
+        deny_payload.payload_type = "rule_mod"
+        deny_payload.mod_kind = "action_legality"
+        deny_payload.mod_op = "deny"
+        deny_payload.value = str(matrix_case["value"])
+        deny_payload.scope = "self"
+        deny_payload.duration_mode = "turns"
+        deny_payload.duration = 2
+        deny_payload.decrement_on = "turn_start"
+        deny_payload.stacking = "replace"
+        if core.service("rule_mod_service").create_instance(deny_payload, {"scope": "unit", "id": actor.unit_instance_id}, battle_state, "test_action_legality_matrix_%s" % str(matrix_case["seed"]), 0, actor.base_speed) == null:
+            return harness.fail_result("failed to create matrix action_legality rule_mod")
+        var actual_allowed: bool = core.service("rule_mod_service").is_action_allowed(
+            battle_state,
+            actor.unit_instance_id,
+            str(matrix_case["action_type"]),
+            str(matrix_case["skill_id"])
+        )
+        if actual_allowed != bool(matrix_case["expected"]):
+            return harness.fail_result(str(matrix_case["label"]))
+    return harness.pass_result()
+
+func _test_action_legality_unknown_action_type_reports_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 927)
+    var actor = battle_state.get_side("P1").get_active_unit()
+    var is_allowed: bool = core.service("rule_mod_service").is_action_allowed(
+        battle_state,
+        actor.unit_instance_id,
+        "test_unknown_action_type"
+    )
+    if is_allowed:
+        return harness.fail_result("unknown managed action type must not silently pass legality check")
+    var error_state: Dictionary = core.service("rule_mod_service").error_state()
+    if error_state.get("code", null) != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
+        return harness.fail_result("unknown managed action type should report invalid_command_payload")
+    if String(error_state.get("message", "")).find("unsupported action_legality action_type") == -1:
+        return harness.fail_result("unknown managed action type should expose explicit action_legality error message")
     return harness.pass_result()
 
 

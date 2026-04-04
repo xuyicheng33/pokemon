@@ -21,6 +21,57 @@
 
 ## 2026-04-04
 
+### 正式角色扩展前整合：批次 1 共享机制硬约束收口（已完成）
+
+- 目标：
+  - 把 `action_legality`、`required_target_same_owner`、effect/rule_mod `refresh` 这三块共享机制里的隐式约定收成显式 contract，避免第 4 个正式角色接入时踩旧坑
+- 范围：
+  - `src/battle_core/content/content_schema.gd`
+  - `src/battle_core/effects/effect_instance_service.gd`
+  - `src/battle_core/effects/effect_precondition_service.gd`
+  - `src/battle_core/effects/effect_source_meta_helper.gd`
+  - `src/battle_core/effects/payload_handlers/payload_apply_effect_handler.gd`
+  - `src/battle_core/effects/rule_mod_read_service.gd`
+  - `src/battle_core/effects/rule_mod_service.gd`
+  - `src/battle_core/effects/rule_mod_write_service.gd`
+  - `tests/suites/action_legality_contract_suite.gd`
+  - `tests/suites/extension_targeting_accuracy_suite.gd`
+  - `tests/suites/on_receive_action_hit_suite.gd`
+  - `tests/suites/rule_mod_runtime_core_paths_suite.gd`
+  - `tests/support/gojo_test_support.gd`
+  - `README.md`
+- 验收标准：
+  - `action_legality` 明确只管理 `skill / ultimate / switch`，`wait / resource_forced_default / surrender` 永不受管控
+  - `required_target_same_owner` 读取 `source_owner_id` 时不再依赖散落裸 meta 约定；缺 owner 归因必须显式失败
+  - effect / rule_mod 的 `refresh` 语义统一为“同实例续命并刷新来源元数据”
+  - `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `ContentSchema` 已新增显式 `MANAGED_ACTION_TYPES / ALWAYS_ALLOWED_ACTION_TYPES`
+  - `RuleModReadService` 已切到显式受管控动作白名单；未知动作类型改为返回显式 `invalid_command_payload` 错误状态，不再靠默认分支静默吞掉
+  - 已新增 `EffectSourceMetaHelper`，统一写入 / 读取 `meta.source_owner_id`
+  - `PayloadApplyEffectHandler`、Gojo test helper 与相关 shared suite 已统一改走 owner meta helper
+  - `EffectPreconditionService` 在 `required_target_same_owner=true` 且命中缺 owner 归因 effect instance 时，会显式上浮 `invalid_state_corruption`
+  - `EffectInstanceService` 与 `RuleModWriteService` 的 `refresh` 路径都已同步刷新：
+    - `remaining`
+    - `source_instance_id`
+    - `source_kind_order`
+    - `source_order_speed_snapshot`
+    - effect `meta`
+  - 已补共享回归：
+    - `action_legality_managed_action_matrix_contract`
+    - `action_legality_unknown_action_type_reports_contract`
+    - `required_target_same_owner_missing_owner_contract`
+    - `effect_refresh_updates_source_metadata_contract`
+    - `rule_mod_refresh_updates_source_metadata_contract`
+  - `README.md` GDScript 行数统计已同步到当前仓库状态
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过
+
 ### 共享 schema 收口与 effect validator 硬化（已完成）
 
 - 目标：
@@ -1869,3 +1920,59 @@
 #### 当前验证结果
 
 - `godot --headless --path . --script tests/run_all.gd` 通过
+
+### 正式角色扩展前整合 Batch 1：共享机制硬约束收口（已完成）
+
+- 目标：
+  - 把后续扩角会复用的共享机制隐式契约收口到显式、可回归的状态
+- 范围：
+  - `src/battle_core/content/content_schema.gd`
+  - `src/battle_core/effects/effect_*`
+  - `src/battle_core/effects/payload_handlers/payload_apply_effect_handler.gd`
+  - `src/battle_core/effects/rule_mod_*`
+  - `tests/suites/action_legality_contract_suite.gd`
+  - `tests/suites/extension_targeting_accuracy_suite.gd`
+  - `tests/suites/rule_mod_runtime_core_paths_suite.gd`
+  - `tests/suites/on_receive_action_hit_suite.gd`
+  - `tests/support/gojo_test_support.gd`
+  - `README.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `action_legality` 改为显式受管控动作白名单口径，`deny all` 仍不封 `wait / resource_forced_default / surrender`
+  - `required_target_same_owner` 的 owner 归因统一走 helper，缺失 owner 归因时不能静默成功
+  - effect / rule_mod 的 `refresh` 统一为“同实例续命并更新来源元数据”
+  - `tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `ContentSchema` 新增共享动作分层常量：
+    - `MANAGED_ACTION_TYPES`
+    - `ALWAYS_ALLOWED_ACTION_TYPES`
+  - `RuleModReadService` 现在显式区分：
+    - 永远不受 `action_legality` 管控的动作
+    - 受管控动作类型的匹配 token
+    - 未知动作类型的显式报错
+  - 新增 `src/battle_core/effects/effect_source_meta_helper.gd`
+    - 统一生成 `meta.source_owner_id`
+    - 统一读取 / 校验 `source_owner_id`
+  - `PayloadApplyEffectHandler`、`GojoTestSupport`、`on_receive_action_hit_suite` 已切到 owner meta helper
+  - `EffectPreconditionService` 在 `required_target_same_owner=true` 且 marker 缺少 owner 归因时，改为显式报 `invalid_state_corruption`
+  - `EffectInstanceService.STACKING_REFRESH` 现在会同步刷新：
+    - `remaining`
+    - `source_instance_id`
+    - `source_kind_order`
+    - `source_order_speed_snapshot`
+    - `meta`
+  - `RuleModWriteService` 的 `refresh` 路径现在会同步刷新来源三件套，并显式保持 `last_apply_skipped = false`
+  - 已补共享回归：
+    - `action_legality_managed_action_matrix_contract`
+    - `action_legality_unknown_action_type_reports_contract`
+    - `required_target_same_owner_missing_owner_contract`
+    - `effect_refresh_updates_source_metadata_contract`
+    - `rule_mod_refresh_updates_source_metadata_contract`
+
+#### 当前验证结果
+
+- `bash tests/run_with_gate.sh` 通过

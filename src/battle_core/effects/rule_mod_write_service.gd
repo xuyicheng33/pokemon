@@ -50,9 +50,13 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
 				existing_instance.remaining = rule_mod_payload.duration if rule_mod_payload.duration_mode == "turns" else -1
 				existing_instance.value = resolved_value if resolved_value != null else rule_mod_payload.value
 				existing_instance.persists_on_switch = bool(rule_mod_payload.persists_on_switch)
+				existing_instance.source_instance_id = source_instance_id
+				existing_instance.source_kind_order = source_kind_order
+				existing_instance.source_order_speed_snapshot = source_order_speed_snapshot
 				existing_instance.source_stacking_key = resolved_source_stacking_key
 				existing_instance.required_incoming_command_types = rule_mod_payload.required_incoming_command_types.duplicate()
 				existing_instance.required_incoming_combat_type_ids = rule_mod_payload.required_incoming_combat_type_ids.duplicate()
+				last_apply_skipped = false
 				return existing_instance
 		ContentSchemaScript.STACKING_REPLACE:
 			if existing_instance != null:

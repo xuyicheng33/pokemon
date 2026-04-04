@@ -7,6 +7,7 @@ const EffectDefinitionScript := preload("res://src/battle_core/content/effect_de
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/effect_source_meta_helper.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
@@ -151,7 +152,7 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
         "test_water_dot_source",
         0,
         source_actor.base_speed,
-        {"source_owner_id": source_actor.unit_instance_id}
+        EffectSourceMetaHelperScript.build_meta(source_actor.unit_instance_id)
     ) == null:
         return harness.fail_result("failed to seed water dot effect instance")
     var attacker_hp_before: int = source_actor.current_hp

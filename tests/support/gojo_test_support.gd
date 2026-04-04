@@ -2,6 +2,7 @@ extends RefCounted
 class_name GojoTestSupport
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/effect_source_meta_helper.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const DomainRoleTestSupportScript := preload("res://tests/support/domain_role_test_support.gd")
@@ -70,9 +71,7 @@ func build_accuracy_skill(skill_id: String, accuracy: int):
 
 func apply_gojo_double_marks(core, content_index, battle_state, target_unit, source_instance_id: String, source_speed: int, source_owner_id: String = "") -> void:
     var resolved_owner_id := source_owner_id if not source_owner_id.is_empty() else source_instance_id
-    var effect_meta := {
-        "source_owner_id": resolved_owner_id,
-    }
+    var effect_meta := EffectSourceMetaHelperScript.build_meta(resolved_owner_id)
     core.service("effect_instance_service").create_instance(content_index.effects["gojo_ao_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed, effect_meta)
     core.service("effect_instance_service").create_instance(content_index.effects["gojo_aka_mark"], target_unit.unit_instance_id, battle_state, source_instance_id, 0, source_speed, effect_meta)
 

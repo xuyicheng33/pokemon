@@ -2,6 +2,7 @@ extends RefCounted
 class_name EffectPreconditionService
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/effect_source_meta_helper.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var last_invalid_battle_code: Variant = null
@@ -64,7 +65,10 @@ func _target_has_required_effect(target_unit, effect_definition_id: String, requ
 			continue
 		if not require_same_owner:
 			return true
-		var source_owner_id := String(effect_instance.meta.get("source_owner_id", ""))
-		if not source_owner_id.is_empty() and source_owner_id == required_owner_id:
+		var source_owner_id := EffectSourceMetaHelperScript.resolve_source_owner_id(effect_instance.meta)
+		if source_owner_id.is_empty():
+			last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+			return false
+		if source_owner_id == required_owner_id:
 			return true
 	return false

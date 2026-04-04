@@ -28,7 +28,11 @@ func create_instance(effect_definition, owner_id: String, battle_state, source_i
         ContentSchemaScript.STACKING_REFRESH:
             if existing_instance != null:
                 existing_instance.remaining = effect_definition.duration
+                existing_instance.source_instance_id = source_instance_id
+                existing_instance.source_kind_order = source_kind_order
+                existing_instance.source_order_speed_snapshot = source_order_speed_snapshot
                 existing_instance.meta = meta.duplicate(true)
+                last_apply_skipped = false
                 return existing_instance
         ContentSchemaScript.STACKING_REPLACE:
             if existing_instance != null:
