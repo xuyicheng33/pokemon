@@ -11,13 +11,75 @@
 
 ## 当前阶段
 
-- 阶段目标：按完整审查结论分阶段收口当前仓库问题；当前顺序是“运行时硬问题修复 → 文档与 gate 对齐 → formal registry / manager smoke / gate 耦合收口”。
-- 当前不做：Gojo / Sukuna / Kashimo 数值平衡调整、新角色扩角、现有角色机制重设计。
+- 阶段目标：按“基础稳定化整改路线图”先收口 passive fail-fast、错误读取通道、runtime wiring SCC、content cache 与 replay 索引，再继续扩正式角色与批量回放。
+- 当前不做：Gojo / Sukuna / Kashimo 数值平衡调整、新角色扩角、现有角色机制重设计、整仓库 DI 重写。
 - 当前优先级：
-  - 先修运行时硬问题，确保坏依赖与重复 rule_mod 不再静默漏报
-  - 再补文档与 gate 漂移，确保正式角色交付面、effect schema 与 README 统计一致
-- 再收 formal registry / runtime validator / manager smoke / repo consistency gate 的边界，降低扩第 4 个角色时的耦合与漏线风险
+  - 先保证 `invalid_battle` 与用户可见错误不再通过字符串通道静默漏报
+  - 再把 runtime wiring 受控 SCC、content cache 与 replay 索引做成 gate 和回归
+  - 同步把审查记录、设计稿与 README 口径写回仓库，避免“严格 DAG / 完全对齐”这类过度结论继续扩散
   - 每阶段都要完成验证、提交、推送，并在进入下一阶段前把工作区收干净
+
+## 2026-04-04
+
+### 基础稳定化整改路线图（已完成）
+
+- 目标：
+  - 按“先稳基础、再准备扩角和批量回放”的顺序落地基础稳定化整改
+  - 不改 `BattleCoreManager` 等对外公开接口，不顺手扩新角色或补正式 passive item 内容
+  - 把本轮审查结论同步落成 gate、回归与仓库记录
+- 范围：
+  - `src/battle_core/passives/*`
+  - `src/battle_core/effects/*`
+  - `src/battle_core/logging/replay_runner.gd`
+  - `src/battle_core/content/*`
+  - `src/composition/*`
+  - `tests/suites/*`
+  - `tests/support/*`
+  - `tests/gates/*`
+  - `docs/design/*`
+  - `docs/records/*`
+  - `README.md`
+- 验收标准：
+  - passive skill / passive item 的坏 trigger source 必须走 `invalid_battle`，不能静默失效
+  - runtime wiring 图必须由 SCC allowlist gate 明确约束，不再口头写成“严格 DAG”
+  - 同一组 `content_snapshot_paths` 的 session / replay 要命中 cache，且 public snapshot、event log、`final_state_hash` 与 baseline 一致
+  - replay 预分组前后必须保持 event log 与 `final_state_hash` 一致
+  - `bash tests/run_with_gate.sh` 全绿
+
+#### 当前执行结果
+
+- 已完成（任务 A：passive fail-fast）：
+  - `PassiveSkillService`、`PassiveItemService` 已显式保存并暴露 `last_invalid_battle_code`
+  - `TriggerBatchRunner.collect_trigger_events()` 已统一检查 passive skill / passive item / effect instance / field 四类 trigger source
+  - 已新增负向回归：
+    - `invalid_passive_skill_trigger_source_fails_fast`
+    - `invalid_passive_item_trigger_source_fails_fast`
+- 已完成（任务 B：错误通道显式化）：
+  - 当前跨模块用户可见错误读取统一收口到 `error_state()`
+  - 当前跨模块 `invalid_battle` 读取统一收口到 `invalid_battle_code()`
+  - `BattleCoreManagerContractHelper`、`BattleCoreSession`、`TriggerBatchRunner` 与 `ReplayRunner -> BattleInitializer` 已切到显式读取
+  - pluggable mock 只在局部 helper 里保留兼容 fallback，不再把动态 `get("last_*")` 继续扩散到正式主路径
+- 已完成（任务 C：runtime wiring SCC gate）：
+  - 已新增 `tests/gates/architecture_wiring_graph_gate.py`
+  - `tests/check_architecture_constraints.sh` 已接入该 gate
+  - 当前 runtime wiring 图正式收口为“静态 import 单向 + 单一 allowlisted SCC”
+- 已完成（任务 D：审查记录与文档落盘）：
+  - 已新增正式审查记录：`docs/records/review_2026-04-04_foundation_stabilization_audit.md`
+  - `architecture_overview.md`、`battle_core_architecture_constraints.md`、`log_and_replay_contract.md`、`kashimo_hajime_design.md`、`README.md`、`tests/README.md` 已同步到当前实现口径
+  - `decisions.md` 已补充 passive fail-fast / 显式错误读取 / runtime SCC allowlist / content cache / replay 索引的正式决策
+- 已完成（任务 E：content cache）：
+  - 已新增 composer 级共享 `ContentSnapshotCache`
+  - session / replay 现在都先从 cache 取“已加载且已校验”的资源数组，再深复制构造 fresh `BattleContentIndex`
+  - 已新增 `content_snapshot_cache_session_and_replay_contract`，固定比较 cache 命中前后的 public snapshot、event log 与 `final_state_hash`
+- 已完成（任务 F：replay 索引）：
+  - `ReplayRunner` 已在 while 循环前按 `turn_index` 预分组 `command_stream`
+  - 已新增 `replay_turn_index_lookup_contract`，固定锁同回合顺序与 deterministic 行为
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/check_architecture_constraints.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
 
 ## 2026-04-03
 

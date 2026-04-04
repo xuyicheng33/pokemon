@@ -33,6 +33,7 @@
 - 外围层（`composition/adapters/scenes`）不得直接依赖 `battle_core/runtime/*`。
 - `adapters/scenes` 只能依赖 facade、公开 contract，或输入枚举常量 `commands/command_types.gd`；不得直接连 `actions/effects/lifecycle/logging/math/passives/turn/content` 等内部服务实现。
 - 外围只能通过 facade 与公开 contract 调核心。
+- 静态 import 面必须保持分层单向；这不等于 runtime wiring 图必须是 DAG。当前 runtime 属性注入图允许保留登记过的受控 SCC，并由架构 gate 固定校验。
 
 ## 3. 模块拆分
 
@@ -60,13 +61,14 @@
 ## 4. 数据流
 
 1. `BattleSandboxRunner` 或测试入口请求 `BattleCoreComposer` 创建核心依赖图。
-2. `BattleInitializer` 读取内容资源与队伍快照，构造 `BattleState`。
-3. `TurnLoopController` 驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`。
-4. `LegalActionService` 产出 `LegalActionSet`；`CommandBuilder` 组装 `Command`；`CommandValidator` 做硬校验。
-5. `ActionQueueBuilder` 生成 `QueuedAction` 列表。
-6. `ActionExecutor` 执行行动，调用 `TargetResolver`、`math`、`effects` 与 `lifecycle`。
-7. `BattleLogger` 与 `LogEventBuilder` 为每个步骤写 `LogEvent`。
-8. `ReplayRunner` 使用 `ReplayInput` 重建流程，产出 `ReplayOutput`。
+2. `BattleCoreManagerContainerService` / `ReplayRunner` 先通过 `ContentSnapshotCache` 取得“已加载且已校验”的资源数组，再为本次 session / replay 深复制资源并构造 fresh `BattleContentIndex`。
+3. `BattleInitializer` 读取内容资源与队伍快照，构造 `BattleState`。
+4. `TurnLoopController` 驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`。
+5. `LegalActionService` 产出 `LegalActionSet`；`CommandBuilder` 组装 `Command`；`CommandValidator` 做硬校验。
+6. `ActionQueueBuilder` 生成 `QueuedAction` 列表。
+7. `ActionExecutor` 执行行动，调用 `TargetResolver`、`math`、`effects` 与 `lifecycle`。
+8. `BattleLogger` 与 `LogEventBuilder` 为每个步骤写 `LogEvent`。
+9. `ReplayRunner` 在进入主循环前先按 `turn_index` 预分组 `command_stream`，再重建流程并产出 `ReplayOutput`。
 
 ## 5. 依赖纪律
 
@@ -91,6 +93,7 @@
   - 挂载 `BattleSandboxRunner`。
 - `src/composition/battle_core_composer.gd`
   - 负责创建 RNG、ID、commands、turn、effects、logging 等服务对象。
+  - 负责维护 composer 级共享 `content_snapshot_cache`，供同一 manager 下的多 session / replay 复用。
   - 通过 `BattleCoreServiceSpecs.SERVICE_DESCRIPTORS` 驱动装配。
   - 返回一个 dictionary-backed 的 `BattleCoreContainer`。
 - `src/composition/battle_core_container.gd`

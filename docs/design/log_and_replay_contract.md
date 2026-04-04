@@ -8,6 +8,7 @@
 |---|---|
 |`battle_logger.gd`|写入与快照完整 `LogEvent` 列表|
 |`log_event_builder.gd`|按 `ChainContext` 统一构造 `LogEvent` 字段|
+|`content_snapshot_cache.gd`|按稳定 `content_snapshot_paths` 签名复用“已加载且已校验”的资源数组，再为每次 session / replay 构造 fresh `BattleContentIndex`|
 |`replay_runner.gd`|按 `ReplayInput` 还原整场对局并产出 `ReplayOutput`|
 |`tests/run_with_gate.sh`|测试闸门：断言失败或引擎错误日志任一命中即失败|
 
@@ -84,6 +85,11 @@
 |`battle_setup`|战斗初始化配置|
 |`command_stream`|按回合分发的指令流|
 
+补充约束：
+
+- `ReplayRunner` 在进入主循环前必须先把 `command_stream` 预分组到 `Dictionary<int, Array>`，每回合只读取当前 `turn_index` 的命令数组。
+- 同回合命令的相对顺序必须严格保留输入顺序，不能因为预分组改变 deterministic 行为。
+
 ### 3.2 ReplayOutput（内部：ReplayRunner）
 
 |字段|说明|
@@ -112,6 +118,7 @@
 - 回放运行必须持续到战斗结束或回合上限触发（不允许半局成功返回）。
 - 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`，且 `cause_event_id` 不得等于当前日志事件自身 ID）。
 - `run_replay` 使用临时容器隔离执行，不读写活跃会话池；回放完成后释放临时容器。
+- 相同 `content_snapshot_paths` 的重复 session / replay 可以命中 `ContentSnapshotCache`；但 cache 里只允许共享“已校验资源数组”，不允许跨会话共享可变 `BattleContentIndex` 或运行态对象。
 
 ## 4. Manager 初始化公开契约
 
@@ -131,4 +138,5 @@
 1. 同输入重复回放，`final_state_hash` 一致。
 2. 日志链路字段遵守“行动链继承、系统链 `null + system:*`”语义，且所有 effect 事件都指向真实上游触发事件。
 3. `system:battle_header` 先于首条 `state:enter`，且 `header_snapshot` 不含私有实例 ID。
-4. `tests/run_with_gate.sh` 返回 `GATE PASSED`。
+4. 同一组 `content_snapshot_paths` 连续建 session 和 replay 时，cache 命中后仍必须保持 public snapshot、event log 与 `final_state_hash` 不变。
+5. `tests/run_with_gate.sh` 返回 `GATE PASSED`。

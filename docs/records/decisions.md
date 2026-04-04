@@ -762,3 +762,84 @@
 - 原因：
   - 旧的按顺序试探 handler 会把“前置守卫 / 路由 / 执行”揉在一起，新增 payload 类型时改动面会持续膨胀。
   - 先把前置守卫独立、再把路由显式注册，后续新增 payload 只需要补一个 handler 与 wiring，不必继续改粗粒度大类。
+
+### 64. Passive / field / effect trigger source 的 `invalid_battle` 必须在 collect 阶段立刻上浮（2026-04-04）
+
+- `PassiveSkillService`、`PassiveItemService`、`FieldService`、`EffectInstanceDispatcher` 这四类 trigger source，只要在 `collect_events()` 阶段得到 `invalid_battle_code`，就必须立刻向上返回。
+- `TriggerBatchRunner.collect_trigger_events()` 当前固定统一检查这四条支路；任一支路命中 `invalid_battle_code`，整批 trigger 立即中止。
+- 明确禁止：
+  - 把 `invalid_battle` 悄悄吞成“这次没有触发任何 effect”
+  - 在 passive / field 触发链上继续留 silent skip
+- 原因：
+  - 这类错误本质上是坏内容或坏运行态，不是“正常没触发”。
+  - 若继续静默吞错，扩角色时最难排查的就会是“资源写错但战斗只表现成偶尔不生效”。
+
+### 65. 跨模块用户可见错误读取统一走 `error_state()` / `invalid_battle_code()`；兼容 fallback 只允许留在可插拔测试替身边界（2026-04-04）
+
+- 当前跨模块读取用户可见错误的正式约定固定为：
+  - `error_state() -> { code, message }`
+  - `invalid_battle_code() -> Variant`
+- 已迁移的高风险读取点：
+  - `BattleCoreManagerContractHelper`
+  - `BattleCoreSession`
+  - `TriggerBatchRunner`
+  - `ReplayRunner -> BattleInitializer`
+- 当前允许保留 property fallback 的范围只剩：
+  - 测试替身
+  - pluggable mock 依赖边界
+- 明确禁止：
+  - 在正式服务之间继续新增 `get("last_error_code") / get("last_invalid_battle_code")`
+  - 用动态字符串读取作为长期主路径
+- 原因：
+  - 这些字符串通道最容易在扩 helper、换 mock、改字段名时悄悄失效。
+  - 先把 façade / orchestrator 侧最危险的读取点改成显式方法，能明显降低“接口没断言、运行到半截才炸”的概率。
+
+### 66. Runtime wiring 图不是严格 DAG；当前正式口径是“静态 import 单向 + 单一 allowlisted SCC + gate 强校验”（2026-04-04）
+
+- 当前架构文档正式口径改为：
+  - 静态 import 面必须单向、干净
+  - runtime 属性注入图允许保留 1 个登记过的 SCC
+- 新增 `tests/gates/architecture_wiring_graph_gate.py` 后，当前唯一允许的 runtime SCC 固定为：
+  - `faint_leave_replacement_service`
+  - `faint_resolver`
+  - `field_apply_effect_runner`
+  - `field_apply_service`
+  - `field_service`
+  - `payload_apply_field_handler`
+  - `payload_damage_handler`
+  - `payload_damage_runtime_service`
+  - `payload_executor`
+  - `payload_forced_replace_handler`
+  - `payload_handler_registry`
+  - `replacement_service`
+  - `trigger_batch_runner`
+- 以后若新增 SCC、扩大成员或拆成新的未登记闭环，architecture gate 必须直接失败。
+- 原因：
+  - 把当前 wiring 误写成“严格 DAG”只会继续误导后续审查。
+  - 真正有约束力的说法应该是：静态依赖保持单向，runtime wiring 允许且只允许这一组受控 SCC。
+
+### 67. 内容快照当前采用“composer 级共享 cache + 每次 fresh index”策略（2026-04-04）
+
+- 当前新增 `ContentSnapshotCache`，挂在 `BattleCoreComposer` 上做共享服务。
+- cache 键固定为稳定排序后的 `content_snapshot_paths` 签名。
+- cache 中只允许存：
+  - 已加载且已校验的资源数组
+- 每次 session / replay 命中 cache 后，仍必须：
+  - 深复制资源
+  - 构造 fresh `BattleContentIndex`
+- 明确禁止：
+  - 直接跨 session / replay 共享可变 `BattleContentIndex`
+  - 为了省 load 成本跳过 fresh index 构造
+- 原因：
+  - 目标是省掉重复 I/O 和重复校验，不是把可变资源对象跨会话复用到一起。
+
+### 68. Replay 命令查找当前固定为“按回合预分组，保持同回合输入顺序不变”（2026-04-04）
+
+- `ReplayRunner` 当前在 while 循环前先把 `command_stream` 预分组到 `Dictionary<int, Array>`。
+- 每回合只读取当前 `turn_index` 的命令数组。
+- 同回合命令的相对顺序固定继承输入顺序，不得因为预分组改变 deterministic 行为。
+- 已新增回归：
+  - `replay_turn_index_lookup_contract`
+- 原因：
+  - 旧的每回合整表扫描方式会把批量回放成本线性放大。
+  - 先按回合索引收口，才能在后续 replay case 增长时维持可接受的基础成本。

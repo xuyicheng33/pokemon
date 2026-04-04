@@ -12,6 +12,7 @@
 - `run_with_gate.sh`: 闸门脚本（业务断言 + 引擎级错误检查 + 架构约束 + 仓库一致性）
 - `check_suite_reachability.sh`: suite 可达性闸门；确保 `tests/suites/*.gd` 都能从 `run_all.gd` 或正式角色 wrapper 子树走到
 - `check_architecture_constraints.sh`: 分层与大文件架构闸门
+- `gates/architecture_wiring_graph_gate.py`: runtime wiring 图 SCC allowlist 闸门；固定只允许当前登记的受控闭环
 - `check_repo_consistency.sh`: README/文档/关键回归一致性闸门总入口
 - `gates/`: 仓库一致性细分 gate；当前按 `surface / formal_character / docs` 三类拆开维护，由 `check_repo_consistency.sh` 聚合执行
 - `fixtures/`: 预留的样例输入与内容快照目录

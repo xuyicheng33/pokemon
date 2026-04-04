@@ -292,12 +292,9 @@
 
 | 资源 | 语义 |
 |------|------|
-| `kashimo_amber_self_transform` | `on_cast` 时施加琥珀形态相关效果 |
-| `kashimo_amber_attack_up` | 攻击 +2 级语义；通过 `persistent_stat_stages` 跨换人保留 |
-| `kashimo_amber_sp_attack_up` | 特攻 +2 级语义；通过 `persistent_stat_stages` 跨换人保留 |
-| `kashimo_amber_speed_up` | 速度 +1 级语义；通过 `persistent_stat_stages` 跨换人保留 |
+| `kashimo_amber_self_transform` | 单一入口 effect；`on_cast` 时直接写入攻击 +2 / 特攻 +2 / 速度 +1 三段 `persistent_stat_stages`，并继续挂 `kashimo_amber_bleed` 与奥义封锁 rule mod |
 | `kashimo_amber_bleed` | `turn_end` 每回合扣 20 HP；`persists_on_switch=true` |
-| `kashimo_amber_ult_lock` | 整场禁止再次使用奥义；`persists_on_switch=true` |
+| 奥义封锁 | 当前不单独落成 `kashimo_amber_ult_lock` 资源，而是作为 `kashimo_amber_self_transform` 内部的 `action_legality deny ultimate` rule mod payload 写入；`persists_on_switch=true` |
 
 **自毁时序**
 
@@ -339,8 +336,9 @@
 |------|------|
 | `kashimo_charge_separation` | 被动入口；负责抗雷减伤与水属性命中后的导电分支 |
 | `kashimo_thunder_resist` | 当来袭主动技能 / 奥义的 `combat_type_id=thunder` 时，本次最终伤害乘 `0.5` |
-| `kashimo_water_leak_self` | 鹿紫云自身 `resource_mod(mp, -15)` |
-| `kashimo_water_leak_counter` | 对攻击者造成 1 次基础值为 15 的 `poison` 固定伤害；最终伤害继续吃 `poison` 属性克制 |
+| `kashimo_apply_water_leak_listeners` | `on_enter` 时一次性挂上两条常驻监听 effect |
+| `kashimo_water_leak_self_listener` | `on_receive_action_hit + water + (skill/ultimate)` 时，鹿紫云自身 `resource_mod(mp, -15)` |
+| `kashimo_water_leak_counter_listener` | 同一触发条件下，对攻击者造成 1 次基础值为 15 的 `poison` 固定伤害；最终伤害继续吃 `poison` 属性克制 |
 
 ---
 
