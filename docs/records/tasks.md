@@ -21,6 +21,51 @@
 
 ## 2026-04-05
 
+### 审查问题修复收口：runtime formal validator registry、cache 签名与 factory 错误口收边（已完成）
+
+- 目标：
+  - 去掉 runtime 对 `docs/records/formal_character_registry.json` 的直接依赖
+  - 让 `ContentSnapshotCache` 在“同路径内容变化”时必然 miss，而不是继续复用旧 cache
+  - 收掉 manager factory 错误路径里对 composition 细节的反向读取
+  - 同步 README / 测试文档 / schema / checklist / 决策记录口径
+- 范围：
+  - `src/battle_core/content/content_snapshot_formal_character_registry.gd`
+  - `src/battle_core/content/content_snapshot_cache.gd`
+  - `src/composition/battle_core_composer.gd`
+  - `src/battle_core/facades/battle_core_manager_container_service.gd`
+  - `tests/suites/content_snapshot_cache_composer_suite.gd`
+  - `tests/gates/repo_consistency_formal_character_gate.py`
+  - `tests/gates/repo_consistency_docs_gate.py`
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/formal_character_delivery_checklist.md`
+  - `docs/records/decisions.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - runtime formal validator 装配不再读取 docs-side registry
+  - repo consistency gate 能校验 runtime validator 描述源与 docs registry 的路径一致
+  - 新增回归能锁住“同路径文件内容变化后 cache 签名变化”
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成：
+  - runtime formal validator 装配已改为代码侧描述源，不再在运行时读取 `docs/records/formal_character_registry.json`
+  - repo consistency gate 已补 runtime validator 描述源与 docs registry 的一致性检查
+  - `ContentSnapshotCache` 签名已纳入文件内容指纹
+  - 已新增 `content_snapshot_cache_signature_tracks_file_content_contract`
+  - manager factory 错误路径已改为只通过 `error_state()` port 回读，不再触碰 `container_factory_owner.composer`
+  - README / 测试文档 / schema / checklist / 决策记录已同步到新的口径
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
+
 ### 审查问题修复收口：宿傩 kamado 20 点火伤升级为真正单源资源（已完成）
 
 - 目标：

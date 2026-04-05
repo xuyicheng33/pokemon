@@ -24,7 +24,7 @@ ctx.require_contains("docs/design/battle_content_schema.md", "effect_stack_sum",
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_effect_ids", "schema power bonus self effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
-ctx.require_contains("docs/design/battle_content_schema.md", "docs/records/formal_character_registry.json", "schema runtime validator registry wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "content_snapshot_formal_character_registry.gd", "schema runtime validator registry wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "content_validator_script_path", "schema formal character validator path wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "nullify_field_accuracy", "schema field accuracy nullify contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "incoming_action_final_mod", "schema incoming action final mod contract")

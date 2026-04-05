@@ -11,6 +11,19 @@
 
 ## 当前有效决策
 
+### 0. Runtime formal validator 与 content cache 收口到代码侧稳定入口（2026-04-05）
+
+- `ContentSnapshotFormalCharacterValidator` 的 runtime 装配，不再直接读取 `docs/records/formal_character_registry.json`。
+- runtime 侧当前固定由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 这份代码侧描述源装配 formal validator。
+- `docs/records/formal_character_registry.json` 继续保留为角色交付、测试与文档元数据注册表；repo consistency gate 必须校验它和 runtime 侧 validator 路径一致。
+- `ContentSnapshotCache` 的签名当前必须同时包含：
+  - 稳定排序后的 `content_snapshot_paths`
+  - 每个路径对应文件的内容指纹（优先 `md5`，失败时退回文件修改时间）
+- 原因：
+  - runtime 不应再依赖 `docs/records` 作为可执行配置源。
+  - 同一路径下文件内容变化后，cache 必须 miss，不能继续复用旧 entry。
+- `BattleCoreManager` 的 container factory 错误路径当前只允许通过 `error_state()` port 回读错误，不再反向 reach-through `container_factory_owner.composer`。
+
 ### 1. 规则、设计、记录的职责分层固定
 
 - `docs/rules/` 是当前生效规则权威。

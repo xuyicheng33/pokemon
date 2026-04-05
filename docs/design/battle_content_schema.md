@@ -294,7 +294,7 @@
 - `required_incoming_command_types / required_incoming_combat_type_ids` 的加载期校验固定包含：只允许 `on_receive_action_hit` effect 使用、不得含空项、动作类型只允许 `skill / ultimate`、属性过滤必须命中已注册 `combat_type`。
 - field 校验覆盖：`field_kind in {normal, domain}`、`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
 - payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`StatModPayload.retention_mode in {normal, persist_on_switch}`、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
-- 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；运行时直接读取 `docs/records/formal_character_registry.json` 里的可选 `content_validator_script_path`，并由 repo consistency gate 校验该单一 registry 的字段完整性、suite 注册链与文档锚点一致性。
+- 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；runtime 侧的 validator 装配描述源固定收口到 `src/battle_core/content/content_snapshot_formal_character_registry.gd`，`docs/records/formal_character_registry.json` 继续承载角色交付元数据与可选 `content_validator_script_path`，并由 repo consistency gate 校验两边的 validator 路径一致性、suite 注册链与文档锚点。
 - 内容快照校验失败直接 fail-fast，不进入运行态。
 
 ## 7. 运行前校验（BattleSetup）

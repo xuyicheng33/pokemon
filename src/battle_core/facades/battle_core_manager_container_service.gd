@@ -100,9 +100,8 @@ func _compose_container_result() -> Dictionary:
     var container = container_factory.call()
     if container != null:
         return BattleCoreManagerContractHelperScript.ok(container)
-    var composer = container_factory_owner.composer if container_factory_owner != null else null
-    if composer != null:
-        var composer_error_state: Dictionary = composer.error_state()
+    if container_factory_owner != null and container_factory_owner.has_method("error_state"):
+        var composer_error_state: Dictionary = container_factory_owner.error_state()
         return BattleCoreManagerContractHelperScript.error(
             composer_error_state.get("code", ErrorCodesScript.INVALID_COMPOSITION),
             String(composer_error_state.get("message", "BattleCoreManager failed to compose battle core container"))

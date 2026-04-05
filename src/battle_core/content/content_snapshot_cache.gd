@@ -97,5 +97,13 @@ func _build_signature(content_snapshot_paths: PackedStringArray) -> String:
         return ""
     var hashing_context = HashingContext.new()
     hashing_context.start(HashingContext.HASH_SHA256)
-    hashing_context.update("\n".join(normalized_paths).to_utf8_buffer())
+    var signature_parts: Array[String] = []
+    for path in normalized_paths:
+        signature_parts.append(path)
+        var md5 := FileAccess.get_md5(path)
+        if not md5.is_empty():
+            signature_parts.append("md5:%s" % md5)
+            continue
+        signature_parts.append("mtime:%d" % FileAccess.get_modified_time(path))
+    hashing_context.update("\n".join(signature_parts).to_utf8_buffer())
     return hashing_context.finish().hex_encode()

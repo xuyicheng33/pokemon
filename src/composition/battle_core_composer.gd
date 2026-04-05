@@ -19,6 +19,14 @@ class ContainerFactoryPort:
             return null
         return composer.compose()
 
+    func error_state() -> Dictionary:
+        if composer == null:
+            return {
+                "code": ErrorCodesScript.INVALID_COMPOSITION,
+                "message": "BattleCoreComposer factory port missing composer",
+            }
+        return composer.error_state()
+
 var last_error_code: Variant = null
 var last_error_message: String = ""
 var _shared_content_snapshot_cache = null

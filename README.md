@@ -197,6 +197,7 @@ tests/run_with_gate.sh
 - 普通技能与奥义优先级约束分离校验
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
 - `SampleBattleFactory.content_snapshot_paths()` 统一从 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 递归自动收集 `.tres`，并做稳定排序，避免角色接线漏资源与回放漂移
+- `ContentSnapshotCache` 的签名当前固定包含稳定排序后的路径列表与每个文件的内容指纹；同一路径下只要文件内容变化，就必须重新 miss，而不是继续复用旧 cache entry
 - 若多个正式资源要共享同一份 payload，可把辅助 Resource 放到 `content/shared/`，再由顶层内容资源显式外部引用；`content/shared/` 本身不参与顶层 snapshot 注册
 
 ### 8.1 正式角色资源
@@ -220,7 +221,7 @@ tests/run_with_gate.sh
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
 - 角色注册：`docs/records/formal_character_registry.json`
-- 共享内容校验：若角色有跨资源共享不变量，可直接在 `docs/records/formal_character_registry.json` 里登记可选 `content_validator_script_path`；运行时与 repo consistency gate 都只读取这一个 docs-side registry
+- 共享内容校验：若角色有跨资源共享不变量，可在 `docs/records/formal_character_registry.json` 里登记 `content_validator_script_path`；runtime 侧实际由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 这份代码侧描述源装配 validator，repo consistency gate 会校验它和 docs registry 的路径一致
 - 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `sample_setup_method / required_suite_paths / required_test_names`；其中 `sample_setup_method` 必须精确对应 `SampleBattleFactory` 的 builder 方法名；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
@@ -247,9 +248,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-05）
 
-- `src/**/*.gd`：`12659` 行
-- `tests/**/*.gd`：`15711` 行
-- GDScript 合计：`28370` 行
+- `src/**/*.gd`：`12669` 行
+- `tests/**/*.gd`：`15742` 行
+- GDScript 合计：`28411` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

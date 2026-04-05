@@ -13,6 +13,16 @@ ctx = GateContext()
 formal_character_registry = ctx.load_json_array("docs/records/formal_character_registry.json", "formal character registry")
 if not formal_character_registry:
     ctx.failures.append("docs/records/formal_character_registry.json must list at least one formal character")
+runtime_registry_text = ctx.read_text("src/battle_core/content/content_snapshot_formal_character_registry.gd")
+runtime_validator_entries = dict(
+    re.findall(
+        r'"character_id": "([^"]+)",\s*"validator_script": preload\("([^"]+)"\)',
+        runtime_registry_text,
+        re.S,
+    )
+)
+if not runtime_validator_entries:
+    ctx.failures.append("runtime formal character validator registry must declare at least one descriptor")
 
 sample_factory_text = ctx.read_text("src/composition/sample_battle_factory.gd")
 run_all_text = ctx.read_text("tests/run_all.gd")
@@ -79,6 +89,16 @@ for entry in formal_character_registry:
         ctx.failures.append(f"src/composition/sample_battle_factory.gd missing sample setup builder: {sample_setup_method}")
     if content_validator_script_path != "":
         ctx.require_exists(content_validator_script_path, f"{character_id} content validator script")
+        runtime_validator_path = runtime_validator_entries.get(character_id, "")
+        expected_runtime_path = content_validator_script_path if content_validator_script_path.startswith("res://") else "res://%s" % content_validator_script_path
+        if runtime_validator_path == "":
+            ctx.failures.append(
+                f"runtime formal character validator registry missing descriptor for {character_id}"
+            )
+        elif runtime_validator_path != expected_runtime_path:
+            ctx.failures.append(
+                f"runtime formal character validator registry drift for {character_id}: expected {expected_runtime_path} got {runtime_validator_path}"
+            )
     if not isinstance(required_suite_paths, list) or not required_suite_paths:
         ctx.failures.append(f"formal character registry[{character_id}] missing required_suite_paths")
     else:
@@ -113,5 +133,11 @@ for entry in formal_character_registry:
     elif adjustment_doc != "":
         for needle in adjustment_needles:
             ctx.require_contains(adjustment_doc, str(needle), f"{character_id} adjustment anchor")
+
+stale_runtime_descriptors = sorted(set(runtime_validator_entries.keys()) - seen_formal_characters)
+for character_id in stale_runtime_descriptors:
+    ctx.failures.append(
+        f"runtime formal character validator registry has stale descriptor without docs registry entry: {character_id}"
+    )
 
 ctx.finish("formal character registry, suite tree, and asset delivery surface are aligned")
