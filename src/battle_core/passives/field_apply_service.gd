@@ -52,17 +52,17 @@ func apply_field(
 			effect_event,
 			battle_state,
 			content_index
-		)
+			)
 		var clash_invalid_code = domain_clash_orchestrator.invalid_battle_code()
 		if clash_invalid_code != null:
 			return clash_invalid_code
 		if bool(conflict_result.get("blocked", false)):
 			field_apply_log_service.log_field_blocked_by_active_domain(before_field, payload, effect_event, battle_state)
 			return null
-		var clash_result: Dictionary = conflict_result.get("clash_result", {})
-		if not clash_result.is_empty():
+		var clash_result = conflict_result.get("clash_result", null)
+		if clash_result != null:
 			field_apply_log_service.log_field_clash(clash_result, before_field, payload, effect_event, battle_state)
-			if not bool(clash_result.get("challenger_won", false)):
+			if not bool(clash_result.challenger_won):
 				var release_invalid_code = field_apply_effect_runner.execute_pending_success_effects(
 					before_field,
 					battle_state,

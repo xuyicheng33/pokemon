@@ -2,7 +2,7 @@ extends RefCounted
 class_name TurnResolutionService
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
-const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
+const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
 
 var selection_resolver
 var field_lifecycle_service
@@ -60,12 +60,12 @@ func apply_turn_start_regen(battle_state, cause_event_id: String) -> void:
         active_unit.current_mp = mp_service.apply_turn_start_regen(active_unit.current_mp, regen_value, active_unit.max_mp)
         if before_mp == active_unit.current_mp:
             continue
-        var value_change = ValueChangeScript.new()
-        value_change.entity_id = active_unit.unit_instance_id
-        value_change.resource_name = "mp"
-        value_change.before_value = before_mp
-        value_change.after_value = active_unit.current_mp
-        value_change.delta = active_unit.current_mp - before_mp
+        var value_change = ValueChangeFactoryScript.create(
+            active_unit.unit_instance_id,
+            "mp",
+            before_mp,
+            active_unit.current_mp
+        )
         var log_event = log_event_builder.build_effect_event(
             EventTypesScript.EFFECT_RESOURCE_MOD,
             battle_state,

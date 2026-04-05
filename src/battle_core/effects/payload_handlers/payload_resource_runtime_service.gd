@@ -2,7 +2,7 @@ extends RefCounted
 class_name PayloadResourceRuntimeService
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
-const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
+const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
 
 var battle_logger
 var log_event_builder
@@ -94,10 +94,4 @@ func _write_resource_value(target_unit, resource_name: String, value: int) -> vo
             target_unit.set(resource_name, value)
 
 func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int):
-    var value_change = ValueChangeScript.new()
-    value_change.entity_id = entity_id
-    value_change.resource_name = resource_name
-    value_change.before_value = before_value
-    value_change.after_value = after_value
-    value_change.delta = after_value - before_value
-    return value_change
+    return ValueChangeFactoryScript.create(entity_id, resource_name, before_value, after_value)

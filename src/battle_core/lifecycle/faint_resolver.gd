@@ -29,24 +29,25 @@ func resolve_missing_dependency() -> String:
     return ""
 
 func resolve_faint_window(battle_state, content_index):
-    var fainted_units: Array = faint_leave_replacement_service.collect_pending_fainted_units(battle_state)
+    while true:
+        var fainted_units: Array = faint_leave_replacement_service.collect_pending_fainted_units(battle_state)
 
-    if not fainted_units.is_empty():
-        var faint_invalid_code = _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units)
-        if faint_invalid_code != null:
-            return faint_invalid_code
+        if not fainted_units.is_empty():
+            var faint_invalid_code = _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units)
+            if faint_invalid_code != null:
+                return faint_invalid_code
 
-    var replacement_resolution: Dictionary = faint_leave_replacement_service.resolve_faint_replacements(battle_state)
-    var replacement_invalid_code = replacement_resolution.get("invalid_code", null)
-    if replacement_invalid_code != null:
-        return replacement_invalid_code
-    var entered_unit_ids: Array = replacement_resolution.get("entered_unit_ids", [])
-    if not entered_unit_ids.is_empty():
-        var on_enter_invalid_code = _execute_unit_trigger_batch("on_enter", battle_state, content_index, entered_unit_ids)
-        if on_enter_invalid_code != null:
-            return on_enter_invalid_code
-    if faint_leave_replacement_service.has_pending_faint_active(battle_state):
-        return resolve_faint_window(battle_state, content_index)
+        var replacement_resolution: Dictionary = faint_leave_replacement_service.resolve_faint_replacements(battle_state)
+        var replacement_invalid_code = replacement_resolution.get("invalid_code", null)
+        if replacement_invalid_code != null:
+            return replacement_invalid_code
+        var entered_unit_ids: Array = replacement_resolution.get("entered_unit_ids", [])
+        if not entered_unit_ids.is_empty():
+            var on_enter_invalid_code = _execute_unit_trigger_batch("on_enter", battle_state, content_index, entered_unit_ids)
+            if on_enter_invalid_code != null:
+                return on_enter_invalid_code
+        if not faint_leave_replacement_service.has_pending_faint_active(battle_state):
+            break
     return null
 
 func _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units: Array) -> Variant:

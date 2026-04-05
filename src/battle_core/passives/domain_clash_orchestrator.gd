@@ -94,7 +94,7 @@ func resolve_field_conflict(before_field, challenger_field_definition, effect_ev
 		return {
 			"blocked": false,
 			"should_break_before_apply": false,
-			"clash_result": {},
+			"clash_result": null,
 		}
 	if content_index == null:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
@@ -115,7 +115,7 @@ func resolve_field_conflict(before_field, challenger_field_definition, effect_ev
 		return {
 			"blocked": true,
 			"should_break_before_apply": false,
-			"clash_result": {},
+			"clash_result": null,
 		}
 	var should_resolve_clash: bool = field_apply_conflict_service.should_resolve_domain_clash(
 		challenger_field_definition,
@@ -129,14 +129,15 @@ func resolve_field_conflict(before_field, challenger_field_definition, effect_ev
 		return {
 			"blocked": false,
 			"should_break_before_apply": true,
-			"clash_result": {},
+			"clash_result": null,
 		}
-	var clash_result: Dictionary = field_apply_conflict_service.resolve_field_clash(before_field, effect_event, battle_state)
-	if clash_result.has("invalid_code"):
-		last_invalid_battle_code = clash_result["invalid_code"]
+	var clash_resolution: Dictionary = field_apply_conflict_service.resolve_field_clash(before_field, effect_event, battle_state)
+	if clash_resolution.has("invalid_code"):
+		last_invalid_battle_code = clash_resolution["invalid_code"]
 		return {}
+	var clash_result = clash_resolution.get("clash_result", null)
 	return {
 		"blocked": false,
-		"should_break_before_apply": bool(clash_result.get("challenger_won", false)),
+		"should_break_before_apply": clash_result != null and bool(clash_result.challenger_won),
 		"clash_result": clash_result,
 	}

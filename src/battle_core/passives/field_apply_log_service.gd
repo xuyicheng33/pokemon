@@ -17,19 +17,19 @@ func resolve_missing_dependency() -> String:
 		return "context_resolver"
 	return ""
 
-func log_field_clash(clash_result: Dictionary, before_field, payload, effect_event, battle_state) -> void:
-	if clash_result.is_empty() or bool(clash_result.get("same_creator", false)):
+func log_field_clash(clash_result, before_field, payload, effect_event, battle_state) -> void:
+	if clash_result == null or bool(clash_result.same_creator):
 		return
-	var challenger_creator: String = str(clash_result.get("challenger_creator", ""))
-	var incumbent_creator: String = str(clash_result.get("incumbent_creator", ""))
-	var challenger_won: bool = bool(clash_result.get("challenger_won", false))
+	var challenger_creator: String = clash_result.challenger_creator
+	var incumbent_creator: String = clash_result.incumbent_creator
+	var challenger_won: bool = clash_result.challenger_won
 	var winner_creator: String = challenger_creator if challenger_won else incumbent_creator
 	var winner_public_id: String = context_resolver.resolve_public_id_or_system(battle_state, winner_creator)
 	var payload_summary: String = "field clash %s(%d) vs %s(%d) -> %s keeps field %s" % [
 		payload.field_definition_id,
-		int(clash_result.get("challenger_mp", -1)),
+		int(clash_result.challenger_mp),
 		before_field.field_def_id,
-		int(clash_result.get("incumbent_mp", -1)),
+		int(clash_result.incumbent_mp),
 		winner_public_id,
 		payload.field_definition_id if challenger_won else before_field.field_def_id,
 	]
@@ -42,7 +42,7 @@ func log_field_clash(clash_result: Dictionary, before_field, payload, effect_eve
 			"target_instance_id": before_field.instance_id,
 			"priority": effect_event.priority,
 			"trigger_name": effect_event.trigger_name,
-			"effect_roll": clash_result.get("tie_roll", null),
+			"effect_roll": clash_result.tie_roll,
 			"payload_summary": payload_summary,
 		}
 	))

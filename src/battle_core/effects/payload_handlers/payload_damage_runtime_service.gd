@@ -3,7 +3,7 @@ class_name PayloadDamageRuntimeService
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
-const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
+const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
 
 var battle_logger
 var log_event_builder
@@ -134,13 +134,7 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
         )
 
 func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int):
-    var value_change = ValueChangeScript.new()
-    value_change.entity_id = entity_id
-    value_change.resource_name = resource_name
-    value_change.before_value = before_value
-    value_change.after_value = after_value
-    value_change.delta = after_value - before_value
-    return value_change
+    return ValueChangeFactoryScript.create(entity_id, resource_name, before_value, after_value)
 
 func _resolve_chain_skill_definition(effect_event, content_index):
     if effect_event == null or effect_event.chain_context == null:

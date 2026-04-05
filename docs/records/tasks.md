@@ -21,6 +21,48 @@
 
 ## 2026-04-05
 
+### 审查问题修复收口：clash_result 强类型、value_change 工厂、faint window 去递归、README 统计同步（进行中）
+
+- 目标：
+  - 把领域对拼结果从裸 `Dictionary` 收口成强类型契约，避免字符串 key 漂移
+  - 去掉三处重复的 `_build_value_change()`，统一走 `ValueChange` 工厂
+  - 把 `FaintResolver.resolve_faint_window()` 的递归改成显式循环
+  - 同步 README 统计值，恢复 repo consistency gate
+- 范围：
+  - `src/battle_core/contracts/clash_result.gd`
+  - `src/battle_core/contracts/value_change.gd`
+  - `src/battle_core/contracts/value_change_factory.gd`
+  - `src/battle_core/passives/field_apply_conflict_service.gd`
+  - `src/battle_core/passives/domain_clash_orchestrator.gd`
+  - `src/battle_core/passives/field_apply_service.gd`
+  - `src/battle_core/passives/field_apply_log_service.gd`
+  - `src/battle_core/effects/payload_handlers/payload_damage_runtime_service.gd`
+  - `src/battle_core/effects/payload_handlers/payload_resource_runtime_service.gd`
+  - `src/battle_core/effects/payload_handlers/payload_stat_mod_runtime_service.gd`
+  - `src/battle_core/actions/action_log_service.gd`
+  - `src/battle_core/turn/turn_resolution_service.gd`
+  - `src/battle_core/lifecycle/faint_resolver.gd`
+  - `README.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - 领域对拼主路径不再通过字符串 key 读取 `clash_result`
+  - 三处 payload runtime service 不再各自维护 `_build_value_change` 实例化细节
+  - `resolve_faint_window()` 不再递归调用自身
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成（批次 1）：
+  - 新增 `ClashResult` 契约，领域对拼主路径已改成对象属性读取，不再散落字符串 key
+  - `ValueChange` 已收口到独立 `ValueChangeFactory`，`payload_*_runtime_service`、`action_log_service`、`turn_resolution_service` 统一复用
+  - `FaintResolver.resolve_faint_window()` 已改成 `while` 循环
+  - `README.md` 代码规模统计已同步到当前仓库实测值，repo consistency gate 已恢复
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
+
 ### 审查问题修复收口：header snapshot 分层、kyokyo 持续时间与 mp_regen 整数 contract（已完成）
 
 - 目标：

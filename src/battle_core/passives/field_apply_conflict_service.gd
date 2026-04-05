@@ -1,6 +1,7 @@
 extends RefCounted
 class_name FieldApplyConflictService
 
+const ClashResultScript := preload("res://src/battle_core/contracts/clash_result.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
@@ -63,34 +64,40 @@ func resolve_field_clash(before_field, effect_event, battle_state) -> Dictionary
 	if incumbent_creator == challenger_creator:
 		return {"invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
 	if challenger_mp > incumbent_mp:
-		return _build_clash_result(true, false, challenger_creator, incumbent_creator, challenger_mp, incumbent_mp, null)
+		return {
+			"clash_result": _build_clash_result(true, false, challenger_creator, incumbent_creator, challenger_mp, incumbent_mp, null)
+		}
 	if challenger_mp < incumbent_mp:
-		return _build_clash_result(false, false, challenger_creator, incumbent_creator, challenger_mp, incumbent_mp, null)
+		return {
+			"clash_result": _build_clash_result(false, false, challenger_creator, incumbent_creator, challenger_mp, incumbent_mp, null)
+		}
 	var tie_roll: Variant = rng_service.next_float()
 	var tie_threshold: float = 0.5
 	if battle_state != null:
 		tie_threshold = float(battle_state.domain_clash_tie_threshold)
 	battle_state.rng_stream_index = rng_service.get_stream_index()
-	return _build_clash_result(
-		tie_roll >= tie_threshold,
-		false,
-		challenger_creator,
-		incumbent_creator,
-		challenger_mp,
-		incumbent_mp,
-		tie_roll
-	)
-
-func _build_clash_result(challenger_won: bool, same_creator: bool, challenger_creator: String, incumbent_creator: String, challenger_mp: int, incumbent_mp: int, tie_roll) -> Dictionary:
 	return {
-		"challenger_won": challenger_won,
-		"same_creator": same_creator,
-		"challenger_creator": challenger_creator,
-		"incumbent_creator": incumbent_creator,
-		"challenger_mp": challenger_mp,
-		"incumbent_mp": incumbent_mp,
-		"tie_roll": tie_roll,
+		"clash_result": _build_clash_result(
+			tie_roll >= tie_threshold,
+			false,
+			challenger_creator,
+			incumbent_creator,
+			challenger_mp,
+			incumbent_mp,
+			tie_roll
+		)
 	}
+
+func _build_clash_result(challenger_won: bool, same_creator: bool, challenger_creator: String, incumbent_creator: String, challenger_mp: int, incumbent_mp: int, tie_roll):
+	var clash_result = ClashResultScript.new()
+	clash_result.challenger_won = challenger_won
+	clash_result.same_creator = same_creator
+	clash_result.challenger_creator = challenger_creator
+	clash_result.incumbent_creator = incumbent_creator
+	clash_result.challenger_mp = challenger_mp
+	clash_result.incumbent_mp = incumbent_mp
+	clash_result.tie_roll = tie_roll
+	return clash_result
 
 func _resolve_creator_mp(battle_state, creator_id: String) -> int:
 	if creator_id.is_empty():
