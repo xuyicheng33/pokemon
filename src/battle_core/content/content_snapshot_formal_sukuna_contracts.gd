@@ -152,14 +152,24 @@ func validate_kamado_contract(validator, content_index, errors: Array) -> void:
 
 func validate_teach_love_contract(validator, content_index, errors: Array) -> void:
 	var label := "formal[sukuna].teach_love"
-	var passive_skill = validator._require_passive_skill(content_index, errors, label, "sukuna_teach_love")
-	if passive_skill != null:
-		validator._expect_packed_string_array(errors, "%s passive.trigger_names" % label, passive_skill.trigger_names, PackedStringArray(["on_matchup_changed"]))
-		validator._expect_packed_string_array(errors, "%s passive.effect_ids" % label, passive_skill.effect_ids, PackedStringArray(["sukuna_refresh_love_regen"]))
+	_helper.validate_passive_skill_contracts(validator, content_index, errors, [{
+		"label": "%s passive" % label,
+		"passive_skill_id": "sukuna_teach_love",
+		"fields": {
+			"trigger_names": PackedStringArray(["on_matchup_changed"]),
+			"effect_ids": PackedStringArray(["sukuna_refresh_love_regen"]),
+		},
+	}])
 	var effect_definition = validator._require_effect(content_index, errors, label, "sukuna_refresh_love_regen")
 	if effect_definition == null:
 		return
-	validator._expect_packed_string_array(errors, "%s effect.trigger_names" % label, effect_definition.trigger_names, PackedStringArray(["on_matchup_changed"]))
+	_helper.validate_effect_contracts(validator, content_index, errors, [{
+		"label": "%s effect" % label,
+		"effect_id": "sukuna_refresh_love_regen",
+		"fields": {
+			"trigger_names": PackedStringArray(["on_matchup_changed"]),
+		},
+	}])
 	var payload = validator._extract_single_payload(errors, label, "sukuna_refresh_love_regen", effect_definition, RuleModPayloadScript, "rule_mod")
 	validator._expect_payload_shape(
 		errors,

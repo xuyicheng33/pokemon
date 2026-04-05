@@ -2,9 +2,12 @@ extends RefCounted
 class_name ContentSnapshotFormalKashimoChargeContracts
 
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
+const ContractHelperScript := preload("res://src/battle_core/content/content_snapshot_formal_character_contract_helper.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
+
+var _helper = ContractHelperScript.new()
 
 func validate(validator, content_index, errors: Array) -> void:
 	_validate_apply_charge(
@@ -61,13 +64,14 @@ func _validate_apply_charge(
 	var effect_definition = validator._require_effect(content_index, errors, label, effect_id)
 	if effect_definition == null:
 		return
-	validator._expect_string(errors, "%s scope" % label, effect_definition.scope, expected_scope)
-	validator._expect_packed_string_array(
-		errors,
-		"%s trigger_names" % label,
-		effect_definition.trigger_names,
-		PackedStringArray([expected_trigger_name])
-	)
+	_helper.validate_effect_contracts(validator, content_index, errors, [{
+		"label": label,
+		"effect_id": effect_id,
+		"fields": {
+			"scope": expected_scope,
+			"trigger_names": PackedStringArray([expected_trigger_name]),
+		},
+	}])
 	var payload = validator._extract_single_payload(errors, label, effect_id, effect_definition, ApplyEffectPayloadScript, "apply_effect")
 	validator._expect_payload_shape(
 		errors,
@@ -81,19 +85,20 @@ func _validate_negative_charge_mark(validator, content_index, errors: Array) -> 
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_negative_charge_mark")
 	if effect_definition == null:
 		return
-	validator._expect_string(errors, "%s scope" % label, effect_definition.scope, "self")
-	validator._expect_string(errors, "%s duration_mode" % label, effect_definition.duration_mode, "turns")
-	validator._expect_int(errors, "%s duration" % label, effect_definition.duration, 4)
-	validator._expect_string(errors, "%s decrement_on" % label, effect_definition.decrement_on, "turn_end")
-	validator._expect_string(errors, "%s stacking" % label, effect_definition.stacking, "stack")
-	validator._expect_int(errors, "%s max_stacks" % label, effect_definition.max_stacks, 3)
-	validator._expect_bool(errors, "%s persists_on_switch" % label, effect_definition.persists_on_switch, false)
-	validator._expect_packed_string_array(
-		errors,
-		"%s trigger_names" % label,
-		effect_definition.trigger_names,
-		PackedStringArray(["turn_end"])
-	)
+	_helper.validate_effect_contracts(validator, content_index, errors, [{
+		"label": label,
+		"effect_id": "kashimo_negative_charge_mark",
+		"fields": {
+			"scope": "self",
+			"duration_mode": "turns",
+			"duration": 4,
+			"decrement_on": "turn_end",
+			"stacking": "stack",
+			"max_stacks": 3,
+			"persists_on_switch": false,
+			"trigger_names": PackedStringArray(["turn_end"]),
+		},
+	}])
 	var damage_payload = validator._extract_single_payload(
 		errors,
 		label,
@@ -114,19 +119,20 @@ func _validate_positive_charge_mark(validator, content_index, errors: Array) -> 
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_positive_charge_mark")
 	if effect_definition == null:
 		return
-	validator._expect_string(errors, "%s scope" % label, effect_definition.scope, "self")
-	validator._expect_string(errors, "%s duration_mode" % label, effect_definition.duration_mode, "turns")
-	validator._expect_int(errors, "%s duration" % label, effect_definition.duration, 4)
-	validator._expect_string(errors, "%s decrement_on" % label, effect_definition.decrement_on, "turn_end")
-	validator._expect_string(errors, "%s stacking" % label, effect_definition.stacking, "stack")
-	validator._expect_int(errors, "%s max_stacks" % label, effect_definition.max_stacks, 3)
-	validator._expect_bool(errors, "%s persists_on_switch" % label, effect_definition.persists_on_switch, false)
-	validator._expect_packed_string_array(
-		errors,
-		"%s trigger_names" % label,
-		effect_definition.trigger_names,
-		PackedStringArray(["turn_start"])
-	)
+	_helper.validate_effect_contracts(validator, content_index, errors, [{
+		"label": label,
+		"effect_id": "kashimo_positive_charge_mark",
+		"fields": {
+			"scope": "self",
+			"duration_mode": "turns",
+			"duration": 4,
+			"decrement_on": "turn_end",
+			"stacking": "stack",
+			"max_stacks": 3,
+			"persists_on_switch": false,
+			"trigger_names": PackedStringArray(["turn_start"]),
+		},
+	}])
 	var resource_payload = validator._extract_single_payload(
 		errors,
 		label,
@@ -154,13 +160,14 @@ func _validate_consume_charge(
 	var effect_definition = validator._require_effect(content_index, errors, label, effect_id)
 	if effect_definition == null:
 		return
-	validator._expect_string(errors, "%s scope" % label, effect_definition.scope, expected_scope)
-	validator._expect_packed_string_array(
-		errors,
-		"%s trigger_names" % label,
-		effect_definition.trigger_names,
-		PackedStringArray(["on_hit"])
-	)
+	_helper.validate_effect_contracts(validator, content_index, errors, [{
+		"label": label,
+		"effect_id": effect_id,
+		"fields": {
+			"scope": expected_scope,
+			"trigger_names": PackedStringArray(["on_hit"]),
+		},
+	}])
 	var payload = validator._extract_single_payload(
 		errors,
 		label,

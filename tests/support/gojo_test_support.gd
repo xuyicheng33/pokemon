@@ -1,13 +1,12 @@
 extends RefCounted
 class_name GojoTestSupport
 
-const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/effect_source_meta_helper.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
-const DomainRoleTestSupportScript := preload("res://tests/support/domain_role_test_support.gd")
+const FormalCharacterTestSupportScript := preload("res://tests/support/formal_character_test_support.gd")
 
-var _domain_support = DomainRoleTestSupportScript.new()
+var _formal_support = FormalCharacterTestSupportScript.new()
 
 func build_gojo_vs_sample_state(harness, seed: int) -> Dictionary:
     return build_gojo_battle_state(harness, seed, false, true)
@@ -24,15 +23,15 @@ func build_gojo_battle_state(harness, seed: int, use_sukuna: bool, gojo_on_p1: b
     if sample_factory == null:
         return {"error": "SampleBattleFactory init failed"}
     var content_index = harness.build_loaded_content_index(sample_factory)
-    var battle_setup = sample_factory.build_sample_setup()
-    if use_sukuna:
-        battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_pyron"]) if gojo_on_p1 else PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"])
-        battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"]) if gojo_on_p1 else PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
+    var p1_units := PackedStringArray()
+    var p2_units := PackedStringArray()
+    if gojo_on_p1:
+        p1_units = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_pyron"]) if use_sukuna else PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
+        p2_units = PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"]) if use_sukuna else PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
     else:
-        battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"]) if gojo_on_p1 else PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
-        battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"]) if gojo_on_p1 else PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
-    battle_setup.sides[0].starting_index = 0
-    battle_setup.sides[1].starting_index = 0
+        p1_units = PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"]) if use_sukuna else PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
+        p2_units = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
+    var battle_setup = _formal_support.build_setup(sample_factory, p1_units, p2_units)
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, seed, battle_setup)
     return {
         "core": core,
@@ -41,16 +40,16 @@ func build_gojo_battle_state(harness, seed: int, use_sukuna: bool, gojo_on_p1: b
     }
 
 func build_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-    return _domain_support.build_manual_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
+    return _formal_support.build_manual_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
 
 func build_ultimate_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-    return _domain_support.build_manual_ultimate_command(core, turn_index, side_id, actor_public_id, skill_id)
+    return _formal_support.build_manual_ultimate_command(core, turn_index, side_id, actor_public_id, skill_id)
 
 func build_wait_command(core, turn_index: int, side_id: String, actor_public_id: String):
-    return _domain_support.build_manual_wait_command(core, turn_index, side_id, actor_public_id)
+    return _formal_support.build_manual_wait_command(core, turn_index, side_id, actor_public_id)
 
 func build_switch_command(core, turn_index: int, side_id: String, actor_public_id: String, target_public_id: String):
-    return _domain_support.build_manual_switch_command(core, turn_index, side_id, actor_public_id, target_public_id)
+    return _formal_support.build_manual_switch_command(core, turn_index, side_id, actor_public_id, target_public_id)
 
 func build_resolved_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, actor_id: String, skill_id: String):
     var command = build_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
@@ -83,43 +82,19 @@ func set_field_state(battle_state, field_id: String, creator_id: String) -> void
     battle_state.field_state = field_state
 
 func find_unit_on_side(battle_state, side_id: String, definition_id: String):
-    var side_state = battle_state.get_side(side_id)
-    if side_state == null:
-        return null
-    for unit_state in side_state.team_units:
-        if unit_state.definition_id == definition_id:
-            return unit_state
-    return null
+    return _formal_support.find_unit_on_side(battle_state, side_id, definition_id)
 
 func find_effect_instance(unit_state, effect_id: String):
-    for effect_instance in unit_state.effect_instances:
-        if effect_instance.def_id == effect_id:
-            return effect_instance
-    return null
+    return _formal_support.find_effect_instance(unit_state, effect_id)
 
 func count_effect_instances(unit_state, effect_id: String) -> int:
-    var count := 0
-    for effect_instance in unit_state.effect_instances:
-        if effect_instance.def_id == effect_id:
-            count += 1
-    return count
+    return _formal_support.count_effect_instances(unit_state, effect_id)
 
 func count_rule_mod_instances(unit_state, mod_kind: String) -> int:
-    var count := 0
-    for rule_mod_instance in unit_state.rule_mod_instances:
-        if rule_mod_instance.mod_kind == mod_kind:
-            count += 1
-    return count
+    return _formal_support.count_rule_mod_instances(unit_state, mod_kind)
 
 func count_target_damage_events(event_log: Array, event_type: String, target_unit_id: String) -> int:
-    var count := 0
-    for ev in event_log:
-        if ev.event_type == event_type and ev.target_instance_id == target_unit_id:
-            count += 1
-    return count
+    return _formal_support.count_target_damage_events(event_log, event_type, target_unit_id)
 
 func has_event(event_log: Array, predicate: Callable) -> bool:
-    for ev in event_log:
-        if bool(predicate.call(ev)):
-            return true
-    return false
+    return _formal_support.has_event(event_log, predicate)

@@ -2,16 +2,23 @@ extends RefCounted
 class_name ContentSnapshotFormalKashimoPassiveContracts
 
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
+const ContractHelperScript := preload("res://src/battle_core/content/content_snapshot_formal_character_contract_helper.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 
+var _helper = ContractHelperScript.new()
+
 func validate_charge_separation_contract(validator, content_index, errors: Array) -> void:
 	var label := "formal[kashimo].charge_separation"
-	var passive_definition = validator._require_passive_skill(content_index, errors, label, "kashimo_charge_separation")
-	if passive_definition != null:
-		validator._expect_packed_string_array(errors, "%s passive.trigger_names" % label, passive_definition.trigger_names, PackedStringArray(["on_enter"]))
-		validator._expect_packed_string_array(errors, "%s passive.effect_ids" % label, passive_definition.effect_ids, PackedStringArray(["kashimo_thunder_resist", "kashimo_apply_water_leak_listeners"]))
+	_helper.validate_passive_skill_contracts(validator, content_index, errors, [{
+		"label": "%s passive" % label,
+		"passive_skill_id": "kashimo_charge_separation",
+		"fields": {
+			"trigger_names": PackedStringArray(["on_enter"]),
+			"effect_ids": PackedStringArray(["kashimo_thunder_resist", "kashimo_apply_water_leak_listeners"]),
+		},
+	}])
 
 func validate_charge_separation_effects(validator, content_index, errors: Array) -> void:
 	_validate_apply_water_leak_listeners(validator, content_index, errors)
@@ -39,8 +46,14 @@ func _validate_apply_water_leak_listeners(validator, content_index, errors: Arra
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_apply_water_leak_listeners")
 	if effect_definition == null:
 		return
-	validator._expect_string(errors, "%s scope" % label, effect_definition.scope, "self")
-	validator._expect_packed_string_array(errors, "%s trigger_names" % label, effect_definition.trigger_names, PackedStringArray(["on_enter"]))
+	_helper.validate_effect_contracts(validator, content_index, errors, [{
+		"label": label,
+		"effect_id": "kashimo_apply_water_leak_listeners",
+		"fields": {
+			"scope": "self",
+			"trigger_names": PackedStringArray(["on_enter"]),
+		},
+	}])
 	if effect_definition.payloads.size() != 2:
 		errors.append("%s payload count mismatch: expected 2 got %d" % [label, effect_definition.payloads.size()])
 		return
@@ -57,10 +70,16 @@ func _validate_water_leak_self(validator, content_index, errors: Array) -> void:
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_water_leak_self_listener")
 	if effect_definition == null:
 		return
-	validator._expect_string(errors, "%s scope" % label, effect_definition.scope, "self")
-	validator._expect_packed_string_array(errors, "%s trigger_names" % label, effect_definition.trigger_names, PackedStringArray(["on_receive_action_hit"]))
-	validator._expect_packed_string_array(errors, "%s required_incoming_command_types" % label, effect_definition.required_incoming_command_types, PackedStringArray(["skill", "ultimate"]))
-	validator._expect_packed_string_array(errors, "%s required_incoming_combat_type_ids" % label, effect_definition.required_incoming_combat_type_ids, PackedStringArray(["water"]))
+	_helper.validate_effect_contracts(validator, content_index, errors, [{
+		"label": label,
+		"effect_id": "kashimo_water_leak_self_listener",
+		"fields": {
+			"scope": "self",
+			"trigger_names": PackedStringArray(["on_receive_action_hit"]),
+			"required_incoming_command_types": PackedStringArray(["skill", "ultimate"]),
+			"required_incoming_combat_type_ids": PackedStringArray(["water"]),
+		},
+	}])
 	var payload = validator._extract_single_payload(errors, label, "kashimo_water_leak_self_listener", effect_definition, ResourceModPayloadScript, "resource_mod")
 	validator._expect_payload_shape(errors, "%s effect" % label, payload, {"resource_key": "mp", "amount": -15})
 
@@ -69,12 +88,18 @@ func _validate_water_leak_counter(validator, content_index, errors: Array) -> vo
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_water_leak_counter_listener")
 	if effect_definition == null:
 		return
+	_helper.validate_effect_contracts(validator, content_index, errors, [{
+		"label": label,
+		"effect_id": "kashimo_water_leak_counter_listener",
+		"fields": {
+			"scope": "action_actor",
+			"trigger_names": PackedStringArray(["on_receive_action_hit"]),
+			"required_incoming_command_types": PackedStringArray(["skill", "ultimate"]),
+			"required_incoming_combat_type_ids": PackedStringArray(["water"]),
+		},
+	}])
 	var payload = validator._extract_single_payload(errors, label, "kashimo_water_leak_counter_listener", effect_definition, DamagePayloadScript, "damage")
 	if payload == null:
 		return
-	validator._expect_string(errors, "%s scope" % label, effect_definition.scope, "action_actor")
-	validator._expect_packed_string_array(errors, "%s trigger_names" % label, effect_definition.trigger_names, PackedStringArray(["on_receive_action_hit"]))
-	validator._expect_packed_string_array(errors, "%s required_incoming_command_types" % label, effect_definition.required_incoming_command_types, PackedStringArray(["skill", "ultimate"]))
-	validator._expect_packed_string_array(errors, "%s required_incoming_combat_type_ids" % label, effect_definition.required_incoming_combat_type_ids, PackedStringArray(["water"]))
 	validator._expect_int(errors, "%s amount" % label, payload.amount, 15)
 	validator._expect_string(errors, "%s combat_type_id" % label, payload.combat_type_id, "poison")

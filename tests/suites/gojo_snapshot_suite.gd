@@ -1,6 +1,10 @@
 extends RefCounted
 class_name GojoSnapshotSuite
 
+const FormalCharacterSnapshotTestHelperScript := preload("res://tests/support/formal_character_snapshot_test_helper.gd")
+
+var _helper = FormalCharacterSnapshotTestHelperScript.new()
+
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("gojo_unit_snapshot_contract", failures, Callable(self, "_test_gojo_unit_snapshot_contract").bind(harness))
     runner.run_test("gojo_skill_snapshot_contract", failures, Callable(self, "_test_gojo_skill_snapshot_contract").bind(harness))
@@ -180,20 +184,7 @@ func _test_gojo_effect_snapshot_contract(harness) -> Dictionary:
     return _run_checks(harness, checks)
 
 func _build_content_index(harness):
-    var sample_factory = harness.build_sample_factory()
-    if sample_factory == null:
-        return null
-    return harness.build_loaded_content_index(sample_factory)
+    return _helper.build_content_index(harness)
 
 func _run_checks(harness, checks: Array[Dictionary]) -> Dictionary:
-    var failures: Array[String] = []
-    for check in checks:
-        if check["actual"] != check["expected"]:
-            failures.append("%s expected=%s actual=%s" % [
-                String(check["label"]),
-                var_to_str(check["expected"]),
-                var_to_str(check["actual"]),
-            ])
-    if not failures.is_empty():
-        return harness.fail_result("\n".join(failures))
-    return harness.pass_result()
+    return _helper.run_checks(harness, checks)

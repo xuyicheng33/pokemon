@@ -58,6 +58,12 @@ func _expect_int(errors: Array, label: String, actual, expected: int) -> void:
 		return
 	errors.append("%s mismatch: expected %d got %d" % [label, expected, int(actual)])
 
+func _expect_float(errors: Array, label: String, actual, expected: float) -> void:
+	var actual_float := float(actual)
+	if is_equal_approx(actual_float, expected):
+		return
+	errors.append("%s mismatch: expected %s got %s" % [label, var_to_str(expected), var_to_str(actual_float)])
+
 func _expect_string(errors: Array, label: String, actual, expected: String) -> void:
 	var actual_string := String(actual)
 	if actual_string == expected:

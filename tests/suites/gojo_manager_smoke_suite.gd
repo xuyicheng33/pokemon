@@ -2,28 +2,35 @@ extends RefCounted
 class_name GojoManagerSmokeSuite
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
-const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
+const FormalCharacterManagerSmokeHelperScript := preload("res://tests/support/formal_character_manager_smoke_helper.gd")
 
-var _helper = ManagerContractTestHelperScript.new()
+var _smoke_helper = null
+var _helper = null
 
 func register_tests(runner, failures: Array[String], harness) -> void:
+	_ensure_helpers()
 	runner.run_test("gojo_manager_smoke_contract", failures, Callable(self, "_test_gojo_manager_smoke_contract").bind(harness))
 	runner.run_test("gojo_manager_domain_public_contract", failures, Callable(self, "_test_gojo_manager_domain_public_contract").bind(harness))
 
+func _ensure_helpers() -> void:
+	if _smoke_helper != null and _helper != null:
+		return
+	_smoke_helper = FormalCharacterManagerSmokeHelperScript.new()
+	_helper = _smoke_helper.contracts()
+
 func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
-	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
-	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
-	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+	var context: Dictionary = _smoke_helper.build_context(harness)
+	if context.has("error"):
+		return harness.fail_result(str(context["error"]))
+	var manager = context["manager"]
+	var sample_factory = context["sample_factory"]
 	var ritual_loadout := PackedStringArray(["gojo_ao", "gojo_aka", "gojo_reverse_ritual"])
-	var init_unwrap = _helper.unwrap_ok(manager.create_session({
-		"battle_seed": 1301,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
-		"battle_setup": sample_factory.build_gojo_vs_sample_setup({"P1": {0: ritual_loadout}}),
-	}), "create_session")
+	var init_unwrap = _smoke_helper.create_session(
+		manager,
+		sample_factory,
+		1301,
+		sample_factory.build_gojo_vs_sample_setup({"P1": {0: ritual_loadout}})
+	)
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
@@ -66,7 +73,7 @@ func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 	if not bool(damaged_snapshot_unwrap.get("ok", false)):
 		return harness.fail_result(str(damaged_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
 	var damaged_snapshot: Dictionary = damaged_snapshot_unwrap.get("data", {})
-	var damaged_actor_snapshot := _helper.find_unit_snapshot(damaged_snapshot, "P1", "P1-A")
+	var damaged_actor_snapshot: Dictionary = _helper.find_unit_snapshot(damaged_snapshot, "P1", "P1-A")
 	if damaged_actor_snapshot.is_empty():
 		return harness.fail_result("gojo manager smoke missing actor public snapshot after damage")
 	var damaged_hp := int(damaged_actor_snapshot.get("current_hp", -1))
@@ -102,10 +109,10 @@ func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 	if not bool(public_snapshot_unwrap.get("ok", false)):
 		return harness.fail_result(str(public_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
 	var public_snapshot: Dictionary = public_snapshot_unwrap.get("data", {})
-	var shape_error := _helper.validate_snapshot_shape(public_snapshot)
+	var shape_error: String = _helper.validate_snapshot_shape(public_snapshot)
 	if not shape_error.is_empty():
 		return harness.fail_result("gojo manager smoke public snapshot malformed: %s" % shape_error)
-	var actor_snapshot := _helper.find_unit_snapshot(public_snapshot, "P1", "P1-A")
+	var actor_snapshot: Dictionary = _helper.find_unit_snapshot(public_snapshot, "P1", "P1-A")
 	if actor_snapshot.is_empty():
 		return harness.fail_result("gojo manager smoke missing actor public snapshot")
 	if int(actor_snapshot.get("current_hp", -1)) <= damaged_hp:
@@ -121,29 +128,23 @@ func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 		return harness.fail_result("gojo manager smoke event log must stay public-safe")
 	if not _helper.event_log_has_public_heal(events, "P1-A"):
 		return harness.fail_result("gojo manager smoke event log should expose heal on P1-A")
-	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
+	var close_unwrap = _smoke_helper.close_session(manager, session_id)
 	if not bool(close_unwrap.get("ok", false)):
 		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
 func _test_gojo_manager_domain_public_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
-	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
-	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
-	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+	var context: Dictionary = _smoke_helper.build_context(harness)
+	if context.has("error"):
+		return harness.fail_result(str(context["error"]))
+	var manager = context["manager"]
+	var sample_factory = context["sample_factory"]
 	var battle_setup = sample_factory.build_sample_setup()
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
 	battle_setup.sides[0].starting_index = 0
 	battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_mossaur", "sample_pyron", "sample_tidekit"])
 	battle_setup.sides[1].starting_index = 0
-	var init_unwrap = _helper.unwrap_ok(manager.create_session({
-		"battle_seed": 1303,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
-		"battle_setup": battle_setup,
-	}), "create_session")
+	var init_unwrap = _smoke_helper.create_session(manager, sample_factory, 1303, battle_setup)
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
@@ -221,7 +222,7 @@ func _test_gojo_manager_domain_public_contract(harness) -> Dictionary:
 		return harness.fail_result("gojo manager domain path event log must stay public-safe")
 	if not _helper.event_log_has_public_action_cast(events, "P1-A", "gojo_satoru"):
 		return harness.fail_result("gojo manager domain path should expose gojo public action cast")
-	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
+	var close_unwrap = _smoke_helper.close_session(manager, session_id)
 	if not bool(close_unwrap.get("ok", false)):
 		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()

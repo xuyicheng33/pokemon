@@ -47,68 +47,53 @@ func collect_tres_paths_recursive(dir_path: String) -> Array[String]:
     return paths
 
 func build_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
-    var battle_setup = BattleSetupScript.new()
-    battle_setup.format_id = "prototype_full_open"
-    var p1 = SideSetupScript.new()
-    p1.side_id = "P1"
-    p1.unit_definition_ids = PackedStringArray(["sample_pyron", "sample_mossaur", "sample_tidekit"])
-    p1.starting_index = 0
-    p1.regular_skill_loadout_overrides = side_regular_skill_overrides.get("P1", {})
-    var p2 = SideSetupScript.new()
-    p2.side_id = "P2"
-    p2.unit_definition_ids = PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"])
-    p2.starting_index = 0
-    p2.regular_skill_loadout_overrides = side_regular_skill_overrides.get("P2", {})
-    battle_setup.sides = [p1, p2]
-    return battle_setup
+    return _build_custom_setup(
+        PackedStringArray(["sample_pyron", "sample_mossaur", "sample_tidekit"]),
+        PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
 
 func build_gojo_vs_sukuna_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
-    var battle_setup = build_sample_setup(side_regular_skill_overrides)
-    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_pyron"])
-    battle_setup.sides[0].starting_index = 0
-    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"])
-    battle_setup.sides[1].starting_index = 0
-    return battle_setup
+    return _build_custom_setup(
+        PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_pyron"]),
+        PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
 
 func build_gojo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
-    var battle_setup = build_sample_setup(side_regular_skill_overrides)
-    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
-    battle_setup.sides[0].starting_index = 0
-    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
-    battle_setup.sides[1].starting_index = 0
-    return battle_setup
+    return _build_custom_setup(
+        PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"]),
+        PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
 
 func build_sukuna_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
-    var battle_setup = build_sample_setup(side_regular_skill_overrides)
-    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_tidekit"])
-    battle_setup.sides[0].starting_index = 0
-    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
-    battle_setup.sides[1].starting_index = 0
-    return battle_setup
+    return _build_custom_setup(
+        PackedStringArray(["sukuna", "sample_mossaur", "sample_tidekit"]),
+        PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
 
 func build_kashimo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
-    var battle_setup = build_sample_setup(side_regular_skill_overrides)
-    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["kashimo_hajime", "sample_mossaur", "sample_pyron"])
-    battle_setup.sides[0].starting_index = 0
-    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"])
-    battle_setup.sides[1].starting_index = 0
-    return battle_setup
+    return _build_custom_setup(
+        PackedStringArray(["kashimo_hajime", "sample_mossaur", "sample_pyron"]),
+        PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
 
 func build_obito_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
-    var battle_setup = build_sample_setup(side_regular_skill_overrides)
-    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"])
-    battle_setup.sides[0].starting_index = 0
-    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
-    battle_setup.sides[1].starting_index = 0
-    return battle_setup
+    return _build_custom_setup(
+        PackedStringArray(["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"]),
+        PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
 
 func build_passive_item_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
-    var battle_setup = build_sample_setup(side_regular_skill_overrides)
-    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sample_pyron_charm", "sample_mossaur", "sample_tidekit"])
-    battle_setup.sides[0].starting_index = 0
-    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"])
-    battle_setup.sides[1].starting_index = 0
-    return battle_setup
+    return _build_custom_setup(
+        PackedStringArray(["sample_pyron_charm", "sample_mossaur", "sample_tidekit"]),
+        PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
 
 func build_demo_replay_input(command_port, side_regular_skill_overrides: Dictionary = {}) -> Variant:
     if command_port == null or not command_port.has_method("build_command"):
@@ -183,3 +168,26 @@ func _resolve_command_data(command_result) -> Variant:
     if typeof(command_result) == TYPE_DICTIONARY and command_result.has("ok") and command_result.has("data"):
         return command_result.get("data", null)
     return command_result
+
+func _build_custom_setup(
+    p1_unit_definition_ids: PackedStringArray,
+    p2_unit_definition_ids: PackedStringArray,
+    side_regular_skill_overrides: Dictionary = {},
+    p1_starting_index: int = 0,
+    p2_starting_index: int = 0
+) -> Variant:
+    var battle_setup = BattleSetupScript.new()
+    battle_setup.format_id = "prototype_full_open"
+    battle_setup.sides = [
+        _build_side_setup("P1", p1_unit_definition_ids, p1_starting_index, side_regular_skill_overrides),
+        _build_side_setup("P2", p2_unit_definition_ids, p2_starting_index, side_regular_skill_overrides),
+    ]
+    return battle_setup
+
+func _build_side_setup(side_id: String, unit_definition_ids: PackedStringArray, starting_index: int, side_regular_skill_overrides: Dictionary) -> Variant:
+    var side_setup = SideSetupScript.new()
+    side_setup.side_id = side_id
+    side_setup.unit_definition_ids = unit_definition_ids
+    side_setup.starting_index = starting_index
+    side_setup.regular_skill_loadout_overrides = side_regular_skill_overrides.get(side_id, {})
+    return side_setup

@@ -2,31 +2,33 @@ extends RefCounted
 class_name SukunaManagerSmokeSuite
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
-const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
+const FormalCharacterManagerSmokeHelperScript := preload("res://tests/support/formal_character_manager_smoke_helper.gd")
 
-var _helper = ManagerContractTestHelperScript.new()
+var _smoke_helper = null
+var _helper = null
 
 func register_tests(runner, failures: Array[String], harness) -> void:
+	_ensure_helpers()
 	runner.run_test("sukuna_manager_smoke_contract", failures, Callable(self, "_test_sukuna_manager_smoke_contract").bind(harness))
 	runner.run_test("sukuna_manager_domain_lifecycle_public_contract", failures, Callable(self, "_test_sukuna_manager_domain_lifecycle_public_contract").bind(harness))
 
+func _ensure_helpers() -> void:
+	if _smoke_helper != null and _helper != null:
+		return
+	_smoke_helper = FormalCharacterManagerSmokeHelperScript.new()
+	_helper = _smoke_helper.contracts()
+
 func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
-	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
-	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
-	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+	var context: Dictionary = _smoke_helper.build_context(harness)
+	if context.has("error"):
+		return harness.fail_result(str(context["error"]))
+	var manager = context["manager"]
+	var sample_factory = context["sample_factory"]
 	var ritual_loadout := PackedStringArray(["sukuna_kai", "sukuna_hatsu", "sukuna_reverse_ritual"])
 	var battle_setup = sample_factory.build_sample_setup({"P1": {0: ritual_loadout}})
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_pyron"])
 	battle_setup.sides[0].starting_index = 0
-	var init_unwrap = _helper.unwrap_ok(manager.create_session({
-		"battle_seed": 1302,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
-		"battle_setup": battle_setup,
-	}), "create_session")
+	var init_unwrap = _smoke_helper.create_session(manager, sample_factory, 1302, battle_setup)
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
@@ -68,7 +70,7 @@ func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
 	var damaged_snapshot_unwrap = _helper.unwrap_ok(manager.get_public_snapshot(session_id), "get_public_snapshot_after_damage")
 	if not bool(damaged_snapshot_unwrap.get("ok", false)):
 		return harness.fail_result(str(damaged_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
-	var damaged_actor_snapshot := _helper.find_unit_snapshot(damaged_snapshot_unwrap.get("data", {}), "P1", "P1-A")
+	var damaged_actor_snapshot: Dictionary = _helper.find_unit_snapshot(damaged_snapshot_unwrap.get("data", {}), "P1", "P1-A")
 	if damaged_actor_snapshot.is_empty():
 		return harness.fail_result("sukuna manager smoke missing actor snapshot after setup turn")
 	var before_hp := int(damaged_actor_snapshot.get("current_hp", -1))
@@ -105,10 +107,10 @@ func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
 	if not bool(public_snapshot_unwrap.get("ok", false)):
 		return harness.fail_result(str(public_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
 	var public_snapshot: Dictionary = public_snapshot_unwrap.get("data", {})
-	var shape_error := _helper.validate_snapshot_shape(public_snapshot)
+	var shape_error: String = _helper.validate_snapshot_shape(public_snapshot)
 	if not shape_error.is_empty():
 		return harness.fail_result("sukuna manager smoke public snapshot malformed: %s" % shape_error)
-	var actor_snapshot := _helper.find_unit_snapshot(public_snapshot, "P1", "P1-A")
+	var actor_snapshot: Dictionary = _helper.find_unit_snapshot(public_snapshot, "P1", "P1-A")
 	if actor_snapshot.is_empty():
 		return harness.fail_result("sukuna manager smoke missing actor public snapshot")
 	if int(actor_snapshot.get("current_hp", -1)) != before_hp + expected_gain:
@@ -124,29 +126,23 @@ func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
 		return harness.fail_result("sukuna manager smoke event log must stay public-safe")
 	if not _helper.event_log_has_public_heal(events, "P1-A"):
 		return harness.fail_result("sukuna manager smoke event log should expose heal on P1-A")
-	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
+	var close_unwrap = _smoke_helper.close_session(manager, session_id)
 	if not bool(close_unwrap.get("ok", false)):
 		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
 func _test_sukuna_manager_domain_lifecycle_public_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
-	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
-	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
-	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+	var context: Dictionary = _smoke_helper.build_context(harness)
+	if context.has("error"):
+		return harness.fail_result(str(context["error"]))
+	var manager = context["manager"]
+	var sample_factory = context["sample_factory"]
 	var battle_setup = sample_factory.build_sample_setup()
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_pyron"])
 	battle_setup.sides[0].starting_index = 0
 	battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_mossaur", "sample_pyron", "sample_tidekit"])
 	battle_setup.sides[1].starting_index = 0
-	var init_unwrap = _helper.unwrap_ok(manager.create_session({
-		"battle_seed": 1304,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
-		"battle_setup": battle_setup,
-	}), "create_session")
+	var init_unwrap = _smoke_helper.create_session(manager, sample_factory, 1304, battle_setup)
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
@@ -238,7 +234,7 @@ func _test_sukuna_manager_domain_lifecycle_public_contract(harness) -> Dictionar
 	var pre_expire_snapshot_unwrap = _helper.unwrap_ok(manager.get_public_snapshot(session_id), "get_public_snapshot pre_expire")
 	if not bool(pre_expire_snapshot_unwrap.get("ok", false)):
 		return harness.fail_result(str(pre_expire_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
-	var pre_expire_target := _helper.find_unit_snapshot(pre_expire_snapshot_unwrap.get("data", {}), "P2", "P2-A")
+	var pre_expire_target: Dictionary = _helper.find_unit_snapshot(pre_expire_snapshot_unwrap.get("data", {}), "P2", "P2-A")
 	if pre_expire_target.is_empty():
 		return harness.fail_result("sukuna manager domain path missing target snapshot before expire")
 	var hp_before_expire := int(pre_expire_target.get("current_hp", -1))
@@ -270,7 +266,7 @@ func _test_sukuna_manager_domain_lifecycle_public_contract(harness) -> Dictionar
 	var expired_snapshot: Dictionary = expired_snapshot_unwrap.get("data", {})
 	if expired_snapshot.get("field_id", null) != null:
 		return harness.fail_result("sukuna manager domain path should clear field after natural expire")
-	var expired_target := _helper.find_unit_snapshot(expired_snapshot, "P2", "P2-A")
+	var expired_target: Dictionary = _helper.find_unit_snapshot(expired_snapshot, "P2", "P2-A")
 	if expired_target.is_empty():
 		return harness.fail_result("sukuna manager domain path missing target snapshot after expire")
 	if int(expired_target.get("current_hp", -1)) >= hp_before_expire:
@@ -281,7 +277,7 @@ func _test_sukuna_manager_domain_lifecycle_public_contract(harness) -> Dictionar
 	var events: Array = event_log_unwrap.get("data", {}).get("events", [])
 	if _helper.contains_runtime_id_leak(events):
 		return harness.fail_result("sukuna manager domain path event log must stay public-safe")
-	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
+	var close_unwrap = _smoke_helper.close_session(manager, session_id)
 	if not bool(close_unwrap.get("ok", false)):
 		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()

@@ -3,6 +3,7 @@ class_name ContentSnapshotFormalGojoValidator
 
 const GojoContractsScript := preload("res://src/battle_core/content/content_snapshot_formal_gojo_contracts.gd")
 const GojoDomainContractsScript := preload("res://src/battle_core/content/content_snapshot_formal_gojo_domain_contracts.gd")
+const ContractHelperScript := preload("res://src/battle_core/content/content_snapshot_formal_character_contract_helper.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const HealPayloadScript := preload("res://src/battle_core/content/heal_payload.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
@@ -10,6 +11,7 @@ const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_pa
 
 var _contracts = GojoContractsScript.new()
 var _domain_contracts = GojoDomainContractsScript.new()
+var _helper = ContractHelperScript.new()
 
 func validate(content_index, errors: Array) -> void:
 	_contracts.validate_unit_contract(self, content_index, errors)
@@ -22,14 +24,24 @@ func validate(content_index, errors: Array) -> void:
 
 func _validate_mugen_contract(content_index, errors: Array) -> void:
 	var label := "formal[gojo].mugen"
-	var passive_skill = _require_passive_skill(content_index, errors, label, "gojo_mugen")
-	if passive_skill != null:
-		_expect_packed_string_array(errors, "%s trigger_names" % label, passive_skill.trigger_names, PackedStringArray(["on_enter"]))
-		_expect_packed_string_array(errors, "%s effect_ids" % label, passive_skill.effect_ids, PackedStringArray(["gojo_mugen_incoming_accuracy_down"]))
+	_helper.validate_passive_skill_contracts(self, content_index, errors, [{
+		"label": label,
+		"passive_skill_id": "gojo_mugen",
+		"fields": {
+			"trigger_names": PackedStringArray(["on_enter"]),
+			"effect_ids": PackedStringArray(["gojo_mugen_incoming_accuracy_down"]),
+		},
+	}])
 	var effect_definition = _require_effect(content_index, errors, label, "gojo_mugen_incoming_accuracy_down")
 	if effect_definition == null:
 		return
-	_expect_packed_string_array(errors, "%s effect.trigger_names" % label, effect_definition.trigger_names, PackedStringArray(["on_enter"]))
+	_helper.validate_effect_contracts(self, content_index, errors, [{
+		"label": "%s effect" % label,
+		"effect_id": "gojo_mugen_incoming_accuracy_down",
+		"fields": {
+			"trigger_names": PackedStringArray(["on_enter"]),
+		},
+	}])
 	var payload = _extract_single_payload(errors, label, "gojo_mugen_incoming_accuracy_down", effect_definition, RuleModPayloadScript, "rule_mod")
 	if payload == null:
 		return
@@ -52,10 +64,16 @@ func _validate_reverse_ritual_contract(content_index, errors: Array) -> void:
 	var effect_definition = _require_effect(content_index, errors, label, "gojo_reverse_heal")
 	if effect_definition == null:
 		return
-	_expect_string(errors, "%s effect.scope" % label, effect_definition.scope, "self")
-	_expect_string(errors, "%s effect.duration_mode" % label, effect_definition.duration_mode, "permanent")
-	_expect_string(errors, "%s effect.stacking" % label, effect_definition.stacking, "none")
-	_expect_packed_string_array(errors, "%s effect.trigger_names" % label, effect_definition.trigger_names, PackedStringArray(["on_cast"]))
+	_helper.validate_effect_contracts(self, content_index, errors, [{
+		"label": "%s effect" % label,
+		"effect_id": "gojo_reverse_heal",
+		"fields": {
+			"scope": "self",
+			"duration_mode": "permanent",
+			"stacking": "none",
+			"trigger_names": PackedStringArray(["on_cast"]),
+		},
+	}])
 	var heal_payload = _extract_single_payload(
 		errors,
 		label,
