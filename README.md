@@ -110,7 +110,7 @@ tests/run_with_gate.sh
 闸门通过条件：
 
 - 业务断言全部通过（`tests/run_all.gd`）
-- headless 主流程启动 smoke 通过（`godot --headless --path . --quit-after 20`）
+- headless 主流程启动 smoke 通过（`godot --headless --path . --quit-after 20`），且不得出现 `BATTLE_SANDBOX_FAILED:` 应用层失败标记
 - 无引擎级 warning（`WARNING:`）
 - suite 可达性检查通过（`tests/check_suite_reachability.sh`）
 - 无引擎级错误（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
@@ -127,8 +127,8 @@ tests/run_with_gate.sh
 - `get_legal_actions(session_id, side_id)`
 - `build_command(input_payload)`
 - `run_turn(session_id, commands)`
-- `get_public_snapshot(session_id)`
-- `get_event_log_snapshot(session_id, from_index = 0)`（返回 `{ events, total_size }`；供调试与固定案例复查读取只读日志增量快照，且只暴露公开安全字段）
+- `get_public_snapshot(session_id)`（返回与运行态断引用的公开快照）
+- `get_event_log_snapshot(session_id, from_index = 0)`（返回 `{ events, total_size }`；供调试与固定案例复查读取只读日志增量快照，且只暴露公开安全字段，并与内部日志断引用）
 - `close_session(session_id)`
 - `run_replay(replay_input)`
 - `active_session_count()`（返回当前活跃会话数量）
@@ -248,9 +248,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-05）
 
-- `src/**/*.gd`：`12861` 行
-- `tests/**/*.gd`：`15963` 行
-- GDScript 合计：`28824` 行
+- `src/**/*.gd`：`12847` 行
+- `tests/**/*.gd`：`16075` 行
+- GDScript 合计：`28922` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

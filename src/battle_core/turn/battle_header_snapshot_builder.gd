@@ -1,6 +1,8 @@
 extends RefCounted
 class_name BattleHeaderSnapshotBuilder
 
+const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
+
 static func build_header_snapshot(battle_state, content_index = null) -> Dictionary:
 	if battle_state == null:
 		return {}
@@ -16,22 +18,22 @@ static func build_header_snapshot(battle_state, content_index = null) -> Diction
 
 static func build_public_field_snapshot(battle_state, content_index = null) -> Dictionary:
 	if battle_state.field_state == null:
-		return {
+		return DeepCopyHelperScript.copy_value({
 			"field_id": null,
 			"field_kind": null,
 			"remaining_turns": null,
 			"creator_public_id": null,
 			"creator_side_id": null,
-		}
+		})
 	var creator_id := String(battle_state.field_state.creator)
 	if creator_id.is_empty():
-		return {
+		return DeepCopyHelperScript.copy_value({
 			"field_id": battle_state.field_state.field_def_id,
 			"field_kind": null,
 			"remaining_turns": battle_state.field_state.remaining_turns,
 			"creator_public_id": null,
 			"creator_side_id": null,
-		}
+		})
 	var field_kind: Variant = null
 	if content_index != null:
 		var field_definition = content_index.fields.get(String(battle_state.field_state.field_def_id), null)
@@ -41,13 +43,13 @@ static func build_public_field_snapshot(battle_state, content_index = null) -> D
 	var creator_side = battle_state.get_side_for_unit(creator_id)
 	if creator_side != null:
 		creator_side_id = String(creator_side.side_id)
-	return {
+	return DeepCopyHelperScript.copy_value({
 		"field_id": battle_state.field_state.field_def_id,
 		"field_kind": field_kind,
 		"remaining_turns": battle_state.field_state.remaining_turns,
 		"creator_public_id": _resolve_public_id_or_system(battle_state, creator_id),
 		"creator_side_id": creator_side_id,
-	}
+	})
 
 static func build_prebattle_public_teams(battle_state, content_index) -> Array:
 	if content_index == null:
@@ -90,14 +92,14 @@ static func build_prebattle_public_teams(battle_state, content_index) -> Array:
 			"units": unit_models,
 		})
 	side_models.sort_custom(func(left, right): return String(left.get("side_id", "")) < String(right.get("side_id", "")))
-	return side_models
+	return DeepCopyHelperScript.copy_value(side_models)
 
 static func build_initial_active_public_ids_by_side(battle_state) -> Dictionary:
 	var active_ids_by_side: Dictionary = {}
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
 		active_ids_by_side[side_state.side_id] = active_unit.public_id if active_unit != null else null
-	return active_ids_by_side
+	return DeepCopyHelperScript.copy_value(active_ids_by_side)
 
 static func _resolve_public_id_or_system(battle_state, source_id: String) -> Variant:
 	if source_id.is_empty():

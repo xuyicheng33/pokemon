@@ -59,6 +59,7 @@ ctx.require_contains("docs/design/command_and_legality.md", "regular_skill_ids",
 ctx.require_contains("docs/design/command_and_legality.md", "domain_legality_service.gd", "domain legality helper doc")
 ctx.require_contains("docs/design/log_and_replay_contract.md", "ContentSnapshotCache", "log/replay cache contract doc")
 ctx.require_contains("docs/design/log_and_replay_contract.md", "预分组", "log/replay turn grouping doc")
+ctx.require_contains("docs/design/log_and_replay_contract.md", "外部修改不得回写到 event log", "log/replay detached public snapshot wording")
 ctx.require_contains("docs/design/lifecycle_and_replacement.md", "faint_killer_attribution_service.gd", "lifecycle helper doc")
 ctx.require_contains("docs/design/lifecycle_and_replacement.md", "faint_leave_replacement_service.gd", "lifecycle replacement helper doc")
 ctx.require_contains("docs/design/passive_and_field.md", "field_apply_context_resolver.gd", "field helper doc")
@@ -107,7 +108,12 @@ ctx.require_contains("docs/records/decisions.md", "Runtime wiring 图重新收�
 ctx.require_contains("docs/records/decisions.md", "composer 级共享 cache + 每次 fresh index", "content snapshot cache decision wording")
 ctx.require_contains("docs/records/review_2026-04-04_foundation_stabilization_audit.md", "基础稳定化审查记录", "foundation stabilization review record")
 ctx.require_contains("README.md", "content_validator_script_path", "README runtime validator registry doc")
+ctx.require_contains("README.md", "BATTLE_SANDBOX_FAILED:", "README sandbox failure gate wording")
+ctx.require_contains("README.md", "与内部日志断引用", "README detached event log wording")
+ctx.require_contains("tests/README.md", "run_all.gd` 会直接注册核心公共 suite", "tests README current run_all wording")
 ctx.require_contains("tests/check_architecture_constraints.sh", "ARCH_GATE_WARNING", "architecture warning marker")
+ctx.require_absent("docs/records/decisions.md", "运行时当前直接读取这份 docs-side registry", "stale docs-side runtime registry wording")
+ctx.require_absent("tests/README.md", "只注册顶层 wrapper，不直接注册子套件", "stale wrapper-only tests README wording")
 for rel_path in [
     "README.md",
     "tests/README.md",

@@ -62,7 +62,7 @@
 
 ### 2.4 Manager 对外日志快照
 
-- `BattleCoreManager.get_event_log_snapshot()` 返回的是公开安全快照，不是内部 `LogEvent` 原样序列化。
+- `BattleCoreManager.get_event_log_snapshot()` 返回的是公开安全快照，不是内部 `LogEvent` 原样序列化；返回值必须与内部日志断引用，外部修改不得回写到 event log。
 - manager 出口固定移除内部 runtime id：`actor_id / source_instance_id / target_instance_id / killer_id / value_changes[].entity_id`。
 - 对外事件快照固定补公开归因字段：
   - `actor_public_id / actor_definition_id`

@@ -3,7 +3,7 @@
 本目录承载当前业务回归闸门与测试支撑脚手架。
 
 - `suites/`: 业务回归测试套件
-- `suites/*_suite.gd`: 顶层 wrapper，只负责 `register_tests(...)` 聚合，不直接堆具体 `_test_*`
+- `suites/*_suite.gd`: 优先作为顶层 wrapper 或按单一 contract 聚合的 suite；若文件足够小且不值得再拆，也允许直接在本文件注册具体 `_test_*`
 - `suites/*_contract_suite.gd` / `suites/*_runtime_suite.gd` / 角色子套件：按单一子域拆分的真实断言文件
 - `suites/adapter_contract_suite.gd`: manager 输出边界契约回归
 - `suites/content_snapshot_cache_suite.gd`: manager 黑盒视角下的 content snapshot cache 语义等价回归
@@ -26,7 +26,7 @@
 
 当前约定：
 
-- `run_all.gd` 只注册顶层 wrapper，不直接注册子套件，避免重复执行。
+- `run_all.gd` 会直接注册核心公共 suite，并按正式角色注册表动态追加角色 wrapper；共享子套件仍必须沿 `preload(...)` 子树真实可达。
 - 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback。
 - 正式角色 wrapper 统一登记在 `docs/records/formal_character_registry.json`，由 `tests/run_all.gd` 自动加载。
 - 正式角色注册表除 `suite_path` 外，还要显式登记 `sample_setup_method / required_suite_paths / required_test_names`，把样例构局入口、角色 suite 子树与关键回归锚点一并固定下来。

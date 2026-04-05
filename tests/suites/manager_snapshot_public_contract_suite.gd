@@ -12,6 +12,7 @@ const ManagerContractTestHelperScript := preload("res://tests/support/manager_co
 var _helper = ManagerContractTestHelperScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("full_open_public_snapshot_contract", failures, Callable(self, "_test_full_open_public_snapshot_contract").bind(harness))
+	runner.run_test("public_snapshot_readonly_detached_contract", failures, Callable(self, "_test_public_snapshot_readonly_detached_contract").bind(harness))
 	runner.run_test("visibility_mode_runtime_decoupled_contract", failures, Callable(self, "_test_visibility_mode_runtime_decoupled_contract").bind(harness))
 	runner.run_test("battle_format_runtime_constants_copy_contract", failures, Callable(self, "_test_battle_format_runtime_constants_copy_contract").bind(harness))
 	runner.run_test("legal_action_public_id_contract", failures, Callable(self, "_test_legal_action_public_id_contract").bind(harness))
@@ -92,6 +93,61 @@ func _test_full_open_public_snapshot_contract(harness) -> Dictionary:
 	var close_result = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
 	if not bool(close_result.get("ok", false)):
 		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
+	return harness.pass_result()
+
+func _test_public_snapshot_readonly_detached_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var init_unwrap = _helper.unwrap_ok(manager.create_session({
+		"battle_seed": 3011,
+		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"battle_setup": sample_factory.build_sample_setup(),
+	}), "create_session")
+	if not bool(init_unwrap.get("ok", false)):
+		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+	var init_data: Dictionary = init_unwrap.get("data", {})
+	var session_id := String(init_data.get("session_id", ""))
+	var public_snapshot: Dictionary = init_data.get("public_snapshot", {})
+	var create_prebattle_teams: Array = init_data.get("prebattle_public_teams", [])
+	if create_prebattle_teams.is_empty():
+		return harness.fail_result("create_session should expose prebattle_public_teams")
+	var public_prebattle_teams: Array = public_snapshot.get("prebattle_public_teams", [])
+	if public_prebattle_teams.is_empty():
+		return harness.fail_result("public_snapshot should expose prebattle_public_teams")
+	var create_p1_prebattle_units: Array = create_prebattle_teams[0].get("units", [])
+	var public_p1_prebattle_units: Array = public_prebattle_teams[0].get("units", [])
+	var public_side_units: Array = public_snapshot.get("sides", [])[0].get("team_units", [])
+	var create_prebattle_skill_ids: PackedStringArray = create_p1_prebattle_units[0].get("skill_ids", PackedStringArray())
+	var public_prebattle_skill_ids: PackedStringArray = public_p1_prebattle_units[0].get("skill_ids", PackedStringArray())
+	var public_combat_type_ids: PackedStringArray = public_side_units[0].get("combat_type_ids", PackedStringArray())
+	var original_public_skill_ids: PackedStringArray = public_prebattle_skill_ids.duplicate()
+	var original_public_types: PackedStringArray = public_combat_type_ids.duplicate()
+	create_prebattle_skill_ids[0] = "top_level_mutation"
+	if public_prebattle_skill_ids != original_public_skill_ids:
+		return harness.fail_result("create_session top-level prebattle_public_teams should not alias public_snapshot payload")
+	public_prebattle_skill_ids[0] = "snapshot_mutation"
+	public_combat_type_ids[0] = "mutated_type"
+	var fresh_snapshot_unwrap = _helper.unwrap_ok(manager.get_public_snapshot(session_id), "get_public_snapshot")
+	if not bool(fresh_snapshot_unwrap.get("ok", false)):
+		return harness.fail_result(str(fresh_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
+	var fresh_snapshot: Dictionary = fresh_snapshot_unwrap.get("data", {})
+	var fresh_prebattle_teams: Array = fresh_snapshot.get("prebattle_public_teams", [])
+	if fresh_prebattle_teams.is_empty():
+		return harness.fail_result("fresh public_snapshot should keep prebattle_public_teams")
+	var fresh_skill_ids: PackedStringArray = fresh_prebattle_teams[0].get("units", [])[0].get("skill_ids", PackedStringArray())
+	var fresh_combat_type_ids: PackedStringArray = fresh_snapshot.get("sides", [])[0].get("team_units", [])[0].get("combat_type_ids", PackedStringArray())
+	if fresh_skill_ids != original_public_skill_ids:
+		return harness.fail_result("mutating public snapshot skill_ids should not affect later reads")
+	if fresh_combat_type_ids != original_public_types:
+		return harness.fail_result("mutating public snapshot combat_type_ids should not affect later reads")
+	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
+	if not bool(close_unwrap.get("ok", false)):
+		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
 func _test_visibility_mode_runtime_decoupled_contract(harness) -> Dictionary:

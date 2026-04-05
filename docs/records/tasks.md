@@ -1,6 +1,6 @@
 # 任务清单（精简版）
 
-本文件只保留当前仍需直接指导开发的任务摘要、验证结果与未解决问题。
+本文件以当前仍需直接指导开发的任务摘要、验证结果与未解决问题为主；必要时保留带历史标记的已完成记录，避免当前口径丢失追溯链。
 
 历史完整记录已归档到：
 
@@ -492,7 +492,7 @@
 
 - `bash tests/run_with_gate.sh` 通过
 
-### 正式角色扩展前整合：批次 2 formal registry 单一权威源收口（已完成）
+### 历史记录：正式角色扩展前整合：批次 2 formal registry 单一权威源收口（该阶段方案已在 2026-04-05 被 code-side runtime registry 口径替代）
 
 - 目标：
   - 把正式角色交付面从“docs registry + code-side validator registry”双源维护，收口成 `docs/records/formal_character_registry.json` 单一权威源

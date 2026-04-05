@@ -933,9 +933,9 @@
   - 第 4 个正式角色若继续踩隐式白名单、散落 owner meta 约定、effect/rule_mod refresh 语义分叉，后续回归和扩角成本会快速失控。
   - 先把共享底座 contract 写死，后续角色只需要消费稳定能力，不再一边扩角一边猜历史约定。
 
-### 72. 正式角色交付面重新收口为 docs-side 单一 registry；suite 注册链一致性也归它约束（2026-04-04）
+### 72. 正式角色交付面继续由 docs-side registry 记录；runtime formal validator 改由 code-side registry 装配（2026-04-04，2026-04-05 口径更新）
 
-- `docs/records/formal_character_registry.json` 当前重新明确为正式角色交付面的唯一权威源：
+- `docs/records/formal_character_registry.json` 当前继续作为正式角色交付面的 docs/test 元数据权威源：
   - 设计稿 / 调整记录
   - wrapper suite
   - `sample_setup_method`
@@ -943,14 +943,14 @@
   - `required_suite_paths`
   - `required_test_names`
   - 可选 `content_validator_script_path`
-- `ContentSnapshotFormalCharacterRegistry` 运行时当前直接读取这份 docs-side registry；`src/battle_core/content/formal_character_validator_registry.json` 已删除，不再保留 code-side read model。
-- repo consistency gate 当前围绕这一个 registry 检查：
+- runtime 侧当前固定由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 这份代码侧描述源装配 formal validator，不再把 docs-side registry 当可执行配置源。
+- repo consistency gate 当前会同时围绕 docs-side 交付面与 runtime code-side validator 描述源检查：
   - 字段完整性
-  - validator 路径存在且可加载
+  - validator 路径存在且与 runtime 描述源一致
   - `SampleBattleFactory` builder 对应关系
   - `required_suite_paths` 必须能从 `tests/run_all.gd` 与 wrapper `preload(...)` 子树真实到达
   - `required_test_names / required_content_paths / design_needles / adjustment_needles` 一致
-- README、接入 checklist 与 schema 文档当前都统一引用 docs-side registry，不再把 code-side registry 当成人工维护入口。
+- README、接入 checklist 与 schema 文档当前继续引用 docs-side registry 作为人工维护入口；runtime code-side registry 只负责执行期 validator 装配。
 - 原因：
   - 双源 registry 会把角色接入动作拆成两份人工同步点，最容易在扩角时形成“运行时能过、门禁没锁”或“门禁在锁一份已不被运行时读取的文件”这两类伪一致性。
   - 把 suite 注册链也挂回同一份 registry，后续扩角时就能同时锁住“资源在不在”和“测试有没有真的接进执行树”。

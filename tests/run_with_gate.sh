@@ -8,6 +8,7 @@ BOOT_LOG_FILE="$(mktemp)"
 trap 'rm -f "$LOG_FILE" "$BOOT_LOG_FILE"' EXIT
 ENGINE_ERROR_PATTERN='SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script|Failed loading resource|Failed to instantiate script|Cannot open file '\''res://'
 ENGINE_WARNING_PATTERN='^WARNING:'
+APP_FAILURE_PATTERN='BATTLE_SANDBOX_FAILED:'
 
 cd "$ROOT_DIR"
 
@@ -51,6 +52,12 @@ fi
 if rg -q "$ENGINE_WARNING_PATTERN" "$BOOT_LOG_FILE"; then
   echo "ENGINE_GATE_FAILED: found engine warnings during boot smoke" >&2
   rg -n "$ENGINE_WARNING_PATTERN" "$BOOT_LOG_FILE" >&2 || true
+  exit 1
+fi
+
+if rg -q "$APP_FAILURE_PATTERN" "$BOOT_LOG_FILE"; then
+  echo "BOOT_GATE_FAILED: found battle sandbox application failure during boot smoke" >&2
+  rg -n "$APP_FAILURE_PATTERN" "$BOOT_LOG_FILE" >&2 || true
   exit 1
 fi
 

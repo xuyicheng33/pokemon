@@ -5,6 +5,7 @@ const BattleCoreSessionScript := preload("res://src/battle_core/facades/battle_c
 const BattleCoreManagerContractHelperScript := preload("res://src/battle_core/facades/battle_core_manager_contract_helper.gd")
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
 
 var container_factory: Callable = Callable()
 var public_snapshot_builder = null
@@ -69,7 +70,7 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
         "response": BattleCoreManagerContractHelperScript.ok({
             "session_id": session_id,
             "public_snapshot": public_snapshot,
-            "prebattle_public_teams": public_snapshot.get("prebattle_public_teams", []),
+            "prebattle_public_teams": DeepCopyHelperScript.copy_value(public_snapshot.get("prebattle_public_teams", [])),
         }),
     }
 

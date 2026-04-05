@@ -1,6 +1,8 @@
 extends RefCounted
 class_name EventLogPublicSnapshotBuilder
 
+const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
+
 const SAFE_EVENT_FIELDS := [
 	"battle_seed",
 	"battle_rng_profile",
@@ -38,7 +40,7 @@ func build_public_snapshot(log_event, battle_state) -> Dictionary:
 		return {}
 	var event_snapshot: Dictionary = {}
 	for field_name in SAFE_EVENT_FIELDS:
-		event_snapshot[field_name] = log_event.get(field_name)
+		event_snapshot[field_name] = DeepCopyHelperScript.copy_value(log_event.get(field_name))
 	event_snapshot["field_change"] = _serialize_field_change(log_event.field_change)
 	event_snapshot["value_changes"] = _build_public_value_changes(log_event.value_changes, battle_state)
 	event_snapshot["actor_public_id"] = _resolve_public_id(battle_state, log_event.actor_id)
@@ -47,7 +49,7 @@ func build_public_snapshot(log_event, battle_state) -> Dictionary:
 	event_snapshot["target_definition_id"] = _resolve_definition_id(battle_state, log_event.target_instance_id)
 	event_snapshot["killer_public_id"] = _resolve_public_id(battle_state, log_event.killer_id)
 	event_snapshot["killer_definition_id"] = _resolve_definition_id(battle_state, log_event.killer_id)
-	return event_snapshot
+	return DeepCopyHelperScript.copy_value(event_snapshot)
 
 func _serialize_field_change(field_change) -> Variant:
 	if field_change == null:

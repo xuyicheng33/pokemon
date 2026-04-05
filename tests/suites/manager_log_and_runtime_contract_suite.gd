@@ -11,6 +11,7 @@ var _helper = ManagerContractTestHelperScript.new()
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("event_log_snapshot_public_contract", failures, Callable(self, "_test_event_log_snapshot_public_contract").bind(harness))
+	runner.run_test("event_log_snapshot_readonly_detached_contract", failures, Callable(self, "_test_event_log_snapshot_readonly_detached_contract").bind(harness))
 	runner.run_test("manager_invalid_session_read_contract", failures, Callable(self, "_test_manager_invalid_session_read_contract").bind(harness))
 	runner.run_test("manager_run_turn_invalid_envelope_contract", failures, Callable(self, "_test_manager_run_turn_invalid_envelope_contract").bind(harness))
 	runner.run_test("manager_unconfigured_dependency_guard_contract", failures, Callable(self, "_test_manager_unconfigured_dependency_guard_contract").bind(harness))
@@ -112,6 +113,55 @@ func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 	var close_result = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
 	if not bool(close_result.get("ok", false)):
 		return harness.fail_result(str(close_result.get("error", "manager close_session failed")))
+	return harness.pass_result()
+
+func _test_event_log_snapshot_readonly_detached_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var init_unwrap = _helper.unwrap_ok(manager.create_session({
+		"battle_seed": 3041,
+		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"battle_setup": sample_factory.build_sample_setup(),
+	}), "create_session")
+	if not bool(init_unwrap.get("ok", false)):
+		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
+	var initial_log_unwrap = _helper.unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot")
+	if not bool(initial_log_unwrap.get("ok", false)):
+		return harness.fail_result(str(initial_log_unwrap.get("error", "manager get_event_log_snapshot failed")))
+	var initial_events: Array = initial_log_unwrap.get("data", {}).get("events", [])
+	var header_event := _find_header_event_snapshot(initial_events)
+	if header_event.is_empty():
+		return harness.fail_result("event_log snapshot should expose system:battle_header")
+	var header_snapshot: Dictionary = header_event.get("header_snapshot", {})
+	var original_visibility_mode := String(header_snapshot.get("visibility_mode", ""))
+	var header_prebattle_teams: Array = header_snapshot.get("prebattle_public_teams", [])
+	if header_prebattle_teams.is_empty():
+		return harness.fail_result("header_snapshot should expose prebattle_public_teams")
+	var header_skill_ids: PackedStringArray = header_prebattle_teams[0].get("units", [])[0].get("skill_ids", PackedStringArray())
+	var original_skill_ids: PackedStringArray = header_skill_ids.duplicate()
+	header_snapshot["visibility_mode"] = "mutated_visibility"
+	header_skill_ids[0] = "mutated_skill"
+	var fresh_log_unwrap = _helper.unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot")
+	if not bool(fresh_log_unwrap.get("ok", false)):
+		return harness.fail_result(str(fresh_log_unwrap.get("error", "manager get_event_log_snapshot fresh failed")))
+	var fresh_header_event := _find_header_event_snapshot(fresh_log_unwrap.get("data", {}).get("events", []))
+	if fresh_header_event.is_empty():
+		return harness.fail_result("fresh event_log snapshot should keep system:battle_header")
+	var fresh_header_snapshot: Dictionary = fresh_header_event.get("header_snapshot", {})
+	var fresh_skill_ids: PackedStringArray = fresh_header_snapshot.get("prebattle_public_teams", [])[0].get("units", [])[0].get("skill_ids", PackedStringArray())
+	if String(fresh_header_snapshot.get("visibility_mode", "")) != original_visibility_mode:
+		return harness.fail_result("mutating public event header_snapshot should not affect later reads")
+	if fresh_skill_ids != original_skill_ids:
+		return harness.fail_result("mutating public event prebattle skill_ids should not affect later reads")
+	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
+	if not bool(close_unwrap.get("ok", false)):
+		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
 func _test_manager_run_turn_invalid_envelope_contract(harness) -> Dictionary:
@@ -263,3 +313,9 @@ func _test_manager_disposed_request_guard_contract(harness) -> Dictionary:
 	if not bool(failure.get("ok", false)):
 		return harness.fail_result(str(failure.get("error", "disposed manager guard contract failed")))
 	return harness.pass_result()
+
+func _find_header_event_snapshot(events: Array) -> Dictionary:
+	for event_snapshot in events:
+		if String(event_snapshot.get("event_type", "")) == EventTypesScript.SYSTEM_BATTLE_HEADER:
+			return event_snapshot
+	return {}

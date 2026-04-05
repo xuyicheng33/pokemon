@@ -8,16 +8,36 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 
 var composer
 var manager
+var _startup_failed: bool = false
 
 func _ready() -> void:
+    _startup_failed = false
     composer = BattleCoreComposerScript.new()
+    if composer == null:
+        _fail_startup("Battle sandbox failed to construct composer")
+        return
     manager = composer.compose_manager()
+    if manager == null:
+        var composer_error: Dictionary = composer.error_state()
+        _fail_startup(
+            "Battle sandbox failed to compose manager: %s" % str(composer_error.get("message", "unknown composition error"))
+        )
+        return
     var sample_factory: Variant = SampleBattleFactoryScript.new()
+    if sample_factory == null:
+        _fail_startup("Battle sandbox failed to construct sample battle factory")
+        return
     var demo_mode := _resolve_demo_mode()
     var replay_input = _build_replay_input_for_demo_mode(sample_factory, demo_mode)
+    if _startup_failed:
+        return
+    var replay_input_error := _validate_replay_input(replay_input)
+    if not replay_input_error.is_empty():
+        _fail_startup(replay_input_error)
+        return
     var replay_envelope: Dictionary = manager.run_replay(replay_input)
     if not bool(replay_envelope.get("ok", false)):
-        push_error("Battle sandbox replay failed: %s" % str(replay_envelope.get("error_message", "unknown error")))
+        _fail_startup("Battle sandbox replay failed: %s" % str(replay_envelope.get("error_message", "unknown error")))
         return
 
 func _resolve_demo_mode() -> String:
@@ -91,11 +111,35 @@ func _build_kashimo_demo_replay_input(sample_factory) -> Variant:
             "actor_public_id": "P1-A",
         }),
     ]
+    if _startup_failed:
+        return null
     return replay_input
 
 func _cmd(payload: Dictionary) -> Variant:
     var envelope: Dictionary = manager.build_command(payload)
     if not bool(envelope.get("ok", false)):
-        push_error("Battle sandbox command build failed: %s" % str(envelope.get("error_message", "unknown error")))
+        _fail_startup("Battle sandbox command build failed: %s" % str(envelope.get("error_message", "unknown error")))
         return null
     return envelope.get("data", null)
+
+func _validate_replay_input(replay_input) -> String:
+    if replay_input == null:
+        return "Battle sandbox failed to build replay input"
+    if replay_input.battle_setup == null:
+        return "Battle sandbox replay input missing battle_setup"
+    if replay_input.content_snapshot_paths.is_empty():
+        return "Battle sandbox replay input missing content_snapshot_paths"
+    if replay_input.command_stream.is_empty():
+        return "Battle sandbox replay input missing command_stream"
+    for command_index in range(replay_input.command_stream.size()):
+        if replay_input.command_stream[command_index] == null:
+            return "Battle sandbox replay input contains null command at index %d" % command_index
+    return ""
+
+func _fail_startup(message: String) -> void:
+    if _startup_failed:
+        return
+    _startup_failed = true
+    printerr("BATTLE_SANDBOX_FAILED: %s" % message)
+    if get_tree() != null:
+        get_tree().quit(1)
