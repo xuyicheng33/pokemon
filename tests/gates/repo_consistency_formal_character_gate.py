@@ -86,6 +86,28 @@ for entry in formal_character_registry:
         ctx.failures.append(f"src/composition/sample_battle_factory.gd missing sample setup builder: {sample_setup_method}")
     if content_validator_script_path != "":
         ctx.require_exists(content_validator_script_path, f"{character_id} content validator script")
+        validator_text = ctx.read_text(content_validator_script_path)
+        if not content_validator_script_path.endswith("_validator.gd"):
+            ctx.failures.append(f"formal character registry[{character_id}] content validator must end with _validator.gd: {content_validator_script_path}")
+        else:
+            validator_prefix = content_validator_script_path.removesuffix("_validator.gd")
+            expected_bucket_paths = [
+                (f"{validator_prefix}_unit_passive_contracts.gd", "unit_passive_contracts"),
+                (f"{validator_prefix}_skill_effect_contracts.gd", "skill_effect_contracts"),
+                (f"{validator_prefix}_ultimate_domain_contracts.gd", "ultimate_domain_contracts"),
+            ]
+            for bucket_path, bucket_label in expected_bucket_paths:
+                ctx.require_exists(bucket_path, f"{character_id} {bucket_label} validator bucket")
+                preload_path = 'preload("res://%s")' % bucket_path
+                if preload_path not in validator_text:
+                    ctx.failures.append(
+                        f"formal character registry[{character_id}] entry validator must preload {bucket_label}: {bucket_path}"
+                    )
+            for bucket_var in ["_unit_passive_contracts", "_skill_effect_contracts", "_ultimate_domain_contracts"]:
+                if f"{bucket_var}.validate(self, content_index, errors)" not in validator_text:
+                    ctx.failures.append(
+                        f"formal character registry[{character_id}] entry validator must dispatch {bucket_var}.validate(self, content_index, errors)"
+                    )
     if not isinstance(required_suite_paths, list) or not required_suite_paths:
         ctx.failures.append(f"formal character registry[{character_id}] missing required_suite_paths")
     else:

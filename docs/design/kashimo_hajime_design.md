@@ -254,7 +254,7 @@
 
 | 资源 | 语义 |
 |------|------|
-| `kashimo_kyokyo_nullify` | `scope=self`；外层 effect 持续 3 次 `turn_end`；其 `rule_mod` 语义按 `stacking=refresh` 续命；整体语义为“忽略领域附加必中，只读技能原始命中率” |
+| `kashimo_kyokyo_nullify` | `scope=self`；外层 effect 持续 3 次 `turn_end`；其 `rule_mod` 语义按 `stacking=refresh` 续命；持续中再次施放会把剩余窗口刷新回完整 3 回合；整体语义为“忽略领域附加必中，只读技能原始命中率” |
 
 ### 2.5 幻兽琥珀（奥义）
 
@@ -286,6 +286,7 @@
 - 机制说明：
   - 奥义合法性仍同时要求 `current_mp >= 35` 与 `ultimate_points >= 3`。
   - 开始施放时立刻清空奥义点。
+  - `SkillDefinition.once_per_battle = true` 当前只负责表达“整场一次”的共享能力入口；真正的二次拦截由 battle-scoped 使用记录承担，因此即使后续出现死亡、复活或状态重建，也不会被放宽成“活着时一次”。
   - `on_cast` 阶段就进入琥珀状态，所以就算这次攻击 miss，强化与自伤也照样生效。
 
 **琥珀相关资源**

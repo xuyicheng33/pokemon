@@ -55,6 +55,7 @@ Composition 补充约束：
 - `incoming_accuracy`
 - `nullify_field_accuracy`
 - `incoming_action_final_mod`
+- `incoming_heal_final_mod`
 
 补充说明：
 

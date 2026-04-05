@@ -110,6 +110,7 @@
 |`ultimate_points_required`|`int`|施放奥义所需点数|
 |`ultimate_point_gain_on_regular_skill_cast`|`int`|每次开始施放常规技能时获得的奥义点|
 |`regular_skill_ids`|`PackedStringArray`|本场实际已装备的 3 个常规技能；初始化时从默认装配或 setup override 解析得到|
+|`used_once_per_battle_skill_ids`|`PackedStringArray`|内部 battle-scoped 一次性技能消耗记录；仅供合法性与执行链读取，不对 manager public contract 暴露|
 |`combat_type_ids`|`PackedStringArray`|运行态战斗属性镜像，初始化时从 `UnitDefinition` 复制|
 |`base_attack`|`int`|基础攻击|
 |`base_defense`|`int`|基础防御|
@@ -208,6 +209,7 @@
 
 - `UnitDefinition.skill_ids` 不再直接承担“本场实际装配”语义；运行时、合法性、公开快照统一读取 `UnitState.regular_skill_ids`。
 - `candidate_skill_ids` 只存在于内容定义层；运行态当前不额外镜像候选池。
+- `used_once_per_battle_skill_ids` 只保留在核心内部运行态，不回写到 manager public snapshot、回放公开 contract 或外层输入结构。
 
 ## 11. 禁止事项
 

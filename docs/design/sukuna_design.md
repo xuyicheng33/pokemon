@@ -289,6 +289,7 @@
 - 当前样例与正式角色都必须满足这个 7 维公式假设；若未来引入 `max_mp = 0` 的 dummy / 测试单位，需要先重审该公式再接入。
 - 动态公式只会把求值结果写进运行时 `rule_mod instance`，不会回写共享 `.tres` payload。
 - 当前宿傩每回合最终回复值固定为 `12 + 动态加值`；例如对位五条悟时，当前口径为 `12 + 9 = 21`。
+- `sukuna_refresh_love_regen` 当前正式写死为 `duration_mode = permanent`；每次 `on_matchup_changed` 时，同来源组内只保留 1 条长期 `mp_regen add`，并用 `stacking=replace` 把旧档位替换成新的长期回蓝值。
 - `mp_regen` 的多来源叠加语义不再由隐式 key 折叠；共享 contract 统一按“不同来源组并存、同来源组内再走 `none / refresh / replace`”执行。因此宿傩被动回蓝和未来装备回蓝会一起算；若内容想刻意合并，必须显式复用同一个 `stacking_source_key`。
 
 ---

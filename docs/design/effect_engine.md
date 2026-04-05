@@ -98,6 +98,7 @@ effect 级前置约束：
 - 若 `required_target_same_owner=true`，则命中的 required effect instance 还必须记录 `meta.source_owner_id == effect_event.owner_id`。
 - 前置不满足时整条 effect 直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 - `scope=action_actor` 只允许用于 `on_receive_action_hit`；相关单位目标固定读取 `chain_context.action_actor_id`。
+- `required_incoming_command_types / required_incoming_combat_type_ids` 当前统一可用于 `on_receive_action_hit / on_receive_action_damage_segment`；运行时都读取同一份 `chain_context.command_type / action_combat_type_id`。
 - `on_receive_action_damage_segment` 当前由主动伤害主链在每个成功结算段后显式派发；其上下文固定补 `chain_context.action_segment_index / action_segment_total / action_combat_type_id`。
 - 多段主动伤害的段级上下文当前必须走同一条保护路径：先补段索引 / 段总数 / 段属性 / target，再派发 trigger，最后恢复原始 `chain_context`；不允许在 owner 内继续手改后靠人肉恢复。
 

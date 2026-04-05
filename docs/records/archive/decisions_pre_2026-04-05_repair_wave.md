@@ -1,0 +1,1100 @@
+# 决策记录（精简版）
+
+本文件只保留当前阶段仍会直接约束实现、测试或扩角流程的关键决策。
+
+历史完整记录已归档到：
+
+- `docs/records/archive/decisions_pre_v0.6.3.md`
+- `docs/records/archive/decisions_pre_v0.6.4.md`
+
+当前生效规则以 `docs/rules/` 为准；本文件只记录“为什么这样定”。
+
+## 当前有效决策
+
+### 0. Runtime formal validator 与 content cache 收口到 docs registry 单一真相 + runtime loader 稳定入口（2026-04-05）
+
+- `docs/records/formal_character_registry.json` 当前既是正式角色交付面的元数据注册表，也是可选 `content_validator_script_path` 的单一登记源。
+- runtime 侧固定由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 读取这份 docs registry，并在同一个 fail-fast loader 中完成 formal validator descriptor 装配。
+- `ContentSnapshotFormalCharacterValidator` 不再自己散读正式角色 registry；repo consistency gate 必须校验 runtime loader 直接读取 docs registry，且 runtime 不保留第二份硬编码 formal character descriptor 列表。
+- `ContentSnapshotCache` 的签名当前必须同时包含：
+  - 稳定排序后的 `content_snapshot_paths`
+  - 每个路径对应文件的内容指纹（优先 `md5`，失败时退回文件修改时间）
+- 原因：
+  - 正式角色接入若存在两份 registry / descriptor 源，最容易在扩角时形成“文档与 gate 已改、runtime 还在读旧配置”或反过来的伪一致性。
+  - runtime 继续允许通过单一 loader 读取 docs registry，但不允许把 docs 读取散落到 validator / test helper 多处。
+  - 同一路径下文件内容变化后，cache 必须 miss，不能继续复用旧 entry。
+- `BattleCoreManager` 的 container factory 错误路径当前只允许通过 `error_state()` port 回读错误，不再反向 reach-through `container_factory_owner.composer`。
+
+### 0.1 正式角色 formal validator 必须锁角色专有关键机制形状（2026-04-05）
+
+- 正式角色 formal validator 不再只校验“角色资源存在、基础字段没漂”；还必须锁住角色专有、最容易静默漂移的关键机制形状。
+- 当前已明确纳入 baseline 的例子：
+  - Gojo `gojo_murasaki_conditional_burst` 必须固定为 `damage + remove gojo_ao_mark + remove gojo_aka_mark`
+  - Kashimo 电荷体系必须固定校验 `apply mark / mark shape / consume all` 这组关键资源
+- 原因：
+  - 复杂角色最容易出问题的不是“文件丢了”，而是 payload 顺序、作用域、触发时机、remove 目标这些细节悄悄漂掉。
+  - 只靠文档存在性、wrapper suite 存在性，挡不住“角色还在，但核心机制已经偏了”的假阳性。
+
+### 0.2 文档公开推荐的固定案例 runner 必须优先走真实对局路径（2026-04-05）
+
+- 若某个 `tests/helpers/*_case_runner.gd` 被 README、设计稿或测试文档明确列为固定诊断入口，它的关键 matchup 案例默认必须优先走真实装配和真实施法路径。
+- 当前已写死的例子：
+  - `tests/helpers/kashimo_case_runner.gd` 里的 `kyokyo_vs_domain` 必须由 Gojo 真实施放 `gojo_unlimited_void` 建场后再验证 `kashimo_kyokyo_katsura`，不能继续直接手工塞 `field_state`
+- 合成注入仍然允许保留在局部 runtime 单测里，但不再作为文档公开推荐的主复查入口。
+- 原因：
+  - 固定案例 runner 的目标是“出 gate 以后，快速复查真实局面有没有漂”，不是只证明局部字段能被人造状态凑出来。
+  - 领域建立时机、起手 MP、换装技能组、行动顺序这类问题，只有真实对局路径才能稳定暴露。
+
+### 0.3 角色侧关键机制必须有直给回归锚点，不只挂共享 suite（2026-04-05）
+
+- 共享 suite 继续保留，用来锁公共领域、奥义点、field 生命周期这类跨角色 contract。
+- 但正式角色 registry 里的 `required_test_names`，必须显式挂上角色侧最容易被误判成“共享已覆盖”的关键机制回归。
+- 当前明确收口的例子：
+  - Gojo `gojo_unlimited_void_expire_removes_field_buff_contract`
+  - Gojo `gojo_unlimited_void_break_removes_field_buff_contract`
+  - Sukuna `sukuna_domain_failed_clash_no_field_no_buff_no_expire_burst_contract`
+  - Kashimo `kashimo_negative_charge_switch_clear_contract`
+- 原因：
+  - 这批问题的根子不是完全没测，而是“共享 suite 有覆盖，但角色侧入口不直观”，导致审查时很容易误判成缺测试。
+  - 把角色侧直给锚点写进 registry，后续扩角和复查时就不会再靠人肉回忆“这个是不是在公共 suite 里顺带测过”。
+
+### 0.4 静态资源补漏优先前移到 formal validator，snapshot 诊断必须一次报全（2026-04-05）
+
+- `combat_type_ids`、空 effect 数组、领域 `field_kind`、领域 apply / buff remove 这类静态关键字段，当前要求优先锁进 formal validator，不再只靠 snapshot suite 间接兜底。
+- Gojo / Sukuna / Kashimo 的 snapshot suite `_run_checks` 当前统一改成“同一轮把全部 mismatch 一次报完”，不再首错即停。
+- 原因：
+  - 这类漂移越早炸越省事，最好在 formal validator 阶段就拦下，而不是拖到角色 runtime suite 才暴露。
+  - 首错即停会把多处静态漂移压缩成一条报错，信息量不够，补漏效率低。
+
+### 0.5 formal validator 只校验当前快照实际出现的正式角色（2026-04-05）
+
+- `ContentSnapshotFormalCharacterValidator` 当前按 `unit_definition_id` 判断角色是否出现在 `content_index.units` 中，只对实际进入当前 snapshot 的正式角色执行对应 validator。
+- `partial snapshot`、聚焦坏例或单角色资源包校验时，不允许因为其它正式角色未加载而误报缺资源。
+- 原因：
+  - 正式角色 validator 的职责是锁“当前交付内容有没有漂”，不是强迫所有局部快照都携带整仓正式角色资源。
+  - 角色数量继续增长后，如果 validator 仍对缺席角色逐个硬炸，内容校验会快速失去定位价值。
+
+### 0.6 百分比治疗正式扩成 `max_hp / missing_hp` 双基准，并引入 `incoming_heal_final_mod` 作为目标侧末端读取点（2026-04-05）
+
+- `HealPayload.percent_base` 当前正式支持：
+  - `max_hp`
+  - `missing_hp`
+- `missing_hp` 口径固定为：
+  - 基数 = `target.max_hp - target.current_hp`
+  - 治疗量 = `floor(base * percent / 100)`
+  - 只要 `missing_hp > 0` 且本次治疗合法，百分比治疗至少回复 `1`
+- 目标侧治疗末端读取点当前固定新增为 `incoming_heal_final_mod`，并作为正式 `rule_mod` 白名单的一部分。
+- 该读取点统一在“基础治疗量解出之后、最终 HP clamp 之前”应用；最终治疗值若 `<= 0`，不写 `effect:heal` 日志。
+- 原因：
+  - 带土的 `仙人之力` 与禁疗需要共享化的“缺失生命百分比治疗 + 目标侧禁疗”能力，不能继续靠角色专用 runtime 分支落地。
+  - 用数值倍率语义的 `incoming_heal_final_mod`，比布尔禁疗开关更利于后续角色复用和 formal validator 锁定。
+
+### 0.7 技能级 `execute_*` 处决 contract 正式纳入 `SkillDefinition`（2026-04-05）
+
+- `SkillDefinition` 当前正式新增：
+  - `execute_target_hp_ratio_lte`
+  - `execute_required_total_stacks`
+  - `execute_self_effect_ids`
+  - `execute_target_effect_ids`
+- 判定时机固定为：
+  - 技能命中后
+  - 常规直接伤害前
+- 若处决条件成立：
+  - 目标 HP 直接归零
+  - 仍写一条正常 `effect:damage` 公开日志
+  - `payload_summary` 追加 `[execute]`
+  - 常规伤害链不再继续执行
+- 若条件不成立：
+  - 完整回退到原有直接伤害路径
+- 原因：
+  - 这类机制已经不是单角色特例；若继续把“低血斩杀”写进角色专用分支，扩角时会直接破坏主线架构清晰度。
+  - 技能级 schema 明确后，内容校验、formal validator、runtime suite 和 manager facade 才能对齐同一套语义。
+
+### 0.8 共享多段主动伤害与逐段触发正式落入主线，`on_receive_action_hit` 旧语义保持不变（2026-04-05）
+
+- `SkillDefinition.damage_segments` 当前已成为正式共享能力；多段主动伤害统一按段展开并逐段结算。
+- `ChainContext` 当前正式补入：
+  - `action_segment_index`
+  - `action_segment_total`
+  - `action_combat_type_id`
+- 新增逐段触发口：
+  - `on_receive_action_damage_segment`
+- 旧语义明确保持不变：
+  - `on_receive_action_hit` 仍然只表示“整次来袭行动命中一次”
+  - 不因多段技能自动升级成“每段一次”
+- 公开日志 contract 保持不升级 schema：
+  - 每段继续写现有 `effect:damage`
+  - 通过 `payload_summary segment i/n` 暴露段序
+- 原因：
+  - 带土的奥义和阴阳遁都需要“逐段伤害、逐段减伤、逐段叠层”，但鹿紫云现有 `on_receive_action_hit` 等旧角色路径不能被一起改坏。
+  - 通过新增逐段 trigger，而不是改写旧 trigger 语义，可以让共享多段能力进入主线，同时保持旧角色 contract 稳定。
+
+### 1. 规则、设计、记录的职责分层固定
+
+- `docs/rules/` 是当前生效规则权威。
+- `docs/design/` 负责实现落点、架构与角色/机制设计。
+- `docs/records/` 只保留决策背景、任务摘要与追溯入口，不再承载会被误当成“当前真相”的大正文。
+
+### 2. 扩角前先做规范整合，不先做新角色与平衡修正
+
+- 当前主线先解决工程/文档/门禁/诊断漂移。
+- 宿傩对 Gojo 的领域兑现率问题保留到下一轮平衡任务。
+- 本轮默认不动 Gojo / Sukuna 数值，不把 `domain_successes = 0` 当成规范整合阶段的实现目标。
+
+### 3. 预期 invalid termination 不再伪装成引擎级错误
+
+- `invalid_battle / hard_terminate_invalid_state` 仍要保留可检索诊断输出。
+- 但这类预期负路径不再走引擎级 `push_error()`，避免闸门全绿时控制台仍充满误导性 `ERROR:`
+- `tests/run_with_gate.sh` 继续只拦截真正的脚本/编译/解析/加载错误。
+
+### 4. `BattleFormatConfig` 的正式目录固定为 `content/battle_formats/`
+
+- `content/samples/` 只承载样例资源与样例对局资源，不再承载正式 battle format。
+- 默认快照扫描目录必须与目录规范一致；新增 battle format 时不允许靠样例目录兜底。
+
+### 5. 默认快照扫描目录固定显式列出
+
+- `SampleBattleFactory.content_snapshot_paths()` 默认收集：
+  - `battle_formats`
+  - `combat_types`
+  - `units`
+  - `skills`
+  - `passive_skills`
+  - `passive_items`
+  - `effects`
+  - `fields`
+  - `samples`
+- 继续保持稳定排序，避免内容接线漏资源与 replay 漂移。
+
+### 6. 领域公共规则必须有单独模板入口
+
+- Gojo / Sukuna 共享的领域规则，不再只分散写在角色设计稿里。
+- 当前正式要求：领域角色扩展前，先阅读并对齐领域模板文档，再写角色差异项。
+- 角色设计稿只保留自身差异，不再重复定义整套公共领域冲突矩阵。
+
+### 7. 领域公共规则继续沿用当前主线 contract
+
+- `domain vs domain` 比较双方扣费后的当前 MP。
+- 成功后附带链统一走 `field_apply_success`。
+- 领域增幅必须是 field 绑定收益，跟随 `field_apply / field_break / field_expire` 生命周期。
+- 同回合双方已入队的领域动作不得被 action lock 回溯取消。
+- 己方领域在场时，己方不得重开己方领域；该限制不影响对手领域，也不影响普通 field。
+
+### 8. 固定案例诊断口径（已被第 15 条进一步收口）
+
+- 当前主线只保留 `tests/replay_cases/` 固定可复查案例作为角色与规则复查入口。
+- 历史上的批量模拟拆分方案已随第 15 条一起退出主线，不再作为现行要求。
+- 固定案例至少覆盖领域成功、领域失败、平 MP tie-break、普通 field 阻断、同回合双开域。
+
+### 9. 正式角色资产交付面继续保持不变
+
+- 每个正式角色都必须同时具备：
+  - 设计稿
+  - 调整记录
+  - 内容资源
+  - `SampleBattleFactory` 接线
+  - 独立角色 suite
+- 后续新角色默认沿用这套交付面，不再接受“只有 `.tres` + 测试”的半成品接入。
+
+### 9.1 正式角色模板、checklist 与最低测试面固定（2026-04-01）
+
+- 正式角色设计稿统一使用 `docs/design/formal_character_design_template.md`。
+- 正式角色接入动作统一使用 `docs/design/formal_character_delivery_checklist.md`。
+- 默认施工顺序固定为：
+  - 先写设计稿 / 调整记录
+  - 再落内容资源
+  - 再补 `SampleBattleFactory`、formal registry 与 suite
+- 正式角色最低测试面固定包含：
+  - `snapshot suite`
+  - 角色独有 `runtime suite`
+  - `manager smoke suite`
+- 若角色是领域角色，只在角色稿末尾追加“领域角色差异附录”；公共领域规则继续引用 `docs/design/domain_field_template.md`，不再在角色稿内重复展开。
+- 若只是复用现有机制接入新角色，不新增 `decisions.md`；只有引入新 trigger / payload / schema / 生命周期口径时，才补新决策记录。
+
+### 10. 对外 contract 继续收口到公开层接口
+
+- 外层输入与公开快照继续只使用 `public_id`。
+- `BattleCoreManager` 仍是外围稳定入口。
+- 调试读取若需要更多信息，只允许走显式的只读快照/日志接口，不再直穿内部 session/runtime。
+
+### 11. `battle_core / composition` 的源码大文件 allowlist 已清空（2026-03-30）
+
+- 当前 `src/battle_core` 与 `src/composition` 已无 `>250` 行源码文件。
+- 架构闸门不再保留历史临时 `max_lines` allowlist；若旧 allowlist 条目继续留在门禁脚本里，也视为漂移。
+- 后续若再次出现 `>250` 行源码文件，必须重新做职责复核、补决策记录，再显式登记新的临时上限。
+
+### 12. 领域合法性与公开快照口径统一（2026-03-30）
+
+- 新增 `domain_legality_service` 作为领域重开判定的单一真相：
+  - 选指阶段（`LegalActionService`）与执行阶段（`ActionDomainGuard`）统一复用同一判定。
+- `public_snapshot.field` 扩展 `field_kind / creator_side_id`：
+  - 供外层输入、公开快照与规则复查统一读取当前 field 类型与归属侧。
+- 领域重开、field 归属与公开快照的读取口径，当前统一依赖上述公共 contract。
+- 若未来恢复自动选指，必须重新补齐规则、设计文档与接线任务，不得直接回填历史实现。
+
+### 13. Active Field 的 creator 视为运行态硬约束（2026-03-30）
+
+- 只要 `battle_state.field_state != null`，就必须满足：
+  - `field_state.creator` 非空
+  - `field_state.creator` 能解析到当前运行态中的单位
+- 原因：
+  - 领域对拼与 field 生命周期日志都依赖 creator 归因；继续用缺失 creator 的脏状态往下跑，只会把坏状态伪装成正常对拼结果。
+- 当前处理：
+  - `RuntimeGuardService` 在每回合入口统一拦截这类坏状态，直接返回 `invalid_state_corruption`
+  - `FieldApplyConflictService` 额外保留本地防御，不再把缺失 creator 降级成 `-1 MP` 继续参与领域对拼
+
+### 13.1 扩角前再收口三处高频漂移（2026-04-05）
+
+- `battle_header` 的公开快照构建不再从 `turn` 层直接依赖 `facades/public_snapshot_builder`；当前统一改为 `BattleHeaderSnapshotBuilder` 静态 helper，避免 L4 再借 facade helper 取 header snapshot。
+- `kashimo_kyokyo_nullify` 的外层 `EffectDefinition` 现已和设计稿统一为 `duration_mode=turns / duration=3 / decrement_on=turn_end`；不再保留“外层 permanent、内层 3 回合”的双口径。
+- `mp_regen` 的动态求值 contract 当前正式收紧为“整数值 only”：
+  - 内容校验期必须拦截非整数 `value`
+  - `dynamic_value_outputs / dynamic_value_default` 对 `mp_regen` 也必须保持整数值
+  - 运行时若仍拿到非整数结果，必须直接 `invalid_rule_mod_definition`
+
+### 14. 扩角前规范整合口径正式收紧（2026-03-30）
+
+- manager 对外事件日志改为白名单公开快照：
+  - 保留公开归因字段 `actor_public_id / actor_definition_id / target_public_id / target_definition_id / killer_public_id / killer_definition_id`
+  - 移除 `actor_id / source_instance_id / target_instance_id / killer_id / value_changes[].entity_id`
+- `create_session()` 的对外 contract 正式定义为“已预回首回合 MP 后的初始公开快照”，且初始 `event_log` 不补这条预回蓝。
+- 初始化阶段的 `invalid_battle` 与 startup victory 统一归 `BattleResultService` 落盘，`BattleInitializer` 只保留编排 owner。
+- `ActionCastService` 与 `FaintResolver` 已完成一轮职责预拆；后续扩角优先继续沿子域 helper 扩展，不再把复杂度继续堆回主类。
+
+### 15. 主线移除自动选指与批量模拟层（2026-03-30）
+
+- 当前主线不再保留自动选指适配器、旧策略表、角色 mode handler、批量模拟案例与对应回归。
+- 原因：
+  - 现阶段优先收口核心战斗 contract、角色资源与扩角前治理，不再维护实验性自动选指层。
+  - 继续保留自动选指模拟层会把角色行为问题与核心规则问题混在一起，增加扩角前整合成本。
+- 当前处理：
+  - 正式角色交付面回退为 `设计稿 / 调整记录 / 内容资源 / SampleBattleFactory 接线 / 角色 suite / 必要固定案例`。
+  - 若未来恢复自动选指，必须先补规则与设计文档，再单开接线任务，不得直接回填历史实现。
+
+### 16. Effect 链递归防抖改用稳定语义键（2026-03-30）
+
+- 同一条 `event_chain` 内，effect dedupe key 统一使用：
+  - `source_instance_id / effect_instance_id / trigger_name / effect_definition_id / owner_id / target_unit_id`
+- 不再把 `event_id` 作为去重键的一部分。
+- 原因：
+  - `TriggerDispatcher` / `EffectInstanceDispatcher` 每次重新收集 effect event 都会生成新的 `event_id`，继续依赖它只能拦住“同一个事件对象重复执行”，挡不住递归重新派发出来的新事件。
+  - 同时补入 `effect_instance_id`，避免“同源、同触发、同目标、但属于不同叠层实例”的 effect 在合法路径里被误判成重复。
+  - 保留 `target_unit_id` 维度，避免把 battle_init 换位后重新形成的新稳定对位错误拦成递归。
+
+### 17. 正式角色接入与内容快照门禁改用统一注册表（2026-03-30）
+
+- 新增 `docs/records/formal_character_registry.json` 作为正式角色交付面的单一真相：
+  - 至少登记 `unit_definition_id / design_doc / adjustment_doc / suite_path / required_content_paths`
+- `tests/run_all.gd` 不再手写正式角色 wrapper 列表，统一按注册表动态装配。
+- `tests/check_repo_consistency.sh` 不再点名 Gojo / 宿傩的交付面路径，统一按注册表校验正式角色文档、suite、内容资源与 `SampleBattleFactory` 接线。
+- `SampleBattleFactory.content_snapshot_paths()` 改为递归收集 `.tres`：
+  - 避免后续把角色资源拆进子目录后，内容快照与回放输入静默漏资源。
+
+### 18. Effect 去重必须区分具体 effect instance（2026-03-30）
+
+- effect dedupe key 必须包含 effect_instance_id。
+- `PayloadExecutor` 的 effect dedupe key 不能只靠来源与目标语义。
+- 同来源、同目标、同触发名下，来自不同 `effect_instance_id` 的合法堆叠实例必须分别结算；否则会把“同链递归防抖”和“多层独立实例”错误混成一件事。
+- 当前 contract 固定为：继续拦递归重派发，但 distinct stacked instances 不能互相吞掉。
+
+### 19. `field_break / field_expire` 链上创建的 successor field 必须保留（2026-03-30）
+
+- field_break / field_expire 链上创建的 successor field 必须保留。
+- 若旧 field 的 `on_break_effect_ids` 或 `on_expire_effect_ids` 在自身生命周期链里成功创建了 successor field，旧 field 清理阶段不得把 successor 一并删掉。
+- 原因：
+  - 这类链路本质上是“旧 field 结束时交接到新 field”，不是“旧 field 清理自己时把场地彻底清空”。
+  - 若继续复用旧清理逻辑，会把新 field、其 rule_mod 与公开快照一起误判成旧状态垃圾。
+
+### 20. 正式角色注册表升级为“资产 + suite 子树 + 回归锚点”单一真相（2026-03-30）
+
+- 正式角色注册表当前必须登记角色 effect 资源、wrapper 下属 suite 与关键回归测试名。
+- `docs/records/formal_character_registry.json` 当前除了角色文档、wrapper suite 与内容资源外，还必须登记：
+  - `required_suite_paths`
+  - `required_test_names`
+- 原因：
+  - 正式角色的真实交付面不只是“有个 wrapper”；还包括 wrapper 下的 suite 子树和必须长期保留的关键回归断言。
+  - 复杂角色扩角前，effect 资源也必须进入注册表，不再只登记 unit / skill / passive / field。
+
+### 21. 总闸门追加 suite 可达性与 `battle_core` 内部分层静态约束（2026-03-30）
+
+- `tests/run_with_gate.sh` 现在除断言、引擎错误、仓库一致性外，还必须跑 `check_suite_reachability.sh`。
+- suite 可达性闸门只认 `run_all.gd` 与正式角色 wrapper 为根；子 suite 必须能沿 `preload(...)` 子树真正走到，不能靠旁路登记假装被覆盖。
+- `check_architecture_constraints.sh` 额外收紧：
+  - `content / contracts / runtime` 保持 L1 纯度，不得反向 import 上层服务
+  - `commands / math` 保持 L2 纯度，不得 import runtime / orchestrator / coordinator / facade
+  - `battle_core` 内层模块不得反向 import `facades/*`
+
+### 22. 同回合双开领域时，先手 success 链延后到对拼结论后兑现（2026-03-31）
+
+- 同回合双方都已入队施放领域时：
+  - 先手领域若仍处于对拼窗口内，`field_apply_success` 链必须延后到对拼结果明确后再兑现
+  - 若先手方最终被后手领域翻盘，则视为“未成功立住”，不得残留 `action_lock` 之类只应在成功立场后成立的附带效果
+- 原因：
+  - 旧时序会让先手领域先兑现 success 附带效果，再在后手领域翻盘时留下本不该成立的运行态残留。
+
+### 23. 宿傩动态回蓝正式收口为“基础值 + 对位追加”（2026-03-31）
+
+- 宿傩 `regen_per_turn = 12` 保持为基础面板值，不再允许被同一被动语义写成“更接近对位反而回得更少”。
+- `sukuna_refresh_love_regen` 当前正式口径固定为：
+  - `mp_regen add`
+  - 动态表 `9 / 8 / 7 / 6 / 5 / 0`
+  - 最终回蓝值按 `基础 12 + 对位追加` 读取
+- 原因：
+  - 旧的 `mp_regen set` 语义与宿傩面板基础回蓝 `12` 自相矛盾，会把接近对位下的被动补强写成实际削弱。
+
+### 24. 内容快照 shape validator 继续保持“入口编排 + 子域校验”结构（2026-03-31）
+
+- `ContentSnapshotShapeValidator.validate()` 只保留 shape 校验主流水线，不再回退成一个超长函数承载全部 unit / skill / passive / field / effect 规则。
+- unit 相关 shape 校验当前下沉到独立 helper；后续若继续增长，应继续按内容子域拆，而不是把逻辑重新堆回入口。
+- 原因：
+  - 内容快照校验会随着扩角和 payload / field 变种增加持续膨胀；若继续集中在单函数内，后续每个角色接入都会把治理成本抬高。
+
+### 25. `on_matchup_changed` 的签名比较与触发 owner 统一收口到 field lifecycle（2026-03-31）
+
+- 初始化阶段与回合内阶段统一复用 `TurnFieldLifecycleService.execute_matchup_changed_if_needed()`。
+- `BattleInitializer` 只保留初始化编排 owner，不再维护本地重复的 matchup signature 比较与 trigger 调度实现。
+- 原因：
+  - `on_matchup_changed` 已属于稳定对位变化的公共生命周期，不应该分别散落在初始化和回合推进两条链上各写一份。
+
+### 26. Turn limit 计分与 battle result 落盘职责分离（2026-03-31）
+
+- `BattleResultService` 保留 battle end 落盘、invalid / surrender / victory 编排与日志。
+- turn limit 的 side 计分、排序与平局比较当前统一下沉到 `TurnLimitScoringService`。
+- 原因：
+  - 后续若补特殊胜利条件或追加更多 turn limit 规则，不应继续把评分细节堆进 battle result 主类。
+
+### 27. 正式角色契约收口统一为“唯一 facade + 全量快照 + 共享回归回挂”（2026-03-31）
+
+- `BattleCoreManager` 是外围唯一稳定 facade。
+- `BattleCoreSession` 只作为 manager 内部会话壳，不属于外围稳定入口。
+- facade 若需要装配容器，只能依赖 build-container callable / factory port，不再直接持有完整 composition root。
+- 正式角色注册表除 wrapper `suite_path` 外，必须继续显式登记：
+  - `required_suite_paths`
+  - `required_test_names`
+- 共享 suite 只要属于角色正式验收项，也必须回挂到角色注册表；当前 Gojo / Sukuna 都要显式挂住 `ultimate_field_suite.gd` 的共享领域回归。
+- 正式角色必须各自拥有全量 snapshot suite，用字面量断言锁死单位面板、技能资源与关键 effect / field / passive 资源，不再只靠“从当前资源反推期望值”的测试。
+- Gojo `苍 / 赫` 当前正式口径固定为速度能力阶段 `+1 / -1`，范围 `-2..+2`，离场清空，不改成 3 回合 buff / debuff。
+- 宿傩对外类型文案统一写“恶魔”；内部资源 `combat_type_id = demon` 不改。
+
+### 28. 扩角前运行时 helper 全部统一进 composition 装配（2026-03-31）
+
+- 当前统一装配边界收口到“战斗运行时 helper”：
+  - 行动链 helper
+  - 数值 payload helper
+  - 击倒/补位 helper
+  - field apply helper
+- 这些 helper 不再允许由 owner service 内部 `new()`，也不再允许 `_sync_*dependencies()` 这种手工灌依赖链继续存在。
+- 原因：
+
+### 63. 已证伪的“payload/领域残留实例”问题不进入代码修复面（2026-04-03）
+
+- 本轮审查里已确认不成立、且当前继续只记录不补运行时代码的一条问题：
+  - `gojo_ao_mark_apply / gojo_aka_mark_apply` 的触发类 effect instance 残留
+- 原因：
+  - 这类实例当前只是 trigger 路由承载物，不构成语义错误，也没有现成回归证明它们导致玩法、快照或生命周期异常。
+  - 若为它们补“清残留”逻辑，反而会在 effect 生命周期里引入新的特殊分支，增加扩角期维护成本。
+- 当前要求：
+  - `.audit/` 结论不直接驱动代码改动。
+  - 只有当 `docs/records/*` 与自动化回归共同证明存在真实运行时问题时，才进入修复面。
+
+### 64. Payload 执行层正式改为“precondition + registry + 单 payload handler”模型（2026-04-03）
+
+- `PayloadExecutor` 当前只保留两类职责：
+  - effect 级 guard：chain depth / dedupe / invalid dependency hard-stop
+  - 调用 `EffectPreconditionService` 与 `PayloadHandlerRegistry` 编排 payload 执行
+- 当前正式 payload 路由固定为“一种 payload script 对应一个 handler”：
+  - `DamagePayload -> PayloadDamageHandler`
+  - `HealPayload -> PayloadHealHandler`
+  - `ResourceModPayload -> PayloadResourceModHandler`
+  - `StatModPayload -> PayloadStatModHandler`
+  - `ApplyFieldPayload -> PayloadApplyFieldHandler`
+  - `ApplyEffectPayload -> PayloadApplyEffectHandler`
+  - `RemoveEffectPayload -> PayloadRemoveEffectHandler`
+  - `RuleModPayload -> PayloadRuleModHandler`
+  - `ForcedReplacePayload -> PayloadForcedReplaceHandler`
+- `payload_damage_runtime_service / payload_resource_runtime_service / payload_stat_mod_runtime_service` 继续保留为真正的业务执行层，不借重构重写稳定数值逻辑。
+- `payload_numeric_handler.gd` 与 `payload_state_handler.gd` 当前已退出正式运行时。
+- 原因：
+  - 旧的“顺序试探两个大 handler”模型会把 payload 路由与业务语义耦在一起；一旦 payload 类型继续增长，单类复杂度和依赖面都会继续上升。
+  - 先把 payload 分发改成注册表声明，再把具体语义拆回单 payload handler，后续扩新 payload 时只需要新增一个 handler 与一条 registry 接线，不需要继续往大类里塞条件分支。
+
+### 29. 扩角前门禁正式收紧到“warning 清零 + 主流程启动 smoke”（2026-04-02）
+
+- `tests/run_with_gate.sh` 当前除业务断言、suite 可达性、架构与仓库一致性外，还必须额外满足：
+  - headless 主流程启动 smoke 通过
+  - 输出中不存在 Godot `WARNING:`
+- 原因：
+  - 之前 gate 只拦 `SCRIPT ERROR / Parse Error / Compile Error`，会把真实存在的静态 warning 漏掉。
+  - 扩角前如果不先清 warning，后续新增角色或机制时很容易把真正的漂移淹没在噪声里。
+  - 扩角后每新增一个运行时依赖，若还保留“composition wiring + owner 手工同步”双维护路径，极容易出现 helper 漏接线且只在运行到半截时才炸。
+- 当前处理：
+  - helper 统一注册进 `BattleCoreServiceSpecs` / `BattleCoreWiringSpecs`
+  - `BattleCoreContainer` 显式持有 helper slot
+  - `RuntimeGuardService` 递归检查这些 helper 的缺线问题
+
+### 29. `BattleCoreManager` 公开 contract 统一为严格 envelope（2026-03-31）
+
+- 当前所有公开方法统一返回：
+  - `{"ok": bool, "data": ..., "error_code": String|null, "error_message": String|null}`
+- 公开成功结果只允许把原 payload 放在 `data` 里；失败时必须 `data = null`。
+- 原因：
+  - 旧 contract 有的直接回对象，有的靠断言崩，外围调用方很难稳定判断“是业务失败、会话不存在，还是装配断了”。
+- 当前处理：
+  - `BattleCoreComposer` 装配失败不再靠断言暴露
+  - `BattleCoreManager` 对 compose / session / replay / build_command 等失败路径全部统一转成结构化错误
+  - manager contract suite 现在把 envelope 形状视为正式回归的一部分
+
+### 30. 宿傩“灶”正式写死为 3 层硬上限，满层后忽略新层（2026-03-31）
+
+- `sukuna_kamado_mark` 当前正式配置：
+  - `stacking = stack`
+  - `max_stacks = 3`
+- 当目标已满 3 层灶时，再次命中 `开`：
+  - 不新增第 4 层
+  - 不刷新现有层数的剩余回合
+  - 不顶掉旧层
+  - 不额外写特殊日志
+- 原因：
+  - 当前回蓝与领域续航虽然通常不会把灶堆到失控，但扩角后只要出现多动、多段或复制触发，没有显式上限就会把数值边界重新炸开。
+
+### 31. Effects/Lifecycle 受控运行时环只允许保留在 composition 属性注入层（2026-03-31）
+
+- 当前已知受控闭环之一：
+  - `trigger_batch_runner -> payload_executor -> payload_handler_registry -> payload_damage_handler -> payload_damage_runtime_service -> faint_resolver -> replacement_service -> trigger_batch_runner`
+- 该闭环当前允许保留，前提是：
+  - 只通过 composition root 统一属性注入接线
+  - 运行时继续受 `invalid_battle` fail-fast 与 chain depth 守卫保护
+- 明确禁止：
+  - 把这条链直接改成构造器注入
+  - 在 owner service 内局部 `new()` 出一段旁路 helper 来偷偷绕过 composition
+- 原因：
+  - 这条链是当前效果递归、击倒窗口与补位主链之间的稳定调用回路；贸然切装配方式比保留受控闭环更容易引入半初始化或递归死锁。
+
+### 32. 正式角色的跨 effect 共享 payload 统一落到 `content/shared/`，并由 formal validator 强校验引用路径（2026-03-31，2026-04-05 更新）
+
+- 当前宿傩 `sukuna_kamado_mark`、`sukuna_kamado_explode`、`sukuna_domain_expire_burst` 共用一份外部 `DamagePayload`：
+  - `res://content/shared/effects/sukuna_shared_fire_burst_damage.tres`
+- `content/shared/` 只放“被顶层内容资源引用的辅助 Resource”，不参与 `SampleBattleFactory.content_snapshot_paths()` 的顶层注册扫描。
+- `ContentSnapshotShapeValidator` 继续通过 formal-character helper 同时校验：
+  - 这三个 effect 的 damage payload 资源路径必须都指向同一份 shared payload
+  - 共享 payload 的 `amount / use_formula / combat_type_id` 必须符合正式角色 contract
+- 原因：
+  - 共享数值真正收口成单源后，调数值不再需要多处同步。
+  - 保持现有 registry / schema 不扩新顶层资源类型，同时避免“shared helper resource 被当成顶层 content 注册”。
+
+### 33. 正式角色 content 资源按角色子目录组织，继续复用递归 snapshot 收集（2026-03-31）
+
+- 当前正式角色资源统一下沉到：
+  - `content/units/{gojo,sukuna}/`
+  - `content/skills/{gojo,sukuna}/`
+  - `content/effects/{gojo,sukuna}/`
+  - `content/passive_skills/{gojo,sukuna}/`
+  - `content/fields/{gojo,sukuna}/`
+- `SampleBattleFactory.content_snapshot_paths()` 继续保持“按大类目录递归收集 `.tres`”的策略，不为单个角色写特判路径。
+- 原因：
+  - 扩角后平铺目录会迅速退化成文件汤，查找和审查成本线性上升。
+  - 现有 loader 已支持递归扫描，目录治理不需要改内容 schema 或运行时装配。
+
+### 34. 正式角色命名继续沿用“术式罗马音 + 领域英文描述”的当前混合口径（2026-03-31）
+
+- 当前 Gojo / Sukuna 的正式资源命名并不是“单角色全英文”：
+  - 常规术式与术式衍生 effect 继续使用角色侧约定的罗马音命名，例如 `gojo_ao / gojo_aka / gojo_murasaki / sukuna_hiraku / sukuna_fukuma_mizushi`
+  - 领域 skill / field 继续使用英文描述命名，例如 `gojo_unlimited_void / gojo_unlimited_void_field / sukuna_malevolent_shrine_field`
+- 因此外部审查里“Gojo 全套用英文，所以宿傩命名风格不一致”这条判断不成立；当前不做只针对宿傩单角色的重命名。
+- 若未来要统一成“全英文”或“全罗马音”，必须走一次仓库级命名规范任务，同时修改角色资源、文档、测试与注册表，不能单独改一个角色。
+
+### 35. 生产路径里的 raw `assert()` 只允许保留给测试、抽象基类与程序员不变量（2026-03-31）
+
+- 会直接受内容快照、战斗输入、运行态污染影响的生产路径，不再允许把 raw `assert()` 当成正式失败路径。
+- 本轮已收口的路径：
+  - `RuleModWriteService` 的 stacking key schema / stacking key field 异常改成 `INVALID_RULE_MOD_DEFINITION`
+  - `BattleContentRegistry` 的 unsupported resource 改成显式内容加载失败，并由 `BattleContentIndex.load_snapshot()` 返回 `INVALID_CONTENT_SNAPSHOT`
+- 当前明确允许保留 raw `assert()` 的位置：
+  - `tests/support/formal_character_registry.gd`
+  - `src/battle_core/lifecycle/replacement_selector.gd`
+  - `src/battle_core/logging/log_event_builder.gd`
+  - `src/battle_core/effects/effect_queue_service.gd`
+  - `src/battle_core/turn/public_id_allocator.gd`
+  - `src/battle_core/effects/payload_handlers/payload_damage_runtime_service.gd`
+- 原因：
+  - 上述点要么只服务测试装配，要么是必须 override 的抽象占位，要么属于纯程序员不变量；保留 raw `assert()` 比把它们包装成业务错误更清晰。
+
+### 36. 核心源码 `220..250` 行进入非阻断预警，`>250` 仍维持硬门禁（2026-03-31）
+
+- `tests/check_architecture_constraints.sh` 现在对 `src/battle_core` 与 `src/composition` 中落在 `220..250` 行的 `.gd` 输出 `ARCH_GATE_WARNING`，但不阻断闸门。
+- `>250` 行源码与 `>600` 行测试的硬门禁不变。
+- 原因：
+  - 当前主线已经有若干文件长期贴近 `250` 行上限，只在超线后才治理会把拆分任务变成被动救火。
+  - 提前预警能暴露热点，但不会把日常迭代变成机械拆文件。
+
+### 37. `BattleCoreManager` 的公开读口与回合入口先做 runtime fail-fast（2026-03-31）
+
+- `get_legal_actions / run_turn / get_public_snapshot / get_event_log_snapshot` 进入 session 后都必须先经过 `RuntimeGuardService` 校验。
+- 若 active field 缺失 creator、field 定义漂移或其他运行态硬约束已经损坏，manager 只能返回结构化 `invalid_state_corruption`，不能继续构造 legal actions、公开快照或事件日志。
+- 原因：
+  - 旧口径虽然能在部分主链入口拦坏状态，但外围仍可能通过 facade 读到“半正常、半损坏”的公开结果，等于把内部污染继续泄漏给上层。
+
+### 38. 正式角色共享内容校验由 formal registry 的可选 validator path 驱动（2026-03-31）
+
+- `ContentSnapshotFormalCharacterValidator` 只负责编排；`content_snapshot_formal_character_registry.gd` 会从 `docs/records/formal_character_registry.json` 读取可选 `content_validator_script_path`，动态装配角色级 validator。
+- `docs/records/formal_character_registry.json` 继续是正式角色交付面的单一真相；除设计稿、内容资源、suite 与关键回归锚点外，现在允许登记角色共享内容校验脚本路径。
+- 原因：
+  - 正式角色的共享内容约束本来就和交付面绑定；把 validator path 收回同一注册表后，文档、门禁与运行时加载可以共用一份 source of truth，同时仍由代码 loader 负责 fail-fast。
+
+### 39. 宿傩正式回归拆成“灶生命周期”和“领域链路”两组 suite（2026-03-31）
+
+- 原 `tests/suites/sukuna_kamado_domain_suite.gd` 现已拆分为：
+  - `tests/suites/sukuna_kamado_suite.gd`
+  - `tests/suites/sukuna_domain_suite.gd`
+- `tests/suites/sukuna_suite.gd` 继续只做 wrapper；正式角色注册表里的 `required_suite_paths` 也同步改为两条子 suite。
+- 原因：
+  - 宿傩当前是最复杂的正式角色之一，灶层数生命周期与领域链路已经跨两个子域；继续堆在单一 suite 会拖慢定位回归与后续扩角复查。
+
+### 40. 旧合法性口径从当前正式 contract 硬移除，只保留 `action_legality`（2026-04-01）
+
+- 当前正式 `rule_mod` 合法性读取点只剩 `action_legality`；活动规则、设计文档、测试与运行时代码不再保留旧合法性双口径。
+- `wait` 继续不受 `action_legality` 影响；技能 / 奥义 / 换人统一走单一匹配矩阵与统一排序链。
+- 原因：
+  - 旧双口径在代码已经硬切后，继续留在活动文档里只会制造“看起来还能用”的假象，直接抬高扩角时的误用风险。
+
+### 41. `matchup_bst_gap_band` 正式冻结为包含 `max_mp` 的七维口径（2026-04-01）
+
+- 当前 `dynamic_value_formula = matchup_bst_gap_band` 固定按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值。
+- `max_mp` 当前视为正式第七维；宿傩对位追加回蓝与相关角色回归都以此为准。
+- 原因：
+  - 这条公式已经进入正式角色资源与回归；若不把 `max_mp` 写成明文 contract，后续扩角时很容易有人按“六维 BST”误实现。
+
+### 42. `BattleInitializer` 与 `BattleCoreManager` 继续通过内部 helper 留出治理余量（2026-04-01）
+
+- `BattleInitializer` 当前把初始化阶段子流程下沉到 `BattleInitializerPhaseService`，`BattleCoreManager` 把 session/replay 容器编排下沉到 `BattleCoreManagerContainerService`。
+- 这两类 helper 只负责 owner 内部编排，不升级成新的稳定 facade，也不改变原有模块边界。
+- 原因：
+  - 本轮目标不是“刚好压到线下”，而是给继续扩角留下安全余量，避免 owner 文件再次贴着 `220..250` 行预警区滚雪球。
+
+### 43. 仓库一致性闸门按 `surface / formal_character / docs` 模块化拆分（2026-04-01）
+
+- `tests/check_repo_consistency.sh` 当前只作为聚合入口，实际校验下沉到：
+  - `tests/gates/repo_consistency_surface_gate.py`
+  - `tests/gates/repo_consistency_formal_character_gate.py`
+  - `tests/gates/repo_consistency_docs_gate.py`
+- 原因：
+  - 把 README、正式角色交付面、活动文档针脚全堆在单脚本里，维护时定位太慢，也容易让无关修改互相牵连。
+
+### 44. `required_target_effects` 可选收紧到“必须由当前 owner 本人施加”（2026-04-01）
+
+- `EffectDefinition` 当前新增可选字段 `required_target_same_owner`。
+- 当 `required_target_same_owner = true` 时：
+  - 前置不只检查目标身上是否存在 `required_target_effects`
+  - 还要检查命中的 effect instance 记录的 `meta.source_owner_id == effect_event.owner_id`
+- `apply_effect` 创建实例时，当前统一写入 `meta.source_owner_id`，供该前置守卫读取。
+- 当前正式接线角色：
+  - `gojo_murasaki_conditional_burst`
+- 原因：
+  - Gojo 的双标记爆发已经不该继续依赖“同队重复角色禁止”这种玩法前提兜语义。
+  - 把来源绑定收口成 effect 级前置能力，比写角色特判更稳，也更利于后续扩角复用。
+
+### 45. 高热点角色/规则 suite 继续按 wrapper + 子 suite 拆分（2026-04-01）
+
+- 本轮已继续拆分的热点 suite：
+  - `content_validation_contract_suite.gd`
+  - `sukuna_setup_regen_suite.gd`
+  - `action_guard_state_integrity_suite.gd`
+  - `rule_mod_runtime_suite.gd`
+  - `gojo_domain_suite.gd`
+- wrapper 继续保留原路径与角色/模块归属；真实断言下沉到按主题拆开的子 suite。
+- 原因：
+  - 上述文件已经出现“角色资源、运行时路径、坏例 contract、多主题断言堆叠”的混杂趋势。
+  - 继续扩角前先拆开，能降低回归定位成本，也避免单文件继续滚到新的屎山热点。
+
+### 46. 持久 buff 在板凳上只掉时间，不跑普通每回合结算（2026-04-01）
+
+- `persists_on_switch=true` 的 unit effect / unit rule mod 在 `manual_switch / forced_replace` 后继续保留；`faint` 仍然清空全部 unit effect / rule mod。
+- owner 位于 bench 时，这类持久 effect 当前只继续扣 `remaining`，不进入普通 `turn_start / turn_end` trigger batch。
+- 若持久 effect 在板凳上到期，只移除并写正常 remove log；当前不派发 `on_expire_effect_ids`。
+- 原因：
+  - 当前扩角主线只需要“换下后持续时间继续流动”，不需要把完整 off-field 结算链一起放开。
+  - 先把板凳语义收成“只掉时间”能避免半场外结算把生命周期、日志和领域链路一起拉复杂。
+
+### 47. `mp_regen / incoming_accuracy` 正式允许多来源并存，来源组内再走 stacking（2026-04-01）
+
+- `mp_regen / incoming_accuracy` 当前不再默认按“同 owner + 同 mod_op”静默折叠。
+- 来源分组优先级固定为：
+  - `payload.stacking_source_key`
+  - 否则当前 effect definition id
+  - 再兜底到 `source_instance_id`
+- 不同来源组可以并存；同一来源组内继续按 `none / refresh / replace` 处理。
+- 原因：
+  - 宿傩被动回蓝、装备回蓝、Gojo 无下限减命中、领域减命中这类来源后续都会并行出现，继续靠隐式 key 折叠会把扩角风险埋进运行时。
+  - 把“是否合并”下放给内容层显式控制，比继续依赖隐式冲突键更清晰。
+
+### 48. `power_bonus_source` 统一只在 `PowerBonusResolver` 注册与求值（2026-04-01）
+
+- `ActionCastDirectDamagePipeline` 不再写角色专属 `power_bonus_source` 分支；共享伤害管线当前只调用 `PowerBonusResolver`。
+- `ContentSnapshotSkillValidator` 与 `PowerBonusResolver` 统一读取共享的 `power_bonus_source` 注册表，不再各自本地硬编码白名单。
+- 当前正式主线仍只开放两种来源：
+  - 空串
+  - `mp_diff_clamped`
+- 原因：
+  - 宿傩“捌”已经证明“额外威力来源”属于会继续扩张的共享能力；继续把公式硬编码在共享伤害管线里，会让后续扩角必然改到主线执行文件。
+
+### 49. 离场保留判断统一下沉到 `LifecycleRetentionPolicy`，但 `faint` 当前行为不变（2026-04-01）
+
+- `LeaveService` 当前不再自己展开“换人保留 / 击倒清空”的硬编码分支，而是统一委托给 `LifecycleRetentionPolicy`。
+- 当前正式行为保持不变：
+  - `manual_switch / forced_replace`：只保留 `persists_on_switch=true` 的 unit effect / unit rule mod
+  - `faint`：一律清空全部 unit effect / unit rule mod
+- 原因：
+  - 这轮只需要给未来“死亡后仍保留某类持续物”预留接线位，不需要提前放开内容能力。
+  - 先把判断入口收成单点，后续要扩新语义时才不必再散改 `LeaveService` 主链。
+
+### 50. 领域对拼编排统一下沉到 `DomainClashOrchestrator`，BattleFormat 增加两条运行时常量（2026-04-01）
+
+- `ActionQueueBuilder`、`DomainLegalityService`、`FieldApplyService` 当前都通过 `DomainClashOrchestrator` 读取同一套领域对拼编排逻辑。
+- `field_apply_conflict_service.gd` 继续保留，但职责收窄为：
+  - 领域 vs 领域 / 普通 field vs 领域 的低层冲突判定
+  - 平 MP tie-break 结果生成
+- `BattleFormatConfig` 当前新增：
+  - `default_recoil_ratio`
+  - `domain_clash_tie_threshold`
+- 运行时快照固定复制到 `BattleState`，默认样例值继续是：
+  - `default_recoil_ratio = 0.25`
+  - `domain_clash_tie_threshold = 0.5`
+- 原因：
+  - 第三角色若继续带领域差异，原先“队列保护 / 合法性豁免 / field 冲突”散落在多处的写法会明显放大维护成本。
+  - 默认反伤比例与领域平 MP 阈值已经属于格式级战斗常量，继续硬编码在执行路径里不利于复查与调参。
+
+### 51. 鹿紫云一角色稿按最终讨论方向重写，不再默认沿用早期草稿降级语义（2026-04-01）
+
+- `docs/design/kashimo_hajime_design.md` 当前冻结为 `v1.1`，并明确按以下口径收口：
+  - 雷电抗性不再写成 `incoming_accuracy -15`，改为“雷属性攻击打到鹿紫云时伤害降低”
+  - 水属性命中后的“咒力外泄”不再暂缓，正式写回角色主方案：鹿紫云自身流失 MP，并对攻击者造成等额毒属性固定伤害
+  - 讨论中的四个常规技能概念，当前在既有战斗格式下按“4 选 3”落地；不静默扩成 4 常规技能槽
+  - 幻兽琥珀按“不可逆强化形态”定义，主稿语义要求强化、自伤、奥义封锁都应跨换人保留
+- 与上述语义不一致的实现层降级，不允许直接改主稿；若后续因为引擎能力不足需要临时降级，必须写进单独的 adjustment 文档。
+- 原因：
+  - 这轮复查已确认早期草稿里有几处内容虽然“能实现”，但已经偏离实际讨论方向，继续沿用只会让后续正式交付面建立在错口径上。
+  - 先把角色主稿写回讨论原意，再把真正缺的引擎 / 内容扩展列清楚，后续实现与验收才不会一边开发一边改角色定义本身。
+
+### 52. 鹿紫云一的“抗雷”是角色特性，不得错误写成全局雷属性克制；水中外泄只对主动技能 / 奥义命中触发（2026-04-01）
+
+- 鹿紫云一的雷属性减伤，当前正式定义为“角色被动特性”，不是 `thunder` 类型单位的通用克制关系。
+- 因此后续实现不得通过修改全局 `combat_type_chart` 的 `thunder -> thunder` 条目来表达鹿紫云的抗雷。
+- 鹿紫云的“水中外泄”当前正式定义为：
+  - 只对主动技能 / 奥义命中触发
+  - 命中即触发，不要求先造成伤害
+  - 固定数值：鹿紫云自身 `-15 MP`，攻击者立刻受到 `15` 点毒属性固定伤害
+- `poison` 当前正式升级为完整新属性，而不是仅为鹿紫云临时占位的空壳类型。
+- 常规技能槽位当前仍固定为 `3`；鹿紫云的 `弥虚葛笼` 继续按候选技能处理，不扩成 4 常规技能战斗格式。
+- 原因：
+  - 这几条如果不在现在写死，后续实现最容易出现两类偏差：
+    - 为了省事把角色特性误写成全局属性规则
+    - 为了接线方便把“命中即触发”的对局语义悄悄改成“造成伤害后才触发”或“连 field / 被动链也一起触发”
+
+### 53. 鹿紫云一的固定属性伤害继续吃属性克制；回授电击按“命中后同时清空双方电荷”收口（2026-04-02）
+
+- 鹿紫云一当前所有写作“雷属性 / 毒属性固定伤害”的效果，正式语义统一为：
+  - 基础值固定
+  - 最终伤害仍继续吃对应 `combat_type` 的属性克制
+- 因此：
+  - `负电荷` 每层的 `8` 点雷属性固定伤害，不锁死最终值 `8`
+  - `水中外泄` 返还的 `15` 点 `poison` 固定伤害，不锁死最终值 `15`
+- `水中外泄` 继续固定为：
+  - 只对主动技能 / 奥义命中触发
+  - 持续伤害不触发
+  - 即使这一下已经把鹿紫云打死，也照样触发反击
+- `回授电击` 当前技能原生命中为 `100`，因此正式设计不再保留“miss 时只清自己正电荷”的旧残留口径。
+- 当前正式口径改为：`回授电击` 命中后同时清空自身全部正电荷与目标全部负电荷。
+- 原因：
+  - 继续把固定伤害写成“最终值锁死”会和现有属性伤害读法冲突，也会让 `poison` 进入正式类型系统后变成半套规则。
+  - `回授电击` 既然本来就不会空，再保留拆开的 `on_cast / on_hit` 清层语义只会让文档更绕，不能增加真实玩法价值。
+
+### 54. 鹿紫云共享底座扩展先独立交付，`poison` 首版即按正式属性进入系统（2026-04-02）
+
+- 本轮先独立落地鹿紫云需要的共享底层能力，不把角色内容资源和引擎扩展混在同一批提交里。
+- 当前正式进入主线的共享能力包括：
+  - `SkillDefinition.power_bonus_source = effect_stack_sum`
+  - `RemoveEffectPayload.remove_mode = single | all`
+  - `rule_mod`：`nullify_field_accuracy`、`incoming_action_final_mod`
+  - trigger：`on_receive_action_hit`
+  - effect scope：`action_actor`
+  - `ChainContext.action_actor_id / action_combat_type_id`
+- `incoming_action_final_mod` 当前只接“主动技能 / 奥义的直接伤害路径”，不向 effect-chain 持续伤害扩散。
+- `poison` 当前不再是鹿紫云专用的临时标签，而是正式战斗属性：
+  - 已新增独立 combat type 资源
+  - 已接入 battle format 克制表
+  - 固定毒属性伤害继续走属性克制，不锁死最终值
+- 原因：
+  - 鹿紫云的电荷体系、弥虚葛笼与水中外泄都依赖共享能力；先把底层收口，后续内容层和回归才不会一边做角色一边改公共骨架。
+  - `poison` 一旦决定吃属性克制，就必须作为正式属性接入 chart，继续做成“半占位”只会把规则写脏。
+
+### 55. 鹿紫云 Phase 1 先按“主循环三技能 + 候选弥虚葛笼 + 无奥义”独立落地；水中外泄过滤下沉到 effect 级（2026-04-02）
+
+- 鹿紫云 Phase 1 当前正式内容面先只交付：
+  - 默认三技能：`雷拳 / 蓄电 / 回授电击`
+  - 候选位：`弥虚葛笼`
+  - 被动：`电荷分离`
+- 当前 Phase 1 unit 明确保持：
+  - `ultimate_skill_id = ""`
+  - `ultimate_points_required = 0`
+  - `ultimate_points_cap = 0`
+  - `ultimate_point_gain_on_regular_skill_cast = 0`
+- `幻兽琥珀` 留到持久能力阶段载体做好以后再正式接回 unit，不在这一步半接。
+- 为了表达“只对水属性主动技能 / 奥义命中触发”的被动监听，当前新增 effect 级来袭动作过滤字段：
+  - `EffectDefinition.required_incoming_command_types`
+  - `EffectDefinition.required_incoming_combat_type_ids`
+- 过滤判断当前在 `PayloadExecutor` 的 effect precondition 里统一执行，不写鹿紫云专属分支。
+- 原因：
+  - `on_receive_action_hit` + `action_actor` 解决了触发时机和反击对象，但如果没有 effect 级过滤，鹿紫云的水中外泄就只能错误地对所有来袭主动技触发。
+  - 先把 Phase 1 主循环单独交付，能避免 `幻兽琥珀` 的持久阶段机制没准备好时，把正式角色内容提前接成半成品。
+
+### 56. 持久能力阶段正式进入运行时；`persists_on_switch` 的持续效果在同回合重上场时仍暂停普通回合触发（2026-04-02）
+
+- `StatModPayload` 当前新增 `retention_mode = persist_on_switch`，并把跨换人保留的能力阶段正式下沉到 `UnitState.persistent_stat_stages`。
+- 当前有效能力阶段统一读取：
+  - `effective_stage = clamp(stat_stages + persistent_stat_stages, -2, 2)`
+- `manual_switch / forced_replace` 时：
+  - 临时能力阶段继续清零
+  - `persistent_stat_stages` 保留
+- `faint` 时：
+  - `persistent_stat_stages` 也一并清空
+- 对 `persists_on_switch=true` 的 unit effect，当前正式补一条生命周期语义：
+  - 若 owner 在执行阶段中途重新上场，则这些持久 effect 在“同回合重上场当回合”仍不参与普通 `turn_start / turn_end` trigger batch
+  - 下一整回合起恢复
+- 原因：
+  - 幻兽琥珀要求“强化、自伤、奥义封锁都跨换人保留”，只靠原来的临时 `stat_stage` 已经无法表达。
+  - 如果不把“同回合重上场仍暂停”写成共享规则，琥珀自伤会在重上场当回合立刻恢复，和冻结角色语义冲突。
+
+### 57. 鹿紫云正式交付面切回 registry；`run_all` 不再保留临时直连（2026-04-02）
+
+- 鹿紫云当前正式进入 `docs/records/formal_character_registry.json`：
+  - 设计稿：`docs/design/kashimo_hajime_design.md`
+  - 调整记录：`docs/design/kashimo_hajime_adjustments.md`
+  - wrapper suite：`tests/suites/kashimo_suite.gd`
+  - 角色级 content validator：`src/battle_core/content/content_snapshot_formal_kashimo_validator.gd`
+- `tests/run_all.gd` 当前删除了临时手动 `KashimoSuiteScript` 接线，改为和 Gojo / 宿傩一样统一走 formal registry 扩展。
+- `docs/design/kashimo_hajime_design.md` 当前同步升到 `v1.2`，把以下正式实现名写回主稿：
+  - `effect_stack_sum`
+  - `incoming_action_final_mod`
+  - `persistent_stat_stages`
+- 原因：
+  - 鹿紫云已经不再是“扩角中的临时角色”，而是正式角色交付面的一部分。
+  - 继续保留 `run_all` 的临时直连只会制造双跑与交付面不一致。
+
+### 58. `BattleCoreManager` 只允许通过 `BattleCoreSession` 做内部会话代理，不再直接穿透 `session.container`（2026-04-02）
+
+- `BattleCoreManager` 当前正式收口为：
+  - 只认 `BattleCoreSession` 这个内部会话壳
+  - 不再直接调用 `session.container.legal_action_service / turn_loop_controller / battle_logger / runtime_guard_service`
+- `BattleCoreSession` 当前承担 facade 内部代理职责，统一封装：
+  - runtime 校验
+  - 合法行动查询
+  - 回合执行
+  - event log 快照读取
+- `tests/check_architecture_constraints.sh` 当前补了一条 facade 专属 gate：
+  - 除 `battle_core_session.gd` 与 `battle_core_manager_container_service.gd` 外，不允许在 facade 层继续出现 `session.container` 直穿
+- 原因：
+  - manager 继续直穿容器会把 facade 的边界语义掏空，后续如果 adapter 或第三方接线变化，内部服务名就会反向绑死到外围调用面。
+  - 先把 session 代理层站稳，后面 manager 公共契约和容器装配才能各自独立演进。
+
+### 59. `ActionExecutor` 退回行动编排壳；起手、技能触发、命中结算、链上下文分别下沉到独立服务（2026-04-02）
+
+- `ActionExecutor` 当前正式只保留：
+  - 解析 command / actor / skill
+  - 建立 `chain_context`
+  - 统一前置合法性检查
+  - 串联 `start -> on_cast -> switch/resolve`
+- 以下职责当前正式拆出：
+  - `ActionChainContextBuilder`：构建 `ChainContext`
+  - `ActionStartPhaseService`：行动起手、MP 扣除、奥义点变更与 `action:cast` 记录
+  - `ActionSkillEffectService`：`on_cast / on_miss / on_hit` 技能触发分发
+  - `ActionExecutionResolutionService`：目标解析、命中判定、直接伤害、受击回调、默认反伤
+- 对应 composition wiring 当前已显式注册到：
+  - `battle_core_container`
+  - `battle_core_service_specs`
+  - `battle_core_wiring_specs`
+- 原因：
+  - `execute_action()` 原先把建链、起手资源、命中与伤害后置都揉在一起，继续叠第三、第四角色特例只会再次推高热点复杂度。
+  - 先把职责拆回可测试的小服务，后面补间接伤害修正或新角色动作特例时，改动面才能保持局部。
+
+### 60. 正式角色内容 validator 的通用 helper 统一下沉到共享基类（2026-04-02）
+
+- 当前新增 `ContentSnapshotFormalCharacterValidatorBase`，承接所有正式角色 validator 都会反复用到的底层 helper：
+  - `_extract_single_payload(...)`
+  - `_expect_packed_string_array(...)`
+- `Gojo / Sukuna / Kashimo` 的角色级 validator 继续各自保留角色专属断言，不再各自复制一份公共 helper。
+- 原因：
+  - 角色 validator 的增长模式和正式角色数量强相关；如果第 4、5 个角色继续从旧文件复制 helper，维护成本会按角色数线性抬升。
+  - 先把“公共取 payload / 公共数组断言”收成共享基类，后续角色只需要新增自身机制校验，能把改动面保持在角色差异层。
+
+### 61. Composition 装配当前固定为“descriptor 单一真相 + dictionary 容器 API + 静态 gate”三件套（2026-04-03）
+
+- `BattleCoreServiceSpecs` 当前正式收口为：
+  - `SERVICE_DESCRIPTORS = [{slot, script}]`
+  - `service_slots()` 与 `script_by_slot()` 只从 descriptors 派生
+- `BattleCoreContainer` 当前正式改成 dictionary-backed 容器，不再声明每个 slot 的显式属性。
+- 当前唯一允许的容器 API 固定为：
+  - `set_service(slot_name, service)`
+  - `service(slot_name)`
+  - `has_service(slot_name)`
+  - `clear_service(slot_name)`
+  - `configure_dispose_specs(...)`
+  - `dispose()`
+- 仓库内 battle core 容器消费者当前统一迁移到：
+  - `core.service("slot")`
+  - `container.service("slot")`
+- `tests/check_architecture_constraints.sh` 当前继续通过 `architecture_composition_consistency_gate.py` 固定校验：
+  - `SERVICE_DESCRIPTORS` 重复与漂移
+  - `WIRING_SPECS / RESET_SPECS` 的 owner/source 必须都是已声明服务槽位
+  - container API 是否完整
+  - composer 是否继续使用 `container.get/set(...)`
+  - repo 内是否残留 `core.<service> / container.<service>` 旧访问
+- 原因：
+  - 旧的 `SERVICE_SLOTS + SCRIPT_BY_SLOT + BattleCoreContainer 显式 var surface` 会让新增服务时同时改三四处，长期必然继续漂移。
+  - 把描述源压成 descriptors、把容器表面压成统一 API，才能把扩新机制时的装配成本收回到“新增 descriptor + wiring + gate 自动兜底”。
+
+### 62. RuleMod 写入链的 owner 作用域逻辑下沉到独立 helper；field break 生命周期批次必须尊重显式 chain_context（2026-04-02）
+
+- `RuleModWriteService` 当前不再同时承载：
+  - payload schema 校验
+  - owner scope 校验
+  - owner instance 读写
+  - stacking key 组装
+  - 生命周期递减
+- 其中 owner scope / owner instance 读写 / turn 递减当前已下沉到 `RuleModOwnerScopeService`，让 `RuleModWriteService` 回到“创建实例 + 处理 stacking 语义”的主职责。
+- `FieldService.break_active_field()` 当前执行 `field_break` 生命周期 effect batch 时，固定使用调用方传入的 `chain_context`，不再回退偷用 `battle_state.chain_context`。
+- 当前已补共享回归 `field_break_uses_explicit_chain_context_contract`，避免 field 生命周期链未来再次把显式上下文丢回系统默认上下文。
+- 原因：
+  - `rule_mod_write_service.gd` 已经接近架构闸门的热点预警线；继续把 owner 校验、owner 落点和 stacking 规则全堆在一处，不利于下一个角色继续扩带 field/unit 混合 rule_mod。
+  - field 生命周期链若忽略显式传入的 `chain_context`，以后新增“由旧 field 生命周期派生出新 field / 新 effect”时，很容易把归因、链深和去重键落回错误的系统上下文。
+
+### 63. Payload 执行层当前固定为“前置守卫 + registry 分发 + 单 payload handler”模型（2026-04-03）
+
+- `PayloadExecutor` 当前只保留：
+  - effect guard / chain depth / dedupe
+  - `EffectPreconditionService` 前置守卫
+  - `PayloadHandlerRegistry` 显式路由
+- payload 前置守卫当前统一下沉到 `EffectPreconditionService`：
+  - `required_target_effects`
+  - `required_target_same_owner`
+  - `required_incoming_command_types`
+  - `required_incoming_combat_type_ids`
+- payload 路由当前正式改成“一种 payload script 对应一个 handler”：
+  - `damage / heal / resource_mod / stat_mod`
+  - `apply_field / apply_effect / remove_effect / rule_mod / forced_replace`
+- 既有稳定 runtime 业务执行层继续保留复用：
+  - `payload_damage_runtime_service`
+  - `payload_resource_runtime_service`
+  - `payload_stat_mod_runtime_service`
+- `payload_numeric_handler.gd` 与 `payload_state_handler.gd` 当前已删除，不再保留兼容壳。
+- `PayloadExecutor.execute_payload()` 的未知 payload 语义继续固定为 fail-fast：
+  - 未注册即 `invalid_effect_definition`
+- 原因：
+  - 旧的按顺序试探 handler 会把“前置守卫 / 路由 / 执行”揉在一起，新增 payload 类型时改动面会持续膨胀。
+  - 先把前置守卫独立、再把路由显式注册，后续新增 payload 只需要补一个 handler 与 wiring，不必继续改粗粒度大类。
+
+### 64. Passive / field / effect trigger source 的 `invalid_battle` 必须在 collect 阶段立刻上浮（2026-04-04）
+
+- `PassiveSkillService`、`PassiveItemService`、`FieldService`、`EffectInstanceDispatcher` 这四类 trigger source，只要在 `collect_events()` 阶段得到 `invalid_battle_code`，就必须立刻向上返回。
+- `TriggerBatchRunner.collect_trigger_events()` 当前固定统一检查这四条支路；任一支路命中 `invalid_battle_code`，整批 trigger 立即中止。
+- 明确禁止：
+  - 把 `invalid_battle` 悄悄吞成“这次没有触发任何 effect”
+  - 在 passive / field 触发链上继续留 silent skip
+- 原因：
+  - 这类错误本质上是坏内容或坏运行态，不是“正常没触发”。
+  - 若继续静默吞错，扩角色时最难排查的就会是“资源写错但战斗只表现成偶尔不生效”。
+
+### 65. 跨模块用户可见错误读取统一走 `error_state()` / `invalid_battle_code()`；兼容 fallback 只允许留在可插拔测试替身边界（2026-04-04）
+
+- 当前跨模块读取用户可见错误的正式约定固定为：
+  - `error_state() -> { code, message }`
+  - `invalid_battle_code() -> Variant`
+- 已迁移的高风险读取点：
+  - `BattleCoreManagerContractHelper`
+  - `BattleCoreSession`
+  - `TriggerBatchRunner`
+  - `ReplayRunner -> BattleInitializer`
+- 当前允许保留 property fallback 的范围只剩：
+  - 测试替身
+  - pluggable mock 依赖边界
+- 明确禁止：
+  - 在正式服务之间继续新增 `get("last_error_code") / get("last_invalid_battle_code")`
+  - 用动态字符串读取作为长期主路径
+- 原因：
+  - 这些字符串通道最容易在扩 helper、换 mock、改字段名时悄悄失效。
+  - 先把 façade / orchestrator 侧最危险的读取点改成显式方法，能明显降低“接口没断言、运行到半截才炸”的概率。
+
+### 66. Runtime wiring 图重新收口为严格 DAG；trigger batch 执行权改为显式透传（2026-04-04）
+
+- 当前架构文档正式口径改为：
+  - 静态 import 面必须单向、干净
+  - runtime 属性注入图也必须保持严格 DAG
+- 本次拆环的正式落点：
+  - `FieldService`、`FieldApplyEffectRunner`、`ReplacementService` 不再通过属性注入直接持有 `trigger_batch_runner`
+  - 需要递归执行 trigger batch 的路径改为显式透传 `Callable(trigger_batch_runner, "execute_trigger_batch")`
+  - `PayloadDamageRuntimeService` 与 `ActionCastDirectDamagePipeline` 只记录 fatal damage attribution，不再直接依赖 `FaintResolver`
+  - `FaintResolver` / `FaintLeaveReplacementService` 的 helper 边界继续瘦身，不再把 `field_service / replacement_service / trigger_dispatcher` 这类非必须依赖继续挂在 resolver 上
+- `tests/gates/architecture_wiring_graph_gate.py` 现在固定要求 runtime wiring 图无 SCC；只要出现闭环，gate 必须直接失败。
+- 原因：
+  - 之前把 wiring 环登记成 allowlist，只是在把真实耦合固化进 composition root。
+  - 现在把执行权收回单点 runner，并把递归 batch 依赖改成显式参数，才能让 wiring 图、文档口径和真实实现重新对齐。
+
+### 67. 内容快照当前采用“composer 级共享 cache + 每次 fresh index”策略（2026-04-04）
+
+- 当前新增 `ContentSnapshotCache`，挂在 `BattleCoreComposer` 上做共享服务。
+- cache 键固定为稳定排序后的 `content_snapshot_paths` 签名。
+- cache 中只允许存：
+  - 已加载且已校验的资源数组
+- 每次 session / replay 命中 cache 后，仍必须：
+  - 深复制资源
+  - 构造 fresh `BattleContentIndex`
+- 明确禁止：
+  - 直接跨 session / replay 共享可变 `BattleContentIndex`
+  - 为了省 load 成本跳过 fresh index 构造
+- 原因：
+  - 目标是省掉重复 I/O 和重复校验，不是把可变资源对象跨会话复用到一起。
+
+### 68. Replay 命令查找当前固定为“按回合预分组，保持同回合输入顺序不变”（2026-04-04）
+
+- `ReplayRunner` 当前在 while 循环前先把 `command_stream` 预分组到 `Dictionary<int, Array>`。
+- 每回合只读取当前 `turn_index` 的命令数组。
+- 同回合命令的相对顺序固定继承输入顺序，不得因为预分组改变 deterministic 行为。
+- 已新增回归：
+  - `replay_turn_index_lookup_contract`
+- 原因：
+  - 旧的每回合整表扫描方式会把批量回放成本线性放大。
+  - 先按回合索引收口，才能在后续 replay case 增长时维持可接受的基础成本。
+
+### 69. manager raw port 与跨服务错误读取统一走显式边界（2026-04-04）
+
+- `BattleCoreManager` 的 `container_factory / command_builder / command_id_factory / public_snapshot_builder` 只允许作为内部装配端口存在，不再作为 facade raw field 暴露给外围或测试。
+- `BattleCoreComposer` 统一通过 `_configure_core_ports(...)` 装配 manager。
+- manager 相关测试若确实需要观察内部会话或替换端口，只允许走显式 `_debug_* / *_for_test` 入口，不再散落着直接摸 raw field。
+- 正式服务之间读取错误状态时：
+  - `invalid_battle` 统一走 `invalid_battle_code()`
+  - 普通错误统一走 `error_state()`
+- 明确禁止：
+  - 跨对象直读 `last_invalid_battle_code / last_error_code`
+  - 再引入 `get("last_*")`、`_has_property()` 这类字符串通道兼容回退
+- 原因：
+  - facade 如果继续暴露 raw port，测试和新代码会再次把装配细节当成稳定接口。
+  - 错误传播如果继续混用字段直读和字符串回退，会把 fail-fast 边界重新变脆。
+
+### 70. manager smoke 与 manager public contract 回归必须保持黑盒；被动持有物主线至少保留 1 个正式样例（2026-04-04）
+
+- manager 相关正式回归当前固定分成两层：
+  - 黑盒 facade 回归：只允许走 `create_session / get_legal_actions / build_command / run_turn / get_public_snapshot / get_event_log_snapshot / close_session / run_replay`
+  - 白盒内核回归：若需要直看 runtime / container，统一留在 harness + core service 侧，不得再借 manager 私有钩子穿透
+- 明确禁止：
+  - 在 `BattleCoreManager` 上重新引入 `_debug_session`、`_inject_session_for_test`、`_override_container_factory_for_test`、`_replace_public_snapshot_builder_for_test`、`_shared_content_snapshot_cache_for_test`
+  - manager smoke 通过内部 session 改 runtime / content 再回头验证 facade
+- 被动持有物当前正式要求至少保留 1 个最小样例闭环：
+  - 有正式 `.tres` 资源
+  - 有 runtime 回归
+  - 有 manager 黑盒回归
+  - 有 replay 黑盒回归
+- 原因：
+  - manager 黑盒面如果继续夹带私有钩子，测试通过也不能证明外围 contract 稳定。
+  - 被动持有物若始终只有引擎框架、没有正式样例，仓库会持续高估当前 prototype 的功能完整度。
+
+### 71. 扩角前共享机制 contract 先收口为“显式 managed action 白名单 + owner helper + refresh 统一来源语义”（2026-04-04）
+
+- `action_legality` 当前正式只管理三类动作：
+  - `skill`
+  - `ultimate`
+  - `switch`
+- `wait / resource_forced_default / surrender` 永远不受 `action_legality` 管控；`deny all` 的正式语义只表示“封禁全部受管控动作类型”。
+- 若调用侧把未知动作类型送进 `action_legality` 读取链，当前必须显式报 `invalid_command_payload` 错误状态；明确禁止继续靠默认 `_ -> false` 静默吞掉。
+- `required_target_same_owner` 当前统一依赖 `EffectSourceMetaHelper` 生成 / 读取 `meta.source_owner_id`：
+  - 允许继续把 owner 归因放在 effect instance `meta` 中
+  - 不把 `source_owner_id` 升成 `EffectInstanceService.create_instance()` 的新显式参数
+  - 若命中的 required effect instance 缺失 `source_owner_id`，运行时直接视为 `invalid_state_corruption`
+- effect instance 与 rule_mod instance 的 `refresh` 语义当前统一固定为：
+  - 继续复用同一个 runtime instance
+  - 刷新持续时间
+  - 同步刷新 `source_instance_id / source_kind_order / source_order_speed_snapshot`
+  - effect 侧同时刷新 `meta`
+  - `last_apply_skipped` 必须保持 `false`
+- 原因：
+  - 第 4 个正式角色若继续踩隐式白名单、散落 owner meta 约定、effect/rule_mod refresh 语义分叉，后续回归和扩角成本会快速失控。
+  - 先把共享底座 contract 写死，后续角色只需要消费稳定能力，不再一边扩角一边猜历史约定。
+
+### 72. 正式角色交付面与 runtime formal validator 统一收口到 docs registry 单一真相（2026-04-04，2026-04-05 口径更新）
+
+- `docs/records/formal_character_registry.json` 当前继续作为正式角色交付面的唯一登记源：
+  - 设计稿 / 调整记录
+  - wrapper suite
+  - `sample_setup_method`
+  - `required_content_paths`
+  - `required_suite_paths`
+  - `required_test_names`
+  - 可选 `content_validator_script_path`
+- runtime 侧当前固定由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 直接读取这份 docs registry，并动态装配 validator；正式角色运行时不再维护第二份 registry / descriptor 文件。
+- `ContentSnapshotFormalCharacterValidator` 当前只会对 `content_index.units` 中实际出现的正式角色执行对应 validator。
+- repo consistency gate 当前会围绕 docs registry 与 runtime loader 检查：
+  - 字段完整性
+  - validator 路径存在
+  - runtime loader 直接读取 docs registry，且不保留第二份硬编码 descriptor 列表
+  - `SampleBattleFactory` builder 对应关系
+  - `required_suite_paths` 必须能从 `tests/run_all.gd` 与 wrapper `preload(...)` 子树真实到达
+  - `required_test_names / required_content_paths / design_needles / adjustment_needles` 一致
+- README、接入 checklist、schema 与 tests README 当前继续统一引用 `docs/records/formal_character_registry.json` 作为维护入口；runtime loader 只负责读取和 fail-fast 装配。
+- 原因：
+  - 双源 registry 会把角色接入动作拆成两份人工同步点，最容易在扩角时形成“运行时能过、门禁没锁”或“门禁在锁一份已不被运行时读取的文件”这两类伪一致性。
+  - 把 suite 注册链也挂回同一份 registry，后续扩角时就能同时锁住“资源在不在”和“测试有没有真的接进执行树”。
+
+### 73. 审查记录里的旧 SCC 口径要显式标成历史态；Gojo formal validator 的领域校验拆成独立 helper（2026-04-04）
+
+- `review_2026-04-04_foundation_stabilization_audit.md` 当前继续保留“当时审查发现过受控 SCC”的历史信息，但正文必须明确：
+  - 那是审查起点，不是当前仓库现状
+  - 当前正式实现与 gate 口径都以 strict DAG 为准
+- `ContentSnapshotFormalGojoValidator` 当前把领域 followup / buff / stat rollback 校验拆到独立 `content_snapshot_formal_gojo_domain_contracts.gd`：
+  - 保留原 validator 作为编排入口
+  - 继续复用 base validator 的 `_require_* / _expect_* / _extract_single_payload()` helper
+  - 避免单文件继续贴近 250 行架构复核阈值
+- 原因：
+  - 审查记录若继续把“允许 1 个 SCC”写成现在时，会直接和 gate、设计文档、当前代码相互打架。
+  - Gojo formal validator 已逼近 220 行预警区，先按领域子域拆开，比等到越过 250 行再补救更省成本。
+
+### 74. 正式角色回归必须同时锁资源形状和真实对局路径；Kashimo 的对领域验收不再只靠手工注入（2026-04-05）
+
+- formal validator 当前对正式角色的职责继续明确为“两层一起锁”：
+  - 第一层：锁 `UnitDefinition / SkillDefinition / EffectDefinition` 的稳定资源形状
+  - 第二层：对容易漂移的关键 payload 顺序与 remove/apply 关系做结构性断言
+- 对 Kashimo 当前追加明确要求：
+  - `apply_negative_charge / apply_positive_charge / negative_charge_mark / positive_charge_mark / consume_positive_charges / consume_negative_charges` 必须都在 formal validator 中逐个点名校验
+  - `弥虚葛笼` 的正式交付验收必须至少保留 1 条真实 Gojo `无限空处` 对局路径，不能只靠直接塞 `field_state` 的合成场景
+- 测试分层当前统一为：
+  - 合成注入测试可以保留，用来快速锁局部 runtime 语义
+  - 但 formal registry 认定的角色交付面，必须额外包含真实装配/真实对局路径回归
+- 原因：
+  - 只锁资源存在性，不锁 payload 结构，最容易出现“资源 ID 没变但语义已漂移”的假通过。
+  - 只做手工注入，不做真实对局，最容易把换装、起手 MP、领域建立时机、行动顺序这类真实路径问题漏掉。
+
+### 75. 扩角色前整改固定走“正式角色模板统一 + 共享 owner helper 拆分”双轨收口（2026-04-05）
+
+- 本轮整改边界固定为：
+  - 允许调整共享语义落点与代码结构
+  - 不改 Gojo / Sukuna / Kashimo / Obito 数值与平衡
+  - 不新增玩法口径，不在整改期并行接第 5 个正式角色
+- 正式角色交付面当前固定只认一套模板：
+  - 设计稿
+  - 调整记录
+  - docs formal registry
+  - `SampleBattleFactory` builder
+  - snapshot / runtime / manager smoke
+  - 共享 suite 与关键 test anchor 回挂
+- `docs/records/formal_character_registry.json` 继续作为 docs / runtime / tests 的单一真相；schema、公开 builder 名称、wrapper suite 名称与 manager facade contract 保持稳定，不通过改外层接口解决内部重复。
+- 以下语义当前正式收口到共享设计文档，不再让角色稿重复承载引擎规范：
+  - `damage_segments`
+  - `on_receive_action_damage_segment`
+  - `incoming_heal_final_mod`
+  - `execute_*`
+  - `effect_stack_sum`
+  - `persistent_stat_stages`
+  - `incoming_action_final_mod`
+- 共享热点 owner 当前统一采用“owner 保留稳定入口 + 内部 helper 分担细职责”的拆法：
+  - `action_cast_direct_damage_pipeline.gd`
+  - `rule_mod_read_service.gd`
+  - `field_service.gd`
+  - `replacement_service.gd`
+- 这批 owner 内部 helper 化后，原 owner 文件必须退出 `220..250` 行预警区；若未来新增共享语义会改变四个正式角色的对局结果，必须先补新的决策记录，再改实现。

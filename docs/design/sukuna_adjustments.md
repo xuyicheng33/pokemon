@@ -4,6 +4,26 @@
 
 领域公共规则另见 `docs/design/domain_field_template.md`。
 
+## 2026-04-06
+
+### 调整：宿傩动态回蓝常驻语义从 `duration=999` 收口为真正的长期规则
+
+- 改了什么：
+  - `sukuna_refresh_love_regen` 的 effect 口径从“`duration_mode=turns` + `duration=999` 的近似常驻”改成 `duration_mode = permanent`
+  - `on_matchup_changed` 继续只保留 1 条宿傩自己的 `mp_regen add`；当对位变化时，旧值按 `stacking=replace` 被替换成新的长期回蓝值，也就是直接 `replace 成新的长期回蓝值`
+- 为什么改：
+  - `去掉 `999`` 这个实现期 magic number，不再让文档和 formal contract 把它误当成权威语义
+  - 宿傩被动真正要表达的是“长期有效，直到对位变化后替换成新的档位”，不是“持续 999 回合”
+- 影响测试：
+  - `tests/suites/sukuna_snapshot_suite.gd`
+  - `tests/suites/sukuna_setup_loadout_regen_suite.gd`
+- 是否改变玩家口径：
+  - 否
+  - 玩家读到的仍然是“基础 12 + 对位追加”的长期回蓝，只是实现与文档不再用 `999` 假装常驻
+- 是否改变数值平衡结论：
+  - 否
+  - 这轮只修语义与 contract，不改宿傩当前的回蓝档位表
+
 ## 2026-03-31
 
 ### 调整：宿傩动态回蓝改为“基础回蓝 + 对位追加”，并重算奥义窗口

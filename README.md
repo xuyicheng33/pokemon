@@ -227,6 +227,7 @@ tests/run_with_gate.sh
 - 角色注册：`docs/records/formal_character_registry.json`
 - 共享内容校验：若角色有跨资源共享不变量，可在 `docs/records/formal_character_registry.json` 里登记 `content_validator_script_path`；这份 registry 同时是正式角色交付面与可选内容 validator 的单一登记源，runtime 统一由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 读取它并动态装配 validator
 - 加载期 formal 校验：`ContentSnapshotFormalCharacterValidator` 只会对当前 content snapshot 实际已出现的正式角色执行对应 validator，缺席角色不会误报
+- validator 模板：正式角色 entry validator 固定收口为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶；入口文件只负责 preload 与串联，不再自由追加角色私有逻辑
 - 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `sample_setup_method / required_suite_paths / required_test_names`；其中 `sample_setup_method` 必须精确对应 `SampleBattleFactory` 的 builder 方法名；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
@@ -252,11 +253,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-05）
+## 10. 当前代码规模（2026-04-06）
 
-- `src/**/*.gd`：`14371` 行
-- `tests/**/*.gd`：`18572` 行
-- GDScript 合计：`32943` 行
+- `src/**/*.gd`：`14555` 行
+- `tests/**/*.gd`：`18761` 行
+- GDScript 合计：`33316` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

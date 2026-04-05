@@ -170,9 +170,13 @@
       "3 点奥义点体系下",
       "默认装配的第一次奥义合法窗口固定落在第 4 回合",
       "反转术式装配的第一次奥义合法窗口固定落在第 4 回合",
+      "duration_mode = permanent",
       "不在角色稿重复定义"
     ],
     "adjustment_needles": [
+      "duration_mode = permanent",
+      "replace 成新的长期回蓝值",
+      "去掉 `999`",
       "首次奥义窗口，当前都重算为第 `4` 回合",
       "mp_regen add",
       "影响测试"
@@ -211,11 +215,13 @@
       "kashimo_feedback_strike_dynamic_power_and_clear_contract",
       "kashimo_kyokyo_loadout_contract",
       "kashimo_kyokyo_katsura_nullify_field_accuracy_contract",
+      "kashimo_kyokyo_katsura_refresh_contract",
       "kashimo_kyokyo_vs_gojo_unlimited_void_contract",
       "kashimo_thunder_resist_contract",
       "kashimo_water_leak_counter_contract",
       "kashimo_water_leak_ultimate_counter_contract",
       "kashimo_phantom_beast_amber_persistent_stage_contract",
+      "kashimo_phantom_beast_amber_once_per_battle_contract",
       "kashimo_manager_smoke_contract",
       "kashimo_manager_amber_public_contract",
       "persistent_stat_stage_switch_and_faint_contract",
@@ -253,9 +259,13 @@
     "design_needles": [
       "effect_stack_sum",
       "incoming_action_final_mod",
+      "once_per_battle",
       "persistent_stat_stages"
     ],
     "adjustment_needles": [
+      "battle-scoped 使用记录",
+      "once_per_battle",
+      "stacking=refresh",
       "effect_stack_sum",
       "persistent_stat_stages",
       "同回合重上场"
@@ -289,9 +299,11 @@
       "obito_candidate_loadout_contract",
       "obito_passive_missing_hp_heal_contract",
       "obito_qiudao_jiaotu_heal_block_contract",
+      "obito_qiudao_jiaotu_expire_sync_contract",
       "obito_qiudao_jiaotu_switch_persist_contract",
       "obito_yinyang_dun_cast_contract",
       "obito_yinyang_dun_segment_mitigation_and_stack_contract",
+      "obito_yinyang_dun_non_skill_segment_ignored_contract",
       "obito_yinyang_dun_stack_cap_contract",
       "obito_qiudaoyu_power_bonus_contract",
       "obito_qiudaoyu_execute_contract",
@@ -339,10 +351,13 @@
       "incoming_heal_final_mod",
       "damage_segments",
       "execute_target_hp_ratio_lte",
-      "on_receive_action_damage_segment"
+      "on_receive_action_damage_segment",
+      "敌方 `skill / ultimate`"
     ],
     "adjustment_needles": [
       "首版正式接入",
+      "skill / ultimate",
+      "同步过期",
       "不做平衡回调",
       "影响测试"
     ]

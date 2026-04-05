@@ -7,7 +7,7 @@
 - 内容层只描述静态定义，不保存运行时 HP/MP。
 - 所有内容资源类都放在 `src/battle_core/content/`。
 - 所有内容资源文件都放在 `content/`，不放进 `assets/`。
-- 当前仓库已同时承载最小样例资源，以及 Gojo / Sukuna / Kashimo 三个正式角色内容包；内容 schema 需要能直接描述正式原型角色与技能。
+- 当前仓库已同时承载最小样例资源，以及 Gojo / Sukuna / Kashimo / Obito 四个正式角色内容包；内容 schema 需要能直接描述正式原型角色与技能。
 
 ## 2. 文件与目录映射
 
@@ -89,6 +89,7 @@
 |`mp_cost`|`int`|MP 消耗|
 |`priority`|`int`|行动优先级|
 |`combat_type_id`|`String`|技能战斗属性；空串表示无属性|
+|`once_per_battle`|`bool`|是否属于整场仅能消耗一次的主动技能 / 奥义；默认 `false`|
 |`power_bonus_source`|`String`|额外威力来源；当前允许空串、`mp_diff_clamped` 或 `effect_stack_sum`|
 |`power_bonus_self_effect_ids`|`PackedStringArray`|`effect_stack_sum` 时统计自身 effect 层数的定义 ID 列表|
 |`power_bonus_target_effect_ids`|`PackedStringArray`|`effect_stack_sum` 时统计目标 effect 层数的定义 ID 列表|
@@ -114,6 +115,7 @@
 - `execute_*` 当前固定表示“命中后、常规直接伤害前”的技能级处决 contract；满足时直接把目标 HP 置 `0`，并写一条追加 `[execute]` 标记的伤害日志。
 - `damage_segments` 当前固定只描述“主动技能命中后的逐段直接伤害”；整招仍然只有一次命中判定与一条行动日志。
 - 若 `damage_segments` 非空，顶层 `power` 仍需保留合法正整数，以满足当前技能加载期的伤害技能校验；实际分段伤害以 `damage_segments` 为准。
+- `once_per_battle=true` 当前只属于主动技能 / 奥义内容字段；运行时使用 battle-scoped 消耗记录裁掉第二次合法性，不会额外暴露到 manager public snapshot。
 
 ### 3.3.1 SkillDamageSegment
 
@@ -157,8 +159,8 @@
 |`trigger_names`|`PackedStringArray`|允许的触发点|
 |`required_target_effects`|`PackedStringArray`|effect 级前置条件；仅 `scope=target` 允许声明|
 |`required_target_same_owner`|`bool`|是否要求 `required_target_effects` 必须由当前 effect owner 本人施加；仅 `scope=target` 且 `required_target_effects` 非空时允许|
-|`required_incoming_command_types`|`PackedStringArray`|仅 `trigger_names` 包含 `on_receive_action_hit` 时允许声明；用于过滤来袭动作类型|
-|`required_incoming_combat_type_ids`|`PackedStringArray`|仅 `trigger_names` 包含 `on_receive_action_hit` 时允许声明；用于过滤来袭动作属性|
+|`required_incoming_command_types`|`PackedStringArray`|仅 `trigger_names` 包含 `on_receive_action_hit / on_receive_action_damage_segment` 时允许声明；用于过滤来袭动作类型|
+|`required_incoming_combat_type_ids`|`PackedStringArray`|仅 `trigger_names` 包含 `on_receive_action_hit / on_receive_action_damage_segment` 时允许声明；用于过滤来袭动作属性|
 |`on_expire_effect_ids`|`PackedStringArray`|实例到期时追加执行的效果 ID|
 |`payloads`|`Array[Resource]`|payload 资源数组|
 |`persists_on_switch`|`bool`|离场是否保留|
@@ -167,7 +169,7 @@
 
 - `required_target_effects` 只允许出现在 `scope=target` 的 effect 上。
 - `required_target_same_owner=true` 时，前置检查除“目标持有这些 effect”外，还要求这些 effect instance 的 `meta.source_owner_id` 与当前 effect owner 一致；该字段当前统一通过 owner helper 生成/读取，缺失时运行时直接按 `invalid_state_corruption` 处理。
-- `required_incoming_command_types / required_incoming_combat_type_ids` 只允许出现在 `trigger_names` 包含 `on_receive_action_hit` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
+- `required_incoming_command_types / required_incoming_combat_type_ids` 只允许出现在 `trigger_names` 包含 `on_receive_action_hit / on_receive_action_damage_segment` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
 - `scope=action_actor` 只允许用于 `trigger_names = [on_receive_action_hit]` 的 effect；该作用域的单位目标固定读取 `ChainContext.action_actor_id`。
 - `on_receive_action_damage_segment` 当前是多段主动伤害的逐段触发口；它和 `on_receive_action_hit` 并存，前者“每个成功结算段一次”，后者仍保持“整次来袭行动一次”。
 - `max_stacks` 只允许和 `stacking=stack` 一起声明；`-1` 表示不封顶，正整数表示硬上限。
@@ -265,7 +267,7 @@
 |---|---|---|
 |`mod_kind / mod_op / value`|`Variant`|基础 rule_mod 定义；见 `docs/rules/06`|
 |`persists_on_switch`|`bool`|非击倒离场时是否保留该 rule_mod；仅允许单位 owner 的 `self / target` 声明|
-|`stacking_source_key`|`String`|`mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 的来源分组键；留空时按共享兜底口径生成|
+|`stacking_source_key`|`String`|`mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod / incoming_heal_final_mod` 的来源分组键；留空时按共享兜底口径生成|
 |`dynamic_value_formula`|`String`|运行时求值公式；当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 `rule_mod` 使用|
 |`dynamic_value_thresholds`|`PackedInt32Array`|运行时区间阈值|
 |`dynamic_value_outputs`|`PackedFloat32Array`|每个阈值对应输出值；`mp_regen` 当前要求这些值都必须是整数值|
@@ -317,7 +319,7 @@
 - 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单（含 `on_matchup_changed`、`on_receive_action_hit`、`on_receive_action_damage_segment`、`stack`）、效果优先级范围、`max_stacks` 合法性、payload 类型与跨资源引用完整性。
 - `ApplyFieldPayload.on_success_effect_ids` 的引用必须全部存在，且被引用 effect 必须声明 `trigger_names` 包含 `field_apply_success`。
 - `required_target_effects` 的加载期校验固定包含：非空项、去重、引用存在性、以及 `scope=target` 约束；若 `required_target_same_owner=true`，则同时要求 `required_target_effects` 非空且 effect `scope=target`。
-- `required_incoming_command_types / required_incoming_combat_type_ids` 的加载期校验固定包含：只允许 `on_receive_action_hit` effect 使用、不得含空项、动作类型只允许 `skill / ultimate`、属性过滤必须命中已注册 `combat_type`。
+- `required_incoming_command_types / required_incoming_combat_type_ids` 的加载期校验固定包含：只允许 `on_receive_action_hit / on_receive_action_damage_segment` effect 使用、不得含空项、动作类型只允许 `skill / ultimate`、属性过滤必须命中已注册 `combat_type`。
 - field 校验覆盖：`field_kind in {normal, domain}`、`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
 - payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent` 且 `percent_base in {max_hp, missing_hp}`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`StatModPayload.retention_mode in {normal, persist_on_switch}`、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
 - 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；`docs/records/formal_character_registry.json` 是角色交付元数据与可选 `content_validator_script_path` 的单一登记源，runtime 由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 读取该 registry 并动态装配 validator；validator 只会对当前 snapshot 实际出现的正式角色执行角色级校验，repo consistency gate 负责锁 registry 完整性、suite 注册链与文档锚点。

@@ -142,11 +142,11 @@
     - `stat_mod(defense, +1)`
     - `stat_mod(sp_defense, +1)`
   - `obito_yinyang_dun_guard_rule_mod` 在本回合内对后续敌方 `skill / ultimate` 的每段最终伤害乘 `0.5`
-  - `obito_yinyang_dun_guard_stack_listener` 监听 `on_receive_action_damage_segment`，每成功承受 1 段直接主动伤害就再 `apply_effect(obito_yinyang_zhili)`
+  - `obito_yinyang_dun_guard_stack_listener` 监听 `on_receive_action_damage_segment`，并与减伤 rule mod 复用同一组过滤条件：只响应敌方 `skill / ultimate` 的成功直接伤害段；命中后每承受 1 段才再 `apply_effect(obito_yinyang_zhili)`
 - 边界：
   - 满 `5` 层后不再继续加层
   - 但双防提升和本回合减伤仍照常生效
-- 验收点：`on_receive_action_damage_segment` 逐段生效；`on_receive_action_hit` 旧语义不改。
+- 验收点：`on_receive_action_damage_segment` 只对敌方 `skill / ultimate` 逐段生效；`on_receive_action_hit` 旧语义不改。
 
 ### 2.5 求道玉
 

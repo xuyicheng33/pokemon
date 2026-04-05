@@ -35,6 +35,7 @@
 - 正式角色注册表除 `suite_path` 外，还要显式登记 `sample_setup_method / required_suite_paths / required_test_names`，把样例构局入口、角色 suite 子树与关键回归锚点一并固定下来。
 - runtime formal validator 当前统一由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 读取 `docs/records/formal_character_registry.json` 并动态装配；这份 registry 同时承载测试/文档/交付面元数据与可选 `content_validator_script_path`。
 - `ContentSnapshotFormalCharacterValidator` 只校验当前快照里实际出现的正式角色，不会因为缺席角色而误炸。
+- 正式角色 entry validator 当前固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板组织；tests 侧只验证这三个入口仍可实例化并回挂到 wrapper 子树。
 - 正式角色的 `required_suite_paths` 可以同时挂角色专属子套件与共享 suite；例如 `gojo_snapshot_suite.gd` / `sukuna_snapshot_suite.gd` 用来锁资源快照，`ultimate_field_suite.gd` 用来把共享领域回归正式挂回角色交付面。
 - 带土当前也按同一机制挂接：`obito_suite.gd` 负责 wrapper，`obito_*` 子 suite 负责角色专项回归，`heal_extension_suite.gd / skill_execute_contract_suite.gd / multihit_skill_runtime_suite.gd` 作为带土依赖面的共享锚点继续挂在 formal registry 里。
 - `check_suite_reachability.sh` 只把 `run_all.gd` 和注册表里的 wrapper 当作入口；`required_suite_paths` 必须真的能从这些入口沿 `preload(...)` 子树走到，不能靠注册表直接兜底。

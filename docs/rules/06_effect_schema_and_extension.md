@@ -33,18 +33,18 @@
 |`trigger_names`|触发点列表|
 |`required_target_effects`|effect 级前置条件；仅 `scope=target` 允许声明|
 |`required_target_same_owner`|可选；要求 `required_target_effects` 必须由当前 effect owner 本人施加|
-|`required_incoming_command_types`|可选；仅 `trigger_names` 包含 `on_receive_action_hit` 时允许声明，用于过滤来袭动作类型|
-|`required_incoming_combat_type_ids`|可选；仅 `trigger_names` 包含 `on_receive_action_hit` 时允许声明，用于过滤来袭动作属性|
+|`required_incoming_command_types`|可选；仅 `trigger_names` 包含 `on_receive_action_hit / on_receive_action_damage_segment` 时允许声明，用于过滤来袭动作类型|
+|`required_incoming_combat_type_ids`|可选；仅 `trigger_names` 包含 `on_receive_action_hit / on_receive_action_damage_segment` 时允许声明，用于过滤来袭动作属性|
 |`on_expire_effect_ids`|实例到期后追加执行的效果 ID 列表|
 |`payloads`|效果行为列表|
 |`persists_on_switch`|是否跨离场保留；默认 `false`|
 
 补充规则：
 
-1. 当前 schema 仍然没有通用 `conditions` 字段；effect 级前置目前只开放 `required_target_effects` 与 `on_receive_action_hit` 下的来袭动作过滤。
+1. 当前 schema 仍然没有通用 `conditions` 字段；effect 级前置目前只开放 `required_target_effects` 与 `on_receive_action_hit / on_receive_action_damage_segment` 下的来袭动作过滤。
 2. `required_target_effects` 只允许挂在 `scope=target` 的 effect 上；加载期必须校验非空项、去重和引用存在性。
 3. `required_target_same_owner = true` 时，前置除检查目标持有这些 effect 外，还必须通过统一 owner helper 读取这些 effect instance 记录的 `meta.source_owner_id`，并校验它与当前 effect owner 一致；若命中的 required effect instance 缺失该字段，运行时直接按 `invalid_state_corruption` 处理。
-4. `required_incoming_command_types / required_incoming_combat_type_ids` 只允许声明在 `trigger_names` 包含 `on_receive_action_hit` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
+4. `required_incoming_command_types / required_incoming_combat_type_ids` 只允许声明在 `trigger_names` 包含 `on_receive_action_hit / on_receive_action_damage_segment` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
 5. `scope=action_actor` 只允许用于 `trigger_names = [on_receive_action_hit]` 的 effect；该作用域的单位目标固定读取 `ChainContext.action_actor_id`。
 6. `apply_field` payload requires `scope=field`；当前不允许把 `apply_field` 挂在 `self / target / action_actor` effect 上。
 7. `damage / heal / resource_mod / stat_mod / apply_effect / remove_effect` 只允许 `scope=self / target / action_actor`；`scope=field` 会在加载期直接判非法，避免运行时静默 no-op。
@@ -107,7 +107,7 @@
 12. `field_apply_success` 只用于 `ApplyFieldPayload.on_success_effect_ids` 的 follow-up 派发。
 13. `on_expire` 只用于 `EffectDefinition.on_expire_effect_ids` 派发，语义与 `field_expire` 严格分离，不混用。
 14. `on_receive_action_hit` 只表示“owner 被一次来袭行动命中后”的 effect 入口；若还要继续限制只对特定动作类型或属性生效，必须显式使用 `required_incoming_command_types / required_incoming_combat_type_ids`。
-15. `on_receive_action_damage_segment` 只表示“owner 被一次来袭行动中的某个成功伤害段结算后”的 effect 入口；该 trigger 当前不消费 `required_incoming_command_types / required_incoming_combat_type_ids`，其逐段上下文统一走 `ChainContext.action_segment_index / action_segment_total / action_combat_type_id`。
+15. `on_receive_action_damage_segment` 只表示“owner 被一次来袭行动中的某个成功伤害段结算后”的 effect 入口；若还要继续限制只对特定动作类型或属性生效，同样必须显式使用 `required_incoming_command_types / required_incoming_combat_type_ids`，其逐段上下文统一走 `ChainContext.action_segment_index / action_segment_total / action_combat_type_id`。
 
 ## 5. 当前基线 payload 类型
 

@@ -2,6 +2,27 @@
 
 本文件只记录增量调整，不重复抄写当前冻结设计稿。当前生效方案以 `docs/design/kashimo_hajime_design.md` 为准。
 
+## 2026-04-06
+
+### 调整：幻兽琥珀的“一整场一次”改由 battle-scoped 使用记录承接
+
+- 改了什么：
+  - `kashimo_phantom_beast_amber` 当前正式开启共享字段 `once_per_battle = true`
+  - 合法性与执行链不再只依赖琥珀自带的 `action_legality deny ultimate` 常驻 rule mod，而是额外写入并读取 battle-scoped 使用记录
+  - `弥虚葛笼` 的 `kashimo_kyokyo_nullify` 在持续中再次施放时，继续按 `stacking=refresh` 把剩余窗口刷新回完整 3 回合
+- 为什么改：
+  - 旧做法只能保证“当前活着这条 runtime state 里别再开第二次”，但挡不住未来出现复活、重建状态或特殊回放装配时把它误放宽成“活着时一次”
+  - 琥珀的强化、自伤、奥义封锁仍然保留在角色资源里；“整场一次”则收回共享合法性 contract，更适合作为后续扩角复用模板
+- 影响测试：
+  - `tests/suites/kashimo_amber_suite.gd`
+  - `tests/suites/kashimo_runtime_suite.gd`
+- 是否改变玩家口径：
+  - 否
+  - 玩家感知仍然是“整场只能开一次”
+- 是否改变数值平衡结论：
+  - 否
+  - 这轮不改鹿紫云强度，只补 battle-scoped 使用记录这层真正的语义兜底
+
 ## 2026-04-02
 
 ### 调整：鹿紫云正式交付接回奥义，并把共享机制名与生命周期语义收口

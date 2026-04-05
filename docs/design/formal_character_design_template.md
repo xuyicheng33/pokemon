@@ -7,6 +7,7 @@
 1. 先按本模板写角色稿。
 2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、registry、suite 和记录；正式角色 registry 的单一维护入口固定为 `docs/records/formal_character_registry.json`。
 3. 若角色带领域机制，只在本稿末尾追加“领域角色差异附录”，公共规则继续引用 `docs/design/domain_field_template.md`。
+4. 若角色需要 `content_validator_script_path`，entry validator 固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板落地。
 
 ## 固定范围
 
