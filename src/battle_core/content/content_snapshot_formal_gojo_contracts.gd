@@ -2,173 +2,138 @@ extends RefCounted
 class_name ContentSnapshotFormalGojoContracts
 
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
+const ContractHelperScript := preload("res://src/battle_core/content/content_snapshot_formal_character_contract_helper.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 
+var _helper = ContractHelperScript.new()
+
 func validate_unit_contract(validator, content_index, errors: Array) -> void:
-	var label := "formal[gojo].unit"
-	var unit_definition = validator._require_unit(content_index, errors, label, "gojo_satoru")
-	if unit_definition == null:
-		return
-	validator._expect_string(errors, "%s display_name" % label, unit_definition.display_name, "五条悟")
-	validator._expect_int(errors, "%s base_hp" % label, unit_definition.base_hp, 124)
-	validator._expect_int(errors, "%s base_attack" % label, unit_definition.base_attack, 56)
-	validator._expect_int(errors, "%s base_defense" % label, unit_definition.base_defense, 60)
-	validator._expect_int(errors, "%s base_sp_attack" % label, unit_definition.base_sp_attack, 88)
-	validator._expect_int(errors, "%s base_sp_defense" % label, unit_definition.base_sp_defense, 68)
-	validator._expect_int(errors, "%s base_speed" % label, unit_definition.base_speed, 86)
-	validator._expect_int(errors, "%s max_mp" % label, unit_definition.max_mp, 100)
-	validator._expect_int(errors, "%s init_mp" % label, unit_definition.init_mp, 50)
-	validator._expect_int(errors, "%s regen_per_turn" % label, unit_definition.regen_per_turn, 14)
-	validator._expect_int(errors, "%s ultimate_points_required" % label, unit_definition.ultimate_points_required, 3)
-	validator._expect_int(errors, "%s ultimate_points_cap" % label, unit_definition.ultimate_points_cap, 3)
-	validator._expect_int(errors, "%s ultimate_point_gain_on_regular_skill_cast" % label, unit_definition.ultimate_point_gain_on_regular_skill_cast, 1)
-	validator._expect_packed_string_array(errors, "%s combat_type_ids" % label, unit_definition.combat_type_ids, PackedStringArray(["space", "psychic"]))
-	validator._expect_packed_string_array(errors, "%s skill_ids" % label, unit_definition.skill_ids, PackedStringArray(["gojo_ao", "gojo_aka", "gojo_murasaki"]))
-	validator._expect_packed_string_array(errors, "%s candidate_skill_ids" % label, unit_definition.candidate_skill_ids, PackedStringArray(["gojo_ao", "gojo_aka", "gojo_murasaki", "gojo_reverse_ritual"]))
-	validator._expect_string(errors, "%s ultimate_skill_id" % label, unit_definition.ultimate_skill_id, "gojo_unlimited_void")
-	validator._expect_string(errors, "%s passive_skill_id" % label, unit_definition.passive_skill_id, "gojo_mugen")
+	_helper.validate_unit_contract(
+		validator,
+		content_index,
+		errors,
+		"formal[gojo].unit",
+		"gojo_satoru",
+		{
+			"display_name": "五条悟",
+			"base_hp": 124,
+			"base_attack": 56,
+			"base_defense": 60,
+			"base_sp_attack": 88,
+			"base_sp_defense": 68,
+			"base_speed": 86,
+			"max_mp": 100,
+			"init_mp": 50,
+			"regen_per_turn": 14,
+			"ultimate_points_required": 3,
+			"ultimate_points_cap": 3,
+			"ultimate_point_gain_on_regular_skill_cast": 1,
+			"combat_type_ids": PackedStringArray(["space", "psychic"]),
+			"skill_ids": PackedStringArray(["gojo_ao", "gojo_aka", "gojo_murasaki"]),
+			"candidate_skill_ids": PackedStringArray(["gojo_ao", "gojo_aka", "gojo_murasaki", "gojo_reverse_ritual"]),
+			"ultimate_skill_id": "gojo_unlimited_void",
+			"passive_skill_id": "gojo_mugen",
+		}
+	)
 
 func validate_core_skill_contract(validator, content_index, errors: Array) -> void:
-	_validate_skill_contract(
-		validator,
-		content_index,
-		errors,
-		"formal[gojo].ao",
-		"gojo_ao",
+	_helper.validate_skill_contracts(validator, content_index, errors, [
 		{
-			"display_name": "苍",
-			"damage_kind": "special",
-			"power": 44,
-			"accuracy": 95,
-			"mp_cost": 14,
-			"priority": 0,
-			"combat_type_id": "space",
-			"targeting": "enemy_active_slot",
-			"effects_on_cast_ids": PackedStringArray(),
-			"effects_on_hit_ids": PackedStringArray(["gojo_ao_speed_up", "gojo_ao_mark_apply"]),
-			"effects_on_miss_ids": PackedStringArray(),
-			"effects_on_kill_ids": PackedStringArray(),
-		}
-	)
-	_validate_skill_contract(
-		validator,
-		content_index,
-		errors,
-		"formal[gojo].aka",
-		"gojo_aka",
+			"label": "formal[gojo].ao",
+			"skill_id": "gojo_ao",
+			"fields": {
+				"display_name": "苍",
+				"damage_kind": "special",
+				"power": 44,
+				"accuracy": 95,
+				"mp_cost": 14,
+				"priority": 0,
+				"combat_type_id": "space",
+				"targeting": "enemy_active_slot",
+				"effects_on_cast_ids": PackedStringArray(),
+				"effects_on_hit_ids": PackedStringArray(["gojo_ao_speed_up", "gojo_ao_mark_apply"]),
+				"effects_on_miss_ids": PackedStringArray(),
+				"effects_on_kill_ids": PackedStringArray(),
+			},
+		},
 		{
-			"display_name": "赫",
-			"damage_kind": "special",
-			"power": 44,
-			"accuracy": 95,
-			"mp_cost": 14,
-			"priority": 0,
-			"combat_type_id": "psychic",
-			"targeting": "enemy_active_slot",
-			"effects_on_cast_ids": PackedStringArray(),
-			"effects_on_hit_ids": PackedStringArray(["gojo_aka_slow_down", "gojo_aka_mark_apply"]),
-			"effects_on_miss_ids": PackedStringArray(),
-			"effects_on_kill_ids": PackedStringArray(),
-		}
-	)
-	_validate_skill_contract(
-		validator,
-		content_index,
-		errors,
-		"formal[gojo].murasaki",
-		"gojo_murasaki",
+			"label": "formal[gojo].aka",
+			"skill_id": "gojo_aka",
+			"fields": {
+				"display_name": "赫",
+				"damage_kind": "special",
+				"power": 44,
+				"accuracy": 95,
+				"mp_cost": 14,
+				"priority": 0,
+				"combat_type_id": "psychic",
+				"targeting": "enemy_active_slot",
+				"effects_on_cast_ids": PackedStringArray(),
+				"effects_on_hit_ids": PackedStringArray(["gojo_aka_slow_down", "gojo_aka_mark_apply"]),
+				"effects_on_miss_ids": PackedStringArray(),
+				"effects_on_kill_ids": PackedStringArray(),
+			},
+		},
 		{
-			"display_name": "茈",
-			"damage_kind": "special",
-			"power": 64,
-			"accuracy": 90,
-			"mp_cost": 24,
-			"priority": -1,
-			"combat_type_id": "space",
-			"targeting": "enemy_active_slot",
-			"effects_on_cast_ids": PackedStringArray(),
-			"effects_on_hit_ids": PackedStringArray(["gojo_murasaki_conditional_burst"]),
-			"effects_on_miss_ids": PackedStringArray(),
-			"effects_on_kill_ids": PackedStringArray(),
-		}
-	)
-	_validate_skill_contract(
-		validator,
-		content_index,
-		errors,
-		"formal[gojo].reverse_ritual",
-		"gojo_reverse_ritual",
+			"label": "formal[gojo].murasaki",
+			"skill_id": "gojo_murasaki",
+			"fields": {
+				"display_name": "茈",
+				"damage_kind": "special",
+				"power": 64,
+				"accuracy": 90,
+				"mp_cost": 24,
+				"priority": -1,
+				"combat_type_id": "space",
+				"targeting": "enemy_active_slot",
+				"effects_on_cast_ids": PackedStringArray(),
+				"effects_on_hit_ids": PackedStringArray(["gojo_murasaki_conditional_burst"]),
+				"effects_on_miss_ids": PackedStringArray(),
+				"effects_on_kill_ids": PackedStringArray(),
+			},
+		},
 		{
-			"display_name": "反转术式",
-			"damage_kind": "none",
-			"power": 0,
-			"accuracy": 100,
-			"mp_cost": 14,
-			"priority": 0,
-			"combat_type_id": "",
-			"targeting": "self",
-			"effects_on_cast_ids": PackedStringArray(["gojo_reverse_heal"]),
-			"effects_on_hit_ids": PackedStringArray(),
-			"effects_on_miss_ids": PackedStringArray(),
-			"effects_on_kill_ids": PackedStringArray(),
-		}
-	)
-	_validate_skill_contract(
-		validator,
-		content_index,
-		errors,
-		"formal[gojo].unlimited_void",
-		"gojo_unlimited_void",
+			"label": "formal[gojo].reverse_ritual",
+			"skill_id": "gojo_reverse_ritual",
+			"fields": {
+				"display_name": "反转术式",
+				"damage_kind": "none",
+				"power": 0,
+				"accuracy": 100,
+				"mp_cost": 14,
+				"priority": 0,
+				"combat_type_id": "",
+				"targeting": "self",
+				"effects_on_cast_ids": PackedStringArray(["gojo_reverse_heal"]),
+				"effects_on_hit_ids": PackedStringArray(),
+				"effects_on_miss_ids": PackedStringArray(),
+				"effects_on_kill_ids": PackedStringArray(),
+			},
+		},
 		{
-			"display_name": "无量空处",
-			"damage_kind": "special",
-			"power": 48,
-			"accuracy": 100,
-			"mp_cost": 50,
-			"priority": 5,
-			"combat_type_id": "space",
-			"targeting": "enemy_active_slot",
-			"is_domain_skill": true,
-			"effects_on_cast_ids": PackedStringArray(),
-			"effects_on_hit_ids": PackedStringArray(["gojo_apply_domain_field"]),
-			"effects_on_miss_ids": PackedStringArray(),
-			"effects_on_kill_ids": PackedStringArray(),
-		}
-	)
+			"label": "formal[gojo].unlimited_void",
+			"skill_id": "gojo_unlimited_void",
+			"fields": {
+				"display_name": "无量空处",
+				"damage_kind": "special",
+				"power": 48,
+				"accuracy": 100,
+				"mp_cost": 50,
+				"priority": 5,
+				"combat_type_id": "space",
+				"targeting": "enemy_active_slot",
+				"is_domain_skill": true,
+				"effects_on_cast_ids": PackedStringArray(),
+				"effects_on_hit_ids": PackedStringArray(["gojo_apply_domain_field"]),
+				"effects_on_miss_ids": PackedStringArray(),
+				"effects_on_kill_ids": PackedStringArray(),
+			},
+		},
+	])
 
 func validate_marker_contract(validator, content_index, errors: Array) -> void:
 	_validate_marker_effect(validator, content_index, errors, "formal[gojo].ao_mark", "gojo_ao_mark", "gojo_ao_speed_up", "speed", 1)
 	_validate_marker_effect(validator, content_index, errors, "formal[gojo].aka_mark", "gojo_aka_mark", "gojo_aka_slow_down", "speed", -1)
-
-func _validate_skill_contract(
-	validator,
-	content_index,
-	errors: Array,
-	label: String,
-	skill_id: String,
-	expected_fields: Dictionary
-) -> void:
-	var skill_definition = validator._require_skill(content_index, errors, label, skill_id)
-	if skill_definition == null:
-		return
-	validator._expect_string(errors, "%s display_name" % label, skill_definition.display_name, String(expected_fields.get("display_name", "")))
-	validator._expect_string(errors, "%s damage_kind" % label, skill_definition.damage_kind, String(expected_fields.get("damage_kind", "")))
-	validator._expect_int(errors, "%s power" % label, skill_definition.power, int(expected_fields.get("power", 0)))
-	validator._expect_int(errors, "%s accuracy" % label, skill_definition.accuracy, int(expected_fields.get("accuracy", 0)))
-	validator._expect_int(errors, "%s mp_cost" % label, skill_definition.mp_cost, int(expected_fields.get("mp_cost", 0)))
-	validator._expect_int(errors, "%s priority" % label, skill_definition.priority, int(expected_fields.get("priority", 0)))
-	validator._expect_string(errors, "%s combat_type_id" % label, skill_definition.combat_type_id, String(expected_fields.get("combat_type_id", "")))
-	validator._expect_string(errors, "%s targeting" % label, skill_definition.targeting, String(expected_fields.get("targeting", "")))
-	if expected_fields.has("is_domain_skill"):
-		validator._expect_bool(errors, "%s is_domain_skill" % label, skill_definition.is_domain_skill, bool(expected_fields.get("is_domain_skill", false)))
-	if expected_fields.has("effects_on_cast_ids"):
-		validator._expect_packed_string_array(errors, "%s effects_on_cast_ids" % label, skill_definition.effects_on_cast_ids, expected_fields.get("effects_on_cast_ids", PackedStringArray()))
-	if expected_fields.has("effects_on_hit_ids"):
-		validator._expect_packed_string_array(errors, "%s effects_on_hit_ids" % label, skill_definition.effects_on_hit_ids, expected_fields.get("effects_on_hit_ids", PackedStringArray()))
-	if expected_fields.has("effects_on_miss_ids"):
-		validator._expect_packed_string_array(errors, "%s effects_on_miss_ids" % label, skill_definition.effects_on_miss_ids, expected_fields.get("effects_on_miss_ids", PackedStringArray()))
-	if expected_fields.has("effects_on_kill_ids"):
-		validator._expect_packed_string_array(errors, "%s effects_on_kill_ids" % label, skill_definition.effects_on_kill_ids, expected_fields.get("effects_on_kill_ids", PackedStringArray()))
 
 func _validate_marker_effect(
 	validator,

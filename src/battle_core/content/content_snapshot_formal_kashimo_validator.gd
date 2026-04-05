@@ -3,22 +3,23 @@ class_name ContentSnapshotFormalKashimoValidator
 
 const KashimoContractsScript := preload("res://src/battle_core/content/content_snapshot_formal_kashimo_contracts.gd")
 const KashimoChargeContractsScript := preload("res://src/battle_core/content/content_snapshot_formal_kashimo_charge_contracts.gd")
+const KashimoPassiveContractsScript := preload("res://src/battle_core/content/content_snapshot_formal_kashimo_passive_contracts.gd")
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
-const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 
 var _contracts = KashimoContractsScript.new()
 var _charge_contracts = KashimoChargeContractsScript.new()
+var _passive_contracts = KashimoPassiveContractsScript.new()
 
 func validate(content_index, errors: Array) -> void:
 	_contracts.validate_unit_contract(self, content_index, errors)
 	_contracts.validate_core_skill_contract(self, content_index, errors)
 	_contracts.validate_feedback_strike_contract(self, content_index, errors)
 	_contracts.validate_kyokyo_contract(self, content_index, errors)
-	_contracts.validate_charge_separation_contract(self, content_index, errors)
-	_contracts.validate_charge_separation_effects(self, content_index, errors)
+	_passive_contracts.validate_charge_separation_contract(self, content_index, errors)
+	_passive_contracts.validate_charge_separation_effects(self, content_index, errors)
 	_charge_contracts.validate(self, content_index, errors)
 	_validate_amber_contract(content_index, errors)
 

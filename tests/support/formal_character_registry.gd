@@ -2,17 +2,13 @@ extends RefCounted
 class_name FormalCharacterRegistry
 
 const REGISTRY_PATH := "res://docs/records/formal_character_registry.json"
+const RuntimeRegistryScript := preload("res://src/battle_core/content/content_snapshot_formal_character_registry.gd")
 
 func load_entries() -> Array:
-	var file := FileAccess.open(REGISTRY_PATH, FileAccess.READ)
-	assert(file != null, "FormalCharacterRegistry missing registry: %s" % REGISTRY_PATH)
-	var parsed = JSON.parse_string(file.get_as_text())
-	assert(parsed is Array, "FormalCharacterRegistry expects top-level array: %s" % REGISTRY_PATH)
-	var entries: Array = []
-	for raw_entry in parsed:
-		assert(raw_entry is Dictionary, "FormalCharacterRegistry expects dictionary entries")
-		entries.append(raw_entry)
-	return entries
+	var load_result: Dictionary = RuntimeRegistryScript.load_entries()
+	var error_message := String(load_result.get("error", ""))
+	assert(error_message.is_empty(), "FormalCharacterRegistry failed to load runtime registry entries: %s" % error_message)
+	return load_result.get("entries", [])
 
 func build_suite_instances() -> Array:
 	var suites: Array = []

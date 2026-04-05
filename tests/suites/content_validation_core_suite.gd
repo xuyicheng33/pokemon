@@ -20,6 +20,8 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("content_validation_new_constraints", failures, Callable(self, "_test_content_validation_new_constraints").bind(harness))
 	runner.run_test("formal_character_shared_fire_burst_validation", failures, Callable(self, "_test_formal_character_shared_fire_burst_validation").bind(harness))
 	runner.run_test("formal_character_validator_registry_runtime_contract", failures, Callable(self, "_test_formal_character_validator_registry_runtime_contract").bind(harness))
+	runner.run_test("formal_character_validator_partial_snapshot_contract", failures, Callable(self, "_test_formal_character_validator_partial_snapshot_contract").bind(harness))
+	runner.run_test("formal_character_validator_present_character_scope_contract", failures, Callable(self, "_test_formal_character_validator_present_character_scope_contract").bind(harness))
 	runner.run_test("unsupported_resource_snapshot_fails_fast", failures, Callable(self, "_test_unsupported_resource_snapshot_fails_fast").bind(harness))
 	runner.run_test("on_receive_forbidden_in_content", failures, Callable(self, "_test_on_receive_forbidden_in_content").bind(harness))
 	runner.run_test("battle_format_runtime_constant_validation", failures, Callable(self, "_test_battle_format_runtime_constant_validation").bind(harness))
@@ -261,16 +263,70 @@ func _test_formal_character_shared_fire_burst_validation(harness) -> Dictionary:
 	return harness.fail_result("formal shared fire burst validation should fail when Sukuna effects stop sharing one payload resource")
 
 func _test_formal_character_validator_registry_runtime_contract(harness) -> Dictionary:
-	var registry_result: Dictionary = FormalCharacterValidatorRegistryScript.build_validator_instances()
-	var error_message := String(registry_result.get("error", ""))
+	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries()
+	var error_message := String(load_result.get("error", ""))
 	if not error_message.is_empty():
 		return harness.fail_result("formal character validator registry should load cleanly: %s" % error_message)
-	var validators: Array = registry_result.get("validators", [])
-	if validators.is_empty():
-		return harness.fail_result("formal character validator registry should expose at least one validator")
-	for validator in validators:
+	var entries: Array = load_result.get("entries", [])
+	if entries.is_empty():
+		return harness.fail_result("formal character validator registry should expose at least one docs entry")
+	var descriptor_result: Dictionary = FormalCharacterValidatorRegistryScript.build_validator_descriptors()
+	error_message = String(descriptor_result.get("error", ""))
+	if not error_message.is_empty():
+		return harness.fail_result("formal character validator descriptors should build cleanly: %s" % error_message)
+	var descriptors: Array = descriptor_result.get("descriptors", [])
+	if descriptors.size() != entries.size():
+		return harness.fail_result("formal character validator descriptors should match docs registry entry count")
+	for raw_descriptor in descriptors:
+		if not (raw_descriptor is Dictionary):
+			return harness.fail_result("formal character validator descriptor must be Dictionary")
+		var descriptor: Dictionary = raw_descriptor
+		if String(descriptor.get("character_id", "")).is_empty():
+			return harness.fail_result("formal character validator descriptor missing character_id")
+		if String(descriptor.get("unit_definition_id", "")).is_empty():
+			return harness.fail_result("formal character validator descriptor missing unit_definition_id")
+		if String(descriptor.get("content_validator_script_path", "")).is_empty():
+			return harness.fail_result("formal character validator descriptor missing content_validator_script_path")
+		var validator = descriptor.get("validator", null)
 		if validator == null or not validator.has_method("validate"):
 			return harness.fail_result("formal character validator registry returned invalid validator instance")
+	return harness.pass_result()
+
+func _test_formal_character_validator_partial_snapshot_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var sample_only_content = BattleContentIndexScript.new()
+	if not sample_only_content.load_snapshot(_build_filtered_snapshot_paths(sample_factory, PackedStringArray(["/gojo/", "/sukuna/", "/kashimo/"]))):
+		return harness.fail_result("sample-only snapshot should validate without formal character assets: %s" % sample_only_content.last_error_message)
+	var gojo_only_content = BattleContentIndexScript.new()
+	if not gojo_only_content.load_snapshot(_build_filtered_snapshot_paths(sample_factory, PackedStringArray(["/sukuna/", "/kashimo/"]))):
+		return harness.fail_result("gojo-only snapshot should validate without unrelated formal characters: %s" % gojo_only_content.last_error_message)
+	if not gojo_only_content.units.has("gojo_satoru") or gojo_only_content.units.has("sukuna") or gojo_only_content.units.has("kashimo_hajime"):
+		return harness.fail_result("gojo-only snapshot filter should keep only Gojo formal assets")
+	return harness.pass_result()
+
+func _test_formal_character_validator_present_character_scope_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = BattleContentIndexScript.new()
+	if not content_index.load_snapshot(_build_filtered_snapshot_paths(sample_factory, PackedStringArray(["/sukuna/", "/kashimo/"]))):
+		return harness.fail_result("gojo-only snapshot should load before scoped validation probe: %s" % content_index.last_error_message)
+	var burst_effect = content_index.effects.get("gojo_murasaki_conditional_burst", null)
+	if burst_effect == null:
+		return harness.fail_result("gojo-only snapshot missing gojo_murasaki_conditional_burst")
+	burst_effect.required_target_same_owner = false
+	var errors: Array = content_index.validate_snapshot()
+	var saw_gojo_scope_error := false
+	for error_msg in errors:
+		var msg := str(error_msg)
+		if msg.find("formal[gojo].murasaki_burst required_target_same_owner must be true") != -1:
+			saw_gojo_scope_error = true
+		if msg.find("formal[sukuna]") != -1 or msg.find("formal[kashimo]") != -1:
+			return harness.fail_result("scoped formal validator should not report unrelated characters when only Gojo is loaded")
+	if not saw_gojo_scope_error:
+		return harness.fail_result("scoped formal validator should still enforce Gojo contracts when Gojo is present")
 	return harness.pass_result()
 
 func _test_unsupported_resource_snapshot_fails_fast(_harness) -> Dictionary:
@@ -348,3 +404,17 @@ func _build_dynamic_formula_effect(effect_id: String, scope: String, thresholds:
 	effect.payloads.clear()
 	effect.payloads.append(payload)
 	return effect
+
+func _build_filtered_snapshot_paths(sample_factory, excluded_tokens: PackedStringArray) -> PackedStringArray:
+	var filtered_paths: PackedStringArray = PackedStringArray()
+	for raw_path in sample_factory.content_snapshot_paths():
+		var path := String(raw_path)
+		var should_exclude := false
+		for raw_token in excluded_tokens:
+			if path.find(String(raw_token)) != -1:
+				should_exclude = true
+				break
+		if should_exclude:
+			continue
+		filtered_paths.append(path)
+	return filtered_paths

@@ -11,16 +11,17 @@
 
 ## 当前有效决策
 
-### 0. Runtime formal validator 与 content cache 收口到代码侧稳定入口（2026-04-05）
+### 0. Runtime formal validator 与 content cache 收口到 docs registry 单一真相 + runtime loader 稳定入口（2026-04-05）
 
-- `ContentSnapshotFormalCharacterValidator` 的 runtime 装配，不再直接读取 `docs/records/formal_character_registry.json`。
-- runtime 侧当前固定由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 这份代码侧描述源装配 formal validator。
-- `docs/records/formal_character_registry.json` 继续保留为角色交付、测试与文档元数据注册表；repo consistency gate 必须校验它和 runtime 侧 validator 路径一致。
+- `docs/records/formal_character_registry.json` 当前既是正式角色交付面的元数据注册表，也是可选 `content_validator_script_path` 的单一登记源。
+- runtime 侧固定由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 读取这份 docs registry，并在同一个 fail-fast loader 中完成 formal validator descriptor 装配。
+- `ContentSnapshotFormalCharacterValidator` 不再自己散读正式角色 registry；repo consistency gate 必须校验 runtime loader 直接读取 docs registry，且 runtime 不保留第二份硬编码 formal character descriptor 列表。
 - `ContentSnapshotCache` 的签名当前必须同时包含：
   - 稳定排序后的 `content_snapshot_paths`
   - 每个路径对应文件的内容指纹（优先 `md5`，失败时退回文件修改时间）
 - 原因：
-  - runtime 不应再依赖 `docs/records` 作为可执行配置源。
+  - 正式角色接入若存在两份 registry / descriptor 源，最容易在扩角时形成“文档与 gate 已改、runtime 还在读旧配置”或反过来的伪一致性。
+  - runtime 继续允许通过单一 loader 读取 docs registry，但不允许把 docs 读取散落到 validator / test helper 多处。
   - 同一路径下文件内容变化后，cache 必须 miss，不能继续复用旧 entry。
 - `BattleCoreManager` 的 container factory 错误路径当前只允许通过 `error_state()` port 回读错误，不再反向 reach-through `container_factory_owner.composer`。
 
@@ -64,6 +65,14 @@
 - 原因：
   - 这类漂移越早炸越省事，最好在 formal validator 阶段就拦下，而不是拖到角色 runtime suite 才暴露。
   - 首错即停会把多处静态漂移压缩成一条报错，信息量不够，补漏效率低。
+
+### 0.5 formal validator 只校验当前快照实际出现的正式角色（2026-04-05）
+
+- `ContentSnapshotFormalCharacterValidator` 当前按 `unit_definition_id` 判断角色是否出现在 `content_index.units` 中，只对实际进入当前 snapshot 的正式角色执行对应 validator。
+- `partial snapshot`、聚焦坏例或单角色资源包校验时，不允许因为其它正式角色未加载而误报缺资源。
+- 原因：
+  - 正式角色 validator 的职责是锁“当前交付内容有没有漂”，不是强迫所有局部快照都携带整仓正式角色资源。
+  - 角色数量继续增长后，如果 validator 仍对缺席角色逐个硬炸，内容校验会快速失去定位价值。
 
 ### 1. 规则、设计、记录的职责分层固定
 
@@ -954,9 +963,9 @@
   - 第 4 个正式角色若继续踩隐式白名单、散落 owner meta 约定、effect/rule_mod refresh 语义分叉，后续回归和扩角成本会快速失控。
   - 先把共享底座 contract 写死，后续角色只需要消费稳定能力，不再一边扩角一边猜历史约定。
 
-### 72. 正式角色交付面继续由 docs-side registry 记录；runtime formal validator 改由 code-side registry 装配（2026-04-04，2026-04-05 口径更新）
+### 72. 正式角色交付面与 runtime formal validator 统一收口到 docs registry 单一真相（2026-04-04，2026-04-05 口径更新）
 
-- `docs/records/formal_character_registry.json` 当前继续作为正式角色交付面的 docs/test 元数据权威源：
+- `docs/records/formal_character_registry.json` 当前继续作为正式角色交付面的唯一登记源：
   - 设计稿 / 调整记录
   - wrapper suite
   - `sample_setup_method`
@@ -964,14 +973,16 @@
   - `required_suite_paths`
   - `required_test_names`
   - 可选 `content_validator_script_path`
-- runtime 侧当前固定由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 这份代码侧描述源装配 formal validator，不再把 docs-side registry 当可执行配置源。
-- repo consistency gate 当前会同时围绕 docs-side 交付面与 runtime code-side validator 描述源检查：
+- runtime 侧当前固定由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 直接读取这份 docs registry，并动态装配 validator；正式角色运行时不再维护第二份 registry / descriptor 文件。
+- `ContentSnapshotFormalCharacterValidator` 当前只会对 `content_index.units` 中实际出现的正式角色执行对应 validator。
+- repo consistency gate 当前会围绕 docs registry 与 runtime loader 检查：
   - 字段完整性
-  - validator 路径存在且与 runtime 描述源一致
+  - validator 路径存在
+  - runtime loader 直接读取 docs registry，且不保留第二份硬编码 descriptor 列表
   - `SampleBattleFactory` builder 对应关系
   - `required_suite_paths` 必须能从 `tests/run_all.gd` 与 wrapper `preload(...)` 子树真实到达
   - `required_test_names / required_content_paths / design_needles / adjustment_needles` 一致
-- README、接入 checklist 与 schema 文档当前继续引用 docs-side registry 作为人工维护入口；runtime code-side registry 只负责执行期 validator 装配。
+- README、接入 checklist、schema 与 tests README 当前继续统一引用 `docs/records/formal_character_registry.json` 作为维护入口；runtime loader 只负责读取和 fail-fast 装配。
 - 原因：
   - 双源 registry 会把角色接入动作拆成两份人工同步点，最容易在扩角时形成“运行时能过、门禁没锁”或“门禁在锁一份已不被运行时读取的文件”这两类伪一致性。
   - 把 suite 注册链也挂回同一份 registry，后续扩角时就能同时锁住“资源在不在”和“测试有没有真的接进执行树”。

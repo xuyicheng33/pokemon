@@ -5,7 +5,7 @@
 使用方式：
 
 1. 先按本模板写角色稿。
-2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、registry、suite 和记录。
+2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、registry、suite 和记录；正式角色 registry 的单一维护入口固定为 `docs/records/formal_character_registry.json`。
 3. 若角色带领域机制，只在本稿末尾追加“领域角色差异附录”，公共规则继续引用 `docs/design/domain_field_template.md`。
 
 ## 固定范围
@@ -105,7 +105,7 @@
 - 每个常规技能 / 奥义都要写出资源字段和玩法语义
 - 若某技能依赖共享能力，只写“本角色怎么用”，不重复写完整 schema / 读写路径 / 全局排序链
 - 关键 effect / field / passive 资源必须显式列出，不允许把核心语义藏在“见资源文件”
-- 若有“必须满足的跨资源不变量”，要在角色稿里写清，并在 checklist 阶段决定是否需要 `content_validator_script_path`
+- 若有“必须满足的跨资源不变量”，要在角色稿里写清，并在 checklist 阶段决定是否需要 `content_validator_script_path`；若需要，直接登记进 `docs/records/formal_character_registry.json`，runtime 会统一从这份 registry 装配
 
 推荐骨架：
 
@@ -139,7 +139,7 @@
 
 - 至少覆盖 `snapshot / runtime / manager smoke` 三类视角
 - 只列“这个角色必须长期锁死什么”，不要把通用测试说明重抄一遍
-- 若共享 suite 是正式交付面的一部分，要写明“通过 formal registry 回挂”
+- 若共享 suite 是正式交付面的一部分，要写明“通过 formal registry 回挂”；registry 的单一维护入口仍是 `docs/records/formal_character_registry.json`
 
 推荐骨架：
 
@@ -212,4 +212,4 @@
 - 不把共享 effect / rule_mod schema 再抄一遍
 - 不在角色稿里重新定义公共领域对拼矩阵
 - 不把 manager envelope、`public_id` 契约、bench 生命周期等全局规则复制到每个角色稿
-- 不把“资源清单 / registry / suite / checklist”混进玩法章节里，交付动作统一交给 `formal_character_delivery_checklist.md`
+- 不把“资源清单 / registry / suite / checklist”混进玩法章节里，交付动作统一交给 `formal_character_delivery_checklist.md` 与 `docs/records/formal_character_registry.json`

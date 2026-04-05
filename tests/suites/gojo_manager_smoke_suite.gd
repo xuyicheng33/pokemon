@@ -8,6 +8,7 @@ var _helper = ManagerContractTestHelperScript.new()
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("gojo_manager_smoke_contract", failures, Callable(self, "_test_gojo_manager_smoke_contract").bind(harness))
+	runner.run_test("gojo_manager_domain_public_contract", failures, Callable(self, "_test_gojo_manager_domain_public_contract").bind(harness))
 
 func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
@@ -120,6 +121,106 @@ func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 		return harness.fail_result("gojo manager smoke event log must stay public-safe")
 	if not _helper.event_log_has_public_heal(events, "P1-A"):
 		return harness.fail_result("gojo manager smoke event log should expose heal on P1-A")
+	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
+	if not bool(close_unwrap.get("ok", false)):
+		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
+	return harness.pass_result()
+
+func _test_gojo_manager_domain_public_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var battle_setup = sample_factory.build_sample_setup()
+	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
+	battle_setup.sides[0].starting_index = 0
+	battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_mossaur", "sample_pyron", "sample_tidekit"])
+	battle_setup.sides[1].starting_index = 0
+	var init_unwrap = _helper.unwrap_ok(manager.create_session({
+		"battle_seed": 1303,
+		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"battle_setup": battle_setup,
+	}), "create_session")
+	if not bool(init_unwrap.get("ok", false)):
+		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
+	for turn_index in [1, 2, 3]:
+		var gojo_command = _helper.unwrap_ok(manager.build_command({
+			"turn_index": turn_index,
+			"command_type": CommandTypesScript.SKILL,
+			"command_source": "manual",
+			"side_id": "P1",
+			"actor_public_id": "P1-A",
+			"skill_id": "gojo_ao",
+		}), "build_command(gojo_ao)")
+		if not bool(gojo_command.get("ok", false)):
+			return harness.fail_result(str(gojo_command.get("error", "manager build_command failed")))
+		var wait_command = _helper.unwrap_ok(manager.build_command({
+			"turn_index": turn_index,
+			"command_type": CommandTypesScript.WAIT,
+			"command_source": "manual",
+			"side_id": "P2",
+			"actor_public_id": "P2-A",
+		}), "build_command(wait)")
+		if not bool(wait_command.get("ok", false)):
+			return harness.fail_result(str(wait_command.get("error", "manager build_command failed")))
+		var run_turn_unwrap = _helper.unwrap_ok(manager.run_turn(session_id, [
+			gojo_command.get("data", null),
+			wait_command.get("data", null),
+		]), "run_turn charge_gojo")
+		if not bool(run_turn_unwrap.get("ok", false)):
+			return harness.fail_result(str(run_turn_unwrap.get("error", "manager run_turn failed")))
+	var legal_actions_unwrap = _helper.unwrap_ok(manager.get_legal_actions(session_id, "P1"), "get_legal_actions")
+	if not bool(legal_actions_unwrap.get("ok", false)):
+		return harness.fail_result(str(legal_actions_unwrap.get("error", "manager get_legal_actions failed")))
+	var legal_actions = legal_actions_unwrap.get("data", null)
+	if not legal_actions.legal_ultimate_ids.has("gojo_unlimited_void"):
+		return harness.fail_result("gojo manager domain path should expose unlimited void after 3 regular casts")
+	var domain_command = _helper.unwrap_ok(manager.build_command({
+		"turn_index": 4,
+		"command_type": CommandTypesScript.ULTIMATE,
+		"command_source": "manual",
+		"side_id": "P1",
+		"actor_public_id": "P1-A",
+		"skill_id": "gojo_unlimited_void",
+	}), "build_command(gojo_unlimited_void)")
+	if not bool(domain_command.get("ok", false)):
+		return harness.fail_result(str(domain_command.get("error", "manager build_command failed")))
+	var wait_turn_4 = _helper.unwrap_ok(manager.build_command({
+		"turn_index": 4,
+		"command_type": CommandTypesScript.WAIT,
+		"command_source": "manual",
+		"side_id": "P2",
+		"actor_public_id": "P2-A",
+	}), "build_command(wait turn4)")
+	if not bool(wait_turn_4.get("ok", false)):
+		return harness.fail_result(str(wait_turn_4.get("error", "manager build_command failed")))
+	var domain_turn_unwrap = _helper.unwrap_ok(manager.run_turn(session_id, [
+		domain_command.get("data", null),
+		wait_turn_4.get("data", null),
+	]), "run_turn domain")
+	if not bool(domain_turn_unwrap.get("ok", false)):
+		return harness.fail_result(str(domain_turn_unwrap.get("error", "manager run_turn failed")))
+	var public_snapshot_unwrap = _helper.unwrap_ok(manager.get_public_snapshot(session_id), "get_public_snapshot")
+	if not bool(public_snapshot_unwrap.get("ok", false)):
+		return harness.fail_result(str(public_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
+	var public_snapshot: Dictionary = public_snapshot_unwrap.get("data", {})
+	if String(public_snapshot.get("field_id", "")) != "gojo_unlimited_void_field":
+		return harness.fail_result("gojo manager domain path should expose active gojo_unlimited_void_field")
+	var field_snapshot: Dictionary = public_snapshot.get("field", {})
+	if String(field_snapshot.get("creator_public_id", "")) != "P1-A":
+		return harness.fail_result("gojo manager domain path should expose P1-A as field creator")
+	var event_log_unwrap = _helper.unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot")
+	if not bool(event_log_unwrap.get("ok", false)):
+		return harness.fail_result(str(event_log_unwrap.get("error", "manager get_event_log_snapshot failed")))
+	var events: Array = event_log_unwrap.get("data", {}).get("events", [])
+	if _helper.contains_runtime_id_leak(events):
+		return harness.fail_result("gojo manager domain path event log must stay public-safe")
+	if not _helper.event_log_has_public_action_cast(events, "P1-A", "gojo_satoru"):
+		return harness.fail_result("gojo manager domain path should expose gojo public action cast")
 	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
 	if not bool(close_unwrap.get("ok", false)):
 		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))

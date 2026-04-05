@@ -24,7 +24,9 @@ ctx.require_contains("docs/design/battle_content_schema.md", "effect_stack_sum",
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_effect_ids", "schema power bonus self effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
-ctx.require_contains("docs/design/battle_content_schema.md", "content_snapshot_formal_character_registry.gd", "schema runtime validator registry wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "docs/records/formal_character_registry.json", "schema formal character single source wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "content_snapshot_formal_character_registry.gd", "schema runtime validator loader wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "当前 snapshot 实际出现的正式角色", "schema scoped formal validator wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "content_validator_script_path", "schema formal character validator path wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "nullify_field_accuracy", "schema field accuracy nullify contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "incoming_action_final_mod", "schema incoming action final mod contract")
@@ -108,11 +110,12 @@ ctx.require_contains("docs/records/decisions.md", "Runtime wiring 图重新收�
 ctx.require_contains("docs/records/decisions.md", "composer 级共享 cache + 每次 fresh index", "content snapshot cache decision wording")
 ctx.require_contains("docs/records/review_2026-04-04_foundation_stabilization_audit.md", "基础稳定化审查记录", "foundation stabilization review record")
 ctx.require_contains("README.md", "content_validator_script_path", "README runtime validator registry doc")
+ctx.require_contains("README.md", "当前 content snapshot 实际已出现的正式角色", "README scoped formal validator doc")
 ctx.require_contains("README.md", "BATTLE_SANDBOX_FAILED:", "README sandbox failure gate wording")
 ctx.require_contains("README.md", "与内部日志断引用", "README detached event log wording")
 ctx.require_contains("tests/README.md", "run_all.gd` 会直接注册核心公共 suite", "tests README current run_all wording")
+ctx.require_contains("tests/README.md", "只校验当前快照里实际出现的正式角色", "tests README scoped formal validator wording")
 ctx.require_contains("tests/check_architecture_constraints.sh", "ARCH_GATE_WARNING", "architecture warning marker")
-ctx.require_absent("docs/records/decisions.md", "运行时当前直接读取这份 docs-side registry", "stale docs-side runtime registry wording")
 ctx.require_absent("tests/README.md", "只注册顶层 wrapper，不直接注册子套件", "stale wrapper-only tests README wording")
 for rel_path in [
     "README.md",
@@ -121,6 +124,15 @@ for rel_path in [
     "docs/design/battle_content_schema.md",
 ]:
     ctx.require_absent(rel_path, "formal_character_validator_registry.json", "removed code-side validator registry wording")
+for rel_path in [
+    "README.md",
+    "tests/README.md",
+    "docs/design/formal_character_delivery_checklist.md",
+    "docs/design/battle_content_schema.md",
+    "docs/records/decisions.md",
+]:
+    ctx.require_absent(rel_path, "代码侧描述源", "stale code-side formal registry wording")
+ctx.require_absent("docs/records/decisions.md", "runtime formal validator 改由 code-side registry 装配", "stale dual-registry decision wording")
 
 stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",

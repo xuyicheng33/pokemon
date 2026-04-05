@@ -46,11 +46,11 @@
   - [ ] `design_doc / adjustment_doc`
   - [ ] `suite_path`
   - [ ] `sample_setup_method`（必须与 `SampleBattleFactory` 里的 builder 方法名完全一致）
-  - [ ] `required_content_paths`
-  - [ ] `required_suite_paths`
-  - [ ] `required_test_names`
+- [ ] `required_content_paths`
+- [ ] `required_suite_paths`
+- [ ] `required_test_names`
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
-- [ ] 若补了 `content_validator_script_path`，直接登记在 `docs/records/formal_character_registry.json` 对应角色条目里，并同步到 `src/battle_core/content/content_snapshot_formal_character_registry.gd`；repo consistency gate 会校验两边一致
+- [ ] 若补了 `content_validator_script_path`，只登记在 `docs/records/formal_character_registry.json` 对应角色条目里；runtime loader 会直接读取这份 registry 并动态装配 validator，不再维护第二份 runtime 描述表
 
 ## 4. 测试最低面
 

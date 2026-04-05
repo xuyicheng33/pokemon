@@ -21,6 +21,68 @@
 
 ## 2026-04-05
 
+### 审查问题修复收口：formal registry 单一真相、作用域化 validator 与 Kashimo contract 拆分（已完成）
+
+- 目标：
+  - 把正式角色交付面、runtime formal validator、文档和 repo consistency gate 收回同一口径，避免继续保留“双源描述 + 人工同步”的隐患
+  - 让 formal validator 只校验当前快照实际出现的正式角色，避免局部快照或坏例因缺席角色误炸
+  - 收掉 `content_snapshot_formal_kashimo_contracts.gd` 贴近 250 行阈值的架构预警
+- 范围：
+  - `src/battle_core/content/content_snapshot_formal_character_registry.gd`
+  - `src/battle_core/content/content_snapshot_formal_character_validator.gd`
+  - `src/battle_core/content/content_snapshot_formal_character_contract_helper.gd`
+  - `src/battle_core/content/content_snapshot_formal_gojo_contracts.gd`
+  - `src/battle_core/content/content_snapshot_formal_sukuna_contracts.gd`
+  - `src/battle_core/content/content_snapshot_formal_kashimo_contracts.gd`
+  - `src/battle_core/content/content_snapshot_formal_kashimo_passive_contracts.gd`
+  - `src/battle_core/content/content_snapshot_formal_kashimo_validator.gd`
+  - `tests/suites/content_validation_core_suite.gd`
+  - `tests/suites/gojo_manager_smoke_suite.gd`
+  - `tests/suites/sukuna_manager_smoke_suite.gd`
+  - `tests/suites/kashimo_manager_smoke_suite.gd`
+  - `tests/support/formal_character_registry.gd`
+  - `tests/gates/repo_consistency_formal_character_gate.py`
+  - `tests/gates/repo_consistency_docs_gate.py`
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/formal_character_delivery_checklist.md`
+  - `docs/design/formal_character_design_template.md`
+  - `docs/records/decisions.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - `docs/records/formal_character_registry.json` 成为正式角色交付面与可选 `content_validator_script_path` 的单一登记源
+  - runtime formal validator 统一通过 `ContentSnapshotFormalCharacterRegistry` 读取 docs registry，并只校验当前快照实际出现的正式角色
+  - 文档、README、tests README、decisions 与 docs gate 不再保留“code-side registry / 代码侧描述源”旧口径
+  - `content_snapshot_formal_kashimo_contracts.gd` 脱离 220+ 行预警区
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成：
+  - `ContentSnapshotFormalCharacterRegistry` 已直接读取 `docs/records/formal_character_registry.json`，并在 runtime fail-fast loader 中装配可选角色 validator
+  - `ContentSnapshotFormalCharacterValidator` 已改成只对 `content_index.units` 中实际出现的正式角色执行对应 validator
+  - Gojo / Sukuna / Kashimo formal contract 已统一复用 `content_snapshot_formal_character_contract_helper.gd`，去掉重复的 unit / skill 基础断言
+  - `content_validation_core_suite.gd` 已新增局部快照与 present-character scope 回归，锁住 formal validator 的新作用域
+  - Gojo / Sukuna / Kashimo manager smoke 已补公开主链回归，并挂回正式角色 registry 锚点
+  - `repo_consistency_formal_character_gate.py` 已收口为围绕 docs registry + runtime loader 的单源检查，并补回缺失的 `import re`
+  - `README.md`、`tests/README.md`、`battle_content_schema.md`、`formal_character_delivery_checklist.md`、`formal_character_design_template.md`、`decisions.md` 已统一为“docs registry 单一真相 + runtime loader 读取 + scoped validator”口径
+  - 已新增 `content_snapshot_formal_kashimo_passive_contracts.gd`，把鹿紫云被动 / 水漏相关 formal contract 从主文件拆出；`content_snapshot_formal_kashimo_contracts.gd` 已降到 `170` 行
+  - `README.md` 代码规模统计已同步到当前仓库实测值：
+    - `src`：`13024`
+    - `tests`：`16676`
+    - `total`：`29700`
+
+#### 当前验证结果
+
+- `python3 tests/gates/repo_consistency_docs_gate.py` 通过
+- `python3 tests/gates/repo_consistency_formal_character_gate.py` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
+
 ### 审查问题修复收口：角色侧战斗核心回归补漏与 formal contract 收紧（已完成）
 
 - 目标：
@@ -161,10 +223,10 @@
 - `bash tests/check_repo_consistency.sh` 通过
 - `bash tests/run_with_gate.sh` 通过
 
-### 审查问题修复收口：runtime formal validator registry、cache 签名与 factory 错误口收边（已完成）
+### 审查问题修复收口：formal validator loader、cache 签名与 factory 错误口收边（已完成）
 
 - 目标：
-  - 去掉 runtime 对 `docs/records/formal_character_registry.json` 的直接依赖
+  - 把 runtime formal validator 对正式角色 registry 的读取收口到单一 loader，不再散落在 validator / 测试支撑多处
   - 让 `ContentSnapshotCache` 在“同路径内容变化”时必然 miss，而不是继续复用旧 cache
   - 收掉 manager factory 错误路径里对 composition 细节的反向读取
   - 同步 README / 测试文档 / schema / checklist / 决策记录口径
@@ -183,8 +245,8 @@
   - `docs/records/decisions.md`
   - `docs/records/tasks.md`
 - 验收标准：
-  - runtime formal validator 装配不再读取 docs-side registry
-  - repo consistency gate 能校验 runtime validator 描述源与 docs registry 的路径一致
+  - runtime formal validator 统一经 `ContentSnapshotFormalCharacterRegistry` 读取 `docs/records/formal_character_registry.json`
+  - repo consistency gate 能校验 runtime loader 直连 docs registry，且 runtime 不保留第二份 formal character descriptor 列表
   - 新增回归能锁住“同路径文件内容变化后 cache 签名变化”
   - `godot --headless --path . --script tests/run_all.gd`
   - `bash tests/check_repo_consistency.sh`
@@ -193,8 +255,8 @@
 #### 当前执行结果
 
 - 已完成：
-  - runtime formal validator 装配已改为代码侧描述源，不再在运行时读取 `docs/records/formal_character_registry.json`
-  - repo consistency gate 已补 runtime validator 描述源与 docs registry 的一致性检查
+  - `ContentSnapshotFormalCharacterRegistry` 已收口为 formal validator 的单一 runtime loader，统一读取 `docs/records/formal_character_registry.json` 并装配可选 `content_validator_script_path`
+  - repo consistency gate 已补 runtime loader 直读 docs registry、且不保留第二份 formal character descriptor 列表的检查
   - `ContentSnapshotCache` 签名已纳入文件内容指纹
   - 已新增 `content_snapshot_cache_signature_tracks_file_content_contract`
   - manager factory 错误路径已改为只通过 `error_state()` port 回读，不再触碰 `container_factory_owner.composer`
@@ -550,7 +612,7 @@
 
 - `bash tests/run_with_gate.sh` 通过
 
-### 历史记录：正式角色扩展前整合：批次 2 formal registry 单一权威源收口（该阶段方案已在 2026-04-05 被 code-side runtime registry 口径替代）
+### 历史记录：正式角色扩展前整合：批次 2 formal registry 单一权威源收口（已完成，当前单一真相口径继续沿用）
 
 - 目标：
   - 把正式角色交付面从“docs registry + code-side validator registry”双源维护，收口成 `docs/records/formal_character_registry.json` 单一权威源
@@ -1043,16 +1105,18 @@
   - `tests/suites/content_validation_core_suite.gd`
   - `tests/suites/rule_mod_runtime*.gd`
 - 验收标准：
-  - runtime validator registry 与 docs registry 重新收回“code-side read model + docs 交付面记录”的同一口径
+  - formal character runtime loader 与 docs registry 重新收回同一口径，不再保留会造成双源漂移的第二份运行时注册表
   - formal registry 显式补齐 `sample_setup_method`，并由 gate 校验对应 `SampleBattleFactory` builder 存在
   - `battle_runtime_model.md` 的 `RuleModInstance` 说明补齐 `nullify_field_accuracy / incoming_action_final_mod`
   - `rule_mod` runtime core 热区完成拆分，现有测试名与 reachability 不漂移
 
 #### 当前执行结果
 
-- 已新增 `src/battle_core/content/formal_character_validator_registry.json`，运行时 `ContentSnapshotFormalCharacterRegistry` 现在只读取这份 code-side registry，不再直接读取 `docs/records/formal_character_registry.json`
-- `tests/gates/repo_consistency_formal_character_gate.py` 已改成双向校验 docs registry 与 runtime validator registry 的 `character_id / content_validator_script_path`
-- 已新增 `formal_character_validator_registry_runtime_contract`，直接断言 runtime validator registry 可加载且能实例化 validator
+- 历史状态：
+  - 本阶段曾短暂引入 `src/battle_core/content/formal_character_validator_registry.json` 作为 runtime read model
+  - 该方案已在 2026-04-05 被回收；当前正式口径是 `ContentSnapshotFormalCharacterRegistry` 直接读取 `docs/records/formal_character_registry.json`
+- `tests/gates/repo_consistency_formal_character_gate.py` 已围绕正式角色 registry 的字段、suite reachability、`sample_setup_method` 与 validator path 建立 gate；后续 2026-04-05 已继续收紧到“runtime loader 必须直读 docs registry，且不保留第二份 descriptor 列表”
+- 已新增 `formal_character_validator_registry_runtime_contract`，随后在 2026-04-05 收口为直接复用 runtime loader 的 registry runtime contract
 - 正式角色 registry 已补齐 `sample_setup_method`：
   - `gojo_satoru -> build_gojo_vs_sample_setup`
   - `sukuna -> build_sukuna_vs_sample_setup`
@@ -1119,12 +1183,13 @@
   - `python3 tests/gates/repo_consistency_docs_gate.py` 已通过
   - `bash tests/run_with_gate.sh` 已通过
 - 已完成（阶段三：formal registry / runtime validator / manager smoke / gate 收口）：
-  - 已新增 `src/battle_core/content/formal_character_validator_registry.json`；`ContentSnapshotFormalCharacterValidator` 运行时不再直接读取 `docs/records/formal_character_registry.json`
-  - `tests/gates/repo_consistency_formal_character_gate.py` 当前会强校验 docs registry 与 runtime validator registry 的 `content_validator_script_path` 完全对齐，避免双份注册表静默漂移
+  - 历史状态：本阶段曾短暂引入 `src/battle_core/content/formal_character_validator_registry.json`
+  - 该方案已在 2026-04-05 删除；当前 `ContentSnapshotFormalCharacterValidator` 统一经 `ContentSnapshotFormalCharacterRegistry` 直接读取 `docs/records/formal_character_registry.json`
+  - `tests/gates/repo_consistency_formal_character_gate.py` 当前已继续收口为围绕 docs registry 与 runtime loader 的单源检查，不再维护 docs/runtime 双向对齐
   - 正式角色 registry 已新增 `sample_setup_method`；`repo_consistency_formal_character_gate.py` 不再只看角色 ID 字符串，而会强校验 `SampleBattleFactory` 上存在对应 builder
   - 已新增 `SampleBattleFactory.build_sukuna_vs_sample_setup(...)`，让宿傩也有与五条悟 / 鹿紫云同口径的角色对样例建局入口
   - `gojo_manager_smoke_suite.gd` 与 `sukuna_manager_smoke_suite.gd` 已改成真正黑盒：通过公开 facade 驱动“两回合先受伤、再反转术式回血”的主路径，不再伸手访问 `manager._sessions` 或内部 battle state
-  - `README.md`、`battle_content_schema.md`、`formal_character_delivery_checklist.md` 与 `decisions.md` 已同步改成“docs registry 记录交付面，runtime 只读 code-side validator registry”的当前口径
+  - `README.md`、`battle_content_schema.md`、`formal_character_delivery_checklist.md` 与 `decisions.md` 的正式口径已在 2026-04-05 进一步收口为“docs registry 单一真相 + runtime loader 直接读取”
   - `python3 tests/gates/repo_consistency_formal_character_gate.py` 已通过
   - `bash tests/run_with_gate.sh` 已通过
 
