@@ -63,6 +63,60 @@
 #### 当前验证结果
 
 - `godot --headless --path . --script tests/run_all.gd` 通过
+
+### formal validator 补强与鹿紫云真实对局回归收口（已完成）
+
+- 目标：
+  - 把 formal validator 从“核心技能大框正确”收紧到“关键 payload 结构、标记生命周期和换装对局都被明确锁住”，避免在扩第 4 个角色前留下交付假阳性
+- 范围：
+  - `src/battle_core/content/content_snapshot_formal_gojo_validator.gd`
+  - `src/battle_core/content/content_snapshot_formal_kashimo_validator.gd`
+  - `src/battle_core/content/content_snapshot_formal_kashimo_charge_contracts.gd`
+  - `tests/support/kashimo_test_support.gd`
+  - `tests/suites/kashimo_suite.gd`
+  - `tests/suites/kashimo_charge_lifecycle_suite.gd`
+  - `tests/suites/kashimo_setup_loadout_suite.gd`
+  - `tests/suites/extension_validation_contract_suite.gd`
+  - `docs/records/formal_character_registry.json`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+  - `README.md`
+- 验收标准：
+  - Kashimo 的 formal validator 必须显式锁住 `apply / mark / consume` 三段电荷资源的 scope、trigger、payload 形状
+  - Gojo 的 `murasaki` 条件爆发必须锁死“1 个 damage + 2 个 remove_effect”的清理结构
+  - 鹿紫云必须补足“负电荷滚动上限 / 正电荷溢出与换人清空 / `弥虚葛笼` 真实对 Gojo 领域路径 / 换装技能组”回归
+  - `formal_character_registry.json` 必须把新增 suite 与测试名一起收进去
+  - `godot --headless --path . --script tests/run_all.gd`、`bash tests/check_repo_consistency.sh`、`bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - 已新增 `src/battle_core/content/content_snapshot_formal_kashimo_charge_contracts.gd`
+  - 已把 Kashimo formal validator 扩到：
+    - `kashimo_apply_negative_charge`
+    - `kashimo_apply_positive_charge`
+    - `kashimo_negative_charge_mark`
+    - `kashimo_positive_charge_mark`
+    - `kashimo_consume_positive_charges`
+    - `kashimo_consume_negative_charges`
+  - 已把 Gojo `gojo_murasaki_conditional_burst` 收紧为固定 3 段 payload：
+    - 第 1 段必须是 `damage`
+    - 第 2/3 段必须分别清掉 `gojo_ao_mark` / `gojo_aka_mark`
+  - 已新增回归：
+    - `tests/suites/kashimo_charge_lifecycle_suite.gd`
+    - `tests/suites/kashimo_setup_loadout_suite.gd`
+  - 已把 `KashimoSuite` wrapper 接入新增 suite
+  - 已给 `extension_validation_contract_suite.gd` 补 formal bad case：
+    - `formal_gojo_validator_murasaki_cleanup_bad_case_contract`
+    - `formal_kashimo_validator_charge_mark_bad_case_contract`
+  - 已把 registry 必需交付面补齐：
+    - `required_suite_paths`
+    - `required_test_names`
+  - 已把 README 代码规模统计更新到本批次真实值
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
 - `bash tests/check_repo_consistency.sh` 通过
 - `bash tests/run_with_gate.sh` 通过
 

@@ -16,6 +16,12 @@ func build_kashimo_setup(sample_factory, p1_regular_skill_overrides: Dictionary 
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
+func build_kashimo_vs_gojo_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}, p2_regular_skill_overrides: Dictionary = {}):
+    var battle_setup = build_kashimo_setup(sample_factory, p1_regular_skill_overrides, p2_regular_skill_overrides)
+    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
+    battle_setup.sides[1].starting_index = 0
+    return battle_setup
+
 func build_battle_state(core, content_index, battle_setup, seed: int):
     return _support.build_battle_state(core, content_index, battle_setup, seed)
 

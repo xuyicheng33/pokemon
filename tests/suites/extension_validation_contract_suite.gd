@@ -15,10 +15,12 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("extension_validation_contract", failures, Callable(self, "_test_extension_validation_contract").bind(harness))
     runner.run_test("formal_gojo_validator_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_bad_case_contract").bind(harness))
     runner.run_test("formal_gojo_validator_reverse_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_reverse_bad_case_contract").bind(harness))
+    runner.run_test("formal_gojo_validator_murasaki_cleanup_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_murasaki_cleanup_bad_case_contract").bind(harness))
     runner.run_test("formal_sukuna_validator_bad_case_contract", failures, Callable(self, "_test_formal_sukuna_validator_bad_case_contract").bind(harness))
     runner.run_test("formal_sukuna_validator_reverse_bad_case_contract", failures, Callable(self, "_test_formal_sukuna_validator_reverse_bad_case_contract").bind(harness))
     runner.run_test("formal_kashimo_validator_bad_case_contract", failures, Callable(self, "_test_formal_kashimo_validator_bad_case_contract").bind(harness))
     runner.run_test("formal_kashimo_validator_kyokyo_bad_case_contract", failures, Callable(self, "_test_formal_kashimo_validator_kyokyo_bad_case_contract").bind(harness))
+    runner.run_test("formal_kashimo_validator_charge_mark_bad_case_contract", failures, Callable(self, "_test_formal_kashimo_validator_charge_mark_bad_case_contract").bind(harness))
 
 func _test_extension_validation_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
@@ -325,6 +327,20 @@ func _test_formal_gojo_validator_reverse_bad_case_contract(harness) -> Dictionar
         return harness.fail_result("gojo formal validator should fail-fast when reverse_ritual mp_cost drifts")
     return harness.pass_result()
 
+func _test_formal_gojo_validator_murasaki_cleanup_bad_case_contract(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var murasaki_burst = content_index.effects.get("gojo_murasaki_conditional_burst", null)
+    if murasaki_burst == null or murasaki_burst.payloads.size() < 3:
+        return harness.fail_result("missing gojo_murasaki_conditional_burst cleanup payloads")
+    murasaki_burst.payloads[1].effect_definition_id = "gojo_aka_mark"
+    var errors: Array = content_index.validate_snapshot()
+    if not _has_error(errors, 'formal[gojo].murasaki_burst payload[1].effect_definition_id mismatch: expected "gojo_ao_mark" got "gojo_aka_mark"'):
+        return harness.fail_result("gojo formal validator should fail-fast when murasaki cleanup payload drifts")
+    return harness.pass_result()
+
 func _test_formal_sukuna_validator_bad_case_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
@@ -379,6 +395,20 @@ func _test_formal_kashimo_validator_kyokyo_bad_case_contract(harness) -> Diction
     var errors: Array = content_index.validate_snapshot()
     if not _has_error(errors, "formal[kashimo].kyokyo priority mismatch: expected 2 got 1"):
         return harness.fail_result("kashimo formal validator should fail-fast when kyokyo priority drifts")
+    return harness.pass_result()
+
+func _test_formal_kashimo_validator_charge_mark_bad_case_contract(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var negative_mark = content_index.effects.get("kashimo_negative_charge_mark", null)
+    if negative_mark == null:
+        return harness.fail_result("missing kashimo_negative_charge_mark")
+    negative_mark.max_stacks = 2
+    var errors: Array = content_index.validate_snapshot()
+    if not _has_error(errors, "formal[kashimo].negative_charge_mark max_stacks mismatch: expected 3 got 2"):
+        return harness.fail_result("kashimo formal validator should fail-fast when negative charge stack cap drifts")
     return harness.pass_result()
 
 

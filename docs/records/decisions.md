@@ -947,3 +947,18 @@
 - 原因：
   - 审查记录若继续把“允许 1 个 SCC”写成现在时，会直接和 gate、设计文档、当前代码相互打架。
   - Gojo formal validator 已逼近 220 行预警区，先按领域子域拆开，比等到越过 250 行再补救更省成本。
+
+### 74. 正式角色回归必须同时锁资源形状和真实对局路径；Kashimo 的对领域验收不再只靠手工注入（2026-04-05）
+
+- formal validator 当前对正式角色的职责继续明确为“两层一起锁”：
+  - 第一层：锁 `UnitDefinition / SkillDefinition / EffectDefinition` 的稳定资源形状
+  - 第二层：对容易漂移的关键 payload 顺序与 remove/apply 关系做结构性断言
+- 对 Kashimo 当前追加明确要求：
+  - `apply_negative_charge / apply_positive_charge / negative_charge_mark / positive_charge_mark / consume_positive_charges / consume_negative_charges` 必须都在 formal validator 中逐个点名校验
+  - `弥虚葛笼` 的正式交付验收必须至少保留 1 条真实 Gojo `无限空处` 对局路径，不能只靠直接塞 `field_state` 的合成场景
+- 测试分层当前统一为：
+  - 合成注入测试可以保留，用来快速锁局部 runtime 语义
+  - 但 formal registry 认定的角色交付面，必须额外包含真实装配/真实对局路径回归
+- 原因：
+  - 只锁资源存在性，不锁 payload 结构，最容易出现“资源 ID 没变但语义已漂移”的假通过。
+  - 只做手工注入，不做真实对局，最容易把换装、起手 MP、领域建立时机、行动顺序这类真实路径问题漏掉。

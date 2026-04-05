@@ -1,0 +1,130 @@
+extends RefCounted
+class_name KashimoChargeLifecycleSuite
+
+const EventTypesScript := preload("res://src/shared/event_types.gd")
+const KashimoTestSupportScript := preload("res://tests/support/kashimo_test_support.gd")
+
+var _support = KashimoTestSupportScript.new()
+
+func register_tests(runner, failures: Array[String], harness) -> void:
+	runner.run_test("kashimo_negative_charge_overflow_and_roll_contract", failures, Callable(self, "_test_kashimo_negative_charge_overflow_and_roll_contract").bind(harness))
+	runner.run_test("kashimo_positive_charge_overflow_and_switch_clear_contract", failures, Callable(self, "_test_kashimo_positive_charge_overflow_and_switch_clear_contract").bind(harness))
+
+func _test_kashimo_negative_charge_overflow_and_roll_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	content_index.units["sample_mossaur"].base_hp = 999
+	var battle_setup = _support.build_kashimo_setup(sample_factory)
+	battle_setup.sides[1].starting_index = 2
+	var battle_state = _support.build_battle_state(core, content_index, battle_setup, 841)
+	var target = battle_state.get_side("P2").get_active_unit()
+	if target == null:
+		return harness.fail_result("missing target unit for negative charge lifecycle contract")
+	var target_public_id := String(target.public_id)
+	var expected_tick = _support.calc_expected_fixed_effect_damage(core, content_index, "kashimo_negative_charge_mark", target)
+	if expected_tick <= 0:
+		return harness.fail_result("failed to resolve expected negative charge tick damage")
+	var expected_stacks_by_turn := {1: 1, 2: 2, 3: 3, 4: 2}
+	var expected_tick_counts_by_turn := {1: 1, 2: 2, 3: 3, 4: 3}
+	for turn_index in range(1, 5):
+		core.service("battle_logger").reset()
+		core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+			_support.build_manual_skill_command(core, turn_index, "P1", "P1-A", "kashimo_raiken"),
+			_support.build_manual_wait_command(core, turn_index, "P2", target_public_id),
+		])
+		var stack_count = _support.count_effect_instances(target, "kashimo_negative_charge_mark")
+		if stack_count != int(expected_stacks_by_turn[turn_index]):
+			return harness.fail_result("negative charge stack count mismatch on turn %d: expected=%d actual=%d" % [
+				turn_index,
+				int(expected_stacks_by_turn[turn_index]),
+				stack_count,
+			])
+		var tick_deltas := _collect_trigger_damage_deltas(core.service("battle_logger").event_log, target.unit_instance_id, "turn_end")
+		if tick_deltas.size() != int(expected_tick_counts_by_turn[turn_index]):
+			return harness.fail_result("negative charge tick count mismatch on turn %d: expected=%d actual=%d" % [
+				turn_index,
+				int(expected_tick_counts_by_turn[turn_index]),
+				tick_deltas.size(),
+			])
+		for tick_delta in tick_deltas:
+			if tick_delta != expected_tick:
+				return harness.fail_result("negative charge tick damage mismatch on turn %d: expected=%d actual=%d" % [
+					turn_index,
+					expected_tick,
+					tick_delta,
+				])
+	return harness.pass_result()
+
+func _test_kashimo_positive_charge_overflow_and_switch_clear_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = _support.build_battle_state(core, content_index, _support.build_kashimo_setup(sample_factory), 842)
+	var kashimo = battle_state.get_side("P1").get_active_unit()
+	if kashimo == null:
+		return harness.fail_result("missing kashimo active unit for positive charge lifecycle contract")
+	for turn_index in range(1, 4):
+		core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+			_support.build_manual_skill_command(core, turn_index, "P1", "P1-A", "kashimo_charge"),
+			_support.build_manual_wait_command(core, turn_index, "P2", "P2-A"),
+		])
+	if _support.count_effect_instances(kashimo, "kashimo_positive_charge_mark") != 3:
+		return harness.fail_result("positive charge should reach exactly three stacks after three casts")
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		_support.build_manual_skill_command(core, 4, "P1", "P1-A", "kashimo_charge"),
+		_support.build_manual_wait_command(core, 4, "P2", "P2-A"),
+	])
+	if _support.count_effect_instances(kashimo, "kashimo_positive_charge_mark") != 2:
+		return harness.fail_result("positive charge overflow cast should not create a fourth stack and oldest stack should roll off after turn_end")
+	var turn_start_ticks = _count_resource_mod_ticks(core.service("battle_logger").event_log, kashimo.unit_instance_id, "turn_start", 5)
+	if turn_start_ticks != 3:
+		return harness.fail_result("positive charge overflow turn should still emit exactly three +5 turn_start ticks, actual=%d" % turn_start_ticks)
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		_support.build_manual_switch_command(core, 5, "P1", "P1-A", "P1-B"),
+		_support.build_manual_wait_command(core, 5, "P2", "P2-A"),
+	])
+	if _support.count_effect_instances(kashimo, "kashimo_positive_charge_mark") != 0:
+		return harness.fail_result("positive charges should clear when kashimo leaves active slot")
+	return harness.pass_result()
+
+func _collect_trigger_damage_deltas(event_log: Array, target_instance_id: String, trigger_name: String) -> Array[int]:
+	var deltas: Array[int] = []
+	for event in event_log:
+		if event.event_type != EventTypesScript.EFFECT_DAMAGE:
+			continue
+		if String(event.target_instance_id) != target_instance_id:
+			continue
+		if String(event.trigger_name) != trigger_name:
+			continue
+		if event.value_changes.is_empty():
+			continue
+		deltas.append(abs(int(event.value_changes[0].delta)))
+	return deltas
+
+func _count_resource_mod_ticks(event_log: Array, target_instance_id: String, trigger_name: String, expected_delta: int) -> int:
+	var count := 0
+	for event in event_log:
+		if event.event_type != EventTypesScript.EFFECT_RESOURCE_MOD:
+			continue
+		if String(event.target_instance_id) != target_instance_id:
+			continue
+		if String(event.trigger_name) != trigger_name:
+			continue
+		if event.value_changes.is_empty():
+			continue
+		if int(event.value_changes[0].delta) != expected_delta:
+			continue
+		count += 1
+	return count
