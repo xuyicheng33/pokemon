@@ -21,6 +21,52 @@
 
 ## 2026-04-05
 
+### 审查问题修复收口：Gojo / Kashimo 正式角色 validator 收紧与 Kashimo 真实路径回归补齐（已完成）
+
+- 目标：
+  - 把 Gojo / Kashimo formal validator 从“角色资源存在”收紧到“关键机制形状必须正确”
+  - 补齐 Kashimo 电荷滚动、候选配招覆盖、以及对 Gojo 领域的真实对局回归
+  - 避免继续把角色复杂行为堆进单个巨型 suite
+- 范围：
+  - `src/battle_core/content/content_snapshot_formal_gojo_validator.gd`
+  - `src/battle_core/content/content_snapshot_formal_kashimo_validator.gd`
+  - `src/battle_core/content/content_snapshot_formal_kashimo_charge_contracts.gd`
+  - `tests/support/kashimo_test_support.gd`
+  - `tests/suites/kashimo_suite.gd`
+  - `tests/suites/kashimo_charge_lifecycle_suite.gd`
+  - `tests/suites/kashimo_setup_loadout_suite.gd`
+  - `tests/suites/extension_validation_contract_suite.gd`
+  - `docs/records/formal_character_registry.json`
+  - `README.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - Gojo `murasaki` 条件爆发必须锁住“1 个伤害 payload + 2 个移除标记 payload”的固定顺序
+  - Kashimo formal validator 必须锁住正负电荷的 apply / mark / consume 关键资源形状
+  - Kashimo 必须补上独立的 charge lifecycle suite 与 setup/loadout suite
+  - `kashimo_kyokyo_vs_gojo_unlimited_void_contract` 必须走 Gojo 真领域路径，而不是手工伪造结论
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成（批次 2）：
+  - 新增 `ContentSnapshotFormalKashimoChargeContracts`，把 `apply_negative / apply_positive / negative_mark / positive_mark / consume_positive / consume_negative` 六个关键 charge 资源收进 Kashimo formal validator
+  - `ContentSnapshotFormalGojoValidator` 已补 `gojo_murasaki_conditional_burst` 的 payload 顺序与移除目标校验，禁止再把双标记清理写歪
+  - Kashimo 测试拆成 `runtime / charge_lifecycle / setup_loadout / amber / manager_smoke` 多个 suite，避免继续往单文件里堆
+  - `kashimo_negative_charge_overflow_and_roll_contract` 已改成高 HP 观察目标，稳定锁住第 4 回合 `3 -> 2` 的滚动语义
+  - `kashimo_kyokyo_loadout_contract` 与 `kashimo_kyokyo_vs_gojo_unlimited_void_contract` 已补齐，前者锁候选技能装配，后者锁真实 Gojo 领域下的必中中和路径
+  - `extension_validation_contract_suite.gd` 已补 Gojo murasaki 清理坏例与 Kashimo charge mark 坏例
+  - `docs/records/formal_character_registry.json` 已登记新增 suite 与关键回归测试名
+  - `README.md` 代码规模统计已同步到当前仓库实测值
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
+
 ### 审查问题修复收口：runtime formal validator registry、cache 签名与 factory 错误口收边（已完成）
 
 - 目标：

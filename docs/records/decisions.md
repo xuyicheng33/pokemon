@@ -24,6 +24,16 @@
   - 同一路径下文件内容变化后，cache 必须 miss，不能继续复用旧 entry。
 - `BattleCoreManager` 的 container factory 错误路径当前只允许通过 `error_state()` port 回读错误，不再反向 reach-through `container_factory_owner.composer`。
 
+### 0.1 正式角色 formal validator 必须锁角色专有关键机制形状（2026-04-05）
+
+- 正式角色 formal validator 不再只校验“角色资源存在、基础字段没漂”；还必须锁住角色专有、最容易静默漂移的关键机制形状。
+- 当前已明确纳入 baseline 的例子：
+  - Gojo `gojo_murasaki_conditional_burst` 必须固定为 `damage + remove gojo_ao_mark + remove gojo_aka_mark`
+  - Kashimo 电荷体系必须固定校验 `apply mark / mark shape / consume all` 这组关键资源
+- 原因：
+  - 复杂角色最容易出问题的不是“文件丢了”，而是 payload 顺序、作用域、触发时机、remove 目标这些细节悄悄漂掉。
+  - 只靠文档存在性、wrapper suite 存在性，挡不住“角色还在，但核心机制已经偏了”的假阳性。
+
 ### 1. 规则、设计、记录的职责分层固定
 
 - `docs/rules/` 是当前生效规则权威。
