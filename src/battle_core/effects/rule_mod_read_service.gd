@@ -97,6 +97,24 @@ func has_nullify_field_accuracy(battle_state, owner_id: String) -> bool:
             is_enabled = bool(rule_mod_instance.value)
     return is_enabled
 
+func resolve_incoming_heal_final_multiplier(battle_state, owner_id: String) -> float:
+    _reset_error_state()
+    if battle_state.get_unit(owner_id) == null:
+        return 1.0
+    var final_multiplier: float = 1.0
+    var ordered_instances: Array = _sorted_active_instances_for_read(battle_state, owner_id)
+    for rule_mod_instance in ordered_instances:
+        if rule_mod_instance.mod_kind != ContentSchemaScript.RULE_MOD_INCOMING_HEAL_FINAL_MOD:
+            continue
+        match rule_mod_instance.mod_op:
+            "mul":
+                final_multiplier *= float(rule_mod_instance.value)
+            "add":
+                final_multiplier += float(rule_mod_instance.value)
+            "set":
+                final_multiplier = float(rule_mod_instance.value)
+    return final_multiplier
+
 func resolve_incoming_action_final_multiplier(battle_state, owner_id: String, command_type: String, combat_type_id: String) -> float:
     _reset_error_state()
     if battle_state.get_unit(owner_id) == null:

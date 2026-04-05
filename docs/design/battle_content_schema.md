@@ -75,6 +75,7 @@
 - 当前仓库里的宿傩已按正式字段落盘：默认技能组为 `解 / 捌 / 开`，`反转术式` 作为候选常规技能保留在 `candidate_skill_ids` 中。
 - 当前仓库里的 Gojo 也已按正式字段落盘：默认技能组为 `苍 / 赫 / 茈`，奥义点 contract 为 `3 / 3 / 1`。
 - 当前仓库里的 Kashimo 也已按正式字段落盘：默认技能组为 `雷拳 / 蓄电 / 回授电击`，`弥虚葛笼` 作为候选常规技能保留在 `candidate_skill_ids` 中，奥义点 contract 同样为 `3 / 3 / 1`。
+- 当前仓库里以 Gojo / Sukuna / Kashimo 为原有正式角色基线，并已新增 Obito：默认技能组为 `求道焦土 / 阴阳遁 / 求道玉`，`六道十字奉火` 作为候选常规技能保留在 `candidate_skill_ids` 中，奥义 `十尾尾兽玉` 通过 `damage_segments` 表达十段伤害。
 
 ### 3.3 SkillDefinition
 
@@ -92,6 +93,11 @@
 |`power_bonus_self_effect_ids`|`PackedStringArray`|`effect_stack_sum` 时统计自身 effect 层数的定义 ID 列表|
 |`power_bonus_target_effect_ids`|`PackedStringArray`|`effect_stack_sum` 时统计目标 effect 层数的定义 ID 列表|
 |`power_bonus_per_stack`|`int`|`effect_stack_sum` 时每层额外增加的威力|
+|`execute_target_hp_ratio_lte`|`float`|可选；命中后、常规伤害前的目标血线处决阈值|
+|`execute_required_total_stacks`|`int`|可选；触发处决所需的总层数门槛|
+|`execute_self_effect_ids`|`PackedStringArray`|可选；处决层数统计时要读取的自身 effect 定义 ID|
+|`execute_target_effect_ids`|`PackedStringArray`|可选；处决层数统计时要读取的目标 effect 定义 ID|
+|`damage_segments`|`Array[Resource]`|可选；多段主动伤害定义，元素固定为 `SkillDamageSegment`|
 |`targeting`|`String`|`enemy_active_slot / self / field`|
 |`is_domain_skill`|`bool`|是否属于领域技能；用于合法性与领域冲突规则|
 |`effects_on_cast_ids`|`PackedStringArray`|施放触发效果 ID|
@@ -102,6 +108,21 @@
 优先级硬约束：
 - 普通技能（出现在任意单位 `skill_ids` 或 `candidate_skill_ids`）只能是 `-2..+2`。
 - 奥义（被任意单位 `ultimate_skill_id` 引用）只能是 `+5/-5`。
+
+补充语义：
+
+- `execute_*` 当前固定表示“命中后、常规直接伤害前”的技能级处决 contract；满足时直接把目标 HP 置 `0`，并写一条追加 `[execute]` 标记的伤害日志。
+- `damage_segments` 当前固定只描述“主动技能命中后的逐段直接伤害”；整招仍然只有一次命中判定与一条行动日志。
+- 若 `damage_segments` 非空，顶层 `power` 仍需保留合法正整数，以满足当前技能加载期的伤害技能校验；实际分段伤害以 `damage_segments` 为准。
+
+### 3.3.1 SkillDamageSegment
+
+|字段|类型|说明|
+|---|---|---|
+|`repeat_count`|`int`|该段重复次数；运行时会先展开成逐段伤害序列|
+|`power`|`int`|该段威力|
+|`combat_type_id`|`String`|该段的技能属性；空串表示无属性|
+|`damage_kind`|`String`|该段攻防路径；当前只允许 `physical / special`|
 
 ### 3.4 PassiveSkillDefinition / PassiveItemDefinition
 
@@ -148,6 +169,7 @@
 - `required_target_same_owner=true` 时，前置检查除“目标持有这些 effect”外，还要求这些 effect instance 的 `meta.source_owner_id` 与当前 effect owner 一致；该字段当前统一通过 owner helper 生成/读取，缺失时运行时直接按 `invalid_state_corruption` 处理。
 - `required_incoming_command_types / required_incoming_combat_type_ids` 只允许出现在 `trigger_names` 包含 `on_receive_action_hit` 的 effect 上；动作类型当前只允许 `skill / ultimate`，属性过滤必须命中已注册 `combat_type`。
 - `scope=action_actor` 只允许用于 `trigger_names = [on_receive_action_hit]` 的 effect；该作用域的单位目标固定读取 `ChainContext.action_actor_id`。
+- `on_receive_action_damage_segment` 当前是多段主动伤害的逐段触发口；它和 `on_receive_action_hit` 并存，前者“每个成功结算段一次”，后者仍保持“整次来袭行动一次”。
 - `max_stacks` 只允许和 `stacking=stack` 一起声明；`-1` 表示不封顶，正整数表示硬上限。
 - `apply_field` payload requires `scope=field`；当前不允许把 `apply_field` 挂在 `self / target / action_actor` effect 上。
 - `damage / heal / resource_mod / stat_mod / apply_effect / remove_effect` 只允许 `scope=self / target / action_actor`；`scope=field` 会在加载期直接判非法，避免运行时静默 no-op。
@@ -235,6 +257,7 @@
 |`amount`|`int`|固定治疗量|
 |`use_percent`|`bool`|是否改为按目标 `max_hp` 百分比结算|
 |`percent`|`float`|百分比数值；`use_percent = true` 时生效|
+|`percent_base`|`String`|百分比治疗基准；当前允许 `max_hp / missing_hp`|
 
 ### 4.3 RuleModPayload
 
@@ -252,15 +275,16 @@
 
 补充约束：
 
-- `mod_kind` 当前实现白名单以 `docs/rules/06_effect_schema_and_extension.md` 为准，当前包含 `final_mod / mp_regen / action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod`。
+- `mod_kind` 当前实现白名单以 `docs/rules/06_effect_schema_and_extension.md` 为准，当前包含 `final_mod / mp_regen / action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod / incoming_heal_final_mod`。
 - `action_legality` 是当前覆盖技能 / 奥义 / 换人的正式合法性读取点；当前显式 managed action 白名单固定为 `skill / ultimate / switch`，`wait / resource_forced_default / surrender` 永不受其影响。
 - `matchup_bst_gap_band` 当前按双方 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值，`max_mp` 视为正式第七维。
 - `mp_regen.value` 当前要求为 `int`；若启用 `dynamic_value_formula`，其输出和默认值也必须是整数值，运行时遇到非整数结果会直接视为 `invalid_rule_mod_definition`。
 - `incoming_accuracy.value` 当前要求为 `int`，并且禁止 `dynamic_value_formula`。
 - `nullify_field_accuracy.value` 当前要求为 `bool`，语义固定为“忽略领域附加必中，不影响技能原生命中率”。
 - `incoming_action_final_mod.value` 当前要求为数值；`required_incoming_command_types / required_incoming_combat_type_ids` 也只允许挂在这一类 rule_mod 上。
+- `incoming_heal_final_mod.value` 当前要求为数值，并且禁止 `dynamic_value_formula`；目标侧治疗末端读取只允许通过这一类 rule_mod 接入。
 - `persists_on_switch=true` 的 rule_mod 只允许 `scope=self/target`；`field` scope 非法。
-- `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 当前正式支持多来源并存；来源分组优先级固定为 `stacking_source_key -> effect_definition_id -> source_instance_id`，同来源组内继续按 `none / refresh / replace` 处理。
+- `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod / incoming_heal_final_mod` 当前正式支持多来源并存；来源分组优先级固定为 `stacking_source_key -> effect_definition_id -> source_instance_id`，同来源组内继续按 `none / refresh / replace` 处理。
 - `refresh` 的正式语义固定为“同实例续命并刷新来源元数据”；当前 effect / rule_mod 两条链保持一致，不再允许出现一边只续命、一边还改来源的分叉口径。
 
 实现状态说明（2026-03-25）：
@@ -287,13 +311,15 @@
 - `BattleFormatConfig.default_recoil_ratio / domain_clash_tie_threshold` 必须落在 `0.0..1.0`。
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
+- `SkillDefinition.execute_*` 的加载期校验固定包含：血线阈值必须落在 `0.0..1.0`、层数门槛不得为负、层数门槛存在时必须至少声明一侧 `execute_*_effect_ids`，且技能本身必须是可对敌造成伤害的主动技能。
+- `SkillDefinition.damage_segments` 的加载期校验固定包含：`targeting=enemy_active_slot`、顶层 `damage_kind != none`、每段 `repeat_count > 0`、每段 `power > 0`、每段 `damage_kind in {physical, special}`、每段属性必须命中已注册 `combat_type` 或为空串。
 - `SkillDefinition.is_domain_skill` 与其实际 `apply_field` 目标必须一致：领域技能必须施加 `field_kind=domain` 的 field；施加 `domain` field 的技能也必须声明 `is_domain_skill=true`。
-- 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单（含 `on_matchup_changed`、`on_receive_action_hit`、`stack`）、效果优先级范围、`max_stacks` 合法性、payload 类型与跨资源引用完整性。
+- 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单（含 `on_matchup_changed`、`on_receive_action_hit`、`on_receive_action_damage_segment`、`stack`）、效果优先级范围、`max_stacks` 合法性、payload 类型与跨资源引用完整性。
 - `ApplyFieldPayload.on_success_effect_ids` 的引用必须全部存在，且被引用 effect 必须声明 `trigger_names` 包含 `field_apply_success`。
 - `required_target_effects` 的加载期校验固定包含：非空项、去重、引用存在性、以及 `scope=target` 约束；若 `required_target_same_owner=true`，则同时要求 `required_target_effects` 非空且 effect `scope=target`。
 - `required_incoming_command_types / required_incoming_combat_type_ids` 的加载期校验固定包含：只允许 `on_receive_action_hit` effect 使用、不得含空项、动作类型只允许 `skill / ultimate`、属性过滤必须命中已注册 `combat_type`。
 - field 校验覆盖：`field_kind in {normal, domain}`、`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
-- payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`StatModPayload.retention_mode in {normal, persist_on_switch}`、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
+- payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent` 且 `percent_base in {max_hp, missing_hp}`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`StatModPayload.retention_mode in {normal, persist_on_switch}`、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
 - 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；`docs/records/formal_character_registry.json` 是角色交付元数据与可选 `content_validator_script_path` 的单一登记源，runtime 由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 读取该 registry 并动态装配 validator；validator 只会对当前 snapshot 实际出现的正式角色执行角色级校验，repo consistency gate 负责锁 registry 完整性、suite 注册链与文档锚点。
 - 内容快照校验失败直接 fail-fast，不进入运行态。
 

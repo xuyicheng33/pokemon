@@ -74,6 +74,61 @@
   - 正式角色 validator 的职责是锁“当前交付内容有没有漂”，不是强迫所有局部快照都携带整仓正式角色资源。
   - 角色数量继续增长后，如果 validator 仍对缺席角色逐个硬炸，内容校验会快速失去定位价值。
 
+### 0.6 百分比治疗正式扩成 `max_hp / missing_hp` 双基准，并引入 `incoming_heal_final_mod` 作为目标侧末端读取点（2026-04-05）
+
+- `HealPayload.percent_base` 当前正式支持：
+  - `max_hp`
+  - `missing_hp`
+- `missing_hp` 口径固定为：
+  - 基数 = `target.max_hp - target.current_hp`
+  - 治疗量 = `floor(base * percent / 100)`
+  - 只要 `missing_hp > 0` 且本次治疗合法，百分比治疗至少回复 `1`
+- 目标侧治疗末端读取点当前固定新增为 `incoming_heal_final_mod`，并作为正式 `rule_mod` 白名单的一部分。
+- 该读取点统一在“基础治疗量解出之后、最终 HP clamp 之前”应用；最终治疗值若 `<= 0`，不写 `effect:heal` 日志。
+- 原因：
+  - 带土的 `仙人之力` 与禁疗需要共享化的“缺失生命百分比治疗 + 目标侧禁疗”能力，不能继续靠角色专用 runtime 分支落地。
+  - 用数值倍率语义的 `incoming_heal_final_mod`，比布尔禁疗开关更利于后续角色复用和 formal validator 锁定。
+
+### 0.7 技能级 `execute_*` 处决 contract 正式纳入 `SkillDefinition`（2026-04-05）
+
+- `SkillDefinition` 当前正式新增：
+  - `execute_target_hp_ratio_lte`
+  - `execute_required_total_stacks`
+  - `execute_self_effect_ids`
+  - `execute_target_effect_ids`
+- 判定时机固定为：
+  - 技能命中后
+  - 常规直接伤害前
+- 若处决条件成立：
+  - 目标 HP 直接归零
+  - 仍写一条正常 `effect:damage` 公开日志
+  - `payload_summary` 追加 `[execute]`
+  - 常规伤害链不再继续执行
+- 若条件不成立：
+  - 完整回退到原有直接伤害路径
+- 原因：
+  - 这类机制已经不是单角色特例；若继续把“低血斩杀”写进角色专用分支，扩角时会直接破坏主线架构清晰度。
+  - 技能级 schema 明确后，内容校验、formal validator、runtime suite 和 manager facade 才能对齐同一套语义。
+
+### 0.8 共享多段主动伤害与逐段触发正式落入主线，`on_receive_action_hit` 旧语义保持不变（2026-04-05）
+
+- `SkillDefinition.damage_segments` 当前已成为正式共享能力；多段主动伤害统一按段展开并逐段结算。
+- `ChainContext` 当前正式补入：
+  - `action_segment_index`
+  - `action_segment_total`
+  - `action_combat_type_id`
+- 新增逐段触发口：
+  - `on_receive_action_damage_segment`
+- 旧语义明确保持不变：
+  - `on_receive_action_hit` 仍然只表示“整次来袭行动命中一次”
+  - 不因多段技能自动升级成“每段一次”
+- 公开日志 contract 保持不升级 schema：
+  - 每段继续写现有 `effect:damage`
+  - 通过 `payload_summary segment i/n` 暴露段序
+- 原因：
+  - 带土的奥义和阴阳遁都需要“逐段伤害、逐段减伤、逐段叠层”，但鹿紫云现有 `on_receive_action_hit` 等旧角色路径不能被一起改坏。
+  - 通过新增逐段 trigger，而不是改写旧 trigger 语义，可以让共享多段能力进入主线，同时保持旧角色 contract 稳定。
+
 ### 1. 规则、设计、记录的职责分层固定
 
 - `docs/rules/` 是当前生效规则权威。

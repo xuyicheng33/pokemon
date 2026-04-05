@@ -21,6 +21,7 @@ func validate(content_index, errors: Array) -> void:
         "on_faint",
         "on_kill",
         ContentSchemaScript.TRIGGER_ON_RECEIVE_ACTION_HIT,
+        ContentSchemaScript.TRIGGER_ON_RECEIVE_ACTION_DAMAGE_SEGMENT,
         "on_matchup_changed",
         "field_apply",
         ContentSchemaScript.TRIGGER_FIELD_APPLY_SUCCESS,

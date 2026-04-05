@@ -69,6 +69,8 @@
 |`target_slot`|`Variant`|当前链目标槽位|
 |`action_actor_id`|`Variant`|来袭动作的施法者实例 ID；`on_receive_action_hit` / `scope=action_actor` 读取这个字段|
 |`action_combat_type_id`|`Variant`|来袭技能或奥义的 `combat_type_id` 快照；供受击前置与来袭伤害修正读取|
+|`action_segment_index`|`int`|多段主动伤害的当前段序号；非多段路径固定为 `0`|
+|`action_segment_total`|`int`|多段主动伤害总段数；非多段路径固定为 `0`|
 |`chain_depth`|`int`|当前 effect 递归深度；超过 `max_chain_depth` 必须 fail-fast|
 |`effect_dedupe_keys`|`Dictionary`|同链 effect 递归防抖键集合；当前按稳定语义键去重，避免递归重派发死循环|
 |`defer_field_apply_success`|`bool`|同回合双开领域时，先手领域若仍需等待对拼结果，则先延后 `field_apply_success` 附带效果|
@@ -76,7 +78,7 @@
 补充说明：
 
 - `effect_dedupe_keys` 当前用于拦截“同链、同语义”的 effect 重复派发；它不等于全局去重，不得跨链复用。
-- `action_actor_id / action_combat_type_id` 是 `on_receive_action_hit` 链的正式上下文字段；禁止再从日志或外层命令对象反推。
+- `action_actor_id / action_combat_type_id / action_segment_index / action_segment_total` 是受击链的正式上下文字段；`on_receive_action_hit` 读取整次来袭动作，`on_receive_action_damage_segment` 读取逐段上下文，禁止再从日志或外层命令对象反推。
 - `copy_shallow()` 必须复制 `effect_dedupe_keys` 与当前链关键定位字段，保证派生链不会共享同一个可变字典实例。
 
 ## 5. SideState
@@ -167,7 +169,7 @@
 |字段|类型|说明|
 |---|---|---|
 |`instance_id`|`String`|实例 ID|
-|`mod_kind`|`String`|`final_mod / mp_regen / action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod`|
+|`mod_kind`|`String`|`final_mod / mp_regen / action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod / incoming_heal_final_mod`|
 |`mod_op`|`String`|`mul / add / set / allow / deny`|
 |`value`|`Variant`|运算值|
 |`scope`|`String`|生效域（如 `self / field`）|
@@ -182,14 +184,14 @@
 |`source_kind_order`|`int`|来源类型|
 |`source_order_speed_snapshot`|`int`|速度快照|
 |`persists_on_switch`|`bool`|非击倒离场时是否保留该规则修正|
-|`source_stacking_key`|`String`|多来源分组键；当前供 `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 使用|
+|`source_stacking_key`|`String`|多来源分组键；当前供 `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod / incoming_heal_final_mod` 使用|
 |`priority`|`int`|读取顺序优先级|
 
 补充说明：
 
-- `action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 已是当前运行态 contract 的正式组成部分。
+- `action_legality / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod / incoming_heal_final_mod` 已是当前运行态 contract 的正式组成部分。
 - `action_legality` 当前显式只管理 `skill / ultimate / switch`；`wait / resource_forced_default / surrender` 永远不进入其封禁面。
-- `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod` 当前按“来源分组内走 stacking、不同来源组并存”的主线语义运行；`source_stacking_key` 的解析优先级为 `payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
+- `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod / incoming_heal_final_mod` 当前按“来源分组内走 stacking、不同来源组并存”的主线语义运行；`source_stacking_key` 的解析优先级为 `payload.stacking_source_key -> effect_definition_id -> source_instance_id`。
 - `persists_on_switch=true` 的 unit rule mod 在非击倒离场后继续保留；`faint` 仍然清空全部 unit rule mod。
 - `stacking=refresh` 的 rule mod 当前固定保留同一 runtime instance，并同步刷新 `remaining / source_instance_id / source_kind_order / source_order_speed_snapshot`。
 

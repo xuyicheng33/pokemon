@@ -20,6 +20,9 @@ const AdapterContractSuiteScript := preload("res://tests/suites/adapter_contract
 const CompositionContainerContractSuiteScript := preload("res://tests/suites/composition_container_contract_suite.gd")
 const TriggerValidationSuiteScript := preload("res://tests/suites/trigger_validation_suite.gd")
 const PowerBonusRuntimeSuiteScript := preload("res://tests/suites/power_bonus_runtime_suite.gd")
+const HealExtensionSuiteScript := preload("res://tests/suites/heal_extension_suite.gd")
+const SkillExecuteContractSuiteScript := preload("res://tests/suites/skill_execute_contract_suite.gd")
+const MultihitSkillRuntimeSuiteScript := preload("res://tests/suites/multihit_skill_runtime_suite.gd")
 const PersistentStatStageSuiteScript := preload("res://tests/suites/persistent_stat_stage_suite.gd")
 const PassiveItemContractSuiteScript := preload("res://tests/suites/passive_item_contract_suite.gd")
 const ContentSnapshotCacheComposerSuiteScript := preload("res://tests/suites/content_snapshot_cache_composer_suite.gd")
@@ -50,6 +53,9 @@ func _init() -> void:
         CompositionContainerContractSuiteScript.new(),
         TriggerValidationSuiteScript.new(),
         PowerBonusRuntimeSuiteScript.new(),
+        HealExtensionSuiteScript.new(),
+        SkillExecuteContractSuiteScript.new(),
+        MultihitSkillRuntimeSuiteScript.new(),
         PersistentStatStageSuiteScript.new(),
         ContentSnapshotCacheComposerSuiteScript.new(),
         PassiveItemContractSuiteScript.new(),

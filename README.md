@@ -13,7 +13,7 @@
   - `combat_type` 战斗属性系统（单位 `0..2`、技能 `0..1`、显式克制表）
   - `ultimate_points` 奥义点资源、公开快照与合法性校验
   - `on_matchup_changed`、field 生命周期（自然到期 / 提前打断 / 领域对拼 / 普通 field 阻断 / 成功后附带效果）、被动技能、被动持有物、受限 rule_mod
-  - 默认装配可直接加载的 Gojo / Sukuna / Kashimo 正式角色原型内容包
+  - 默认装配可直接加载的 Gojo / Sukuna / Kashimo / Obito 正式角色原型内容包
   - deterministic 回放（同输入同结果）
   - 完整日志契约（`log_schema_version = 3`）
 - 明确不做：通用状态包、暴击、STAB、属性免疫、主动道具、多目标/双打
@@ -189,6 +189,9 @@ tests/run_with_gate.sh
 - `EffectDefinition.stacking` 已开放 `stack`
 - `FieldDefinition` 已包含 `on_expire_effect_ids / on_break_effect_ids / creator_accuracy_override`
 - 触发点当前包含 `field_apply / field_break / field_expire / on_expire`，并要求引用关系与触发器声明一致
+- `HealPayload.percent_base` 已正式支持 `max_hp / missing_hp`；目标侧 `incoming_heal_final_mod` 作为共享治疗末端读取点接入主线
+- `SkillDefinition` 已正式支持 `execute_target_hp_ratio_lte / execute_required_total_stacks / execute_self_effect_ids / execute_target_effect_ids / damage_segments`
+- `ContentSchema` 已新增 `on_receive_action_damage_segment`；多段主动伤害逐段结算时，会通过 `ChainContext.action_segment_index / action_segment_total / action_combat_type_id` 暴露当前段上下文
 - field 持续时间不写在 `FieldDefinition`；由施加它的 `EffectDefinition.duration / decrement_on` 决定
 - `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 rule_mod 使用；该公式按 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值）
 - `BattleFormatConfig` 已包含 `visibility_mode / selection_deadline_ms / max_chain_depth / default_recoil_ratio / domain_clash_tie_threshold`
@@ -205,6 +208,7 @@ tests/run_with_gate.sh
 - `Gojo`：默认技能组 `苍 / 赫 / 茈`（`gojo_ao / gojo_aka / gojo_murasaki`），候选技能池 `candidate_skill_ids = 苍 / 赫 / 茈 / 反转术式`，奥义 `无量空处`，被动 `无下限`，奥义点 `required=3 / cap=3 / regular skill cast +1`
 - `宿傩`：默认技能组 `解 / 捌 / 开`（`sukuna_kai / sukuna_hatsu / sukuna_hiraku`），奥义 `伏魔御厨子`，被动 `教会你爱的是...`，候选技能池 `candidate_skill_ids = 解 / 捌 / 开 / 反转术式`，奥义点 `required=3 / cap=3 / regular skill cast +1`；MP 回复按“基础 `12` + 对位追加值”结算
 - `Kashimo`：默认技能组 `雷拳 / 蓄电 / 回授电击`（`kashimo_raiken / kashimo_charge / kashimo_feedback_strike`），候选技能池 `candidate_skill_ids = 雷拳 / 蓄电 / 回授电击 / 弥虚葛笼`，奥义 `幻兽琥珀`，被动 `电荷分离`，奥义点 `required=3 / cap=3 / regular skill cast +1`
+- `Obito`：默认技能组 `求道焦土 / 阴阳遁 / 求道玉`（`obito_qiudao_jiaotu / obito_yinyang_dun / obito_qiudao_yu`），候选技能池 `candidate_skill_ids = 求道焦土 / 阴阳遁 / 求道玉 / 六道十字奉火`，奥义 `十尾尾兽玉`，被动 `仙人之力`，奥义点 `required=3 / cap=3 / regular skill cast +1`
 - `poison` 已作为正式 `combat_type` 接入主线；仓库内同时保留独立样例技能 `sample_poison_sting` 与对应 runtime suite，用来验证它不是鹿紫云专属的临时标签
 - prototype 额外内置一个最小正式 passive item 样例：`sample_attack_charm` 绑定到 `sample_pyron_charm`，用于锁被动持有物的内容加载、公开快照、manager 黑盒与 replay 主路径
 - 赛前覆盖：`SideSetup.regular_skill_loadout_overrides` 可把候选常规技能换入本场装配；未提供覆盖时，行为等价于使用默认 `skill_ids`
@@ -229,13 +233,14 @@ tests/run_with_gate.sh
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 - 当前仓库已内置两组固定诊断入口：`tests/helpers/domain_case_runner.gd`（领域）与 `tests/helpers/kashimo_case_runner.gd`（鹿紫云）
+- 若角色依赖共享扩展（如 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、`execute_*`、`damage_segments`、`on_receive_action_damage_segment`），则必须把对应共享 suite 一并挂回正式角色 registry
 
 当前已落地的固定案例入口：
 
 - `tests/replay_cases/domain_cases.md`：领域与对拼复查
 - `tests/replay_cases/kashimo_cases.md`：鹿紫云电荷主循环 / 琥珀换人 / 弥虚葛笼对 Gojo 真领域复查
 
-当前 Gojo、Sukuna 与 Kashimo 都必须满足这套交付面，后续新角色默认沿用。
+当前 Gojo、Sukuna、Kashimo 与 Obito 都必须满足这套交付面，后续新角色默认沿用。
 
 ## 9. 日志与回放契约
 
@@ -249,9 +254,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-05）
 
-- `src/**/*.gd`：`13024` 行
-- `tests/**/*.gd`：`16676` 行
-- GDScript 合计：`29700` 行
+- `src/**/*.gd`：`13806` 行
+- `tests/**/*.gd`：`18377` 行
+- GDScript 合计：`32183` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

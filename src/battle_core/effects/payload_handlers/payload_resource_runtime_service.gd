@@ -8,6 +8,7 @@ var battle_logger
 var log_event_builder
 var target_helper
 var effect_event_helper
+var rule_mod_service
 
 func resolve_missing_dependency() -> String:
     if battle_logger == null:
@@ -18,6 +19,8 @@ func resolve_missing_dependency() -> String:
         return "target_helper"
     if effect_event_helper == null:
         return "effect_event_helper"
+    if rule_mod_service == null:
+        return "rule_mod_service"
     return ""
 
 func apply_heal_payload(payload, effect_definition, effect_event, battle_state) -> void:
@@ -26,7 +29,18 @@ func apply_heal_payload(payload, effect_definition, effect_event, battle_state) 
         return
     var resolved_amount: int = int(payload.amount)
     if bool(payload.use_percent):
-        resolved_amount = max(1, int(floor(float(target_unit.max_hp) * float(payload.percent) / 100.0)))
+        var percent_base := int(target_unit.max_hp)
+        if String(payload.percent_base) == "missing_hp":
+            percent_base = max(0, int(target_unit.max_hp) - int(target_unit.current_hp))
+        if percent_base <= 0:
+            resolved_amount = 0
+        else:
+            resolved_amount = max(1, int(floor(float(percent_base) * float(payload.percent) / 100.0)))
+    var incoming_heal_multiplier: float = rule_mod_service.resolve_incoming_heal_final_multiplier(
+        battle_state,
+        target_unit.unit_instance_id
+    )
+    resolved_amount = max(0, int(floor(float(resolved_amount) * incoming_heal_multiplier)))
     _apply_resource_like_change(
         battle_state,
         effect_event,
@@ -54,6 +68,8 @@ func apply_resource_mod_payload(payload, effect_definition, effect_event, battle
     )
 
 func _apply_resource_like_change(battle_state, effect_event, target_unit, resource_name: String, delta: int, event_type: String, summary_tag: String, max_value: int) -> void:
+    if delta == 0:
+        return
     var before_value: int = _read_resource_value(target_unit, resource_name)
     var after_value: int = clamp(before_value + delta, 0, max_value)
     if before_value == after_value:

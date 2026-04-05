@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/apply_effect_payload.gd" id="2"]
+[ext_resource type="Script" path="res://src/battle_core/content/stat_mod_payload.gd" id="3"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "apply_effect"
+effect_definition_id = "obito_yinyang_zhili"
+
+[sub_resource type="Resource" id="2"]
+script = ExtResource("3")
+payload_type = "stat_mod"
+stat_name = "defense"
+stage_delta = 1
+retention_mode = "normal"
+
+[sub_resource type="Resource" id="3"]
+script = ExtResource("3")
+payload_type = "stat_mod"
+stat_name = "sp_defense"
+stage_delta = 1
+retention_mode = "normal"
+
+[resource]
+script = ExtResource("1")
+id = "obito_yinyang_dun_boost_and_charge"
+display_name = "阴阳遁·强化与蓄力"
+scope = "self"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_cast")
+payloads = Array[Resource]([SubResource("1"), SubResource("2"), SubResource("3")])

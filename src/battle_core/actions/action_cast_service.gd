@@ -86,13 +86,14 @@ func is_damage_action(command, skill_definition) -> bool:
         return true
     return skill_definition != null and skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and skill_definition.power > 0
 
-func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, cause_event_id: String) -> void:
-    action_cast_direct_damage_pipeline.apply_direct_damage(
+func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, content_index, cause_event_id: String) -> Dictionary:
+    return action_cast_direct_damage_pipeline.apply_direct_damage(
         queued_action,
         actor,
         target,
         skill_definition,
         battle_state,
+        content_index,
         cause_event_id,
         SOURCE_KIND_ORDER_ACTIVE_SKILL
     )

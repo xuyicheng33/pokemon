@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="PassiveSkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/passive_skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "obito_xianren_zhili"
+display_name = "仙人之力"
+trigger_names = PackedStringArray("turn_start")
+effect_ids = PackedStringArray("obito_xianren_zhili_heal")

@@ -4,3 +4,4 @@ class_name HealPayload
 @export var amount: int = 0
 @export var use_percent: bool = false
 @export var percent: int = 0
+@export var percent_base: String = "max_hp"

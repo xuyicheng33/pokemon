@@ -25,6 +25,7 @@ const FIELD_KIND_DOMAIN := "domain"
 
 const TRIGGER_FIELD_APPLY_SUCCESS := "field_apply_success"
 const TRIGGER_ON_RECEIVE_ACTION_HIT := "on_receive_action_hit"
+const TRIGGER_ON_RECEIVE_ACTION_DAMAGE_SEGMENT := "on_receive_action_damage_segment"
 
 const RULE_MOD_FINAL_MOD := "final_mod"
 const RULE_MOD_MP_REGEN := "mp_regen"
@@ -32,6 +33,7 @@ const RULE_MOD_ACTION_LEGALITY := "action_legality"
 const RULE_MOD_INCOMING_ACCURACY := "incoming_accuracy"
 const RULE_MOD_NULLIFY_FIELD_ACCURACY := "nullify_field_accuracy"
 const RULE_MOD_INCOMING_ACTION_FINAL_MOD := "incoming_action_final_mod"
+const RULE_MOD_INCOMING_HEAL_FINAL_MOD := "incoming_heal_final_mod"
 
 const ACTION_LEGALITY_ALL := "all"
 const ACTION_LEGALITY_SKILL := "skill"

@@ -103,7 +103,12 @@ func log_action_hit(queued_action, battle_state, command, target_instance_id: Va
     battle_logger.append_event(log_event)
     return log_event_builder.resolve_event_id(log_event)
 
-func log_damage(queued_action, battle_state, actor, target, damage_amount: int, value_change, type_effectiveness: float, cause_event_id: String) -> Variant:
+func log_damage(queued_action, battle_state, actor, target, damage_amount: int, value_change, type_effectiveness: float, cause_event_id: String, segment_index: int = 0, segment_total: int = 0, summary_suffix: String = "") -> Variant:
+    var payload_summary := "%s dealt %d damage to %s" % [actor.public_id, damage_amount, target.public_id]
+    if segment_index > 0 and segment_total > 0:
+        payload_summary += " [segment %d/%d]" % [segment_index, segment_total]
+    if not summary_suffix.is_empty():
+        payload_summary += " %s" % summary_suffix
     var log_event = log_event_builder.build_effect_event(
         EventTypesScript.EFFECT_DAMAGE,
         battle_state,
@@ -116,7 +121,7 @@ func log_damage(queued_action, battle_state, actor, target, damage_amount: int, 
             "trigger_name": "on_hit",
             "type_effectiveness": type_effectiveness,
             "value_changes": [value_change],
-            "payload_summary": "%s dealt %d damage to %s" % [actor.public_id, damage_amount, target.public_id],
+            "payload_summary": payload_summary,
         }
     )
     battle_logger.append_event(log_event)

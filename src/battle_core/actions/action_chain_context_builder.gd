@@ -20,6 +20,8 @@ func build_chain_context(queued_action, battle_state, skill_definition) -> Varia
     chain_context.target_slot = queued_action.target_snapshot.target_slot
     chain_context.action_actor_id = queued_action.command.actor_id
     chain_context.action_combat_type_id = String(skill_definition.combat_type_id) if skill_definition != null and skill_definition.combat_type_id != null else ""
+    chain_context.action_segment_index = 0
+    chain_context.action_segment_total = 0
     chain_context.defer_field_apply_success = queued_action.defer_domain_success_effects
     return chain_context
 

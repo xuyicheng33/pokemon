@@ -1,0 +1,27 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "obito_qiudao_yu"
+display_name = "求道玉"
+damage_kind = "special"
+power = 24
+accuracy = 100
+mp_cost = 18
+priority = 0
+combat_type_id = "light"
+power_bonus_source = "effect_stack_sum"
+power_bonus_self_effect_ids = PackedStringArray("obito_yinyang_zhili")
+power_bonus_target_effect_ids = PackedStringArray()
+power_bonus_per_stack = 12
+execute_target_hp_ratio_lte = 0.3
+execute_required_total_stacks = 5
+execute_self_effect_ids = PackedStringArray("obito_yinyang_zhili")
+execute_target_effect_ids = PackedStringArray()
+targeting = "enemy_active_slot"
+effects_on_cast_ids = PackedStringArray()
+effects_on_hit_ids = PackedStringArray("obito_qiudao_yu_clear_yinyang")
+effects_on_miss_ids = PackedStringArray("obito_qiudao_yu_clear_yinyang")
+effects_on_kill_ids = PackedStringArray()

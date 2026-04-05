@@ -49,6 +49,7 @@
 - [ ] `required_content_paths`
 - [ ] `required_suite_paths`
 - [ ] `required_test_names`
+- [ ] `design_needles / adjustment_needles`
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
 - [ ] 若补了 `content_validator_script_path`，只登记在 `docs/records/formal_character_registry.json` 对应角色条目里；runtime loader 会直接读取这份 registry 并动态装配 validator，不再维护第二份 runtime 描述表
 
@@ -78,6 +79,7 @@
 ### D. 共享 suite 回挂
 
 - [ ] 若共享领域 / 奥义点 / 合法性 suite 属于正式交付面，必须显式挂到 `required_suite_paths`
+- [ ] 若角色依赖共享 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 等扩展能力，对应共享 suite 也必须显式挂到 `required_suite_paths`
 - [ ] 不允许只靠通用 contract suite 兜角色回归
 
 ### E. Replay case（按需）

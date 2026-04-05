@@ -109,6 +109,8 @@
 |`mp_cost`|MP 消耗|
 |`priority`|优先级；普通技能允许 `-2 ~ +2`，奥义只能是 `+5` 或 `-5`|
 |`combat_type_id`|战斗属性；空串表示无属性技能|
+|`damage_segments`|可选；多段主动伤害定义。整招仍只有一次命中判定，命中后再按段依次结算|
+|`execute_target_hp_ratio_lte / execute_required_total_stacks / execute_self_effect_ids / execute_target_effect_ids`|可选；命中后、常规伤害前的技能级处决 contract|
 |`targeting`|`enemy_active_slot / self / field`|
 |`effects_on_cast_ids / effects_on_hit_ids / effects_on_miss_ids / effects_on_kill_ids`|见模块 06|
 
@@ -284,10 +286,31 @@
 |反伤|按独立伤害事件处理，必须写明来源归属|
 |复活|当前关闭|
 
-## 12. 首个可玩基线的技能复杂度
+补充规则：
+
+1. `HealPayload.use_percent = true` 时，当前正式支持两种百分比基准：
+   - `percent_base = max_hp`
+   - `percent_base = missing_hp`
+2. `percent_base = missing_hp` 时，基数固定为 `target.max_hp - target.current_hp`。
+3. 只要目标当前 `missing_hp > 0` 且本次百分比治疗合法，最终治疗值至少为 `1`。
+4. 目标侧 `incoming_heal_final_mod` 在基础治疗量解出后、最终 HP clamp 前参与结算；若最终治疗值 `<= 0`，本次不写 `effect:heal`。
+
+## 12. 多段主动伤害与技能级处决
+
+|项|规则|
+|---|---|
+|多段主动伤害|`SkillDefinition.damage_segments` 已正式支持；命中后按段展开并逐段结算|
+|命中判定|整招仍只有一次命中判定；miss 时整组分段都不进入伤害结算|
+|逐段结算|每段独立计算威力、属性克制、`incoming_action_final_mod` 与 HP 变化|
+|逐段日志|每段继续写现有 `effect:damage`，并在 `payload_summary` 标明 `segment i/n`|
+|逐段触发|每个成功结算段后都会派发 `on_receive_action_damage_segment`；`on_receive_action_hit` 仍然只表示整次来袭行动一次|
+|中途终止|目标在中途倒下或离开 active 后，剩余段数立即停止|
+|技能级处决|`execute_*` 当前在“命中后、常规伤害前”判定；成功后直接把目标 HP 置 `0` 并写 `[execute]` 伤害日志|
+
+## 13. 首个可玩基线的技能复杂度
 
 |内容|口径|
 |---|---|
-|多段攻击|当前不强制支持，后续若加入必须单独补规则|
+|多段攻击|当前已作为共享主线能力接入，但新增角色仍应优先复用 `damage_segments`，不做角色专用多段分支|
 |复杂连锁倍率|当前不建议做得太深，避免首版实现失控|
 |持续效果|若技能需要持续效果，当前只允许“按回合”或“永久”两种持续方式；并必须写清触发点、离场是否清除|

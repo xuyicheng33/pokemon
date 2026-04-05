@@ -25,6 +25,7 @@
 |---|---|
 |换人、离场、bench 持续效果与补位|`docs/rules/04_status_switch_and_lifecycle.md`|
 |effect / rule_mod schema、持久 rule_mod、来源分组叠加|`docs/rules/06_effect_schema_and_extension.md`|
+|共享治疗 / 处决 / 多段主动伤害 contract|`docs/rules/03_stats_resources_and_damage.md` + `docs/rules/06_effect_schema_and_extension.md`|
 |运行时模型与 `EffectInstance / RuleModInstance` 字段|`docs/design/battle_runtime_model.md`|
 |内容资源字段与加载期校验|`docs/design/battle_content_schema.md`|
 |正式角色交付清单与测试最低面|`docs/design/formal_character_delivery_checklist.md`|
@@ -104,6 +105,7 @@
 
 - 每个常规技能 / 奥义都要写出资源字段和玩法语义
 - 若某技能依赖共享能力，只写“本角色怎么用”，不重复写完整 schema / 读写路径 / 全局排序链
+- 若角色依赖 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、技能级 `execute_*`、`damage_segments` 或 `on_receive_action_damage_segment`，只写“本角色怎么用”，不在角色稿里重复讲共享 runtime 细节
 - 关键 effect / field / passive 资源必须显式列出，不允许把核心语义藏在“见资源文件”
 - 若有“必须满足的跨资源不变量”，要在角色稿里写清，并在 checklist 阶段决定是否需要 `content_validator_script_path`；若需要，直接登记进 `docs/records/formal_character_registry.json`，runtime 会统一从这份 registry 装配
 

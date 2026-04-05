@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/skill_damage_segment.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+repeat_count = 2
+power = 12
+combat_type_id = "dark"
+damage_kind = "special"
+
+[sub_resource type="Resource" id="2"]
+script = ExtResource("2")
+repeat_count = 8
+power = 12
+combat_type_id = "light"
+damage_kind = "special"
+
+[resource]
+script = ExtResource("1")
+id = "obito_shiwei_weishouyu"
+display_name = "十尾尾兽玉"
+damage_kind = "special"
+power = 12
+accuracy = 100
+mp_cost = 50
+priority = 5
+combat_type_id = ""
+damage_segments = Array[Resource]([SubResource("1"), SubResource("2")])
+targeting = "enemy_active_slot"
+effects_on_cast_ids = PackedStringArray()
+effects_on_hit_ids = PackedStringArray()
+effects_on_miss_ids = PackedStringArray()
+effects_on_kill_ids = PackedStringArray()

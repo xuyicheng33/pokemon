@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="EffectDefinition" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/effect_definition.gd" id="1"]
+[ext_resource type="Script" path="res://src/battle_core/content/remove_effect_payload.gd" id="2"]
+
+[sub_resource type="Resource" id="1"]
+script = ExtResource("2")
+payload_type = "remove_effect"
+effect_definition_id = "obito_yinyang_zhili"
+remove_mode = "all"
+
+[resource]
+script = ExtResource("1")
+id = "obito_qiudao_yu_clear_yinyang"
+display_name = "求道玉·清空阴阳之力"
+scope = "self"
+duration_mode = "permanent"
+stacking = "none"
+trigger_names = PackedStringArray("on_hit", "on_miss")
+payloads = Array[Resource]([SubResource("1")])

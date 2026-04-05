@@ -54,6 +54,9 @@ func resolve_incoming_accuracy(battle_state, owner_id: String, base_accuracy: in
 func has_nullify_field_accuracy(battle_state, owner_id: String) -> bool:
     return _read_service.has_nullify_field_accuracy(battle_state, owner_id)
 
+func resolve_incoming_heal_final_multiplier(battle_state, owner_id: String) -> float:
+    return _read_service.resolve_incoming_heal_final_multiplier(battle_state, owner_id)
+
 func resolve_incoming_action_final_multiplier(battle_state, owner_id: String, command_type: String, combat_type_id: String) -> float:
     return _read_service.resolve_incoming_action_final_multiplier(battle_state, owner_id, command_type, combat_type_id)
 

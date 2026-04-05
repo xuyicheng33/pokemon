@@ -11,15 +11,106 @@
 
 ## 当前阶段
 
-- 阶段目标：按“基础稳定化整改路线图”先收口 passive fail-fast、错误读取通道、runtime wiring DAG、content cache 与 replay 索引，再继续扩正式角色与批量回放。
-- 当前不做：Gojo / Sukuna / Kashimo 数值平衡调整、新角色扩角、现有角色机制重设计、整仓库 DI 重写。
+- 阶段目标：在当前未提交共享层基线上，正式接入第 `4` 名正式角色 `Obito`，并把 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 这组共享能力连同带土文档、资源、formal validator、registry 与 suite 一起收口进主闸门。
+- 当前不做：Gojo / Sukuna / Kashimo / Obito 数值平衡调整、旧角色玩法重设计、整仓库 DI 重写、field 新系统扩展。
 - 当前优先级：
-  - 先保证 `invalid_battle` 与用户可见错误不再通过字符串通道静默漏报
-  - 再把 runtime wiring DAG、content cache 与 replay 索引做成 gate 和回归
-  - 同步把审查记录、设计稿与 README 口径写回仓库，避免“严格 DAG / 完全对齐”这类过度结论继续扩散
+  - 先把 Obito formal delivery 主链接上：设计稿 / 调整记录 / 内容资源 / formal validator / registry / wrapper suite
+  - 再把共享 heal / execute / multihit 文档口径、README 统计值与 records 一起补齐
+  - 最后用 `run_all / check_repo_consistency / run_with_gate` 把带土与共享扩展真正压进主线绿色基线
   - 每阶段都要完成验证、提交、推送，并在进入下一阶段前把工作区收干净
 
 ## 2026-04-05
+
+### 带土正式角色接入：共享扩展收口、formal validator 与主链挂接（已完成）
+
+- 目标：
+  - 在不回滚当前未提交共享层的前提下，把 `Obito` 作为第 `4` 名正式角色完整挂进正式交付链
+  - 让 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、技能级 `execute_*`、共享 `damage_segments` 与 `on_receive_action_damage_segment` 既有实现真正被正式角色消费并回挂到主回归
+  - 把 README / tests README / schema / rules / records 与当前真实实现重新对齐
+- 范围：
+  - `src/battle_core/actions/action_cast_direct_damage_pipeline.gd`
+  - `src/battle_core/actions/action_cast_execute_contract_helper.gd`
+  - `src/battle_core/actions/action_cast_damage_segment_helper.gd`
+  - `src/battle_core/content/skill_definition.gd`
+  - `src/battle_core/content/skill_damage_segment.gd`
+  - `src/battle_core/content/heal_payload.gd`
+  - `src/battle_core/content/rule_mod_schema.gd`
+  - `src/battle_core/contracts/chain_context.gd`
+  - `src/battle_core/content/content_snapshot_formal_obito_validator.gd`
+  - `src/battle_core/content/content_snapshot_formal_obito_unit_passive_contracts.gd`
+  - `src/battle_core/content/content_snapshot_formal_obito_skill_contracts.gd`
+  - `src/battle_core/content/content_snapshot_formal_obito_ultimate_contracts.gd`
+  - `src/composition/sample_battle_factory.gd`
+  - `content/units/obito/*`
+  - `content/skills/obito/*`
+  - `content/effects/obito/*`
+  - `content/passive_skills/obito/*`
+  - `tests/support/obito_test_support.gd`
+  - `tests/suites/heal_extension_suite.gd`
+  - `tests/suites/skill_execute_contract_suite.gd`
+  - `tests/suites/multihit_skill_runtime_suite.gd`
+  - `tests/suites/obito_*`
+  - `docs/design/obito_juubi_jinchuriki_design.md`
+  - `docs/design/obito_juubi_jinchuriki_adjustments.md`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/battle_runtime_model.md`
+  - `docs/design/effect_engine.md`
+  - `docs/rules/03_stats_resources_and_damage.md`
+  - `docs/rules/06_effect_schema_and_extension.md`
+  - `docs/records/formal_character_registry.json`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+  - `README.md`
+  - `tests/README.md`
+- 验收标准：
+  - Obito 资源、formal validator、sample builder、registry、suite 与文档锚点全部存在且命名一致
+  - `tests/run_all.gd` 能通过 formal registry 自动装配 Obito wrapper，并把全部 `obito_*` 专项测试跑绿
+  - `check_suite_reachability` 不再把带土 suite 视为孤儿文件
+  - README 代码规模统计与 repo consistency gate 实测一致
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成：
+  - 共享层已正式收口：
+    - `HealPayload.percent_base` 支持 `missing_hp`
+    - `incoming_heal_final_mod` 进入正式 rule mod 白名单
+    - `SkillDefinition` 已支持 `execute_*` 与 `damage_segments`
+    - `ChainContext` 已补 `action_segment_index / action_segment_total / action_combat_type_id`
+    - `on_receive_action_damage_segment` 已作为共享逐段触发口接入主动伤害链
+  - `action_cast_direct_damage_pipeline.gd` 已拆出 execute / segment helper，重新回到架构闸门允许的体量
+  - 已新增带土设计稿与调整记录：
+    - `docs/design/obito_juubi_jinchuriki_design.md`
+    - `docs/design/obito_juubi_jinchuriki_adjustments.md`
+  - 已新增带土完整内容资源：
+    - `UnitDefinition`、`PassiveSkillDefinition`
+    - `5` 个技能
+    - `10` 个 effect 资源（含禁疗与逐段监听的内部 apply wrapper）
+  - `SampleBattleFactory.build_obito_vs_sample_setup()` 已接入正式 sample builder
+  - 已新增带土 formal validator 4 文件：
+    - `content_snapshot_formal_obito_validator.gd`
+    - `content_snapshot_formal_obito_unit_passive_contracts.gd`
+    - `content_snapshot_formal_obito_skill_contracts.gd`
+    - `content_snapshot_formal_obito_ultimate_contracts.gd`
+  - `docs/records/formal_character_registry.json` 已新增 Obito 条目，并把共享 `heal / execute / multihit / ultimate_points` suite 一并挂入带土正式交付面
+  - 已新增带土测试支撑与专项 suites：
+    - `tests/support/obito_test_support.gd`
+    - `tests/suites/obito_snapshot_suite.gd`
+    - `tests/suites/obito_runtime_passive_and_seal_suite.gd`
+    - `tests/suites/obito_runtime_yinyang_suite.gd`
+    - `tests/suites/obito_runtime_qiudaoyu_suite.gd`
+    - `tests/suites/obito_ultimate_suite.gd`
+    - `tests/suites/obito_manager_smoke_suite.gd`
+    - `tests/suites/obito_suite.gd`
+  - `obito_manager_public_contract` 已改成通过 `get_event_log_snapshot(session_id, from_index)` 只读取奥义回合新增的公开日志，锁住 facade 真实读法
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
 
 ### 审查问题修复收口：formal registry 单一真相、作用域化 validator 与 Kashimo contract 拆分（已完成）
 

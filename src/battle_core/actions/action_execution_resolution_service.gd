@@ -45,7 +45,18 @@ func resolve_started_action(queued_action, actor, command, skill_definition, bat
         hit_info["hit_roll"]
     )
     if action_cast_service.is_damage_action(command, skill_definition):
-        action_cast_service.apply_direct_damage(queued_action, actor, resolved_target, skill_definition, battle_state, action_hit_cause_event_id)
+        var direct_damage_result: Dictionary = action_cast_service.apply_direct_damage(
+            queued_action,
+            actor,
+            resolved_target,
+            skill_definition,
+            battle_state,
+            content_index,
+            action_hit_cause_event_id
+        )
+        if direct_damage_result.get("invalid_battle_code", null) != null:
+            result.invalid_battle_code = direct_damage_result.get("invalid_battle_code", null)
+            return
     _dispatch_on_receive_action_hit_if_needed(queued_action, command, resolved_target, battle_state, content_index, result)
     if result.invalid_battle_code != null:
         return

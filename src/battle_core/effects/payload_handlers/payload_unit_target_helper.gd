@@ -35,6 +35,9 @@ func _allows_inactive_field_owner_target(scope: String, effect_event) -> bool:
     return effect_event.trigger_name == "field_break" or effect_event.trigger_name == "field_expire"
 
 func _allows_on_receive_action_hit_target(scope: String, effect_event) -> bool:
-    if effect_event == null or effect_event.trigger_name != "on_receive_action_hit":
+    if effect_event == null:
+        return false
+    var trigger_name := String(effect_event.trigger_name)
+    if trigger_name != "on_receive_action_hit" and trigger_name != "on_receive_action_damage_segment":
         return false
     return scope == "self" or scope == "action_actor"

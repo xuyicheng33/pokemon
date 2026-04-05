@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="SkillDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/battle_core/content/skill_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "obito_liudao_shizi_fenghuo"
+display_name = "六道十字奉火"
+damage_kind = "special"
+power = 62
+accuracy = 90
+mp_cost = 24
+priority = -1
+combat_type_id = "fire"
+targeting = "enemy_active_slot"
+effects_on_cast_ids = PackedStringArray()
+effects_on_hit_ids = PackedStringArray()
+effects_on_miss_ids = PackedStringArray()
+effects_on_kill_ids = PackedStringArray()

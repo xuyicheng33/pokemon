@@ -94,6 +94,14 @@ func build_kashimo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
+func build_obito_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
+    var battle_setup = build_sample_setup(side_regular_skill_overrides)
+    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"])
+    battle_setup.sides[0].starting_index = 0
+    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"])
+    battle_setup.sides[1].starting_index = 0
+    return battle_setup
+
 func build_passive_item_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     var battle_setup = build_sample_setup(side_regular_skill_overrides)
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sample_pyron_charm", "sample_mossaur", "sample_tidekit"])

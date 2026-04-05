@@ -3,7 +3,7 @@ class_name RuleModSchema
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
-const ALLOWED_MOD_KINDS := ["final_mod", "mp_regen", "action_legality", "incoming_accuracy", "nullify_field_accuracy", "incoming_action_final_mod"]
+const ALLOWED_MOD_KINDS := ["final_mod", "mp_regen", "action_legality", "incoming_accuracy", "nullify_field_accuracy", "incoming_action_final_mod", "incoming_heal_final_mod"]
 const ALLOWED_SCOPES := ["self", "target", "field"]
 const ALLOWED_STACKING := ["none", "refresh", "replace"]
 const ACTION_LEGALITY_VALUES := ["all", "skill", "ultimate", "switch"]
@@ -14,6 +14,7 @@ const STACKING_KEY_SCHEMA_BY_KIND := {
     "incoming_accuracy": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
     "nullify_field_accuracy": ["mod_kind", "scope", "owner_scope", "owner_id", "source_stacking_key"],
     "incoming_action_final_mod": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
+    "incoming_heal_final_mod": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
 }
 
 func validate_payload(rule_mod_payload, content_index = null) -> Array:
@@ -60,6 +61,11 @@ func validate_payload(rule_mod_payload, content_index = null) -> Array:
                 errors.append("mod_op %s" % rule_mod_payload.mod_op)
             if typeof(rule_mod_payload.value) != TYPE_INT and typeof(rule_mod_payload.value) != TYPE_FLOAT:
                 errors.append("incoming_action_final_mod value must be number")
+        ContentSchemaScript.RULE_MOD_INCOMING_HEAL_FINAL_MOD:
+            if rule_mod_payload.mod_op != "mul" and rule_mod_payload.mod_op != "add" and rule_mod_payload.mod_op != "set":
+                errors.append("mod_op %s" % rule_mod_payload.mod_op)
+            if typeof(rule_mod_payload.value) != TYPE_INT and typeof(rule_mod_payload.value) != TYPE_FLOAT:
+                errors.append("incoming_heal_final_mod value must be number")
     _validate_incoming_action_filters(errors, rule_mod_payload, content_index)
     _validate_dynamic_value_schema(errors, rule_mod_payload)
     return errors
@@ -90,7 +96,8 @@ func _validate_dynamic_value_schema(errors: Array, rule_mod_payload) -> void:
     if rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_ACTION_LEGALITY \
     or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_INCOMING_ACCURACY \
     or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_NULLIFY_FIELD_ACCURACY \
-    or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_INCOMING_ACTION_FINAL_MOD:
+    or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_INCOMING_ACTION_FINAL_MOD \
+    or rule_mod_payload.mod_kind == ContentSchemaScript.RULE_MOD_INCOMING_HEAL_FINAL_MOD:
         errors.append("dynamic value formula is not allowed for %s" % String(rule_mod_payload.mod_kind))
     if rule_mod_payload.scope == "field":
         errors.append("dynamic value formula is not allowed for field scope")

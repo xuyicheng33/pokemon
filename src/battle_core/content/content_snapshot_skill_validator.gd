@@ -3,6 +3,7 @@ class_name ContentSnapshotSkillValidator
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const PowerBonusSourceRegistryScript := preload("res://src/battle_core/content/power_bonus_source_registry.gd")
+const SkillDamageSegmentScript := preload("res://src/battle_core/content/skill_damage_segment.gd")
 
 var _content_index = null
 var _payload_validator = null
@@ -48,6 +49,8 @@ func _validate_skills(errors: Array) -> void:
         if not allowed_power_bonus_sources.has(String(skill_definition.power_bonus_source)):
             errors.append("skill[%s].power_bonus_source invalid: %s" % [skill_id, String(skill_definition.power_bonus_source)])
         _validate_power_bonus_contract(errors, skill_id, skill_definition)
+        _validate_execute_contract(errors, skill_id, skill_definition)
+        _validate_damage_segments(errors, skill_id, skill_definition, allowed_damage_kinds)
         if skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and int(skill_definition.power) <= 0:
             errors.append("skill[%s].power must be > 0 for damage skills, got %d" % [skill_id, int(skill_definition.power)])
         _payload_validator.validate_effect_refs(errors, "skill[%s].effects_on_cast_ids" % skill_id, skill_definition.effects_on_cast_ids, _content_index.effects)
@@ -84,6 +87,64 @@ func _validate_power_bonus_contract(errors: Array, skill_id: String, skill_defin
         errors.append("skill[%s].effect_stack_sum requires at least one power bonus effect id" % skill_id)
     if int(skill_definition.power_bonus_per_stack) <= 0:
         errors.append("skill[%s].power_bonus_per_stack must be > 0 for effect_stack_sum, got %d" % [skill_id, int(skill_definition.power_bonus_per_stack)])
+
+func _validate_execute_contract(errors: Array, skill_id: String, skill_definition) -> void:
+    var execute_ratio := float(skill_definition.execute_target_hp_ratio_lte)
+    var execute_required_total_stacks := int(skill_definition.execute_required_total_stacks)
+    var has_execute_config: bool = execute_ratio > 0.0 or execute_required_total_stacks > 0 \
+        or not skill_definition.execute_self_effect_ids.is_empty() \
+        or not skill_definition.execute_target_effect_ids.is_empty()
+    if execute_ratio < 0.0 or execute_ratio > 1.0:
+        errors.append("skill[%s].execute_target_hp_ratio_lte out of range: %s" % [skill_id, var_to_str(execute_ratio)])
+    if execute_required_total_stacks < 0:
+        errors.append("skill[%s].execute_required_total_stacks must be >= 0, got %d" % [skill_id, execute_required_total_stacks])
+    if not has_execute_config:
+        return
+    if skill_definition.targeting != ContentSchemaScript.TARGET_ENEMY_ACTIVE:
+        errors.append("skill[%s].execute contract requires targeting=enemy_active_slot" % skill_id)
+    if skill_definition.damage_kind == ContentSchemaScript.DAMAGE_KIND_NONE and skill_definition.damage_segments.is_empty():
+        errors.append("skill[%s].execute contract requires damage skill" % skill_id)
+    var has_execute_effect_id := false
+    for effect_id in skill_definition.execute_self_effect_ids:
+        var normalized_effect_id := String(effect_id).strip_edges()
+        if normalized_effect_id.is_empty():
+            errors.append("skill[%s].execute_self_effect_ids must not contain empty entry" % skill_id)
+            continue
+        has_execute_effect_id = true
+        if not _content_index.effects.has(normalized_effect_id):
+            errors.append("skill[%s].execute_self_effect_ids missing effect: %s" % [skill_id, normalized_effect_id])
+    for effect_id in skill_definition.execute_target_effect_ids:
+        var normalized_effect_id := String(effect_id).strip_edges()
+        if normalized_effect_id.is_empty():
+            errors.append("skill[%s].execute_target_effect_ids must not contain empty entry" % skill_id)
+            continue
+        has_execute_effect_id = true
+        if not _content_index.effects.has(normalized_effect_id):
+            errors.append("skill[%s].execute_target_effect_ids missing effect: %s" % [skill_id, normalized_effect_id])
+    if execute_required_total_stacks > 0 and not has_execute_effect_id:
+        errors.append("skill[%s].execute_required_total_stacks requires execute effect ids" % skill_id)
+
+func _validate_damage_segments(errors: Array, skill_id: String, skill_definition, allowed_damage_kinds: PackedStringArray) -> void:
+    if skill_definition.damage_segments.is_empty():
+        return
+    if skill_definition.targeting != ContentSchemaScript.TARGET_ENEMY_ACTIVE:
+        errors.append("skill[%s].damage_segments requires targeting=enemy_active_slot" % skill_id)
+    if skill_definition.damage_kind == ContentSchemaScript.DAMAGE_KIND_NONE:
+        errors.append("skill[%s].damage_segments requires top-level damage_kind != none" % skill_id)
+    for segment_index in range(skill_definition.damage_segments.size()):
+        var raw_segment = skill_definition.damage_segments[segment_index]
+        if raw_segment == null or not raw_segment is SkillDamageSegmentScript:
+            errors.append("skill[%s].damage_segments[%d] invalid type" % [skill_id, segment_index])
+            continue
+        var segment = raw_segment as SkillDamageSegmentScript
+        if int(segment.repeat_count) <= 0:
+            errors.append("skill[%s].damage_segments[%d].repeat_count must be > 0, got %d" % [skill_id, segment_index, int(segment.repeat_count)])
+        if int(segment.power) <= 0:
+            errors.append("skill[%s].damage_segments[%d].power must be > 0, got %d" % [skill_id, segment_index, int(segment.power)])
+        if not allowed_damage_kinds.has(String(segment.damage_kind)) or String(segment.damage_kind) == ContentSchemaScript.DAMAGE_KIND_NONE:
+            errors.append("skill[%s].damage_segments[%d].damage_kind invalid: %s" % [skill_id, segment_index, String(segment.damage_kind)])
+        if not String(segment.combat_type_id).is_empty() and not _content_index.combat_types.has(String(segment.combat_type_id)):
+            errors.append("skill[%s].damage_segments[%d].combat_type_id missing combat type: %s" % [skill_id, segment_index, String(segment.combat_type_id)])
 
 func _validate_passive_skills(errors: Array) -> void:
     for passive_id in _content_index.passive_skills.keys():
