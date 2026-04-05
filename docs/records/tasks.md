@@ -109,6 +109,95 @@
 #### 当前验证结果
 
 - `godot --headless --path . --script tests/run_all.gd` 通过
+
+### 扩角色前工程规范整改收口（已完成）
+
+- 目标：
+  - 在不新增角色、不改角色平衡的前提下，把 Gojo / Sukuna / Kashimo / Obito 四个正式角色和共享战斗底座收成一套可继续扩角的稳定规范
+  - 统一正式角色交付面模板，拆掉共享热点 owner 的高密度职责堆叠，并把关键共享语义回收到公共设计文档与主闸门
+- 范围：
+  - `src/composition/sample_battle_factory.gd`
+  - `src/battle_core/actions/action_cast_direct_damage_pipeline.gd`
+  - `src/battle_core/actions/action_damage_*`
+  - `src/battle_core/effects/rule_mod_read_service.gd`
+  - `src/battle_core/effects/rule_mod_*query*.gd`
+  - `src/battle_core/passives/field_service.gd`
+  - `src/battle_core/passives/field_*helper.gd`
+  - `src/battle_core/lifecycle/replacement_service.gd`
+  - `src/battle_core/lifecycle/replacement_*helper.gd`
+  - `src/battle_core/content/content_snapshot_formal_*`
+  - `tests/support/formal_character_*`
+  - `tests/support/gojo_test_support.gd`
+  - `tests/support/sukuna_test_support.gd`
+  - `tests/support/kashimo_test_support.gd`
+  - `tests/support/obito_test_support.gd`
+  - `tests/suites/*snapshot_suite.gd`
+  - `tests/suites/*manager_smoke_suite.gd`
+  - `tests/suites/multihit_skill_runtime_suite.gd`
+  - `docs/design/formal_character_delivery_checklist.md`
+  - `docs/design/effect_engine.md`
+  - `docs/design/action_execution.md`
+  - `docs/design/turn_orchestrator.md`
+  - `docs/records/formal_character_registry.json`
+  - `docs/records/decisions.md`
+  - `docs/records/tasks.md`
+  - `README.md`
+- 验收标准：
+  - `SampleBattleFactory` 公开 builder 名称保持不变，但内部不再保留正式角色私有手写构局
+  - formal validator、snapshot suite、manager smoke、角色 support 都挂到共享模板层；四个正式角色交付面形状一致
+  - `action_cast_direct_damage_pipeline.gd / rule_mod_read_service.gd / field_service.gd / replacement_service.gd` 退出 `220..250` 行预警区，且对外稳定入口不变
+  - 多段伤害上下文恢复、`execute_*` 与多段短路互斥、角色 runtime / snapshot / manager smoke、registry 锚点回归全部通过
+  - `git diff --check`、`bash tests/check_repo_consistency.sh`、`bash tests/check_architecture_constraints.sh`、`bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `SampleBattleFactory` 已改成统一 `_build_custom_setup()` + `_build_side_setup()`，保留原有公开 builder 名称不变
+  - 已新增共享正式角色测试模板：
+    - `tests/support/formal_character_test_support.gd`
+    - `tests/support/formal_character_snapshot_test_helper.gd`
+    - `tests/support/formal_character_manager_smoke_helper.gd`
+  - Gojo / Sukuna / Kashimo / Obito 的 support、snapshot suite、manager smoke 已迁到统一模板，不再各自手写整套样板
+  - formal validator 已补共享 helper：
+    - `effect / field / passive skill` 描述符校验
+    - 共享 payload 断言入口
+    - 公共 float 断言
+  - 直伤主链已拆成：
+    - `action_damage_segment_resolution_service.gd`
+    - `action_damage_log_service.gd`
+    - `action_damage_segment_trigger_context_service.gd`
+  - `RuleModReadService` 已拆成：
+    - `rule_mod_active_instance_collector.gd`
+    - `rule_mod_legality_query.gd`
+    - `rule_mod_numeric_query.gd`
+  - `FieldService` 已拆成：
+    - `field_trigger_collection_helper.gd`
+    - `field_cleanup_helper.gd`
+  - `ReplacementService` 已拆成：
+    - `replacement_selection_helper.gd`
+    - `replacement_entry_helper.gd`
+  - 热点 owner 当前行数已压回：
+    - `action_cast_direct_damage_pipeline.gd` `128`
+    - `rule_mod_read_service.gd` `82`
+    - `field_service.gd` `130`
+    - `replacement_service.gd` `175`
+  - 已新增共享回归：
+    - `multihit_skill_segment_context_restore_contract`
+    - `multihit_skill_execute_short_circuit_contract`
+  - `formal_character_registry.json` 已把新的 multihit 关键锚点挂回 Obito 正式交付面
+  - 共享设计文档与 delivery checklist 已同步写死共享语义归属，不再让角色稿重复承载引擎规范
+  - `README.md` 代码规模统计已同步到当前实测值：
+    - `src`：`14371`
+    - `tests`：`18572`
+    - `total`：`32943`
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `git diff --check` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+- `bash tests/check_architecture_constraints.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
 - `bash tests/check_repo_consistency.sh` 通过
 - `bash tests/run_with_gate.sh` 通过
 

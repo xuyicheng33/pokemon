@@ -16,8 +16,13 @@
 |`effect_instance_service.gd`|管理持续效果实例|
 |`rule_mod_service.gd`|`rule_mod` facade，对外维持单入口|
 |`rule_mod_read_service.gd`|`rule_mod` 读取查询（合法性、命中、最终倍率、回蓝）|
+|`rule_mod_active_instance_collector.gd`|统一收集 owner + field 生效中的 `rule_mod`，并固定读取排序|
+|`rule_mod_legality_query.gd`|承接 `action_legality` 查询与共享错误文案|
+|`rule_mod_numeric_query.gd`|承接倍率 / 命中 / 回蓝 / 治疗 / 来袭倍率读取|
 |`rule_mod_write_service.gd`|`rule_mod` 写路径（create / stacking / decrement / remove）|
 |`rule_mod_value_resolver.gd`|对动态 `rule_mod` 值做运行时求值，不回写共享内容资源|
+|`field_trigger_collection_helper.gd`|统一收集 field 本体 trigger 与生命周期 effect 批次|
+|`field_cleanup_helper.gd`|统一清理 field 解绑、field rule mod 清除与空场回收|
 
 补充说明：
 
@@ -94,13 +99,14 @@ effect 级前置约束：
 - 前置不满足时整条 effect 直接跳过，不报错，也不写任何由该 effect 产生的 payload 日志。
 - `scope=action_actor` 只允许用于 `on_receive_action_hit`；相关单位目标固定读取 `chain_context.action_actor_id`。
 - `on_receive_action_damage_segment` 当前由主动伤害主链在每个成功结算段后显式派发；其上下文固定补 `chain_context.action_segment_index / action_segment_total / action_combat_type_id`。
+- 多段主动伤害的段级上下文当前必须走同一条保护路径：先补段索引 / 段总数 / 段属性 / target，再派发 trigger，最后恢复原始 `chain_context`；不允许在 owner 内继续手改后靠人肉恢复。
 
 ## 5. RuleMod 子域
 
 ### 5.1 结构
 
 - `RuleModService` 现在只保留 facade 职责，对外继续暴露稳定入口。
-- `RuleModReadService` 固定承接读路径，避免新查询再继续堆回旧热点。
+- `RuleModReadService` 固定承接读路径 owner；其内部现已拆成实例收集 / legality 查询 / numeric 查询三块 helper，避免继续堆回旧热点。
 - `RuleModWriteService` 固定承接写路径，负责实例创建、stacking 语义与回合节点扣减。
 
 ### 5.2 读取点
@@ -112,6 +118,8 @@ effect 级前置约束：
 - `nullify_field_accuracy`：目标侧“忽略领域附加必中”读取点；不影响技能原生命中率。
 - `incoming_action_final_mod`：目标侧来袭行动最终倍率读取点；当前支持按来袭动作类型与属性过滤。
 - `incoming_heal_final_mod`：目标侧治疗末端倍率读取点；在基础治疗量解出后、最终 HP clamp 前参与计算。
+
+这批读取点已属于共享主线，不再允许角色稿重复定义语义，只允许角色资源声明自己是否消费这些读取点。
 
 ### 5.3 生命周期
 

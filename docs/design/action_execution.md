@@ -11,6 +11,9 @@
 |`action_cast_service.gd`|编排技能 / 奥义行动主链，协调命中、直伤与技能 effect 分发|
 |`action_hit_resolution_service.gd`|处理命中率读取、领域必中覆盖与来袭命中修正|
 |`action_cast_direct_damage_pipeline.gd`|处理技能本体直伤、额外威力读取与伤害公式调用|
+|`action_damage_segment_resolution_service.gd`|处理多段伤害的段解析、倍率读取与最终 HP 结算|
+|`action_damage_log_service.gd`|统一直伤 / execute / 默认反伤日志与致死归因|
+|`action_damage_segment_trigger_context_service.gd`|统一保护多段伤害逐段 trigger 的 `chain_context` 恢复|
 |`power_bonus_resolver.gd`|统一解析 `SkillDefinition.power_bonus_source` 对应的额外威力来源|
 |`action_cast_skill_effect_dispatch_pipeline.gd`|按 `on_cast / on_hit / on_miss` 分发技能 effect 链|
 |`action_domain_guard.gd`|行动开始前做领域重开与 `action_legality` 的二次合法性拦截|
@@ -60,6 +63,16 @@
 6. 命中成功时，先走技能本体直伤与额外威力 pipeline
 7. 资源型/超时型默认动作在命中后追加默认反伤
 8. 触发 `effects_on_hit_ids` 或 `effects_on_miss_ids`
+
+共享直伤补充：
+
+- `damage_segments`、`execute_*`、`effect_stack_sum` 现已正式属于共享主线。
+- `execute_*` 判定命中后、常规直伤前执行；命中时短路后续多段伤害链，不再继续派发段级 trigger。
+- 多段主动伤害当前固定走：
+  - 段解析与倍率读取
+  - 段日志与致死归因
+  - 段级 `on_receive_action_damage_segment` 上下文保护
+- `on_receive_action_hit` 旧语义保持不变，仍只表示“整次来袭命中一次”；多段不自动改成“每段一次”。
 
 ## 4. TargetResolver
 

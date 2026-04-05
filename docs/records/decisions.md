@@ -1069,3 +1069,32 @@
 - 原因：
   - 只锁资源存在性，不锁 payload 结构，最容易出现“资源 ID 没变但语义已漂移”的假通过。
   - 只做手工注入，不做真实对局，最容易把换装、起手 MP、领域建立时机、行动顺序这类真实路径问题漏掉。
+
+### 75. 扩角色前整改固定走“正式角色模板统一 + 共享 owner helper 拆分”双轨收口（2026-04-05）
+
+- 本轮整改边界固定为：
+  - 允许调整共享语义落点与代码结构
+  - 不改 Gojo / Sukuna / Kashimo / Obito 数值与平衡
+  - 不新增玩法口径，不在整改期并行接第 5 个正式角色
+- 正式角色交付面当前固定只认一套模板：
+  - 设计稿
+  - 调整记录
+  - docs formal registry
+  - `SampleBattleFactory` builder
+  - snapshot / runtime / manager smoke
+  - 共享 suite 与关键 test anchor 回挂
+- `docs/records/formal_character_registry.json` 继续作为 docs / runtime / tests 的单一真相；schema、公开 builder 名称、wrapper suite 名称与 manager facade contract 保持稳定，不通过改外层接口解决内部重复。
+- 以下语义当前正式收口到共享设计文档，不再让角色稿重复承载引擎规范：
+  - `damage_segments`
+  - `on_receive_action_damage_segment`
+  - `incoming_heal_final_mod`
+  - `execute_*`
+  - `effect_stack_sum`
+  - `persistent_stat_stages`
+  - `incoming_action_final_mod`
+- 共享热点 owner 当前统一采用“owner 保留稳定入口 + 内部 helper 分担细职责”的拆法：
+  - `action_cast_direct_damage_pipeline.gd`
+  - `rule_mod_read_service.gd`
+  - `field_service.gd`
+  - `replacement_service.gd`
+- 这批 owner 内部 helper 化后，原 owner 文件必须退出 `220..250` 行预警区；若未来新增共享语义会改变四个正式角色的对局结果，必须先补新的决策记录，再改实现。

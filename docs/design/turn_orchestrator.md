@@ -18,6 +18,8 @@
 |`turn_resolution_service.gd`|统一回合节点触发、MP 回复、effect/rule_mod 扣减与链终止处理|
 |`battle_result_service.gd`|胜负判定与终局结果落盘（含初始化阶段 invalid/startup victory）|
 |`runtime_guard_service.gd`|运行时依赖完整性检查（缺失即 fail-fast）|
+|`replacement_selection_helper.gd`|统一 bench 候选收集、active slot 定位与 replacement 选择|
+|`replacement_entry_helper.gd`|统一 replacement 入场状态写入与公开日志|
 
 ## 2. BattleInitializer
 
@@ -66,6 +68,23 @@
 
 - 选择非法、执行期 invalid code、效果执行 invalid code 都走 fail-fast。
 - 终止后 `battle_result = no_winner`，并记录 `invalid_battle_code`。
+
+### 3.4 Replacement / Field 编排顺序
+
+当前换人与 forced replace 相关主线顺序固定为：
+
+1. `on_switch`
+2. `on_exit`
+3. leave / 离场状态写入
+4. `field break` 检查与生命周期收尾
+5. replacement 入场
+6. `on_enter`
+
+约束：
+
+- `ReplacementService` 继续保留稳定入口，不新增外围稳定 API；选择与入场样板统一下沉到 helper。
+- `FieldService` 继续保留稳定入口；field trigger 收集、生命周期 effect 收集和 field 清理解绑统一走共享 helper。
+- `persistent_stat_stages` 属于共享运行时语义，跨换人 / 死亡保留规则不得再写回角色稿。
 
 ## 4. ActionQueueBuilder
 

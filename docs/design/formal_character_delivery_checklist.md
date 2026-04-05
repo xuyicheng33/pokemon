@@ -40,6 +40,7 @@
 ## 3. 接线与正式交付面
 
 - [ ] `SampleBattleFactory` 增加该角色相关构局入口，避免 suite 内手写拼装
+- [ ] `SampleBattleFactory` 公开 builder 名称保持稳定，内部只允许走统一 helper，不再为单角色保留私有手写构局
 - [ ] `docs/records/formal_character_registry.json` 新增角色条目
 - [ ] registry 至少补齐：
   - [ ] `character_id / display_name / unit_definition_id`
@@ -52,6 +53,7 @@
 - [ ] `design_needles / adjustment_needles`
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
 - [ ] 若补了 `content_validator_script_path`，只登记在 `docs/records/formal_character_registry.json` 对应角色条目里；runtime loader 会直接读取这份 registry 并动态装配 validator，不再维护第二份 runtime 描述表
+- [ ] formal validator 优先复用共享模板 helper；角色 validator 只保留角色差异校验，不再复制 unit / skill / effect / field 的通用断言文案
 
 ## 4. 测试最低面
 
@@ -60,6 +62,7 @@
 ### A. Snapshot suite
 
 - [ ] `tests/suites/<character>_snapshot_suite.gd`
+- [ ] 优先复用共享 snapshot helper / formal character test support，不再为单角色复制 `_build_content_index()` 与 `_run_checks()` 模板
 - [ ] 锁 `UnitDefinition` 字面量
 - [ ] 锁技能资源字面量
 - [ ] 锁关键 effect / field / passive 资源字面量
@@ -73,6 +76,7 @@
 ### C. Manager smoke suite
 
 - [ ] `tests/suites/<character>_manager_smoke_suite.gd`
+- [ ] 优先复用共享 manager smoke helper，统一 `build_manager -> create_session -> close_session` 黑盒样板
 - [ ] 覆盖 `create_session -> get_legal_actions -> build_command -> run_turn -> get_public_snapshot / get_event_log_snapshot`
 - [ ] 断言公开快照与事件日志不泄漏 runtime private id
 
@@ -80,6 +84,7 @@
 
 - [ ] 若共享领域 / 奥义点 / 合法性 suite 属于正式交付面，必须显式挂到 `required_suite_paths`
 - [ ] 若角色依赖共享 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 等扩展能力，对应共享 suite 也必须显式挂到 `required_suite_paths`
+- [ ] 若共享 suite 新增了角色明确依赖的关键锚点，也要同步补进 `required_test_names`，不允许只挂 suite 文件不挂回归名
 - [ ] 不允许只靠通用 contract suite 兜角色回归
 
 ### E. Replay case（按需）
@@ -103,3 +108,22 @@
 5. 最后更新 `tasks.md`，必要时补 `decisions.md`
 
 这样可以避免“测试名、resource id、registry 锚点”来回改喵。
+
+## 7. 共享语义归属
+
+角色稿默认只保留：
+
+- 角色独有玩法
+- 数值口径
+- 验收矩阵
+- 与共享机制的差异说明
+
+以下语义已属于共享主线，必须回收进公共设计文档，不再在角色稿里重复承载引擎规范：
+
+- `damage_segments`
+- `on_receive_action_damage_segment`
+- `incoming_heal_final_mod`
+- `execute_*`
+- `effect_stack_sum`
+- `persistent_stat_stages`
+- `incoming_action_final_mod`

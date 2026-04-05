@@ -309,6 +309,8 @@
       "multihit_skill_per_segment_mod_runtime_contract",
       "multihit_skill_stops_after_faint_contract",
       "multihit_skill_segment_trigger_contract",
+      "multihit_skill_segment_context_restore_contract",
+      "multihit_skill_execute_short_circuit_contract",
       "multihit_skill_validation_contract",
       "ultimate_points_regular_skill_gain_contract",
       "ultimate_points_non_regular_switch_preserve_contract",
