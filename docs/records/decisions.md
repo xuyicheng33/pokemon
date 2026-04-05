@@ -34,6 +34,16 @@
   - 复杂角色最容易出问题的不是“文件丢了”，而是 payload 顺序、作用域、触发时机、remove 目标这些细节悄悄漂掉。
   - 只靠文档存在性、wrapper suite 存在性，挡不住“角色还在，但核心机制已经偏了”的假阳性。
 
+### 0.2 文档公开推荐的固定案例 runner 必须优先走真实对局路径（2026-04-05）
+
+- 若某个 `tests/helpers/*_case_runner.gd` 被 README、设计稿或测试文档明确列为固定诊断入口，它的关键 matchup 案例默认必须优先走真实装配和真实施法路径。
+- 当前已写死的例子：
+  - `tests/helpers/kashimo_case_runner.gd` 里的 `kyokyo_vs_domain` 必须由 Gojo 真实施放 `gojo_unlimited_void` 建场后再验证 `kashimo_kyokyo_katsura`，不能继续直接手工塞 `field_state`
+- 合成注入仍然允许保留在局部 runtime 单测里，但不再作为文档公开推荐的主复查入口。
+- 原因：
+  - 固定案例 runner 的目标是“出 gate 以后，快速复查真实局面有没有漂”，不是只证明局部字段能被人造状态凑出来。
+  - 领域建立时机、起手 MP、换装技能组、行动顺序这类问题，只有真实对局路径才能稳定暴露。
+
 ### 1. 规则、设计、记录的职责分层固定
 
 - `docs/rules/` 是当前生效规则权威。

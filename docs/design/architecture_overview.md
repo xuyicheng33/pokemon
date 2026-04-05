@@ -62,7 +62,7 @@
 
 1. `BattleSandboxRunner` 或测试入口请求 `BattleCoreComposer` 创建核心依赖图。
 2. `BattleCoreManagerContainerService` / `ReplayRunner` 先通过 `ContentSnapshotCache` 取得“已加载且已校验”的资源数组，再为本次 session / replay 深复制资源并构造 fresh `BattleContentIndex`。
-3. `BattleInitializer` 读取内容资源与队伍快照，构造 `BattleState`。
+3. `BattleInitializer` 作为初始化编排 owner，驱动 `BattleInitializerStateBuilder` 生成 fresh `BattleState`，再交给 `BattleInitializerPhaseService` 完成 `battle_header / on_enter / battle_init / 首回合预回蓝`。
 4. `TurnLoopController` 驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`。
 5. `LegalActionService` 产出 `LegalActionSet`；`CommandBuilder` 组装 `Command`；`CommandValidator` 做硬校验。
 6. `ActionQueueBuilder` 生成 `QueuedAction` 列表。

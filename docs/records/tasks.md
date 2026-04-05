@@ -21,6 +21,42 @@
 
 ## 2026-04-05
 
+### 审查问题修复收口：鹿紫云固定案例 runner 改走真实 Gojo 领域路径，架构文档同步对齐（已完成）
+
+- 目标：
+  - 把文档公开推荐的鹿紫云固定案例入口从“人造领域态”收口到“真实 Gojo 开领域路径”
+  - 顺手修正 `BattleInitializer` 在架构总览里的职责描述，避免后续扩角时继续按旧口径理解初始化分工
+- 范围：
+  - `tests/helpers/kashimo_case_runner.gd`
+  - `tests/replay_cases/kashimo_cases.md`
+  - `tests/README.md`
+  - `docs/design/kashimo_hajime_design.md`
+  - `docs/design/architecture_overview.md`
+  - `README.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `kyokyo_vs_domain` 必须先让 Gojo 真实施放 `gojo_unlimited_void`，再验证 `kashimo_kyokyo_katsura`
+  - 文档里提到的鹿紫云固定案例说明，必须同步改成“对 Gojo 真领域复查”
+  - `architecture_overview.md` 必须明确 `BattleInitializer` 是编排 owner，`BattleInitializerStateBuilder` 负责 fresh `BattleState`
+  - `CASE=all godot --headless --path . --script tests/helpers/kashimo_case_runner.gd` 与 `bash tests/run_with_gate.sh` 通过
+
+#### 当前执行结果
+
+- 已完成：
+  - `tests/helpers/kashimo_case_runner.gd` 的 `kyokyo_vs_domain` 已改成真实 Gojo 领域路径：
+    - 把 `gojo_ao.accuracy` 临时改成 `0`
+    - 第 1 回合由 Gojo 真实开 `gojo_unlimited_void`
+    - 第 2 回合再比较“未开弥虚葛笼”和“已开弥虚葛笼”的受击结果
+  - 已删掉固定案例 runner 中直接手工塞 `FieldState` 的做法
+  - `README.md`、`tests/README.md`、`tests/replay_cases/kashimo_cases.md`、`docs/design/kashimo_hajime_design.md` 已同步改成真实领域口径
+  - `docs/design/architecture_overview.md` 已把 `BattleInitializer` 的描述改成“编排 owner + state builder/phase service 分工”
+
+#### 当前验证结果
+
+- `CASE=all godot --headless --path . --script tests/helpers/kashimo_case_runner.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
+
 ### 审查问题修复收口：Gojo / Kashimo 正式角色 validator 收紧与 Kashimo 真实路径回归补齐（已完成）
 
 - 目标：
