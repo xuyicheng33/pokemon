@@ -1,6 +1,7 @@
 extends RefCounted
 class_name ContentSnapshotFormalGojoContracts
 
+const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 
 func validate_unit_contract(validator, content_index, errors: Array) -> void:
@@ -21,6 +22,7 @@ func validate_unit_contract(validator, content_index, errors: Array) -> void:
 	validator._expect_int(errors, "%s ultimate_points_required" % label, unit_definition.ultimate_points_required, 3)
 	validator._expect_int(errors, "%s ultimate_points_cap" % label, unit_definition.ultimate_points_cap, 3)
 	validator._expect_int(errors, "%s ultimate_point_gain_on_regular_skill_cast" % label, unit_definition.ultimate_point_gain_on_regular_skill_cast, 1)
+	validator._expect_packed_string_array(errors, "%s combat_type_ids" % label, unit_definition.combat_type_ids, PackedStringArray(["space", "psychic"]))
 	validator._expect_packed_string_array(errors, "%s skill_ids" % label, unit_definition.skill_ids, PackedStringArray(["gojo_ao", "gojo_aka", "gojo_murasaki"]))
 	validator._expect_packed_string_array(errors, "%s candidate_skill_ids" % label, unit_definition.candidate_skill_ids, PackedStringArray(["gojo_ao", "gojo_aka", "gojo_murasaki", "gojo_reverse_ritual"]))
 	validator._expect_string(errors, "%s ultimate_skill_id" % label, unit_definition.ultimate_skill_id, "gojo_unlimited_void")
@@ -42,7 +44,10 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"priority": 0,
 			"combat_type_id": "space",
 			"targeting": "enemy_active_slot",
+			"effects_on_cast_ids": PackedStringArray(),
 			"effects_on_hit_ids": PackedStringArray(["gojo_ao_speed_up", "gojo_ao_mark_apply"]),
+			"effects_on_miss_ids": PackedStringArray(),
+			"effects_on_kill_ids": PackedStringArray(),
 		}
 	)
 	_validate_skill_contract(
@@ -60,7 +65,10 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"priority": 0,
 			"combat_type_id": "psychic",
 			"targeting": "enemy_active_slot",
+			"effects_on_cast_ids": PackedStringArray(),
 			"effects_on_hit_ids": PackedStringArray(["gojo_aka_slow_down", "gojo_aka_mark_apply"]),
+			"effects_on_miss_ids": PackedStringArray(),
+			"effects_on_kill_ids": PackedStringArray(),
 		}
 	)
 	_validate_skill_contract(
@@ -78,7 +86,10 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"priority": -1,
 			"combat_type_id": "space",
 			"targeting": "enemy_active_slot",
+			"effects_on_cast_ids": PackedStringArray(),
 			"effects_on_hit_ids": PackedStringArray(["gojo_murasaki_conditional_burst"]),
+			"effects_on_miss_ids": PackedStringArray(),
+			"effects_on_kill_ids": PackedStringArray(),
 		}
 	)
 	_validate_skill_contract(
@@ -97,6 +108,9 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"combat_type_id": "",
 			"targeting": "self",
 			"effects_on_cast_ids": PackedStringArray(["gojo_reverse_heal"]),
+			"effects_on_hit_ids": PackedStringArray(),
+			"effects_on_miss_ids": PackedStringArray(),
+			"effects_on_kill_ids": PackedStringArray(),
 		}
 	)
 	_validate_skill_contract(
@@ -115,7 +129,10 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"combat_type_id": "space",
 			"targeting": "enemy_active_slot",
 			"is_domain_skill": true,
+			"effects_on_cast_ids": PackedStringArray(),
 			"effects_on_hit_ids": PackedStringArray(["gojo_apply_domain_field"]),
+			"effects_on_miss_ids": PackedStringArray(),
+			"effects_on_kill_ids": PackedStringArray(),
 		}
 	)
 
@@ -148,6 +165,10 @@ func _validate_skill_contract(
 		validator._expect_packed_string_array(errors, "%s effects_on_cast_ids" % label, skill_definition.effects_on_cast_ids, expected_fields.get("effects_on_cast_ids", PackedStringArray()))
 	if expected_fields.has("effects_on_hit_ids"):
 		validator._expect_packed_string_array(errors, "%s effects_on_hit_ids" % label, skill_definition.effects_on_hit_ids, expected_fields.get("effects_on_hit_ids", PackedStringArray()))
+	if expected_fields.has("effects_on_miss_ids"):
+		validator._expect_packed_string_array(errors, "%s effects_on_miss_ids" % label, skill_definition.effects_on_miss_ids, expected_fields.get("effects_on_miss_ids", PackedStringArray()))
+	if expected_fields.has("effects_on_kill_ids"):
+		validator._expect_packed_string_array(errors, "%s effects_on_kill_ids" % label, skill_definition.effects_on_kill_ids, expected_fields.get("effects_on_kill_ids", PackedStringArray()))
 
 func _validate_marker_effect(
 	validator,
@@ -167,6 +188,15 @@ func _validate_marker_effect(
 		validator._expect_string(errors, "%s decrement_on" % label, marker_effect.decrement_on, "turn_end")
 		validator._expect_string(errors, "%s stacking" % label, marker_effect.stacking, "refresh")
 		validator._expect_bool(errors, "%s persists_on_switch" % label, marker_effect.persists_on_switch, false)
+	var apply_effect_id := "%s_apply" % marker_effect_id
+	var apply_effect = validator._require_effect(content_index, errors, label, apply_effect_id)
+	if apply_effect != null:
+		validator._expect_string(errors, "%s effect[%s].scope" % [label, apply_effect_id], apply_effect.scope, "target")
+		validator._expect_string(errors, "%s effect[%s].duration_mode" % [label, apply_effect_id], apply_effect.duration_mode, "permanent")
+		validator._expect_string(errors, "%s effect[%s].stacking" % [label, apply_effect_id], apply_effect.stacking, "none")
+		validator._expect_packed_string_array(errors, "%s effect[%s].trigger_names" % [label, apply_effect_id], apply_effect.trigger_names, PackedStringArray(["on_hit"]))
+		var apply_payload = validator._extract_single_payload(errors, label, apply_effect_id, apply_effect, ApplyEffectPayloadScript, "apply_effect")
+		validator._expect_payload_shape(errors, "%s effect[%s]" % [label, apply_effect_id], apply_payload, {"effect_definition_id": marker_effect_id})
 	var stat_effect = validator._require_effect(content_index, errors, label, stat_effect_id)
 	if stat_effect == null:
 		return

@@ -9,6 +9,7 @@ var _support = KashimoTestSupportScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("kashimo_negative_charge_overflow_and_roll_contract", failures, Callable(self, "_test_kashimo_negative_charge_overflow_and_roll_contract").bind(harness))
 	runner.run_test("kashimo_positive_charge_overflow_and_switch_clear_contract", failures, Callable(self, "_test_kashimo_positive_charge_overflow_and_switch_clear_contract").bind(harness))
+	runner.run_test("kashimo_negative_charge_switch_clear_contract", failures, Callable(self, "_test_kashimo_negative_charge_switch_clear_contract").bind(harness))
 
 func _test_kashimo_negative_charge_overflow_and_roll_contract(harness) -> Dictionary:
 	var core_payload = harness.build_core()
@@ -45,7 +46,7 @@ func _test_kashimo_negative_charge_overflow_and_roll_contract(harness) -> Dictio
 				int(expected_stacks_by_turn[turn_index]),
 				stack_count,
 			])
-		var tick_deltas := _collect_trigger_damage_deltas(core.service("battle_logger").event_log, target.unit_instance_id, "turn_end")
+		var tick_deltas := _support.collect_trigger_damage_deltas(core.service("battle_logger").event_log, target.unit_instance_id, "turn_end")
 		if tick_deltas.size() != int(expected_tick_counts_by_turn[turn_index]):
 			return harness.fail_result("negative charge tick count mismatch on turn %d: expected=%d actual=%d" % [
 				turn_index,
@@ -99,19 +100,44 @@ func _test_kashimo_positive_charge_overflow_and_switch_clear_contract(harness) -
 		return harness.fail_result("positive charges should clear when kashimo leaves active slot")
 	return harness.pass_result()
 
-func _collect_trigger_damage_deltas(event_log: Array, target_instance_id: String, trigger_name: String) -> Array[int]:
-	var deltas: Array[int] = []
-	for event in event_log:
-		if event.event_type != EventTypesScript.EFFECT_DAMAGE:
-			continue
-		if String(event.target_instance_id) != target_instance_id:
-			continue
-		if String(event.trigger_name) != trigger_name:
-			continue
-		if event.value_changes.is_empty():
-			continue
-		deltas.append(abs(int(event.value_changes[0].delta)))
-	return deltas
+func _test_kashimo_negative_charge_switch_clear_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	content_index.units["sample_mossaur"].base_hp = 999
+	var battle_setup = _support.build_kashimo_setup(sample_factory)
+	battle_setup.sides[1].starting_index = 2
+	var battle_state = _support.build_battle_state(core, content_index, battle_setup, 843)
+	var target = battle_state.get_side("P2").get_active_unit()
+	if target == null:
+		return harness.fail_result("missing target unit for negative charge switch clear contract")
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		_support.build_manual_skill_command(core, 1, "P1", "P1-A", "kashimo_raiken"),
+		_support.build_manual_wait_command(core, 1, "P2", "P2-C"),
+	])
+	if _support.count_effect_instances(target, "kashimo_negative_charge_mark") != 1:
+		return harness.fail_result("negative charge setup should leave one stack before target switches")
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		_support.build_manual_wait_command(core, 2, "P1", "P1-A"),
+		_support.build_manual_switch_command(core, 2, "P2", "P2-C", "P2-A"),
+	])
+	var replacement = battle_state.get_side("P2").get_active_unit()
+	if replacement == null or String(replacement.public_id) != "P2-A":
+		return harness.fail_result("negative charge switch clear contract should bring in the requested replacement")
+	if _support.count_effect_instances(target, "kashimo_negative_charge_mark") != 0:
+		return harness.fail_result("negative charges should clear when the marked target leaves active slot")
+	if _support.count_effect_instances(replacement, "kashimo_negative_charge_mark") != 0:
+		return harness.fail_result("negative charges should not leak onto the replacement target")
+	var switch_turn_ticks := _support.collect_trigger_damage_deltas(core.service("battle_logger").event_log, target.unit_instance_id, "turn_end")
+	if not switch_turn_ticks.is_empty():
+		return harness.fail_result("negative charges should not keep ticking on the bench after switch clear")
+	return harness.pass_result()
 
 func _count_resource_mod_ticks(event_log: Array, target_instance_id: String, trigger_name: String, expected_delta: int) -> int:
 	var count := 0

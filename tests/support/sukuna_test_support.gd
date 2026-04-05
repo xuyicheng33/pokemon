@@ -13,6 +13,17 @@ func build_sukuna_setup(sample_factory, p1_regular_skill_overrides: Dictionary =
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
+func build_sukuna_vs_gojo_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}, p2_regular_skill_overrides: Dictionary = {}):
+    var battle_setup = sample_factory.build_sample_setup({
+        "P1": p1_regular_skill_overrides,
+        "P2": p2_regular_skill_overrides,
+    })
+    battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_pyron"])
+    battle_setup.sides[0].starting_index = 0
+    battle_setup.sides[1].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
+    battle_setup.sides[1].starting_index = 0
+    return battle_setup
+
 func build_battle_state(core, content_index, battle_setup, seed: int):
     return _domain_support.build_battle_state(core, content_index, battle_setup, seed)
 

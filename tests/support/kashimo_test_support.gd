@@ -2,6 +2,7 @@ extends RefCounted
 class_name KashimoTestSupport
 
 const DomainRoleTestSupportScript := preload("res://tests/support/domain_role_test_support.gd")
+const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 var _support = DomainRoleTestSupportScript.new()
 
@@ -97,6 +98,20 @@ func count_effect_instances(unit_state, effect_id: String) -> int:
         if String(effect_instance.def_id) == effect_id:
             count += 1
     return count
+
+func collect_trigger_damage_deltas(event_log: Array, target_instance_id: String, trigger_name: String) -> Array[int]:
+    var deltas: Array[int] = []
+    for event in event_log:
+        if event.event_type != EventTypesScript.EFFECT_DAMAGE:
+            continue
+        if String(event.target_instance_id) != target_instance_id:
+            continue
+        if String(event.trigger_name) != trigger_name:
+            continue
+        if event.value_changes.is_empty():
+            continue
+        deltas.append(abs(int(event.value_changes[0].delta)))
+    return deltas
 
 func has_rule_mod(unit_state, mod_kind: String, value: Variant = null) -> bool:
     for rule_mod_instance in unit_state.rule_mod_instances:

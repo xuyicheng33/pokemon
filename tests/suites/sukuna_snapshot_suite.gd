@@ -136,7 +136,11 @@ func _test_sukuna_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "sukuna_apply_domain_field duration_mode", "actual": String(apply_domain.duration_mode), "expected": "turns"},
         {"label": "sukuna_apply_domain_field duration", "actual": int(apply_domain.duration), "expected": 3},
         {"label": "sukuna_apply_domain_field decrement_on", "actual": String(apply_domain.decrement_on), "expected": "turn_end"},
+        {"label": "sukuna_apply_domain_field scope", "actual": String(apply_domain.scope), "expected": "field"},
+        {"label": "sukuna_apply_domain_field stacking", "actual": String(apply_domain.stacking), "expected": "replace"},
+        {"label": "sukuna_apply_domain_field trigger_names", "actual": apply_domain.trigger_names, "expected": PackedStringArray(["on_hit"])},
         {"label": "sukuna_apply_domain_field field_definition_id", "actual": String(apply_domain_payload.field_definition_id), "expected": "sukuna_malevolent_shrine_field"},
+        {"label": "sukuna_malevolent_shrine_field field_kind", "actual": String(domain_field.field_kind), "expected": "domain"},
         {"label": "sukuna_malevolent_shrine_field effect_ids", "actual": domain_field.effect_ids, "expected": PackedStringArray(["sukuna_domain_cast_buff"])},
         {"label": "sukuna_malevolent_shrine_field on_expire_effect_ids", "actual": domain_field.on_expire_effect_ids, "expected": PackedStringArray(["sukuna_domain_buff_remove", "sukuna_domain_expire_burst"])},
         {"label": "sukuna_malevolent_shrine_field on_break_effect_ids", "actual": domain_field.on_break_effect_ids, "expected": PackedStringArray(["sukuna_domain_buff_remove"])},
@@ -176,11 +180,14 @@ func _build_content_index(harness):
     return harness.build_loaded_content_index(sample_factory)
 
 func _run_checks(harness, checks: Array[Dictionary]) -> Dictionary:
+    var failures: Array[String] = []
     for check in checks:
         if check["actual"] != check["expected"]:
-            return harness.fail_result("%s expected=%s actual=%s" % [
+            failures.append("%s expected=%s actual=%s" % [
                 String(check["label"]),
                 var_to_str(check["expected"]),
                 var_to_str(check["actual"]),
             ])
+    if not failures.is_empty():
+        return harness.fail_result("\n".join(failures))
     return harness.pass_result()

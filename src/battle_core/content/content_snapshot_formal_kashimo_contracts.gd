@@ -46,23 +46,35 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"combat_type_id": "thunder",
 			"targeting": "enemy_active_slot",
 			"effects_on_hit_ids": PackedStringArray(["kashimo_apply_negative_charge"]),
+			"effects_on_cast_ids": PackedStringArray(),
+			"effects_on_miss_ids": PackedStringArray(),
+			"effects_on_kill_ids": PackedStringArray(),
 		}
 	)
 	_validate_skill_contract(validator, content_index, errors, "formal[kashimo].charge", "kashimo_charge", {
 		"display_name": "蓄电", "damage_kind": "none", "power": 0, "accuracy": 100,
 		"mp_cost": 8, "priority": 0, "combat_type_id": "", "targeting": "self",
 		"effects_on_cast_ids": PackedStringArray(["kashimo_apply_positive_charge"]),
+		"effects_on_hit_ids": PackedStringArray(),
+		"effects_on_miss_ids": PackedStringArray(),
+		"effects_on_kill_ids": PackedStringArray(),
 	})
 	_validate_skill_contract(validator, content_index, errors, "formal[kashimo].feedback_strike", "kashimo_feedback_strike", {
 		"display_name": "回授电击", "damage_kind": "special", "power": 30, "accuracy": 100,
 		"mp_cost": 15, "priority": 0, "combat_type_id": "thunder", "targeting": "enemy_active_slot",
 		"power_bonus_source": "effect_stack_sum",
 		"effects_on_hit_ids": PackedStringArray(["kashimo_consume_positive_charges", "kashimo_consume_negative_charges"]),
+		"effects_on_cast_ids": PackedStringArray(),
+		"effects_on_miss_ids": PackedStringArray(),
+		"effects_on_kill_ids": PackedStringArray(),
 	})
 	_validate_skill_contract(validator, content_index, errors, "formal[kashimo].kyokyo", "kashimo_kyokyo_katsura", {
 		"display_name": "弥虚葛笼", "damage_kind": "none", "power": 0, "accuracy": 100,
 		"mp_cost": 20, "priority": 2, "combat_type_id": "", "targeting": "self",
 		"effects_on_cast_ids": PackedStringArray(["kashimo_kyokyo_nullify"]),
+		"effects_on_hit_ids": PackedStringArray(),
+		"effects_on_miss_ids": PackedStringArray(),
+		"effects_on_kill_ids": PackedStringArray(),
 	})
 	_validate_skill_contract(
 		validator,
@@ -81,6 +93,9 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 			"targeting": "enemy_active_slot",
 			"is_domain_skill": false,
 			"effects_on_cast_ids": PackedStringArray(["kashimo_amber_self_transform"]),
+			"effects_on_hit_ids": PackedStringArray(),
+			"effects_on_miss_ids": PackedStringArray(),
+			"effects_on_kill_ids": PackedStringArray(),
 		}
 	)
 func validate_charge_separation_contract(validator, content_index, errors: Array) -> void:
@@ -158,6 +173,10 @@ func _validate_skill_contract(
 		validator._expect_packed_string_array(errors, "%s effects_on_cast_ids" % label, skill_definition.effects_on_cast_ids, expected_fields.get("effects_on_cast_ids", PackedStringArray()))
 	if expected_fields.has("effects_on_hit_ids"):
 		validator._expect_packed_string_array(errors, "%s effects_on_hit_ids" % label, skill_definition.effects_on_hit_ids, expected_fields.get("effects_on_hit_ids", PackedStringArray()))
+	if expected_fields.has("effects_on_miss_ids"):
+		validator._expect_packed_string_array(errors, "%s effects_on_miss_ids" % label, skill_definition.effects_on_miss_ids, expected_fields.get("effects_on_miss_ids", PackedStringArray()))
+	if expected_fields.has("effects_on_kill_ids"):
+		validator._expect_packed_string_array(errors, "%s effects_on_kill_ids" % label, skill_definition.effects_on_kill_ids, expected_fields.get("effects_on_kill_ids", PackedStringArray()))
 func _validate_thunder_resist(validator, content_index, errors: Array) -> void:
 	var label := "formal[kashimo].thunder_resist"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_thunder_resist")

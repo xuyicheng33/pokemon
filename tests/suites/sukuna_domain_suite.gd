@@ -11,6 +11,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("sukuna_domain_break_chain_path", failures, Callable(self, "_test_sukuna_domain_break_chain_path").bind(harness))
     runner.run_test("sukuna_domain_break_on_faint_path", failures, Callable(self, "_test_sukuna_domain_break_on_faint_path").bind(harness))
     runner.run_test("sukuna_field_accuracy_override_path", failures, Callable(self, "_test_sukuna_field_accuracy_override_path").bind(harness))
+    runner.run_test("sukuna_domain_failed_clash_no_field_no_buff_no_expire_burst_contract", failures, Callable(self, "_test_sukuna_domain_failed_clash_no_field_no_buff_no_expire_burst_contract").bind(harness))
 
 func _test_sukuna_domain_expire_chain_path(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -173,8 +174,52 @@ func _test_sukuna_field_accuracy_override_path(harness) -> Dictionary:
         return harness.fail_result("field accuracy override should let zero-accuracy hiraku hit while domain is active")
     return harness.pass_result()
 
+func _test_sukuna_domain_failed_clash_no_field_no_buff_no_expire_burst_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_setup = _build_sukuna_vs_gojo_setup(sample_factory)
+    var battle_state = _build_battle_state(core, content_index, battle_setup, 710)
+    var sukuna_unit = battle_state.get_side("P1").get_active_unit()
+    var gojo_unit = battle_state.get_side("P2").get_active_unit()
+    if sukuna_unit == null or gojo_unit == null:
+        return harness.fail_result("missing active units for sukuna failed clash contract")
+    sukuna_unit.current_mp = 80
+    sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
+    gojo_unit.current_mp = gojo_unit.max_mp
+    gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
+    gojo_unit.base_speed = 999
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        _build_manual_ultimate_command(core, 1, "P1", "P1-A", "sukuna_fukuma_mizushi"),
+        _build_manual_ultimate_command(core, 1, "P2", "P2-A", "gojo_unlimited_void"),
+    ])
+    if battle_state.field_state == null or battle_state.field_state.field_def_id != "gojo_unlimited_void_field":
+        return harness.fail_result("宿傩对拼失败后，场上不应留下伏魔御厨子")
+    if int(sukuna_unit.stat_stages.get("attack", 0)) != 0 or int(sukuna_unit.stat_stages.get("sp_attack", 0)) != 0:
+        return harness.fail_result("宿傩对拼失败后，不应保留领域双攻增幅")
+    var gojo_hp_before_expire_window: int = gojo_unit.current_hp
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        _build_manual_wait_command(core, 2, "P1", "P1-A"),
+        _build_manual_wait_command(core, 2, "P2", "P2-A"),
+    ])
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        _build_manual_wait_command(core, 3, "P1", "P1-A"),
+        _build_manual_wait_command(core, 3, "P2", "P2-A"),
+    ])
+    if gojo_unit.current_hp != gojo_hp_before_expire_window:
+        return harness.fail_result("宿傩对拼失败后，不应残留领域自然到期终爆")
+    return harness.pass_result()
+
 func _build_sukuna_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}):
     return _support.build_sukuna_setup(sample_factory, p1_regular_skill_overrides)
+
+func _build_sukuna_vs_gojo_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}, p2_regular_skill_overrides: Dictionary = {}):
+    return _support.build_sukuna_vs_gojo_setup(sample_factory, p1_regular_skill_overrides, p2_regular_skill_overrides)
 
 func _build_battle_state(core, content_index, battle_setup, seed: int):
     return _support.build_battle_state(core, content_index, battle_setup, seed)

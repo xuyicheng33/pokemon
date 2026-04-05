@@ -24,6 +24,11 @@ func _validate_domain_followup(validator, content_index, errors: Array) -> void:
 	)
 	if apply_field_payload == null:
 		return
+	validator._expect_string(errors, "%s scope" % label, effect_definition.scope, "field")
+	validator._expect_string(errors, "%s duration_mode" % label, effect_definition.duration_mode, "turns")
+	validator._expect_int(errors, "%s duration" % label, effect_definition.duration, 3)
+	validator._expect_string(errors, "%s decrement_on" % label, effect_definition.decrement_on, "turn_end")
+	validator._expect_string(errors, "%s stacking" % label, effect_definition.stacking, "replace")
 	if String(apply_field_payload.field_definition_id) != "gojo_unlimited_void_field":
 		errors.append("%s field_definition_id mismatch: expected gojo_unlimited_void_field got %s" % [
 			label,
@@ -46,6 +51,7 @@ func _validate_domain_buff_contract(validator, content_index, errors: Array) -> 
 	var label := "formal[gojo].domain_buff_contract"
 	var field_definition = validator._require_field(content_index, errors, label, "gojo_unlimited_void_field")
 	if field_definition != null:
+		validator._expect_string(errors, "%s field.field_kind" % label, field_definition.field_kind, "domain")
 		validator._expect_packed_string_array(
 			errors,
 			"%s field.effect_ids" % label,
@@ -94,8 +100,8 @@ func _validate_domain_buff_contract(validator, content_index, errors: Array) -> 
 				"decrement_on": "turn_end",
 			}
 		)
-	_validate_stat_mod_effect(validator, content_index, errors, label, "gojo_domain_cast_buff", "sp_attack", 1)
-	_validate_stat_mod_effect(validator, content_index, errors, label, "gojo_domain_buff_remove", "sp_attack", -1)
+	_validate_stat_mod_effect(validator, content_index, errors, label, "gojo_domain_cast_buff", "sp_attack", 1, PackedStringArray(["field_apply"]))
+	_validate_stat_mod_effect(validator, content_index, errors, label, "gojo_domain_buff_remove", "sp_attack", -1, PackedStringArray(["field_break", "field_expire"]))
 
 func _validate_stat_mod_effect(
 	validator,
@@ -104,11 +110,16 @@ func _validate_stat_mod_effect(
 	label: String,
 	effect_id: String,
 	expected_stat_name: String,
-	expected_stage_delta: int
+	expected_stage_delta: int,
+	expected_trigger_names: PackedStringArray
 ) -> void:
 	var effect_definition = validator._require_effect(content_index, errors, label, effect_id)
 	if effect_definition == null:
 		return
+	validator._expect_string(errors, "%s effect[%s].scope" % [label, effect_id], effect_definition.scope, "self")
+	validator._expect_string(errors, "%s effect[%s].duration_mode" % [label, effect_id], effect_definition.duration_mode, "permanent")
+	validator._expect_string(errors, "%s effect[%s].stacking" % [label, effect_id], effect_definition.stacking, "none")
+	validator._expect_packed_string_array(errors, "%s effect[%s].trigger_names" % [label, effect_id], effect_definition.trigger_names, expected_trigger_names)
 	var stat_mod_payload = validator._extract_single_payload(
 		errors,
 		label,

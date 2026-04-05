@@ -44,7 +44,7 @@ func _test_kashimo_raiken_negative_charge_contract(harness) -> Dictionary:
         var stack_count: int = _support.count_effect_instances(target, "kashimo_negative_charge_mark")
         if stack_count != turn_index:
             return harness.fail_result("raiken should leave %d negative charge stacks after turn %d, actual=%d" % [turn_index, turn_index, stack_count])
-        var tick_deltas: Array[int] = _collect_trigger_damage_deltas(core.service("battle_logger").event_log, target.unit_instance_id, "turn_end")
+        var tick_deltas: Array[int] = _support.collect_trigger_damage_deltas(core.service("battle_logger").event_log, target.unit_instance_id, "turn_end")
         if tick_deltas.size() != turn_index:
             return harness.fail_result("negative charge should emit %d turn_end ticks on turn %d, actual=%d" % [turn_index, turn_index, tick_deltas.size()])
         for tick_delta in tick_deltas:
@@ -349,20 +349,6 @@ func _build_kashimo_state(harness, seed: int) -> Dictionary:
         "content_index": content_index,
         "battle_state": battle_state,
     }
-
-func _collect_trigger_damage_deltas(event_log: Array, target_instance_id: String, trigger_name: String) -> Array[int]:
-    var deltas: Array[int] = []
-    for event in event_log:
-        if event.event_type != EventTypesScript.EFFECT_DAMAGE:
-            continue
-        if String(event.target_instance_id) != target_instance_id:
-            continue
-        if String(event.trigger_name) != trigger_name:
-            continue
-        if event.value_changes.is_empty():
-            continue
-        deltas.append(abs(int(event.value_changes[0].delta)))
-    return deltas
 
 func _find_counter_damage(event_log: Array, target_instance_id: String) -> int:
     for event in event_log:

@@ -21,6 +21,64 @@
 
 ## 2026-04-05
 
+### 审查问题修复收口：角色侧战斗核心回归补漏与 formal contract 收紧（已完成）
+
+- 目标：
+  - 把这轮审查里真正还缺的战斗核心补漏收口掉，避免继续把“共享 suite 有覆盖”和“角色侧没有直给锚点”混成一件事
+  - 顺手把正式角色 formal contract 里几条低成本但容易静默漂移的字段锁死
+- 范围：
+  - `tests/suites/gojo_unlimited_void_suite.gd`
+  - `tests/suites/sukuna_domain_suite.gd`
+  - `tests/suites/kashimo_charge_lifecycle_suite.gd`
+  - `tests/suites/kashimo_runtime_suite.gd`
+  - `tests/suites/gojo_snapshot_suite.gd`
+  - `tests/suites/sukuna_snapshot_suite.gd`
+  - `tests/suites/kashimo_snapshot_suite.gd`
+  - `tests/support/kashimo_test_support.gd`
+  - `tests/support/sukuna_test_support.gd`
+  - `src/battle_core/content/content_snapshot_formal_gojo_contracts.gd`
+  - `src/battle_core/content/content_snapshot_formal_gojo_domain_contracts.gd`
+  - `src/battle_core/content/content_snapshot_formal_sukuna_contracts.gd`
+  - `src/battle_core/content/content_snapshot_formal_sukuna_validator.gd`
+  - `src/battle_core/content/content_snapshot_formal_kashimo_contracts.gd`
+  - `docs/records/formal_character_registry.json`
+  - `README.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - Gojo / Sukuna 已存在的关键领域测试锚点必须正式登记进 `formal_character_registry.json`
+  - Kashimo 必须补上“负电荷换人清空且不再继续 tick”的角色侧专项回归
+  - Gojo / Sukuna / Kashimo snapshot suite 的 `_run_checks` 不再首错即停
+  - Gojo / Sukuna / Kashimo formal contract 必须补上这轮补漏对应的关键字段锁定
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成：
+  - `formal_character_registry.json` 已补回角色侧关键锚点：
+    - Gojo `gojo_unlimited_void_expire_removes_field_buff_contract`
+    - Gojo `gojo_unlimited_void_break_removes_field_buff_contract`
+    - Sukuna `sukuna_domain_failed_clash_no_field_no_buff_no_expire_burst_contract`
+    - Kashimo `kashimo_negative_charge_switch_clear_contract`
+  - `kashimo_negative_charge_switch_clear_contract` 已新增，锁住负电荷目标换人后清空且不再继续 `turn_end` tick
+  - `KashimoTestSupport` 已抽出 `collect_trigger_damage_deltas()`，收掉 `kashimo_charge_lifecycle_suite.gd` 和 `kashimo_runtime_suite.gd` 的重复 helper
+  - Gojo / Sukuna / Kashimo snapshot suite 的 `_run_checks` 已改成收集所有失败后一次报出
+  - Gojo / Sukuna / Kashimo formal contract 已补：
+    - Gojo / Sukuna `combat_type_ids`
+    - 三角色关键技能的空 effect 数组
+    - Gojo 标记施加 effect 形状
+    - Gojo / Sukuna 领域 `field_kind`
+    - Gojo / Sukuna 领域 apply / cleanup 关键 trigger 与形状
+  - `README.md` 代码规模统计已同步到本批次实测值
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/check_repo_consistency.sh` 通过
+- `bash tests/run_with_gate.sh` 通过
+
 ### 审查问题修复收口：鹿紫云固定案例 runner 改走真实 Gojo 领域路径，架构文档同步对齐（已完成）
 
 - 目标：

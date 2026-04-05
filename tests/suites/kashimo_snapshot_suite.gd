@@ -191,11 +191,14 @@ func _build_content_index(harness):
     return harness.build_loaded_content_index(sample_factory)
 
 func _run_checks(harness, checks: Array[Dictionary]) -> Dictionary:
+    var failures: Array[String] = []
     for check in checks:
         if check["actual"] != check["expected"]:
-            return harness.fail_result("%s expected=%s actual=%s" % [
+            failures.append("%s expected=%s actual=%s" % [
                 String(check["label"]),
                 var_to_str(check["expected"]),
                 var_to_str(check["actual"]),
             ])
+    if not failures.is_empty():
+        return harness.fail_result("\n".join(failures))
     return harness.pass_result()

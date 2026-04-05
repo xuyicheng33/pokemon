@@ -70,24 +70,35 @@ func _validate_domain_contract(content_index, errors: Array) -> void:
 			apply_payload,
 			{"field_definition_id": "sukuna_malevolent_shrine_field"}
 		)
+		_expect_string(errors, "%s apply.scope" % label, apply_effect.scope, "field")
 		_expect_string(errors, "%s apply.duration_mode" % label, apply_effect.duration_mode, "turns")
 		_expect_int(errors, "%s apply.duration" % label, apply_effect.duration, 3)
 		_expect_string(errors, "%s apply.decrement_on" % label, apply_effect.decrement_on, "turn_end")
+		_expect_string(errors, "%s apply.stacking" % label, apply_effect.stacking, "replace")
+		_expect_packed_string_array(errors, "%s apply.trigger_names" % label, apply_effect.trigger_names, PackedStringArray(["on_hit"]))
 	var field_definition = _require_field(content_index, errors, label, "sukuna_malevolent_shrine_field")
 	if field_definition != null:
+		_expect_string(errors, "%s field.field_kind" % label, field_definition.field_kind, "domain")
 		_expect_packed_string_array(errors, "%s field.effect_ids" % label, field_definition.effect_ids, PackedStringArray(["sukuna_domain_cast_buff"]))
 		_expect_packed_string_array(errors, "%s field.on_expire_effect_ids" % label, field_definition.on_expire_effect_ids, PackedStringArray(["sukuna_domain_buff_remove", "sukuna_domain_expire_burst"]))
 		_expect_packed_string_array(errors, "%s field.on_break_effect_ids" % label, field_definition.on_break_effect_ids, PackedStringArray(["sukuna_domain_buff_remove"]))
 		_expect_int(errors, "%s field.creator_accuracy_override" % label, field_definition.creator_accuracy_override, 100)
-	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_cast_buff", "attack", 1, 0)
-	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_cast_buff", "sp_attack", 1, 1)
-	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_buff_remove", "attack", -1, 0)
-	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_buff_remove", "sp_attack", -1, 1)
+	var expire_burst = _require_effect(content_index, errors, label, "sukuna_domain_expire_burst")
+	if expire_burst != null:
+		_expect_packed_string_array(errors, "%s effect[sukuna_domain_expire_burst].trigger_names" % label, expire_burst.trigger_names, PackedStringArray(["field_expire"]))
+	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_cast_buff", "attack", 1, 0, PackedStringArray(["field_apply"]))
+	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_cast_buff", "sp_attack", 1, 1, PackedStringArray(["field_apply"]))
+	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_buff_remove", "attack", -1, 0, PackedStringArray(["field_break", "field_expire"]))
+	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_buff_remove", "sp_attack", -1, 1, PackedStringArray(["field_break", "field_expire"]))
 
-func _validate_domain_stat_mod(content_index, errors: Array, label: String, effect_id: String, stat_name: String, stage_delta: int, payload_index: int) -> void:
+func _validate_domain_stat_mod(content_index, errors: Array, label: String, effect_id: String, stat_name: String, stage_delta: int, payload_index: int, expected_trigger_names: PackedStringArray) -> void:
 	var effect_definition = _require_effect(content_index, errors, label, effect_id)
 	if effect_definition == null:
 		return
+	_expect_string(errors, "%s effect[%s].scope" % [label, effect_id], effect_definition.scope, "self")
+	_expect_string(errors, "%s effect[%s].duration_mode" % [label, effect_id], effect_definition.duration_mode, "permanent")
+	_expect_string(errors, "%s effect[%s].stacking" % [label, effect_id], effect_definition.stacking, "none")
+	_expect_packed_string_array(errors, "%s effect[%s].trigger_names" % [label, effect_id], effect_definition.trigger_names, expected_trigger_names)
 	if effect_definition.payloads.size() <= payload_index:
 		errors.append("%s effect[%s] missing payload index %d" % [label, effect_id, payload_index])
 		return

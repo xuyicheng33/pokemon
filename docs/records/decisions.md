@@ -44,6 +44,19 @@
   - 固定案例 runner 的目标是“出 gate 以后，快速复查真实局面有没有漂”，不是只证明局部字段能被人造状态凑出来。
   - 领域建立时机、起手 MP、换装技能组、行动顺序这类问题，只有真实对局路径才能稳定暴露。
 
+### 0.3 角色侧关键机制必须有直给回归锚点，不只挂共享 suite（2026-04-05）
+
+- 共享 suite 继续保留，用来锁公共领域、奥义点、field 生命周期这类跨角色 contract。
+- 但正式角色 registry 里的 `required_test_names`，必须显式挂上角色侧最容易被误判成“共享已覆盖”的关键机制回归。
+- 当前明确收口的例子：
+  - Gojo `gojo_unlimited_void_expire_removes_field_buff_contract`
+  - Gojo `gojo_unlimited_void_break_removes_field_buff_contract`
+  - Sukuna `sukuna_domain_failed_clash_no_field_no_buff_no_expire_burst_contract`
+  - Kashimo `kashimo_negative_charge_switch_clear_contract`
+- 原因：
+  - 这批问题的根子不是完全没测，而是“共享 suite 有覆盖，但角色侧入口不直观”，导致审查时很容易误判成缺测试。
+  - 把角色侧直给锚点写进 registry，后续扩角和复查时就不会再靠人肉回忆“这个是不是在公共 suite 里顺带测过”。
+
 ### 1. 规则、设计、记录的职责分层固定
 
 - `docs/rules/` 是当前生效规则权威。
