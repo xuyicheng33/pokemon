@@ -352,14 +352,17 @@
 - 原因：
   - 这条链是当前效果递归、击倒窗口与补位主链之间的稳定调用回路；贸然切装配方式比保留受控闭环更容易引入半初始化或递归死锁。
 
-### 32. 正式角色若因 effect 触发差异必须双写共享伤害 payload，加载期必须做一致性校验（2026-03-31）
+### 32. 正式角色的跨 effect 共享 payload 统一落到 `content/shared/`，并由 formal validator 强校验引用路径（2026-03-31，2026-04-05 更新）
 
-- 当前宿傩 `sukuna_kamado_mark`、`sukuna_kamado_explode`、`sukuna_domain_expire_burst` 都各自带一份 `20` 点火属性固定伤害 payload。
-- 这三处独立定义暂时保留，因为它们分别挂在 `on_exit / on_expire / field_expire` 三条不同 effect 链上，直接抽成独立 content 资源会越过当前注册表支持范围。
-- `ContentSnapshotShapeValidator` 现在继续通过 formal-character helper 在加载期强校验三处 `amount / use_formula / combat_type_id` 必须完全一致。
+- 当前宿傩 `sukuna_kamado_mark`、`sukuna_kamado_explode`、`sukuna_domain_expire_burst` 共用一份外部 `DamagePayload`：
+  - `res://content/shared/effects/sukuna_shared_fire_burst_damage.tres`
+- `content/shared/` 只放“被顶层内容资源引用的辅助 Resource”，不参与 `SampleBattleFactory.content_snapshot_paths()` 的顶层注册扫描。
+- `ContentSnapshotShapeValidator` 继续通过 formal-character helper 同时校验：
+  - 这三个 effect 的 damage payload 资源路径必须都指向同一份 shared payload
+  - 共享 payload 的 `amount / use_formula / combat_type_id` 必须符合正式角色 contract
 - 原因：
-  - 不再只靠设计稿里的“手工同步点”提醒维护数值。
-  - 保持现有 content schema 不扩新资源类型，同时让这类正式角色共享数值漂移能在加载时 fail-fast。
+  - 共享数值真正收口成单源后，调数值不再需要多处同步。
+  - 保持现有 registry / schema 不扩新顶层资源类型，同时避免“shared helper resource 被当成顶层 content 注册”。
 
 ### 33. 正式角色 content 资源按角色子目录组织，继续复用递归 snapshot 收集（2026-03-31）
 

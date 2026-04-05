@@ -21,6 +21,45 @@
 
 ## 2026-04-05
 
+### 审查问题修复收口：宿傩 kamado 20 点火伤升级为真正单源资源（已完成）
+
+- 目标：
+  - 把宿傩 `sukuna_kamado_mark / sukuna_kamado_explode / sukuna_domain_expire_burst` 的共享 20 点火属性固定伤害从“三处重复定义 + 一致性校验”升级为真正单源
+  - 保持现有 content registry 不扩新顶层资源类型，不把 helper resource 误注册进 content snapshot
+  - 同步 formal validator、设计稿与记录文档，避免仓库口径继续停留在“有意重复”
+- 范围：
+  - `content/shared/effects/sukuna_shared_fire_burst_damage.tres`
+  - `content/effects/sukuna/sukuna_kamado_mark.tres`
+  - `content/effects/sukuna/sukuna_kamado_explode.tres`
+  - `content/effects/sukuna/sukuna_domain_expire_burst.tres`
+  - `src/battle_core/content/content_snapshot_formal_sukuna_validator.gd`
+  - `tests/suites/content_validation_core_suite.gd`
+  - `content/README.md`
+  - `README.md`
+  - `docs/design/sukuna_design.md`
+  - `docs/records/decisions.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - 三个宿傩 effect 都改为引用同一个 shared payload 资源
+  - formal validator 不再只校验数值一致，而是要求三者复用同一资源路径
+  - 内容校验回归能在“其中一个 effect 改成独立 payload”时直接 fail-fast
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成（批次 3）：
+  - 新增 `content/shared/effects/sukuna_shared_fire_burst_damage.tres` 作为宿傩共享 20 点火属性固定伤害单源
+  - `sukuna_kamado_mark / sukuna_kamado_explode / sukuna_domain_expire_burst` 已全部改为外部引用同一 shared payload
+  - `ContentSnapshotFormalSukunaValidator` 已从“值一致”升级到“共享资源路径 + 数值形状”双重校验
+  - `content_validation_core_suite.gd` 已补单源回归：任一 effect 脱离 shared payload 即触发 formal validation 失败
+  - README / content README / 宿傩设计稿 / 决策记录已同步到新的单源口径
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
+
 ### 审查问题修复收口：clash_result 强类型、value_change 工厂、faint window 去递归、README 统计同步（已完成）
 
 - 目标：

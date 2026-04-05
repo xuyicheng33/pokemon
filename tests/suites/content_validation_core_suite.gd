@@ -8,6 +8,7 @@ const EffectDefinitionScript := preload("res://src/battle_core/content/effect_de
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const UnitDefinitionScript := preload("res://src/battle_core/content/unit_definition.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
+const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
@@ -233,19 +234,31 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
 	return harness.pass_result()
 
 func _test_formal_character_shared_fire_burst_validation(harness) -> Dictionary:
+	var shared_path := "res://content/shared/effects/sukuna_shared_fire_burst_damage.tres"
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var kamado_mark = content_index.effects.get("sukuna_kamado_mark", null)
-	if kamado_mark == null or kamado_mark.payloads.is_empty():
-		return harness.fail_result("missing sukuna_kamado_mark damage payload")
-	kamado_mark.payloads[0].amount = 21
+	var kamado_explode = content_index.effects.get("sukuna_kamado_explode", null)
+	var domain_expire_burst = content_index.effects.get("sukuna_domain_expire_burst", null)
+	if kamado_mark == null or kamado_explode == null or domain_expire_burst == null:
+		return harness.fail_result("missing Sukuna shared fire burst effects")
+	if kamado_mark.payloads.is_empty() or kamado_explode.payloads.is_empty() or domain_expire_burst.payloads.is_empty():
+		return harness.fail_result("missing Sukuna shared fire burst payload")
+	if String(kamado_mark.payloads[0].resource_path) != shared_path or String(kamado_explode.payloads[0].resource_path) != shared_path or String(domain_expire_burst.payloads[0].resource_path) != shared_path:
+		return harness.fail_result("Sukuna fire burst effects must all point to the shared payload resource")
+	var drift_payload := DamagePayloadScript.new()
+	drift_payload.payload_type = "damage"
+	drift_payload.amount = 20
+	drift_payload.use_formula = false
+	drift_payload.combat_type_id = "fire"
+	kamado_mark.payloads[0] = drift_payload
 	var errors: Array = content_index.validate_snapshot()
 	for error_msg in errors:
-		if str(error_msg).find("formal[sukuna].shared_fire_burst payload mismatch") != -1:
+		if str(error_msg).find("formal[sukuna].shared_fire_burst effect[sukuna_kamado_mark] must reuse payload resource") != -1:
 			return harness.pass_result()
-	return harness.fail_result("formal shared fire burst validation should fail when Sukuna payloads drift")
+	return harness.fail_result("formal shared fire burst validation should fail when Sukuna effects stop sharing one payload resource")
 
 func _test_formal_character_validator_registry_runtime_contract(harness) -> Dictionary:
 	var registry_result: Dictionary = FormalCharacterValidatorRegistryScript.build_validator_instances()

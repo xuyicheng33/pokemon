@@ -35,6 +35,7 @@
 content/                # 战斗定义资源（.tres）
   battle_formats/
   samples/              # 最小可运行样例与样例对局资源
+  shared/               # 供内容资源复用的非顶层辅助 Resource，不直接参与 snapshot 注册
   combat_types/
   units/
   skills/
@@ -196,6 +197,7 @@ tests/run_with_gate.sh
 - 普通技能与奥义优先级约束分离校验
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
 - `SampleBattleFactory.content_snapshot_paths()` 统一从 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 递归自动收集 `.tres`，并做稳定排序，避免角色接线漏资源与回放漂移
+- 若多个正式资源要共享同一份 payload，可把辅助 Resource 放到 `content/shared/`，再由顶层内容资源显式外部引用；`content/shared/` 本身不参与顶层 snapshot 注册
 
 ### 8.1 正式角色资源
 
@@ -243,11 +245,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-04）
+## 10. 当前代码规模（2026-04-05）
 
-- `src/**/*.gd`：`12652` 行
-- `tests/**/*.gd`：`15698` 行
-- GDScript 合计：`28350` 行
+- `src/**/*.gd`：`12659` 行
+- `tests/**/*.gd`：`15711` 行
+- GDScript 合计：`28370` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

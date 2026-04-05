@@ -8,6 +8,7 @@ const DamagePayloadScript := preload("res://src/battle_core/content/damage_paylo
 const HealPayloadScript := preload("res://src/battle_core/content/heal_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
+const SHARED_FIRE_BURST_RESOURCE_PATH := "res://content/shared/effects/sukuna_shared_fire_burst_damage.tres"
 
 var _contracts = SukunaContractsScript.new()
 
@@ -18,8 +19,17 @@ func validate(content_index, errors: Array) -> void:
 	_validate_reverse_ritual_contract(content_index, errors)
 	_validate_domain_contract(content_index, errors)
 	_contracts.validate_teach_love_contract(self, content_index, errors)
-	_validate_matching_damage_payloads(
-		content_index, errors, "formal[sukuna].shared_fire_burst", PackedStringArray(["sukuna_kamado_mark", "sukuna_kamado_explode", "sukuna_domain_expire_burst"])
+	_validate_shared_damage_payload_resource(
+		content_index,
+		errors,
+		"formal[sukuna].shared_fire_burst",
+		PackedStringArray(["sukuna_kamado_mark", "sukuna_kamado_explode", "sukuna_domain_expire_burst"]),
+		SHARED_FIRE_BURST_RESOURCE_PATH,
+		{
+			"amount": 20,
+			"use_formula": false,
+			"combat_type_id": "fire",
+		}
 	)
 
 func _validate_reverse_ritual_contract(content_index, errors: Array) -> void:
@@ -88,9 +98,14 @@ func _validate_domain_stat_mod(content_index, errors: Array, label: String, effe
 	_expect_payload_shape(errors, "%s effect[%s].payload[%d]" % [label, effect_id, payload_index], payload, {"stat_name": stat_name, "stage_delta": stage_delta})
 
 
-func _validate_matching_damage_payloads(content_index, errors: Array, label: String, effect_ids: PackedStringArray) -> void:
-	var baseline_fingerprint: Dictionary = {}
-	var baseline_effect_id := ""
+func _validate_shared_damage_payload_resource(
+	content_index,
+	errors: Array,
+	label: String,
+	effect_ids: PackedStringArray,
+	expected_resource_path: String,
+	expected_fields: Dictionary
+) -> void:
 	for raw_effect_id in effect_ids:
 		var effect_id := String(raw_effect_id)
 		var effect_definition = _require_effect(content_index, errors, label, effect_id)
@@ -99,22 +114,14 @@ func _validate_matching_damage_payloads(content_index, errors: Array, label: Str
 		var damage_payload = _extract_single_damage_payload(errors, label, effect_id, effect_definition)
 		if damage_payload == null:
 			continue
-		var fingerprint := {
-			"amount": int(damage_payload.amount),
-			"use_formula": bool(damage_payload.use_formula),
-			"combat_type_id": String(damage_payload.combat_type_id),
-		}
-		if baseline_effect_id.is_empty():
-			baseline_effect_id = effect_id
-			baseline_fingerprint = fingerprint
-			continue
-		if fingerprint != baseline_fingerprint:
-			errors.append("%s payload mismatch: effect[%s]=%s expected effect[%s]=%s" % [
+		_expect_payload_shape(errors, "%s effect[%s]" % [label, effect_id], damage_payload, expected_fields)
+		var resource_path := String(damage_payload.resource_path)
+		if resource_path != expected_resource_path:
+			errors.append("%s effect[%s] must reuse payload resource %s, got %s" % [
 				label,
 				effect_id,
-				var_to_str(fingerprint),
-				baseline_effect_id,
-				var_to_str(baseline_fingerprint),
+				expected_resource_path,
+				resource_path,
 			])
 
 func _extract_single_damage_payload(errors: Array, label: String, effect_id: String, effect_definition) -> Variant:
