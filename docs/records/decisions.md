@@ -57,6 +57,14 @@
   - 这批问题的根子不是完全没测，而是“共享 suite 有覆盖，但角色侧入口不直观”，导致审查时很容易误判成缺测试。
   - 把角色侧直给锚点写进 registry，后续扩角和复查时就不会再靠人肉回忆“这个是不是在公共 suite 里顺带测过”。
 
+### 0.4 静态资源补漏优先前移到 formal validator，snapshot 诊断必须一次报全（2026-04-05）
+
+- `combat_type_ids`、空 effect 数组、领域 `field_kind`、领域 apply / buff remove 这类静态关键字段，当前要求优先锁进 formal validator，不再只靠 snapshot suite 间接兜底。
+- Gojo / Sukuna / Kashimo 的 snapshot suite `_run_checks` 当前统一改成“同一轮把全部 mismatch 一次报完”，不再首错即停。
+- 原因：
+  - 这类漂移越早炸越省事，最好在 formal validator 阶段就拦下，而不是拖到角色 runtime suite 才暴露。
+  - 首错即停会把多处静态漂移压缩成一条报错，信息量不够，补漏效率低。
+
 ### 1. 规则、设计、记录的职责分层固定
 
 - `docs/rules/` 是当前生效规则权威。
