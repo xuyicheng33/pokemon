@@ -19,7 +19,7 @@ func resolve_missing_dependency() -> String:
         return "id_factory"
     return ""
 
-func build_command(input_payload: Dictionary):
+func build_command(input_payload: Dictionary) -> Variant:
     last_error_code = null
     last_error_message = ""
     if id_factory == null:
@@ -46,7 +46,7 @@ func build_command(input_payload: Dictionary):
     command.target_slot = input_payload.get("target_slot", "")
     return command
 
-func _fail_invalid_payload(message: String):
+func _fail_invalid_payload(message: String) -> Variant:
     last_error_code = ErrorCodesScript.INVALID_COMMAND_PAYLOAD
     last_error_message = message
     return null

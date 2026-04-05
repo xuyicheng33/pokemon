@@ -75,7 +75,7 @@ func break_active_field(battle_state, content_index, trigger_name: String) -> bo
     battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
     return true
 
-func apply_turn_end_field_tick(battle_state, content_index, cause_event_id: String):
+func apply_turn_end_field_tick(battle_state, content_index, cause_event_id: String) -> Variant:
     if battle_state.field_state == null:
         return {
             "field_change": null,

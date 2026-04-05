@@ -23,7 +23,7 @@ func error_state() -> Dictionary:
 		"message": last_error_message,
 	}
 
-func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = ""):
+func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = "") -> Variant:
 	last_error_code = null
 	last_error_message = ""
 	last_apply_skipped = false
@@ -102,7 +102,7 @@ func decrement_for_trigger(battle_state, trigger_name: String) -> Array:
 	removed_instances.append_array(field_result["removed_instances"])
 	return removed_instances
 
-func _find_existing(owner_instances: Array, stacking_key: String):
+func _find_existing(owner_instances: Array, stacking_key: String) -> Variant:
 	for rule_mod_instance in owner_instances:
 		if rule_mod_instance.stacking_key == stacking_key:
 			return rule_mod_instance
@@ -167,7 +167,7 @@ func _resolve_source_stacking_key(rule_mod_payload, source_stacking_token: Strin
 		return provided_key
 	return str(source_instance_id)
 
-func _resolve_runtime_value(rule_mod_payload, resolved_value):
+func _resolve_runtime_value(rule_mod_payload, resolved_value) -> Variant:
 	var runtime_value = resolved_value if resolved_value != null else rule_mod_payload.value
 	match String(rule_mod_payload.mod_kind):
 		ContentSchemaScript.RULE_MOD_MP_REGEN, ContentSchemaScript.RULE_MOD_INCOMING_ACCURACY:

@@ -164,7 +164,7 @@ func _select_replacement_unit_id(battle_state, side_state, legal_bench_ids: Pack
     if selected_unit_id.is_empty() or not legal_bench_ids.has(selected_unit_id):
         return ""
     return selected_unit_id
-func _enter_replacement(battle_state, side_state, slot_id: String, selected_unit_id: String):
+func _enter_replacement(battle_state, side_state, slot_id: String, selected_unit_id: String) -> Variant:
     var bench_unit = battle_state.get_unit(selected_unit_id)
     if bench_unit == null or bench_unit.current_hp <= 0 or not side_state.has_bench_unit(selected_unit_id):
         return null
@@ -206,7 +206,7 @@ func _execute_lifecycle_trigger_batch(
     content_index,
     owner_unit_ids: Array,
     execute_trigger_batch: Callable = Callable()
-):
+) -> Variant:
     if not execute_trigger_batch.is_valid():
         return ErrorCodesScript.INVALID_STATE_CORRUPTION
     return execute_trigger_batch.call(

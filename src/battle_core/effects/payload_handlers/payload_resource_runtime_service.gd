@@ -93,5 +93,5 @@ func _write_resource_value(target_unit, resource_name: String, value: int) -> vo
         _:
             target_unit.set(resource_name, value)
 
-func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int):
+func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int) -> Variant:
     return ValueChangeFactoryScript.create(entity_id, resource_name, before_value, after_value)

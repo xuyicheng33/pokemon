@@ -3,7 +3,7 @@ class_name LogEventBuilder
 
 const LogEventScript := preload("res://src/battle_core/contracts/log_event.gd")
 
-func build_event(event_type: String, battle_state, payload: Dictionary = {}):
+func build_event(event_type: String, battle_state, payload: Dictionary = {}) -> Variant:
     var chain_context = battle_state.chain_context
     assert(chain_context != null, "LogEventBuilder.build_event missing chain_context")
     assert(not String(chain_context.event_chain_id).is_empty(), "LogEventBuilder.build_event missing event_chain_id")
@@ -30,7 +30,7 @@ func build_event(event_type: String, battle_state, payload: Dictionary = {}):
         log_event.set(key, payload[key])
     return log_event
 
-func build_effect_event(event_type: String, battle_state, cause_event_id: String, payload: Dictionary = {}):
+func build_effect_event(event_type: String, battle_state, cause_event_id: String, payload: Dictionary = {}) -> Variant:
     assert(event_type.begins_with("effect:"), "LogEventBuilder.build_effect_event only accepts effect:* events")
     assert(not cause_event_id.strip_edges().is_empty(), "LogEventBuilder.build_effect_event requires real cause_event_id")
     var effect_payload := payload.duplicate()

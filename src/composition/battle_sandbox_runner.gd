@@ -30,12 +30,12 @@ func _resolve_demo_mode() -> String:
             return String(arg.split("=", true, 1)[1]).strip_edges()
     return "kashimo"
 
-func _build_replay_input_for_demo_mode(sample_factory, demo_mode: String):
+func _build_replay_input_for_demo_mode(sample_factory, demo_mode: String) -> Variant:
     if demo_mode == "legacy":
         return sample_factory.build_demo_replay_input(manager)
     return _build_kashimo_demo_replay_input(sample_factory)
 
-func _build_kashimo_demo_replay_input(sample_factory):
+func _build_kashimo_demo_replay_input(sample_factory) -> Variant:
     var replay_input = ReplayInputScript.new()
     replay_input.battle_seed = 9101
     replay_input.content_snapshot_paths = sample_factory.content_snapshot_paths()
@@ -93,7 +93,7 @@ func _build_kashimo_demo_replay_input(sample_factory):
     ]
     return replay_input
 
-func _cmd(payload: Dictionary):
+func _cmd(payload: Dictionary) -> Variant:
     var envelope: Dictionary = manager.build_command(payload)
     if not bool(envelope.get("ok", false)):
         push_error("Battle sandbox command build failed: %s" % str(envelope.get("error_message", "unknown error")))

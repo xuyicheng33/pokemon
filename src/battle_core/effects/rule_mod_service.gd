@@ -18,7 +18,7 @@ func error_state() -> Dictionary:
         "message": String(read_error_state.get("message", write_error_state.get("message", ""))),
     }
 
-func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = ""):
+func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = "") -> Variant:
     _write_service.id_factory = id_factory
     last_apply_skipped = false
     var created_instance = _write_service.create_instance(

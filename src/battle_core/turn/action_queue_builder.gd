@@ -87,7 +87,7 @@ func _resolve_speed_snapshot(command, battle_state) -> int:
     actor.last_effective_speed = stat_calculator.calc_effective_stat(actor.base_speed, actor.get_effective_stage("speed"))
     return actor.last_effective_speed
 
-func _build_target_snapshot(command, battle_state, content_index):
+func _build_target_snapshot(command, battle_state, content_index) -> Variant:
     var target_snapshot = TargetSnapshotScript.new()
     match command.command_type:
         CommandTypesScript.SWITCH:

@@ -81,7 +81,7 @@ func _resolve_definition_id(battle_state, runtime_unit_id) -> Variant:
 		return null
 	return unit_state.definition_id
 
-func _resolve_unit_state(battle_state, runtime_unit_id):
+func _resolve_unit_state(battle_state, runtime_unit_id) -> Variant:
 	if battle_state == null:
 		return null
 	var normalized_id := str(runtime_unit_id)

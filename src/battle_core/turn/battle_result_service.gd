@@ -22,7 +22,7 @@ func resolve_missing_dependency() -> String:
         return "turn_limit_scoring_service"
     return ""
 
-func build_system_chain(command_type: String):
+func build_system_chain(command_type: String) -> Variant:
     var chain_context = ChainContextScript.new()
     chain_context.event_chain_id = id_factory.next_id("chain")
     chain_context.chain_origin = _resolve_chain_origin(command_type)
@@ -191,7 +191,7 @@ func _side_has_available_unit(side_state) -> bool:
             return true
     return false
 
-func _build_battle_end_chain(resolved_phase: String, _battle_state):
+func _build_battle_end_chain(resolved_phase: String, _battle_state) -> Variant:
     match resolved_phase:
         BattlePhasesScript.BATTLE_INIT:
             return build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT)

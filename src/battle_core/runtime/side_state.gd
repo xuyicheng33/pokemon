@@ -10,19 +10,19 @@ var bench_order: PackedStringArray = PackedStringArray()
 var public_labels: Dictionary = {}
 var selection_state = null
 
-func find_unit(unit_instance_id: String):
+func find_unit(unit_instance_id: String) -> Variant:
     for unit_state in team_units:
         if unit_state.unit_instance_id == unit_instance_id:
             return unit_state
     return null
 
-func find_unit_by_public_id(public_id: String):
+func find_unit_by_public_id(public_id: String) -> Variant:
     for unit_state in team_units:
         if unit_state.public_id == public_id:
             return unit_state
     return null
 
-func get_active_unit(slot_id: String = ContentSchemaScript.ACTIVE_SLOT_PRIMARY):
+func get_active_unit(slot_id: String = ContentSchemaScript.ACTIVE_SLOT_PRIMARY) -> Variant:
     var unit_instance_id: String = active_slots.get(slot_id, "")
     if unit_instance_id.is_empty():
         return null

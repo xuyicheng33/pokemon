@@ -10,7 +10,7 @@ var _dispose_reset_specs: Array = []
 func set_service(slot_name: String, service) -> void:
 	_services[slot_name] = service
 
-func service(slot_name: String):
+func service(slot_name: String) -> Variant:
 	return _services.get(slot_name, null)
 
 func has_service(slot_name: String) -> bool:

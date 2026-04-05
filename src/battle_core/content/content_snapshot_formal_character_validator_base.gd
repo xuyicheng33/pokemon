@@ -1,31 +1,31 @@
 extends RefCounted
 class_name ContentSnapshotFormalCharacterValidatorBase
 
-func _require_unit(content_index, errors: Array, label: String, unit_id: String):
+func _require_unit(content_index, errors: Array, label: String, unit_id: String) -> Variant:
 	var unit_definition = content_index.units.get(unit_id, null)
 	if unit_definition == null:
 		errors.append("%s missing unit: %s" % [label, unit_id])
 	return unit_definition
 
-func _require_skill(content_index, errors: Array, label: String, skill_id: String):
+func _require_skill(content_index, errors: Array, label: String, skill_id: String) -> Variant:
 	var skill_definition = content_index.skills.get(skill_id, null)
 	if skill_definition == null:
 		errors.append("%s missing skill: %s" % [label, skill_id])
 	return skill_definition
 
-func _require_effect(content_index, errors: Array, label: String, effect_id: String):
+func _require_effect(content_index, errors: Array, label: String, effect_id: String) -> Variant:
 	var effect_definition = content_index.effects.get(effect_id, null)
 	if effect_definition == null:
 		errors.append("%s missing effect: %s" % [label, effect_id])
 	return effect_definition
 
-func _require_field(content_index, errors: Array, label: String, field_id: String):
+func _require_field(content_index, errors: Array, label: String, field_id: String) -> Variant:
 	var field_definition = content_index.fields.get(field_id, null)
 	if field_definition == null:
 		errors.append("%s missing field: %s" % [label, field_id])
 	return field_definition
 
-func _require_passive_skill(content_index, errors: Array, label: String, passive_skill_id: String):
+func _require_passive_skill(content_index, errors: Array, label: String, passive_skill_id: String) -> Variant:
 	var passive_skill_definition = content_index.passive_skills.get(passive_skill_id, null)
 	if passive_skill_definition == null:
 		errors.append("%s missing passive_skill: %s" % [label, passive_skill_id])
@@ -38,7 +38,7 @@ func _extract_single_payload(
 	effect_definition,
 	payload_script,
 	payload_name: String
-):
+) -> Variant:
 	var matched_payloads: Array = []
 	for payload in effect_definition.payloads:
 		if payload != null and payload.get_script() == payload_script:

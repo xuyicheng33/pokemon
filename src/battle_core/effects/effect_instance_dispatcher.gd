@@ -134,7 +134,7 @@ func _collect_expire_events(effect_instance, effect_definition, owner_id: String
         expire_events.append(effect_event)
     return expire_events
 
-func _build_expire_chain_context(chain_context, battle_state, owner_id: String):
+func _build_expire_chain_context(chain_context, battle_state, owner_id: String) -> Variant:
     if chain_context == null:
         return null
     var expire_chain_context = chain_context.copy_shallow()

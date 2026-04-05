@@ -7,7 +7,7 @@ var succeeded: bool = false
 var battle_result = null
 var final_battle_state = null
 
-func clone_without_runtime_state():
+func clone_without_runtime_state() -> Variant:
     var replay_output = get_script().new()
     replay_output.event_log = event_log.duplicate()
     replay_output.final_state_hash = final_state_hash

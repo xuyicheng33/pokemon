@@ -23,7 +23,7 @@ func resolve_missing_dependency() -> String:
         return "domain_legality_service"
     return ""
 
-func get_legal_actions(battle_state, side_id: String, content_index):
+func get_legal_actions(battle_state, side_id: String, content_index) -> Variant:
     last_error_code = null
     last_error_message = ""
     var side_state = battle_state.get_side(side_id)
@@ -189,7 +189,7 @@ func _is_action_legal_with_rule_mod(battle_state, actor_id: String, action_type:
         return false
     return rule_mod_service.is_action_allowed(battle_state, actor_id, action_type, skill_id)
 
-func _fail_invalid_state(message: String):
+func _fail_invalid_state(message: String) -> Variant:
     last_error_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
     last_error_message = message
     return null

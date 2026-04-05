@@ -3,7 +3,7 @@ class_name BattleCoreManagerContractHelper
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-func ok(data) -> Dictionary:
+static func ok(data) -> Dictionary:
 	return {
 		"ok": true,
 		"data": data,
@@ -11,7 +11,7 @@ func ok(data) -> Dictionary:
 		"error_message": null,
 	}
 
-func error(error_code: String, error_message: String) -> Dictionary:
+static func error(error_code: String, error_message: String) -> Dictionary:
 	return {
 		"ok": false,
 		"data": null,
@@ -19,12 +19,12 @@ func error(error_code: String, error_message: String) -> Dictionary:
 		"error_message": error_message,
 	}
 
-func dependency_error(missing_dependency: String):
+static func dependency_error(missing_dependency: String) -> Variant:
 	if missing_dependency.is_empty():
 		return null
 	return error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: %s" % missing_dependency)
 
-func validate_create_session_payload(init_payload):
+static func validate_create_session_payload(init_payload) -> Variant:
 	if init_payload == null:
 		return error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "BattleCoreManager.create_session requires input payload")
 	if not init_payload.has("battle_setup"):
@@ -33,7 +33,7 @@ func validate_create_session_payload(init_payload):
 		return error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "BattleCoreManager.create_session requires content_snapshot_paths")
 	return null
 
-func get_session_result(sessions: Dictionary, session_id: String) -> Dictionary:
+static func get_session_result(sessions: Dictionary, session_id: String) -> Dictionary:
 	if session_id.is_empty():
 		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager requires non-empty session_id")
 	var session = sessions.get(session_id, null)
@@ -41,12 +41,12 @@ func get_session_result(sessions: Dictionary, session_id: String) -> Dictionary:
 		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager unknown battle session: %s" % session_id)
 	return ok(session)
 
-func validate_session_runtime_result(session) -> Variant:
+static func validate_session_runtime_result(session) -> Variant:
 	if session == null or not session.has_method("validate_runtime_result"):
 		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
 	return session.validate_runtime_result()
 
-func resolve_turn_failure_result(session) -> Variant:
+static func resolve_turn_failure_result(session) -> Variant:
 	if session == null or session.battle_state == null or session.battle_state.battle_result == null:
 		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
 	var battle_result = session.battle_state.battle_result
@@ -57,7 +57,7 @@ func resolve_turn_failure_result(session) -> Variant:
 		return null
 	return error(reason, "BattleCoreManager run_turn terminated invalid battle: %s" % reason)
 
-func normalize_command_input(raw_command) -> Dictionary:
+static func normalize_command_input(raw_command) -> Dictionary:
 	if raw_command == null:
 		return error(ErrorCodesScript.INVALID_COMMAND_PAYLOAD, "BattleCoreManager.run_turn received null command")
 	if typeof(raw_command) == TYPE_DICTIONARY and raw_command.has("ok") and raw_command.has("data"):
@@ -71,7 +71,7 @@ func normalize_command_input(raw_command) -> Dictionary:
 		return ok(raw_command.get("data", null))
 	return ok(raw_command)
 
-func service_error(service, fallback_code: String, fallback_message: String) -> Dictionary:
+static func service_error(service, fallback_code: String, fallback_message: String) -> Dictionary:
 	var resolved_code: String = fallback_code
 	var resolved_message: String = fallback_message
 	if service != null and service.has_method("error_state"):

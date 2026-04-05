@@ -29,38 +29,38 @@ var field_rule_mod_instances: Array = []
 var last_matchup_signature: String = ""
 var pre_applied_turn_start_regen_turn_index: int = 0
 
-func get_side(side_id: String):
+func get_side(side_id: String) -> Variant:
     for side_state in sides:
         if side_state.side_id == side_id:
             return side_state
     return null
 
-func get_opponent_side(side_id: String):
+func get_opponent_side(side_id: String) -> Variant:
     for side_state in sides:
         if side_state.side_id != side_id:
             return side_state
     return null
 
-func get_side_for_unit(unit_instance_id: String):
+func get_side_for_unit(unit_instance_id: String) -> Variant:
     for side_state in sides:
         if side_state.find_unit(unit_instance_id) != null:
             return side_state
     return null
 
-func get_unit(unit_instance_id: String):
+func get_unit(unit_instance_id: String) -> Variant:
     var side_state = get_side_for_unit(unit_instance_id)
     if side_state == null:
         return null
     return side_state.find_unit(unit_instance_id)
 
-func get_unit_by_public_id(public_id: String):
+func get_unit_by_public_id(public_id: String) -> Variant:
     for side_state in sides:
         for unit_state in side_state.team_units:
             if unit_state.public_id == public_id:
                 return unit_state
     return null
 
-func get_active_unit(side_id: String, slot_id: String = ContentSchemaScript.ACTIVE_SLOT_PRIMARY):
+func get_active_unit(side_id: String, slot_id: String = ContentSchemaScript.ACTIVE_SLOT_PRIMARY) -> Variant:
     var side_state = get_side(side_id)
     if side_state == null:
         return null

@@ -36,7 +36,7 @@ func error_state() -> Dictionary:
         "message": last_error_message,
     }
 
-func run_replay(replay_input):
+func run_replay(replay_input) -> Variant:
     return run_replay_with_context(replay_input).get("replay_output", null)
 
 func run_replay_with_context(replay_input) -> Dictionary:

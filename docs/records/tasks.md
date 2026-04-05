@@ -21,7 +21,7 @@
 
 ## 2026-04-05
 
-### 审查问题修复收口：clash_result 强类型、value_change 工厂、faint window 去递归、README 统计同步（进行中）
+### 审查问题修复收口：clash_result 强类型、value_change 工厂、faint window 去递归、README 统计同步（已完成）
 
 - 目标：
   - 把领域对拼结果从裸 `Dictionary` 收口成强类型契约，避免字符串 key 漂移
@@ -57,6 +57,67 @@
   - `ValueChange` 已收口到独立 `ValueChangeFactory`，`payload_*_runtime_service`、`action_log_service`、`turn_resolution_service` 统一复用
   - `FaintResolver.resolve_faint_window()` 已改成 `while` 循环
   - `README.md` 代码规模统计已同步到当前仓库实测值，repo consistency gate 已恢复
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
+
+### 审查问题修复收口：source owner fail-fast 与返回类型标注补齐（已完成）
+
+- 目标：
+  - 去掉 `EffectSourceMetaHelper` 里不符合当前决策口径的 raw `assert()`
+  - 把 `src/` 中缺失的返回类型标注补齐，至少统一收口到 `-> Variant`
+  - 同步 README 统计值，保持 repo consistency gate 可通过
+- 范围：
+  - `src/battle_core/effects/effect_source_meta_helper.gd`
+  - `src/**/*.gd` 中缺失返回类型标注的函数签名
+  - `README.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - `effect_source_meta_helper.gd` 不再包含 raw `assert()`
+  - `src/` 中缺失返回类型标注的函数数为 `0`
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成（批次 2）：
+  - `EffectSourceMetaHelper.build_meta()` / `require_source_owner_id()` 已改成 `push_error(...) + 显式返回`
+  - 已批量为 `src/` 中原先缺失返回类型标注的 100 个函数补上 `-> Variant`
+  - `README.md` 代码规模统计已同步到当前仓库实测值
+
+#### 当前验证结果
+
+- `godot --headless --path . --script tests/run_all.gd` 通过
+- `bash tests/run_with_gate.sh` 通过
+
+### 审查问题修复收口：manager helper 注入边界统一（已完成）
+
+- 目标：
+  - 去掉 `BattleCoreManager` 内部手动 `.new()` 创建的 facade helper
+  - 保持 manager 对外 contract 不变的前提下，把有状态 helper 交给 composer 注入，无状态 helper 收口成静态工具
+  - 同步 README 统计值，保持 repo consistency gate 可通过
+- 范围：
+  - `src/battle_core/facades/battle_core_manager.gd`
+  - `src/battle_core/facades/battle_core_manager_contract_helper.gd`
+  - `src/battle_core/facades/battle_core_manager_container_service.gd`
+  - `src/composition/battle_core_composer.gd`
+  - `README.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - `BattleCoreManager` 不再直接 `.new()` 其内部 helper
+  - composer 负责注入 `container_service` 与 event log snapshot builder
+  - manager 相关 contract suite 与总闸门保持通过
+  - `bash tests/run_with_gate.sh`
+
+#### 当前执行结果
+
+- 已完成（批次 3）：
+  - `BattleCoreManagerContractHelper` 已改成静态 helper，不再需要 manager 持有实例
+  - `BattleCoreManagerContainerService` 已切到 composer 注入；manager 自身不再 `.new()` container service
+  - composer 现在显式创建并注入 manager 所需的 event log snapshot builder 与 container service
+  - `README.md` 代码规模统计已同步到当前仓库实测值
 
 #### 当前验证结果
 

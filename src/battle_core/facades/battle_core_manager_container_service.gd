@@ -2,11 +2,11 @@ extends RefCounted
 class_name BattleCoreManagerContainerService
 
 const BattleCoreSessionScript := preload("res://src/battle_core/facades/battle_core_session.gd")
+const BattleCoreManagerContractHelperScript := preload("res://src/battle_core/facades/battle_core_manager_contract_helper.gd")
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var container_factory: Callable = Callable()
-var contract_helper = null
 var public_snapshot_builder = null
 var container_factory_owner = null
 
@@ -27,7 +27,7 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
         container.dispose()
         return {
             "session": null,
-            "response": contract_helper.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: content_snapshot_cache"),
+            "response": BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: content_snapshot_cache"),
         }
     id_factory.reset()
     rng_service.reset(battle_seed)
@@ -36,7 +36,7 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
         container.dispose()
         return {
             "session": null,
-            "response": contract_helper.error(
+            "response": BattleCoreManagerContractHelperScript.error(
                 content_index_result.get("error_code", ErrorCodesScript.INVALID_CONTENT_SNAPSHOT),
                 String(content_index_result.get("error_message", "BattleCoreManager failed to load content snapshot"))
             ),
@@ -53,7 +53,7 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
         container.dispose()
         return {
             "session": null,
-            "response": contract_helper.error(
+            "response": BattleCoreManagerContractHelperScript.error(
                 initializer_error_code if initializer_error_code != null else ErrorCodesScript.INVALID_BATTLE_SETUP,
                 initializer_error_message if not initializer_error_message.is_empty() else "BattleCoreManager failed to initialize battle"
             ),
@@ -66,7 +66,7 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
     var public_snapshot = public_snapshot_builder.build_public_snapshot(battle_state, content_index)
     return {
         "session": session,
-        "response": contract_helper.ok({
+        "response": BattleCoreManagerContractHelperScript.ok({
             "session_id": session_id,
             "public_snapshot": public_snapshot,
             "prebattle_public_teams": public_snapshot.get("prebattle_public_teams", []),
@@ -82,7 +82,7 @@ func run_replay_result(replay_input) -> Dictionary:
     var replay_result: Dictionary = replay_runner.run_replay_with_context(replay_input)
     var internal_replay_output = replay_result.get("replay_output", null)
     if internal_replay_output == null:
-        var error_result = contract_helper.service_error(
+        var error_result = BattleCoreManagerContractHelperScript.service_error(
             replay_runner,
             ErrorCodesScript.INVALID_REPLAY_INPUT,
             "BattleCoreManager failed to run replay"
@@ -92,19 +92,19 @@ func run_replay_result(replay_input) -> Dictionary:
     var public_snapshot = public_snapshot_builder.build_public_snapshot(internal_replay_output.final_battle_state, replay_result["content_index"])
     var replay_output = internal_replay_output.clone_without_runtime_state()
     temp_container.dispose()
-    return contract_helper.ok({"replay_output": replay_output, "public_snapshot": public_snapshot})
+    return BattleCoreManagerContractHelperScript.ok({"replay_output": replay_output, "public_snapshot": public_snapshot})
 
 func _compose_container_result() -> Dictionary:
     if not container_factory.is_valid():
-        return contract_helper.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager requires container_factory")
+        return BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager requires container_factory")
     var container = container_factory.call()
     if container != null:
-        return contract_helper.ok(container)
+        return BattleCoreManagerContractHelperScript.ok(container)
     var composer = container_factory_owner.composer if container_factory_owner != null else null
     if composer != null:
         var composer_error_state: Dictionary = composer.error_state()
-        return contract_helper.error(
+        return BattleCoreManagerContractHelperScript.error(
             composer_error_state.get("code", ErrorCodesScript.INVALID_COMPOSITION),
             String(composer_error_state.get("message", "BattleCoreManager failed to compose battle core container"))
         )
-    return contract_helper.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager failed to compose battle core container")
+    return BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager failed to compose battle core container")

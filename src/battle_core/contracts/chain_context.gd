@@ -20,7 +20,7 @@ var chain_depth: int = 0
 var effect_dedupe_keys: Dictionary = {}
 var defer_field_apply_success: bool = false
 
-func copy_shallow():
+func copy_shallow() -> Variant:
     var clone = self.get_script().new()
     clone.event_chain_id = event_chain_id
     clone.root_action_id = root_action_id

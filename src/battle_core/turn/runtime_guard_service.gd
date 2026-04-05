@@ -27,7 +27,7 @@ func _resolve_object_missing_dependency(dependency) -> String:
         return str(dependency.resolve_missing_dependency())
     return ""
 
-func validate_runtime_state(battle_state, content_index = null):
+func validate_runtime_state(battle_state, content_index = null) -> Variant:
     if battle_state.chain_context == null:
         return ErrorCodesScript.INVALID_STATE_CORRUPTION
     if battle_state.max_chain_depth <= 0:

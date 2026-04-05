@@ -16,7 +16,7 @@ func error_state() -> Dictionary:
         "message": last_error_message,
     }
 
-func build_side_state(side_setup, format_config, content_index, id_factory, public_id_allocator):
+func build_side_state(side_setup, format_config, content_index, id_factory, public_id_allocator) -> Variant:
     last_error_code = null
     last_error_message = ""
     if side_setup == null:
@@ -87,7 +87,7 @@ func _resolve_regular_skill_loadout(side_setup, unit_index: int, unit_definition
         return PackedStringArray()
     return unit_definition.skill_ids.duplicate()
 
-func _fail(error_code: String, message: String):
+func _fail(error_code: String, message: String) -> Variant:
     last_error_code = error_code
     last_error_message = message
     return null

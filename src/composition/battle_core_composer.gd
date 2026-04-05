@@ -3,6 +3,8 @@ class_name BattleCoreComposer
 
 const BattleCoreContainerScript := preload("res://src/composition/battle_core_container.gd")
 const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_core_manager.gd")
+const BattleCoreManagerContainerServiceScript := preload("res://src/battle_core/facades/battle_core_manager_container_service.gd")
+const EventLogPublicSnapshotBuilderScript := preload("res://src/battle_core/facades/event_log_public_snapshot_builder.gd")
 const ServiceSpecsScript := preload("res://src/composition/battle_core_service_specs.gd")
 const WiringSpecsScript := preload("res://src/composition/battle_core_wiring_specs.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -12,7 +14,7 @@ class ContainerFactoryPort:
 
     var composer
 
-    func build_container():
+    func build_container() -> Variant:
         if composer == null:
             return null
         return composer.compose()
@@ -27,12 +29,12 @@ func error_state() -> Dictionary:
         "message": last_error_message,
     }
 
-func shared_content_snapshot_cache():
+func shared_content_snapshot_cache() -> Variant:
     if _shared_content_snapshot_cache == null:
         _shared_content_snapshot_cache = _new_service_instance("content_snapshot_cache")
     return _shared_content_snapshot_cache
 
-func compose():
+func compose() -> Variant:
     last_error_code = null
     last_error_message = ""
     var container = BattleCoreContainerScript.new()
@@ -46,14 +48,14 @@ func compose():
         return null
     return container
 
-func compose_manager():
+func compose_manager() -> Variant:
     last_error_code = null
     last_error_message = ""
     var factory_port = ContainerFactoryPort.new()
     factory_port.composer = self
     return compose_manager_with_factory(Callable(factory_port, "build_container"), factory_port)
 
-func compose_manager_with_factory(container_factory: Callable, container_factory_owner = null):
+func compose_manager_with_factory(container_factory: Callable, container_factory_owner = null) -> Variant:
     last_error_code = null
     last_error_message = ""
     var manager = BattleCoreManagerScript.new()
@@ -69,11 +71,21 @@ func compose_manager_with_factory(container_factory: Callable, container_factory
     var public_snapshot_builder = _new_service_instance("public_snapshot_builder")
     if public_snapshot_builder == null:
         return null
+    var event_log_public_snapshot_builder = EventLogPublicSnapshotBuilderScript.new()
+    if event_log_public_snapshot_builder == null:
+        _fail("compose_manager requires event_log_public_snapshot_builder")
+        return null
+    var container_service = BattleCoreManagerContainerServiceScript.new()
+    if container_service == null:
+        _fail("compose_manager requires container_service")
+        return null
     manager._configure_core_ports(
         container_factory,
         command_builder,
         command_id_factory,
         public_snapshot_builder,
+        event_log_public_snapshot_builder,
+        container_service,
         container_factory_owner
     )
     return manager
@@ -127,7 +139,7 @@ func _validate_container_dependencies(container) -> bool:
 func _resolve_service_slots() -> PackedStringArray:
     return ServiceSpecsScript.service_slots()
 
-func _new_service_instance(slot_name: String):
+func _new_service_instance(slot_name: String) -> Variant:
     var script_ref = ServiceSpecsScript.script_by_slot(slot_name)
     if script_ref == null:
         _fail("Unknown service slot: %s" % slot_name)

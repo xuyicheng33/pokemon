@@ -4,7 +4,7 @@ class_name ActionChainContextBuilder
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 
-func build_chain_context(queued_action, battle_state, skill_definition):
+func build_chain_context(queued_action, battle_state, skill_definition) -> Variant:
     var chain_context = ChainContextScript.new()
     chain_context.event_chain_id = queued_action.action_id
     chain_context.root_action_id = queued_action.action_id

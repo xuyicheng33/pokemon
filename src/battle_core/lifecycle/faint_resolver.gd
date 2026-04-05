@@ -28,7 +28,7 @@ func resolve_missing_dependency() -> String:
         return "faint_leave_replacement_service.%s" % faint_leave_missing
     return ""
 
-func resolve_faint_window(battle_state, content_index):
+func resolve_faint_window(battle_state, content_index) -> Variant:
     while true:
         var fainted_units: Array = faint_leave_replacement_service.collect_pending_fainted_units(battle_state)
 
@@ -106,7 +106,7 @@ func _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units:
     faint_killer_attribution_service.clear_fatal_damage_records(battle_state, fainted_unit_ids)
     return null
 
-func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array, extra_effect_events: Array = []):
+func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array, extra_effect_events: Array = []) -> Variant:
     return trigger_batch_runner.execute_trigger_batch(
         trigger_name,
         battle_state,
@@ -127,7 +127,7 @@ func _execute_field_break_if_creator_inactive(battle_state, content_index) -> Va
         Callable(trigger_batch_runner, "execute_trigger_batch")
     )
 
-func _resolve_field_service():
+func _resolve_field_service() -> Variant:
     if trigger_batch_runner == null:
         return null
     return trigger_batch_runner.field_service

@@ -46,7 +46,7 @@ func collect_tres_paths_recursive(dir_path: String) -> Array[String]:
     paths.sort()
     return paths
 
-func build_sample_setup(side_regular_skill_overrides: Dictionary = {}):
+func build_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     var battle_setup = BattleSetupScript.new()
     battle_setup.format_id = "prototype_full_open"
     var p1 = SideSetupScript.new()
@@ -62,7 +62,7 @@ func build_sample_setup(side_regular_skill_overrides: Dictionary = {}):
     battle_setup.sides = [p1, p2]
     return battle_setup
 
-func build_gojo_vs_sukuna_setup(side_regular_skill_overrides: Dictionary = {}):
+func build_gojo_vs_sukuna_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     var battle_setup = build_sample_setup(side_regular_skill_overrides)
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_pyron"])
     battle_setup.sides[0].starting_index = 0
@@ -70,7 +70,7 @@ func build_gojo_vs_sukuna_setup(side_regular_skill_overrides: Dictionary = {}):
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
-func build_gojo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
+func build_gojo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     var battle_setup = build_sample_setup(side_regular_skill_overrides)
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
     battle_setup.sides[0].starting_index = 0
@@ -78,7 +78,7 @@ func build_gojo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
-func build_sukuna_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
+func build_sukuna_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     var battle_setup = build_sample_setup(side_regular_skill_overrides)
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_tidekit"])
     battle_setup.sides[0].starting_index = 0
@@ -86,7 +86,7 @@ func build_sukuna_vs_sample_setup(side_regular_skill_overrides: Dictionary = {})
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
-func build_kashimo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
+func build_kashimo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     var battle_setup = build_sample_setup(side_regular_skill_overrides)
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["kashimo_hajime", "sample_mossaur", "sample_pyron"])
     battle_setup.sides[0].starting_index = 0
@@ -94,7 +94,7 @@ func build_kashimo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
-func build_passive_item_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}):
+func build_passive_item_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     var battle_setup = build_sample_setup(side_regular_skill_overrides)
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sample_pyron_charm", "sample_mossaur", "sample_tidekit"])
     battle_setup.sides[0].starting_index = 0
@@ -102,7 +102,7 @@ func build_passive_item_vs_sample_setup(side_regular_skill_overrides: Dictionary
     battle_setup.sides[1].starting_index = 0
     return battle_setup
 
-func build_demo_replay_input(command_port, side_regular_skill_overrides: Dictionary = {}):
+func build_demo_replay_input(command_port, side_regular_skill_overrides: Dictionary = {}) -> Variant:
     if command_port == null or not command_port.has_method("build_command"):
         return null
     var replay_input = ReplayInputScript.new()
@@ -145,7 +145,7 @@ func build_demo_replay_input(command_port, side_regular_skill_overrides: Diction
     ]
     return replay_input
 
-func build_passive_item_demo_replay_input(command_port):
+func build_passive_item_demo_replay_input(command_port) -> Variant:
     if command_port == null or not command_port.has_method("build_command"):
         return null
     var replay_input = ReplayInputScript.new()
@@ -171,7 +171,7 @@ func build_passive_item_demo_replay_input(command_port):
     ]
     return replay_input
 
-func _resolve_command_data(command_result):
+func _resolve_command_data(command_result) -> Variant:
     if typeof(command_result) == TYPE_DICTIONARY and command_result.has("ok") and command_result.has("data"):
         return command_result.get("data", null)
     return command_result

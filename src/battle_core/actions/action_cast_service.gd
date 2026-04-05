@@ -53,7 +53,7 @@ func consume_mp(actor, consumed_mp: int) -> Array:
         mp_changes.append(action_log_service.build_value_change(actor.unit_instance_id, "mp", before_mp, actor.current_mp))
     return mp_changes
 
-func resolve_target(queued_action, battle_state):
+func resolve_target(queued_action, battle_state) -> Variant:
     return target_resolver.resolve_target(queued_action, battle_state)
 
 func is_action_target_valid(command, queued_action, resolved_target) -> bool:
@@ -65,7 +65,7 @@ func is_action_target_valid(command, queued_action, resolved_target) -> bool:
         return false
     return resolved_target.leave_state == LeaveStatesScript.ACTIVE and resolved_target.current_hp > 0
 
-func resolve_target_instance_id(queued_action, resolved_target):
+func resolve_target_instance_id(queued_action, resolved_target) -> Variant:
     if resolved_target == null:
         return null
     if queued_action.target_snapshot.target_kind == ContentSchemaScript.TARGET_FIELD:
@@ -118,7 +118,7 @@ func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String,
         SOURCE_KIND_ORDER_ACTIVE_SKILL
     )
 
-func execute_lifecycle_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
+func execute_lifecycle_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array) -> Variant:
     return trigger_batch_runner.execute_trigger_batch(
         trigger_name,
         battle_state,

@@ -48,7 +48,7 @@ func _passes_incoming_action_filters(effect_definition, effect_event) -> bool:
 		return false
 	return true
 
-func _resolve_required_target(effect_event, battle_state):
+func _resolve_required_target(effect_event, battle_state) -> Variant:
 	if effect_event == null or effect_event.chain_context == null:
 		return null
 	var target_unit_id := str(effect_event.chain_context.target_unit_id)

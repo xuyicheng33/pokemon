@@ -33,7 +33,7 @@ func resolve_missing_dependency() -> String:
 				return "%s.%s" % [slot_name, missing_dependency]
 	return ""
 
-func handler_for(payload):
+func handler_for(payload) -> Variant:
 	if payload == null:
 		return null
 	var payload_script = payload.get_script()

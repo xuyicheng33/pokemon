@@ -38,7 +38,7 @@ func resolve_missing_dependency() -> String:
             return "field_service.%s" % field_missing
     return ""
 
-func execute_switch_action(queued_action, battle_state, content_index):
+func execute_switch_action(queued_action, battle_state, content_index) -> Variant:
     var result = ActionResultScript.new()
     var command = queued_action.command
     var side_state = battle_state.get_side(command.side_id)

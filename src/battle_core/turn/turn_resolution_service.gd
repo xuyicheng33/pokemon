@@ -159,7 +159,7 @@ func decrement_effect_instances_and_log(battle_state, content_index, trigger_nam
         battle_logger.append_event(log_event)
     return false
 
-func apply_turn_end_field_tick(battle_state, content_index, cause_event_id: String):
+func apply_turn_end_field_tick(battle_state, content_index, cause_event_id: String) -> Variant:
     return field_lifecycle_service.apply_turn_end_field_tick(battle_state, content_index, cause_event_id)
 
 func clear_turn_end_state(battle_state) -> void:

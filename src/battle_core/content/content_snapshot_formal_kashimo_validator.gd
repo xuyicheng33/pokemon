@@ -91,7 +91,7 @@ func _extract_stat_payloads(effect_definition) -> Array:
 			matched_payloads.append(payload)
 	return matched_payloads
 
-func _extract_rule_mod_by_kind(effect_definition, mod_kind: String):
+func _extract_rule_mod_by_kind(effect_definition, mod_kind: String) -> Variant:
 	for payload in effect_definition.payloads:
 		if payload is RuleModPayloadScript and String(payload.mod_kind) == mod_kind:
 			return payload

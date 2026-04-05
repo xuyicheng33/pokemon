@@ -25,7 +25,7 @@ func resolve_missing_dependency() -> String:
 		return "context_resolver"
 	return ""
 
-func create_field_state(effect_definition, payload, effect_event):
+func create_field_state(effect_definition, payload, effect_event) -> Variant:
 	last_invalid_battle_code = null
 	var field_state = FieldStateScript.new()
 	field_state.field_def_id = payload.field_definition_id

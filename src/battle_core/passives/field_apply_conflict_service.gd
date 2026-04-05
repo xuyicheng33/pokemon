@@ -88,7 +88,7 @@ func resolve_field_clash(before_field, effect_event, battle_state) -> Dictionary
 		)
 	}
 
-func _build_clash_result(challenger_won: bool, same_creator: bool, challenger_creator: String, incumbent_creator: String, challenger_mp: int, incumbent_mp: int, tie_roll):
+func _build_clash_result(challenger_won: bool, same_creator: bool, challenger_creator: String, incumbent_creator: String, challenger_mp: int, incumbent_mp: int, tie_roll) -> Variant:
 	var clash_result = ClashResultScript.new()
 	clash_result.challenger_won = challenger_won
 	clash_result.same_creator = same_creator

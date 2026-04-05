@@ -22,7 +22,7 @@ func execute_trigger_batch(
     owner_unit_ids: Array,
     chain_context,
     extra_effect_events: Array = []
-):
+) -> Variant:
     last_invalid_battle_code = null
     var missing_dependency := resolve_missing_dependency()
     if not missing_dependency.is_empty():

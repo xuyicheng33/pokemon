@@ -87,5 +87,5 @@ func _should_consume_field_reversible_stat_mod(effect_event, battle_state) -> bo
         and (effect_event.trigger_name == "field_break" or effect_event.trigger_name == "field_expire") \
         and effect_event.source_instance_id == battle_state.field_state.instance_id
 
-func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int):
+func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int) -> Variant:
     return ValueChangeFactoryScript.create(entity_id, resource_name, before_value, after_value)

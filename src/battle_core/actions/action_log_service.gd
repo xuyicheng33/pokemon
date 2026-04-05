@@ -168,7 +168,7 @@ func log_state_enter(battle_state, target_unit) -> void:
         }
     ))
 
-func build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int):
+func build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int) -> Variant:
     return ValueChangeFactoryScript.create(entity_id, resource_name, before_value, after_value)
 
 func log_action_resource_change(queued_action, battle_state, actor, resource_name: String, before_value: int, after_value: int, cause_event_id: String, payload_summary: String) -> void:

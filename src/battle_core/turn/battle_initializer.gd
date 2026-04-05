@@ -76,7 +76,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
     battle_state.phase = BattlePhasesScript.SELECTION
     return true
 
-func _prepare_battle_state(battle_state, content_index, battle_setup):
+func _prepare_battle_state(battle_state, content_index, battle_setup) -> Variant:
     if battle_setup == null:
         _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup is required")
         return null

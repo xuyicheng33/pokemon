@@ -128,7 +128,7 @@ func apply_initial_turn_start_regen(battle_state) -> void:
         )
     battle_state.pre_applied_turn_start_regen_turn_index = battle_state.turn_index
 
-func _execute_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array):
+func _execute_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array) -> Variant:
     return trigger_batch_runner.execute_trigger_batch(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context)
 
 func _collect_active_unit_ids(battle_state) -> Array:
@@ -139,7 +139,7 @@ func _collect_active_unit_ids(battle_state) -> Array:
             active_ids.append(active_unit.unit_instance_id)
     return active_ids
 
-func _build_system_chain(command_type: String, chain_origin: String):
+func _build_system_chain(command_type: String, chain_origin: String) -> Variant:
     var chain_context = ChainContextScript.new()
     chain_context.event_chain_id = id_factory.next_id("chain")
     chain_context.chain_origin = chain_origin

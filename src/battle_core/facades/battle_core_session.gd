@@ -61,7 +61,7 @@ func dispose() -> void:
 func _is_ready() -> bool:
     return container != null and battle_state != null and content_index != null
 
-func _get_container_service(service_name: String):
+func _get_container_service(service_name: String) -> Variant:
     if container == null:
         return null
     return container.service(service_name)

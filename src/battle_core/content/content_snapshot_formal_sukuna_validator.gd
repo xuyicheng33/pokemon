@@ -117,7 +117,7 @@ func _validate_matching_damage_payloads(content_index, errors: Array, label: Str
 				var_to_str(baseline_fingerprint),
 			])
 
-func _extract_single_damage_payload(errors: Array, label: String, effect_id: String, effect_definition):
+func _extract_single_damage_payload(errors: Array, label: String, effect_id: String, effect_definition) -> Variant:
 	return _extract_single_payload(
 		errors,
 		label,

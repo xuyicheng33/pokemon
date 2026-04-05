@@ -50,7 +50,7 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, c
     last_invalid_battle_code = _read_trigger_dispatcher_invalid_battle_code()
     return effect_events
 
-func get_field_definition_for_state(field_state, content_index):
+func get_field_definition_for_state(field_state, content_index) -> Variant:
     if field_state == null or content_index == null:
         return null
     return content_index.fields.get(field_state.field_def_id)
@@ -173,7 +173,7 @@ func resolve_opponent_active_id_for_creator(battle_state, creator_id: String) ->
         return null
     return target_unit.unit_instance_id
 
-func _build_lifecycle_chain_context(chain_context, battle_state, creator_id: String):
+func _build_lifecycle_chain_context(chain_context, battle_state, creator_id: String) -> Variant:
     if chain_context == null:
         return null
     var lifecycle_chain_context = chain_context.copy_shallow()

@@ -12,7 +12,7 @@ var last_apply_skipped: bool = false
 func invalid_battle_code() -> Variant:
     return last_invalid_battle_code
 
-func create_instance(effect_definition, owner_id: String, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, meta: Dictionary = {}):
+func create_instance(effect_definition, owner_id: String, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, meta: Dictionary = {}) -> Variant:
     last_invalid_battle_code = null
     last_apply_skipped = false
     var owner_unit = battle_state.get_unit(owner_id)
@@ -57,7 +57,7 @@ func create_instance(effect_definition, owner_id: String, battle_state, source_i
     owner_unit.effect_instances.append(effect_instance)
     return effect_instance
 
-func remove_instance(owner_id: String, effect_definition_id: String, battle_state):
+func remove_instance(owner_id: String, effect_definition_id: String, battle_state) -> Variant:
     var owner_unit = battle_state.get_unit(owner_id)
     if owner_unit == null:
         return null
@@ -79,7 +79,7 @@ func remove_all_instances(owner_id: String, effect_definition_id: String, battle
         owner_unit.effect_instances.erase(effect_instance)
     return matching_instances
 
-func _find_existing(owner_unit, effect_definition_id: String):
+func _find_existing(owner_unit, effect_definition_id: String) -> Variant:
     for effect_instance in owner_unit.effect_instances:
         if effect_instance.def_id == effect_definition_id:
             return effect_instance

@@ -3,7 +3,7 @@ class_name PayloadUnitTargetHelper
 
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
-func resolve_target_unit(scope: String, effect_event, battle_state):
+func resolve_target_unit(scope: String, effect_event, battle_state) -> Variant:
     match scope:
         "self":
             return battle_state.get_unit(effect_event.owner_id)

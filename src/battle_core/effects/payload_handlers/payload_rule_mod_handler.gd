@@ -74,7 +74,7 @@ func execute(payload, _effect_definition, effect_event, battle_state, _content_i
 		}
 	))
 
-func _resolve_rule_mod_owner(payload, effect_event, battle_state):
+func _resolve_rule_mod_owner(payload, effect_event, battle_state) -> Variant:
 	match payload.scope:
 		"self":
 			var owner_unit = battle_state.get_unit(effect_event.owner_id)

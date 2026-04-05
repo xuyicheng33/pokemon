@@ -49,7 +49,7 @@ func resolve_missing_dependency() -> String:
         return "action_domain_guard.%s" % domain_missing
     return ""
 
-func execute_action(queued_action, battle_state, content_index):
+func execute_action(queued_action, battle_state, content_index) -> Variant:
     var result = ActionResultScript.new()
     result.action_id = queued_action.action_id
     var command = queued_action.command
@@ -92,7 +92,7 @@ func execute_action(queued_action, battle_state, content_index):
     )
     return result
 
-func _resolve_skill_definition(command, content_index):
+func _resolve_skill_definition(command, content_index) -> Variant:
     if not _uses_skill_definition(command.command_type):
         return null
     return content_index.skills.get(command.skill_id, null)
