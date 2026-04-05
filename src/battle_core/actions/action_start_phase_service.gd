@@ -24,6 +24,7 @@ func apply_action_start_phase(queued_action, battle_state, actor, command, skill
     actor.has_acted = true
     var consumed_mp: int = action_cast_service.resolve_mp_cost(command, skill_definition)
     var mp_changes: Array = action_cast_service.consume_mp(actor, consumed_mp)
+    _mark_once_per_battle_usage(actor, command, skill_definition)
     var action_cast_event_id: String = action_log_service.log_action_cast(queued_action, battle_state, command, mp_changes)
     _apply_action_start_resource_changes(queued_action, battle_state, actor, command, action_cast_event_id)
     var result_type: Variant = null
@@ -73,3 +74,12 @@ func _clear_ultimate_points(queued_action, battle_state, actor, cause_event_id: 
         cause_event_id,
         "%s ultimate_points reset (%d/%d)" % [actor.public_id, actor.ultimate_points, actor.ultimate_points_cap]
     )
+
+func _mark_once_per_battle_usage(actor, command, skill_definition) -> void:
+    if actor == null or command == null or skill_definition == null:
+        return
+    if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
+        return
+    if not bool(skill_definition.once_per_battle):
+        return
+    actor.mark_once_per_battle_skill_used(String(skill_definition.id))

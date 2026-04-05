@@ -9,6 +9,7 @@ var _support = ObitoTestSupportScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("obito_passive_missing_hp_heal_contract", failures, Callable(self, "_test_obito_passive_missing_hp_heal_contract").bind(harness))
     runner.run_test("obito_qiudao_jiaotu_heal_block_contract", failures, Callable(self, "_test_obito_qiudao_jiaotu_heal_block_contract").bind(harness))
+    runner.run_test("obito_qiudao_jiaotu_expire_sync_contract", failures, Callable(self, "_test_obito_qiudao_jiaotu_expire_sync_contract").bind(harness))
     runner.run_test("obito_qiudao_jiaotu_switch_persist_contract", failures, Callable(self, "_test_obito_qiudao_jiaotu_switch_persist_contract").bind(harness))
 
 func _test_obito_passive_missing_hp_heal_contract(harness) -> Dictionary:
@@ -133,4 +134,36 @@ func _test_obito_qiudao_jiaotu_switch_persist_contract(harness) -> Dictionary:
         return harness.fail_result("incoming_heal_final_mod should persist on switch with the target")
     if int(persisted_rule_mod.remaining) != 1:
         return harness.fail_result("persisted heal block rule mod should tick down to remaining=1 after turn_end")
+    return harness.pass_result()
+
+func _test_obito_qiudao_jiaotu_expire_sync_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_state = _support.build_battle_state(core, content_index, _support.build_obito_vs_gojo_setup(sample_factory), 1513)
+    var gojo = battle_state.get_side("P2").get_active_unit()
+    if gojo == null:
+        return harness.fail_result("missing gojo active unit for obito expire sync contract")
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        _support.build_manual_skill_command(core, 1, "P1", "P1-A", "obito_qiudao_jiaotu"),
+        _support.build_manual_wait_command(core, 1, "P2", "P2-A"),
+    ])
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        _support.build_manual_wait_command(core, 2, "P1", "P1-A"),
+        _support.build_manual_wait_command(core, 2, "P2", "P2-A"),
+    ])
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        _support.build_manual_wait_command(core, 3, "P1", "P1-A"),
+        _support.build_manual_wait_command(core, 3, "P2", "P2-A"),
+    ])
+    if _support.count_effect_instances(gojo, "obito_qiudao_jiaotu_heal_block_mark") != 0:
+        return harness.fail_result("heal block public mark should expire on the shared turn_end window")
+    if _support.count_rule_mod_instances(gojo, "incoming_heal_final_mod") != 0:
+        return harness.fail_result("incoming_heal_final_mod should expire on the same turn_end window as the public mark")
     return harness.pass_result()

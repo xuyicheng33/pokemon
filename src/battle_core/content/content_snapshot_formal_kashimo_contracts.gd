@@ -121,6 +121,7 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 				"mp_cost": 35,
 				"priority": 5,
 				"combat_type_id": "thunder",
+				"once_per_battle": true,
 				"targeting": "enemy_active_slot",
 				"is_domain_skill": false,
 				"effects_on_cast_ids": PackedStringArray(["kashimo_amber_self_transform"]),

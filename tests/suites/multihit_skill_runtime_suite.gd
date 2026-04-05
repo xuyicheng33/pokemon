@@ -370,11 +370,23 @@ func _test_multihit_skill_validation_contract(harness) -> Dictionary:
     bad_skill.damage_segments = bad_segments
     content_index.register_resource(bad_skill)
 
+    var filtered_segment_effect = _build_filtered_on_segment_mp_loss_effect(
+        "test_allowed_segment_filter_effect",
+        "skill",
+        "fire",
+        -2
+    )
+    content_index.register_resource(filtered_segment_effect)
+
     var errors: Array = content_index.validate_snapshot()
     if not _has_error(errors, "skill[test_bad_multihit_skill].damage_segments[0].repeat_count must be > 0, got 0"):
         return harness.fail_result("multihit validation should reject non-positive repeat_count")
     if not _has_error(errors, "skill[test_bad_multihit_skill].damage_segments[0].combat_type_id missing combat type: missing_combat_type"):
         return harness.fail_result("multihit validation should reject missing segment combat type")
+    if _has_error(errors, "effect[test_allowed_segment_filter_effect].required_incoming_command_types only allowed for on_receive_action_hit/on_receive_action_damage_segment"):
+        return harness.fail_result("multihit validation should allow command filters on on_receive_action_damage_segment")
+    if _has_error(errors, "effect[test_allowed_segment_filter_effect].required_incoming_combat_type_ids only allowed for on_receive_action_hit/on_receive_action_damage_segment"):
+        return harness.fail_result("multihit validation should allow combat filters on on_receive_action_damage_segment")
     return harness.pass_result()
 
 func _build_multihit_skill(skill_id: String, segments: Array):
@@ -415,6 +427,12 @@ func _build_mp_loss_effect(effect_id: String, trigger_name: String, mp_delta: in
 func _build_filtered_on_hit_mp_loss_effect(effect_id: String, combat_type_id: String, mp_delta: int):
     var effect = _build_mp_loss_effect(effect_id, "on_receive_action_hit", mp_delta)
     effect.required_incoming_command_types = PackedStringArray(["skill"])
+    effect.required_incoming_combat_type_ids = PackedStringArray([combat_type_id])
+    return effect
+
+func _build_filtered_on_segment_mp_loss_effect(effect_id: String, command_type: String, combat_type_id: String, mp_delta: int):
+    var effect = _build_mp_loss_effect(effect_id, "on_receive_action_damage_segment", mp_delta)
+    effect.required_incoming_command_types = PackedStringArray([command_type])
     effect.required_incoming_combat_type_ids = PackedStringArray([combat_type_id])
     return effect
 

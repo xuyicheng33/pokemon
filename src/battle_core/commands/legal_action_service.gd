@@ -114,6 +114,7 @@ func _resolve_skill_legality(battle_state, actor, skill_id: String, content_inde
     var skill_definition = content_index.skills.get(skill_id)
     if skill_definition == null:
         return {"is_legal": false, "blocked_non_mp": false}
+    var blocked_by_once_per_battle: bool = bool(skill_definition.once_per_battle) and actor.has_used_once_per_battle_skill(skill_id)
     var blocked_by_side_domain: bool = side_domain_recast_blocked and content_index.is_domain_skill(skill_id)
     var allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
         battle_state,
@@ -122,8 +123,8 @@ func _resolve_skill_legality(battle_state, actor, skill_id: String, content_inde
         skill_id
     )
     return {
-        "is_legal": actor.current_mp >= skill_definition.mp_cost and allowed_by_rule_mod and not blocked_by_side_domain,
-        "blocked_non_mp": blocked_by_side_domain or not allowed_by_rule_mod,
+        "is_legal": actor.current_mp >= skill_definition.mp_cost and allowed_by_rule_mod and not blocked_by_side_domain and not blocked_by_once_per_battle,
+        "blocked_non_mp": blocked_by_side_domain or not allowed_by_rule_mod or blocked_by_once_per_battle,
     }
 
 func _resolve_ultimate_legality(battle_state, actor, unit_definition, content_index, side_domain_recast_blocked: bool) -> Dictionary:
@@ -132,6 +133,7 @@ func _resolve_ultimate_legality(battle_state, actor, unit_definition, content_in
     var ultimate_definition = content_index.skills.get(unit_definition.ultimate_skill_id)
     if ultimate_definition == null:
         return {"is_legal": false, "blocked_non_mp": false}
+    var blocked_by_once_per_battle: bool = bool(ultimate_definition.once_per_battle) and actor.has_used_once_per_battle_skill(unit_definition.ultimate_skill_id)
     var blocked_by_side_domain: bool = side_domain_recast_blocked and content_index.is_domain_skill(unit_definition.ultimate_skill_id)
     var allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
         battle_state,
@@ -143,8 +145,9 @@ func _resolve_ultimate_legality(battle_state, actor, unit_definition, content_in
         "is_legal": actor.current_mp >= ultimate_definition.mp_cost \
             and actor.ultimate_points >= actor.ultimate_points_required \
             and allowed_by_rule_mod \
-            and not blocked_by_side_domain,
-        "blocked_non_mp": blocked_by_side_domain or not allowed_by_rule_mod,
+            and not blocked_by_side_domain \
+            and not blocked_by_once_per_battle,
+        "blocked_non_mp": blocked_by_side_domain or not allowed_by_rule_mod or blocked_by_once_per_battle,
     }
 
 func _collect_switch_action_flags(battle_state, side_state, actor, legal_action_set) -> Dictionary:

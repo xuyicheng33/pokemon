@@ -108,8 +108,9 @@ func _validate_skill_contract(validator, content_index, errors: Array, descripto
 	for field_name in ["power", "accuracy", "mp_cost", "priority"]:
 		if expected_fields.has(field_name):
 			validator._expect_int(errors, "%s %s" % [label, field_name], skill_definition.get(field_name), int(expected_fields.get(field_name, 0)))
-	if expected_fields.has("is_domain_skill"):
-		validator._expect_bool(errors, "%s is_domain_skill" % label, skill_definition.is_domain_skill, bool(expected_fields.get("is_domain_skill", false)))
+	for field_name in ["is_domain_skill", "once_per_battle"]:
+		if expected_fields.has(field_name):
+			validator._expect_bool(errors, "%s %s" % [label, field_name], skill_definition.get(field_name), bool(expected_fields.get(field_name, false)))
 	for field_name in ["effects_on_cast_ids", "effects_on_hit_ids", "effects_on_miss_ids", "effects_on_kill_ids"]:
 		if expected_fields.has(field_name):
 			validator._expect_packed_string_array(

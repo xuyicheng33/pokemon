@@ -146,6 +146,7 @@ func _test_obito_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "obito_yinyang_listener_apply trigger_names", "actual": listener_apply.trigger_names, "expected": PackedStringArray(["on_cast"])},
         {"label": "obito_yinyang_listener_apply target", "actual": String(listener_apply_payload.effect_definition_id), "expected": "obito_yinyang_dun_guard_stack_listener_state"},
         {"label": "obito_yinyang_listener_state trigger_names", "actual": listener_state.trigger_names, "expected": PackedStringArray(["on_receive_action_damage_segment"])},
+        {"label": "obito_yinyang_listener_state command_filters", "actual": listener_state.required_incoming_command_types, "expected": PackedStringArray(["skill", "ultimate"])},
         {"label": "obito_yinyang_listener_state duration", "actual": int(listener_state.duration), "expected": 1},
         {"label": "obito_yinyang_listener_state decrement_on", "actual": String(listener_state.decrement_on), "expected": "turn_end"},
         {"label": "obito_yinyang_listener_state apply target", "actual": String(listener_state_payload.effect_definition_id), "expected": "obito_yinyang_zhili"},

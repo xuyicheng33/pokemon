@@ -9,6 +9,7 @@ class_name SkillDefinition
 @export var mp_cost: int = 0
 @export var priority: int = 0
 @export var combat_type_id: String = ""
+@export var once_per_battle: bool = false
 @export var power_bonus_source: String = ""
 @export var power_bonus_self_effect_ids: PackedStringArray = PackedStringArray()
 @export var power_bonus_target_effect_ids: PackedStringArray = PackedStringArray()

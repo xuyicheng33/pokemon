@@ -140,6 +140,7 @@ func validate_yinyang_dun_contracts(validator, content_index, errors: Array) -> 
 			"decrement_on": "turn_end",
 			"stacking": "none",
 			"trigger_names": PackedStringArray(["on_receive_action_damage_segment"]),
+			"required_incoming_command_types": PackedStringArray(["skill", "ultimate"]),
 			"persists_on_switch": false,
 		},
 	}])

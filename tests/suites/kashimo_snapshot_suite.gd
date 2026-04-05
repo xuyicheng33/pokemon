@@ -87,6 +87,7 @@ func _test_kashimo_skill_snapshot_contract(harness) -> Dictionary:
         {"label": "kashimo_amber mp_cost", "actual": int(amber.mp_cost), "expected": 35},
         {"label": "kashimo_amber priority", "actual": int(amber.priority), "expected": 5},
         {"label": "kashimo_amber combat_type_id", "actual": String(amber.combat_type_id), "expected": "thunder"},
+        {"label": "kashimo_amber once_per_battle", "actual": bool(amber.once_per_battle), "expected": true},
         {"label": "kashimo_amber effects_on_cast_ids", "actual": amber.effects_on_cast_ids, "expected": PackedStringArray(["kashimo_amber_self_transform"])},
     ]
     return _run_checks(harness, checks)

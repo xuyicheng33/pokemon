@@ -18,5 +18,6 @@ duration = 1
 decrement_on = "turn_end"
 stacking = "none"
 trigger_names = PackedStringArray("on_receive_action_damage_segment")
+required_incoming_command_types = PackedStringArray("skill", "ultimate")
 payloads = Array[Resource]([SubResource("1")])
 persists_on_switch = false

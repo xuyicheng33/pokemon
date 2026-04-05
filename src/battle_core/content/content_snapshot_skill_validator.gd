@@ -12,14 +12,14 @@ const EFFECT_STACK_SUM := PowerBonusSourceRegistryScript.EFFECT_STACK_SUM
 func validate(content_index, errors: Array, payload_validator, regular_skill_refs: Dictionary, ultimate_skill_refs: Dictionary) -> void:
     _content_index = content_index
     _payload_validator = payload_validator
-    _validate_skills(errors)
+    _validate_skills(errors, regular_skill_refs, ultimate_skill_refs)
     _validate_passive_skills(errors)
     _validate_passive_items(errors)
     _validate_skill_role_constraints(errors, regular_skill_refs, ultimate_skill_refs)
     _payload_validator = null
     _content_index = null
 
-func _validate_skills(errors: Array) -> void:
+func _validate_skills(errors: Array, regular_skill_refs: Dictionary, ultimate_skill_refs: Dictionary) -> void:
     var allowed_targets := PackedStringArray([
         ContentSchemaScript.TARGET_ENEMY_ACTIVE,
         ContentSchemaScript.TARGET_SELF,
@@ -48,6 +48,10 @@ func _validate_skills(errors: Array) -> void:
             errors.append("skill[%s].priority out of range: %d" % [skill_id, int(skill_definition.priority)])
         if not allowed_power_bonus_sources.has(String(skill_definition.power_bonus_source)):
             errors.append("skill[%s].power_bonus_source invalid: %s" % [skill_id, String(skill_definition.power_bonus_source)])
+        if bool(skill_definition.once_per_battle) \
+        and not regular_skill_refs.has(skill_id) \
+        and not ultimate_skill_refs.has(skill_id):
+            errors.append("skill[%s].once_per_battle requires unit.skill_ids/candidate_skill_ids or unit.ultimate_skill_id reference" % skill_id)
         _validate_power_bonus_contract(errors, skill_id, skill_definition)
         _validate_execute_contract(errors, skill_id, skill_definition)
         _validate_damage_segments(errors, skill_id, skill_definition, allowed_damage_kinds)

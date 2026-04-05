@@ -7,6 +7,7 @@ var _support = KashimoTestSupportScript.new()
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("kashimo_phantom_beast_amber_persistent_stage_contract", failures, Callable(self, "_test_kashimo_phantom_beast_amber_persistent_stage_contract").bind(harness))
+    runner.run_test("kashimo_phantom_beast_amber_once_per_battle_contract", failures, Callable(self, "_test_kashimo_phantom_beast_amber_once_per_battle_contract").bind(harness))
 
 func _test_kashimo_phantom_beast_amber_persistent_stage_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -74,6 +75,36 @@ func _test_kashimo_phantom_beast_amber_persistent_stage_contract(harness) -> Dic
         return harness.fail_result("amber bleed and ultimate lock should clear on faint")
     return harness.pass_result()
 
+func _test_kashimo_phantom_beast_amber_once_per_battle_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_state = _support.build_battle_state(core, content_index, _support.build_kashimo_setup(sample_factory), 911)
+    var kashimo = battle_state.get_side("P1").get_active_unit()
+    if kashimo == null:
+        return harness.fail_result("missing kashimo active unit for amber once_per_battle contract")
+    kashimo.current_mp = kashimo.max_mp
+    kashimo.ultimate_points = kashimo.ultimate_points_cap
+
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        _support.build_manual_ultimate_command(core, 1, "P1", "P1-A", "kashimo_phantom_beast_amber"),
+        _support.build_manual_wait_command(core, 1, "P2", _active_public_id(battle_state, "P2")),
+    ])
+    if not kashimo.has_used_once_per_battle_skill("kashimo_phantom_beast_amber"):
+        return harness.fail_result("amber cast should write the once_per_battle runtime usage record")
+    _clear_runtime_amber_markers(kashimo)
+    kashimo.current_mp = kashimo.max_mp
+    kashimo.ultimate_points = kashimo.ultimate_points_cap
+    var legal_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
+    if legal_actions.legal_ultimate_ids.has("kashimo_phantom_beast_amber"):
+        return harness.fail_result("amber should stay illegal after battle-scoped consumption even without runtime lock markers")
+    return harness.pass_result()
+
 func _has_effect_instance(unit_state, effect_id: String) -> bool:
     for effect_instance in unit_state.effect_instances:
         if String(effect_instance.def_id) == effect_id:
@@ -94,3 +125,17 @@ func _active_public_id(battle_state, side_id: String) -> String:
     if active == null:
         return ""
     return String(active.public_id)
+
+func _clear_runtime_amber_markers(unit_state) -> void:
+    var kept_effects: Array = []
+    for effect_instance in unit_state.effect_instances:
+        if String(effect_instance.def_id) == "kashimo_amber_bleed":
+            continue
+        kept_effects.append(effect_instance)
+    unit_state.effect_instances = kept_effects
+    var kept_rule_mods: Array = []
+    for rule_mod_instance in unit_state.rule_mod_instances:
+        if String(rule_mod_instance.mod_kind) == "action_legality" and String(rule_mod_instance.value) == "ultimate":
+            continue
+        kept_rule_mods.append(rule_mod_instance)
+    unit_state.rule_mod_instances = kept_rule_mods

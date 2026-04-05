@@ -178,8 +178,7 @@ func validate_teach_love_contract(validator, content_index, errors: Array) -> vo
 		{
 			"mod_kind": "mp_regen",
 			"mod_op": "add",
-			"duration_mode": "turns",
-			"duration": 999,
+			"duration_mode": "permanent",
 			"decrement_on": "turn_start",
 			"stacking": "replace",
 			"dynamic_value_formula": "matchup_bst_gap_band",

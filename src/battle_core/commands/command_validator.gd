@@ -73,4 +73,6 @@ func _validate_skill(command, active_unit, content_index, require_ultimate: bool
             return false
     elif not active_unit.regular_skill_ids.has(command.skill_id):
         return false
+    if bool(skill_definition.once_per_battle) and active_unit.has_used_once_per_battle_skill(command.skill_id):
+        return false
     return active_unit.current_mp >= skill_definition.mp_cost

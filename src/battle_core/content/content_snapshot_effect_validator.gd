@@ -137,11 +137,13 @@ func _validate_incoming_action_filters(content_index, errors: Array, effect_id: 
     var combat_type_filters: PackedStringArray = effect_definition.required_incoming_combat_type_ids
     if command_filters.is_empty() and combat_type_filters.is_empty():
         return
-    if not effect_definition.trigger_names.has(ContentSchemaScript.TRIGGER_ON_RECEIVE_ACTION_HIT):
+    var supports_incoming_filters: bool = effect_definition.trigger_names.has(ContentSchemaScript.TRIGGER_ON_RECEIVE_ACTION_HIT) \
+        or effect_definition.trigger_names.has(ContentSchemaScript.TRIGGER_ON_RECEIVE_ACTION_DAMAGE_SEGMENT)
+    if not supports_incoming_filters:
         if not command_filters.is_empty():
-            errors.append("effect[%s].required_incoming_command_types only allowed for on_receive_action_hit" % effect_id)
+            errors.append("effect[%s].required_incoming_command_types only allowed for on_receive_action_hit/on_receive_action_damage_segment" % effect_id)
         if not combat_type_filters.is_empty():
-            errors.append("effect[%s].required_incoming_combat_type_ids only allowed for on_receive_action_hit" % effect_id)
+            errors.append("effect[%s].required_incoming_combat_type_ids only allowed for on_receive_action_hit/on_receive_action_damage_segment" % effect_id)
         return
     for command_type in command_filters:
         var normalized_command_type := String(command_type).strip_edges()

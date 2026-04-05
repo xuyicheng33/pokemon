@@ -12,6 +12,7 @@ accuracy = 100
 mp_cost = 35
 priority = 5
 combat_type_id = "thunder"
+once_per_battle = true
 power_bonus_source = ""
 targeting = "enemy_active_slot"
 is_domain_skill = false

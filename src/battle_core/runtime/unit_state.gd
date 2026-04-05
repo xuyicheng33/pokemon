@@ -46,6 +46,7 @@ var leave_state: String = LeaveStatesScript.ACTIVE
 var leave_reason: Variant = null
 var last_effective_speed: int = 0
 var reentered_turn_index: int = -1
+var used_once_per_battle_skill_ids: PackedStringArray = PackedStringArray()
 
 func to_stable_dict() -> Dictionary:
     var effect_dicts: Array = []
@@ -90,6 +91,20 @@ func to_stable_dict() -> Dictionary:
         "last_effective_speed": last_effective_speed,
         "reentered_turn_index": reentered_turn_index,
     }
+
+func has_used_once_per_battle_skill(skill_id: String) -> bool:
+    var normalized_skill_id := String(skill_id).strip_edges()
+    if normalized_skill_id.is_empty():
+        return false
+    return used_once_per_battle_skill_ids.has(normalized_skill_id)
+
+func mark_once_per_battle_skill_used(skill_id: String) -> void:
+    var normalized_skill_id := String(skill_id).strip_edges()
+    if normalized_skill_id.is_empty():
+        return
+    if used_once_per_battle_skill_ids.has(normalized_skill_id):
+        return
+    used_once_per_battle_skill_ids.append(normalized_skill_id)
 
 func get_effective_stage(stat_name: String) -> int:
     var temporary_stage: int = int(stat_stages.get(stat_name, 0))
