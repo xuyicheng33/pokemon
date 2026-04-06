@@ -33,6 +33,10 @@ if "FORMAL_CHARACTER_DESCRIPTORS" in runtime_registry_text or '"validator_script
     ctx.failures.append("runtime formal character validator registry must not keep a second hard-coded character descriptor list")
 
 sample_factory_text = ctx.read_text("src/composition/sample_battle_factory.gd")
+if 'entry.get("formal_setup_matchup_id"' not in sample_factory_text:
+    ctx.failures.append("SampleBattleFactory.build_formal_character_setup must read formal_setup_matchup_id from registry")
+if "return call(sample_setup_method, side_regular_skill_overrides)" in sample_factory_text:
+    ctx.failures.append("SampleBattleFactory.build_formal_character_setup must not route formal setup through sample_setup_method")
 run_all_text = ctx.read_text("tests/run_all.gd")
 suite_ref_patterns = [
     re.compile(r'preload\("res://(tests/suites/[^"]+\.gd)"\)'),
@@ -90,6 +94,7 @@ for entry in formal_character_registry:
     adjustment_doc = str(entry.get("adjustment_doc", ""))
     suite_path = str(entry.get("suite_path", ""))
     sample_setup_method = str(entry.get("sample_setup_method", ""))
+    formal_setup_matchup_id = str(entry.get("formal_setup_matchup_id", ""))
     content_validator_script_path = str(entry.get("content_validator_script_path", ""))
     required_content_paths = entry.get("required_content_paths", [])
     required_suite_paths = entry.get("required_suite_paths", [])
@@ -122,6 +127,12 @@ for entry in formal_character_registry:
         ctx.failures.append(f"formal character registry[{character_id}] missing sample_setup_method")
     elif f"func {sample_setup_method}(" not in sample_factory_text:
         ctx.failures.append(f"src/composition/sample_battle_factory.gd missing sample setup builder: {sample_setup_method}")
+    if formal_setup_matchup_id == "":
+        ctx.failures.append(f"formal character registry[{character_id}] missing formal_setup_matchup_id")
+    elif f'"{formal_setup_matchup_id}"' not in ctx.read_text("src/composition/sample_battle_factory_matchup_catalog.gd"):
+        ctx.failures.append(
+            f"formal character registry[{character_id}] formal_setup_matchup_id missing from SampleBattleFactory matchup catalog: {formal_setup_matchup_id}"
+        )
     if content_validator_script_path != "":
         ctx.require_exists(content_validator_script_path, f"{character_id} content validator script")
         validator_text = ctx.read_text(content_validator_script_path)

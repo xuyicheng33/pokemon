@@ -94,12 +94,12 @@ func formal_character_ids() -> PackedStringArray:
 
 func build_formal_character_setup(formal_character_definition_id: String, side_regular_skill_overrides: Dictionary = {}) -> Variant:
 	var entry := _find_formal_character_registry_entry(formal_character_definition_id)
-	if entry.is_empty():
-		return null
-	var sample_setup_method := String(entry.get("sample_setup_method", "")).strip_edges()
-	assert(not sample_setup_method.is_empty(), "SampleBattleFactory registry[%s] missing sample_setup_method" % formal_character_definition_id)
-	assert(has_method(sample_setup_method), "SampleBattleFactory registry[%s] references missing sample setup method: %s" % [formal_character_definition_id, sample_setup_method])
-	return call(sample_setup_method, side_regular_skill_overrides)
+	assert(not entry.is_empty(), "SampleBattleFactory unknown formal_character_definition_id: %s" % formal_character_definition_id)
+	var matchup_id := String(entry.get("formal_setup_matchup_id", "")).strip_edges()
+	assert(not matchup_id.is_empty(), "SampleBattleFactory registry[%s] missing formal_setup_matchup_id" % formal_character_definition_id)
+	var battle_setup = build_setup_by_matchup_id(matchup_id, side_regular_skill_overrides)
+	assert(battle_setup != null, "SampleBattleFactory registry[%s] references missing formal setup matchup: %s" % [formal_character_definition_id, matchup_id])
+	return battle_setup
 
 func formal_pair_smoke_cases() -> Array:
 	return _matchup_catalog.formal_pair_smoke_cases()
@@ -127,9 +127,6 @@ func build_sample_vs_gojo_setup(side_regular_skill_overrides: Dictionary = {}) -
 
 func build_sukuna_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
 	return build_setup_by_matchup_id("sukuna_vs_sample", side_regular_skill_overrides)
-
-func build_sukuna_formal_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
-	return build_setup_by_matchup_id("sukuna_setup", side_regular_skill_overrides)
 
 func build_sukuna_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
 	return build_formal_character_setup("sukuna", side_regular_skill_overrides)

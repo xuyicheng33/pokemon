@@ -143,12 +143,16 @@
   - formal/setup 敏感 support 已开始接入新 helper，当前已覆盖 `formal_character_snapshot_test_helper`、Gojo、Kashimo、Sukuna 的相关测试支撑。
 - 第三批已完成：
   - `SampleBattleFactory.formal_character_ids()` 与 `build_formal_character_setup()` 已改成直接读取 `config/formal_character_registry.json`，不再保留第二份正式角色 ID / setup 映射常量。
-  - registry 驱动真正落地后，已修正 Sukuna 的 `sample_setup_method` 漂移：formal setup 现在显式走 `build_sukuna_formal_setup()`，继续保持 `sukuna_setup` 的正式构局语义。
+  - registry 已新增 `formal_setup_matchup_id`，把“样例 builder 名称”和“默认 formal setup 实际走哪一组 matchup”拆成两个显式字段；Sukuna 因此不再需要额外特判，也能继续保持 `sukuna_setup` 的正式构局语义。
   - Obito formal bad cases 已补强 effect surface：
     - `formal_obito_validator_heal_block_surface_bad_case_contract`
     - `formal_obito_validator_yinyang_guard_surface_bad_case_contract`
     - `formal_obito_validator_yinyang_listener_surface_bad_case_contract`
   - Obito registry 测试锚点已补齐新增 validator bad cases，以及 runtime 的 `obito_yinyang_dun_same_side_segment_ignored_contract`。
+  - formal docs / gate / runtime suite 也已补齐 `formal_setup_matchup_id` 的一致性约束，避免 registry 口径只写不验。
+- 第四批已完成：
+  - `docs/design/battle_core_architecture_constraints.md` 已改成和当前 gate 一致的“零 allowlist”口径：核心文件 > `250` 行直接拆分，不再文档上保留临时白名单承诺。
+  - `README.md` 的 `src/**/*.gd`、`tests/**/*.gd` 与总 GDScript 行数统计已同步到最新，`check_repo_consistency.sh` 不再被陈旧计数拦住。
 
 ### 当前验证结果
 
@@ -164,6 +168,11 @@
   - `git diff --check`
   - `godot --headless --path . --script tests/run_all.gd`
   - `bash tests/check_suite_reachability.sh`
+- 第四批已通过：
+  - `git diff --check`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
 
 ## 下一角色扩充准备
 

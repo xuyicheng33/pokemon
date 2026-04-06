@@ -4,6 +4,7 @@ const BaseSuiteScript := preload("res://tests/suites/content_validation_core/bas
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("formal_character_shared_fire_burst_validation", failures, Callable(self, "_test_formal_character_shared_fire_burst_validation").bind(harness))
     runner.run_test("formal_character_validator_registry_runtime_contract", failures, Callable(self, "_test_formal_character_validator_registry_runtime_contract").bind(harness))
+    runner.run_test("formal_character_setup_registry_runtime_contract", failures, Callable(self, "_test_formal_character_setup_registry_runtime_contract").bind(harness))
     runner.run_test("formal_character_validator_partial_snapshot_contract", failures, Callable(self, "_test_formal_character_validator_partial_snapshot_contract").bind(harness))
     runner.run_test("formal_character_validator_present_character_scope_contract", failures, Callable(self, "_test_formal_character_validator_present_character_scope_contract").bind(harness))
 
@@ -64,6 +65,35 @@ func _test_formal_character_validator_registry_runtime_contract(harness) -> Dict
             return harness.fail_result("formal character validator registry returned invalid validator instance")
     return harness.pass_result()
 
+func _test_formal_character_setup_registry_runtime_contract(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries()
+    var error_message := String(load_result.get("error", ""))
+    if not error_message.is_empty():
+        return harness.fail_result("formal character registry should load cleanly for setup contract: %s" % error_message)
+    var entries: Array = load_result.get("entries", [])
+    var expected_ids := PackedStringArray()
+    for raw_entry in entries:
+        var entry: Dictionary = raw_entry
+        var character_id := String(entry.get("character_id", "")).strip_edges()
+        expected_ids.append(character_id)
+        var matchup_id := String(entry.get("formal_setup_matchup_id", "")).strip_edges()
+        if matchup_id.is_empty():
+            return harness.fail_result("formal character registry[%s] missing formal_setup_matchup_id" % character_id)
+        var expected_setup = sample_factory.build_setup_by_matchup_id(matchup_id)
+        if expected_setup == null:
+            return harness.fail_result("formal character setup matchup missing from SampleBattleFactory: %s" % matchup_id)
+        var actual_setup = sample_factory.build_formal_character_setup(character_id)
+        if actual_setup == null:
+            return harness.fail_result("build_formal_character_setup returned null for %s" % character_id)
+        if _setup_signature(actual_setup) != _setup_signature(expected_setup):
+            return harness.fail_result("formal character setup drifted from registry matchup for %s" % character_id)
+    if sample_factory.formal_character_ids() != expected_ids:
+        return harness.fail_result("formal_character_ids should preserve registry file order")
+    return harness.pass_result()
+
 func _test_formal_character_validator_partial_snapshot_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
@@ -109,3 +139,15 @@ func _test_formal_character_validator_present_character_scope_contract(harness) 
     if not saw_gojo_scope_error:
         return harness.fail_result("scoped formal validator should still enforce Gojo contracts when Gojo is present")
     return harness.pass_result()
+
+func _setup_signature(battle_setup) -> Array:
+    var signature: Array = []
+    if battle_setup == null:
+        return signature
+    for side_setup in battle_setup.sides:
+        signature.append({
+            "side_id": String(side_setup.side_id),
+            "unit_definition_ids": PackedStringArray(side_setup.unit_definition_ids),
+            "starting_index": int(side_setup.starting_index),
+        })
+    return signature

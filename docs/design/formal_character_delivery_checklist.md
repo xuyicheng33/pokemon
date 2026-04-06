@@ -48,6 +48,7 @@
   - [ ] `design_doc / adjustment_doc`
   - [ ] `suite_path`
   - [ ] `sample_setup_method`（必须与 `SampleBattleFactory` 里的 builder 方法名完全一致）
+  - [ ] `formal_setup_matchup_id`（默认 formal setup 实际要走的 matchup_id；若与 sample builder 不是同一路由，也必须显式登记，避免语义漂移）
 - [ ] `required_content_paths`
 - [ ] `required_suite_paths`
 - [ ] `required_test_names`

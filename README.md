@@ -233,7 +233,7 @@ tests/run_with_gate.sh
 - 加载期 formal 校验：`ContentSnapshotFormalCharacterValidator` 只会对当前 content snapshot 实际已出现的正式角色执行对应 validator，缺席角色不会误报
 - validator 模板：正式角色 entry validator 固定收口为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶；入口文件只负责 preload 与串联，不再自由追加角色私有逻辑
 - 大型共享 suite 当前统一采用“稳定 wrapper + 子 suite”组织：例如 `tests/suites/multihit_skill_runtime_suite.gd` 只保留入口职责，真实断言下沉到 `tests/suites/multihit_skill_runtime/*.gd`
-- 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `sample_setup_method / required_suite_paths / required_test_names`；其中 `sample_setup_method` 必须精确对应 `SampleBattleFactory` 的 builder 方法名；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
+- 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `sample_setup_method / formal_setup_matchup_id / required_suite_paths / required_test_names`；其中 `sample_setup_method` 必须精确对应 `SampleBattleFactory` 的样例 builder 方法名，`formal_setup_matchup_id` 则固定该角色默认 formal setup 实际走哪一组 matchup；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
 - validator 坏例：只要角色登记了 `content_validator_script_path`，就必须同时把 `tests/suites/extension_validation_contract_suite.gd` 和至少一个 `formal_<character>_validator_*bad_case_contract` 锚点挂回 registry
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
@@ -263,9 +263,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-06）
 
-- `src/**/*.gd`：`15262` 行
-- `tests/**/*.gd`：`19501` 行
-- GDScript 合计：`34763` 行
+- `src/**/*.gd`：`15328` 行
+- `tests/**/*.gd`：`19757` 行
+- GDScript 合计：`35085` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

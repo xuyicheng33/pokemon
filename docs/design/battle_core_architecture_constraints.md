@@ -103,7 +103,8 @@ Composition 补充约束：
 若超阈值仍不拆，必须同时满足：
 
 - 在 `docs/records/decisions.md` 写明“为何仍合理 + 预计何时拆分”。
-- 在架构闸门的 `size_review_rules` allowlist 里写明该文件的临时 `max_lines` 上限，超限直接 gate fail。
+- 当前架构闸门实际采用零 allowlist 策略：`size_review_rules = {}`，也就是核心文件一旦 > `250` 行就必须先拆分，不能靠临时白名单放行。
+- 若未来确实要恢复临时 allowlist，必须同时补齐 gate 实现、`docs/records/decisions.md` 记录和本文档口径，三者缺一不可。
 
 ### 4.3 `assert()` 与 fail-fast 边界
 
@@ -151,5 +152,5 @@ Composition 补充约束：
 - 外围层（`src/adapters`、`src/composition`、`scenes`）不得 import `src/battle_core/runtime/*`。
 - `src/adapters` 与 `scenes` 不得 import `battle_core` 内部服务实现；允许范围固定为 `facades/*`、`contracts/*` 与 `commands/command_types.gd`。
 - `src/adapters` 与 `scenes` 若 import `battle_core/commands/*`，只允许 `commands/command_types.gd`，其他命令实现一律禁止。
-- 大文件闸门必须覆盖 `src/battle_core` 与 `src/composition`；若出现超阈值文件，必须同时有 allowlist 临时上限与决策记录。
+- 大文件闸门必须覆盖 `src/battle_core` 与 `src/composition`；当前策略不保留 allowlist，出现超阈值文件就应直接拆分并重新过 gate。
 - runtime wiring 图必须额外经过 `tests/gates/architecture_wiring_graph_gate.py` 校验，并保持严格无环。

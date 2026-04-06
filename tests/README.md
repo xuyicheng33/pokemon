@@ -33,7 +33,7 @@
 - `run_all.gd` 会直接注册核心公共 suite，并按正式角色注册表动态追加角色 wrapper；共享子套件仍必须沿 `preload(...)` 子树真实可达。
 - 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback。
 - 正式角色 wrapper 统一登记在 `config/formal_character_registry.json`，由 `tests/run_all.gd` 自动加载。
-- 正式角色注册表除 `suite_path` 外，还要显式登记 `sample_setup_method / required_suite_paths / required_test_names`，把样例构局入口、角色 suite 子树与关键回归锚点一并固定下来。
+- 正式角色注册表除 `suite_path` 外，还要显式登记 `sample_setup_method / formal_setup_matchup_id / required_suite_paths / required_test_names`，把样例构局入口、默认 formal setup 路由、角色 suite 子树与关键回归锚点一并固定下来。
 - runtime formal validator 当前统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 `config/formal_character_registry.json` 并动态装配；这份 registry 同时承载测试/文档/交付面元数据与可选 `content_validator_script_path`。
 - `ContentSnapshotFormalCharacterValidator` 只校验当前快照里实际出现的正式角色，不会因为缺席角色而误炸。
 - 正式角色 entry validator 当前固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板组织；tests 侧只验证这三个入口仍可实例化并回挂到 wrapper 子树。

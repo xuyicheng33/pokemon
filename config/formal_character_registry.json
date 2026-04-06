@@ -7,6 +7,7 @@
     "adjustment_doc": "docs/design/gojo_satoru_adjustments.md",
     "suite_path": "tests/suites/gojo_suite.gd",
     "sample_setup_method": "build_gojo_vs_sample_setup",
+    "formal_setup_matchup_id": "gojo_vs_sample",
     "content_validator_script_path": "src/battle_core/content/formal_validators/gojo/content_snapshot_formal_gojo_validator.gd",
     "required_suite_paths": [
       "tests/suites/gojo_setup_and_markers_suite.gd",
@@ -110,7 +111,8 @@
     "design_doc": "docs/design/sukuna_design.md",
     "adjustment_doc": "docs/design/sukuna_adjustments.md",
     "suite_path": "tests/suites/sukuna_suite.gd",
-    "sample_setup_method": "build_sukuna_formal_setup",
+    "sample_setup_method": "build_sukuna_vs_sample_setup",
+    "formal_setup_matchup_id": "sukuna_setup",
     "content_validator_script_path": "src/battle_core/content/formal_validators/sukuna/content_snapshot_formal_sukuna_validator.gd",
     "required_suite_paths": [
       "tests/suites/sukuna_setup_loadout_regen_suite.gd",
@@ -207,6 +209,7 @@
     "adjustment_doc": "docs/design/kashimo_hajime_adjustments.md",
     "suite_path": "tests/suites/kashimo_suite.gd",
     "sample_setup_method": "build_kashimo_vs_sample_setup",
+    "formal_setup_matchup_id": "kashimo_vs_sample",
     "content_validator_script_path": "src/battle_core/content/formal_validators/kashimo/content_snapshot_formal_kashimo_validator.gd",
     "required_suite_paths": [
       "tests/suites/kashimo_snapshot_suite.gd",
@@ -305,6 +308,7 @@
     "adjustment_doc": "docs/design/obito_juubi_jinchuriki_adjustments.md",
     "suite_path": "tests/suites/obito_suite.gd",
     "sample_setup_method": "build_obito_vs_sample_setup",
+    "formal_setup_matchup_id": "obito_vs_sample",
     "content_validator_script_path": "src/battle_core/content/formal_validators/obito/content_snapshot_formal_obito_validator.gd",
     "required_suite_paths": [
       "tests/suites/obito_snapshot_suite.gd",
