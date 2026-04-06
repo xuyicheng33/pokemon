@@ -292,3 +292,26 @@
   - `damage_segments = 2 dark + 8 light`
 - 原因：
   - 继续让 segmented skill 用“顶层 `power` 只是为了过校验”的灰色口径，会把内容校验、运行时执行和设计稿三份真相越拉越开；扩角后这种漂移会非常难查。
+
+### 25. formal validator 装配继续 lazy 到 `validate()`，且只对 present-only 正式角色实例化（2026-04-06）
+
+- `config/formal_character_runtime_registry.json` 里的 `content_validator_script_path` 当前仍由 runtime registry loader 校验路径存在，但不再在 loader 初始化阶段把所有 validator 全量实例化。
+- `ContentSnapshotFormalCharacterValidator.validate(content_index, errors)` 当前正式语义固定为：
+  - 先按 runtime registry 建 descriptor
+  - 再只对当前 `content_index.units` 里实际出现、且登记了 validator 的正式角色做脚本加载与实例化
+  - 缺席角色的坏 validator 不得导致当前 snapshot 校验失败
+  - 出场角色的坏 validator 仍必须 fail-fast
+- 原因：
+  - 扩角继续增加角色后，若缺席角色的坏脚本也能把所有正式快照一起炸掉，formal validator 会从“当前交付面守门”退化成“全仓库全量 preload 炸点”。
+
+### 26. tests/support 与 tests/gates 进入独立热点治理：pair interaction 单一真相 + 新体积阈值（2026-04-06）
+
+- `tests/support/formal_pair_interaction/scenario_registry.gd` 当前固定作为 pair interaction scenario runner 的单一真相；catalog 校验和运行分发都只能读这张映射。
+- pair interaction support 当前禁止两类回退：
+  - 调 sample-only setup / pair builder
+  - 直接改 formal authored skill `accuracy / power`
+- `tests/check_architecture_constraints.sh` 当前新增 tests 支撑层体积阈值：
+  - `tests/support/**/*.gd`：`220..250` 预警，`>250` 必须拆
+  - `tests/gates/*.py`：`350..400` 预警，`>400` 必须拆
+- 原因：
+  - 继续让 tests/support 与 gates 无上限堆逻辑，会比业务代码更快变成新的“隐藏架构层”，下一轮扩角时最先反噬的就是验证可信度。

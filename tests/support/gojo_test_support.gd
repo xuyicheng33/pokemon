@@ -11,6 +11,28 @@ func build_gojo_vs_sample_state(harness, seed: int) -> Dictionary:
 func build_gojo_vs_sukuna_state(harness, seed: int) -> Dictionary:
 	return build_gojo_battle_state(harness, seed, true, true)
 
+func build_gojo_matchup_state(harness, matchup_id: String, seed: int, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return {"error": str(core_payload["error"])}
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return {"error": "SampleBattleFactory init failed"}
+	var battle_setup_result = build_matchup_setup_result(sample_factory, matchup_id, side_regular_skill_overrides)
+	if not bool(battle_setup_result.get("ok", false)):
+		return {"error": str(battle_setup_result.get("error_message", "failed to build gojo matchup setup"))}
+	var battle_setup = battle_setup_result.get("data", null)
+	var content_index = harness.build_loaded_content_index_for_setup(sample_factory, battle_setup)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, seed, battle_setup)
+	return {
+		"core": core,
+		"content_index": content_index,
+		"battle_state": battle_state,
+		"battle_setup": battle_setup,
+		"sample_factory": sample_factory,
+	}
+
 func build_sample_vs_gojo_state(harness, seed: int, use_sukuna: bool) -> Dictionary:
 	return build_gojo_battle_state(harness, seed, use_sukuna, false)
 

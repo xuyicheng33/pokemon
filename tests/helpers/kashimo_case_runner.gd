@@ -136,11 +136,14 @@ func _run_kyokyo_vs_domain() -> Dictionary:
 	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
 		return {"error": "SampleBattleFactory init failed"}
-
-	var baseline_payload = _support.run_gojo_domain_accuracy_case(_harness, sample_factory, false, 6103)
+	var seed_result = _support.find_gojo_domain_accuracy_probe_seed(_harness, sample_factory, 6103)
+	if not bool(seed_result.get("ok", false)):
+		return {"error": str(seed_result.get("error", "failed to find gojo domain accuracy probe seed"))}
+	var probe_seed := int(seed_result.get("seed", 0))
+	var baseline_payload = _support.run_gojo_domain_accuracy_case(_harness, sample_factory, false, probe_seed)
 	if not bool(baseline_payload.get("ok", false)):
 		return baseline_payload
-	var protected_payload = _support.run_gojo_domain_accuracy_case(_harness, sample_factory, true, 6104)
+	var protected_payload = _support.run_gojo_domain_accuracy_case(_harness, sample_factory, true, probe_seed)
 	if not bool(protected_payload.get("ok", false)):
 		return protected_payload
 	return {

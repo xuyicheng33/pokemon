@@ -64,16 +64,20 @@ func _test_kashimo_kyokyo_vs_gojo_unlimited_void_contract(harness) -> Dictionary
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var baseline_result = _support.run_gojo_domain_accuracy_case(harness, sample_factory, false, 853)
+	var seed_result = _support.find_gojo_domain_accuracy_probe_seed(harness, sample_factory, 853)
+	if not bool(seed_result.get("ok", false)):
+		return harness.fail_result(str(seed_result.get("error", "failed to find gojo domain accuracy probe seed")))
+	var probe_seed := int(seed_result.get("seed", 0))
+	var baseline_result = _support.run_gojo_domain_accuracy_case(harness, sample_factory, false, probe_seed)
 	if not bool(baseline_result.get("ok", false)):
-		return baseline_result
+		return harness.fail_result(str(baseline_result.get("error", "baseline gojo domain accuracy case failed")))
 	if int(baseline_result.get("damage", 0)) <= 0:
-		return harness.fail_result("gojo domain should force zero-accuracy ao to hit before kyokyo is cast")
-	var protected_result = _support.run_gojo_domain_accuracy_case(harness, sample_factory, true, 854)
+		return harness.fail_result("gojo domain should force authored ao to hit before kyokyo is cast")
+	var protected_result = _support.run_gojo_domain_accuracy_case(harness, sample_factory, true, probe_seed)
 	if not bool(protected_result.get("ok", false)):
-		return protected_result
+		return harness.fail_result(str(protected_result.get("error", "protected gojo domain accuracy case failed")))
 	if int(protected_result.get("damage", -1)) != 0:
-		return harness.fail_result("kyokyo should restore original zero accuracy under a real gojo domain")
+		return harness.fail_result("kyokyo should restore gojo ao's original miss rate under a real gojo domain")
 	if not bool(protected_result.get("nullify_active", false)):
 		return harness.fail_result("kyokyo runtime path should apply nullify_field_accuracy before gojo ao resolves")
 	return harness.pass_result()

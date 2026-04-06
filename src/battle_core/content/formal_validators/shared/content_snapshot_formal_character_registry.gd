@@ -110,32 +110,44 @@ static func build_validator_descriptors_from_path(registry_path: String) -> Dict
 		if validator_path.is_empty():
 			continue
 		var resolved_validator_path := validator_path if validator_path.begins_with("res://") else "res://%s" % validator_path
-		var validator_script = load(resolved_validator_path)
-		if validator_script == null:
-			return {
-				"descriptors": [],
-				"error": "ContentSnapshotFormalCharacterRegistry[%s] failed to load validator: %s" % [character_id, resolved_validator_path],
-			}
-		if not (validator_script is Script) or not validator_script.can_instantiate():
-			return {
-				"descriptors": [],
-				"error": "ContentSnapshotFormalCharacterRegistry[%s] validator is not instantiable" % character_id,
-			}
-		var validator_instance = validator_script.new()
-		if validator_instance == null or not validator_instance.has_method("validate"):
-			return {
-				"descriptors": [],
-				"error": "ContentSnapshotFormalCharacterRegistry[%s] failed to instantiate validator" % character_id,
-			}
 		descriptors.append({
 			"character_id": character_id,
 			"unit_definition_id": String(entry.get("unit_definition_id", "")).strip_edges(),
 			"content_validator_script_path": resolved_validator_path,
 			"entry": entry.duplicate(true),
-			"validator": validator_instance,
 		})
 	return {
 		"descriptors": descriptors,
+		"error": "",
+	}
+
+static func instantiate_validator_descriptor(descriptor: Dictionary) -> Dictionary:
+	var character_id := String(descriptor.get("character_id", "")).strip_edges()
+	var validator_path := String(descriptor.get("content_validator_script_path", "")).strip_edges()
+	if validator_path.is_empty():
+		return {
+			"validator": null,
+			"error": "ContentSnapshotFormalCharacterRegistry[%s] missing validator path" % character_id,
+		}
+	var validator_script = load(validator_path)
+	if validator_script == null:
+		return {
+			"validator": null,
+			"error": "ContentSnapshotFormalCharacterRegistry[%s] failed to load validator: %s" % [character_id, validator_path],
+		}
+	if not (validator_script is Script) or not validator_script.can_instantiate():
+		return {
+			"validator": null,
+			"error": "ContentSnapshotFormalCharacterRegistry[%s] validator is not instantiable" % character_id,
+		}
+	var validator_instance = validator_script.new()
+	if validator_instance == null or not validator_instance.has_method("validate"):
+		return {
+			"validator": null,
+			"error": "ContentSnapshotFormalCharacterRegistry[%s] failed to instantiate validator" % character_id,
+		}
+	return {
+		"validator": validator_instance,
 		"error": "",
 	}
 
@@ -154,7 +166,14 @@ static func build_validator_instances_from_path(registry_path: String) -> Dictio
 	for raw_descriptor in descriptor_result.get("descriptors", []):
 		if not (raw_descriptor is Dictionary):
 			continue
-		var validator = raw_descriptor.get("validator", null)
+		var instantiate_result := instantiate_validator_descriptor(raw_descriptor)
+		var instantiate_error := String(instantiate_result.get("error", ""))
+		if not instantiate_error.is_empty():
+			return {
+				"validators": [],
+				"error": instantiate_error,
+			}
+		var validator = instantiate_result.get("validator", null)
 		if validator != null:
 			validators.append(validator)
 	return {

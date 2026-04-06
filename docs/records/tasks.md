@@ -354,6 +354,48 @@
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/run_with_gate.sh`
 
+## 扩角前整波整改计划（补充收口，2026-04-06）
+
+- 状态：已完成
+- 目标：
+  - 在恢复第 5 个正式角色扩充前，把 formal validator 装配时机、pair interaction 可信度、tests/gates 热点和文档口径再做一轮收口，避免同类问题反复回潮。
+- 范围：
+  - `ContentSnapshotFormalCharacterValidator` 改成 present-only lazy instantiation。
+  - `SampleBattleFactory.build_formal_character_setup_result()` 透传真实下游错误。
+  - pair interaction support 收口到 `tests/support/formal_pair_interaction/scenario_registry.gd` 单一真相，并禁止 sample-only setup / authored skill `accuracy,power` 改写。
+  - `tests/suites/content_validation_core/formal_registry_suite.gd`、`tests/gates/repo_consistency_formal_character_gate.py`、`tests/check_architecture_constraints.sh` 与相关文档同步整改。
+- 验收标准：
+  - 缺席角色的坏 validator 不误炸，出场角色的坏 validator 仍 fail-fast。
+  - `build_formal_character_setup_result()` 不再把失败统一抹平成 missing matchup。
+  - 6 组 pair interaction case 全部读取 catalog 的 `matchup_id / battle_seed`，且不再走 sample-only builder。
+  - `bash tests/run_with_gate.sh` 全绿。
+
+### 执行结果
+
+- formal validator：
+  - runtime registry loader 现在只校验 entry 形状与 validator 路径存在性。
+  - validator 实例化已下沉到 `ContentSnapshotFormalCharacterValidator.validate()`，只对当前 snapshot 实际出现的正式角色执行。
+  - 已补回归：
+    - 缺席角色坏 validator 不误炸
+    - 出场角色坏 validator 仍 fail-fast
+- SampleBattleFactory：
+  - `build_formal_character_setup_result()` 现在保留下游真实 `error_code / error_message`。
+  - `sample_battle_factory_result_error_contract` 已补 message 回归，锁住 missing character 的真实错误文案。
+- pair interaction：
+  - `tests/support/formal_pair_interaction/scenario_registry.gd` 已成为 scenario runner 单一真相。
+  - `gojo_vs_kashimo` 与 `sukuna_vs_kashimo` 已改成 authored `95/90` 命中技能 + 固定 seed 的 deterministic 黑盒回归，不再直接改 skill `accuracy`。
+  - `gojo_vs_obito` 的禁疗换人链已改成“先正式命中挂标记，再在下一回合执行真实 switch action 并在 turn_end 前断言保留”，避免把 switch 高优先级重定向误当成 persistence 语义。
+- tests / gates 热点治理：
+  - `tests/suites/content_validation_core/formal_registry_suite.gd` 已改成稳定 wrapper + 子 suite，原测试名不变。
+  - `tests/gates/repo_consistency_formal_character_gate.py` 已拆 helper，并新增 pair interaction support 静态防回退：
+    - 禁止 sample-only setup path
+    - 禁止直接改 formal skill `accuracy/power`
+  - `tests/check_architecture_constraints.sh` 已新增：
+    - `tests/support/**/*.gd`：`220..250` 预警，`>250` 失败
+    - `tests/gates/*.py`：`350..400` 预警，`>400` 失败
+- 文档：
+  - `tests/README.md`、`docs/design/battle_content_schema.md`、`docs/design/effect_engine.md` 已同步 present-only validator、runtime/delivery 双表、pair interaction 单一真相与 field 归属口径。
+
 ## 下一角色扩充准备
 
 - 新角色进入正式交付链前，必须先完成：

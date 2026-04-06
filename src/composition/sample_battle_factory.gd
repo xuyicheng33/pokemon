@@ -115,9 +115,10 @@ func build_formal_character_setup_result(character_id: String, side_regular_skil
 	if not bool(setup_result.get("ok", false)):
 		return _record_result(_registry_helper.error_result(
 			str(setup_result.get("error_code", ErrorCodesScript.INVALID_BATTLE_SETUP)),
-			"SampleBattleFactory registry[%s] references missing formal setup matchup: %s" % [
+			"SampleBattleFactory registry[%s] failed to build formal setup matchup %s: %s" % [
 				character_id,
 				matchup_id,
+				String(setup_result.get("error_message", "unknown error")),
 			]
 		))
 	return _record_result(_registry_helper.ok_result(setup_result.get("data", null)))

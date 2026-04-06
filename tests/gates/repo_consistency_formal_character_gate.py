@@ -1,12 +1,19 @@
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from repo_consistency_common import GateContext
+from repo_consistency_formal_character_gate_support import (
+    collect_scope_tree,
+    collect_suite_refs,
+    scan_legacy_registry_refs,
+    scan_legacy_sample_factory_calls,
+    scan_pair_interaction_support_regressions,
+    validator_test_prefix,
+)
 
 
 ctx = GateContext()
@@ -34,79 +41,6 @@ SHARED_SUITE_ROOTS = [
     "tests/suites/combat_type_definition_suite.gd",
     "tests/suites/combat_type_runtime_suite.gd",
 ]
-
-
-def validator_test_prefix(script_path: str) -> str:
-    stem = Path(script_path).stem
-    match = re.fullmatch(r"content_snapshot_formal_(.+)_validator", stem)
-    return "" if match is None else match.group(1)
-
-
-def collect_suite_refs(text: str) -> list[str]:
-    refs: list[str] = []
-    for pattern in [
-        re.compile(r'preload\("res://(tests/suites/[^"]+\.gd)"\)'),
-        re.compile(r'extends "res://(tests/suites/[^"]+\.gd)"'),
-    ]:
-        refs.extend(pattern.findall(text))
-    return refs
-
-
-def collect_scope_tree(start_paths: list[str]) -> list[str]:
-    discovered: set[str] = set()
-    pending_paths: list[str] = list(start_paths)
-    while pending_paths:
-        rel_path = pending_paths.pop()
-        if rel_path in discovered:
-            continue
-        if not (ctx.root / rel_path).exists():
-            continue
-        discovered.add(rel_path)
-        for child_rel_path in collect_suite_refs(ctx.read_text(rel_path)):
-            pending_paths.append(child_rel_path)
-    return sorted(discovered)
-
-
-def scan_legacy_sample_factory_calls() -> list[str]:
-    legacy_call_patterns = [
-        r"\bsample_factory\.build_setup_by_matchup_id\(",
-        r"\bsample_factory\.content_snapshot_paths\(",
-        r"\bsample_factory\.content_snapshot_paths_for_setup\(",
-        r"\bsample_factory\.collect_tres_paths\(",
-        r"\bsample_factory\.collect_tres_paths_recursive\(",
-        r"\bsample_factory\.formal_character_ids\(",
-        r"\bsample_factory\.formal_unit_definition_ids\(",
-        r"\bsample_factory\.build_formal_character_setup\(",
-        r"\bsample_factory\.build_sample_setup\(",
-        r"\bsample_factory\.build_demo_replay_input\(",
-        r"\bsample_factory\.build_passive_item_demo_replay_input\(",
-    ]
-    failures: list[str] = []
-    for top_level_dir in ["src", "tests"]:
-        for path in sorted((ctx.root / top_level_dir).rglob("*.gd")):
-            rel_path = str(path.relative_to(ctx.root))
-            text = path.read_text(encoding="utf-8")
-            for pattern in legacy_call_patterns:
-                if re.search(pattern, text):
-                    failures.append(f"{rel_path} still calls removed SampleBattleFactory wrapper: {pattern}")
-    return failures
-
-
-def scan_legacy_registry_refs() -> list[str]:
-    failures: list[str] = []
-    scan_specs = [
-        ("src", "*.gd"),
-        ("tests", "*.gd"),
-        ("tests", "*.sh"),
-    ]
-    for top_level_dir, pattern in scan_specs:
-        for path in sorted((ctx.root / top_level_dir).rglob(pattern)):
-            rel_path = str(path.relative_to(ctx.root))
-            text = path.read_text(encoding="utf-8")
-            if LEGACY_REGISTRY_PATH in text:
-                failures.append(f"{rel_path} still references removed legacy registry path: {LEGACY_REGISTRY_PATH}")
-    return failures
-
 
 runtime_registry = ctx.load_json_array(RUNTIME_REGISTRY_PATH, "formal character runtime registry")
 delivery_registry = ctx.load_json_array(DELIVERY_REGISTRY_PATH, "formal character delivery registry")
@@ -197,9 +131,11 @@ if "._test_" in pair_interaction_support_text:
 
 for rel_path in [RUNTIME_REGISTRY_HELPER_PATH, DELIVERY_REGISTRY_HELPER_PATH, "tests/check_suite_reachability.sh"]:
     ctx.require_absent(rel_path, LEGACY_REGISTRY_PATH, "legacy single formal registry path")
-for failure in scan_legacy_sample_factory_calls():
+for failure in scan_legacy_sample_factory_calls(ctx):
     ctx.failures.append(failure)
-for failure in scan_legacy_registry_refs():
+for failure in scan_legacy_registry_refs(ctx, LEGACY_REGISTRY_PATH):
+    ctx.failures.append(failure)
+for failure in scan_pair_interaction_support_regressions(ctx):
     ctx.failures.append(failure)
 
 character_to_unit: dict[str, str] = {}
@@ -252,7 +188,7 @@ for entry in runtime_registry:
 
 reachable_suite_paths: set[str] = set()
 pending_suite_paths: list[str] = collect_suite_refs(ctx.read_text("tests/run_all.gd"))
-shared_suite_scope_paths = collect_scope_tree(SHARED_SUITE_ROOTS)
+shared_suite_scope_paths = collect_scope_tree(ctx, SHARED_SUITE_ROOTS)
 
 for entry in delivery_registry:
     character_id = str(entry.get("character_id", "")).strip()
@@ -307,7 +243,7 @@ for entry in delivery_registry:
     if adjustment_doc:
         for anchor_id in adjustment_needles if isinstance(adjustment_needles, list) else []:
             ctx.require_anchor(adjustment_doc, str(anchor_id), f"{character_id} adjustment anchor")
-    scoped_suite_paths = collect_scope_tree(suite_scope_paths)
+    scoped_suite_paths = collect_scope_tree(ctx, suite_scope_paths)
     for test_name in required_test_names if isinstance(required_test_names, list) else []:
         ctx.require_contains_any(scoped_suite_paths, f'runner.run_test("{str(test_name)}"', f"{character_id} regression anchor")
         if any(f'runner.run_test("{str(test_name)}"' in ctx.read_text(shared_path) for shared_path in shared_suite_scope_paths):

@@ -7,7 +7,10 @@ const GojoTestSupportScript := preload("res://tests/support/gojo_test_support.gd
 var _support = GojoTestSupportScript.new()
 
 func run_failed_clash_does_not_revive_action_lock_contract(harness) -> Dictionary:
-	var state_payload = _support.build_gojo_battle_state(harness, 1216, true, true)
+	return run_failed_clash_does_not_revive_action_lock_contract_for_matchup(harness, "gojo_vs_sukuna", 1216)
+
+func run_failed_clash_does_not_revive_action_lock_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
+	var state_payload = _support.build_gojo_matchup_state(harness, matchup_id, seed)
 	if state_payload.has("error"):
 		return harness.fail_result(str(state_payload["error"]))
 	var core = state_payload["core"]
@@ -41,12 +44,15 @@ func run_failed_clash_does_not_revive_action_lock_contract(harness) -> Dictionar
 		return harness.fail_result("Gojo 对拼失败后，不应残留或复活无量空处的 action_lock")
 	if not _support.has_event(core.service("battle_logger").event_log, func(ev):
 		return ev.event_type == EventTypesScript.ACTION_CAST and ev.actor_id == sukuna_unit.unit_instance_id
-	):
-		return harness.fail_result("Gojo 对拼失败后，宿傩原本已入队的领域动作应继续正常执行")
+		):
+			return harness.fail_result("Gojo 对拼失败后，宿傩原本已入队的领域动作应继续正常执行")
 	return harness.pass_result()
 
 func run_expire_removes_field_buff_contract(harness) -> Dictionary:
-	var state_payload = _support.build_gojo_vs_sample_state(harness, 1218)
+	return run_expire_removes_field_buff_contract_for_matchup(harness, "gojo_vs_sukuna", 1218)
+
+func run_expire_removes_field_buff_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
+	var state_payload = _support.build_gojo_matchup_state(harness, matchup_id, seed)
 	if state_payload.has("error"):
 		return harness.fail_result(str(state_payload["error"]))
 	var core = state_payload["core"]
@@ -79,11 +85,14 @@ func run_expire_removes_field_buff_contract(harness) -> Dictionary:
 	if not _support.has_event(core.service("battle_logger").event_log, func(ev):
 		return ev.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE
 	):
-		return harness.fail_result("无量空处自然到期时应写出 field_expire 日志")
+			return harness.fail_result("无量空处自然到期时应写出 field_expire 日志")
 	return harness.pass_result()
 
 func run_break_removes_field_buff_contract(harness) -> Dictionary:
-	var state_payload = _support.build_gojo_vs_sample_state(harness, 1219)
+	return run_break_removes_field_buff_contract_for_matchup(harness, "gojo_vs_sukuna", 1219)
+
+func run_break_removes_field_buff_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
+	var state_payload = _support.build_gojo_matchup_state(harness, matchup_id, seed)
 	if state_payload.has("error"):
 		return harness.fail_result(str(state_payload["error"]))
 	var core = state_payload["core"]

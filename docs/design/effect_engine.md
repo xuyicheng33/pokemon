@@ -27,6 +27,7 @@
 补充说明：
 
 - 被动技能、被动持有物与 field 作为 trigger source 的接入与归属，统一见 [passive_and_field.md](./passive_and_field.md)。
+- `field_apply_service / field_service / field_cleanup_helper / field_trigger_collection_helper` 虽然会被 effect 主链调用，但实现归属仍在 `src/battle_core/passives/`；它们属于被动与 field 子域，不属于 effect engine 自己的 owner。
 
 ## 2. EffectEvent 契约
 

@@ -141,8 +141,23 @@ if warning_review:
 for path in (root / "tests").rglob("*.gd"):
     rel = str(path.relative_to(root))
     line_count = len(path.read_text(encoding="utf-8").splitlines())
+    if rel.startswith("tests/support/"):
+        if 220 <= line_count <= 250:
+            print(f"ARCH_GATE_WARNING: tests support file approaching 250-line split threshold: {rel} ({line_count} lines)")
+        if line_count > 250:
+            print(f"ARCH_GATE_FAILED: tests support file exceeds 250 lines and must be split: {rel} ({line_count})", file=sys.stderr)
+            sys.exit(1)
     if line_count > 600:
         print(f"ARCH_GATE_FAILED: test file exceeds 600 lines: {rel} ({line_count})", file=sys.stderr)
+        sys.exit(1)
+
+for path in sorted((root / "tests/gates").glob("*.py")):
+    rel = str(path.relative_to(root))
+    line_count = len(path.read_text(encoding="utf-8").splitlines())
+    if 350 <= line_count <= 400:
+        print(f"ARCH_GATE_WARNING: tests gate file approaching 400-line split threshold: {rel} ({line_count} lines)")
+    if line_count > 400:
+        print(f"ARCH_GATE_FAILED: tests gate file exceeds 400 lines and must be split: {rel} ({line_count})", file=sys.stderr)
         sys.exit(1)
 
 print("ARCH_GATE_PASSED: outer/internal layering and size constraints are satisfied")
