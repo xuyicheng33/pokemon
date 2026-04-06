@@ -140,6 +140,7 @@
   - `BattleSandboxRunner` 默认 Kashimo demo 已改成先构建 `battle_setup`，再走 `content_snapshot_paths_for_setup_result(battle_setup)`，不再回退到全量 snapshot。
   - `BattleCoreTestHarness` 已新增 setup-scoped snapshot / content index helper，后续 formal 与 setup-sensitive 用例可以统一接入，不必各自重复造轮子。
   - `content_snapshot_cache_composer_stats_contract` 已切到 harness 的 setup-scoped helper，保证这条测试入口不是死代码。
+  - formal/setup 敏感 support 已开始接入新 helper，当前已覆盖 `formal_character_snapshot_test_helper`、Gojo、Kashimo、Sukuna 的相关测试支撑。
 
 ### 当前验证结果
 
@@ -150,6 +151,7 @@
   - `git diff --check`
   - `godot --headless --path . --script tests/run_all.gd`
   - `godot --headless --path . --quit-after 20`
+  - formal/setup 敏感 support 接入后再次通过 `godot --headless --path . --script tests/run_all.gd`
 
 ## 下一角色扩充准备
 
