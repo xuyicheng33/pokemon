@@ -1,12 +1,16 @@
 extends RefCounted
-class_name BattleCoreSession
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var session_id: String = ""
-var container = null
-var battle_state = null
-var content_index = null
+var _container = null
+var _battle_state = null
+var _content_index = null
+
+func configure_runtime(container, battle_state, content_index) -> void:
+    _container = container
+    _battle_state = battle_state
+    _content_index = content_index
 
 func validate_runtime_result() -> Variant:
     if not _is_ready():
@@ -14,7 +18,7 @@ func validate_runtime_result() -> Variant:
     var runtime_guard_service = _get_container_service("runtime_guard_service")
     if runtime_guard_service == null:
         return _error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: runtime_guard_service")
-    var invalid_code = runtime_guard_service.validate_runtime_state(battle_state, content_index)
+    var invalid_code = runtime_guard_service.validate_runtime_state(_battle_state, _content_index)
     if invalid_code == null:
         return null
     return _error(str(invalid_code), "BattleCoreManager runtime state invalid: %s" % str(invalid_code))
@@ -25,7 +29,7 @@ func get_legal_actions_result(side_id: String) -> Dictionary:
     var legal_action_service = _get_container_service("legal_action_service")
     if legal_action_service == null:
         return _error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: legal_action_service")
-    var legal_actions = legal_action_service.get_legal_actions(battle_state, side_id, content_index)
+    var legal_actions = legal_action_service.get_legal_actions(_battle_state, side_id, _content_index)
     if legal_actions == null:
         return _service_error(
             legal_action_service,
@@ -40,7 +44,7 @@ func run_turn_result(commands: Array) -> Dictionary:
     var turn_loop_controller = _get_container_service("turn_loop_controller")
     if turn_loop_controller == null:
         return _error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: turn_loop_controller")
-    turn_loop_controller.run_turn(battle_state, content_index, commands)
+    turn_loop_controller.run_turn(_battle_state, _content_index, commands)
     return _ok(true)
 
 func get_event_log_snapshot_result() -> Dictionary:
@@ -51,20 +55,26 @@ func get_event_log_snapshot_result() -> Dictionary:
         return _error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: battle_logger")
     return _ok(battle_logger.snapshot())
 
+func current_battle_state():
+    return _battle_state
+
+func current_content_index():
+    return _content_index
+
 func dispose() -> void:
-    if container != null and container.has_method("dispose"):
-        container.dispose()
-    container = null
-    battle_state = null
-    content_index = null
+    if _container != null and _container.has_method("dispose"):
+        _container.dispose()
+    _container = null
+    _battle_state = null
+    _content_index = null
 
 func _is_ready() -> bool:
-    return container != null and battle_state != null and content_index != null
+    return _container != null and _battle_state != null and _content_index != null
 
 func _get_container_service(service_name: String) -> Variant:
-    if container == null:
+    if _container == null:
         return null
-    return container.service(service_name)
+    return _container.service(service_name)
 
 func _ok(data) -> Dictionary:
     return {

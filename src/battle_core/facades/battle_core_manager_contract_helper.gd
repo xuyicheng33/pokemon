@@ -112,9 +112,12 @@ static func validate_session_runtime_result(session) -> Variant:
 	return session.validate_runtime_result()
 
 static func resolve_turn_failure_result(session) -> Variant:
-	if session == null or session.battle_state == null or session.battle_state.battle_result == null:
+	if session == null or not session.has_method("current_battle_state"):
 		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
-	var battle_result = session.battle_state.battle_result
+	var battle_state = session.current_battle_state()
+	if battle_state == null or battle_state.battle_result == null:
+		return error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
+	var battle_result = battle_state.battle_result
 	if not bool(battle_result.finished):
 		return null
 	var reason := String(battle_result.reason)

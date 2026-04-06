@@ -45,6 +45,7 @@
 - `effect:field_blocked` 只用于“普通 field 被在场领域阻断”；该事件 `effect_roll` 固定为 `null`。
 - `header_snapshot` 仅在 `event_type = system:battle_header` 时填写，其余事件写 `null`。
 - `header_snapshot` 必填字段固定为 `visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`，且禁止出现 `unit_instance_id` 等私有运行态 ID。
+- `header_snapshot.initial_field.creator_public_id` 只允许公开 `public_id` 或 `null`；creator 解析失败时不得回退 runtime/source id。
 - 系统锚点事件（`system:battle_init / system:turn_start / system:turn_end`）允许保留对应节点名到 `trigger_name`，便于日志排查；其 `cause_event_id` 仍写 `null`。
 - 其他非 effect 事件 `trigger_name / cause_event_id` 写 `null`。
 - `killer_id` 无归属时写 `null`。
@@ -123,6 +124,7 @@
 ## 4. Manager 初始化公开契约
 
 - `create_session()` 对外返回的是“已预回首回合 MP 后”的初始公开快照。
+- `create_session()` 在返回首个 `public_snapshot` 前必须再次通过 runtime guard；若初始化后的运行态非法，直接返回失败 envelope（`data=null`），不返回首帧公开快照。
 - 这次初始化预回蓝不会补写到初始 `event_log`；在首回合开始前看不到对应 `effect:resource_mod`，这是正式 contract。
 - 初始化阶段的 `invalid_battle` 与 startup victory 结果落盘统一由 `BattleResultService` 负责，`BattleInitializer` 只保留初始化编排。
 

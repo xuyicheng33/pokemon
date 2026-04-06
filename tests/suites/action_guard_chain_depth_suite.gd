@@ -12,6 +12,7 @@ var _support = ActionGuardStateIntegrityTestSupportScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("invalid_chain_depth_max_guard", failures, Callable(self, "_test_invalid_chain_depth_max_guard").bind(harness))
 	runner.run_test("invalid_chain_depth_dedupe_guard", failures, Callable(self, "_test_invalid_chain_depth_dedupe_guard").bind(harness))
+	runner.run_test("dedupe_discriminator_explicit_repeat_contract", failures, Callable(self, "_test_dedupe_discriminator_explicit_repeat_contract").bind(harness))
 	runner.run_test("stacked_effect_instances_same_source_contract", failures, Callable(self, "_test_stacked_effect_instances_same_source_contract").bind(harness))
 
 func _test_invalid_chain_depth_max_guard(harness) -> Dictionary:
@@ -120,6 +121,85 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 	core.service("payload_executor").execute_effect_event(retriggered_effect_events[0], battle_state, content_index)
 	if core.service("payload_executor").last_invalid_battle_code != ErrorCodesScript.INVALID_CHAIN_DEPTH:
 		return harness.fail_result("expected invalid_chain_depth on dedupe guard, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
+	return harness.pass_result()
+
+func _test_dedupe_discriminator_explicit_repeat_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1192)
+
+	var dedupe_effect = EffectDefinitionScript.new()
+	dedupe_effect.id = "test_dedupe_discriminator_effect"
+	dedupe_effect.display_name = "Dedupe Discriminator Effect"
+	dedupe_effect.scope = "self"
+	dedupe_effect.trigger_names = PackedStringArray(["on_cast"])
+	dedupe_effect.payloads.clear()
+	content_index.register_resource(dedupe_effect)
+
+	var p1_active = battle_state.get_side("P1").get_active_unit()
+	var p2_active = battle_state.get_side("P2").get_active_unit()
+	var chain_context = _support.build_chain_context("test_dedupe_discriminator_chain", p1_active.unit_instance_id, p2_active.unit_instance_id)
+	chain_context.step_counter = 8
+	battle_state.chain_context = chain_context
+	var effect_events = core.service("trigger_dispatcher").collect_events(
+		"on_cast",
+		battle_state,
+		content_index,
+		PackedStringArray([dedupe_effect.id]),
+		p1_active.unit_instance_id,
+		"action_dedupe_discriminator",
+		2,
+		p1_active.base_speed,
+		battle_state.chain_context
+	)
+	if effect_events.is_empty():
+		return harness.fail_result("failed to build dedupe discriminator effect event")
+	effect_events[0].dedupe_discriminator = "primary"
+	core.service("payload_executor").execute_effect_event(effect_events[0], battle_state, content_index)
+	if core.service("payload_executor").last_invalid_battle_code != null:
+		return harness.fail_result("first dedupe discriminator event should pass")
+	battle_state.chain_context.step_counter = 8
+	var repeated_effect_events = core.service("trigger_dispatcher").collect_events(
+		"on_cast",
+		battle_state,
+		content_index,
+		PackedStringArray([dedupe_effect.id]),
+		p1_active.unit_instance_id,
+		"action_dedupe_discriminator",
+		2,
+		p1_active.base_speed,
+		battle_state.chain_context
+	)
+	if repeated_effect_events.is_empty():
+		return harness.fail_result("failed to rebuild dedupe discriminator effect event")
+	repeated_effect_events[0].dedupe_discriminator = "secondary"
+	core.service("payload_executor").execute_effect_event(repeated_effect_events[0], battle_state, content_index)
+	if core.service("payload_executor").last_invalid_battle_code != null:
+		return harness.fail_result("explicit dedupe discriminator should allow same-chain repeat, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
+	battle_state.chain_context.step_counter = 8
+	var blocked_effect_events = core.service("trigger_dispatcher").collect_events(
+		"on_cast",
+		battle_state,
+		content_index,
+		PackedStringArray([dedupe_effect.id]),
+		p1_active.unit_instance_id,
+		"action_dedupe_discriminator",
+		2,
+		p1_active.base_speed,
+		battle_state.chain_context
+	)
+	if blocked_effect_events.is_empty():
+		return harness.fail_result("failed to rebuild blocked dedupe discriminator effect event")
+	blocked_effect_events[0].dedupe_discriminator = "secondary"
+	core.service("payload_executor").execute_effect_event(blocked_effect_events[0], battle_state, content_index)
+	if core.service("payload_executor").last_invalid_battle_code != ErrorCodesScript.INVALID_CHAIN_DEPTH:
+		return harness.fail_result("same dedupe discriminator should still hit the dedupe guard, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
 	return harness.pass_result()
 
 func _test_stacked_effect_instances_same_source_contract(harness) -> Dictionary:

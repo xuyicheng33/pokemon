@@ -60,11 +60,16 @@ fail-fast：任一批次产生 invalid code，立即返回上层终止战斗。
 
 - `forced_replace` 生命周期链已收口为 `on_switch -> on_exit -> leave -> field_break(若 creator 离场) -> replace -> on_enter`。
 - 其中递归 `on_switch / on_exit / field_break / on_enter` batch 不再靠属性注入持有 `trigger_batch_runner`，而是由外层显式透传执行权。
+- `FaintResolver` 当前也显式持有 `field_service`，不再通过 `trigger_batch_runner.field_service` 读取隐藏依赖。
 
 ## 4.1 手动换人与强制换下顺序
 
 - 手动换人固定顺序：`on_switch -> on_exit -> leave -> field_break(若 creator 离场) -> replace -> on_enter`
 - 强制换下固定顺序：`on_switch -> on_exit -> leave -> field_break(若 creator 离场) -> replace -> on_enter`
+- 手动换人、强制换下、击倒补位的入场状态当前统一为：
+  - `reentered_turn_index = battle_state.turn_index`
+  - `has_acted = false`
+  - `action_window_passed = false`
 - 提前打断只执行 `on_break_effect_ids`，不执行 `on_expire_effect_ids`，也不写自然到期日志。
 
 ## 5. 约束

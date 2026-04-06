@@ -118,12 +118,14 @@
 |`base_sp_defense`|`int`|基础特防|
 |`base_speed`|`int`|基础速度|
 |`stat_stages`|`Dictionary`|能力阶段|
+|`persistent_stat_stages`|`Dictionary`|跨非击倒离场保留的持久能力阶段；击倒时清空，并在有效阶段计算时与 `stat_stages` 合并|
 |`effect_instances`|`Array[EffectInstance]`|挂载的持续效果实例|
 |`rule_mod_instances`|`Array[RuleModInstance]`|挂载的规则修正实例|
 |`has_acted`|`bool`|本回合是否已开始行动|
 |`action_window_passed`|`bool`|本回合行动机会是否已过|
 |`leave_state`|`String`|必须取自 `LeaveStates`|
 |`leave_reason`|`Variant`|离场原因快照（如击倒、替换、投降链）|
+|`reentered_turn_index`|`int`|最近一次通过 replacement / 手动换人重新入场时记录的回合号|
 |`last_effective_speed`|`int`|最近一次用于排序的有效速度快照|
 
 ## 7. FieldState
@@ -132,17 +134,24 @@
 |---|---|---|
 |`field_def_id`|`String`|field 定义 ID|
 |`instance_id`|`String`|field 实例 ID|
-|`creator`|`String`|来源单位或系统名|
+|`creator`|`String`|当前 field creator 的 `unit_instance_id`；active field 存在时必须非空且能解析到仍在运行态里的单位|
 |`remaining_turns`|`int`|剩余回合|
 |`source_instance_id`|`String`|触发源实例|
 |`source_kind_order`|`int`|来源类型枚举值|
 |`source_order_speed_snapshot`|`int`|速度快照|
 |`reversible_stat_mod_totals`|`Dictionary`|按 `owner_id|stat_name` 记录 field 期间实际生效的能力阶段净变化|
+|`pending_success_effect_ids`|`PackedStringArray`|待在 `field_apply_success` 兑现的 follow-up effect 列表|
+|`pending_success_source_instance_id`|`String`|`field_apply_success` follow-up 复用的来源实例|
+|`pending_success_source_kind_order`|`int`|`field_apply_success` follow-up 复用的来源类型|
+|`pending_success_source_order_speed_snapshot`|`int`|`field_apply_success` follow-up 复用的速度快照|
+|`pending_success_chain_context`|`ChainContext|nil`|`field_apply_success` follow-up 复用的链上下文|
 
 补充说明：
 
 - `reversible_stat_mod_totals` 用于 field 生命周期回滚：`field_apply` 时记录实际写入增量，`field_break / field_expire` 时只消费已记录增量，避免 clamp/外部改动导致过量回滚。
 - `FieldState.to_stable_dict()` 必须包含 `reversible_stat_mod_totals`，保证 replay 与 `final_state_hash` 在该语义下仍可稳定复现。
+- `FieldState.creator` 当前不再接受 `system` 之类占位值；只要场上存在 active field，就必须指向仍可解析的单位实例。
+- 对外 `public_snapshot.field.creator_public_id` 与 `header_snapshot.initial_field.creator_public_id` 只允许公开 `public_id` 或 `null`；creator 解析失败时禁止回退 runtime/source id。
 
 ## 8. EffectInstance
 
@@ -210,6 +219,8 @@
 - `UnitDefinition.skill_ids` 不再直接承担“本场实际装配”语义；运行时、合法性、公开快照统一读取 `UnitState.regular_skill_ids`。
 - `candidate_skill_ids` 只存在于内容定义层；运行态当前不额外镜像候选池。
 - `used_once_per_battle_skill_ids` 只保留在核心内部运行态，不回写到 manager public snapshot、回放公开 contract 或外层输入结构。
+- replacement / 手动换人入场后，`reentered_turn_index = 当前 battle_state.turn_index`，并统一把 `has_acted=false`、`action_window_passed=false` 作为稳定运行态口径。
+- 同链 effect 递归防抖的正式扩展位是 `EffectEvent.dedupe_discriminator`；若未来需要允许“同链合法重复派发”，只能显式设置这个 discriminator，不能再靠复制 effect id 或篡改 source token 绕过去重。
 
 ## 11. 禁止事项
 

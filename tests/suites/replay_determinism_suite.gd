@@ -128,9 +128,10 @@ func _test_final_state_hash_tracks_once_per_battle_usage_contract(harness) -> Di
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var battle_setup = sample_factory.build_kashimo_setup()
-	if battle_setup == null:
-		return harness.fail_result("failed to build Kashimo setup for final_state_hash contract")
+	var battle_setup_result: Dictionary = sample_factory.build_formal_character_setup_result("kashimo_hajime")
+	if not bool(battle_setup_result.get("ok", false)):
+		return harness.fail_result("failed to build Kashimo setup for final_state_hash contract: %s" % String(battle_setup_result.get("error_message", "unknown error")))
+	var battle_setup = battle_setup_result.get("data", null)
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 913, battle_setup)
 	var kashimo = battle_state.get_side("P1").get_active_unit()

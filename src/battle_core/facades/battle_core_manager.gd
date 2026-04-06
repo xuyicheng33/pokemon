@@ -2,20 +2,18 @@ extends RefCounted
 class_name BattleCoreManager
 
 const BattleCoreManagerContractHelperScript := preload("res://src/battle_core/facades/battle_core_manager_contract_helper.gd")
+const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
-
 var _container_factory: Callable = Callable()
 var _command_builder = null
 var _command_id_factory = null
 var _public_snapshot_builder = null
 var _container_factory_owner = null
-
 var _sessions: Dictionary = {}
 var _session_seq: int = 0
 var _event_log_public_snapshot_builder = null
 var _container_service = null
 var _disposed: bool = false
-
 func create_session(init_payload: Dictionary) -> Dictionary:
     var payload_error = BattleCoreManagerContractHelperScript.validate_create_session_payload(init_payload)
     if payload_error != null:
@@ -30,8 +28,18 @@ func create_session(init_payload: Dictionary) -> Dictionary:
     var response = create_result.get("response", BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager failed to create session"))
     if session == null:
         return response
+    var runtime_error = BattleCoreManagerContractHelperScript.validate_session_runtime_result(session)
+    if runtime_error != null:
+        if session.has_method("dispose"):
+            session.dispose()
+        return runtime_error
     _sessions[session_id] = session
-    return response
+    var public_snapshot = _public_snapshot_builder.build_public_snapshot(session.current_battle_state(), session.current_content_index())
+    return BattleCoreManagerContractHelperScript.ok({
+        "session_id": session_id,
+        "public_snapshot": public_snapshot,
+        "prebattle_public_teams": DeepCopyHelperScript.copy_value(public_snapshot.get("prebattle_public_teams", [])),
+    })
 
 func get_legal_actions(session_id: String, side_id: String) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
@@ -84,7 +92,10 @@ func run_turn(session_id: String, commands: Array) -> Dictionary:
     var turn_failure = BattleCoreManagerContractHelperScript.resolve_turn_failure_result(session)
     if turn_failure != null:
         return turn_failure
-    return BattleCoreManagerContractHelperScript.ok({"session_id": session_id, "public_snapshot": _public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index)})
+    return BattleCoreManagerContractHelperScript.ok({
+        "session_id": session_id,
+        "public_snapshot": _public_snapshot_builder.build_public_snapshot(session.current_battle_state(), session.current_content_index()),
+    })
 
 func get_public_snapshot(session_id: String) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
@@ -97,7 +108,9 @@ func get_public_snapshot(session_id: String) -> Dictionary:
     var runtime_error = BattleCoreManagerContractHelperScript.validate_session_runtime_result(session)
     if runtime_error != null:
         return runtime_error
-    return BattleCoreManagerContractHelperScript.ok(_public_snapshot_builder.build_public_snapshot(session.battle_state, session.content_index))
+    return BattleCoreManagerContractHelperScript.ok(
+        _public_snapshot_builder.build_public_snapshot(session.current_battle_state(), session.current_content_index())
+    )
 
 func get_event_log_snapshot(session_id: String, from_index: int = 0) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
@@ -119,7 +132,9 @@ func get_event_log_snapshot(session_id: String, from_index: int = 0) -> Dictiona
     var start_index: int = min(from_index, event_log.size())
     var event_snapshots: Array = []
     for event_index in range(start_index, event_log.size()):
-        event_snapshots.append(_event_log_public_snapshot_builder.build_public_snapshot(event_log[event_index], session.battle_state))
+        event_snapshots.append(
+            _event_log_public_snapshot_builder.build_public_snapshot(event_log[event_index], session.current_battle_state())
+        )
     return BattleCoreManagerContractHelperScript.ok({"events": event_snapshots, "total_size": event_log.size()})
 
 func close_session(session_id: String) -> Dictionary:

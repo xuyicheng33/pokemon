@@ -8,6 +8,7 @@ var battle_logger
 var log_event_builder
 var faint_killer_attribution_service
 var faint_leave_replacement_service
+var field_service
 
 func resolve_missing_dependency() -> String:
     if trigger_batch_runner == null:
@@ -26,6 +27,12 @@ func resolve_missing_dependency() -> String:
     var faint_leave_missing := str(faint_leave_replacement_service.resolve_missing_dependency())
     if not faint_leave_missing.is_empty():
         return "faint_leave_replacement_service.%s" % faint_leave_missing
+    if field_service == null:
+        return "field_service"
+    if field_service.has_method("resolve_missing_dependency"):
+        var field_missing := str(field_service.resolve_missing_dependency())
+        if not field_missing.is_empty():
+            return "field_service.%s" % field_missing
     return ""
 
 func resolve_faint_window(battle_state, content_index) -> Variant:
@@ -117,7 +124,6 @@ func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_ind
     )
 
 func _execute_field_break_if_creator_inactive(battle_state, content_index) -> Variant:
-    var field_service = _resolve_field_service()
     if field_service == null:
         return null
     return field_service.break_field_if_creator_inactive(
@@ -126,8 +132,3 @@ func _execute_field_break_if_creator_inactive(battle_state, content_index) -> Va
         battle_state.chain_context,
         Callable(trigger_batch_runner, "execute_trigger_batch")
     )
-
-func _resolve_field_service() -> Variant:
-    if trigger_batch_runner == null:
-        return null
-    return trigger_batch_runner.field_service

@@ -5,12 +5,10 @@ const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
-
 var id_factory
 var battle_logger
 var log_event_builder
 var turn_limit_scoring_service
-
 func resolve_missing_dependency() -> String:
     if id_factory == null:
         return "id_factory"

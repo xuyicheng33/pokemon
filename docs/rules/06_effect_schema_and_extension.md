@@ -269,7 +269,7 @@
 |`source`|谁造成了这次效果|
 |`owner`|这个效果实例现在挂在谁身上或由谁承载|
 |`target`|这次 payload 直接作用到谁|
-|`creator`|是谁创建了当前 field|
+|`creator`|当前 field creator 的 `unit_instance_id`；active field 存在时必须可解析到仍在运行态里的单位|
 |`source_instance_id`|当前触发源的稳定实例 ID|
 |`source_kind_order`|当前触发源继承的根来源类型枚举|
 

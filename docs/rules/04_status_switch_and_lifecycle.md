@@ -73,6 +73,7 @@
 3. 若行动已经开始执行，却发现所选目标不在合法 bench，视为运行态破坏规则，按 `invalid_battle` 处理。
 4. 新入场单位、其 `on_enter`、以及后续 `on_matchup_changed` 不得读取一个按本规则已被打断的旧 field。
 5. 若旧单位保留了 `persists_on_switch=true` 的 effect / rule mod，它们跟着单位下场保留，但不会让该单位继续以“在场单位”身份参与普通回合批次。
+6. 新入场单位的 replacement 状态固定写成：`reentered_turn_index = 当前 turn_index`、`has_acted=false`、`action_window_passed=false`。
 
 ## 5. 强制换下顺序
 
@@ -92,6 +93,7 @@
 3. 若当前没有合法 bench，强制换下效果直接失效；不触发 `on_switch / on_exit`，也不改写当前 active。
 4. 提前打断不会触发 `effect:field_expire`，也不会执行 `on_expire_effect_ids`。
 5. `forced_replace` 与 `manual_switch` 的保留口径一致：只保留显式声明 `persists_on_switch=true` 的 unit effect / unit rule mod。
+6. 替补入场后的 replacement 状态也统一写成：`reentered_turn_index = 当前 turn_index`、`has_acted=false`、`action_window_passed=false`。
 
 ## 6. 倒下离场顺序
 
@@ -115,6 +117,7 @@
 4. 强制补位的替补选择必须走系统接口：合法 bench 候选 > 1 时返回目标 `unit_instance_id`；若只剩 1 名则自动锁定。
 5. 若系统接口返回空值、返回不在合法候选列表、或超时，按 `invalid_replacement_selection` 立即终止战斗。
 6. 旧 field 被提前打断后，补位链和新单位 `on_enter` 不得再读取它。
+7. 击倒补位写入的新 active 继续复用同一 replacement 状态口径：`reentered_turn_index = 当前 turn_index`、`has_acted=false`、`action_window_passed=false`。
 
 ## 7. 同窗双倒下处理
 

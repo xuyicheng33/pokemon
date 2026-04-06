@@ -47,7 +47,7 @@ static func build_public_field_snapshot(battle_state, content_index = null) -> D
 		"field_id": battle_state.field_state.field_def_id,
 		"field_kind": field_kind,
 		"remaining_turns": battle_state.field_state.remaining_turns,
-		"creator_public_id": _resolve_public_id_or_system(battle_state, creator_id),
+		"creator_public_id": _resolve_public_id_or_null(battle_state, creator_id),
 		"creator_side_id": creator_side_id,
 	})
 
@@ -101,10 +101,10 @@ static func build_initial_active_public_ids_by_side(battle_state) -> Dictionary:
 		active_ids_by_side[side_state.side_id] = active_unit.public_id if active_unit != null else null
 	return DeepCopyHelperScript.copy_value(active_ids_by_side)
 
-static func _resolve_public_id_or_system(battle_state, source_id: String) -> Variant:
+static func _resolve_public_id_or_null(battle_state, source_id: String) -> Variant:
 	if source_id.is_empty():
 		return null
 	var source_unit = battle_state.get_unit(source_id)
 	if source_unit != null:
 		return source_unit.public_id
-	return source_id
+	return null

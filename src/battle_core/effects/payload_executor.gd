@@ -127,12 +127,13 @@ func _build_dedupe_key(effect_event) -> String:
     if effect_event != null and effect_event.chain_context != null:
         target_unit_id = _string_or_empty(effect_event.chain_context.target_unit_id)
         action_segment_index = int(effect_event.chain_context.action_segment_index)
-    return "%s|%s|%s|%s|%s|%s|%d" % [
+    return "%s|%s|%s|%s|%s|%s|%s|%d" % [
         _string_or_empty(effect_event.source_instance_id if effect_event != null else null),
         _string_or_empty(effect_event.effect_instance_id if effect_event != null else null),
         _string_or_empty(effect_event.trigger_name if effect_event != null else null),
         _string_or_empty(effect_event.effect_definition_id if effect_event != null else null),
         _string_or_empty(effect_event.owner_id if effect_event != null else null),
+        _string_or_empty(effect_event.dedupe_discriminator if effect_event != null else null),
         target_unit_id,
         action_segment_index,
     ]

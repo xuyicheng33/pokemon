@@ -5,7 +5,6 @@ const BattleCoreSessionScript := preload("res://src/battle_core/facades/battle_c
 const BattleCoreManagerContractHelperScript := preload("res://src/battle_core/facades/battle_core_manager_contract_helper.gd")
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
-const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
 
 var container_factory: Callable = Callable()
 var public_snapshot_builder = null
@@ -61,17 +60,17 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
         }
     var session = BattleCoreSessionScript.new()
     session.session_id = session_id
-    session.container = container
-    session.battle_state = battle_state
-    session.content_index = content_index
-    var public_snapshot = public_snapshot_builder.build_public_snapshot(battle_state, content_index)
+    session.configure_runtime(container, battle_state, content_index)
+    var runtime_error = BattleCoreManagerContractHelperScript.validate_session_runtime_result(session)
+    if runtime_error != null:
+        session.dispose()
+        return {
+            "session": null,
+            "response": runtime_error,
+        }
     return {
         "session": session,
-        "response": BattleCoreManagerContractHelperScript.ok({
-            "session_id": session_id,
-            "public_snapshot": public_snapshot,
-            "prebattle_public_teams": DeepCopyHelperScript.copy_value(public_snapshot.get("prebattle_public_teams", [])),
-        }),
+        "response": BattleCoreManagerContractHelperScript.ok({"session_id": session_id}),
     }
 
 func run_replay_result(replay_input) -> Dictionary:

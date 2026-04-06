@@ -84,7 +84,7 @@ func _test_passive_item_runtime_contract(harness) -> Dictionary:
 		item_content_index,
 		sample_factory,
 		1901,
-		sample_factory.build_passive_item_vs_sample_setup()
+		sample_factory.build_setup_by_matchup_id("passive_item_vs_sample")
 	)
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(item_battle_state, item_content_index, [
@@ -125,7 +125,7 @@ func _test_passive_item_manager_smoke_contract(harness) -> Dictionary:
 	var baseline_result = _run_manager_damage_case(harness, manager, sample_factory, sample_factory.build_sample_setup(), 1901)
 	if baseline_result.has("error"):
 		return harness.fail_result(str(baseline_result["error"]))
-	var item_result = _run_manager_damage_case(harness, manager, sample_factory, sample_factory.build_passive_item_vs_sample_setup(), 1901)
+	var item_result = _run_manager_damage_case(harness, manager, sample_factory, sample_factory.build_setup_by_matchup_id("passive_item_vs_sample"), 1901)
 	if item_result.has("error"):
 		return harness.fail_result(str(item_result["error"]))
 	if int(item_result.get("damage", 0)) <= int(baseline_result.get("damage", 0)):
@@ -149,7 +149,7 @@ func _test_passive_item_replay_contract(harness) -> Dictionary:
 	var baseline_input = _build_single_strike_replay_input(harness, manager, sample_factory, sample_factory.build_sample_setup(), 1901)
 	if baseline_input == null:
 		return harness.fail_result("failed to build baseline replay input")
-	var item_input = _build_single_strike_replay_input(harness, manager, sample_factory, sample_factory.build_passive_item_vs_sample_setup(), 1901)
+	var item_input = _build_single_strike_replay_input(harness, manager, sample_factory, sample_factory.build_setup_by_matchup_id("passive_item_vs_sample"), 1901)
 	if item_input == null:
 		return harness.fail_result("failed to build passive item replay input")
 	var baseline_unwrap = _helper.unwrap_ok(manager.run_replay(baseline_input), "run_replay_baseline")

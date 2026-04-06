@@ -1,11 +1,14 @@
 extends "res://tests/suites/manager_snapshot_public_contract/base.gd"
 const BaseSuiteScript := preload("res://tests/suites/manager_snapshot_public_contract/base.gd")
+const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
+const BattleHeaderSnapshotBuilderScript := preload("res://src/battle_core/turn/battle_header_snapshot_builder.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("legal_action_public_id_contract", failures, Callable(self, "_test_legal_action_public_id_contract").bind(harness))
     runner.run_test("initial_selection_mp_contract", failures, Callable(self, "_test_initial_selection_mp_contract").bind(harness))
     runner.run_test("selection_adapters_public_id_contract", failures, Callable(self, "_test_selection_adapters_public_id_contract").bind(harness))
     runner.run_test("validator_internal_id_backfill_contract", failures, Callable(self, "_test_validator_internal_id_backfill_contract").bind(harness))
+    runner.run_test("field_creator_public_id_contract", failures, Callable(self, "_test_field_creator_public_id_contract").bind(harness))
 
 func _test_legal_action_public_id_contract(harness) -> Dictionary:
     var manager_payload = harness.build_manager()
@@ -184,4 +187,34 @@ func _test_validator_internal_id_backfill_contract(harness) -> Dictionary:
         return harness.fail_result("internal switch command using runtime ids should remain valid")
     if command.actor_public_id != "P1-A" or command.target_public_id != "P1-B":
         return harness.fail_result("validator should backfill public ids when internal runtime ids are supplied")
+    return harness.pass_result()
+
+func _test_field_creator_public_id_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 3042)
+    var field_state := FieldStateScript.new()
+    field_state.field_def_id = "test_private_creator_field"
+    field_state.instance_id = "field_instance_private_creator"
+    field_state.creator = "runtime_private_creator"
+    field_state.remaining_turns = 2
+    battle_state.field_state = field_state
+    var public_snapshot = PublicSnapshotBuilderScript.new().build_public_snapshot(battle_state, content_index)
+    var header_snapshot = BattleHeaderSnapshotBuilderScript.build_header_snapshot(battle_state, content_index)
+    var public_field: Dictionary = public_snapshot.get("field", {})
+    var header_field: Dictionary = header_snapshot.get("initial_field", {})
+    if public_field.get("creator_public_id", "__missing__") != null:
+        return harness.fail_result("public snapshot field creator must resolve to public_id or null")
+    if header_field.get("creator_public_id", "__missing__") != null:
+        return harness.fail_result("header snapshot field creator must resolve to public_id or null")
+    if str(public_field.get("creator_public_id", "")) == "runtime_private_creator":
+        return harness.fail_result("public snapshot field creator must not fall back to raw runtime/source id")
+    if str(header_field.get("creator_public_id", "")) == "runtime_private_creator":
+        return harness.fail_result("header snapshot field creator must not fall back to raw runtime/source id")
     return harness.pass_result()

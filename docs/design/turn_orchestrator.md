@@ -96,3 +96,18 @@
 `priority -> speed -> random`
 
 `QueuedAction` 只保存排序快照，执行阶段不重排。
+
+当前 `QueuedAction` 字段固定为：
+
+|字段|说明|
+|---|---|
+|`action_id`|队列动作 ID|
+|`queue_index`|锁队后顺序号|
+|`command`|原始命令对象|
+|`actor_snapshot_id`|入队时 actor 快照 ID|
+|`target_snapshot`|入队时目标快照|
+|`priority`|排序优先级|
+|`speed_snapshot`|排序用速度快照|
+|`speed_tie_roll`|同速随机值|
+|`domain_clash_protected`|是否受领域对拼保护|
+|`defer_domain_success_effects`|是否延后 `field_apply_success` follow-up|

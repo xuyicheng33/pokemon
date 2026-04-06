@@ -168,7 +168,7 @@
 |`event_chain_id`|触发链路 ID|
 |`event_step_id`|链路步骤 ID|
 |`event_type`|事件类型枚举（见 5.4）|
-|`header_snapshot`|仅 `system:battle_header` 事件填写；字段固定为 `visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`|
+|`header_snapshot`|仅 `system:battle_header` 事件填写；字段固定为 `visibility_mode / prebattle_public_teams / initial_active_public_ids_by_side / initial_field`，其中 `initial_field.creator_public_id` 只允许公开 `public_id` 或 `null`|
 |`chain_origin`|链路来源：`battle_init / action / turn_start / turn_end / system_replace`|
 |`trigger_name`|触发点名；仅 effect 类事件必须填写|
 |`cause_event_id`|真实上游触发事件 ID；仅 effect 类事件必须填写，且不得指向当前日志事件自己|
@@ -207,7 +207,7 @@
 |`command_type / command_source`|非行动系统链固定写 `system:*` 与 `system`，例如 `system:battle_header`、`system:battle_init`、`system:turn_start`、`system:turn_end`、`system:replace`|
 |`select_timeout`|`command_source = timeout_auto` 的整条行动链写 `true`；其他行动链写 `false`；非行动系统链写 `null`|
 |`select_deadline_ms`|整条行动链都写本回合截止时间；非行动系统链写 `null`|
-|`header_snapshot`|仅 `system:battle_header` 事件写入；其余事件写 `null`；且字段内禁止出现私有实例 ID（如 `unit_instance_id`）|
+|`header_snapshot`|仅 `system:battle_header` 事件写入；其余事件写 `null`；且字段内禁止出现私有实例 ID（如 `unit_instance_id`），`initial_field.creator_public_id` 解析失败时固定写 `null`|
 |`trigger_name / cause_event_id / killer_id`|effect 事件必须填 `trigger_name / cause_event_id`；其中 `cause_event_id` 固定指向真实上游触发事件：直接伤害/反伤指向 `action:hit`，effect payload 指向内部 `effect_event_*`，`turn_start / turn_end` 的回复与到期链指向对应系统锚点，离场清理指向 `state:exit`；系统锚点事件（如 `system:battle_init / system:turn_start / system:turn_end`）允许填写对应节点名作为 `trigger_name`；其他非 effect 事件 `cause_event_id` 写 `null`；`killer_id` 没有归属则写 `null`|
 
 实现状态说明（2026-03-28）：
@@ -272,5 +272,6 @@
 5. 当前主线不包含自动试指令层；所有外层输入都必须先过合法性服务与选择阶段校验。
 6. `resource_forced_default / resource_auto / wait / timeout_auto` 命名在规则和日志里只有这一套口径。
 7. `create_session()` 返回的是“已预回首回合 MP 后的初始公开快照”；这次预回蓝不补写进初始 `event_log`，属于正式 contract，不是缺日志。
-7. 非适用日志字段一律写 `null`，不会混用 `0` 或省略。
-8. 完整日志能还原命中、同速打平、field 替换、触发源实例与每次随机消费。
+8. `create_session()` 在返回首帧公开快照前必须再次通过 runtime guard；若初始化后的运行态非法，直接返回失败 envelope（`data=null`），不返回任何公开快照。
+9. 非适用日志字段一律写 `null`，不会混用 `0` 或省略。
+10. 完整日志能还原命中、同速打平、field 替换、触发源实例与每次随机消费。
