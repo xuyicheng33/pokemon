@@ -28,33 +28,33 @@ func passes_effect_preconditions(effect_definition, effect_event, battle_state) 
 	if not _is_required_target_valid(target_unit):
 		return false
 	var require_same_owner: bool = bool(effect_definition.required_target_same_owner)
-	var required_owner_id := String(effect_event.owner_id if effect_event != null else "")
+	var required_owner_id := _optional_string(effect_event.owner_id if effect_event != null else null)
 	for required_effect_id in effect_definition.required_target_effects:
-		if not _target_has_required_effect(target_unit, String(required_effect_id), require_same_owner, required_owner_id):
+		if not _target_has_required_effect(target_unit, _optional_string(required_effect_id), require_same_owner, required_owner_id):
 			return false
 	return true
 
 func _passes_receive_action_side_guard(effect_event, battle_state) -> bool:
 	if effect_event == null:
 		return true
-	var trigger_name := String(effect_event.trigger_name)
+	var trigger_name := _optional_string(effect_event.trigger_name)
 	if trigger_name != "on_receive_action_hit" and trigger_name != "on_receive_action_damage_segment":
 		return true
 	if battle_state == null or effect_event.chain_context == null:
-		return false
-	var owner_id := String(effect_event.owner_id)
+		return _fail_invalid_state_corruption()
+	var owner_id := _optional_string(effect_event.owner_id)
 	if owner_id.is_empty():
-		return false
-	var action_actor_id := String(effect_event.chain_context.action_actor_id)
+		return _fail_invalid_state_corruption()
+	var action_actor_id := _optional_string(effect_event.chain_context.action_actor_id)
 	if action_actor_id.is_empty():
-		action_actor_id = String(effect_event.chain_context.actor_id)
+		action_actor_id = _optional_string(effect_event.chain_context.actor_id)
 	if action_actor_id.is_empty():
-		return false
+		return _fail_invalid_state_corruption()
 	var owner_side = battle_state.get_side_for_unit(owner_id)
 	var action_actor_side = battle_state.get_side_for_unit(action_actor_id)
 	if owner_side == null or action_actor_side == null:
-		return false
-	return String(owner_side.side_id) != String(action_actor_side.side_id)
+		return _fail_invalid_state_corruption()
+	return _optional_string(owner_side.side_id) != _optional_string(action_actor_side.side_id)
 
 func _passes_incoming_action_filters(effect_definition, effect_event) -> bool:
 	var command_filters: PackedStringArray = effect_definition.required_incoming_command_types
@@ -62,12 +62,18 @@ func _passes_incoming_action_filters(effect_definition, effect_event) -> bool:
 	if command_filters.is_empty() and combat_type_filters.is_empty():
 		return true
 	if effect_event == null or effect_event.chain_context == null:
-		return false
+		return _fail_invalid_state_corruption()
 	var chain_context = effect_event.chain_context
-	var incoming_command_type := String(chain_context.command_type if chain_context.command_type != null else "")
-	var incoming_combat_type_id := String(chain_context.action_combat_type_id if chain_context.action_combat_type_id != null else "")
+	var raw_command_type = chain_context.command_type
+	var raw_combat_type_id = chain_context.action_combat_type_id
+	var incoming_command_type := _optional_string(raw_command_type)
+	var incoming_combat_type_id := _optional_string(raw_combat_type_id)
+	if not command_filters.is_empty() and raw_command_type == null:
+		return _fail_invalid_state_corruption()
 	if not command_filters.is_empty() and not command_filters.has(incoming_command_type):
 		return false
+	if not combat_type_filters.is_empty() and raw_combat_type_id == null:
+		return _fail_invalid_state_corruption()
 	if not combat_type_filters.is_empty() and not combat_type_filters.has(incoming_combat_type_id):
 		return false
 	return true
@@ -75,7 +81,7 @@ func _passes_incoming_action_filters(effect_definition, effect_event) -> bool:
 func _resolve_required_target(effect_event, battle_state) -> Variant:
 	if effect_event == null or effect_event.chain_context == null:
 		return null
-	var target_unit_id := str(effect_event.chain_context.target_unit_id)
+	var target_unit_id := _optional_string(effect_event.chain_context.target_unit_id)
 	if target_unit_id.is_empty():
 		return null
 	return battle_state.get_unit(target_unit_id)
@@ -96,3 +102,10 @@ func _target_has_required_effect(target_unit, effect_definition_id: String, requ
 		if source_owner_id == required_owner_id:
 			return true
 	return false
+
+func _fail_invalid_state_corruption() -> bool:
+	last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+	return false
+
+func _optional_string(value) -> String:
+	return "" if value == null else str(value)

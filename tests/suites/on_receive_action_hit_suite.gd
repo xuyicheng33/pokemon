@@ -10,11 +10,13 @@ const ResourceModPayloadScript := preload("res://src/battle_core/content/resourc
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/effect_source_meta_helper.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("on_receive_action_hit_lethal_counter_contract", failures, Callable(self, "_test_on_receive_action_hit_lethal_counter_contract").bind(harness))
     runner.run_test("on_receive_action_hit_ignores_persistent_damage_contract", failures, Callable(self, "_test_on_receive_action_hit_ignores_persistent_damage_contract").bind(harness))
     runner.run_test("on_receive_action_hit_same_side_skill_ignored_contract", failures, Callable(self, "_test_on_receive_action_hit_same_side_skill_ignored_contract").bind(harness))
+    runner.run_test("on_receive_action_hit_missing_chain_context_fails_fast_contract", failures, Callable(self, "_test_on_receive_action_hit_missing_chain_context_fails_fast_contract").bind(harness))
 
 func _test_on_receive_action_hit_lethal_counter_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -234,6 +236,33 @@ func _test_on_receive_action_hit_same_side_skill_ignored_contract(harness) -> Di
         return harness.fail_result("same-side on_receive_action_hit should not apply counter damage")
     if _find_counter_damage_event(core.service("battle_logger").event_log, passive_holder.unit_instance_id) != null:
         return harness.fail_result("same-side on_receive_action_hit should not emit counter damage event")
+    return harness.pass_result()
+
+func _test_on_receive_action_hit_missing_chain_context_fails_fast_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    _register_receive_counter_resources(content_index)
+    content_index.units["sample_tidekit"].passive_skill_id = "test_receive_counter_passive"
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 723)
+    var passive_holder = battle_state.get_side("P2").get_active_unit()
+    if passive_holder == null:
+        return harness.fail_result("missing passive holder for missing-chain-context contract")
+    passive_holder.definition_id = "sample_tidekit"
+    var invalid_code = core.service("trigger_batch_runner").execute_trigger_batch(
+        "on_receive_action_hit",
+        battle_state,
+        content_index,
+        [passive_holder.unit_instance_id],
+        null
+    )
+    if invalid_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+        return harness.fail_result("missing on_receive_action_hit chain_context should fail-fast as invalid_state_corruption")
     return harness.pass_result()
 
 func _register_receive_counter_resources(content_index) -> void:

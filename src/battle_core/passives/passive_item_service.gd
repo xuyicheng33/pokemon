@@ -2,6 +2,7 @@ extends RefCounted
 class_name PassiveItemService
 
 const SOURCE_KIND_ORDER_PASSIVE_ITEM := 4
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var trigger_dispatcher
 var last_invalid_battle_code: Variant = null
@@ -15,13 +16,18 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, o
     for owner_id in owner_unit_ids:
         var owner_unit = battle_state.get_unit(owner_id)
         if owner_unit == null:
-            continue
+            last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+            return []
         var unit_definition = content_index.units.get(owner_unit.definition_id)
-        if unit_definition == null or unit_definition.passive_item_id.is_empty():
+        if unit_definition == null:
+            last_invalid_battle_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
+            return []
+        if unit_definition.passive_item_id.is_empty():
             continue
         var passive_definition = content_index.passive_items.get(unit_definition.passive_item_id)
         if passive_definition == null:
-            continue
+            last_invalid_battle_code = ErrorCodesScript.INVALID_CONTENT_SNAPSHOT
+            return []
         var effect_ids: Array[String] = []
         if passive_definition.trigger_names.has(trigger_name):
             for effect_id in passive_definition.effect_ids:

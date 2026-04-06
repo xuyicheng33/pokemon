@@ -59,6 +59,8 @@ func to_stable_dict() -> Dictionary:
     sorted_rule_mods.sort_custom(func(a, b): return a.instance_id < b.instance_id)
     for rule_mod_instance in sorted_rule_mods:
         rule_mod_dicts.append(rule_mod_instance.to_stable_dict())
+    var sorted_used_once_per_battle_skill_ids := used_once_per_battle_skill_ids.duplicate()
+    sorted_used_once_per_battle_skill_ids.sort()
     return {
         "unit_instance_id": unit_instance_id,
         "public_id": public_id,
@@ -90,6 +92,7 @@ func to_stable_dict() -> Dictionary:
         "leave_reason": leave_reason,
         "last_effective_speed": last_effective_speed,
         "reentered_turn_index": reentered_turn_index,
+        "used_once_per_battle_skill_ids": sorted_used_once_per_battle_skill_ids,
     }
 
 func has_used_once_per_battle_skill(skill_id: String) -> bool:
