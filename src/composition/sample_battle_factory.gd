@@ -1,6 +1,7 @@
 extends RefCounted
 class_name SampleBattleFactory
 
+const FormalCharacterRegistryScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd")
 const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
 const MatchupCatalogScript := preload("res://src/composition/sample_battle_factory_matchup_catalog.gd")
 const ReplayBuilderScript := preload("res://src/composition/sample_battle_factory_replay_builder.gd")
@@ -17,20 +18,6 @@ const BASE_CONTENT_SNAPSHOT_DIRS = [
 	"res://content/passive_skills",
 	"res://content/samples",
 ]
-
-const FORMAL_CHARACTER_IDS := [
-	"gojo_satoru",
-	"sukuna",
-	"kashimo_hajime",
-	"obito_juubi_jinchuriki",
-]
-
-const FORMAL_CHARACTER_SETUP_MATCHUP_IDS := {
-	"gojo_satoru": "gojo_vs_sample",
-	"sukuna": "sukuna_setup",
-	"kashimo_hajime": "kashimo_vs_sample",
-	"obito_juubi_jinchuriki": "obito_vs_sample",
-}
 
 var _content_paths_helper = ContentPathsHelperScript.new()
 var _matchup_catalog = MatchupCatalogScript.new()
@@ -96,13 +83,23 @@ func build_matchup_setup(
 	)
 
 func formal_character_ids() -> PackedStringArray:
-	return PackedStringArray(FORMAL_CHARACTER_IDS)
+	var ids := PackedStringArray()
+	for raw_entry in _load_formal_character_registry_entries():
+		var entry: Dictionary = raw_entry
+		var character_id := String(entry.get("character_id", "")).strip_edges()
+		if character_id.is_empty():
+			continue
+		ids.append(character_id)
+	return ids
 
 func build_formal_character_setup(formal_character_definition_id: String, side_regular_skill_overrides: Dictionary = {}) -> Variant:
-	var matchup_id := String(FORMAL_CHARACTER_SETUP_MATCHUP_IDS.get(formal_character_definition_id, ""))
-	if matchup_id.is_empty():
+	var entry := _find_formal_character_registry_entry(formal_character_definition_id)
+	if entry.is_empty():
 		return null
-	return build_setup_by_matchup_id(matchup_id, side_regular_skill_overrides)
+	var sample_setup_method := String(entry.get("sample_setup_method", "")).strip_edges()
+	assert(not sample_setup_method.is_empty(), "SampleBattleFactory registry[%s] missing sample_setup_method" % formal_character_definition_id)
+	assert(has_method(sample_setup_method), "SampleBattleFactory registry[%s] references missing sample setup method: %s" % [formal_character_definition_id, sample_setup_method])
+	return call(sample_setup_method, side_regular_skill_overrides)
 
 func formal_pair_smoke_cases() -> Array:
 	return _matchup_catalog.formal_pair_smoke_cases()
@@ -130,6 +127,9 @@ func build_sample_vs_gojo_setup(side_regular_skill_overrides: Dictionary = {}) -
 
 func build_sukuna_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
 	return build_setup_by_matchup_id("sukuna_vs_sample", side_regular_skill_overrides)
+
+func build_sukuna_formal_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
+	return build_setup_by_matchup_id("sukuna_setup", side_regular_skill_overrides)
 
 func build_sukuna_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
 	return build_formal_character_setup("sukuna", side_regular_skill_overrides)
@@ -179,3 +179,18 @@ func build_passive_item_demo_replay_input(command_port) -> Variant:
 	var battle_setup = build_passive_item_vs_sample_setup()
 	var snapshot_paths_result := content_snapshot_paths_for_setup_result(battle_setup)
 	return _replay_builder.build_passive_item_demo_replay_input(command_port, snapshot_paths_result, battle_setup)
+
+func _load_formal_character_registry_entries() -> Array:
+	var load_result: Dictionary = FormalCharacterRegistryScript.load_entries()
+	var error_message := String(load_result.get("error", "")).strip_edges()
+	assert(error_message.is_empty(), "SampleBattleFactory failed to load formal character registry: %s" % error_message)
+	return load_result.get("entries", [])
+
+func _find_formal_character_registry_entry(formal_character_definition_id: String) -> Dictionary:
+	for raw_entry in _load_formal_character_registry_entries():
+		if not (raw_entry is Dictionary):
+			continue
+		var entry: Dictionary = raw_entry
+		if String(entry.get("character_id", "")).strip_edges() == formal_character_definition_id:
+			return entry
+	return {}

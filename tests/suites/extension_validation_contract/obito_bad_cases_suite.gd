@@ -3,7 +3,10 @@ const BaseSuiteScript := preload("res://tests/suites/extension_validation_contra
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("formal_obito_validator_heal_block_bad_case_contract", failures, Callable(self, "_test_formal_obito_validator_heal_block_bad_case_contract").bind(harness))
+	runner.run_test("formal_obito_validator_heal_block_surface_bad_case_contract", failures, Callable(self, "_test_formal_obito_validator_heal_block_surface_bad_case_contract").bind(harness))
 	runner.run_test("formal_obito_validator_execute_bad_case_contract", failures, Callable(self, "_test_formal_obito_validator_execute_bad_case_contract").bind(harness))
+	runner.run_test("formal_obito_validator_yinyang_guard_surface_bad_case_contract", failures, Callable(self, "_test_formal_obito_validator_yinyang_guard_surface_bad_case_contract").bind(harness))
+	runner.run_test("formal_obito_validator_yinyang_listener_surface_bad_case_contract", failures, Callable(self, "_test_formal_obito_validator_yinyang_listener_surface_bad_case_contract").bind(harness))
 	runner.run_test("formal_obito_validator_ultimate_segments_bad_case_contract", failures, Callable(self, "_test_formal_obito_validator_ultimate_segments_bad_case_contract").bind(harness))
 
 func _test_formal_obito_validator_heal_block_bad_case_contract(harness) -> Dictionary:
@@ -20,6 +23,20 @@ func _test_formal_obito_validator_heal_block_bad_case_contract(harness) -> Dicti
 		return harness.fail_result("obito formal validator should fail-fast when heal-block payload drifts")
 	return harness.pass_result()
 
+func _test_formal_obito_validator_heal_block_surface_bad_case_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var heal_block_effect = content_index.effects.get("obito_qiudao_jiaotu_heal_block_rule_mod", null)
+	if heal_block_effect == null:
+		return harness.fail_result("missing obito_qiudao_jiaotu_heal_block_rule_mod")
+	heal_block_effect.persists_on_switch = false
+	var errors: Array = content_index.validate_snapshot()
+	if not _has_error(errors, "formal[obito].heal_block rule_mod persists_on_switch mismatch"):
+		return harness.fail_result("obito formal validator should fail-fast when heal-block surface drifts")
+	return harness.pass_result()
+
 func _test_formal_obito_validator_execute_bad_case_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
@@ -32,6 +49,34 @@ func _test_formal_obito_validator_execute_bad_case_contract(harness) -> Dictiona
 	var errors: Array = content_index.validate_snapshot()
 	if not _has_error(errors, "formal[obito].qiudao_yu execute_required_total_stacks mismatch: expected 5 got 4"):
 		return harness.fail_result("obito formal validator should fail-fast when execute stack threshold drifts")
+	return harness.pass_result()
+
+func _test_formal_obito_validator_yinyang_guard_surface_bad_case_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var guard_effect = content_index.effects.get("obito_yinyang_dun_guard_rule_mod", null)
+	if guard_effect == null:
+		return harness.fail_result("missing obito_yinyang_dun_guard_rule_mod")
+	guard_effect.trigger_names = PackedStringArray(["on_hit"])
+	var errors: Array = content_index.validate_snapshot()
+	if not _has_error(errors, "formal[obito].yinyang_dun guard trigger_names mismatch"):
+		return harness.fail_result("obito formal validator should fail-fast when yinyang guard surface drifts")
+	return harness.pass_result()
+
+func _test_formal_obito_validator_yinyang_listener_surface_bad_case_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var listener_state = content_index.effects.get("obito_yinyang_dun_guard_stack_listener_state", null)
+	if listener_state == null:
+		return harness.fail_result("missing obito_yinyang_dun_guard_stack_listener_state")
+	listener_state.trigger_names = PackedStringArray(["on_hit"])
+	var errors: Array = content_index.validate_snapshot()
+	if not _has_error(errors, "formal[obito].yinyang_dun listener_state trigger_names mismatch"):
+		return harness.fail_result("obito formal validator should fail-fast when yinyang listener surface drifts")
 	return harness.pass_result()
 
 func _test_formal_obito_validator_ultimate_segments_bad_case_contract(harness) -> Dictionary:

@@ -141,6 +141,14 @@
   - `BattleCoreTestHarness` 已新增 setup-scoped snapshot / content index helper，后续 formal 与 setup-sensitive 用例可以统一接入，不必各自重复造轮子。
   - `content_snapshot_cache_composer_stats_contract` 已切到 harness 的 setup-scoped helper，保证这条测试入口不是死代码。
   - formal/setup 敏感 support 已开始接入新 helper，当前已覆盖 `formal_character_snapshot_test_helper`、Gojo、Kashimo、Sukuna 的相关测试支撑。
+- 第三批已完成：
+  - `SampleBattleFactory.formal_character_ids()` 与 `build_formal_character_setup()` 已改成直接读取 `config/formal_character_registry.json`，不再保留第二份正式角色 ID / setup 映射常量。
+  - registry 驱动真正落地后，已修正 Sukuna 的 `sample_setup_method` 漂移：formal setup 现在显式走 `build_sukuna_formal_setup()`，继续保持 `sukuna_setup` 的正式构局语义。
+  - Obito formal bad cases 已补强 effect surface：
+    - `formal_obito_validator_heal_block_surface_bad_case_contract`
+    - `formal_obito_validator_yinyang_guard_surface_bad_case_contract`
+    - `formal_obito_validator_yinyang_listener_surface_bad_case_contract`
+  - Obito registry 测试锚点已补齐新增 validator bad cases，以及 runtime 的 `obito_yinyang_dun_same_side_segment_ignored_contract`。
 
 ### 当前验证结果
 
@@ -152,6 +160,10 @@
   - `godot --headless --path . --script tests/run_all.gd`
   - `godot --headless --path . --quit-after 20`
   - formal/setup 敏感 support 接入后再次通过 `godot --headless --path . --script tests/run_all.gd`
+- 第三批已通过：
+  - `git diff --check`
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_suite_reachability.sh`
 
 ## 下一角色扩充准备
 
