@@ -111,6 +111,38 @@
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/run_with_gate.sh`
 
+## 当前补充修复：扩角前收尾批次（2026-04-06）
+
+- 状态：进行中
+- 目标：
+  - 把扩角前审查里剩余的共享契约、formal 交付面与 docs 口径问题分批收口；每批都独立回归、提交、推送，最后恢复干净工作区。
+- 范围：
+  - 第一批：`on_receive_action_hit / on_receive_action_damage_segment` 的同侧误触发防线，以及 `battle_end` 执行链继承回归。
+  - 第二批：默认 demo / setup 敏感测试统一接 setup-scoped snapshot 入口。
+  - 第三批：formal registry 单一真相收口，补强 Obito formal bad cases。
+  - 第四批：大文件约束文档与 gate 当前零 allowlist 策略对齐。
+- 验收标准：
+  - 每批完成后至少通过该批相关回归。
+  - 最终通过 `bash tests/run_with_gate.sh`。
+  - 完成后工作区恢复干净。
+
+### 当前执行结果
+
+- 第一批已完成：
+  - 共享 precondition 已统一拦截 `on_receive_action_hit / on_receive_action_damage_segment` 的同侧 action 误触发。
+  - damage segment 派发入口已补“仅敌方 `skill / ultimate` 且目标是敌方 active”保护，避免 runtime 派发链自己放水。
+  - `battle_end` 在执行阶段结束时，若根链仍是 action chain，则继承该 action chain，不再错误退回 system chain。
+  - 已补回归：
+    - `on_receive_action_hit_same_side_skill_ignored_contract`
+    - `obito_yinyang_dun_same_side_segment_ignored_contract`
+    - `battle_end_system_chain` 中 execution battle_end 继承 action chain 的断言
+
+### 当前验证结果
+
+- 第一批已通过：
+  - `git diff --check`
+  - `godot --headless --path . --script tests/run_all.gd`
+
 ## 下一角色扩充准备
 
 - 新角色进入正式交付链前，必须先完成：

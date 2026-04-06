@@ -1,6 +1,7 @@
 extends RefCounted
 class_name OnReceiveActionHitSuite
 
+const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/passive_skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -13,6 +14,7 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("on_receive_action_hit_lethal_counter_contract", failures, Callable(self, "_test_on_receive_action_hit_lethal_counter_contract").bind(harness))
     runner.run_test("on_receive_action_hit_ignores_persistent_damage_contract", failures, Callable(self, "_test_on_receive_action_hit_ignores_persistent_damage_contract").bind(harness))
+    runner.run_test("on_receive_action_hit_same_side_skill_ignored_contract", failures, Callable(self, "_test_on_receive_action_hit_same_side_skill_ignored_contract").bind(harness))
 
 func _test_on_receive_action_hit_lethal_counter_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -181,6 +183,57 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
         return harness.fail_result("persistent water damage should not trigger on_receive_action_hit counter damage")
     if _find_counter_damage_event(core.service("battle_logger").event_log, source_actor.unit_instance_id) != null:
         return harness.fail_result("persistent water damage should not emit poison counter damage event")
+    return harness.pass_result()
+
+func _test_on_receive_action_hit_same_side_skill_ignored_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+    _register_receive_counter_resources(content_index)
+    content_index.units["sample_tidekit"].passive_skill_id = "test_receive_counter_passive"
+
+    var battle_setup = sample_factory.build_sample_setup()
+    battle_setup.sides[0].starting_index = 0
+    battle_setup.sides[1].starting_index = 0
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 722, battle_setup)
+    var passive_holder = battle_state.get_side("P2").get_active_unit()
+    if passive_holder == null:
+        return harness.fail_result("missing passive holder for same-side on_receive_action_hit contract")
+    passive_holder.definition_id = "sample_tidekit"
+    passive_holder.current_hp = passive_holder.max_hp
+    passive_holder.current_mp = 20
+
+    var chain_context = ChainContextScript.new()
+    chain_context.event_chain_id = "test_on_receive_action_hit_same_side"
+    chain_context.chain_origin = "action"
+    chain_context.command_type = CommandTypesScript.SKILL
+    chain_context.command_source = "manual"
+    chain_context.actor_id = passive_holder.unit_instance_id
+    chain_context.action_actor_id = passive_holder.unit_instance_id
+    chain_context.target_unit_id = passive_holder.unit_instance_id
+    chain_context.action_combat_type_id = "water"
+
+    core.service("battle_logger").reset()
+    var invalid_code = core.service("trigger_batch_runner").execute_trigger_batch(
+        "on_receive_action_hit",
+        battle_state,
+        content_index,
+        [passive_holder.unit_instance_id],
+        chain_context
+    )
+    if invalid_code != null:
+        return harness.fail_result("same-side on_receive_action_hit trigger probe should not invalidate battle: %s" % str(invalid_code))
+    if passive_holder.current_mp != 20:
+        return harness.fail_result("same-side on_receive_action_hit should not apply self mp loss")
+    if passive_holder.current_hp != passive_holder.max_hp:
+        return harness.fail_result("same-side on_receive_action_hit should not apply counter damage")
+    if _find_counter_damage_event(core.service("battle_logger").event_log, passive_holder.unit_instance_id) != null:
+        return harness.fail_result("same-side on_receive_action_hit should not emit counter damage event")
     return harness.pass_result()
 
 func _register_receive_counter_resources(content_index) -> void:

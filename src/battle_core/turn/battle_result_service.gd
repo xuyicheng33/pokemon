@@ -191,7 +191,11 @@ func _side_has_available_unit(side_state) -> bool:
             return true
     return false
 
-func _build_battle_end_chain(resolved_phase: String, _battle_state) -> Variant:
+func _build_battle_end_chain(resolved_phase: String, battle_state) -> Variant:
+    if battle_state != null and battle_state.chain_context != null:
+        var existing_chain_context = battle_state.chain_context
+        if String(existing_chain_context.chain_origin) == "action":
+            return existing_chain_context.copy_shallow()
     match resolved_phase:
         BattlePhasesScript.BATTLE_INIT:
             return build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT)

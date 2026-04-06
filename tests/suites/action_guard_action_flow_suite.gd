@@ -293,4 +293,44 @@ func _test_battle_end_system_chain(harness) -> Dictionary:
 		return harness.fail_result("turn_limit battle_end should inherit system:turn_limit")
 	if turn_limit_battle_end.chain_origin != "turn_end":
 		return harness.fail_result("turn_limit battle_end chain_origin should be turn_end")
+
+	var execution_battle = harness.build_initialized_battle(core, content_index, sample_factory, 263)
+	var execution_p1_active = execution_battle.get_side("P1").get_active_unit()
+	var execution_p2_side = execution_battle.get_side("P2")
+	if execution_p1_active == null or execution_p2_side == null:
+		return harness.fail_result("execution battle setup missing active units")
+	for unit_state in execution_p2_side.team_units:
+		unit_state.current_hp = 0
+	var execution_p2_active = execution_p2_side.get_active_unit()
+	if execution_p2_active == null:
+		return harness.fail_result("execution battle missing target active unit")
+	execution_p2_active.current_hp = 1
+	execution_p1_active.base_speed = 999
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(execution_battle, content_index, [
+		core.service("command_builder").build_command({
+			"turn_index": 1,
+			"command_type": CommandTypesScript.SKILL,
+			"command_source": "manual",
+			"side_id": "P1",
+			"actor_public_id": "P1-A",
+			"skill_id": "sample_strike",
+		}),
+		core.service("command_builder").build_command({
+			"turn_index": 1,
+			"command_type": CommandTypesScript.WAIT,
+			"command_source": "manual",
+			"side_id": "P2",
+			"actor_public_id": "P2-A",
+		}),
+	])
+	var execution_battle_end = harness.find_last_event(core.service("battle_logger").event_log, EventTypesScript.RESULT_BATTLE_END)
+	if execution_battle_end == null:
+		return harness.fail_result("execution battle_end event missing")
+	if execution_battle_end.command_type != CommandTypesScript.SKILL:
+		return harness.fail_result("execution battle_end should inherit root action command_type")
+	if execution_battle_end.chain_origin != "action":
+		return harness.fail_result("execution battle_end chain_origin should stay action")
+	if String(execution_battle_end.actor_id) != String(execution_p1_active.unit_instance_id):
+		return harness.fail_result("execution battle_end should inherit root action actor_id")
 	return harness.pass_result()

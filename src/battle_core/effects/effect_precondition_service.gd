@@ -15,6 +15,8 @@ func resolve_missing_dependency() -> String:
 
 func passes_effect_preconditions(effect_definition, effect_event, battle_state) -> bool:
 	last_invalid_battle_code = null
+	if not _passes_receive_action_side_guard(effect_event, battle_state):
+		return false
 	if not _passes_incoming_action_filters(effect_definition, effect_event):
 		return false
 	if effect_definition == null or effect_definition.required_target_effects.is_empty():
@@ -31,6 +33,28 @@ func passes_effect_preconditions(effect_definition, effect_event, battle_state) 
 		if not _target_has_required_effect(target_unit, String(required_effect_id), require_same_owner, required_owner_id):
 			return false
 	return true
+
+func _passes_receive_action_side_guard(effect_event, battle_state) -> bool:
+	if effect_event == null:
+		return true
+	var trigger_name := String(effect_event.trigger_name)
+	if trigger_name != "on_receive_action_hit" and trigger_name != "on_receive_action_damage_segment":
+		return true
+	if battle_state == null or effect_event.chain_context == null:
+		return false
+	var owner_id := String(effect_event.owner_id)
+	if owner_id.is_empty():
+		return false
+	var action_actor_id := String(effect_event.chain_context.action_actor_id)
+	if action_actor_id.is_empty():
+		action_actor_id = String(effect_event.chain_context.actor_id)
+	if action_actor_id.is_empty():
+		return false
+	var owner_side = battle_state.get_side_for_unit(owner_id)
+	var action_actor_side = battle_state.get_side_for_unit(action_actor_id)
+	if owner_side == null or action_actor_side == null:
+		return false
+	return String(owner_side.side_id) != String(action_actor_side.side_id)
 
 func _passes_incoming_action_filters(effect_definition, effect_event) -> bool:
 	var command_filters: PackedStringArray = effect_definition.required_incoming_command_types
