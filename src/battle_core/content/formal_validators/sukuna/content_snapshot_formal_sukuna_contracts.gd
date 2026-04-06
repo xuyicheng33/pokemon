@@ -167,6 +167,10 @@ func validate_teach_love_contract(validator, content_index, errors: Array) -> vo
 		"label": "%s effect" % label,
 		"effect_id": "sukuna_refresh_love_regen",
 		"fields": {
+			"display_name": "教会你爱·回蓝",
+			"scope": "self",
+			"duration_mode": "permanent",
+			"stacking": "none",
 			"trigger_names": PackedStringArray(["on_matchup_changed"]),
 		},
 	}])

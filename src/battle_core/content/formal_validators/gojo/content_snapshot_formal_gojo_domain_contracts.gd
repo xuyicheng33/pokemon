@@ -76,6 +76,10 @@ func _validate_domain_buff_contract(validator, content_index, errors: Array) -> 
 			"label": "%s action_lock" % label,
 			"effect_id": "gojo_domain_action_lock",
 			"fields": {
+				"display_name": "无量空处行动封锁",
+				"scope": "target",
+				"duration_mode": "permanent",
+				"stacking": "none",
 				"trigger_names": PackedStringArray(["field_apply_success"]),
 			},
 		}])

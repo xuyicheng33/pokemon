@@ -31,6 +31,17 @@ func _validate_thunder_resist(validator, content_index, errors: Array) -> void:
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_thunder_resist")
 	if effect_definition == null:
 		return
+	_helper.validate_effect_contracts(validator, content_index, errors, [{
+		"label": label,
+		"effect_id": "kashimo_thunder_resist",
+		"fields": {
+			"display_name": "雷电抗性",
+			"scope": "self",
+			"duration_mode": "permanent",
+			"stacking": "none",
+			"trigger_names": PackedStringArray(["on_enter"]),
+		},
+	}])
 	var payload = validator._extract_single_payload(errors, label, "kashimo_thunder_resist", effect_definition, RuleModPayloadScript, "rule_mod")
 	if payload == null:
 		return
