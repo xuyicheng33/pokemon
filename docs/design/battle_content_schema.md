@@ -114,7 +114,7 @@
 
 - `execute_*` 当前固定表示“命中后、常规直接伤害前”的技能级处决 contract；满足时直接把目标 HP 置 `0`，并写一条追加 `[execute]` 标记的伤害日志。
 - `damage_segments` 当前固定只描述“主动技能命中后的逐段直接伤害”；整招仍然只有一次命中判定与一条行动日志。
-- 若 `damage_segments` 非空，顶层 `power` 仍需保留合法正整数，以满足当前技能加载期的伤害技能校验；实际分段伤害以 `damage_segments` 为准。
+- 若 `damage_segments` 非空，顶层 `power` 必须固定为 `0`；真实伤害只读 `damage_segments`，不再把顶层 `power` 当伤害真相。
 - `once_per_battle=true` 当前只属于主动技能 / 奥义内容字段；运行时使用 battle-scoped 消耗记录裁掉第二次合法性，不会额外暴露到 manager public snapshot。
 
 ### 3.3.1 SkillDamageSegment
@@ -314,7 +314,7 @@
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。
 - 技能校验覆盖：`damage_kind` 白名单、`targeting` 白名单、`accuracy = 0..100`、`mp_cost >= 0`、伤害技能 `power > 0`、优先级范围与普通技能 / 奥义引用约束。
 - `SkillDefinition.execute_*` 的加载期校验固定包含：血线阈值必须落在 `0.0..1.0`、层数门槛不得为负、层数门槛存在时必须至少声明一侧 `execute_*_effect_ids`，且技能本身必须是可对敌造成伤害的主动技能。
-- `SkillDefinition.damage_segments` 的加载期校验固定包含：`targeting=enemy_active_slot`、顶层 `damage_kind != none`、每段 `repeat_count > 0`、每段 `power > 0`、每段 `damage_kind in {physical, special}`、每段属性必须命中已注册 `combat_type` 或为空串。
+- `SkillDefinition.damage_segments` 的加载期校验固定包含：`targeting=enemy_active_slot`、顶层 `damage_kind != none`、顶层 `power = 0`、每段 `repeat_count > 0`、每段 `power > 0`、每段 `damage_kind in {physical, special}`、每段属性必须命中已注册 `combat_type` 或为空串。
 - `SkillDefinition.is_domain_skill` 与其实际 `apply_field` 目标必须一致：领域技能必须施加 `field_kind=domain` 的 field；施加 `domain` field 的技能也必须声明 `is_domain_skill=true`。
 - 效果校验覆盖：`scope / duration_mode / stacking / trigger_names` 白名单（含 `on_matchup_changed`、`on_receive_action_hit`、`on_receive_action_damage_segment`、`stack`）、效果优先级范围、`max_stacks` 合法性、payload 类型与跨资源引用完整性。
 - `ApplyFieldPayload.on_success_effect_ids` 的引用必须全部存在，且被引用 effect 必须声明 `trigger_names` 包含 `field_apply_success`。
@@ -322,7 +322,7 @@
 - `required_incoming_command_types / required_incoming_combat_type_ids` 的加载期校验固定包含：只允许 `on_receive_action_hit / on_receive_action_damage_segment` effect 使用、不得含空项、动作类型只允许 `skill / ultimate`、属性过滤必须命中已注册 `combat_type`。
 - field 校验覆盖：`field_kind in {normal, domain}`、`creator_accuracy_override >= -1`，且 `on_expire_effect_ids / on_break_effect_ids` 引用必须存在。
 - payload 额外校验覆盖：`DamagePayload.amount > 0`、`DamagePayload.use_formula = true` 时 `damage_kind in {physical, special}`、固定伤害仅在非公式模式下允许 `combat_type_id`、`HealPayload.amount > 0`、百分比治疗必须给出有效 `percent` 且 `percent_base in {max_hp, missing_hp}`、`ResourceModPayload.resource_key = mp`、`StatModPayload.stat_name` 只能是五维战斗属性之一、`StatModPayload.retention_mode in {normal, persist_on_switch}`、`RuleModPayload` 组合合法且动态公式 schema 完整、`ForcedReplacePayload.selector_reason` 非空。
-- 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；`config/formal_character_registry.json` 是角色交付元数据与可选 `content_validator_script_path` 的单一登记源，`config/formal_matchup_catalog.json` 是 formal matchup / pair surface / pair interaction 的单一登记源；runtime 由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 registry 并动态装配 validator。runtime / gate 必填字段固定为 `character_id / unit_definition_id / design_doc / adjustment_doc / suite_path / formal_setup_matchup_id / required_content_paths / required_suite_paths / required_test_names / design_needles / adjustment_needles`；其中 `design_needles / adjustment_needles` 固定为显式 anchor id，`required_test_names` 只保留角色私有 runtime / validator 锚点，shared pair 覆盖统一交给 matchup catalog + shared gate。`sample_setup_method` 若保留只作为可选展示/调试元数据；validator 只会对当前 snapshot 实际出现的正式角色执行角色级校验，repo consistency gate 负责锁 registry 完整性、catalog 覆盖、suite 注册链、validator 坏例锚点与文档锚点。
+- 正式角色的跨资源共享不变量，当前统一由 `ContentSnapshotFormalCharacterValidator` 编排；`config/formal_character_runtime_registry.json` 是 runtime 与可选 `content_validator_script_path` 的单一登记源，`config/formal_character_delivery_registry.json` 是测试/文档/交付元数据的单一登记源，`config/formal_matchup_catalog.json` 是 formal matchup / pair surface / pair interaction 的单一登记源；runtime 由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 runtime registry 并动态装配 validator。runtime 必填字段固定为 `character_id / unit_definition_id / formal_setup_matchup_id / required_content_paths`，以及按需补的 `content_validator_script_path`；delivery 必填字段固定为 `character_id / display_name / design_doc / adjustment_doc / suite_path / required_suite_paths / required_test_names / design_needles / adjustment_needles`；其中 `design_needles / adjustment_needles` 固定为显式 anchor id，`required_test_names` 只保留角色私有 runtime / validator 坏例锚点，shared pair 覆盖统一交给 matchup catalog + shared gate。validator 只会对当前 snapshot 实际出现的正式角色执行角色级校验，repo consistency gate 负责锁 runtime / delivery registry 完整性、catalog 覆盖、suite 注册链、validator 坏例锚点与文档锚点。
 - 内容快照校验失败直接 fail-fast，不进入运行态。
 
 ## 7. 运行前校验（BattleSetup）

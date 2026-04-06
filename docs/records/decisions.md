@@ -30,9 +30,10 @@
 - 原因：
   - 扩角前如果继续把活规则、历史讨论与执行流水堆在同一文件里，后续 gate 和人工复查都会越来越不可靠。
 
-### 2. 正式角色 formal validator 固定采用三桶模板，并继续以 config registry 为单一登记源（2026-04-06）
+### 2. 正式角色 formal validator 固定采用三桶模板，并继续以 runtime / delivery registry 收口（2026-04-06）
 
-- `config/formal_character_registry.json` 继续作为正式角色交付面的单一登记源。
+- `config/formal_character_runtime_registry.json` 作为 runtime 与 validator 装配的单一登记源。
+- `config/formal_character_delivery_registry.json` 作为测试 / 文档 / 交付面的单一登记源。
 - entry validator 固定采用三桶模板：
   - `unit_passive_contracts`
   - `skill_effect_contracts`
@@ -42,16 +43,16 @@
 - 只要角色登记了 `content_validator_script_path`，就必须把 `tests/suites/extension_validation_contract_suite.gd` 与至少一个对应角色的 validator 坏例锚点回挂进 registry。
 - 原因：
   - 角色数量继续增长后，如果每个 formal validator 继续自由分桶，结构会先于玩法复杂度失控。
-  - config registry、runtime loader、formal gate 必须盯同一份角色交付面，不能再出现第二套 descriptor 真相。
+  - runtime loader 与 delivery gate 必须各盯自己那一层，不能再把运行时与交付元数据搅成一张表。
 
-### 3. `SampleBattleFactory.content_snapshot_paths_result()` 改为“顶层样例资源 + formal registry.required_content_paths”显式收口（2026-04-06）
+### 3. `SampleBattleFactory.content_snapshot_paths_result()` 改为“顶层样例资源 + runtime registry.required_content_paths”显式收口（2026-04-06）
 
 - `SampleBattleFactory.content_snapshot_paths_result()` 不再递归扫描整个 `content/` 树。
 - 当前正式口径固定为两段：
   - 基础目录顶层样例资源：`battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples`
-  - `config/formal_character_registry.json` 显式登记的 `required_content_paths`
+  - `config/formal_character_runtime_registry.json` 显式登记的 `required_content_paths`
 - 缺目录、缺资源或 registry 漂移时统一返回结构化错误 `{ ok, data, error_code, error_message }`。
-- 旧的 `content_snapshot_paths()` 只保留为内部薄封装，不再承担正式失败语义。
+- `SampleBattleFactory` 对外已只保留结果式接口，不再保留旧空值 / 空数组 wrapper。
 - 当前补充 setup-scoped 入口：`content_snapshot_paths_for_setup_result(battle_setup)` 只为当前对局里实际出现的正式角色补 `required_content_paths`，manager smoke、pair smoke 与 demo replay 统一走这条窄入口。
 - 原因：
   - 递归全扫会把“只供引用的 helper 资源”和“尚未正式挂回交付面的角色资源”一起带进快照，容易掩盖接线遗漏。
@@ -208,10 +209,11 @@
   - replacement 入场状态统一为 `reentered_turn_index = battle_state.turn_index`、`has_acted=false`、`action_window_passed=false`
 - `FaintResolver` 必须显式持有 `field_service`，不允许再通过 `trigger_batch_runner.field_service` 读取隐藏依赖。
 - `BattleCoreSession` 继续只作为 manager 内部实现细节，不再对外围公开 `container / battle_state / content_index` 这种 runtime 直通面。
-- `config/formal_character_registry.json` 当前 runtime / gate 必填面固定为：
-  - `character_id / unit_definition_id / design_doc / adjustment_doc / suite_path / formal_setup_matchup_id / required_content_paths / required_suite_paths / required_test_names / design_needles / adjustment_needles`
+- `config/formal_character_runtime_registry.json` 当前 runtime 必填面固定为：
+  - `character_id / unit_definition_id / formal_setup_matchup_id / required_content_paths`
   - `content_validator_script_path` 按需
-  - `sample_setup_method` 若保留，只是可选展示/调试元数据，不再参与 formal runtime 和 gate 强约束
+- `config/formal_character_delivery_registry.json` 当前 delivery 必填面固定为：
+  - `character_id / display_name / design_doc / adjustment_doc / suite_path / required_suite_paths / required_test_names / design_needles / adjustment_needles`
 - 当前四角色已补齐本轮专项锁点：
   - Gojo：`gojo_domain_action_lock` 的 `stacking=replace`
   - Sukuna：`教会你爱的是...` 在真实对位变化后的 replace 语义
@@ -247,7 +249,7 @@
 - Gojo / Sukuna / Kashimo / Obito 的 support 当前只保留角色专属语义；单纯转发共享 builder 的壳层统一收回基类继承链。
 - 四个 snapshot suite 当前不再各自保留 `_build_content_index()` / `_run_checks()` 模板壳，统一直接走共享 snapshot helper。
 - `tests/suites/lifecycle_replacement_flow_suite.gd` 当前固定只做 wrapper，具体测试拆到 `tests/suites/lifecycle_replacement_flow/` 子 suite；原测试名与可达性入口保持不变。
-- `SampleBattleFactory` 当前继续保留旧空值式兼容 wrapper，但正式 setup surface 补齐到结果式 API；后续新增角色不得再靠 per-character factory wrapper 扩张。
+- `SampleBattleFactory` 当前已删除旧空值式兼容 wrapper；正式 setup / replay / snapshot surface 统一只保留结果式 API。
 - 原因：
   - 这轮不是追求“把所有测试平台化”，而是把最容易在第 5 个角色开始时复制扩散的模板壳、热点文件和入口分叉先压平。
 
@@ -265,10 +267,11 @@
   - pair surface case
   - pair interaction case
   的单一真相。
-- `config/formal_character_registry.json` 当前继续只承载角色交付元数据、角色私有 suite/test/content 锚点与文档 anchor id：
+- `config/formal_character_runtime_registry.json` 当前只承载 runtime 必需字段与可选 validator path。
+- `config/formal_character_delivery_registry.json` 当前只承载角色交付元数据、角色私有 suite/test 锚点与文档 anchor id：
   - `design_needles / adjustment_needles` 固定改成显式 anchor id
-  - `required_test_names` 只保留角色私有 runtime / validator 锚点
-  - shared pair surface / interaction 不再逐角色手抄进 registry
+  - `required_test_names` 只保留角色私有 runtime / validator 坏例锚点
+  - shared pair surface / interaction 不再逐角色手抄进 delivery registry
 - `tests/gates/repo_consistency_formal_character_gate.py` 当前统一负责校验：
   - `formal_setup_matchup_id` 必须落在 matchup catalog 里
   - pair surface 必须覆盖完整有向矩阵

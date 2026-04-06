@@ -51,7 +51,7 @@
     - `tasks.md / decisions.md` 活跃文件瘦身
     - 2026-04-05 之前历史闭环条目归档
 - 验收标准：
-  - `config/formal_character_registry.json` 挂齐本轮新增关键回归锚点
+  - `config/formal_character_delivery_registry.json` 挂齐本轮新增关键回归锚点
   - `repo_consistency_docs_gate.py / repo_consistency_formal_character_gate.py` 能直接校验本轮新规则与三桶模板
   - validator-backed 角色都挂上坏例 suite 与坏例锚点
   - 四名正式角色当前两两组合都至少有一组 manager 级黑盒 smoke 覆盖
@@ -85,9 +85,9 @@
     - Gojo / Sukuna / Kashimo / Obito 现在都补上了 validator 坏例锚点，并统一挂进 `extension_validation_contract_suite.gd`
   - docs / registry：
     - docs gate 已补 `once_per_battle`、四角色口径、`incoming_heal_final_mod`、完整 `stacking_source_key` 枚举与三桶模板文案检查
-    - formal registry 已迁到 `config/formal_character_registry.json`
-    - formal registry 已补回本轮新增测试锚点、跨角色 smoke 锚点与设计/调整文档锚点
-    - `SampleBattleFactory.content_snapshot_paths_result()` 已改成“顶层样例资源 + registry.required_content_paths”显式收口，不再递归扫完整内容树
+    - formal registry 已迁到 `config/formal_character_runtime_registry.json + config/formal_character_delivery_registry.json`
+    - runtime / delivery registry 已补回本轮新增测试锚点、跨角色 smoke 锚点与设计/调整文档锚点
+    - `SampleBattleFactory.content_snapshot_paths_result()` 已改成“顶层样例资源 + runtime registry.required_content_paths”显式收口，不再递归扫完整内容树
     - `SampleBattleFactory.content_snapshot_paths_for_setup_result()` 已补 setup-scoped 快照入口；manager smoke / pair smoke / demo replay 不再默认携带全部正式角色内容
     - `ContentSnapshotCache` 已补“外部 `.tres/.res` 依赖改动也会失效”的回归锁，覆盖 `content/shared/` 共享 payload
     - `SampleBattleFactory` 当前已拆成 matchup catalog + replay helper；正式角色 support 不再继续手写阵容数组
@@ -104,6 +104,53 @@
 
 - 已通过：
   - `godot --headless --path . --script tests/run_all.gd`
+
+## Formal 交付层整合收口计划（2026-04-06）
+
+- 状态：已完成
+- 目标：
+  - 按“两阶段收口”把正式角色接入链压回单一失败语义、单一场景来源，以及清晰的 runtime / delivery 元数据边界。
+- 范围：
+  - `SampleBattleFactory` 结果式接口与调用面
+  - formal runtime / delivery registry loader、gate 与 fixture
+  - pair interaction wrapper / support / catalog 分发链
+  - replay 公开契约文档
+  - `damage_segments` 共享 schema / validator / Obito 设计稿口径
+  - 活跃 README / tests README / delivery checklist / design template / folder structure 等交付文档
+- 验收标准：
+  - 活跃代码不再回读旧单表 legacy formal registry。
+  - pair interaction wrapper 不再维护本地 scenario 清单，也不再直连别的 suite 私有 `_test_*`。
+  - formal runtime 只读 runtime registry，delivery / suite / 文档 gate 只读 delivery registry。
+  - `run_replay` 文档与 manager envelope 实现一致。
+  - `damage_segments` 非空时顶层 `power` 固定为 `0`，共享文档与 validator 口径一致。
+  - `bash tests/run_with_gate.sh` 全绿。
+
+### 执行结果
+
+- `tests/suites/content_validation_core/formal_registry_suite.gd` 已补齐 split 后的 fixture 与坏例：
+  - alias / mismatch 用例分别构造 runtime + delivery fixture
+  - runtime duplicate `unit_definition_id`、runtime 缺字段、runtime 缺 validator path、delivery 缺字段全部有独立坏例
+  - `character_id != unit_definition_id` 继续保留并验证可用
+- `tests/suites/formal_character_pair_smoke/interaction_suite.gd` 已收成纯 wrapper：
+  - 只按 catalog 注册 case 并分发到 suite-local `interaction_support.gd`
+  - 本地 scenario 清单与跨 suite 私有 `_test_*` 直连已移除
+- pair interaction 断言已下沉到 `tests/support/formal_pair_interaction_test_support.gd`，suite-local `interaction_support.gd` 只做单一转发；旧的重复 support 脚本已移除，避免再长出第二套真相
+- `tests/gates/repo_consistency_formal_character_gate.py` 已同步到新的 pair interaction support 路径，并新增静态防回退检查：
+  - wrapper 必须 preload suite-local helper
+  - suite-local helper 必须继续路由到 `tests/support/formal_pair_interaction_test_support.gd`
+- 活跃文档已统一到当前口径：
+  - `BattleCoreManager.run_replay()` 对外是 manager envelope
+  - formal registry 为 runtime / delivery 双表
+  - `required_test_names` 只保留角色私有 runtime / validator 坏例锚点
+  - `sample_setup_method` 已从活跃文档清理
+  - `damage_segments` 非空时顶层 `power = 0`
+- `README.md` 的 GDScript 统计已同步到当前仓库实数。
+
+### 当前验证结果
+
+- 已通过：
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_with_gate.sh`
 
 ## 扩角前整合修复计划（第二阶段收口，2026-04-06）
 
@@ -130,7 +177,7 @@
 - `tests/suites/formal_character_pair_smoke/interaction_suite.gd` 已实际注册并通过：
   - 6 个无向正式角色 pair 的 deep interaction case
   - shared matrix / catalog completeness contract
-- `config/formal_character_registry.json` 已去掉逐角色手抄的 shared pair smoke 测试名；`required_test_names` 现在只保留角色私有 runtime / validator 锚点。
+- `config/formal_character_delivery_registry.json` 已去掉逐角色手抄的 shared pair smoke 测试名；`required_test_names` 现在只保留角色私有 runtime / validator 锚点。
 - design / adjustment 文档已补显式 anchor id；formal gate 现改为校验 anchor，不再依赖自然语言句子。
 - segmented skill 语义已继续锁死：
   - `content/skills/obito/obito_shiwei_weishouyu.tres` 顶层 `power = 0`
@@ -275,7 +322,7 @@
   - `content_snapshot_cache_composer_stats_contract` 已切到 harness 的 setup-scoped helper，保证这条测试入口不是死代码。
   - formal/setup 敏感 support 已开始接入新 helper，当前已覆盖 `formal_character_snapshot_test_helper`、Gojo、Kashimo、Sukuna 的相关测试支撑。
 - 第三批已完成：
-  - `SampleBattleFactory.formal_character_ids()` 与 `build_formal_character_setup()` 已改成直接读取 `config/formal_character_registry.json`，不再保留第二份正式角色 ID / setup 映射常量。
+  - `SampleBattleFactory.formal_character_ids_result()` 与 `build_formal_character_setup_result()` 已改成直接读取 `config/formal_character_runtime_registry.json`，不再保留第二份正式角色 ID / setup 映射常量。
   - registry 已新增 `formal_setup_matchup_id`，把“样例 builder 名称”和“默认 formal setup 实际走哪一组 matchup”拆成两个显式字段；Sukuna 因此不再需要额外特判，也能继续保持 `sukuna_setup` 的正式构局语义。
   - Obito formal bad cases 已补强 effect surface：
     - `formal_obito_validator_heal_block_surface_bad_case_contract`
@@ -311,7 +358,7 @@
 
 - 新角色进入正式交付链前，必须先完成：
   - 设计稿与调整记录
-  - `formal_character_registry.json` 条目
+  - `formal_character_runtime_registry.json / formal_character_delivery_registry.json` 条目
   - `SampleBattleFactory` builder
   - entry validator 三桶模板
   - snapshot / runtime / manager smoke / 必要共享 suite 锚点
@@ -401,8 +448,8 @@
   - `README.md`、`tests/README.md`、design docs、`decisions.md`
 - 验收标准：
   - `manual_switch / forced_replace / faint replace` 顺序与入场状态一致。
-  - formal setup 只认 `character_id + formal_setup_matchup_id`，`sample_setup_method` 退出 runtime / gate 必填面。
-  - 四角色新补的专项锚点全部进入 registry。
+  - formal setup 只认 `character_id + formal_setup_matchup_id`，活跃 runtime / delivery registry 不再保留 `sample_setup_method`。
+  - 四角色新补的专项锚点全部进入 delivery registry。
   - `sample_battle_factory.gd` 继续保持在架构硬门禁以下，wrapper suite 继续保持原文件名与测试名。
   - `bash tests/run_with_gate.sh` 全绿。
 
@@ -418,8 +465,8 @@
   - 去掉全局 `class_name`
   - runtime 通过 `configure_runtime()` 注入
   - manager/helper 不再直接读公开字段 `container / battle_state / content_index`
-- `SampleBattleFactory.build_formal_character_setup()` 已统一按 `character_id` 查 registry；formal runtime 只认 `formal_setup_matchup_id`。
-- `sample_setup_method` 当前保留在 registry 中也只算可选展示/调试元数据，formal gate 已不再把它当必填。
+- `SampleBattleFactory.build_formal_character_setup_result()` 已统一按 `character_id` 查 runtime registry；formal runtime 只认 `formal_setup_matchup_id`。
+- 活跃 runtime / delivery registry 已删除 `sample_setup_method`。
 - 四角色新增并挂回 registry 的专项锚点：
   - Gojo：`formal_gojo_validator_action_lock_stacking_bad_case_contract`
   - Sukuna：`sukuna_teach_love_replace_on_matchup_change_contract`

@@ -105,9 +105,11 @@
 
 `run_replay` 对外 contract 固定为：
 
-- 返回 `{ replay_output, public_snapshot }`。
+- 返回 manager envelope：`{ ok, data, error_code, error_message }`。
+- 成功时 `data = { replay_output, public_snapshot }`。
 - 其中 `replay_output` 来自 `ReplayOutput.clone_without_runtime_state()`，`final_battle_state` 必须为 `null`。
 - `public_snapshot` 由回放结束后的最终运行态即时构建，但运行态对象本身不得越过 manager 边界。
+- 失败时 `data = null`，并返回明确的 `error_code / error_message`。
 
 ### 3.4 deterministic 约束
 

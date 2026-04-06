@@ -41,22 +41,26 @@
 
 - [ ] `SampleBattleFactory` 增加该角色相关构局入口，避免 suite 内手写拼装
 - [ ] `SampleBattleFactory` 公开 builder 名称保持稳定，内部只允许走统一 helper，不再为单角色保留私有手写构局
-- [ ] `SampleBattleFactory` 正式快照路径读取统一走 `content_snapshot_paths_result()`；若保留 `content_snapshot_paths()`，只能作为薄封装，不再承担正式失败语义
-- [ ] `config/formal_character_registry.json` 新增角色条目
-- [ ] registry 至少补齐：
+- [ ] `SampleBattleFactory` 正式快照路径读取统一走 `content_snapshot_paths_result()`；正式失败语义不再允许降级成 `null / [] / PackedStringArray()`
+- [ ] `config/formal_character_runtime_registry.json` 新增或更新 runtime 条目
+- [ ] runtime registry 至少补齐：
   - [ ] `character_id / unit_definition_id`
+  - [ ] `formal_setup_matchup_id`（默认 formal setup 实际要走的 matchup_id；formal runtime 只认 `character_id + formal_setup_matchup_id`）
+  - [ ] `required_content_paths`
+  - [ ] `content_validator_script_path`（按需）
+- [ ] `config/formal_character_delivery_registry.json` 新增或更新 delivery 条目
+- [ ] delivery registry 至少补齐：
+  - [ ] `character_id / display_name`
   - [ ] `design_doc / adjustment_doc`
   - [ ] `suite_path`
-  - [ ] `formal_setup_matchup_id`（默认 formal setup 实际要走的 matchup_id；formal runtime 只认 `character_id + formal_setup_matchup_id`）
-  - [ ] `required_content_paths / required_suite_paths / required_test_names`
+  - [ ] `required_suite_paths / required_test_names`
   - [ ] `design_needles / adjustment_needles`（显式 anchor id，不再写自然语言句子）
 - [ ] `required_content_paths`
 - [ ] `required_suite_paths`
-- [ ] `required_test_names`（只保留角色私有 runtime / validator 锚点；共享 pair surface / interaction 由 catalog + shared gate 统一兜）
+- [ ] `required_test_names`（只保留角色私有 runtime / validator 坏例锚点；共享 pair surface / interaction 由 catalog + shared gate 统一兜）
 - [ ] `design_needles / adjustment_needles`（显式 anchor id）
-- [ ] 若保留 `sample_setup_method`，只把它当作可选展示/调试元数据；不得再把它当 formal setup runtime 路由或 gate 必填项
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
-- [ ] 若补了 `content_validator_script_path`，只登记在 `config/formal_character_registry.json` 对应角色条目里；runtime loader 会直接读取这份 registry 并动态装配 validator，不再维护第二份 runtime 描述表
+- [ ] 若补了 `content_validator_script_path`，只登记在 `config/formal_character_runtime_registry.json` 对应角色条目里；runtime loader 会直接读取 runtime registry 并动态装配 validator
 - [ ] formal validator 统一放在 `src/battle_core/content/formal_validators/`：`shared/` 放模板与 loader，角色子目录放对应 validator
 - [ ] formal validator 优先复用共享模板 helper；角色 validator 只保留角色差异校验，不再复制 unit / skill / effect / field 的通用断言文案
 - [ ] formal validator 入口固定收口为三桶：`unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts`
@@ -95,7 +99,6 @@
 
 - [ ] 若共享领域 / 奥义点 / 合法性 suite 属于正式交付面，必须显式挂到 `required_suite_paths`
 - [ ] 若角色依赖共享 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 等扩展能力，对应共享 suite 也必须显式挂到 `required_suite_paths`
-- [ ] 若共享 suite 新增了角色明确依赖的关键锚点，也要同步补进 `required_test_names`，不允许只挂 suite 文件不挂回归名
 - [ ] 共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`；统一改在 `config/formal_matchup_catalog.json` 收口并由 shared gate 校验覆盖完整性
 - [ ] 不允许只靠通用 contract suite 兜角色回归
 - [ ] 至少补一组“该角色 + 另一名正式角色”的黑盒 smoke，避免正式角色配对覆盖只堆在单一对局上

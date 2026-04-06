@@ -56,10 +56,13 @@ ctx.require_contains("docs/design/battle_content_schema.md", "effect_stack_sum",
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_effect_ids", "schema power bonus self effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
-ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_registry.json", "schema formal character single source wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_runtime_registry.json", "schema formal character runtime registry wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_delivery_registry.json", "schema formal character delivery registry wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_matchup_catalog.json", "schema formal matchup catalog wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "formal_validators/shared/content_snapshot_formal_character_registry.gd", "schema runtime validator loader wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "当前 snapshot 实际出现的正式角色", "schema scoped formal validator wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "content_validator_script_path", "schema formal character validator path wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "顶层 `power = 0`", "schema damage-segment top-level power wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "nullify_field_accuracy", "schema field accuracy nullify contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "incoming_action_final_mod", "schema incoming action final mod contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "required_incoming_command_types", "schema incoming action command filter contract")
@@ -69,7 +72,6 @@ ctx.require_contains("docs/design/battle_content_schema.md", "`apply_field` payl
 ctx.require_contains("docs/design/battle_content_schema.md", "damage / heal / resource_mod / stat_mod / apply_effect / remove_effect", "schema unit-target payload scope contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "retention_mode", "schema stat retention contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "persistent_stat_stages", "schema persistent stat stage contract")
-ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "sample_setup_method", "formal character setup method checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "formal_setup_matchup_id", "formal character setup matchup checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "content_validator_script_path", "formal character validator registry checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts", "formal character tri-bucket checklist wording")
@@ -191,6 +193,8 @@ for rel_path in [
     "docs/design/formal_character_delivery_checklist.md",
     "docs/design/battle_content_schema.md",
     "docs/design/formal_character_design_template.md",
+    "docs/design/project_folder_structure.md",
+    "docs/design/kashimo_hajime_adjustments.md",
     "docs/records/decisions.md",
     "docs/records/tasks.md",
 ]:
@@ -200,10 +204,24 @@ for rel_path in [
     "tests/README.md",
     "docs/design/formal_character_delivery_checklist.md",
     "docs/design/battle_content_schema.md",
+    "docs/design/formal_character_design_template.md",
+    "docs/design/project_folder_structure.md",
+    "docs/design/kashimo_hajime_adjustments.md",
+    "docs/records/decisions.md",
+    "docs/records/tasks.md",
+]:
+    ctx.require_absent(rel_path, "config/formal_character_registry.json", "stale single formal registry path")
+for rel_path in [
+    "README.md",
+    "tests/README.md",
+    "docs/design/formal_character_delivery_checklist.md",
+    "docs/design/battle_content_schema.md",
     "docs/records/decisions.md",
 ]:
     ctx.require_absent(rel_path, "代码侧描述源", "stale code-side formal registry wording")
 ctx.require_absent("docs/records/decisions.md", "runtime formal validator 改由 code-side registry 装配", "stale dual-registry decision wording")
+ctx.require_absent("docs/design/formal_character_delivery_checklist.md", "sample_setup_method", "retired sample_setup_method wording")
+ctx.require_absent("docs/records/tasks.md", "formal registry 已迁到 `config/formal_character_registry.json`", "stale single formal registry task wording")
 
 stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",

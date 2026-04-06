@@ -138,7 +138,9 @@ tests/run_with_gate.sh
 - `resolve_missing_dependency()`（返回缺失依赖名；为空表示依赖完整）
 
 其中 `run_replay` 使用临时容器隔离执行，不污染活跃会话池。
-对外返回结构固定为 `{ replay_output, public_snapshot }`，其中 `replay_output.final_battle_state` 必须为 `null`，运行态对象不得越过 manager 边界。
+对外返回结构固定为 manager envelope：`{ ok, data, error_code, error_message }`。
+成功时 `data = { replay_output, public_snapshot }`，其中 `replay_output.final_battle_state` 必须为 `null`，运行态对象不得越过 manager 边界。
+失败时 `data = null`，并返回明确的 `error_code / error_message`。
 内部 `ReplayRunner` 仍保留 `final_battle_state`，用于计算 `final_state_hash` 与回放诊断，不对外透传。
 `BattleCoreSession` 只作为 manager 内部持有的会话对象，不属于外围稳定入口。
 `BattleCoreManager` 现在也不再直接持有完整 composition root；若需要装配容器，只允许依赖一个 build-container callable / factory port。
@@ -193,6 +195,7 @@ tests/run_with_gate.sh
 - 触发点当前包含 `field_apply / field_break / field_expire / on_expire`，并要求引用关系与触发器声明一致
 - `HealPayload.percent_base` 已正式支持 `max_hp / missing_hp`；目标侧 `incoming_heal_final_mod` 作为共享治疗末端读取点接入主线
 - `SkillDefinition` 已正式支持 `execute_target_hp_ratio_lte / execute_required_total_stacks / execute_self_effect_ids / execute_target_effect_ids / damage_segments`
+- 若 `damage_segments` 非空，顶层 `power` 必须固定为 `0`；真实伤害只读 segments
 - `ContentSchema` 已新增 `on_receive_action_damage_segment`；多段主动伤害逐段结算时，会通过 `ChainContext.action_segment_index / action_segment_total / action_combat_type_id` 暴露当前段上下文
 - field 持续时间不写在 `FieldDefinition`；由施加它的 `EffectDefinition.duration / decrement_on` 决定
 - `RuleModPayload` 已支持 `dynamic_value_formula` 运行时求值（当前仅开放 `matchup_bst_gap_band`，且只允许单位 owner 的数值 rule_mod 使用；该公式按 `max_hp + attack + defense + sp_attack + sp_defense + speed + max_mp` 的绝对差求值）
@@ -201,9 +204,9 @@ tests/run_with_gate.sh
 - `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
 - 普通技能与奥义优先级约束分离校验
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
-- `SampleBattleFactory.content_snapshot_paths_result()` 是正式快照路径入口：当前固定收集两段内容，分别是 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 的顶层样例资源，以及 `config/formal_character_registry.json` 里每个正式角色显式登记的 `required_content_paths`；缺目录、缺资源或 registry 漂移时统一返回 `{ ok, data, error_code, error_message }`
+- `SampleBattleFactory.content_snapshot_paths_result()` 是正式快照路径入口：当前固定收集两段内容，分别是 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 的顶层样例资源，以及 `config/formal_character_runtime_registry.json` 里每个正式角色显式登记的 `required_content_paths`；缺目录、缺资源或 runtime registry 漂移时统一返回 `{ ok, data, error_code, error_message }`
 - `SampleBattleFactory.content_snapshot_paths_for_setup_result(battle_setup)` 会在上述样例顶层资源基础上，只补当前 `battle_setup` 里实际出现的正式角色 `required_content_paths`；manager smoke、pair smoke 与 demo replay 统一走这条 setup-scoped 入口，避免继续把所有正式角色内容一锅端进每个对局
-- 旧的 `SampleBattleFactory.content_snapshot_paths()` 只保留为薄封装，内部直接解包结果式 API，不再承担正式失败语义
+- `SampleBattleFactory` 对外已只保留结果式接口；正式失败语义不再允许降级成 `null / [] / PackedStringArray()`
 - `ContentSnapshotCache` 的签名当前固定包含稳定排序后的路径列表、以及这些顶层资源递归外部依赖到的 `.tres/.res` 文件指纹；因此即使只改了 `content/shared/` 里被正式资源引用的共享 payload，也必须重新 miss，而不是继续复用旧 cache entry
 - 若多个正式资源要共享同一份 payload，可把辅助 Resource 放到 `content/shared/`，再由顶层内容资源显式外部引用；`content/shared/` 本身不参与顶层 snapshot 注册
 
@@ -228,13 +231,16 @@ tests/run_with_gate.sh
 - 接入清单：`docs/design/formal_character_delivery_checklist.md`
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
-- 角色注册：`config/formal_character_registry.json`
-- 共享内容校验：若角色有跨资源共享不变量，可在 `config/formal_character_registry.json` 里登记 `content_validator_script_path`；这份 registry 同时是正式角色交付面与可选内容 validator 的单一登记源，runtime 统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取它并动态装配 validator
+- runtime 注册：`config/formal_character_runtime_registry.json`
+- delivery 注册：`config/formal_character_delivery_registry.json`
+- 共享内容校验：若角色有跨资源共享不变量，可在 `config/formal_character_runtime_registry.json` 里登记 `content_validator_script_path`；runtime 统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 runtime registry 并动态装配 validator；测试、文档、suite 与回归锚点统一落在 delivery registry
 - 加载期 formal 校验：`ContentSnapshotFormalCharacterValidator` 只会对当前 content snapshot 实际已出现的正式角色执行对应 validator，缺席角色不会误报
 - validator 模板：正式角色 entry validator 固定收口为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶；入口文件只负责 preload 与串联，不再自由追加角色私有逻辑
 - 大型共享 suite 当前统一采用“稳定 wrapper + 子 suite”组织：例如 `tests/suites/multihit_skill_runtime_suite.gd` 只保留入口职责，真实断言下沉到 `tests/suites/multihit_skill_runtime/*.gd`
-- 注册表锚点：正式 runtime / gate 必填字段固定为 `character_id / unit_definition_id / design_doc / adjustment_doc / suite_path / formal_setup_matchup_id / required_content_paths / required_suite_paths / required_test_names / design_needles / adjustment_needles`，以及按需补的 `content_validator_script_path`；其中 `design_needles / adjustment_needles` 固定为显式 anchor id，`required_test_names` 只保留角色私有 runtime / validator 锚点；`sample_setup_method` 若保留，只能作为可选展示/调试元数据，不能再驱动 formal setup 路径或作为 gate 必填项；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
-- validator 坏例：只要角色登记了 `content_validator_script_path`，就必须同时把 `tests/suites/extension_validation_contract_suite.gd` 和至少一个 `formal_<character>_validator_*bad_case_contract` 锚点挂回 registry
+- runtime 注册字段固定为 `character_id / unit_definition_id / formal_setup_matchup_id / required_content_paths`，以及按需补的 `content_validator_script_path`
+- delivery 注册字段固定为 `character_id / display_name / design_doc / adjustment_doc / suite_path / required_suite_paths / required_test_names / design_needles / adjustment_needles`
+- `required_test_names` 现在只保留角色私有 runtime / validator 坏例锚点；共享 suite 覆盖不再逐角色复制进 registry，pair surface / interaction 统一由 `config/formal_matchup_catalog.json` + shared gate 收口
+- validator 坏例：只要角色登记了 `content_validator_script_path`，就必须同时把 `tests/suites/extension_validation_contract_suite.gd` 和至少一个 `formal_<character>_validator_*bad_case_contract` 锚点挂回 delivery registry
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
@@ -243,7 +249,7 @@ tests/run_with_gate.sh
 - 当前四名正式角色的 pair surface 已补到完整有向矩阵，deep interaction 固定为 6 个无向 pair case：`Gojo-Sukuna / Gojo-Kashimo / Gojo-Obito / Sukuna-Kashimo / Sukuna-Obito / Kashimo-Obito`
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 - 当前仓库已内置两组固定诊断入口：`tests/helpers/domain_case_runner.gd`（领域）与 `tests/helpers/kashimo_case_runner.gd`（鹿紫云）
-- 若角色依赖共享扩展（如 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、`execute_*`、`damage_segments`、`on_receive_action_damage_segment`），则必须把对应共享 suite 一并挂回正式角色 registry
+- 若角色依赖共享扩展（如 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、`execute_*`、`damage_segments`、`on_receive_action_damage_segment`），则必须把对应共享 suite 一并挂回 formal delivery registry
 
 当前已落地的固定案例入口：
 
@@ -264,9 +270,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-06）
 
-- `src/**/*.gd`：`15519` 行
-- `tests/**/*.gd`：`21063` 行
-- GDScript 合计：`36582` 行
+- `src/**/*.gd`：`15573` 行
+- `tests/**/*.gd`：`21494` 行
+- GDScript 合计：`37067` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 
