@@ -165,3 +165,38 @@
   - Kashimo `kashimo_thunder_resist`
 - 原因：
   - 只锁 payload 不锁 effect surface，会让资源仍然“长得像同一个玩法”，但实际触发点、作用域或生命周期已经漂移。
+
+### 14. `final_state_hash` 必须显式覆盖 `once_per_battle` 使用记录（2026-04-06）
+
+- `UnitState.to_stable_dict()` 当前必须包含 `used_once_per_battle_skill_ids`。
+- 该数组在序列化前必须稳定排序，避免只因写入顺序不同就让 deterministic 回放误报漂移。
+- 原因：
+  - `once_per_battle` 约束已经进入共享主线；若最终状态哈希看不到这份 battle-scoped 使用记录，回放基线会把“已用过”和“未用过”误判成同一终态。
+
+### 15. `on_receive_action_hit / on_receive_action_damage_segment` 对缺失上下文 fail-fast，但合法空 combat_type 不算损坏（2026-04-06）
+
+- 共享 precondition 当前固定口径：
+  - 缺 `battle_state / chain_context / owner_id / action_actor_id / side` => `invalid_state_corruption`
+  - `required_incoming_command_types` 存在但 `command_type == null` => `invalid_state_corruption`
+  - `required_incoming_combat_type_ids` 存在但 `action_combat_type_id == null` => `invalid_state_corruption`
+  - `action_combat_type_id == ""` 只表示“这是合法的无属性/无 combat type 行为”，按普通不匹配处理，不再硬终止整场战斗
+- 原因：
+  - 这轮要锁的是“链路上下文丢失”，不是把所有无属性技能都判成坏状态；否则正式角色对局会被共享过滤误杀。
+
+### 16. `SampleBattleFactory` 的正式失败语义统一收口到结果式 envelope，旧薄封装只负责兼容降级（2026-04-06）
+
+- `SampleBattleFactory` / `SampleBattleFactoryMatchupCatalog` / `SampleBattleFactoryContentPathsHelper` 当前正式失败路径统一返回：
+  - `{ ok, data, error_code, error_message }`
+- 旧接口继续保留，但只做兼容降级：
+  - setup builder 失败 => `null`
+  - 路径收集失败 => `[]` 或空 `PackedStringArray`
+- formal registry 读取、matchup 缺失、formal setup 漂移、递归快照目录缺失都不再用裸 `assert()` 充当业务失败语义。
+- 原因：
+  - 扩角阶段继续依赖 `assert()` 会让黑盒 manager/smoke/replay 难以区分“内容或配置错误”与“脚本崩了”；结果式 envelope 更适合正式交付面持续扩展。
+
+### 17. `sample_battle_factory.gd` 继续通过 helper 拆分压回阈值内，不恢复大文件 allowlist（2026-04-06）
+
+- `SampleBattleFactory` 新增 `sample_battle_factory_registry_helper.gd`，把正式角色 registry 读取与结果字典构造下沉到 helper。
+- `sample_battle_factory.gd` 当前已降到 `234` 行，继续满足“核心文件 > 250 行直接拆分”的现行 gate。
+- 原因：
+  - 这轮整合的目标是给后续继续扩角留干净扩展面；恢复 allowlist 只会把已经暴露的膨胀点再次固化。

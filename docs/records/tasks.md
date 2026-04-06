@@ -207,3 +207,50 @@
 - `bash tests/check_repo_consistency.sh`
 - `bash tests/check_architecture_constraints.sh`
 - `bash tests/run_with_gate.sh`
+
+## 当前补充修复：共享失败语义与 SampleBattleFactory 收口（2026-04-06）
+
+- 状态：已完成
+- 目标：
+  - 把扩角前审查里已经确认的问题真正落地修掉：回放稳定哈希漏项、`on_receive_*` 共享契约的 fail-fast 边界、`SampleBattleFactory` 的结果式失败语义，以及大文件 gate / README 统计漂移。
+- 范围：
+  - `src/battle_core/runtime/unit_state.gd`
+  - `src/battle_core/effects/effect_precondition_service.gd`
+  - `src/battle_core/passives/passive_skill_service.gd`
+  - `src/battle_core/passives/passive_item_service.gd`
+  - `src/composition/sample_battle_factory*.gd`
+  - 对应回归 suite、`README.md`、`docs/records/tasks.md`、`docs/records/decisions.md`
+- 验收标准：
+  - 新增契约回归通过。
+  - `SampleBattleFactory` 的正式失败路径返回 `{ ok, data, error_code, error_message }`，旧薄封装继续按 `null / [] / PackedStringArray()` 退化。
+  - `sample_battle_factory.gd` 回到架构 gate 的 250 行阈值内。
+  - `bash tests/run_with_gate.sh` 全绿。
+
+### 执行结果
+
+- `UnitState.to_stable_dict()` 已把 `used_once_per_battle_skill_ids` 纳入稳定序列化，并在写入前排序；`final_state_hash` 不再漏掉 battle-scoped 一次性技能使用记录。
+- `EffectPreconditionService` 已收紧 `on_receive_action_hit / on_receive_action_damage_segment`：
+  - 缺 `battle_state / chain_context / owner_id / action_actor_id / side` 时直接报 `invalid_state_corruption`
+  - `required_incoming_command_types` 缺 command 上下文时 fail-fast
+  - `required_incoming_combat_type_ids` 只在 `action_combat_type_id == null` 时 fail-fast；空字符串继续按“合法但不匹配”处理，避免把无属性技能误判成状态损坏
+- `PassiveSkillService / PassiveItemService` 已改成 fail-fast：
+  - owner unit 缺失 => `invalid_state_corruption`
+  - unit/passive 定义缺失 => `invalid_content_snapshot`
+- `SampleBattleFactoryContentPathsHelper` 已把递归扫目录的裸 `assert()` 改成结果式错误；缺目录时 `collect_tres_paths_recursive_result()` 返回结构化失败，旧 wrapper 继续降级成空数组。
+- `SampleBattleFactoryMatchupCatalog` 与 `SampleBattleFactory` 已补结果式 API：
+  - `build_setup_by_matchup_id_result()`
+  - `formal_character_ids_result()`
+  - `build_formal_character_setup_result()`
+  - `collect_tres_paths_recursive_result()`
+- `SampleBattleFactory` 已继续拆分：
+  - 新增 `sample_battle_factory_registry_helper.gd`
+  - `sample_battle_factory.gd` 从 286 行降到 234 行，继续保持零 allowlist 口径
+- `README.md` 的源码 / 测试 GDScript 行数统计已同步到当前仓库实数。
+
+### 当前验证结果
+
+- 已通过：
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
