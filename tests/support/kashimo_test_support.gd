@@ -23,16 +23,17 @@ func run_gojo_domain_accuracy_case(harness, sample_factory, use_kyokyo: bool, se
 	if core_payload.has("error"):
 		return {"ok": false, "error": str(core_payload["error"])}
 	var core = core_payload["core"]
-	var content_index = harness.build_loaded_content_index(sample_factory)
+	var p1_overrides := {0: PackedStringArray(["kashimo_raiken", "kashimo_charge", "kashimo_kyokyo_katsura"])} if use_kyokyo else {}
+	var battle_setup = build_kashimo_vs_gojo_setup(sample_factory, p1_overrides)
+	var content_index = harness.build_loaded_content_index_for_setup(sample_factory, battle_setup)
 	var gojo_ao = content_index.skills.get("gojo_ao", null)
 	if gojo_ao == null:
 		return {"ok": false, "error": "missing gojo_ao for kashimo real domain accuracy case"}
 	gojo_ao.accuracy = 0
-	var p1_overrides := {0: PackedStringArray(["kashimo_raiken", "kashimo_charge", "kashimo_kyokyo_katsura"])} if use_kyokyo else {}
 	var battle_state = build_battle_state(
 		core,
 		content_index,
-		build_kashimo_vs_gojo_setup(sample_factory, p1_overrides),
+		battle_setup,
 		seed
 	)
 	var kashimo = battle_state.get_side("P1").get_active_unit()

@@ -7,6 +7,12 @@ func build_content_index(harness):
 		return null
 	return harness.build_loaded_content_index(sample_factory)
 
+func build_content_index_for_setup(harness, battle_setup):
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return null
+	return harness.build_loaded_content_index_for_setup(sample_factory, battle_setup)
+
 func run_checks(harness, checks: Array[Dictionary]) -> Dictionary:
 	var failures: Array[String] = []
 	for check in checks:

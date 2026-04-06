@@ -34,9 +34,10 @@ func run_sukuna_hatsu_damage_case(harness, seed: int, actor_mp_before_cast: int,
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return {"error": "SampleBattleFactory init failed"}
-	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_setup = build_sukuna_setup(sample_factory)
+	var content_index = harness.build_loaded_content_index_for_setup(sample_factory, battle_setup)
 	content_index.skills["sukuna_hatsu"].accuracy = 100
-	var battle_state = build_battle_state(core, content_index, build_sukuna_setup(sample_factory), seed)
+	var battle_state = build_battle_state(core, content_index, battle_setup, seed)
 	var sukuna_unit = battle_state.get_side("P1").get_active_unit()
 	var target_unit = battle_state.get_side("P2").get_active_unit()
 	sukuna_unit.current_mp = actor_mp_before_cast

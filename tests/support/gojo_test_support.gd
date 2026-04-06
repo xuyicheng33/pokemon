@@ -25,13 +25,13 @@ func build_gojo_battle_state(harness, seed: int, use_sukuna: bool, gojo_on_p1: b
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return {"error": "SampleBattleFactory init failed"}
-	var content_index = harness.build_loaded_content_index(sample_factory)
 	var matchup_id := ""
 	if gojo_on_p1:
 		matchup_id = "gojo_vs_sukuna" if use_sukuna else "gojo_vs_sample"
 	else:
 		matchup_id = "sukuna_vs_gojo" if use_sukuna else "sample_vs_gojo"
 	var battle_setup = _formal_support.build_matchup_setup(sample_factory, matchup_id)
+	var content_index = harness.build_loaded_content_index_for_setup(sample_factory, battle_setup)
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, seed, battle_setup)
 	return {
 		"core": core,
