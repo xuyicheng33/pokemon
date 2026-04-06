@@ -8,6 +8,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("content_index_split_validation_contract", failures, Callable(self, "_test_content_index_split_validation_contract").bind(harness))
     runner.run_test("content_snapshot_recursive_contract", failures, Callable(self, "_test_content_snapshot_recursive_contract").bind(harness))
     runner.run_test("content_snapshot_curated_contract", failures, Callable(self, "_test_content_snapshot_curated_contract").bind(harness))
+    runner.run_test("content_snapshot_recursive_missing_dir_contract", failures, Callable(self, "_test_content_snapshot_recursive_missing_dir_contract").bind(harness))
 
 func _test_content_index_split_validation_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
@@ -74,6 +75,19 @@ func _test_content_snapshot_curated_contract(harness) -> Dictionary:
             return harness.fail_result("content snapshot path list should include %s" % required_path)
     if snapshot_paths.has("res://content/shared/effects/sukuna_shared_fire_burst_damage.tres"):
         return harness.fail_result("content snapshot path list should not register content/shared helper resources directly")
+    return harness.pass_result()
+
+func _test_content_snapshot_recursive_missing_dir_contract(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var result: Dictionary = sample_factory.collect_tres_paths_recursive_result("res://tests/fixtures/content_snapshot_missing")
+    if bool(result.get("ok", true)):
+        return harness.fail_result("missing recursive snapshot dir should return structured error")
+    if String(result.get("error_code", "")) != "invalid_content_snapshot":
+        return harness.fail_result("missing recursive snapshot dir should report invalid_content_snapshot")
+    if not sample_factory.collect_tres_paths_recursive("res://tests/fixtures/content_snapshot_missing").is_empty():
+        return harness.fail_result("recursive snapshot wrapper should degrade to empty array on missing dir")
     return harness.pass_result()
 
 func _errors_contain(errors: Array, needle: String) -> bool:

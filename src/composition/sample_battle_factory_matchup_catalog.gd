@@ -1,6 +1,8 @@
 extends RefCounted
 class_name SampleBattleFactoryMatchupCatalog
 
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+
 const MATCHUP_SPECS := {
 	"sample_default": {
 		"p1_units": ["sample_pyron", "sample_mossaur", "sample_tidekit"],
@@ -137,17 +139,48 @@ func has_matchup(matchup_id: String) -> bool:
 	return MATCHUP_SPECS.has(matchup_id)
 
 func build_setup(setup_builder, matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Variant:
+	var result := build_setup_result(setup_builder, matchup_id, side_regular_skill_overrides)
+	if not bool(result.get("ok", false)):
+		return null
+	return result.get("data", null)
+
+func build_setup_result(setup_builder, matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	var spec: Dictionary = MATCHUP_SPECS.get(matchup_id, {})
 	if spec.is_empty():
-		return null
-	return setup_builder.build_matchup_setup(
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory unknown matchup_id: %s" % matchup_id
+		)
+	var battle_setup = setup_builder.build_matchup_setup(
 		PackedStringArray(spec.get("p1_units", [])),
 		PackedStringArray(spec.get("p2_units", [])),
 		side_regular_skill_overrides
 	)
+	if battle_setup == null:
+		return _error_result(
+			ErrorCodesScript.INVALID_COMPOSITION,
+			"SampleBattleFactory failed to build matchup setup: %s" % matchup_id
+		)
+	return _ok_result(battle_setup)
 
 func formal_pair_smoke_cases() -> Array:
 	var cases: Array = []
 	for case_spec in FORMAL_PAIR_SMOKE_CASES:
 		cases.append(case_spec.duplicate(true))
 	return cases
+
+func _ok_result(data) -> Dictionary:
+	return {
+		"ok": true,
+		"data": data,
+		"error_code": null,
+		"error_message": null,
+	}
+
+func _error_result(error_code: String, error_message: String) -> Dictionary:
+	return {
+		"ok": false,
+		"data": null,
+		"error_code": error_code,
+		"error_message": error_message,
+	}
