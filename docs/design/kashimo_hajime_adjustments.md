@@ -1,4 +1,10 @@
 # 鹿紫云一（Kashimo Hajime）调整记录
+<!-- anchor:kashimo.adjust.battle-scoped-usage-record -->
+<!-- anchor:kashimo.adjust.once-per-battle -->
+<!-- anchor:kashimo.adjust.refresh-stacking -->
+<!-- anchor:kashimo.adjust.effect-stack-sum -->
+<!-- anchor:kashimo.adjust.persistent-stat-stages -->
+<!-- anchor:kashimo.adjust.same-turn-reentry -->
 
 本文件只记录增量调整，不重复抄写当前冻结设计稿。当前生效方案以 `docs/design/kashimo_hajime_design.md` 为准。
 
@@ -8,8 +14,11 @@
 
 - 改了什么：
   - `kashimo_phantom_beast_amber` 当前正式开启共享字段 `once_per_battle = true`
+  <!-- anchor:kashimo.adjust.once-per-battle -->
   - 合法性与执行链不再只依赖琥珀自带的 `action_legality deny ultimate` 常驻 rule mod，而是额外写入并读取 battle-scoped 使用记录
+  <!-- anchor:kashimo.adjust.battle-scoped-usage-record -->
   - `弥虚葛笼` 的 `kashimo_kyokyo_nullify` 在持续中再次施放时，继续按 `stacking=refresh` 把剩余窗口刷新回完整 3 回合
+  <!-- anchor:kashimo.adjust.refresh-stacking -->
 - 为什么改：
   - 旧做法只能保证“当前活着这条 runtime state 里别再开第二次”，但挡不住未来出现复活、重建状态或特殊回放装配时把它误放宽成“活着时一次”
   - 琥珀的强化、自伤、奥义封锁仍然保留在角色资源里；“整场一次”则收回共享合法性 contract，更适合作为后续扩角复用模板
@@ -34,8 +43,11 @@
     - `ultimate_points_cap = 3`
     - `ultimate_point_gain_on_regular_skill_cast = 1`
   - `回授电击` 的额外威力来源正式固定为共享字段 `effect_stack_sum`，不再沿用设计讨论期的临时名
+  <!-- anchor:kashimo.adjust.effect-stack-sum -->
   - `幻兽琥珀` 的强化改为走 `persistent_stat_stages`，并通过 `retention_mode = persist_on_switch` 保证跨换人保留
+  <!-- anchor:kashimo.adjust.persistent-stat-stages -->
   - `persists_on_switch=true` 的持续效果在“同回合重上场”时，继续暂停普通 `turn_start / turn_end` 触发；下一整回合再恢复
+  <!-- anchor:kashimo.adjust.same-turn-reentry -->
   - 鹿紫云正式接入 `formal_character_registry.json`，`tests/run_all.gd` 删掉临时手动接线，统一走 formal registry
 - 为什么改：
   - Phase 1 的临时禁奥义只适合做主循环隔离交付，不能作为正式角色交付形态留在主线里

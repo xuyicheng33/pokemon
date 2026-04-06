@@ -1,4 +1,10 @@
 # 两面宿傩（Sukuna）调整记录
+<!-- anchor:sukuna.adjust.matchup-regen-permanent -->
+<!-- anchor:sukuna.adjust.replace-long-term-regen -->
+<!-- anchor:sukuna.adjust.remove-999-turn-fallback -->
+<!-- anchor:sukuna.adjust.first-ultimate-window-turn-4 -->
+<!-- anchor:sukuna.adjust.mp_regen-add -->
+<!-- anchor:sukuna.adjust.tests-impacted -->
 
 本文件只记录增量调整，不重复抄写当前冻结设计稿。当前生效方案以 `docs/design/sukuna_design.md` 为准。
 
@@ -10,9 +16,12 @@
 
 - 改了什么：
   - `sukuna_refresh_love_regen` 的 effect 口径从“`duration_mode=turns` + `duration=999` 的近似常驻”改成 `duration_mode = permanent`
+  <!-- anchor:sukuna.adjust.matchup-regen-permanent -->
   - `on_matchup_changed` 继续只保留 1 条宿傩自己的 `mp_regen add`；当对位变化时，旧值按 `stacking=replace` 被替换成新的长期回蓝值，也就是直接 `replace 成新的长期回蓝值`
+  <!-- anchor:sukuna.adjust.replace-long-term-regen -->
 - 为什么改：
   - `去掉 `999`` 这个实现期 magic number，不再让文档和 formal contract 把它误当成权威语义
+  <!-- anchor:sukuna.adjust.remove-999-turn-fallback -->
   - 宿傩被动真正要表达的是“长期有效，直到对位变化后替换成新的档位”，不是“持续 999 回合”
 - 影响测试：
   - `tests/suites/sukuna_snapshot_suite.gd`
@@ -30,13 +39,16 @@
 
 - 改了什么：
   - `sukuna_refresh_love_regen` 从 `mp_regen set` 改成 `mp_regen add`
+  <!-- anchor:sukuna.adjust.mp_regen-add -->
   - 宿傩基础 `regen_per_turn = 12` 保持不变
   - `sukuna_setup_regen_suite.gd` 改为同时校验初始化预回蓝与下一回合 `turn_start` 的追加回蓝
   - 默认装配与反转术式装配的首次奥义窗口，当前都重算为第 `4` 回合
+  <!-- anchor:sukuna.adjust.first-ultimate-window-turn-4 -->
 - 为什么改：
   - 旧口径把基础回蓝 `12` 与被动 `set 9 / 8 / 7 / 6 / 5 / 0` 叠在一起时会自相矛盾：被动在接近对位里反而把宿傩从 `12` 覆盖到 `9`
   - 当前主线要保留基础面板数值，又要让被动真的是补强而不是暗削弱，因此改成 `add` 是最直接且与面板语义一致的收口
 - 影响测试：
+  <!-- anchor:sukuna.adjust.tests-impacted -->
   - `tests/suites/sukuna_setup_regen_suite.gd`
 - 是否改变玩家口径：
   - 是

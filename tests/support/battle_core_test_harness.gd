@@ -79,6 +79,16 @@ func build_sample_factory():
         return null
     return sample_factory
 
+func build_sample_factory_with_overrides(registry_path_override: String = "", matchup_catalog_path_override: String = ""):
+    var sample_factory = build_sample_factory()
+    if sample_factory == null:
+        return null
+    if not String(registry_path_override).strip_edges().is_empty():
+        sample_factory.configure_registry_path_override(registry_path_override)
+    if not String(matchup_catalog_path_override).strip_edges().is_empty():
+        sample_factory.configure_matchup_catalog_path_override(matchup_catalog_path_override)
+    return sample_factory
+
 func build_content_snapshot_paths(sample_factory) -> Dictionary:
     if sample_factory == null:
         return {"error": "SampleBattleFactory init failed"}

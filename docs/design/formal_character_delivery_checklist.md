@@ -44,15 +44,17 @@
 - [ ] `SampleBattleFactory` 正式快照路径读取统一走 `content_snapshot_paths_result()`；若保留 `content_snapshot_paths()`，只能作为薄封装，不再承担正式失败语义
 - [ ] `config/formal_character_registry.json` 新增角色条目
 - [ ] registry 至少补齐：
-  - [ ] `character_id / display_name / unit_definition_id`
+  - [ ] `character_id / unit_definition_id`
   - [ ] `design_doc / adjustment_doc`
   - [ ] `suite_path`
-  - [ ] `sample_setup_method`（必须与 `SampleBattleFactory` 里的 builder 方法名完全一致）
-  - [ ] `formal_setup_matchup_id`（默认 formal setup 实际要走的 matchup_id；若与 sample builder 不是同一路由，也必须显式登记，避免语义漂移）
+  - [ ] `formal_setup_matchup_id`（默认 formal setup 实际要走的 matchup_id；formal runtime 只认 `character_id + formal_setup_matchup_id`）
+  - [ ] `required_content_paths / required_suite_paths / required_test_names`
+  - [ ] `design_needles / adjustment_needles`（显式 anchor id，不再写自然语言句子）
 - [ ] `required_content_paths`
 - [ ] `required_suite_paths`
-- [ ] `required_test_names`
-- [ ] `design_needles / adjustment_needles`
+- [ ] `required_test_names`（只保留角色私有 runtime / validator 锚点；共享 pair surface / interaction 由 catalog + shared gate 统一兜）
+- [ ] `design_needles / adjustment_needles`（显式 anchor id）
+- [ ] 若保留 `sample_setup_method`，只把它当作可选展示/调试元数据；不得再把它当 formal setup runtime 路由或 gate 必填项
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
 - [ ] 若补了 `content_validator_script_path`，只登记在 `config/formal_character_registry.json` 对应角色条目里；runtime loader 会直接读取这份 registry 并动态装配 validator，不再维护第二份 runtime 描述表
 - [ ] formal validator 统一放在 `src/battle_core/content/formal_validators/`：`shared/` 放模板与 loader，角色子目录放对应 validator
@@ -61,6 +63,7 @@
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
 - [ ] 若登记了 `content_validator_script_path`，同时把 `tests/suites/extension_validation_contract_suite.gd` 挂进 `required_suite_paths`
 - [ ] 若登记了 `content_validator_script_path`，同时把至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
+- [ ] `config/formal_matchup_catalog.json` 新增或更新该角色相关 `matchup / pair_surface_cases / pair_interaction_cases`
 
 ## 4. 测试最低面
 
@@ -93,6 +96,7 @@
 - [ ] 若共享领域 / 奥义点 / 合法性 suite 属于正式交付面，必须显式挂到 `required_suite_paths`
 - [ ] 若角色依赖共享 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 等扩展能力，对应共享 suite 也必须显式挂到 `required_suite_paths`
 - [ ] 若共享 suite 新增了角色明确依赖的关键锚点，也要同步补进 `required_test_names`，不允许只挂 suite 文件不挂回归名
+- [ ] 共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`；统一改在 `config/formal_matchup_catalog.json` 收口并由 shared gate 校验覆盖完整性
 - [ ] 不允许只靠通用 contract suite 兜角色回归
 - [ ] 至少补一组“该角色 + 另一名正式角色”的黑盒 smoke，避免正式角色配对覆盖只堆在单一对局上
 

@@ -2,6 +2,7 @@ extends RefCounted
 class_name ActionCastService
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const ActionCastDamageSegmentHelperScript := preload("res://src/battle_core/actions/action_cast_damage_segment_helper.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
@@ -84,7 +85,7 @@ func resolve_hit(command, skill_definition, resolved_target, battle_state, conte
 func is_damage_action(command, skill_definition) -> bool:
     if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
         return true
-    return skill_definition != null and skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and skill_definition.power > 0
+    return ActionCastDamageSegmentHelperScript.has_damage_truth(skill_definition)
 
 func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, content_index, cause_event_id: String) -> Dictionary:
     return action_cast_direct_damage_pipeline.apply_direct_damage(

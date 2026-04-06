@@ -4,6 +4,7 @@ const BaseSuiteScript := preload("res://tests/suites/multihit_skill_runtime/base
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("multihit_skill_per_segment_mod_runtime_contract", failures, Callable(self, "_test_multihit_skill_per_segment_mod_runtime_contract").bind(harness))
     runner.run_test("multihit_skill_stops_after_faint_contract", failures, Callable(self, "_test_multihit_skill_stops_after_faint_contract").bind(harness))
+    runner.run_test("multihit_skill_top_level_power_ignored_contract", failures, Callable(self, "_test_multihit_skill_top_level_power_ignored_contract").bind(harness))
 
 func _test_multihit_skill_per_segment_mod_runtime_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -152,4 +153,60 @@ func _test_multihit_skill_stops_after_faint_contract(harness) -> Dictionary:
         return harness.fail_result("multihit should stop emitting damage after target faints")
     if String(damage_events[0].payload_summary).find("segment 1/3") == -1:
         return harness.fail_result("faint-stop contract should only keep the first segment log")
+    return harness.pass_result()
+
+func _test_multihit_skill_top_level_power_ignored_contract(harness) -> Dictionary:
+    var core_payload = harness.build_core()
+    if core_payload.has("error"):
+        return harness.fail_result(str(core_payload["error"]))
+    var core = core_payload["core"]
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var content_index = harness.build_loaded_content_index(sample_factory)
+
+    var skill = _build_multihit_skill(
+        "test_multihit_top_level_power_ignored_skill",
+        [{"repeat_count": 1, "power": 20, "combat_type_id": "fire", "damage_kind": "special"}]
+    )
+    skill.power = 999
+    content_index.register_resource(skill)
+    content_index.units["sample_pyron"].skill_ids[0] = skill.id
+
+    var battle_setup = sample_factory.build_sample_setup()
+    battle_setup.sides[1].starting_index = 2
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 842, battle_setup)
+    var actor = battle_state.get_side("P1").get_active_unit()
+    var target = battle_state.get_side("P2").get_active_unit()
+    if actor == null or target == null:
+        return harness.fail_result("missing active units for top-level power ignore contract")
+
+    core.service("battle_logger").reset()
+    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+        core.service("command_builder").build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.SKILL,
+            "command_source": "manual",
+            "side_id": "P1",
+            "actor_public_id": actor.public_id,
+            "skill_id": skill.id,
+        }),
+        core.service("command_builder").build_command({
+            "turn_index": 1,
+            "command_type": CommandTypesScript.WAIT,
+            "command_source": "manual",
+            "side_id": "P2",
+            "actor_public_id": target.public_id,
+        }),
+    ])
+
+    var damage_events := _collect_actor_damage_events(core.service("battle_logger").event_log, actor.public_id)
+    if damage_events.size() != 1:
+        return harness.fail_result("segmented skill should emit exactly one segment damage event in top-level power ignore probe")
+    var expected_damage: int = _calc_expected_damage(core, battle_state, actor, target, 20, "fire", 1.0)
+    var actual_damage: int = abs(int(damage_events[0].value_changes[0].delta))
+    if actual_damage != expected_damage:
+        return harness.fail_result("segmented skill damage should use segment power, not top-level power: expected=%d actual=%d" % [expected_damage, actual_damage])
+    if String(damage_events[0].payload_summary).find("segment 1/1") == -1:
+        return harness.fail_result("segmented skill damage log should still preserve the segment 1/1 marker")
     return harness.pass_result()

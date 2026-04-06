@@ -1,4 +1,7 @@
 # 五条悟（Gojo Satoru）设计方案（审计收口版 v4.2）
+<!-- anchor:gojo.design.success-lock-via-on_success_effect_ids -->
+<!-- anchor:gojo.design.failed-clash-no-field-buff-lock -->
+<!-- anchor:gojo.design.shared-clash-rules-outsourced -->
 
 ## 0. 审计后冻结结论（2026-03-29）
 
@@ -264,12 +267,16 @@
 3. `gojo_unlimited_void_field.on_expire_effect_ids / on_break_effect_ids`：`gojo_domain_buff_remove` 在领域结束或打断时回收增幅
 4. `gojo_domain_action_lock`：只有在 `gojo_apply_domain_field` 成功落地后，才作为 follow-up 生效
 
+<!-- anchor:gojo.design.success-lock-via-on_success_effect_ids -->
+
 补充语义（领域公共规则仍以 `docs/design/domain_field_template.md` 为准）：
 
 - 五条悟当前奥义点配置固定为：`ultimate_points_required = 3`、`ultimate_points_cap = 3`、`ultimate_point_gain_on_regular_skill_cast = 1`。
 - 奥义合法性必须同时满足：`current_mp >= 50` 且 `ultimate_points >= 3`；开始施放无量空处时，奥义点立即清零；换下后点数保留。
 - 若场上已有领域，领域冲突判定、对拼胜负与日志语义统一沿用 `docs/design/domain_field_template.md` 与 `docs/rules/05_items_field_input_and_logging.md`，不在角色稿重复定义。
+<!-- anchor:gojo.design.shared-clash-rules-outsourced -->
 - 若五条悟在领域对拼中失败，则无量空处**不落地、不加 `sp_attack +1`、也不锁人**；只有领域真正成功立住后，才会继续跑 `field_apply` 增幅和 `on_success_effect_ids`（`field_apply_success`）锁人。
+<!-- anchor:gojo.design.failed-clash-no-field-buff-lock -->
 - 同回合双方都已排队施放领域时，会先等待公共领域对拼结论，再兑现 `field_apply_success`；因此 `gojo_domain_action_lock` 不会先挂后残留，也不会把对手同回合已入队的领域动作回溯取消。
 - 由于 `gojo_domain_cast_buff` 已改成 field 绑定效果，所以不会再出现“领域已经没了，但 `sp_attack +1` 还残留在五条悟身上”的状态。
 

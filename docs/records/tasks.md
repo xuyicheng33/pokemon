@@ -104,6 +104,139 @@
 
 - 已通过：
   - `godot --headless --path . --script tests/run_all.gd`
+
+## 扩角前整合修复计划（第二阶段收口，2026-04-06）
+
+- 状态：已完成
+- 目标：
+  - 把继续扩第 5 个正式角色前最容易复制扩散的 formal contract、pair coverage、segmented skill 语义与文档 gate 收口到单一真相。
+- 范围：
+  - `character_id / unit_definition_id` 分工与 mismatch 回归
+  - `config/formal_matchup_catalog.json` 的 formal matchup / pair surface / pair interaction 单一真相
+  - 四正式角色 pair surface 全方向矩阵与 6 组 deep interaction 回归
+  - `damage_segments` 为真相时顶层 `power = 0` 的内容 / runtime / validator / 文档一致性
+  - formal registry 文档锚点化、shared pair 锚点减重、README/tests README 对齐
+  - `SampleBattleFactory` / `BattleCoreManager` / `BattleResultService` 热点压线
+- 验收标准：
+  - `character_id != unit_definition_id` 时，formal setup、pair matrix 与公开快照仍然正确。
+  - pair surface 覆盖完整有向矩阵，pair interaction 覆盖 6 个无向正式角色对。
+  - segmented skill 不再消费顶层 `power` 作为伤害真相。
+  - `tests/run_with_gate.sh` 全绿，且三个热点文件全部退出 `220+` 预警带。
+
+### 执行结果
+
+- `formal_registry_suite.gd` 已新增 mismatch fixture 回归，锁住 `character_id / unit_definition_id` 分离后 formal setup、公开快照和 pair matrix 仍读对口径。
+- `config/formal_matchup_catalog.json` 继续作为 formal matchup、pair surface case 与 pair interaction case 的单一真相；`SampleBattleFactoryMatchupCatalog` 当前也会在 runtime fail-fast 校验 catalog 形状。
+- `tests/suites/formal_character_pair_smoke/interaction_suite.gd` 已实际注册并通过：
+  - 6 个无向正式角色 pair 的 deep interaction case
+  - shared matrix / catalog completeness contract
+- `config/formal_character_registry.json` 已去掉逐角色手抄的 shared pair smoke 测试名；`required_test_names` 现在只保留角色私有 runtime / validator 锚点。
+- design / adjustment 文档已补显式 anchor id；formal gate 现改为校验 anchor，不再依赖自然语言句子。
+- segmented skill 语义已继续锁死：
+  - `content/skills/obito/obito_shiwei_weishouyu.tres` 顶层 `power = 0`
+  - runtime 仍按 `damage_segments` 结算真实伤害
+  - formal validator / snapshot / runtime 回归同步收口
+- 热点文件当前行数：
+  - `src/composition/sample_battle_factory.gd`：`205`
+  - `src/battle_core/facades/battle_core_manager.gd`：`219`
+  - `src/battle_core/turn/battle_result_service.gd`：`219`
+
+### 当前验证结果
+
+- 已通过：
+  - `python3 tests/gates/repo_consistency_surface_gate.py`
+  - `python3 tests/gates/repo_consistency_formal_character_gate.py`
+  - `python3 tests/gates/repo_consistency_docs_gate.py`
+  - `bash tests/check_repo_consistency.sh`
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_with_gate.sh`
+
+## 整合规范波落地：Wave 1 + Wave 2 收口（2026-04-06）
+
+- 状态：已完成
+- 目标：
+  - 按“先收口边界与共享语义，再恢复扩角”的方案，把 manager 初始化边界、公开快照 contract、effect dedupe 扩展位、共享测试支撑和 lifecycle 热点一起压回可继续扩复杂角色的状态。
+- 范围：
+  - `BattleCoreManager.create_session()` 初始化后 runtime guard
+  - `public_snapshot / header_snapshot` 的 field creator 公开 contract
+  - `EffectEvent.dedupe_discriminator` 与 `PayloadExecutor` dedupe key
+  - `SampleBattleFactory` 结果式 setup surface、FormalCharacter shared support、四角色 snapshot suite
+  - `tests/suites/lifecycle_replacement_flow_suite.gd` wrapper + 子 suite 拆分
+  - 对应 design / rules / gate / records
+- 验收标准：
+  - 初始化完成但 runtime 非法时，manager 失败且不返回首帧公开快照。
+  - field creator 解析失败时，公开快照与 header snapshot 只返回 `public_id | null`。
+  - dedupe 默认行为不变；显式设置 `dedupe_discriminator` 才允许同链合法重复。
+  - 四角色 snapshot / manager / runtime 结果不变，lifecycle wrapper 与 suite reachability 继续全绿。
+  - `bash tests/run_with_gate.sh` 全绿。
+
+### 执行结果
+
+- `BattleCoreManager.create_session()` 已在收下 session 前补 runtime guard；非法运行态会先 `dispose()` session，再返回失败 envelope。
+- `BattleHeaderSnapshotBuilder` 已删掉 field creator 的原始 id 回退；`creator_public_id` 现在只会是公开 `public_id` 或 `null`。
+- `EffectEvent` 已新增 `dedupe_discriminator`，`PayloadExecutor` dedupe key 已把它纳入稳定语义键；默认空串不改变现有四角色行为。
+- 已补新增回归：
+  - `manager_create_session_runtime_guard_contract`
+  - `field_creator_public_id_contract`
+  - `dedupe_discriminator_explicit_repeat_contract`
+- `FormalCharacterTestSupport` 已补结果式 setup helper，并作为通用 setup / command builder 基类；Sukuna / Kashimo / Obito / Gojo support 只保留角色专属 helper。
+- 四个 snapshot suite 已去掉本地 `_build_content_index()` / `_run_checks()` 壳层，统一直接走 `FormalCharacterSnapshotTestHelper`。
+- `tests/suites/lifecycle_replacement_flow_suite.gd` 已改成稳定 wrapper，具体断言拆到 `tests/suites/lifecycle_replacement_flow/` 子 suite，并保留原测试名。
+- `docs/design/battle_runtime_model.md`、`docs/design/log_and_replay_contract.md`、`docs/rules/05_items_field_input_and_logging.md` 与 `tests/gates/repo_consistency_docs_gate.py` 已对齐新增 contract wording。
+
+### 当前验证结果
+
+- 已通过：
+  - `bash tests/run_with_gate.sh`
+
+## 整合规范波补完（2026-04-06）
+
+- 状态：已完成
+- 目标：
+  - 按“平衡收口”补完 Wave 1 / Wave 2，把继续扩复杂角色前最容易放大的 runtime / public contract / shared support 风险先压住。
+- 范围：
+  - `BattleCoreManager.create_session()` 首帧公开快照前的 runtime guard
+  - field creator 公开字段与 header snapshot 收口
+  - effect dedupe 扩展位 `dedupe_discriminator`
+  - `SampleBattleFactory` 结果式 setup surface、formal shared support、四角色 snapshot suite、lifecycle replacement flow suite
+- 验收标准：
+  - 初始化后 runtime 非法时，`create_session()` 失败且不返回公开快照。
+  - `creator_public_id` 只允许 `public_id | null`。
+  - `dedupe_discriminator` 默认不改现有行为，显式设置后可区分合法重复。
+  - lifecycle wrapper 保留原测试名，suite reachability 不断链。
+  - 现有四角色正式回归面继续通过。
+
+### 执行结果
+
+- `BattleCoreManager.create_session()` 已改成：
+  - 初始化后再次做 runtime guard
+  - 非法 session 直接返回失败 envelope，并在返回前 dispose
+  - manager 不再先拿 container service 预构好的首帧公开快照直接外发
+- `BattleCoreManagerContainerService.create_session_result()` 已改成：
+  - 在内部也先做一次 runtime guard
+  - 成功路径只返回 session 与最小成功 envelope，把首帧公开快照的正式投影收回 manager
+- `public_snapshot.field.creator_public_id` / `header_snapshot.initial_field.creator_public_id` 的防御性路径已统一写 `null`，不再回退 runtime/source id。
+- `EffectEvent` / `PayloadExecutor` 已补 `dedupe_discriminator` 扩展位，并新增显式 repeat 回归。
+- `SampleBattleFactory` 已补：
+  - `build_setup_from_side_specs_result()`
+  - `build_matchup_setup_result()`
+- Formal shared support 已继续收口：
+  - `FormalCharacterTestSupport` 现在统一提供结果式 setup helper
+  - Gojo / Sukuna / Kashimo / Obito support 已改成继承共享 support，只保留角色专属 helper
+- 四个 snapshot suite 已去掉本地 `_build_content_index()` / `_run_checks()` 模板壳，统一直接复用共享 snapshot helper。
+- `tests/suites/lifecycle_replacement_flow_suite.gd` 已拆成 wrapper + `tests/suites/lifecycle_replacement_flow/` 子 suite，原四个测试名保持不变。
+- `sample_battle_factory.gd` 当前为 `243` 行：
+  - 仍低于 `>250` 的硬门禁
+  - 但已经进入 `220+` 的架构预警带，下一波若再扩增长度必须继续拆 helper，不能再让它回到热点大文件
+
+### 当前验证结果
+
+- 已通过：
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_suite_reachability.sh`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
   - `python3 tests/gates/repo_consistency_docs_gate.py`
   - `python3 tests/gates/repo_consistency_formal_character_gate.py`
   - `git diff --check`
@@ -223,7 +356,7 @@
 - 验收标准：
   - 新增契约回归通过。
   - `SampleBattleFactory` 的正式失败路径返回 `{ ok, data, error_code, error_message }`，旧薄封装继续按 `null / [] / PackedStringArray()` 退化。
-  - `sample_battle_factory.gd` 回到架构 gate 的 250 行阈值内。
+  - `sample_battle_factory.gd` 继续保持在架构 gate 的 250 行硬阈值内。
   - `bash tests/run_with_gate.sh` 全绿。
 
 ### 执行结果
@@ -244,7 +377,7 @@
   - `collect_tres_paths_recursive_result()`
 - `SampleBattleFactory` 已继续拆分：
   - 新增 `sample_battle_factory_registry_helper.gd`
-  - `sample_battle_factory.gd` 从 286 行降到 234 行，继续保持零 allowlist 口径
+  - `sample_battle_factory.gd` 当前为 243 行，继续保持零 allowlist 口径，但已重新进入 220 行预警带
 - `README.md` 的源码 / 测试 GDScript 行数统计已同步到当前仓库实数。
 
 ### 当前验证结果
@@ -254,3 +387,50 @@
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/run_with_gate.sh`
+
+## 扩角前整合规范波（2026-04-06）
+
+- 状态：已完成
+- 目标：
+  - 在继续扩第 5 个角色前，把最容易放大的 runtime / formal contract / 文档对齐问题先一次性收口。
+- 范围：
+  - 生命周期主链：`manual_switch / forced_replace / faint replace`
+  - formal registry 与 `SampleBattleFactory` runtime contract
+  - Gojo / Sukuna / Kashimo / Obito 四角色专项回归与 validator 锁点
+  - `SampleBattleFactory`、`manager_log_and_runtime_contract_suite.gd`、`rule_mod_runtime_core_paths_suite.gd` 热点降温
+  - `README.md`、`tests/README.md`、design docs、`decisions.md`
+- 验收标准：
+  - `manual_switch / forced_replace / faint replace` 顺序与入场状态一致。
+  - formal setup 只认 `character_id + formal_setup_matchup_id`，`sample_setup_method` 退出 runtime / gate 必填面。
+  - 四角色新补的专项锚点全部进入 registry。
+  - `sample_battle_factory.gd` 继续保持在架构硬门禁以下，wrapper suite 继续保持原文件名与测试名。
+  - `bash tests/run_with_gate.sh` 全绿。
+
+### 执行结果
+
+- `SwitchActionService` 已只保留换人指令校验与换人日志入口，真正生命周期统一委托给 `ReplacementService.execute_replacement_lifecycle()`。
+- `manual_switch / forced_replace / faint replace` 当前统一口径为：
+  - `on_switch -> on_exit -> leave -> field_break(若 creator 离场) -> replace -> on_enter`
+  - replacement 入场后统一写 `reentered_turn_index = battle_state.turn_index`
+  - replacement 入场后统一重置 `has_acted=false / action_window_passed=false`
+- `FaintResolver` 已显式注入 `field_service`，不再通过 `trigger_batch_runner.field_service` 读取隐藏依赖。
+- `BattleCoreSession` 已改成 manager 内部实现细节：
+  - 去掉全局 `class_name`
+  - runtime 通过 `configure_runtime()` 注入
+  - manager/helper 不再直接读公开字段 `container / battle_state / content_index`
+- `SampleBattleFactory.build_formal_character_setup()` 已统一按 `character_id` 查 registry；formal runtime 只认 `formal_setup_matchup_id`。
+- `sample_setup_method` 当前保留在 registry 中也只算可选展示/调试元数据，formal gate 已不再把它当必填。
+- 四角色新增并挂回 registry 的专项锚点：
+  - Gojo：`formal_gojo_validator_action_lock_stacking_bad_case_contract`
+  - Sukuna：`sukuna_teach_love_replace_on_matchup_change_contract`
+  - Kashimo：`formal_kashimo_validator_water_leak_counter_fixed_damage_bad_case_contract`
+  - Obito：`obito_qiudaoyu_execute_short_circuit_contract`、`obito_shiwei_weishouyu_mid_kill_stop_contract`
+- 热点文件已降温：
+  - `manager_log_and_runtime_contract_suite.gd` 拆成 wrapper + `manager_log_and_runtime_contract/`
+  - `rule_mod_runtime_core_paths_suite.gd` 拆成 wrapper + `rule_mod_runtime_core_paths/`
+  - `sample_battle_factory.gd` 曾压到 `207` 行；本轮补结果式 setup surface 后回到 `243` 行，仍低于 250 行硬门禁
+
+### 当前验证结果
+
+- 已通过：
+  - `godot --headless --path . --script tests/run_all.gd`

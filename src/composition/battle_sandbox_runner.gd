@@ -56,7 +56,7 @@ func _build_replay_input_for_demo_mode(sample_factory, demo_mode: String) -> Var
     return _build_kashimo_demo_replay_input(sample_factory)
 
 func _build_kashimo_demo_replay_input(sample_factory) -> Variant:
-    var battle_setup = sample_factory.build_kashimo_vs_sample_setup()
+    var battle_setup = sample_factory.build_setup_by_matchup_id("kashimo_vs_sample")
     if battle_setup == null:
         _fail_startup("Battle sandbox failed to build kashimo demo setup")
         return null
@@ -67,7 +67,6 @@ func _build_kashimo_demo_replay_input(sample_factory) -> Variant:
     var replay_input = ReplayInputScript.new()
     replay_input.battle_seed = 9101
     replay_input.content_snapshot_paths = snapshot_paths_result.get("data", PackedStringArray())
-    # NOTE: build_kashimo_vs_sample_setup is wired in SampleBattleFactory (formal delivery surface).
     replay_input.battle_setup = battle_setup
 
     # This is a minimal, stable demo of Kashimo's loop:

@@ -1,4 +1,9 @@
 # 两面宿傩（Sukuna）设计方案（审计收口版 v1.0）
+<!-- anchor:sukuna.design.domain-expire-burst-kept -->
+<!-- anchor:sukuna.design.first-ultimate-window-turn-4-default -->
+<!-- anchor:sukuna.design.first-ultimate-window-turn-4-ritual -->
+<!-- anchor:sukuna.design.matchup-regen-duration-permanent -->
+<!-- anchor:sukuna.design.shared-domain-rules-outsourced -->
 
 ## 0. 审计后冻结结论（2026-03-30）
 
@@ -9,6 +14,7 @@
 | 灶 | 保留“命中后挂灶；离场触发；自然到期也会爆”的现有机制，并补成显式 3 层硬上限 |
 | 奥义点 | `required=3 / cap=3 / regular_skill_cast +1` |
 | 领域终局语义 | **领域自然到期终爆保留**；被打断时**无终爆** |
+<!-- anchor:sukuna.design.domain-expire-burst-kept -->
 | 领域增幅归属 | `attack +1 / sp_attack +1` 改为 field 绑定效果；成功立场时生效，领域结束或打断时移除 |
 | 平衡结论 | `3` 点奥义点体系下，默认装配与反转术式装配都已能稳定进入奥义窗口；但在 Gojo 对位里，宿傩领域对拼仍长期立不住 |
 
@@ -233,9 +239,10 @@
 
 - 玩家说明：高优先级大招，展开后提升自己双攻，并让后续技能必中；领域结束时还会补一段终爆。
 - 机制说明：
-  - 宿傩当前奥义点配置固定为 `required=3 / cap=3 / regular_skill_cast +1`。
-  - 奥义合法性必须同时满足 `current_mp >= 50` 与 `ultimate_points >= 3`；开始施放奥义时奥义点立即清零；换下后点数保留。
-  - 若场上已有领域，领域冲突判定、对拼胜负与日志语义统一沿用 `docs/design/domain_field_template.md` 与 `docs/rules/05_items_field_input_and_logging.md`，不在角色稿重复定义。
+- 宿傩当前奥义点配置固定为 `required=3 / cap=3 / regular_skill_cast +1`。
+- 奥义合法性必须同时满足 `current_mp >= 50` 与 `ultimate_points >= 3`；开始施放奥义时奥义点立即清零；换下后点数保留。
+- 若场上已有领域，领域冲突判定、对拼胜负与日志语义统一沿用 `docs/design/domain_field_template.md` 与 `docs/rules/05_items_field_input_and_logging.md`，不在角色稿重复定义。
+<!-- anchor:sukuna.design.shared-domain-rules-outsourced -->
   - 宿傩若在领域对拼中失败，则本次领域不落地；`attack +1 / sp_attack +1` 与自然到期终爆都不会成立。
   - `creator_accuracy_override=100` 只在领域成功立住后生效。
   - `伏魔御厨子` 本体是**恶魔属性特殊伤害**，不是咒灵属性。
@@ -290,6 +297,7 @@
 - 动态公式只会把求值结果写进运行时 `rule_mod instance`，不会回写共享 `.tres` payload。
 - 当前宿傩每回合最终回复值固定为 `12 + 动态加值`；例如对位五条悟时，当前口径为 `12 + 9 = 21`。
 - `sukuna_refresh_love_regen` 当前正式写死为 `duration_mode = permanent`；每次 `on_matchup_changed` 时，同来源组内只保留 1 条长期 `mp_regen add`，并用 `stacking=replace` 把旧档位替换成新的长期回蓝值。
+<!-- anchor:sukuna.design.matchup-regen-duration-permanent -->
 - `mp_regen` 的多来源叠加语义不再由隐式 key 折叠；共享 contract 统一按“不同来源组并存、同来源组内再走 `none / refresh / replace`”执行。因此宿傩被动回蓝和未来装备回蓝会一起算；若内容想刻意合并，必须显式复用同一个 `stacking_source_key`。
 
 ---
@@ -336,7 +344,9 @@
 - `3 点奥义点体系下`，当前主线先保证“资源 contract 清晰、领域生命周期稳定、固定案例可复查”。
 - 以当前主线实现与回归基线为准：
   - 默认装配线：前 3 回合连续使用 `解`，之后持续 `wait`，默认装配的第一次奥义合法窗口固定落在第 4 回合。
+  <!-- anchor:sukuna.design.first-ultimate-window-turn-4-default -->
   - 反转术式装配线：前 3 回合连续使用 `反转术式`，之后持续 `wait`，反转术式装配的第一次奥义合法窗口固定落在第 4 回合。
+  <!-- anchor:sukuna.design.first-ultimate-window-turn-4-ritual -->
 - 若后续还要继续调强或回调宿傩，应优先观察领域对拼的资源轴，再决定是动伤害、回蓝表、奥义 MP 成本还是奥义点窗口。
 
 ### 4.1 当前冻结

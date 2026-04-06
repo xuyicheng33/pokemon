@@ -13,7 +13,7 @@ func _build_multihit_skill(skill_id: String, segments: Array):
     skill.id = skill_id
     skill.display_name = skill_id
     skill.damage_kind = "special"
-    skill.power = 40
+    skill.power = 0
     skill.accuracy = 100
     skill.mp_cost = 0
     skill.priority = 0

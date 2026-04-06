@@ -1,22 +1,23 @@
-extends RefCounted
+extends "res://tests/support/formal_character_test_support.gd"
 class_name KashimoTestSupport
 
-const FormalCharacterTestSupportScript := preload("res://tests/support/formal_character_test_support.gd")
-const EventTypesScript := preload("res://src/shared/event_types.gd")
-
-var _formal_support = FormalCharacterTestSupportScript.new()
+func build_kashimo_setup_result(sample_factory, p1_regular_skill_overrides: Dictionary = {}, p2_regular_skill_overrides: Dictionary = {}) -> Dictionary:
+	return build_formal_character_setup_result(sample_factory, "kashimo_hajime", {
+		"P1": p1_regular_skill_overrides,
+		"P2": p2_regular_skill_overrides,
+	})
 
 func build_kashimo_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}, p2_regular_skill_overrides: Dictionary = {}):
-	return _formal_support.build_formal_character_setup(sample_factory, "kashimo_hajime", {
+	return _unwrap_setup_result(build_kashimo_setup_result(sample_factory, p1_regular_skill_overrides, p2_regular_skill_overrides))
+
+func build_kashimo_vs_gojo_setup_result(sample_factory, p1_regular_skill_overrides: Dictionary = {}, p2_regular_skill_overrides: Dictionary = {}) -> Dictionary:
+	return build_matchup_setup_result(sample_factory, "kashimo_vs_gojo", {
 		"P1": p1_regular_skill_overrides,
 		"P2": p2_regular_skill_overrides,
 	})
 
 func build_kashimo_vs_gojo_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}, p2_regular_skill_overrides: Dictionary = {}):
-	return _formal_support.build_matchup_setup(sample_factory, "kashimo_vs_gojo", {
-		"P1": p1_regular_skill_overrides,
-		"P2": p2_regular_skill_overrides,
-	})
+	return _unwrap_setup_result(build_kashimo_vs_gojo_setup_result(sample_factory, p1_regular_skill_overrides, p2_regular_skill_overrides))
 
 func run_gojo_domain_accuracy_case(harness, sample_factory, use_kyokyo: bool, seed: int) -> Dictionary:
 	var core_payload = harness.build_core()
@@ -63,21 +64,6 @@ func run_gojo_domain_accuracy_case(harness, sample_factory, use_kyokyo: bool, se
 		"log_size": core.service("battle_logger").event_log.size(),
 	}
 
-func build_battle_state(core, content_index, battle_setup, seed: int):
-	return _formal_support.build_battle_state(core, content_index, battle_setup, seed)
-
-func build_manual_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-	return _formal_support.build_manual_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
-
-func build_manual_ultimate_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-	return _formal_support.build_manual_ultimate_command(core, turn_index, side_id, actor_public_id, skill_id)
-
-func build_manual_wait_command(core, turn_index: int, side_id: String, actor_public_id: String):
-	return _formal_support.build_manual_wait_command(core, turn_index, side_id, actor_public_id)
-
-func build_manual_switch_command(core, turn_index: int, side_id: String, actor_public_id: String, target_public_id: String):
-	return _formal_support.build_manual_switch_command(core, turn_index, side_id, actor_public_id, target_public_id)
-
 func calc_expected_fixed_effect_damage(core, content_index, effect_id: String, target_unit) -> int:
 	var effect_definition = content_index.effects.get(effect_id, null)
 	if effect_definition == null or effect_definition.payloads.is_empty():
@@ -87,9 +73,6 @@ func calc_expected_fixed_effect_damage(core, content_index, effect_id: String, t
 	if not String(payload.combat_type_id).is_empty():
 		type_effectiveness = core.service("combat_type_service").calc_effectiveness(String(payload.combat_type_id), target_unit.combat_type_ids)
 	return core.service("damage_service").apply_final_mod(max(1, int(payload.amount)), type_effectiveness)
-
-func count_effect_instances(unit_state, effect_id: String) -> int:
-	return _formal_support.count_effect_instances(unit_state, effect_id)
 
 func collect_trigger_damage_deltas(event_log: Array, target_instance_id: String, trigger_name: String) -> Array[int]:
 	var deltas: Array[int] = []

@@ -14,7 +14,7 @@ func validate(validator, content_index, errors: Array) -> void:
 			"fields": {
 				"display_name": "十尾尾兽玉",
 				"damage_kind": "special",
-				"power": 12,
+					"power": 0,
 				"accuracy": 100,
 				"mp_cost": 50,
 				"priority": 5,

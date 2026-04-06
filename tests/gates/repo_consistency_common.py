@@ -24,6 +24,12 @@ class GateContext:
                 return
         self.failures.append(f"{', '.join(rel_paths)} missing {label}: {needle}")
 
+    def require_anchor(self, rel_path: str, anchor_id: str, label: str) -> None:
+        normalized_anchor_id = anchor_id.removeprefix("anchor:")
+        anchor_token = f"anchor:{normalized_anchor_id}"
+        if anchor_token not in self.read_text(rel_path):
+            self.failures.append(f"{rel_path} missing {label}: {anchor_token}")
+
     def require_absent(self, rel_path: str, needle: str, label: str) -> None:
         if needle in self.read_text(rel_path):
             self.failures.append(f"{rel_path} still contains stale {label}: {needle}")
@@ -64,6 +70,17 @@ class GateContext:
                 continue
             result.append(raw_entry)
         return result
+
+    def load_json_object(self, rel_path: str, label: str) -> dict:
+        try:
+            payload = json.loads(self.read_text(rel_path))
+        except Exception as exc:
+            self.failures.append(f"{rel_path} invalid {label}: {exc}")
+            return {}
+        if not isinstance(payload, dict):
+            self.failures.append(f"{rel_path} invalid {label}: expected top-level object")
+            return {}
+        return payload
 
     def finish(self, label: str) -> None:
         if self.failures:

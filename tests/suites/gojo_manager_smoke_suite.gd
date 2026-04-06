@@ -29,7 +29,7 @@ func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 		manager,
 		sample_factory,
 		1301,
-		sample_factory.build_gojo_vs_sample_setup({"P1": {0: ritual_loadout}})
+		sample_factory.build_setup_by_matchup_id("gojo_vs_sample", {"P1": {0: ritual_loadout}})
 	)
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))

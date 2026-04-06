@@ -3,6 +3,19 @@ class_name SampleBattleFactoryContentPathsHelper
 
 const FormalCharacterRegistryScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const BASE_CONTENT_SNAPSHOT_DIRS = [
+	"res://content/battle_formats",
+	"res://content/combat_types",
+	"res://content/units",
+	"res://content/skills",
+	"res://content/passive_items",
+	"res://content/effects",
+	"res://content/fields",
+	"res://content/passive_skills",
+	"res://content/samples",
+]
+
+var registry_path_override: String = ""
 
 func build_snapshot_paths(base_dirs: Array) -> Dictionary:
 	return _build_snapshot_paths_from_registry(base_dirs, {}, false)
@@ -20,7 +33,7 @@ func _build_snapshot_paths_from_registry(base_dirs: Array, included_unit_definit
 		if not bool(dir_result.get("ok", false)):
 			return dir_result
 		_append_unique_paths(paths, seen, dir_result.get("data", []))
-	var registry_result: Dictionary = FormalCharacterRegistryScript.load_entries()
+	var registry_result: Dictionary = _load_registry_entries()
 	var registry_error := String(registry_result.get("error", ""))
 	if not registry_error.is_empty():
 		return _error_result("SampleBattleFactory failed to load formal character registry: %s" % registry_error)
@@ -109,7 +122,13 @@ func _append_unique_path(paths: Array[String], seen: Dictionary, path: String) -
 
 func _normalize_res_path(raw_path: String) -> String:
 	var trimmed_path := raw_path.strip_edges()
-	return "" if trimmed_path.is_empty() else (trimmed_path if trimmed_path.begins_with("res://") else "res://%s" % trimmed_path)
+	return "" if trimmed_path.is_empty() else (trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path)
+
+func _load_registry_entries() -> Dictionary:
+	var resolved_override_path := _normalize_res_path(registry_path_override)
+	if resolved_override_path.is_empty():
+		return FormalCharacterRegistryScript.load_entries()
+	return FormalCharacterRegistryScript.load_entries_from_path(resolved_override_path)
 
 func _ok_result(data) -> Dictionary:
 	return {

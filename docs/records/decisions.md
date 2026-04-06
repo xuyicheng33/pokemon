@@ -197,6 +197,95 @@
 ### 17. `sample_battle_factory.gd` 继续通过 helper 拆分压回阈值内，不恢复大文件 allowlist（2026-04-06）
 
 - `SampleBattleFactory` 新增 `sample_battle_factory_registry_helper.gd`，把正式角色 registry 读取与结果字典构造下沉到 helper。
-- `sample_battle_factory.gd` 当前已降到 `234` 行，继续满足“核心文件 > 250 行直接拆分”的现行 gate。
+- `sample_battle_factory.gd` 当前为 `243` 行，仍满足“核心文件 > 250 行直接拆分”的现行 gate，但已经重新进入 `220+` 的架构预警带。
 - 原因：
   - 这轮整合的目标是给后续继续扩角留干净扩展面；恢复 allowlist 只会把已经暴露的膨胀点再次固化。
+
+### 18. 扩第 5 个正式角色前，replacement 主链、formal registry 必填面与四角色缺口必须先收口（2026-04-06）
+
+- `manual_switch / forced_replace / faint replace` 当前必须共用同一 replacement 生命周期主链：
+  - `on_switch -> on_exit -> leave -> field_break(若 creator 离场) -> replace -> on_enter`
+  - replacement 入场状态统一为 `reentered_turn_index = battle_state.turn_index`、`has_acted=false`、`action_window_passed=false`
+- `FaintResolver` 必须显式持有 `field_service`，不允许再通过 `trigger_batch_runner.field_service` 读取隐藏依赖。
+- `BattleCoreSession` 继续只作为 manager 内部实现细节，不再对外围公开 `container / battle_state / content_index` 这种 runtime 直通面。
+- `config/formal_character_registry.json` 当前 runtime / gate 必填面固定为：
+  - `character_id / unit_definition_id / design_doc / adjustment_doc / suite_path / formal_setup_matchup_id / required_content_paths / required_suite_paths / required_test_names / design_needles / adjustment_needles`
+  - `content_validator_script_path` 按需
+  - `sample_setup_method` 若保留，只是可选展示/调试元数据，不再参与 formal runtime 和 gate 强约束
+- 当前四角色已补齐本轮专项锁点：
+  - Gojo：`gojo_domain_action_lock` 的 `stacking=replace`
+  - Sukuna：`教会你爱的是...` 在真实对位变化后的 replace 语义
+  - Kashimo：`水中外泄·毒返` 固定伤害必须 `use_formula=false`
+  - Obito：`求道玉` execute 短路只走一条 execute 伤害、`十尾尾兽玉` 中途击杀立即断段
+- 原因：
+  - 这些口径一旦不在扩角前收口，新增角色会继续复用旧漂移路径，把问题从“一个角色的局部洞”放大成“所有新角色都在复制同一套隐性分叉”。
+
+### 19. `create_session` 的首帧公开快照必须后置到 runtime guard 之后，field creator 公开字段只允许 `public_id | null`（2026-04-06）
+
+- `BattleCoreManager.create_session()` 当前正式口径：
+  - 初始化完成后必须再次走 session runtime guard
+  - 若运行态非法，直接返回失败 envelope（`data=null`）
+  - 非法 session 不得留在 manager session pool 里，也不得对外返回任何公开快照
+- `public_snapshot.field.creator_public_id` 与 `header_snapshot.initial_field.creator_public_id` 当前固定只允许：
+  - 公开 `public_id`
+  - 或 `null`
+- creator 解析失败时，当前禁止再回退 runtime/source id；防御性路径统一写 `null`。
+- 原因：
+  - 首帧公开快照一旦在非法运行态上投影，就会把“内部状态已坏”伪装成“只是普通初始化结果”，后续扩角时最容易把坏 contract 扩散到 replay、manager smoke 和正式文档。
+
+### 20. effect dedupe 的正式扩展位固定为 `EffectEvent.dedupe_discriminator`，默认不改现有四角色语义（2026-04-06）
+
+- `PayloadExecutor` 当前 dedupe key 必须继续包含稳定语义键，并额外纳入 `EffectEvent.dedupe_discriminator`。
+- `dedupe_discriminator` 默认空串；当前四角色、现有 trigger producer 与正式内容资源全部继续走默认值，不允许靠改 effect id 或 source token 偷过 dedupe。
+- 若未来需要“同链合法重复派发”，只能显式设置不同 discriminator 来区分合法重复语义。
+- 原因：
+  - 扩角后最容易遇到的不是“完全不要 dedupe”，而是“少数链路需要合法重复”；先把扩展位收口，能避免以后为了绕过强防抖去污染共享 identity contract。
+
+### 21. Wave 2 的共享支撑继续向 FormalCharacter shared helper 收口，生命周期热点拆成 wrapper + 子 suite（2026-04-06）
+
+- `FormalCharacterTestSupport` 当前继续作为通用 setup / command / battle state builder 的共享入口，并补齐结果式 setup helper。
+- Gojo / Sukuna / Kashimo / Obito 的 support 当前只保留角色专属语义；单纯转发共享 builder 的壳层统一收回基类继承链。
+- 四个 snapshot suite 当前不再各自保留 `_build_content_index()` / `_run_checks()` 模板壳，统一直接走共享 snapshot helper。
+- `tests/suites/lifecycle_replacement_flow_suite.gd` 当前固定只做 wrapper，具体测试拆到 `tests/suites/lifecycle_replacement_flow/` 子 suite；原测试名与可达性入口保持不变。
+- `SampleBattleFactory` 当前继续保留旧空值式兼容 wrapper，但正式 setup surface 补齐到结果式 API；后续新增角色不得再靠 per-character factory wrapper 扩张。
+- 原因：
+  - 这轮不是追求“把所有测试平台化”，而是把最容易在第 5 个角色开始时复制扩散的模板壳、热点文件和入口分叉先压平。
+
+### 22. 第 5 个角色解冻前，manager 初始化边界与 field creator 公开 contract 必须先收紧（2026-04-06）
+
+- `BattleCoreManager.create_session()` 当前必须在返回首个 `public_snapshot` 前再跑一次 runtime guard；若初始化后的运行态非法，直接返回失败 envelope，`data=null`，不保留 session，也不向外投影任何公开快照。
+- `public_snapshot.field.creator_public_id` 与 `header_snapshot.initial_field.creator_public_id` 当前固定只允许公开 `public_id` 或 `null`；creator 解析失败时禁止回退 runtime/source id。
+- 原因：
+  - 这两个洞一旦带着“初始化成功”的外观进入主线，后续扩角会把私有 id 泄漏和非法首帧快照一起复制到 manager smoke、event log 和 replay 验收面里。
+
+### 23. formal matchup / pair coverage / 文档锚点统一收口到单一真相，不再多份手工清单同步（2026-04-06）
+
+- `config/formal_matchup_catalog.json` 当前固定作为：
+  - formal matchup 配置
+  - pair surface case
+  - pair interaction case
+  的单一真相。
+- `config/formal_character_registry.json` 当前继续只承载角色交付元数据、角色私有 suite/test/content 锚点与文档 anchor id：
+  - `design_needles / adjustment_needles` 固定改成显式 anchor id
+  - `required_test_names` 只保留角色私有 runtime / validator 锚点
+  - shared pair surface / interaction 不再逐角色手抄进 registry
+- `tests/gates/repo_consistency_formal_character_gate.py` 当前统一负责校验：
+  - `formal_setup_matchup_id` 必须落在 matchup catalog 里
+  - pair surface 必须覆盖完整有向矩阵
+  - pair interaction 必须覆盖完整无向矩阵
+  - design / adjustment 文档必须命中显式 anchor
+- 原因：
+  - formal 对战面如果同时靠 registry、代码常量、README 句子和测试名清单多处同步，扩第 5 个角色时最容易出现“局部改了、全局漏了”的假绿状态。
+
+### 24. `damage_segments` 非空时，顶层 `power` 不再是伤害真相；执行、校验与文档统一优先读 segment（2026-04-06）
+
+- 只要 `SkillDefinition.damage_segments` 非空：
+  - 顶层 `power` 允许为 `0`
+  - runtime 是否属于伤害技能，统一按 `damage_segments` 或非 segment 的正 `power` 判定
+  - 真实伤害结算优先读 segment，不再从顶层 `power` 推导
+  - 日志继续保留 `segment i/n` 粒度
+- `obito_shiwei_weishouyu` 当前正式写法固定为：
+  - 顶层 `power = 0`
+  - `damage_segments = 2 dark + 8 light`
+- 原因：
+  - 继续让 segmented skill 用“顶层 `power` 只是为了过校验”的灰色口径，会把内容校验、运行时执行和设计稿三份真相越拉越开；扩角后这种漂移会非常难查。

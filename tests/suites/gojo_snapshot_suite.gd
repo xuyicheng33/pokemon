@@ -11,7 +11,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("gojo_effect_snapshot_contract", failures, Callable(self, "_test_gojo_effect_snapshot_contract").bind(harness))
 
 func _test_gojo_unit_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Gojo unit snapshot")
     var gojo = content_index.units.get("gojo_satoru", null)
@@ -37,10 +37,10 @@ func _test_gojo_unit_snapshot_contract(harness) -> Dictionary:
         {"label": "gojo ultimate_skill_id", "actual": String(gojo.ultimate_skill_id), "expected": "gojo_unlimited_void"},
         {"label": "gojo passive_skill_id", "actual": String(gojo.passive_skill_id), "expected": "gojo_mugen"},
     ]
-    return _run_checks(harness, checks)
+    return _helper.run_checks(harness, checks)
 
 func _test_gojo_skill_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Gojo skill snapshot")
     var checks: Array[Dictionary] = []
@@ -94,10 +94,10 @@ func _test_gojo_skill_snapshot_contract(harness) -> Dictionary:
         {"label": "gojo_void is_domain_skill", "actual": bool(gojo_void.is_domain_skill), "expected": true},
         {"label": "gojo_void effects_on_hit_ids", "actual": gojo_void.effects_on_hit_ids, "expected": PackedStringArray(["gojo_apply_domain_field"])},
     ])
-    return _run_checks(harness, checks)
+    return _helper.run_checks(harness, checks)
 
 func _test_gojo_effect_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Gojo effect snapshot")
     var ao_mark = content_index.effects.get("gojo_ao_mark", null)
@@ -172,6 +172,7 @@ func _test_gojo_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "gojo_domain_action_lock duration_mode", "actual": String(domain_lock_payload.duration_mode), "expected": "turns"},
         {"label": "gojo_domain_action_lock duration", "actual": int(domain_lock_payload.duration), "expected": 1},
         {"label": "gojo_domain_action_lock decrement_on", "actual": String(domain_lock_payload.decrement_on), "expected": "turn_end"},
+        {"label": "gojo_domain_action_lock stacking", "actual": String(domain_lock_payload.stacking), "expected": "replace"},
         {"label": "gojo_mugen trigger_names", "actual": mugen.trigger_names, "expected": PackedStringArray(["on_enter"])},
         {"label": "gojo_mugen effect_ids", "actual": mugen.effect_ids, "expected": PackedStringArray(["gojo_mugen_incoming_accuracy_down"])},
         {"label": "gojo_mugen_incoming_accuracy_down trigger_names", "actual": mugen_effect.trigger_names, "expected": PackedStringArray(["on_enter"])},
@@ -181,10 +182,4 @@ func _test_gojo_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "gojo_mugen incoming_accuracy scope", "actual": String(mugen_payload.scope), "expected": "self"},
         {"label": "gojo_mugen incoming_accuracy duration_mode", "actual": String(mugen_payload.duration_mode), "expected": "permanent"},
     ]
-    return _run_checks(harness, checks)
-
-func _build_content_index(harness):
-    return _helper.build_content_index(harness)
-
-func _run_checks(harness, checks: Array[Dictionary]) -> Dictionary:
     return _helper.run_checks(harness, checks)

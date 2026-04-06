@@ -14,7 +14,7 @@ func _test_multihit_skill_validation_contract(harness) -> Dictionary:
     bad_skill.id = "test_bad_multihit_skill"
     bad_skill.display_name = "Bad Multihit Skill"
     bad_skill.damage_kind = "special"
-    bad_skill.power = 20
+    bad_skill.power = 0
     bad_skill.accuracy = 100
     bad_skill.mp_cost = 0
     bad_skill.priority = 0
@@ -41,6 +41,9 @@ func _test_multihit_skill_validation_contract(harness) -> Dictionary:
         return harness.fail_result("multihit validation should reject non-positive repeat_count")
     if not _has_error(errors, "skill[test_bad_multihit_skill].damage_segments[0].combat_type_id missing combat type: missing_combat_type"):
         return harness.fail_result("multihit validation should reject missing segment combat type")
+    if _has_error(errors, "skill[test_bad_multihit_skill].power must be > 0 for damage skills, got 0") \
+    or _has_error(errors, "skill[test_bad_multihit_skill].power must be > 0 for non-segment damage skills, got 0"):
+        return harness.fail_result("multihit validation should allow top-level power=0 when damage_segments carry the damage truth")
     if _has_error(errors, "effect[test_allowed_segment_filter_effect].required_incoming_command_types only allowed for on_receive_action_hit/on_receive_action_damage_segment"):
         return harness.fail_result("multihit validation should allow command filters on on_receive_action_damage_segment")
     if _has_error(errors, "effect[test_allowed_segment_filter_effect].required_incoming_combat_type_ids only allowed for on_receive_action_hit/on_receive_action_damage_segment"):

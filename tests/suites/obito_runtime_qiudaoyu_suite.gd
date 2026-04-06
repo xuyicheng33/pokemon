@@ -8,6 +8,7 @@ var _support = ObitoTestSupportScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("obito_qiudaoyu_power_bonus_contract", failures, Callable(self, "_test_obito_qiudaoyu_power_bonus_contract").bind(harness))
     runner.run_test("obito_qiudaoyu_execute_contract", failures, Callable(self, "_test_obito_qiudaoyu_execute_contract").bind(harness))
+    runner.run_test("obito_qiudaoyu_execute_short_circuit_contract", failures, Callable(self, "_test_obito_qiudaoyu_execute_short_circuit_contract").bind(harness))
     runner.run_test("obito_qiudaoyu_hit_and_miss_clear_contract", failures, Callable(self, "_test_obito_qiudaoyu_hit_and_miss_clear_contract").bind(harness))
 
 func _test_obito_qiudaoyu_power_bonus_contract(harness) -> Dictionary:
@@ -33,6 +34,16 @@ func _test_obito_qiudaoyu_execute_contract(harness) -> Dictionary:
         return harness.fail_result("obito_qiudaoyu execute path should emit [execute] damage log")
     if int(result.get("remaining_stacks", -1)) != 0:
         return harness.fail_result("obito_qiudaoyu execute path should still clear all yinyang stacks")
+    return harness.pass_result()
+
+func _test_obito_qiudaoyu_execute_short_circuit_contract(harness) -> Dictionary:
+    var result = _run_qiudaoyu_execute_case(harness, 1535)
+    if not bool(result.get("ok", false)):
+        return harness.fail_result(str(result.get("error", "obito qiudaoyu execute short-circuit case failed")))
+    if int(result.get("damage_event_count", -1)) != 1:
+        return harness.fail_result("obito_qiudaoyu execute path should emit exactly one execute damage event")
+    if int(result.get("non_execute_damage_event_count", -1)) != 0:
+        return harness.fail_result("obito_qiudaoyu execute path should not continue into formula damage after execute")
     return harness.pass_result()
 
 func _test_obito_qiudaoyu_hit_and_miss_clear_contract(harness) -> Dictionary:
@@ -110,13 +121,17 @@ func _run_qiudaoyu_execute_case(harness, seed: int) -> Dictionary:
     ])
     var damage_events = _support.collect_actor_damage_events(core.service("battle_logger").event_log, "P1-A")
     var execute_log := false
+    var non_execute_damage_events := 0
     for event in damage_events:
         if String(event.payload_summary).find("[execute]") != -1:
             execute_log = true
-            break
+        else:
+            non_execute_damage_events += 1
     return {
         "ok": true,
         "target_hp": int(target.current_hp),
         "remaining_stacks": _support.count_effect_instances(obito, "obito_yinyang_zhili"),
         "execute_log": execute_log,
+        "damage_event_count": damage_events.size(),
+        "non_execute_damage_event_count": non_execute_damage_events,
     }

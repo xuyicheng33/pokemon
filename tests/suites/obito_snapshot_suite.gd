@@ -14,7 +14,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("obito_candidate_loadout_contract", failures, Callable(self, "_test_obito_candidate_loadout_contract").bind(harness))
 
 func _test_obito_unit_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Obito unit snapshot")
     var obito = content_index.units.get("obito_juubi_jinchuriki", null)
@@ -40,10 +40,10 @@ func _test_obito_unit_snapshot_contract(harness) -> Dictionary:
         {"label": "obito ultimate_skill_id", "actual": String(obito.ultimate_skill_id), "expected": "obito_shiwei_weishouyu"},
         {"label": "obito passive_skill_id", "actual": String(obito.passive_skill_id), "expected": "obito_xianren_zhili"},
     ]
-    return _run_checks(harness, checks)
+    return _helper.run_checks(harness, checks)
 
 func _test_obito_skill_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Obito skill snapshot")
     var jiaotu = content_index.skills.get("obito_qiudao_jiaotu", null)
@@ -82,12 +82,13 @@ func _test_obito_skill_snapshot_contract(harness) -> Dictionary:
         {"label": "obito_shiwei_weishouyu accuracy", "actual": int(ultimate.accuracy), "expected": 100},
         {"label": "obito_shiwei_weishouyu mp_cost", "actual": int(ultimate.mp_cost), "expected": 50},
         {"label": "obito_shiwei_weishouyu priority", "actual": int(ultimate.priority), "expected": 5},
+        {"label": "obito_shiwei_weishouyu top_level_power", "actual": int(ultimate.power), "expected": 0},
         {"label": "obito_shiwei_weishouyu segment_count", "actual": int(ultimate.damage_segments.size()), "expected": 2},
     ]
-    return _run_checks(harness, checks)
+    return _helper.run_checks(harness, checks)
 
 func _test_obito_effect_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Obito effect snapshot")
     var heal = content_index.effects.get("obito_xianren_zhili_heal", null)
@@ -154,7 +155,7 @@ func _test_obito_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "obito_qiudao_yu_clear effect_definition_id", "actual": String(clear_payload.effect_definition_id), "expected": "obito_yinyang_zhili"},
         {"label": "obito_qiudao_yu_clear remove_mode", "actual": String(clear_payload.remove_mode), "expected": "all"},
     ]
-    return _run_checks(harness, checks)
+    return _helper.run_checks(harness, checks)
 
 func _test_obito_candidate_loadout_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()
@@ -179,9 +180,3 @@ func _test_obito_candidate_loadout_contract(harness) -> Dictionary:
     if legal_action_set.legal_skill_ids.has("obito_qiudao_yu"):
         return harness.fail_result("obito override loadout should hide swapped-out default skill")
     return harness.pass_result()
-
-func _build_content_index(harness):
-    return _helper.build_content_index(harness)
-
-func _run_checks(harness, checks: Array[Dictionary]) -> Dictionary:
-    return _helper.run_checks(harness, checks)

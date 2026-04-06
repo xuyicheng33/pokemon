@@ -1,30 +1,7 @@
-extends RefCounted
+extends "res://tests/support/sukuna_test_support.gd"
 class_name SukunaSetupRegenTestSupport
 
 const PowerBonusResolverScript := preload("res://src/battle_core/actions/power_bonus_resolver.gd")
-
-const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
-const SukunaTestSupportScript := preload("res://tests/support/sukuna_test_support.gd")
-
-var _support = SukunaTestSupportScript.new()
-
-func build_sukuna_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}):
-	return _support.build_sukuna_setup(sample_factory, p1_regular_skill_overrides)
-
-func build_battle_state(core, content_index, battle_setup, seed: int):
-	return _support.build_battle_state(core, content_index, battle_setup, seed)
-
-func resolve_matchup_gap_value(owner_total: int, opponent_total: int, thresholds: PackedInt32Array, outputs: PackedInt32Array, default_value: int) -> int:
-	return _support.resolve_matchup_gap_value(owner_total, opponent_total, thresholds, outputs, default_value)
-
-func sum_unit_bst(unit_state) -> int:
-	return _support.sum_unit_bst(unit_state)
-
-func build_manual_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):
-	return _support.build_manual_skill_command(core, turn_index, side_id, actor_public_id, skill_id)
-
-func build_manual_wait_command(core, turn_index: int, side_id: String, actor_public_id: String):
-	return _support.build_manual_wait_command(core, turn_index, side_id, actor_public_id)
 
 func run_sukuna_hatsu_damage_case(harness, seed: int, actor_mp_before_cast: int, target_mp_before_cast: int) -> Dictionary:
 	var core_payload = harness.build_core()

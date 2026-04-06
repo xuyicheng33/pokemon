@@ -6,6 +6,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("formal_kashimo_validator_kyokyo_bad_case_contract", failures, Callable(self, "_test_formal_kashimo_validator_kyokyo_bad_case_contract").bind(harness))
 	runner.run_test("formal_kashimo_validator_charge_mark_bad_case_contract", failures, Callable(self, "_test_formal_kashimo_validator_charge_mark_bad_case_contract").bind(harness))
 	runner.run_test("formal_kashimo_validator_thunder_resist_surface_bad_case_contract", failures, Callable(self, "_test_formal_kashimo_validator_thunder_resist_surface_bad_case_contract").bind(harness))
+	runner.run_test("formal_kashimo_validator_water_leak_counter_fixed_damage_bad_case_contract", failures, Callable(self, "_test_formal_kashimo_validator_water_leak_counter_fixed_damage_bad_case_contract").bind(harness))
 
 func _test_formal_kashimo_validator_bad_case_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
@@ -61,4 +62,18 @@ func _test_formal_kashimo_validator_thunder_resist_surface_bad_case_contract(har
 	var errors: Array = content_index.validate_snapshot()
 	if not _has_error(errors, "formal[kashimo].thunder_resist scope mismatch: expected self got target"):
 		return harness.fail_result("kashimo formal validator should fail-fast when thunder_resist surface drifts")
+	return harness.pass_result()
+
+func _test_formal_kashimo_validator_water_leak_counter_fixed_damage_bad_case_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var water_counter = content_index.effects.get("kashimo_water_leak_counter_listener", null)
+	if water_counter == null or water_counter.payloads.is_empty():
+		return harness.fail_result("missing kashimo_water_leak_counter_listener payload")
+	water_counter.payloads[0].use_formula = true
+	var errors: Array = content_index.validate_snapshot()
+	if not _has_error(errors, "formal[kashimo].water_leak_counter use_formula mismatch: expected false got true"):
+		return harness.fail_result("kashimo formal validator should fail-fast when water leak counter stops being fixed damage")
 	return harness.pass_result()

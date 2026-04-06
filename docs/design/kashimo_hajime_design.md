@@ -1,4 +1,8 @@
 # 鹿紫云一（Kashimo Hajime）设计方案 v1.2
+<!-- anchor:kashimo.design.effect-stack-sum -->
+<!-- anchor:kashimo.design.incoming-action-final-mod -->
+<!-- anchor:kashimo.design.once-per-battle -->
+<!-- anchor:kashimo.design.persistent-stat-stages -->
 
 ## 0. 冻结结论（2026-04-01）
 
@@ -201,6 +205,7 @@
 | combat_type_id | `thunder` |
 | targeting | `enemy_active_slot` |
 | power_bonus_source | `effect_stack_sum` |
+<!-- anchor:kashimo.design.effect-stack-sum -->
 | effects_on_cast_ids | `[]` |
 | effects_on_hit_ids | `["kashimo_consume_positive_charges", "kashimo_consume_negative_charges"]` |
 
@@ -287,6 +292,7 @@
   - 奥义合法性仍同时要求 `current_mp >= 35` 与 `ultimate_points >= 3`。
   - 开始施放时立刻清空奥义点。
   - `SkillDefinition.once_per_battle = true` 当前只负责表达“整场一次”的共享能力入口；真正的二次拦截由 battle-scoped 使用记录承担，因此即使后续出现死亡、复活或状态重建，也不会被放宽成“活着时一次”。
+  <!-- anchor:kashimo.design.once-per-battle -->
   - `on_cast` 阶段就进入琥珀状态，所以就算这次攻击 miss，强化与自伤也照样生效。
 
 **琥珀相关资源**
@@ -294,6 +300,7 @@
 | 资源 | 语义 |
 |------|------|
 | `kashimo_amber_self_transform` | 单一入口 effect；`on_cast` 时直接写入攻击 +2 / 特攻 +2 / 速度 +1 三段 `persistent_stat_stages`，并继续挂 `kashimo_amber_bleed` 与奥义封锁 rule mod |
+<!-- anchor:kashimo.design.persistent-stat-stages -->
 | `kashimo_amber_bleed` | `turn_end` 每回合扣 20 HP；`persists_on_switch=true` |
 | 奥义封锁 | 当前不单独落成 `kashimo_amber_ult_lock` 资源，而是作为 `kashimo_amber_self_transform` 内部的 `action_legality deny ultimate` rule mod payload 写入；`persists_on_switch=true` |
 
@@ -445,6 +452,7 @@
 | `RemoveEffectPayload.remove_mode = all` | 已落地 | 小 | 回授电击命中后一次性清空双方全部电荷层 |
 | `nullify_field_accuracy` | 已落地 | 小 | 弥虚葛笼只中和领域附加必中，不影响技能原生 `100` 命中 |
 | `incoming_action_final_mod` | 已落地 | 中 | 目标侧对“主动技能 / 奥义本次伤害”的减伤读取点；鹿紫云的抗雷走这一条 |
+<!-- anchor:kashimo.design.incoming-action-final-mod -->
 | `on_receive_action_hit` | 已落地 | 中 | 被动在“自己被主动技能 / 奥义命中”时触发，且致死命中仍可反击 |
 | `action_actor` | 已落地 | 小 | 水中外泄的毒返直接打回这次行动的攻击者 |
 | `required_incoming_command_types / required_incoming_combat_type_ids` | 已落地 | 小 | 被动可精确过滤来袭主动技类型与属性 |

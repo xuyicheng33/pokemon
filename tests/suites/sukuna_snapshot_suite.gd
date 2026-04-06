@@ -11,7 +11,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("sukuna_effect_snapshot_contract", failures, Callable(self, "_test_sukuna_effect_snapshot_contract").bind(harness))
 
 func _test_sukuna_unit_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Sukuna unit snapshot")
     var sukuna = content_index.units.get("sukuna", null)
@@ -37,10 +37,10 @@ func _test_sukuna_unit_snapshot_contract(harness) -> Dictionary:
         {"label": "sukuna ultimate_skill_id", "actual": String(sukuna.ultimate_skill_id), "expected": "sukuna_fukuma_mizushi"},
         {"label": "sukuna passive_skill_id", "actual": String(sukuna.passive_skill_id), "expected": "sukuna_teach_love"},
     ]
-    return _run_checks(harness, checks)
+    return _helper.run_checks(harness, checks)
 
 func _test_sukuna_skill_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Sukuna skill snapshot")
     var sukuna_kai = content_index.skills.get("sukuna_kai", null)
@@ -92,10 +92,10 @@ func _test_sukuna_skill_snapshot_contract(harness) -> Dictionary:
         {"label": "sukuna_domain is_domain_skill", "actual": bool(sukuna_domain.is_domain_skill), "expected": true},
         {"label": "sukuna_domain effects_on_hit_ids", "actual": sukuna_domain.effects_on_hit_ids, "expected": PackedStringArray(["sukuna_apply_domain_field"])},
     ]
-    return _run_checks(harness, checks)
+    return _helper.run_checks(harness, checks)
 
 func _test_sukuna_effect_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Sukuna effect snapshot")
     var apply_kamado = content_index.effects.get("sukuna_apply_kamado", null)
@@ -174,10 +174,4 @@ func _test_sukuna_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "sukuna_refresh_love_regen outputs", "actual": regen_payload.dynamic_value_outputs, "expected": PackedFloat32Array([9.0, 8.0, 7.0, 6.0, 5.0])},
         {"label": "sukuna_refresh_love_regen default", "actual": float(regen_payload.dynamic_value_default), "expected": 0.0},
     ]
-    return _run_checks(harness, checks)
-
-func _build_content_index(harness):
-    return _helper.build_content_index(harness)
-
-func _run_checks(harness, checks: Array[Dictionary]) -> Dictionary:
     return _helper.run_checks(harness, checks)

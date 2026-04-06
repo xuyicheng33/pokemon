@@ -102,6 +102,7 @@ func _validate_domain_buff_contract(validator, content_index, errors: Array) -> 
 				"duration_mode": "turns",
 				"duration": 1,
 				"decrement_on": "turn_end",
+				"stacking": "replace",
 			}
 		)
 	_validate_stat_mod_effect(validator, content_index, errors, label, "gojo_domain_cast_buff", "sp_attack", 1, PackedStringArray(["field_apply"]))

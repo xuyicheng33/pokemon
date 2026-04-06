@@ -113,4 +113,5 @@ func _validate_water_leak_counter(validator, content_index, errors: Array) -> vo
 	if payload == null:
 		return
 	validator._expect_int(errors, "%s amount" % label, payload.amount, 15)
+	validator._expect_bool(errors, "%s use_formula" % label, payload.use_formula, false)
 	validator._expect_string(errors, "%s combat_type_id" % label, payload.combat_type_id, "poison")

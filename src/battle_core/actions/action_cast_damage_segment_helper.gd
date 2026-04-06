@@ -7,7 +7,7 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 static func resolve_damage_segments(skill_definition, actor, target, power_bonus_resolver) -> Array:
 	var resolved_segments: Array = []
-	if skill_definition == null or skill_definition.damage_segments.is_empty():
+	if not has_damage_segments(skill_definition):
 		resolved_segments.append({
 			"power": (skill_definition.power + resolve_power_bonus(skill_definition, actor, target, power_bonus_resolver)) if skill_definition != null else 50,
 			"damage_kind": skill_definition.damage_kind if skill_definition != null else ContentSchemaScript.DAMAGE_KIND_PHYSICAL,
@@ -25,6 +25,14 @@ static func resolve_damage_segments(skill_definition, actor, target, power_bonus
 				"combat_type_id": String(segment.combat_type_id),
 			})
 	return resolved_segments
+
+static func has_damage_segments(skill_definition) -> bool:
+	return skill_definition != null and not skill_definition.damage_segments.is_empty()
+
+static func has_damage_truth(skill_definition) -> bool:
+	if skill_definition == null or String(skill_definition.damage_kind) == ContentSchemaScript.DAMAGE_KIND_NONE:
+		return false
+	return has_damage_segments(skill_definition) or int(skill_definition.power) > 0
 
 static func resolve_power_bonus(skill_definition, actor, target, power_bonus_resolver) -> int:
 	if skill_definition == null or power_bonus_resolver == null:

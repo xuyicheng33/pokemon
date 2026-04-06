@@ -1,10 +1,13 @@
 extends "res://tests/suites/content_validation_core/base.gd"
 const BaseSuiteScript := preload("res://tests/suites/content_validation_core/base.gd")
+const FormalCharacterPairSmokeSharedScript := preload("res://tests/suites/formal_character_pair_smoke/shared.gd")
+const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("formal_character_shared_fire_burst_validation", failures, Callable(self, "_test_formal_character_shared_fire_burst_validation").bind(harness))
     runner.run_test("formal_character_validator_registry_runtime_contract", failures, Callable(self, "_test_formal_character_validator_registry_runtime_contract").bind(harness))
     runner.run_test("formal_character_setup_registry_runtime_contract", failures, Callable(self, "_test_formal_character_setup_registry_runtime_contract").bind(harness))
+    runner.run_test("formal_character_registry_id_mismatch_contract", failures, Callable(self, "_test_formal_character_registry_id_mismatch_contract").bind(harness))
     runner.run_test("formal_character_validator_partial_snapshot_contract", failures, Callable(self, "_test_formal_character_validator_partial_snapshot_contract").bind(harness))
     runner.run_test("formal_character_validator_present_character_scope_contract", failures, Callable(self, "_test_formal_character_validator_present_character_scope_contract").bind(harness))
     runner.run_test("sample_battle_factory_result_error_contract", failures, Callable(self, "_test_sample_battle_factory_result_error_contract").bind(harness))
@@ -83,17 +86,145 @@ func _test_formal_character_setup_registry_runtime_contract(harness) -> Dictiona
         var matchup_id := String(entry.get("formal_setup_matchup_id", "")).strip_edges()
         if matchup_id.is_empty():
             return harness.fail_result("formal character registry[%s] missing formal_setup_matchup_id" % character_id)
-        var expected_setup = sample_factory.build_setup_by_matchup_id(matchup_id)
-        if expected_setup == null:
-            return harness.fail_result("formal character setup matchup missing from SampleBattleFactory: %s" % matchup_id)
-        var actual_setup = sample_factory.build_formal_character_setup(character_id)
-        if actual_setup == null:
-            return harness.fail_result("build_formal_character_setup returned null for %s" % character_id)
+        var expected_setup_result: Dictionary = sample_factory.build_setup_by_matchup_id_result(matchup_id)
+        if not bool(expected_setup_result.get("ok", false)):
+            return harness.fail_result("formal character setup matchup missing from SampleBattleFactory: %s (%s)" % [
+                matchup_id,
+                String(expected_setup_result.get("error_message", "unknown error")),
+            ])
+        var expected_setup = expected_setup_result.get("data", null)
+        var actual_setup_result: Dictionary = sample_factory.build_formal_character_setup_result(character_id)
+        if not bool(actual_setup_result.get("ok", false)):
+            return harness.fail_result("build_formal_character_setup_result failed for %s: %s" % [
+                character_id,
+                String(actual_setup_result.get("error_message", "unknown error")),
+            ])
+        var actual_setup = actual_setup_result.get("data", null)
         if _setup_signature(actual_setup) != _setup_signature(expected_setup):
             return harness.fail_result("formal character setup drifted from registry matchup for %s" % character_id)
     if sample_factory.formal_character_ids() != expected_ids:
         return harness.fail_result("formal_character_ids should preserve registry file order")
     return harness.pass_result()
+
+func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary:
+    var registry_path := "user://formal_character_registry_mismatch_fixture.json"
+    var matchup_catalog_path := "user://formal_matchup_catalog_mismatch_fixture.json"
+    var registry_payload := JSON.stringify([
+        {
+            "character_id": "gojo_alias",
+            "unit_definition_id": "gojo_satoru",
+            "suite_path": "tests/suites/gojo_suite.gd",
+            "design_doc": "docs/design/gojo_satoru_design.md",
+            "adjustment_doc": "docs/design/gojo_satoru_adjustments.md",
+            "formal_setup_matchup_id": "gojo_alias_vs_sukuna_alias",
+            "required_content_paths": [],
+            "required_suite_paths": ["tests/suites/formal_character_pair_smoke_suite.gd"],
+            "required_test_names": [],
+            "design_needles": ["placeholder:gojo_alias"],
+            "adjustment_needles": ["placeholder:gojo_alias"]
+        },
+        {
+            "character_id": "sukuna_alias",
+            "unit_definition_id": "sukuna",
+            "suite_path": "tests/suites/sukuna_suite.gd",
+            "design_doc": "docs/design/sukuna_design.md",
+            "adjustment_doc": "docs/design/sukuna_adjustments.md",
+            "formal_setup_matchup_id": "sukuna_alias_vs_gojo_alias",
+            "required_content_paths": [],
+            "required_suite_paths": ["tests/suites/formal_character_pair_smoke_suite.gd"],
+            "required_test_names": [],
+            "design_needles": ["placeholder:sukuna_alias"],
+            "adjustment_needles": ["placeholder:sukuna_alias"]
+        }
+    ], "  ")
+    var catalog_payload := JSON.stringify({
+        "matchups": {
+            "gojo_alias_vs_sukuna_alias": {
+                "p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
+                "p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
+            },
+            "sukuna_alias_vs_gojo_alias": {
+                "p1_units": ["sukuna", "sample_tidekit", "sample_mossaur"],
+                "p2_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"]
+            }
+        },
+        "pair_surface_cases": [
+            {
+                "test_name": "formal_pair_gojo_alias_vs_sukuna_alias_manager_smoke_contract",
+                "matchup_id": "gojo_alias_vs_sukuna_alias",
+                "battle_seed": 3611,
+                "p1_character_id": "gojo_alias",
+                "p2_character_id": "sukuna_alias",
+                "p1_unit_definition_id": "gojo_satoru",
+                "p2_unit_definition_id": "sukuna",
+                "p1_skill_id": "gojo_ao",
+                "p2_skill_id": "sukuna_kai"
+            },
+            {
+                "test_name": "formal_pair_sukuna_alias_vs_gojo_alias_manager_smoke_contract",
+                "matchup_id": "sukuna_alias_vs_gojo_alias",
+                "battle_seed": 3612,
+                "p1_character_id": "sukuna_alias",
+                "p2_character_id": "gojo_alias",
+                "p1_unit_definition_id": "sukuna",
+                "p2_unit_definition_id": "gojo_satoru",
+                "p1_skill_id": "sukuna_kai",
+                "p2_skill_id": "gojo_ao"
+            }
+        ],
+        "pair_interaction_cases": []
+    }, "  ")
+    if not _write_json_fixture(registry_path, registry_payload):
+        return harness.fail_result("failed to write formal registry mismatch fixture")
+    if not _write_json_fixture(matchup_catalog_path, catalog_payload):
+        return harness.fail_result("failed to write formal matchup mismatch fixture")
+    var override_factory = harness.build_sample_factory_with_overrides(registry_path, matchup_catalog_path)
+    if override_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed for mismatch fixture")
+    if override_factory.formal_character_ids() != PackedStringArray(["gojo_alias", "sukuna_alias"]):
+        return harness.fail_result("formal_character_ids should preserve registry character ids even when they differ from unit_definition_id")
+    if override_factory.formal_unit_definition_ids() != PackedStringArray(["gojo_satoru", "sukuna"]):
+        return harness.fail_result("formal_unit_definition_ids should expose registry unit_definition_id order")
+    var setup_result: Dictionary = override_factory.build_formal_character_setup_result("gojo_alias")
+    if not bool(setup_result.get("ok", false)):
+        return harness.fail_result("build_formal_character_setup_result should resolve mismatch registry character_id: %s" % String(setup_result.get("error_message", "unknown error")))
+    var battle_setup = setup_result.get("data", null)
+    if battle_setup == null or battle_setup.sides.is_empty() or battle_setup.sides[0].unit_definition_ids[0] != "gojo_satoru":
+        return harness.fail_result("formal setup should still resolve the real unit_definition_id when character_id differs")
+    var pair_shared = FormalCharacterPairSmokeSharedScript.new()
+    var matrix_result = pair_shared.validate_directed_surface_matrix(harness, override_factory, override_factory.formal_pair_surface_cases())
+    if not bool(matrix_result.get("ok", false)):
+        return matrix_result
+    var live_factory = harness.build_sample_factory()
+    if live_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed for public snapshot mismatch contract")
+    var snapshot_result: Dictionary = live_factory.content_snapshot_paths_for_setup_result(battle_setup)
+    if not bool(snapshot_result.get("ok", false)):
+        return harness.fail_result("live snapshot path build failed for mismatch setup: %s" % String(snapshot_result.get("error_message", "unknown error")))
+    var manager_payload = harness.build_manager()
+    if manager_payload.has("error"):
+        return harness.fail_result(str(manager_payload["error"]))
+    var manager = manager_payload["manager"]
+    var create_result: Dictionary = manager.create_session({
+        "battle_seed": 3613,
+        "content_snapshot_paths": snapshot_result.get("data", PackedStringArray()),
+        "battle_setup": battle_setup,
+    })
+    if not bool(create_result.get("ok", false)):
+        return harness.fail_result("manager create_session should accept mismatch setup: %s" % String(create_result.get("error_message", "unknown error")))
+    var public_snapshot: Dictionary = create_result.get("data", {}).get("public_snapshot", {})
+    var manager_helper := ManagerContractTestHelperScript.new()
+    var p1_active_snapshot := manager_helper.find_unit_snapshot(public_snapshot, "P1", "P1-A")
+    if p1_active_snapshot.is_empty() or String(p1_active_snapshot.get("definition_id", "")) != "gojo_satoru":
+        return harness.fail_result("public snapshot should still expose real unit definition ids when registry character_id differs")
+    return harness.pass_result()
+
+func _write_json_fixture(path: String, payload: String) -> bool:
+    var file := FileAccess.open(path, FileAccess.WRITE)
+    if file == null:
+        return false
+    file.store_string(payload)
+    return true
 
 func _test_formal_character_validator_partial_snapshot_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()

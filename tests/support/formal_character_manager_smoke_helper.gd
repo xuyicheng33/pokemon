@@ -8,16 +8,16 @@ var _helper = ManagerContractTestHelperScript.new()
 func contracts() -> Variant:
 	return _helper
 
-func build_context(harness) -> Dictionary:
+func build_context(harness, sample_factory = null) -> Dictionary:
 	var manager_payload = harness.build_manager()
 	if manager_payload.has("error"):
 		return {"error": str(manager_payload["error"])}
-	var sample_factory = harness.build_sample_factory()
-	if sample_factory == null:
+	var resolved_sample_factory = sample_factory if sample_factory != null else harness.build_sample_factory()
+	if resolved_sample_factory == null:
 		return {"error": "SampleBattleFactory init failed"}
 	return {
 		"manager": manager_payload["manager"],
-		"sample_factory": sample_factory,
+		"sample_factory": resolved_sample_factory,
 	}
 
 func create_session(manager, sample_factory, battle_seed: int, battle_setup, label: String = "create_session") -> Dictionary:

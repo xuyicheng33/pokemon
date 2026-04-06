@@ -11,7 +11,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("kashimo_effect_snapshot_contract", failures, Callable(self, "_test_kashimo_effect_snapshot_contract").bind(harness))
 
 func _test_kashimo_unit_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Kashimo unit snapshot")
     var kashimo = content_index.units.get("kashimo_hajime", null)
@@ -37,10 +37,10 @@ func _test_kashimo_unit_snapshot_contract(harness) -> Dictionary:
         {"label": "kashimo ultimate_skill_id", "actual": String(kashimo.ultimate_skill_id), "expected": "kashimo_phantom_beast_amber"},
         {"label": "kashimo passive_skill_id", "actual": String(kashimo.passive_skill_id), "expected": "kashimo_charge_separation"},
     ]
-    return _run_checks(harness, checks)
+    return _helper.run_checks(harness, checks)
 
 func _test_kashimo_skill_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Kashimo skill snapshot")
     var raiken = content_index.skills.get("kashimo_raiken", null)
@@ -90,10 +90,10 @@ func _test_kashimo_skill_snapshot_contract(harness) -> Dictionary:
         {"label": "kashimo_amber once_per_battle", "actual": bool(amber.once_per_battle), "expected": true},
         {"label": "kashimo_amber effects_on_cast_ids", "actual": amber.effects_on_cast_ids, "expected": PackedStringArray(["kashimo_amber_self_transform"])},
     ]
-    return _run_checks(harness, checks)
+    return _helper.run_checks(harness, checks)
 
 func _test_kashimo_effect_snapshot_contract(harness) -> Dictionary:
-    var content_index = _build_content_index(harness)
+    var content_index = _helper.build_content_index(harness)
     if content_index == null:
         return harness.fail_result("failed to load content snapshot for Kashimo effect snapshot")
     var negative_mark = content_index.effects.get("kashimo_negative_charge_mark", null)
@@ -170,6 +170,7 @@ func _test_kashimo_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "kashimo_water_counter command_filters", "actual": water_counter.required_incoming_command_types, "expected": PackedStringArray(["skill", "ultimate"])},
         {"label": "kashimo_water_counter combat_filters", "actual": water_counter.required_incoming_combat_type_ids, "expected": PackedStringArray(["water"])},
         {"label": "kashimo_water_counter payload amount", "actual": int(water_counter_payload.amount), "expected": 15},
+        {"label": "kashimo_water_counter use_formula", "actual": bool(water_counter_payload.use_formula), "expected": false},
         {"label": "kashimo_water_counter payload type", "actual": String(water_counter_payload.combat_type_id), "expected": "poison"},
         {"label": "kashimo_amber_attack stat_name", "actual": String(amber_attack_payload.stat_name), "expected": "attack"},
         {"label": "kashimo_amber_attack stage_delta", "actual": int(amber_attack_payload.stage_delta), "expected": 2},
@@ -187,10 +188,4 @@ func _test_kashimo_effect_snapshot_contract(harness) -> Dictionary:
         {"label": "kashimo_amber_bleed persists_on_switch", "actual": bool(amber_bleed.persists_on_switch), "expected": true},
         {"label": "kashimo_amber_bleed amount", "actual": int(amber_bleed_payload.amount), "expected": 20},
     ]
-    return _run_checks(harness, checks)
-
-func _build_content_index(harness):
-    return _helper.build_content_index(harness)
-
-func _run_checks(harness, checks: Array[Dictionary]) -> Dictionary:
     return _helper.run_checks(harness, checks)

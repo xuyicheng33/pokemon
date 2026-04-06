@@ -10,6 +10,12 @@ func load_entries() -> Array:
 	assert(error_message.is_empty(), "FormalCharacterRegistry failed to load runtime registry entries: %s" % error_message)
 	return load_result.get("entries", [])
 
+func load_entries_from_path(registry_path: String) -> Array:
+	var load_result: Dictionary = RuntimeRegistryScript.load_entries_from_path(registry_path)
+	var error_message := String(load_result.get("error", ""))
+	assert(error_message.is_empty(), "FormalCharacterRegistry failed to load runtime registry entries: %s" % error_message)
+	return load_result.get("entries", [])
+
 func build_suite_instances() -> Array:
 	var suites: Array = []
 	for raw_entry in load_entries():

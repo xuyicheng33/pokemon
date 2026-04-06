@@ -55,8 +55,12 @@ func _validate_skills(errors: Array, regular_skill_refs: Dictionary, ultimate_sk
         _validate_power_bonus_contract(errors, skill_id, skill_definition)
         _validate_execute_contract(errors, skill_id, skill_definition)
         _validate_damage_segments(errors, skill_id, skill_definition, allowed_damage_kinds)
-        if skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE and int(skill_definition.power) <= 0:
-            errors.append("skill[%s].power must be > 0 for damage skills, got %d" % [skill_id, int(skill_definition.power)])
+        if int(skill_definition.power) < 0:
+            errors.append("skill[%s].power must be >= 0, got %d" % [skill_id, int(skill_definition.power)])
+        elif skill_definition.damage_kind != ContentSchemaScript.DAMAGE_KIND_NONE \
+        and skill_definition.damage_segments.is_empty() \
+        and int(skill_definition.power) <= 0:
+            errors.append("skill[%s].power must be > 0 for non-segment damage skills, got %d" % [skill_id, int(skill_definition.power)])
         _payload_validator.validate_effect_refs(errors, "skill[%s].effects_on_cast_ids" % skill_id, skill_definition.effects_on_cast_ids, _content_index.effects)
         _payload_validator.validate_effect_refs(errors, "skill[%s].effects_on_hit_ids" % skill_id, skill_definition.effects_on_hit_ids, _content_index.effects)
         _payload_validator.validate_effect_refs(errors, "skill[%s].effects_on_miss_ids" % skill_id, skill_definition.effects_on_miss_ids, _content_index.effects)
