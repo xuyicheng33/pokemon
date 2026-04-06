@@ -10,12 +10,22 @@ from repo_consistency_common import GateContext
 
 
 ctx = GateContext()
-formal_character_registry = ctx.load_json_array("docs/records/formal_character_registry.json", "formal character registry")
+REGISTRY_PATH = "config/formal_character_registry.json"
+VALIDATOR_BAD_CASE_SUITE_PATH = "tests/suites/extension_validation_contract_suite.gd"
+
+
+def validator_test_prefix(script_path: str) -> str:
+    stem = Path(script_path).stem
+    match = re.fullmatch(r"content_snapshot_formal_(.+)_validator", stem)
+    return "" if match is None else match.group(1)
+
+
+formal_character_registry = ctx.load_json_array(REGISTRY_PATH, "formal character registry")
 if not formal_character_registry:
-    ctx.failures.append("docs/records/formal_character_registry.json must list at least one formal character")
+    ctx.failures.append(f"{REGISTRY_PATH} must list at least one formal character")
 runtime_registry_text = ctx.read_text("src/battle_core/content/content_snapshot_formal_character_registry.gd")
-if 'REGISTRY_PATH := "res://docs/records/formal_character_registry.json"' not in runtime_registry_text:
-    ctx.failures.append("runtime formal character validator registry must read docs/records/formal_character_registry.json directly")
+if 'REGISTRY_PATH := "res://config/formal_character_registry.json"' not in runtime_registry_text:
+    ctx.failures.append("runtime formal character validator registry must read config/formal_character_registry.json directly")
 if "content_validator_script_path" not in runtime_registry_text:
     ctx.failures.append("runtime formal character validator registry must resolve validator paths from docs registry entries")
 if "FORMAL_CHARACTER_DESCRIPTORS" in runtime_registry_text or '"validator_script": preload(' in runtime_registry_text:
@@ -87,14 +97,15 @@ for entry in formal_character_registry:
     if content_validator_script_path != "":
         ctx.require_exists(content_validator_script_path, f"{character_id} content validator script")
         validator_text = ctx.read_text(content_validator_script_path)
+        validator_prefix = validator_test_prefix(content_validator_script_path)
         if not content_validator_script_path.endswith("_validator.gd"):
             ctx.failures.append(f"formal character registry[{character_id}] content validator must end with _validator.gd: {content_validator_script_path}")
         else:
-            validator_prefix = content_validator_script_path.removesuffix("_validator.gd")
+            validator_path_prefix = content_validator_script_path.removesuffix("_validator.gd")
             expected_bucket_paths = [
-                (f"{validator_prefix}_unit_passive_contracts.gd", "unit_passive_contracts"),
-                (f"{validator_prefix}_skill_effect_contracts.gd", "skill_effect_contracts"),
-                (f"{validator_prefix}_ultimate_domain_contracts.gd", "ultimate_domain_contracts"),
+                (f"{validator_path_prefix}_unit_passive_contracts.gd", "unit_passive_contracts"),
+                (f"{validator_path_prefix}_skill_effect_contracts.gd", "skill_effect_contracts"),
+                (f"{validator_path_prefix}_ultimate_domain_contracts.gd", "ultimate_domain_contracts"),
             ]
             for bucket_path, bucket_label in expected_bucket_paths:
                 ctx.require_exists(bucket_path, f"{character_id} {bucket_label} validator bucket")
@@ -118,6 +129,10 @@ for entry in formal_character_registry:
                 ctx.failures.append(
                     f"formal character registry[{character_id}] required_suite_path is not reachable from tests/run_all.gd wrapper tree: {rel_path}"
                 )
+        if content_validator_script_path != "" and VALIDATOR_BAD_CASE_SUITE_PATH not in required_suite_paths:
+            ctx.failures.append(
+                f"formal character registry[{character_id}] validator-backed character must include {VALIDATOR_BAD_CASE_SUITE_PATH} in required_suite_paths"
+            )
     if not isinstance(required_test_names, list) or not required_test_names:
         ctx.failures.append(f"formal character registry[{character_id}] missing required_test_names")
     else:
@@ -127,6 +142,18 @@ for entry in formal_character_registry:
                 'runner.run_test("%s"' % str(test_name),
                 f"{character_id} regression anchor",
             )
+        if content_validator_script_path != "":
+            if validator_prefix == "":
+                ctx.failures.append(
+                    f"formal character registry[{character_id}] content validator name must match content_snapshot_formal_<name>_validator.gd"
+                )
+            elif not any(
+                str(test_name).startswith(f"formal_{validator_prefix}_validator_") and "bad_case_contract" in str(test_name)
+                for test_name in required_test_names
+            ):
+                ctx.failures.append(
+                    f"formal character registry[{character_id}] validator-backed character must include formal_{validator_prefix}_validator_*bad_case_contract regression anchors"
+                )
     if not isinstance(required_content_paths, list) or not required_content_paths:
         ctx.failures.append(f"formal character registry[{character_id}] missing required_content_paths")
     else:

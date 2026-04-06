@@ -120,7 +120,12 @@ func _wire_dependencies(container) -> bool:
         var owner = container.service(owner_name)
         if owner == null:
             return _fail("Composer missing owner: %s" % owner_name)
-        owner.set(dependency_name, container.service(source_name))
+        var dependency = container.service(source_name)
+        if dependency == null:
+            return _fail("Composer missing source service: %s" % source_name)
+        if not _owner_declares_dependency(owner, dependency_name):
+            return _fail("%s missing declared dependency slot: %s" % [owner_name, dependency_name])
+        owner.set(dependency_name, dependency)
     return true
 
 func _validate_container_dependencies(container) -> bool:
@@ -130,6 +135,8 @@ func _validate_container_dependencies(container) -> bool:
         var owner = container.service(owner_name)
         if owner == null:
             return _fail("Composer missing owner: %s" % owner_name)
+        if not _owner_declares_dependency(owner, dependency_name):
+            return _fail("%s missing declared dependency slot: %s" % [owner_name, dependency_name])
         if owner.get(dependency_name) == null:
             return _fail("%s missing dependency: %s" % [owner_name, dependency_name])
     for slot_name in ServiceSpecsScript.service_slots():
@@ -153,6 +160,14 @@ func _new_service_instance(slot_name: String) -> Variant:
         _fail("Unknown service slot: %s" % slot_name)
         return null
     return script_ref.new()
+
+func _owner_declares_dependency(owner, dependency_name: String) -> bool:
+    if owner == null or dependency_name.is_empty():
+        return false
+    for property_info in owner.get_property_list():
+        if String(property_info.get("name", "")) == dependency_name:
+            return true
+    return false
 
 func _fail(message: String) -> bool:
     last_error_code = ErrorCodesScript.INVALID_COMPOSITION

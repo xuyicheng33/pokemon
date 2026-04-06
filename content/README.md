@@ -10,8 +10,10 @@
   - `content/shared/` 下的非顶层辅助资源（只供其他内容资源引用，不直接注册进 content snapshot）
   - `content/{units,skills,effects,passive_skills,fields}/gojo/` 下的 Gojo 正式角色内容包
   - `content/{units,skills,effects,passive_skills,fields}/sukuna/` 下的宿傩正式角色内容包
+  - `content/{units,skills,effects,passive_skills}/kashimo/` 下的鹿紫云正式角色内容包
+  - `content/{units,skills,effects,passive_skills}/obito/` 下的带土正式角色内容包
 - 内容资源以规则文档和加载期校验为准；非法定义会在 `BattleContentIndex` 加载时直接 fail-fast
-- `SampleBattleFactory.content_snapshot_paths()` 会自动从 `battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 收集 `.tres`，并做稳定排序
+- `SampleBattleFactory.content_snapshot_paths()` 当前只收两段：上述九个目录的顶层样例资源，以及 `config/formal_character_registry.json` 里显式登记的 `required_content_paths`
 - `content/shared/` 不参与顶层 snapshot 扫描；若要复用 payload / 子资源，应由顶层 `EffectDefinition / FieldDefinition / SkillDefinition` 等通过外部资源引用它
 - 正式角色资源按角色子目录收纳；sample / battle_format / combat_type 资源继续保持当前目录结构
 - 当前额外保留一个最小正式 passive item 样例：`sample_attack_charm -> sample_attack_charm_bonus -> sample_pyron_charm`

@@ -19,7 +19,7 @@
 
 ## 当前波次：扩角前整合修复（2026-04-06）
 
-- 状态：已完成
+- 状态：已完成（2026-04-06 二次收口）
 - 目标：
   - 在不新增第 5 名正式角色、不调整四名现有角色数值平衡的前提下，把共享规则、角色高风险边界、formal validator 模板、docs gate 与记录治理统一收口。
 - 范围：
@@ -35,16 +35,21 @@
     - entry validator 固定三桶模板
     - 共享 contract helper 复用
     - registry 锚点补全
+    - validator 坏例与跨角色 smoke 回挂
   - 文档 / gate：
     - 四角色口径
     - `incoming_heal_final_mod` 白名单与 `stacking_source_key` 枚举
     - `once_per_battle` 与 damage-segment 过滤文档
+    - formal registry 路径迁移到 `config/`
+    - `SampleBattleFactory.content_snapshot_paths()` 与文档口径重新对齐
   - 记录治理：
     - `tasks.md / decisions.md` 活跃文件瘦身
     - 2026-04-05 之前历史闭环条目归档
 - 验收标准：
-  - `docs/records/formal_character_registry.json` 挂齐本轮新增关键回归锚点
+  - `config/formal_character_registry.json` 挂齐本轮新增关键回归锚点
   - `repo_consistency_docs_gate.py / repo_consistency_formal_character_gate.py` 能直接校验本轮新规则与三桶模板
+  - validator-backed 角色都挂上坏例 suite 与坏例锚点
+  - 非 Gojo 配对正式角色至少有一组黑盒 smoke 覆盖
   - `tasks.md / decisions.md` 只保留当前波次、下一角色准备项与仍生效活规则
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/run_with_gate.sh`
@@ -65,9 +70,12 @@
   - formal validator：
     - 四名正式角色 entry validator 已统一成 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板
     - formal gate 已新增“三桶 wrapper 存在 + entry validator preload/dispatch”结构 smoke
+    - Gojo / Sukuna / Kashimo / Obito 现在都补上了 validator 坏例锚点，并统一挂进 `extension_validation_contract_suite.gd`
   - docs / registry：
     - docs gate 已补 `once_per_battle`、四角色口径、`incoming_heal_final_mod`、完整 `stacking_source_key` 枚举与三桶模板文案检查
-    - formal registry 已补回本轮新增测试锚点与设计/调整文档锚点
+    - formal registry 已迁到 `config/formal_character_registry.json`
+    - formal registry 已补回本轮新增测试锚点、跨角色 smoke 锚点与设计/调整文档锚点
+    - `SampleBattleFactory.content_snapshot_paths()` 已改成“顶层样例资源 + registry.required_content_paths”显式收口，不再递归扫完整内容树
   - records：
     - 已新建 repair-wave archive：
       - `docs/records/archive/tasks_pre_2026-04-05_repair_wave.md`
@@ -92,6 +100,8 @@
   - `SampleBattleFactory` builder
   - entry validator 三桶模板
   - snapshot / runtime / manager smoke / 必要共享 suite 锚点
+  - validator 坏例锚点（若登记了 `content_validator_script_path`）
+  - 至少一组和现有正式角色的跨配对 smoke
 - 若新角色要消费共享扩展，必须先确认以下文档与 gate 已有明确口径：
   - `once_per_battle`
   - `incoming_heal_final_mod`

@@ -141,6 +141,8 @@ if "container.set_service(" not in composer_text:
     composer_issues.append("composer must instantiate services via container.set_service")
 if "container.service(" not in composer_text:
     composer_issues.append("composer must read services via container.service")
+if "_owner_declares_dependency(" not in composer_text:
+    composer_issues.append("composer must validate dependency fields before wiring dynamic specs")
 if "ServiceSpecsScript.service_slots()" not in composer_text:
     composer_issues.append("composer must iterate ServiceSpecsScript.service_slots()")
 if "ServiceSpecsScript.script_by_slot(" not in composer_text:

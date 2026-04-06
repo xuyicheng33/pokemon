@@ -26,6 +26,7 @@ const MultihitSkillRuntimeSuiteScript := preload("res://tests/suites/multihit_sk
 const PersistentStatStageSuiteScript := preload("res://tests/suites/persistent_stat_stage_suite.gd")
 const PassiveItemContractSuiteScript := preload("res://tests/suites/passive_item_contract_suite.gd")
 const ContentSnapshotCacheComposerSuiteScript := preload("res://tests/suites/content_snapshot_cache_composer_suite.gd")
+const FormalCharacterPairSmokeSuiteScript := preload("res://tests/suites/formal_character_pair_smoke_suite.gd")
 const FormalCharacterRegistryScript := preload("res://tests/support/formal_character_registry.gd")
 
 var _harness
@@ -59,6 +60,7 @@ func _init() -> void:
         PersistentStatStageSuiteScript.new(),
         ContentSnapshotCacheComposerSuiteScript.new(),
         PassiveItemContractSuiteScript.new(),
+        FormalCharacterPairSmokeSuiteScript.new(),
     ]
     suites.append_array(FormalCharacterRegistryScript.new().build_suite_instances())
     for suite in suites:

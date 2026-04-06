@@ -335,6 +335,7 @@
 
 ### 2.8 共享能力引用（只写五条悟差异）
 
+- 这一节只保留“五条悟怎么用共享能力”，不再复述公共 schema、全局排序链或完整匹配矩阵。
 - `required_target_effects / required_target_same_owner` 的完整 schema 与运行时语义统一引用 `docs/rules/06_effect_schema_and_extension.md`；五条悟当前只在 `gojo_murasaki_conditional_burst` 上消费“自己本人挂上的双标记”。
 - `incoming_accuracy` 的完整读路径、来源分组与多实例排序统一引用 `docs/rules/03_stats_resources_and_damage.md` 与 `docs/design/battle_runtime_model.md`；五条悟当前只定义 `gojo_mugen_incoming_accuracy_down = -10` 这一条角色差异。
 - `action_legality` 的完整匹配矩阵、排序链与 `wait` 例外统一引用 `docs/design/command_and_legality.md`；五条悟当前只通过 `gojo_domain_action_lock` 在领域成功立住后写入 `deny all`。

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ContentSnapshotFormalCharacterRegistry
 
-const REGISTRY_PATH := "res://docs/records/formal_character_registry.json"
+const REGISTRY_PATH := "res://config/formal_character_registry.json"
 
 static func load_entries() -> Dictionary:
 	var file := FileAccess.open(REGISTRY_PATH, FileAccess.READ)

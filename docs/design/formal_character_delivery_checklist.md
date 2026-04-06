@@ -41,7 +41,7 @@
 
 - [ ] `SampleBattleFactory` 增加该角色相关构局入口，避免 suite 内手写拼装
 - [ ] `SampleBattleFactory` 公开 builder 名称保持稳定，内部只允许走统一 helper，不再为单角色保留私有手写构局
-- [ ] `docs/records/formal_character_registry.json` 新增角色条目
+- [ ] `config/formal_character_registry.json` 新增角色条目
 - [ ] registry 至少补齐：
   - [ ] `character_id / display_name / unit_definition_id`
   - [ ] `design_doc / adjustment_doc`
@@ -52,10 +52,12 @@
 - [ ] `required_test_names`
 - [ ] `design_needles / adjustment_needles`
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
-- [ ] 若补了 `content_validator_script_path`，只登记在 `docs/records/formal_character_registry.json` 对应角色条目里；runtime loader 会直接读取这份 registry 并动态装配 validator，不再维护第二份 runtime 描述表
+- [ ] 若补了 `content_validator_script_path`，只登记在 `config/formal_character_registry.json` 对应角色条目里；runtime loader 会直接读取这份 registry 并动态装配 validator，不再维护第二份 runtime 描述表
 - [ ] formal validator 优先复用共享模板 helper；角色 validator 只保留角色差异校验，不再复制 unit / skill / effect / field 的通用断言文案
 - [ ] formal validator 入口固定收口为三桶：`unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts`
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
+- [ ] 若登记了 `content_validator_script_path`，同时把 `tests/suites/extension_validation_contract_suite.gd` 挂进 `required_suite_paths`
+- [ ] 若登记了 `content_validator_script_path`，同时把至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
 
 ## 4. 测试最低面
 
@@ -88,6 +90,7 @@
 - [ ] 若角色依赖共享 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 等扩展能力，对应共享 suite 也必须显式挂到 `required_suite_paths`
 - [ ] 若共享 suite 新增了角色明确依赖的关键锚点，也要同步补进 `required_test_names`，不允许只挂 suite 文件不挂回归名
 - [ ] 不允许只靠通用 contract suite 兜角色回归
+- [ ] 至少补一组“该角色 + 另一名正式角色”的黑盒 smoke，避免正式角色配对覆盖只堆在单一对局上
 
 ### E. Replay case（按需）
 

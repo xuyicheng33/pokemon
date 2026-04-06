@@ -56,7 +56,7 @@ ctx.require_contains("docs/design/battle_content_schema.md", "effect_stack_sum",
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_effect_ids", "schema power bonus self effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
-ctx.require_contains("docs/design/battle_content_schema.md", "docs/records/formal_character_registry.json", "schema formal character single source wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_registry.json", "schema formal character single source wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "content_snapshot_formal_character_registry.gd", "schema runtime validator loader wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "当前 snapshot 实际出现的正式角色", "schema scoped formal validator wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "content_validator_script_path", "schema formal character validator path wording")
@@ -173,6 +173,16 @@ for rel_path in [
     "docs/design/battle_content_schema.md",
 ]:
     ctx.require_absent(rel_path, "formal_character_validator_registry.json", "removed code-side validator registry wording")
+for rel_path in [
+    "README.md",
+    "tests/README.md",
+    "docs/design/formal_character_delivery_checklist.md",
+    "docs/design/battle_content_schema.md",
+    "docs/design/formal_character_design_template.md",
+    "docs/records/decisions.md",
+    "docs/records/tasks.md",
+]:
+    ctx.require_absent(rel_path, "docs/records/formal_character_registry.json", "stale docs-side formal registry path")
 for rel_path in [
     "README.md",
     "tests/README.md",

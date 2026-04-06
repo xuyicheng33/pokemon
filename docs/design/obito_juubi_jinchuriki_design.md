@@ -9,9 +9,9 @@
 |角色定位|防反叠层型，中后期终结手|
 |被动主轴|`仙人之力` 在 `turn_start` 按已损生命值 `10%` 回复|
 |核心技能主轴|`阴阳遁 -> 阴阳之力 -> 求道玉`|
-|禁疗入口|`求道焦土` 命中后挂公开禁疗标记，并同步写入 `incoming_heal_final_mod`|
-|奥义主轴|`十尾尾兽玉` 通过 `damage_segments` 打出 `2 dark + 8 light` 的十段伤害|
-|处决口径|`求道玉` 通过 `execute_target_hp_ratio_lte = 0.3` + `5` 层阴阳之力达成处决|
+|禁疗入口|`求道焦土` 命中后挂公开禁疗标记；实现上沿用共享禁疗 mod（`incoming_heal_final_mod`）|
+|奥义主轴|`十尾尾兽玉` 走固定十段爆发；实现上用 `damage_segments` 固定为 `2 dark + 8 light`|
+|处决口径|`求道玉` 满层后具备斩杀线；实现上固定为 `execute_target_hp_ratio_lte = 0.3` + `5` 层阴阳之力|
 |奥义点配置|`3 / 3 / 常规技 +1`|
 |当前平衡结论|首版正式接入，只冻结语义与交付面，不做平衡回调|
 |明确不做|不新增 field；不新增新属性；不改 `on_receive_action_hit` 旧语义|
@@ -26,7 +26,7 @@
 ### 1.1 角色定位
 
 - 面向玩家：中速偏慢、当前正式角色里最厚的一名，通过 `阴阳遁` 站场并滚出收头线。
-- 面向实现：复用 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 五条共享能力，不新增带土专用 runtime 分支。
+- 面向实现：只引用共享能力入口，不新增带土专用 runtime 分支；共享 schema 与排序细节统一回到公共规则文档。
 
 ### 1.2 UnitDefinition
 
@@ -142,7 +142,7 @@
     - `stat_mod(defense, +1)`
     - `stat_mod(sp_defense, +1)`
   - `obito_yinyang_dun_guard_rule_mod` 在本回合内对后续敌方 `skill / ultimate` 的每段最终伤害乘 `0.5`
-  - `obito_yinyang_dun_guard_stack_listener` 监听 `on_receive_action_damage_segment`，并与减伤 rule mod 复用同一组过滤条件：只响应敌方 `skill / ultimate` 的成功直接伤害段；命中后每承受 1 段才再 `apply_effect(obito_yinyang_zhili)`
+  - `obito_yinyang_dun_guard_stack_listener` 监听 `on_receive_action_damage_segment`，并与减伤 rule mod 复用同一组过滤条件：只响应敌方 `skill / ultimate` 的成功直接伤害段；命中后每承受 1 段再补 1 层阴阳之力
 - 边界：
   - 满 `5` 层后不再继续加层
   - 但双防提升和本回合减伤仍照常生效

@@ -7,6 +7,7 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("content_index_split_validation_contract", failures, Callable(self, "_test_content_index_split_validation_contract").bind(harness))
     runner.run_test("content_snapshot_recursive_contract", failures, Callable(self, "_test_content_snapshot_recursive_contract").bind(harness))
+    runner.run_test("content_snapshot_curated_contract", failures, Callable(self, "_test_content_snapshot_curated_contract").bind(harness))
 
 func _test_content_index_split_validation_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
@@ -47,6 +48,29 @@ func _test_content_snapshot_recursive_contract(harness) -> Dictionary:
         return harness.fail_result("recursive snapshot collection missed nested tres path")
     if not discovered_paths.has(expected_root_path):
         return harness.fail_result("recursive snapshot collection missed root tres path")
+    return harness.pass_result()
+
+func _test_content_snapshot_curated_contract(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var snapshot_paths = sample_factory.content_snapshot_paths()
+    var required_paths := PackedStringArray([
+        "res://content/skills/sample_strike.tres",
+        "res://content/units/gojo/gojo_satoru.tres",
+        "res://content/skills/obito/obito_qiudao_yu.tres",
+    ])
+    var seen: Dictionary = {}
+    for snapshot_path in snapshot_paths:
+        var path := String(snapshot_path)
+        if seen.has(path):
+            return harness.fail_result("content snapshot path list should stay de-duplicated")
+        seen[path] = true
+    for required_path in required_paths:
+        if not snapshot_paths.has(required_path):
+            return harness.fail_result("content snapshot path list should include %s" % required_path)
+    if snapshot_paths.has("res://content/shared/effects/sukuna_shared_fire_burst_damage.tres"):
+        return harness.fail_result("content snapshot path list should not register content/shared helper resources directly")
     return harness.pass_result()
 
 func _errors_contain(errors: Array, needle: String) -> bool:

@@ -5,35 +5,57 @@ const BattleSetupScript := preload("res://src/battle_core/contracts/battle_setup
 const SideSetupScript := preload("res://src/battle_core/contracts/side_setup.gd")
 const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const FormalCharacterRegistryScript := preload("res://src/battle_core/content/content_snapshot_formal_character_registry.gd")
+
+const BASE_CONTENT_SNAPSHOT_DIRS = [
+    "res://content/battle_formats",
+    "res://content/combat_types",
+    "res://content/units",
+    "res://content/skills",
+    "res://content/passive_items",
+    "res://content/effects",
+    "res://content/fields",
+    "res://content/passive_skills",
+    "res://content/samples",
+]
 
 func content_snapshot_paths() -> PackedStringArray:
-    var collect_dirs := PackedStringArray([
-        "res://content/battle_formats",
-        "res://content/combat_types",
-        "res://content/units",
-        "res://content/skills",
-        "res://content/passive_items",
-        "res://content/effects",
-        "res://content/fields",
-        "res://content/passive_skills",
-        "res://content/samples",
-    ])
     var paths: Array[String] = []
     var seen: Dictionary = {}
-    for raw_dir_path in collect_dirs:
-        var dir_path := String(raw_dir_path)
-        for file_path in collect_tres_paths_recursive(dir_path):
-            if seen.has(file_path):
-                continue
-            seen[file_path] = true
-            paths.append(file_path)
+    for raw_dir_path in BASE_CONTENT_SNAPSHOT_DIRS:
+        _append_unique_paths(paths, seen, collect_tres_paths(String(raw_dir_path)))
+    var registry_result: Dictionary = FormalCharacterRegistryScript.load_entries()
+    var registry_error := String(registry_result.get("error", ""))
+    assert(registry_error.is_empty(), "SampleBattleFactory failed to load formal character registry: %s" % registry_error)
+    for raw_entry in registry_result.get("entries", []):
+        assert(raw_entry is Dictionary, "SampleBattleFactory formal character registry entry must be Dictionary")
+        var entry: Dictionary = raw_entry
+        var character_id := String(entry.get("character_id", "")).strip_edges()
+        var required_content_paths = entry.get("required_content_paths", [])
+        assert(required_content_paths is Array, "SampleBattleFactory registry[%s] missing required_content_paths" % character_id)
+        for raw_rel_path in required_content_paths:
+            var resource_path := _normalize_res_path(String(raw_rel_path))
+            assert(not resource_path.is_empty(), "SampleBattleFactory registry[%s] has empty required_content_paths entry" % character_id)
+            assert(ResourceLoader.exists(resource_path), "SampleBattleFactory missing content snapshot resource: %s" % resource_path)
+            _append_unique_path(paths, seen, resource_path)
     paths.sort()
     return PackedStringArray(paths)
 
+func collect_tres_paths(dir_path: String) -> Array[String]:
+    var dir_access := DirAccess.open(dir_path)
+    assert(dir_access != null, "SampleBattleFactory missing snapshot dir: %s" % dir_path)
+    var paths: Array[String] = []
+    for raw_file_name in dir_access.get_files():
+        var file_name := String(raw_file_name)
+        if file_name.get_extension() != "tres":
+            continue
+        paths.append("%s/%s" % [dir_path, file_name])
+    paths.sort()
+    return paths
+
 func collect_tres_paths_recursive(dir_path: String) -> Array[String]:
     var dir_access := DirAccess.open(dir_path)
-    if dir_access == null:
-        return []
+    assert(dir_access != null, "SampleBattleFactory missing snapshot dir: %s" % dir_path)
     var paths: Array[String] = []
     for raw_subdir_name in dir_access.get_directories():
         var subdir_name := String(raw_subdir_name)
@@ -52,28 +74,24 @@ func build_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Varian
         PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"]),
         side_regular_skill_overrides
     )
-
 func build_gojo_vs_sukuna_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     return _build_custom_setup(
         PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_pyron"]),
         PackedStringArray(["sukuna", "sample_tidekit", "sample_mossaur"]),
         side_regular_skill_overrides
     )
-
 func build_gojo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     return _build_custom_setup(
         PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"]),
         PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"]),
         side_regular_skill_overrides
     )
-
 func build_sukuna_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     return _build_custom_setup(
         PackedStringArray(["sukuna", "sample_mossaur", "sample_tidekit"]),
         PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"]),
         side_regular_skill_overrides
     )
-
 func build_kashimo_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
     return _build_custom_setup(
         PackedStringArray(["kashimo_hajime", "sample_mossaur", "sample_pyron"]),
@@ -85,6 +103,27 @@ func build_obito_vs_sample_setup(side_regular_skill_overrides: Dictionary = {}) 
     return _build_custom_setup(
         PackedStringArray(["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"]),
         PackedStringArray(["sample_pyron", "sample_tidekit", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
+
+func build_sukuna_vs_kashimo_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
+    return _build_custom_setup(
+        PackedStringArray(["sukuna", "sample_mossaur", "sample_pyron"]),
+        PackedStringArray(["kashimo_hajime", "sample_tidekit", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
+
+func build_sukuna_vs_obito_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
+    return _build_custom_setup(
+        PackedStringArray(["sukuna", "sample_mossaur", "sample_pyron"]),
+        PackedStringArray(["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"]),
+        side_regular_skill_overrides
+    )
+
+func build_kashimo_vs_obito_setup(side_regular_skill_overrides: Dictionary = {}) -> Variant:
+    return _build_custom_setup(
+        PackedStringArray(["kashimo_hajime", "sample_mossaur", "sample_pyron"]),
+        PackedStringArray(["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"]),
         side_regular_skill_overrides
     )
 
@@ -191,3 +230,15 @@ func _build_side_setup(side_id: String, unit_definition_ids: PackedStringArray, 
     side_setup.starting_index = starting_index
     side_setup.regular_skill_loadout_overrides = side_regular_skill_overrides.get(side_id, {})
     return side_setup
+
+func _append_unique_paths(paths: Array[String], seen: Dictionary, candidate_paths: Array[String]) -> void:
+    for path in candidate_paths:
+        _append_unique_path(paths, seen, String(path))
+func _append_unique_path(paths: Array[String], seen: Dictionary, path: String) -> void:
+    if path.is_empty() or seen.has(path):
+        return
+    seen[path] = true
+    paths.append(path)
+func _normalize_res_path(raw_path: String) -> String:
+    var trimmed_path := raw_path.strip_edges()
+    return "" if trimmed_path.is_empty() else (trimmed_path if trimmed_path.begins_with("res://") else "res://%s" % trimmed_path)

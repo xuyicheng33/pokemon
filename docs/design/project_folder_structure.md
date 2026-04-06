@@ -6,6 +6,7 @@
 
 ```text
 /
+  config/
   content/
     battle_formats/
     samples/
@@ -54,6 +55,7 @@
 |目录|职责|
 |---|---|
 |`content/`|战斗规则资源定义与最小样例|
+|`config/`|工程级静态配置；当前包含 `formal_character_registry.json`|
 |`content/battle_formats`|战斗格式定义资源|
 |`content/samples`|最小样例资源与样例对局资源|
 |`content/combat_types`|战斗属性定义资源|
