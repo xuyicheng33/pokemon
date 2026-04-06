@@ -54,7 +54,7 @@
   - `config/formal_character_registry.json` 挂齐本轮新增关键回归锚点
   - `repo_consistency_docs_gate.py / repo_consistency_formal_character_gate.py` 能直接校验本轮新规则与三桶模板
   - validator-backed 角色都挂上坏例 suite 与坏例锚点
-  - 非 Gojo 配对正式角色至少有一组黑盒 smoke 覆盖
+  - 四名正式角色当前两两组合都至少有一组 manager 级黑盒 smoke 覆盖
   - `tasks.md / decisions.md` 只保留当前波次、下一角色准备项与仍生效活规则
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/run_with_gate.sh`
@@ -88,7 +88,12 @@
     - formal registry 已迁到 `config/formal_character_registry.json`
     - formal registry 已补回本轮新增测试锚点、跨角色 smoke 锚点与设计/调整文档锚点
     - `SampleBattleFactory.content_snapshot_paths_result()` 已改成“顶层样例资源 + registry.required_content_paths”显式收口，不再递归扫完整内容树
+    - `SampleBattleFactory.content_snapshot_paths_for_setup_result()` 已补 setup-scoped 快照入口；manager smoke / pair smoke / demo replay 不再默认携带全部正式角色内容
+    - `ContentSnapshotCache` 已补“外部 `.tres/.res` 依赖改动也会失效”的回归锁，覆盖 `content/shared/` 共享 payload
+    - `SampleBattleFactory` 当前已拆成 matchup catalog + replay helper；正式角色 support 不再继续手写阵容数组
+    - 四名正式角色当前 manager 级 pair smoke 已补到完整两两组合
     - 大型共享 suite 已统一改成“稳定 wrapper + 子 suite”组织，原测试名保持不变
+    - Gojo / Sukuna / Kashimo 的 formal validator 已补关键 effect 顶层字段坏例，避免只锁 payload 不锁 effect surface
   - records：
     - 已新建 repair-wave archive：
       - `docs/records/archive/tasks_pre_2026-04-05_repair_wave.md`

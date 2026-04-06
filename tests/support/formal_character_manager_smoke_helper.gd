@@ -21,7 +21,7 @@ func build_context(harness) -> Dictionary:
 	}
 
 func create_session(manager, sample_factory, battle_seed: int, battle_setup, label: String = "create_session") -> Dictionary:
-	var snapshot_paths_result: Dictionary = sample_factory.content_snapshot_paths_result()
+	var snapshot_paths_result: Dictionary = sample_factory.content_snapshot_paths_for_setup_result(battle_setup)
 	if not bool(snapshot_paths_result.get("ok", false)):
 		return {"ok": false, "error": str(snapshot_paths_result.get("error_message", "content snapshot path build failed"))}
 	return _helper.unwrap_ok(manager.create_session({

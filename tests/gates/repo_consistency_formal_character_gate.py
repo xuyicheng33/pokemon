@@ -12,6 +12,7 @@ from repo_consistency_common import GateContext
 ctx = GateContext()
 REGISTRY_PATH = "config/formal_character_registry.json"
 VALIDATOR_BAD_CASE_SUITE_PATH = "tests/suites/extension_validation_contract_suite.gd"
+FORMAL_PAIR_SMOKE_SUITE_PATH = "tests/suites/formal_character_pair_smoke_suite.gd"
 
 
 def validator_test_prefix(script_path: str) -> str:
@@ -156,6 +157,10 @@ for entry in formal_character_registry:
                 ctx.failures.append(
                     f"formal character registry[{character_id}] required_suite_path is not reachable from tests/run_all.gd wrapper tree: {rel_path}"
                 )
+        if FORMAL_PAIR_SMOKE_SUITE_PATH not in required_suite_paths:
+            ctx.failures.append(
+                f"formal character registry[{character_id}] must include {FORMAL_PAIR_SMOKE_SUITE_PATH} in required_suite_paths"
+            )
         if content_validator_script_path != "" and VALIDATOR_BAD_CASE_SUITE_PATH not in required_suite_paths:
             ctx.failures.append(
                 f"formal character registry[{character_id}] validator-backed character must include {VALIDATOR_BAD_CASE_SUITE_PATH} in required_suite_paths"
@@ -169,6 +174,10 @@ for entry in formal_character_registry:
                 scoped_suite_paths,
                 'runner.run_test("%s"' % str(test_name),
                 f"{character_id} regression anchor",
+            )
+        if not any(str(test_name).startswith("formal_pair_") for test_name in required_test_names):
+            ctx.failures.append(
+                f"formal character registry[{character_id}] must include at least one formal_pair_*_manager_smoke_contract anchor"
             )
         if content_validator_script_path != "":
             if validator_prefix == "":

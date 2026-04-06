@@ -52,9 +52,11 @@
   - `config/formal_character_registry.json` 显式登记的 `required_content_paths`
 - 缺目录、缺资源或 registry 漂移时统一返回结构化错误 `{ ok, data, error_code, error_message }`。
 - 旧的 `content_snapshot_paths()` 只保留为内部薄封装，不再承担正式失败语义。
+- 当前补充 setup-scoped 入口：`content_snapshot_paths_for_setup_result(battle_setup)` 只为当前对局里实际出现的正式角色补 `required_content_paths`，manager smoke、pair smoke 与 demo replay 统一走这条窄入口。
 - 原因：
   - 递归全扫会把“只供引用的 helper 资源”和“尚未正式挂回交付面的角色资源”一起带进快照，容易掩盖接线遗漏。
   - 现阶段更需要显式交付面，而不是“只要丢进 content 子目录就被顺手加载”的宽松行为。
+  - 当正式角色继续增加时，默认把整套正式角色内容全带进每个对局，只会让 cache、加载期校验和黑盒 smoke 成本线性放大。
 
 ### 4. formal validator 迁到独立子目录，content/ 顶层不再继续堆角色 validator（2026-04-06）
 
@@ -136,3 +138,30 @@
 - 本轮新增的 `once_per_battle` battle-scoped 记录、角色专有 filter 细节与 formal validator 结构都属于核心内部 contract，不外抛到 manager public 面。
 - 原因：
   - 扩角前的整合修复要优先消化内部复杂度，而不是把内部修补再扩散成新的外围接口面。
+
+### 11. 正式角色跨配对 smoke 继续作为 registry 必备锚点，当前四角色已补到完整两两组合（2026-04-06）
+
+- `tests/suites/formal_character_pair_smoke_suite.gd` 继续作为正式角色 pair smoke 的统一入口。
+- formal registry 当前要求每个正式角色都显式挂上：
+  - `tests/suites/formal_character_pair_smoke_suite.gd`
+  - 至少一个 `formal_pair_*_manager_smoke_contract` 锚点
+- 当前四名正式角色的 pair smoke 已补到完整两两组合，不再保留 Gojo 例外口径。
+- 原因：
+  - 若只让部分角色通过 pair smoke 进入交付面，后续扩角会把跨角色回归再次打散回专项 case 和记忆型补测。
+
+### 12. `ContentSnapshotCache` 的签名必须继续递归覆盖外部 `.tres/.res` 依赖（2026-04-06）
+
+- cache 签名不只看顶层 snapshot 路径本身，也必须递归覆盖这些资源通过 `ext_resource` 引进来的外部 `.tres/.res` 依赖。
+- `content/shared/` 虽然不参与顶层 snapshot 注册，但只要它被正式资源引用，它的文件内容变化也必须触发 cache miss。
+- 原因：
+  - 否则共享 payload 的调参会出现“文件改了，但同一路径 cache 继续命中旧内容”的脏缓存风险。
+
+### 13. formal validator 对关键 effect 继续同时锁 effect surface 和 payload surface（2026-04-06）
+
+- 对正式角色关键 effect，不再只锁 payload 形状；top-level `display_name / scope / duration_mode / stacking / trigger_names` 这类 effect surface 也必须一并锁死。
+- 当前已补进正式坏例的代表路径：
+  - Gojo `gojo_domain_action_lock`
+  - Sukuna `sukuna_refresh_love_regen`
+  - Kashimo `kashimo_thunder_resist`
+- 原因：
+  - 只锁 payload 不锁 effect surface，会让资源仍然“长得像同一个玩法”，但实际触发点、作用域或生命周期已经漂移。

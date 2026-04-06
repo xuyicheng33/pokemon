@@ -5,6 +5,14 @@ const FormalCharacterRegistryScript := preload("res://src/battle_core/content/fo
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 func build_snapshot_paths(base_dirs: Array) -> Dictionary:
+	return _build_snapshot_paths_from_registry(base_dirs, {}, false)
+
+func build_snapshot_paths_for_setup(base_dirs: Array, battle_setup) -> Dictionary:
+	if battle_setup == null:
+		return _error_result("SampleBattleFactory requires battle_setup to build setup-scoped content snapshot paths")
+	return _build_snapshot_paths_from_registry(base_dirs, _collect_unit_definition_ids(battle_setup), true)
+
+func _build_snapshot_paths_from_registry(base_dirs: Array, included_unit_definition_ids: Dictionary, restrict_registry_entries: bool) -> Dictionary:
 	var paths: Array[String] = []
 	var seen: Dictionary = {}
 	for raw_dir_path in base_dirs:
@@ -21,6 +29,9 @@ func build_snapshot_paths(base_dirs: Array) -> Dictionary:
 			return _error_result("SampleBattleFactory formal character registry entry must be Dictionary")
 		var entry: Dictionary = raw_entry
 		var character_id := String(entry.get("character_id", "")).strip_edges()
+		var unit_definition_id := String(entry.get("unit_definition_id", "")).strip_edges()
+		if restrict_registry_entries and not included_unit_definition_ids.has(unit_definition_id):
+			continue
 		var required_content_paths = entry.get("required_content_paths", [])
 		if not (required_content_paths is Array):
 			return _error_result("SampleBattleFactory registry[%s] missing required_content_paths" % character_id)
@@ -34,6 +45,21 @@ func build_snapshot_paths(base_dirs: Array) -> Dictionary:
 	paths.sort()
 	return _ok_result(PackedStringArray(paths))
 
+func _collect_unit_definition_ids(battle_setup) -> Dictionary:
+	var unit_definition_ids: Dictionary = {}
+	var sides = battle_setup.get("sides") if battle_setup != null else []
+	if not (sides is Array):
+		return unit_definition_ids
+	for side_setup in sides:
+		if side_setup == null:
+			continue
+		for raw_unit_definition_id in side_setup.unit_definition_ids:
+			var unit_definition_id := String(raw_unit_definition_id).strip_edges()
+			if unit_definition_id.is_empty():
+				continue
+			unit_definition_ids[unit_definition_id] = true
+	return unit_definition_ids
+
 func collect_tres_paths_result(dir_path: String) -> Dictionary:
 	var dir_access := DirAccess.open(dir_path)
 	if dir_access == null:
@@ -46,6 +72,20 @@ func collect_tres_paths_result(dir_path: String) -> Dictionary:
 		paths.append("%s/%s" % [dir_path, file_name])
 	paths.sort()
 	return _ok_result(paths)
+
+func collect_tres_paths_recursive(dir_path: String) -> Array[String]:
+	var dir_access := DirAccess.open(dir_path)
+	assert(dir_access != null, "SampleBattleFactory missing snapshot dir: %s" % dir_path)
+	var paths: Array[String] = []
+	for raw_subdir_name in dir_access.get_directories():
+		paths.append_array(collect_tres_paths_recursive("%s/%s" % [dir_path, String(raw_subdir_name)]))
+	for raw_file_name in dir_access.get_files():
+		var file_name := String(raw_file_name)
+		if file_name.get_extension() != "tres":
+			continue
+		paths.append("%s/%s" % [dir_path, file_name])
+	paths.sort()
+	return paths
 
 func _append_unique_paths(paths: Array[String], seen: Dictionary, candidate_paths: Array) -> void:
 	for path in candidate_paths:

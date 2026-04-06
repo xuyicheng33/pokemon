@@ -6,6 +6,12 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 var _domain_support = DomainRoleTestSupportScript.new()
 
+func build_matchup_setup(sample_factory, matchup_id: String, side_regular_skill_overrides: Dictionary = {}):
+	return sample_factory.build_setup_by_matchup_id(matchup_id, side_regular_skill_overrides)
+
+func build_formal_character_setup(sample_factory, formal_character_definition_id: String, side_regular_skill_overrides: Dictionary = {}):
+	return sample_factory.build_formal_character_setup(formal_character_definition_id, side_regular_skill_overrides)
+
 func build_setup(
 	sample_factory,
 	p1_unit_definition_ids: PackedStringArray,
@@ -14,12 +20,18 @@ func build_setup(
 	p1_starting_index: int = 0,
 	p2_starting_index: int = 0
 ):
-	var battle_setup = sample_factory.build_sample_setup(side_regular_skill_overrides)
-	battle_setup.sides[0].unit_definition_ids = p1_unit_definition_ids
-	battle_setup.sides[0].starting_index = p1_starting_index
-	battle_setup.sides[1].unit_definition_ids = p2_unit_definition_ids
-	battle_setup.sides[1].starting_index = p2_starting_index
-	return battle_setup
+	return sample_factory.build_setup_from_side_specs(
+		sample_factory.build_side_spec(
+			p1_unit_definition_ids,
+			p1_starting_index,
+			side_regular_skill_overrides.get("P1", {})
+		),
+		sample_factory.build_side_spec(
+			p2_unit_definition_ids,
+			p2_starting_index,
+			side_regular_skill_overrides.get("P2", {})
+		)
+	)
 
 func build_battle_state(core, content_index, battle_setup, seed: int):
 	return _domain_support.build_battle_state(core, content_index, battle_setup, seed)

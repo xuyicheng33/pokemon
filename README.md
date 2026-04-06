@@ -202,8 +202,9 @@ tests/run_with_gate.sh
 - 普通技能与奥义优先级约束分离校验
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
 - `SampleBattleFactory.content_snapshot_paths_result()` 是正式快照路径入口：当前固定收集两段内容，分别是 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 的顶层样例资源，以及 `config/formal_character_registry.json` 里每个正式角色显式登记的 `required_content_paths`；缺目录、缺资源或 registry 漂移时统一返回 `{ ok, data, error_code, error_message }`
+- `SampleBattleFactory.content_snapshot_paths_for_setup_result(battle_setup)` 会在上述样例顶层资源基础上，只补当前 `battle_setup` 里实际出现的正式角色 `required_content_paths`；manager smoke、pair smoke 与 demo replay 统一走这条 setup-scoped 入口，避免继续把所有正式角色内容一锅端进每个对局
 - 旧的 `SampleBattleFactory.content_snapshot_paths()` 只保留为薄封装，内部直接解包结果式 API，不再承担正式失败语义
-- `ContentSnapshotCache` 的签名当前固定包含稳定排序后的路径列表与每个文件的内容指纹；同一路径下只要文件内容变化，就必须重新 miss，而不是继续复用旧 cache entry
+- `ContentSnapshotCache` 的签名当前固定包含稳定排序后的路径列表、以及这些顶层资源递归外部依赖到的 `.tres/.res` 文件指纹；因此即使只改了 `content/shared/` 里被正式资源引用的共享 payload，也必须重新 miss，而不是继续复用旧 cache entry
 - 若多个正式资源要共享同一份 payload，可把辅助 Resource 放到 `content/shared/`，再由顶层内容资源显式外部引用；`content/shared/` 本身不参与顶层 snapshot 注册
 
 ### 8.1 正式角色资源
@@ -238,6 +239,7 @@ tests/run_with_gate.sh
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 跨角色 smoke：正式角色之间至少补非镜像配对黑盒样例，避免配对覆盖长期偏在单一角色身上
+- 当前四名正式角色的 manager 级 pair smoke 已补到完整两两组合：`Gojo-Sukuna / Gojo-Kashimo / Gojo-Obito / Sukuna-Kashimo / Sukuna-Obito / Kashimo-Obito`
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 - 当前仓库已内置两组固定诊断入口：`tests/helpers/domain_case_runner.gd`（领域）与 `tests/helpers/kashimo_case_runner.gd`（鹿紫云）
 - 若角色依赖共享扩展（如 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、`execute_*`、`damage_segments`、`on_receive_action_damage_segment`），则必须把对应共享 suite 一并挂回正式角色 registry
@@ -261,9 +263,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-06）
 
-- `src/**/*.gd`：`14947` 行
-- `tests/**/*.gd`：`19336` 行
-- GDScript 合计：`34283` 行
+- `src/**/*.gd`：`15262` 行
+- `tests/**/*.gd`：`19501` 行
+- GDScript 合计：`34763` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

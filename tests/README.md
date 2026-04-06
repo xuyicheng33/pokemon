@@ -8,7 +8,7 @@
 - `suites/*_contract_suite.gd` / `suites/*_runtime_suite.gd` / 角色子套件：按单一子域拆分的真实断言文件
 - `suites/adapter_contract_suite.gd`: manager 输出边界契约回归
 - `suites/content_snapshot_cache_suite.gd`: manager 黑盒视角下的 content snapshot cache 语义等价回归
-- `suites/content_snapshot_cache_composer_suite.gd`: composer 级共享 cache 的 hits/misses/size 统计与签名失效回归
+- `suites/content_snapshot_cache_composer_suite.gd`: composer 级共享 cache 的 hits/misses/size 统计与签名失效回归；当前同时锁顶层文件改动、外部资源依赖改动与 `content/shared/` 共享 payload 改动都会触发签名变化
 - `suites/passive_item_contract_suite.gd`: 最小正式 passive item 内容、runtime、manager 与 replay 黑盒回归
 - `suites/trigger_validation_suite.gd`: 触发器声明一致性校验回归
 - `suites/heal_extension_suite.gd`: `missing_hp` 百分比治疗与 `incoming_heal_final_mod` 共享回归
@@ -40,7 +40,7 @@
 - 正式角色的 `required_suite_paths` 可以同时挂角色专属子套件与共享 suite；例如 `gojo_snapshot_suite.gd` / `sukuna_snapshot_suite.gd` 用来锁资源快照，`ultimate_field_suite.gd` 用来把共享领域回归正式挂回角色交付面。
 - 只要角色登记了 `content_validator_script_path`，`required_suite_paths` 里就必须显式挂 `tests/suites/extension_validation_contract_suite.gd`，`required_test_names` 里也必须挂至少一个对应角色的 validator 坏例锚点。
 - 带土当前也按同一机制挂接：`obito_suite.gd` 负责 wrapper，`obito_*` 子 suite 负责角色专项回归，`heal_extension_suite.gd / skill_execute_contract_suite.gd / multihit_skill_runtime_suite.gd` 作为带土依赖面的共享锚点继续挂在 formal registry 里。
-- `tests/suites/formal_character_pair_smoke_suite.gd` 当前固定承担正式角色跨配对黑盒 smoke，避免配对覆盖长期偏在 Gojo 对局。
+- `tests/suites/formal_character_pair_smoke_suite.gd` 当前固定承担四名正式角色完整两两组合的 manager 级黑盒 smoke，不再只覆盖部分配对。
 - `check_suite_reachability.sh` 只把 `run_all.gd` 和注册表里的 wrapper 当作入口；`required_suite_paths` 必须真的能从这些入口沿 `preload(...)` 子树走到，不能靠注册表直接兜底；当 wrapper 超过维护阈值时，真实断言统一下沉到同名子目录，例如 `tests/suites/manager_snapshot_public_contract_suite.gd` + `tests/suites/manager_snapshot_public_contract/*.gd`
 - manager smoke 与 manager public contract 现在不允许再通过 `_debug_session` 之类私有钩子钻进内部 session。
 - 当单测试文件接近 `500` 行时，先做预拆分评估；超过 `600` 行前必须完成按子域拆分。

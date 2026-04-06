@@ -1,9 +1,13 @@
 extends RefCounted
 class_name ContentSnapshotCacheComposerSuite
 
+const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
+const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
+
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("content_snapshot_cache_composer_stats_contract", failures, Callable(self, "_test_content_snapshot_cache_composer_stats_contract").bind(harness))
 	runner.run_test("content_snapshot_cache_signature_tracks_file_content_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_file_content_contract").bind(harness))
+	runner.run_test("content_snapshot_cache_signature_tracks_external_resource_dependency_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_external_resource_dependency_contract").bind(harness))
 	runner.run_test("content_snapshot_cache_signature_tracks_shared_dependency_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_shared_dependency_contract").bind(harness))
 
 func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary:
@@ -17,9 +21,10 @@ func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
-	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+	var battle_setup = sample_factory.build_sample_setup()
+	var snapshot_paths_result: Dictionary = sample_factory.content_snapshot_paths_for_setup_result(battle_setup)
+	if not bool(snapshot_paths_result.get("ok", false)):
+		return harness.fail_result(str(snapshot_paths_result.get("error_message", "content snapshot path build failed")))
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
 		return harness.fail_result(str(core_payload["error"]))
@@ -31,8 +36,8 @@ func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary
 
 	var create_result = manager.create_session({
 		"battle_seed": 509,
-		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-		"battle_setup": sample_factory.build_sample_setup(),
+		"content_snapshot_paths": snapshot_paths_result.get("data", PackedStringArray()),
+		"battle_setup": battle_setup,
 	})
 	if not bool(create_result.get("ok", false)):
 		return harness.fail_result("create_session should succeed while warming content snapshot cache")
@@ -83,6 +88,55 @@ func _test_content_snapshot_cache_signature_tracks_file_content_contract(harness
 		return harness.fail_result("cache signature should not be empty for probe file")
 	if first_signature == second_signature:
 		return harness.fail_result("cache signature should change when file content changes under the same path")
+	return harness.pass_result()
+
+func _test_content_snapshot_cache_signature_tracks_external_resource_dependency_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var composer = manager_payload.get("composer", null)
+	if composer == null:
+		return harness.fail_result("content snapshot cache dependency contract requires composer handle")
+	var cache = composer.shared_content_snapshot_cache()
+	if cache == null:
+		return harness.fail_result("shared content snapshot cache should be available")
+	var shared_probe_path := "user://content_snapshot_cache_shared_dependency_probe.tres"
+	var effect_probe_path := "user://content_snapshot_cache_effect_dependency_probe.tres"
+	var shared_payload = DamagePayloadScript.new()
+	shared_payload.payload_type = "damage"
+	shared_payload.amount = 7
+	shared_payload.use_formula = false
+	if ResourceSaver.save(shared_payload, shared_probe_path) != OK:
+		return harness.fail_result("failed to create shared dependency probe resource")
+	var loaded_shared_payload = ResourceLoader.load(shared_probe_path)
+	if loaded_shared_payload == null:
+		DirAccess.remove_absolute(shared_probe_path)
+		return harness.fail_result("failed to load shared dependency probe resource")
+	var effect_definition = EffectDefinitionScript.new()
+	effect_definition.id = "content_snapshot_cache_dependency_probe"
+	effect_definition.display_name = "content_snapshot_cache_dependency_probe"
+	effect_definition.scope = "self"
+	effect_definition.trigger_names = PackedStringArray(["on_hit"])
+	effect_definition.payloads.append(loaded_shared_payload)
+	if ResourceSaver.save(effect_definition, effect_probe_path) != OK:
+		DirAccess.remove_absolute(shared_probe_path)
+		return harness.fail_result("failed to create effect dependency probe resource")
+	var first_signature := String(cache._build_signature(PackedStringArray([effect_probe_path])))
+	var updated_shared_payload = DamagePayloadScript.new()
+	updated_shared_payload.payload_type = "damage"
+	updated_shared_payload.amount = 9
+	updated_shared_payload.use_formula = false
+	if ResourceSaver.save(updated_shared_payload, shared_probe_path) != OK:
+		DirAccess.remove_absolute(effect_probe_path)
+		DirAccess.remove_absolute(shared_probe_path)
+		return harness.fail_result("failed to rewrite shared dependency probe resource")
+	var second_signature := String(cache._build_signature(PackedStringArray([effect_probe_path])))
+	DirAccess.remove_absolute(effect_probe_path)
+	DirAccess.remove_absolute(shared_probe_path)
+	if first_signature.is_empty() or second_signature.is_empty():
+		return harness.fail_result("cache signature should not be empty for external dependency probe")
+	if first_signature == second_signature:
+		return harness.fail_result("cache signature should change when an external resource dependency changes")
 	return harness.pass_result()
 
 func _test_content_snapshot_cache_signature_tracks_shared_dependency_contract(harness) -> Dictionary:
