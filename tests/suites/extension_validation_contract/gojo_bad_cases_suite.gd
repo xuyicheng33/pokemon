@@ -5,6 +5,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("formal_gojo_validator_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_bad_case_contract").bind(harness))
 	runner.run_test("formal_gojo_validator_reverse_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_reverse_bad_case_contract").bind(harness))
 	runner.run_test("formal_gojo_validator_murasaki_cleanup_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_murasaki_cleanup_bad_case_contract").bind(harness))
+	runner.run_test("formal_gojo_validator_action_lock_surface_bad_case_contract", failures, Callable(self, "_test_formal_gojo_validator_action_lock_surface_bad_case_contract").bind(harness))
 
 func _test_formal_gojo_validator_bad_case_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
@@ -46,4 +47,18 @@ func _test_formal_gojo_validator_murasaki_cleanup_bad_case_contract(harness) -> 
 	var errors: Array = content_index.validate_snapshot()
 	if not _has_error(errors, 'formal[gojo].murasaki_burst payload[1].effect_definition_id mismatch: expected "gojo_ao_mark" got "gojo_aka_mark"'):
 		return harness.fail_result("gojo formal validator should fail-fast when murasaki cleanup payload drifts")
+	return harness.pass_result()
+
+func _test_formal_gojo_validator_action_lock_surface_bad_case_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var action_lock = content_index.effects.get("gojo_domain_action_lock", null)
+	if action_lock == null:
+		return harness.fail_result("missing gojo_domain_action_lock")
+	action_lock.scope = "self"
+	var errors: Array = content_index.validate_snapshot()
+	if not _has_error(errors, "formal[gojo].domain_buff_contract action_lock scope mismatch: expected target got self"):
+		return harness.fail_result("gojo formal validator should fail-fast when action_lock surface drifts")
 	return harness.pass_result()
