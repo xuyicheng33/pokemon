@@ -136,12 +136,20 @@
     - `on_receive_action_hit_same_side_skill_ignored_contract`
     - `obito_yinyang_dun_same_side_segment_ignored_contract`
     - `battle_end_system_chain` 中 execution battle_end 继承 action chain 的断言
+- 第二批已完成：
+  - `BattleSandboxRunner` 默认 Kashimo demo 已改成先构建 `battle_setup`，再走 `content_snapshot_paths_for_setup_result(battle_setup)`，不再回退到全量 snapshot。
+  - `BattleCoreTestHarness` 已新增 setup-scoped snapshot / content index helper，后续 formal 与 setup-sensitive 用例可以统一接入，不必各自重复造轮子。
+  - `content_snapshot_cache_composer_stats_contract` 已切到 harness 的 setup-scoped helper，保证这条测试入口不是死代码。
 
 ### 当前验证结果
 
 - 第一批已通过：
   - `git diff --check`
   - `godot --headless --path . --script tests/run_all.gd`
+- 第二批已通过：
+  - `git diff --check`
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `godot --headless --path . --quit-after 20`
 
 ## 下一角色扩充准备
 

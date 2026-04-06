@@ -56,7 +56,11 @@ func _build_replay_input_for_demo_mode(sample_factory, demo_mode: String) -> Var
     return _build_kashimo_demo_replay_input(sample_factory)
 
 func _build_kashimo_demo_replay_input(sample_factory) -> Variant:
-    var snapshot_paths_result: Dictionary = sample_factory.content_snapshot_paths_result()
+    var battle_setup = sample_factory.build_kashimo_vs_sample_setup()
+    if battle_setup == null:
+        _fail_startup("Battle sandbox failed to build kashimo demo setup")
+        return null
+    var snapshot_paths_result: Dictionary = sample_factory.content_snapshot_paths_for_setup_result(battle_setup)
     if not bool(snapshot_paths_result.get("ok", false)):
         _fail_startup("Battle sandbox content snapshot build failed: %s" % str(snapshot_paths_result.get("error_message", "unknown error")))
         return null
@@ -64,7 +68,7 @@ func _build_kashimo_demo_replay_input(sample_factory) -> Variant:
     replay_input.battle_seed = 9101
     replay_input.content_snapshot_paths = snapshot_paths_result.get("data", PackedStringArray())
     # NOTE: build_kashimo_vs_sample_setup is wired in SampleBattleFactory (formal delivery surface).
-    replay_input.battle_setup = sample_factory.build_kashimo_vs_sample_setup()
+    replay_input.battle_setup = battle_setup
 
     # This is a minimal, stable demo of Kashimo's loop:
     # - Raiken: apply negative charge
