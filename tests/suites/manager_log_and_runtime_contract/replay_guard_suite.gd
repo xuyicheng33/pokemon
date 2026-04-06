@@ -18,7 +18,7 @@ func _test_manager_run_replay_empty_snapshot_paths_contract(harness) -> Dictiona
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_input = sample_factory.build_demo_replay_input(manager)
+	var replay_input = harness.build_demo_replay_input(sample_factory, manager)
 	if replay_input == null:
 		return harness.fail_result("demo replay input build failed")
 	replay_input.content_snapshot_paths = PackedStringArray()
@@ -46,7 +46,7 @@ func _test_manager_run_replay_null_command_contract(harness) -> Dictionary:
 	if snapshot_paths_payload.has("error"):
 		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	replay_input.content_snapshot_paths = snapshot_paths_payload.get("paths", PackedStringArray())
-	replay_input.battle_setup = sample_factory.build_sample_setup()
+	replay_input.battle_setup = harness.build_sample_setup(sample_factory)
 	replay_input.command_stream = [null]
 	var failure = _helper.expect_failure_code(
 		manager.run_replay(replay_input),

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ContentSnapshotFormalCharacterRegistry
 
-const REGISTRY_PATH := "res://config/formal_character_registry.json"
+const REGISTRY_PATH := "res://config/formal_character_runtime_registry.json"
 
 static func load_entries() -> Dictionary:
 	return load_entries_from_path(REGISTRY_PATH)
@@ -22,6 +22,7 @@ static func load_entries_from_path(registry_path: String) -> Dictionary:
 		}
 	var entries: Array = []
 	var seen_character_ids: Dictionary = {}
+	var seen_unit_definition_ids: Dictionary = {}
 	for raw_entry in parsed:
 		if not (raw_entry is Dictionary):
 			return {
@@ -47,6 +48,43 @@ static func load_entries_from_path(registry_path: String) -> Dictionary:
 				"entries": [],
 				"error": "ContentSnapshotFormalCharacterRegistry[%s] missing unit_definition_id" % character_id,
 			}
+		if seen_unit_definition_ids.has(unit_definition_id):
+			return {
+				"entries": [],
+				"error": "ContentSnapshotFormalCharacterRegistry duplicated unit_definition_id: %s" % unit_definition_id,
+			}
+		seen_unit_definition_ids[unit_definition_id] = true
+		var matchup_id := String(entry.get("formal_setup_matchup_id", "")).strip_edges()
+		if matchup_id.is_empty():
+			return {
+				"entries": [],
+				"error": "ContentSnapshotFormalCharacterRegistry[%s] missing formal_setup_matchup_id" % character_id,
+			}
+		if not entry.has("required_content_paths"):
+			return {
+				"entries": [],
+				"error": "ContentSnapshotFormalCharacterRegistry[%s] missing required_content_paths" % character_id,
+			}
+		var required_content_paths = entry.get("required_content_paths", [])
+		if not (required_content_paths is Array):
+			return {
+				"entries": [],
+				"error": "ContentSnapshotFormalCharacterRegistry[%s] missing required_content_paths" % character_id,
+			}
+		for raw_rel_path in required_content_paths:
+			if String(raw_rel_path).strip_edges().is_empty():
+				return {
+					"entries": [],
+					"error": "ContentSnapshotFormalCharacterRegistry[%s] has empty required_content_paths entry" % character_id,
+				}
+		var validator_path := String(entry.get("content_validator_script_path", "")).strip_edges()
+		if not validator_path.is_empty():
+			var resolved_validator_path := validator_path if validator_path.begins_with("res://") else "res://%s" % validator_path
+			if not ResourceLoader.exists(resolved_validator_path):
+				return {
+					"entries": [],
+					"error": "ContentSnapshotFormalCharacterRegistry[%s] missing validator: %s" % [character_id, resolved_validator_path],
+				}
 		entries.append(entry.duplicate(true))
 	return {
 		"entries": entries,

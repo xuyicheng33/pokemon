@@ -28,6 +28,24 @@ func _test_multihit_skill_validation_contract(harness) -> Dictionary:
     bad_skill.damage_segments = bad_segments
     content_index.register_resource(bad_skill)
 
+    var drift_skill = SkillDefinitionScript.new()
+    drift_skill.id = "test_bad_multihit_truth_skill"
+    drift_skill.display_name = "Bad Multihit Truth Skill"
+    drift_skill.damage_kind = "special"
+    drift_skill.power = 5
+    drift_skill.accuracy = 100
+    drift_skill.mp_cost = 0
+    drift_skill.priority = 0
+    drift_skill.targeting = "enemy_active_slot"
+    var drift_segment = SkillDamageSegmentScript.new()
+    drift_segment.repeat_count = 1
+    drift_segment.power = 20
+    drift_segment.damage_kind = "special"
+    drift_segment.combat_type_id = ""
+    var drift_segments: Array[Resource] = [drift_segment]
+    drift_skill.damage_segments = drift_segments
+    content_index.register_resource(drift_skill)
+
     var filtered_segment_effect = _build_filtered_on_segment_mp_loss_effect(
         "test_allowed_segment_filter_effect",
         "skill",
@@ -44,6 +62,8 @@ func _test_multihit_skill_validation_contract(harness) -> Dictionary:
     if _has_error(errors, "skill[test_bad_multihit_skill].power must be > 0 for damage skills, got 0") \
     or _has_error(errors, "skill[test_bad_multihit_skill].power must be > 0 for non-segment damage skills, got 0"):
         return harness.fail_result("multihit validation should allow top-level power=0 when damage_segments carry the damage truth")
+    if not _has_error(errors, "skill[test_bad_multihit_truth_skill].power must be 0 when damage_segments is present, got 5"):
+        return harness.fail_result("multihit validation should reject non-zero top-level power when damage_segments is present")
     if _has_error(errors, "effect[test_allowed_segment_filter_effect].required_incoming_command_types only allowed for on_receive_action_hit/on_receive_action_damage_segment"):
         return harness.fail_result("multihit validation should allow command filters on on_receive_action_damage_segment")
     if _has_error(errors, "effect[test_allowed_segment_filter_effect].required_incoming_combat_type_ids only allowed for on_receive_action_hit/on_receive_action_damage_segment"):

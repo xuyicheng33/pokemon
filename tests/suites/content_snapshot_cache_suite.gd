@@ -29,7 +29,7 @@ func _test_content_snapshot_cache_manager_black_box_contract(harness) -> Diction
 		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 
 	var content_snapshot_paths: PackedStringArray = snapshot_paths_payload.get("paths", PackedStringArray())
-	var battle_setup = sample_factory.build_sample_setup()
+	var battle_setup = harness.build_sample_setup(sample_factory)
 	var battle_seed := 509
 	var baseline_content_index = harness.build_loaded_content_index(sample_factory)
 	var baseline_battle_state = harness.build_initialized_battle(core, baseline_content_index, sample_factory, battle_seed, battle_setup)
@@ -41,7 +41,7 @@ func _test_content_snapshot_cache_manager_black_box_contract(harness) -> Diction
 	var init_unwrap = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": battle_seed,
 		"content_snapshot_paths": content_snapshot_paths,
-		"battle_setup": sample_factory.build_sample_setup(),
+		"battle_setup": harness.build_sample_setup(sample_factory),
 	}), "create_session")
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
@@ -61,7 +61,7 @@ func _test_content_snapshot_cache_manager_black_box_contract(harness) -> Diction
 	if int(event_log_snapshot.get("total_size", -1)) != baseline_event_snapshots.size():
 		return harness.fail_result("initial event log snapshot total_size must match baseline")
 
-	var baseline_replay_input = sample_factory.build_demo_replay_input(core.service("command_builder"))
+	var baseline_replay_input = harness.build_demo_replay_input(sample_factory, core.service("command_builder"))
 	if baseline_replay_input == null:
 		return harness.fail_result("baseline replay input build failed")
 	var baseline_replay_copy = _clone_replay_input(baseline_replay_input)

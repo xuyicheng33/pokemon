@@ -22,11 +22,11 @@ func _test_replay_snapshot_contract(harness) -> Dictionary:
 	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
 		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
-	var live_unwrap = _unwrap_ok(manager.create_session({"battle_seed": 405, "content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()), "battle_setup": sample_factory.build_sample_setup()}), "create_session")
+	var live_unwrap = _unwrap_ok(manager.create_session({"battle_seed": 405, "content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()), "battle_setup": harness.build_sample_setup(sample_factory)}), "create_session")
 	if not bool(live_unwrap.get("ok", false)):
 		return harness.fail_result(str(live_unwrap.get("error", "manager create_session failed")))
 	var live_snapshot = live_unwrap.get("data", {}).get("public_snapshot", {})
-	var replay_unwrap = _unwrap_ok(manager.run_replay(sample_factory.build_demo_replay_input(manager)), "run_replay")
+	var replay_unwrap = _unwrap_ok(manager.run_replay(harness.build_demo_replay_input(sample_factory, manager)), "run_replay")
 	if not bool(replay_unwrap.get("ok", false)):
 		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
 	var replay_snapshot = replay_unwrap.get("data", {}).get("public_snapshot", {})
@@ -52,7 +52,7 @@ func _test_log_v3_header_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_unwrap = _unwrap_ok(manager.run_replay(sample_factory.build_demo_replay_input(manager)), "run_replay")
+	var replay_unwrap = _unwrap_ok(manager.run_replay(harness.build_demo_replay_input(sample_factory, manager)), "run_replay")
 	if not bool(replay_unwrap.get("ok", false)):
 		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
 	var replay_output = replay_unwrap.get("data", {}).get("replay_output", null)
@@ -86,7 +86,7 @@ func _test_header_snapshot_private_id_guard(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_unwrap = _unwrap_ok(manager.run_replay(sample_factory.build_demo_replay_input(manager)), "run_replay")
+	var replay_unwrap = _unwrap_ok(manager.run_replay(harness.build_demo_replay_input(sample_factory, manager)), "run_replay")
 	if not bool(replay_unwrap.get("ok", false)):
 		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
 	var replay_output = replay_unwrap.get("data", {}).get("replay_output", null)

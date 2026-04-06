@@ -12,12 +12,6 @@ func has_matchup(matchup_id: String) -> bool:
 		return false
 	return catalog_result.get("data", {}).get("matchups", {}).has(matchup_id)
 
-func build_setup(setup_builder, matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Variant:
-	var result := build_setup_result(setup_builder, matchup_id, side_regular_skill_overrides)
-	if not bool(result.get("ok", false)):
-		return null
-	return result.get("data", null)
-
 func build_setup_result(setup_builder, matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	var catalog_result := _load_catalog_result()
 	if not bool(catalog_result.get("ok", false)):
@@ -37,31 +31,37 @@ func build_setup_result(setup_builder, matchup_id: String, side_regular_skill_ov
 		return _error_result(
 			ErrorCodesScript.INVALID_COMPOSITION,
 			"SampleBattleFactory failed to build matchup setup: %s" % matchup_id
-		)
+	)
 	return _ok_result(battle_setup)
 
-func formal_pair_surface_cases() -> Array:
-	return _copy_case_bucket("pair_surface_cases")
+func formal_pair_surface_cases_result() -> Dictionary:
+	return _copy_case_bucket_result("pair_surface_cases")
 
-func formal_pair_smoke_cases() -> Array:
-	return formal_pair_surface_cases()
+func formal_pair_smoke_cases_result() -> Dictionary:
+	return formal_pair_surface_cases_result()
 
-func formal_pair_interaction_cases() -> Array:
-	return _copy_case_bucket("pair_interaction_cases")
+func formal_pair_interaction_cases_result() -> Dictionary:
+	return _copy_case_bucket_result("pair_interaction_cases")
 
-func _copy_case_bucket(bucket_name: String) -> Array:
+func _copy_case_bucket_result(bucket_name: String) -> Dictionary:
 	var catalog_result := _load_catalog_result()
 	if not bool(catalog_result.get("ok", false)):
-		return []
+		return catalog_result
 	var raw_bucket = catalog_result.get("data", {}).get(bucket_name, [])
 	var cases: Array = []
 	if not (raw_bucket is Array):
-		return cases
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory matchup catalog[%s] must be array: %s" % [bucket_name, _resolve_catalog_path()]
+		)
 	for raw_case_spec in raw_bucket:
 		if not (raw_case_spec is Dictionary):
-			continue
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"SampleBattleFactory matchup catalog[%s] contains non-dictionary case" % bucket_name
+			)
 		cases.append(raw_case_spec.duplicate(true))
-	return cases
+	return _ok_result(cases)
 
 func _load_catalog_result() -> Dictionary:
 	var resolved_catalog_path := _resolve_catalog_path()

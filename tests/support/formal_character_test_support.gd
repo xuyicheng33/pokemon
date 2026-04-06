@@ -7,19 +7,13 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 var _domain_support = DomainRoleTestSupportScript.new()
 
 func build_matchup_setup(sample_factory, matchup_id: String, side_regular_skill_overrides: Dictionary = {}):
-	var result := build_matchup_setup_result(sample_factory, matchup_id, side_regular_skill_overrides)
-	if not bool(result.get("ok", false)):
-		return null
-	return result.get("data", null)
+	return _unwrap_setup_result(build_matchup_setup_result(sample_factory, matchup_id, side_regular_skill_overrides))
 
 func build_matchup_setup_result(sample_factory, matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	return sample_factory.build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides)
 
 func build_formal_character_setup(sample_factory, character_id: String, side_regular_skill_overrides: Dictionary = {}):
-	var result := build_formal_character_setup_result(sample_factory, character_id, side_regular_skill_overrides)
-	if not bool(result.get("ok", false)):
-		return null
-	return result.get("data", null)
+	return _unwrap_setup_result(build_formal_character_setup_result(sample_factory, character_id, side_regular_skill_overrides))
 
 func build_formal_character_setup_result(sample_factory, character_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	return sample_factory.build_formal_character_setup_result(character_id, side_regular_skill_overrides)
@@ -32,17 +26,14 @@ func build_setup(
 	p1_starting_index: int = 0,
 	p2_starting_index: int = 0
 ):
-	var result := build_setup_result(
+	return _unwrap_setup_result(build_setup_result(
 		sample_factory,
 		p1_unit_definition_ids,
 		p2_unit_definition_ids,
 		side_regular_skill_overrides,
 		p1_starting_index,
 		p2_starting_index
-	)
-	if not bool(result.get("ok", false)):
-		return null
-	return result.get("data", null)
+	))
 
 func build_setup_result(
 	sample_factory,
@@ -78,8 +69,11 @@ func build_ultimate_command(core, turn_index: int, side_id: String, actor_public
 	return build_manual_ultimate_command(core, turn_index, side_id, actor_public_id, skill_id)
 
 func _unwrap_setup_result(result: Dictionary):
-	if not bool(result.get("ok", false)):
-		return null
+	assert(result != null, "FormalCharacterTestSupport requires non-null setup result")
+	assert(bool(result.get("ok", false)), "FormalCharacterTestSupport build failed: %s (%s)" % [
+		str(result.get("error_message", "unknown error")),
+		str(result.get("error_code", "unknown_error_code")),
+	])
 	return result.get("data", null)
 
 func build_battle_state(core, content_index, battle_setup, seed: int):

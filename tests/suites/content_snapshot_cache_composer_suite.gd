@@ -21,7 +21,7 @@ func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var battle_setup = sample_factory.build_sample_setup()
+	var battle_setup = harness.build_sample_setup(sample_factory)
 	var snapshot_paths_result: Dictionary = harness.build_content_snapshot_paths_for_setup(sample_factory, battle_setup)
 	if snapshot_paths_result.has("error"):
 		return harness.fail_result(str(snapshot_paths_result.get("error", "content snapshot path build failed")))
@@ -47,7 +47,7 @@ func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary
 	if bool(session_stats.get("last_cache_hit", true)):
 		return harness.fail_result("first create_session should be a cache miss")
 
-	var replay_input = sample_factory.build_demo_replay_input(core.service("command_builder"))
+	var replay_input = harness.build_demo_replay_input(sample_factory, core.service("command_builder"))
 	if replay_input == null:
 		return harness.fail_result("replay input build failed")
 	var replay_result = manager.run_replay(replay_input)

@@ -53,7 +53,7 @@ func _test_on_receive_action_hit_lethal_counter_contract(harness) -> Dictionary:
 
     content_index.units["sample_mossaur"].skill_ids[0] = water_skill.id
     content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[0].starting_index = 1
     battle_setup.sides[1].starting_index = 0
 
@@ -140,7 +140,7 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
 
     content_index.units["sample_pyron"].skill_ids[0] = harmless_skill.id
     content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[0].starting_index = 0
     battle_setup.sides[1].starting_index = 0
 
@@ -199,7 +199,7 @@ func _test_on_receive_action_hit_same_side_skill_ignored_contract(harness) -> Di
     _register_receive_counter_resources(content_index)
     content_index.units["sample_tidekit"].passive_skill_id = "test_receive_counter_passive"
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[0].starting_index = 0
     battle_setup.sides[1].starting_index = 0
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 722, battle_setup)

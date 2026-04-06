@@ -26,7 +26,7 @@ func _test_log_contract_semantics(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
-    var replay_output = core.service("replay_runner").run_replay(sample_factory.build_demo_replay_input(core.service("command_builder")))
+    var replay_output = core.service("replay_runner").run_replay(harness.build_demo_replay_input(sample_factory, core.service("command_builder")))
     if replay_output == null:
         return harness.fail_result("replay output is null")
 

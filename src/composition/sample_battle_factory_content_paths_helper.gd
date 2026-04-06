@@ -36,10 +36,10 @@ func _build_snapshot_paths_from_registry(base_dirs: Array, included_unit_definit
 	var registry_result: Dictionary = _load_registry_entries()
 	var registry_error := String(registry_result.get("error", ""))
 	if not registry_error.is_empty():
-		return _error_result("SampleBattleFactory failed to load formal character registry: %s" % registry_error)
+		return _error_result("SampleBattleFactory failed to load formal character runtime registry: %s" % registry_error)
 	for raw_entry in registry_result.get("entries", []):
 		if not (raw_entry is Dictionary):
-			return _error_result("SampleBattleFactory formal character registry entry must be Dictionary")
+			return _error_result("SampleBattleFactory formal character runtime registry entry must be Dictionary")
 		var entry: Dictionary = raw_entry
 		var character_id := String(entry.get("character_id", "")).strip_edges()
 		var unit_definition_id := String(entry.get("unit_definition_id", "")).strip_edges()

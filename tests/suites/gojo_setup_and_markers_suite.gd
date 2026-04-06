@@ -35,11 +35,11 @@ func _test_gojo_content_and_setup_contract(harness) -> Dictionary:
         return harness.fail_result("gojo ultimate should stay fixed as 无量空处")
     if gojo.passive_skill_id != "gojo_mugen":
         return harness.fail_result("gojo passive should stay fixed as 无下限")
-    var gojo_vs_sukuna = sample_factory.build_setup_by_matchup_id("gojo_vs_sukuna")
+    var gojo_vs_sukuna = harness.build_setup_by_matchup_id(sample_factory, "gojo_vs_sukuna")
     if gojo_vs_sukuna.sides[0].unit_definition_ids[0] != "gojo_satoru" or gojo_vs_sukuna.sides[1].unit_definition_ids[0] != "sukuna":
         return harness.fail_result("gojo vs sukuna sample setup should place Gojo and Sukuna on active slots")
     var ritual_loadout: PackedStringArray = PackedStringArray(["gojo_ao", "gojo_aka", "gojo_reverse_ritual"])
-    var gojo_vs_sample = sample_factory.build_setup_by_matchup_id("gojo_vs_sample", {"P1": {0: ritual_loadout}})
+    var gojo_vs_sample = harness.build_setup_by_matchup_id(sample_factory, "gojo_vs_sample", {"P1": {0: ritual_loadout}})
     if gojo_vs_sample.sides[0].unit_definition_ids[0] != "gojo_satoru" or gojo_vs_sample.sides[1].unit_definition_ids[0] != "sample_pyron":
         return harness.fail_result("gojo vs sample setup should expose Gojo and sample unit on active slots")
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1201, gojo_vs_sample)
@@ -59,7 +59,7 @@ func _test_gojo_first_turn_mp_contract(harness) -> Dictionary:
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
     var content_index = harness.build_loaded_content_index(sample_factory)
-    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1202, sample_factory.build_setup_by_matchup_id("gojo_vs_sample"))
+    var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1202, harness.build_setup_by_matchup_id(sample_factory, "gojo_vs_sample"))
     var gojo_unit = battle_state.get_side("P1").get_active_unit()
     if gojo_unit == null:
         return harness.fail_result("missing gojo active unit")

@@ -26,7 +26,7 @@ func _test_content_index_split_validation_contract(harness) -> Dictionary:
     if not _errors_contain(snapshot_errors, "skill[split_contract_bad_skill].priority out of range"):
         return harness.fail_result("snapshot validation contract changed after content index split")
 
-    var battle_setup = sample_factory.build_sample_setup({
+    var battle_setup = harness.build_sample_setup(sample_factory, {
         "P1": {
             3: PackedStringArray(["sample_field_call", "sample_whiff", "sample_tide_surge"])
         }
@@ -40,7 +40,7 @@ func _test_content_snapshot_recursive_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
-    var discovered_paths = sample_factory.collect_tres_paths_recursive("res://tests/fixtures/content_snapshot")
+    var discovered_paths = harness.collect_tres_paths_recursive(sample_factory, "res://tests/fixtures/content_snapshot")
     var expected_nested_path := "res://tests/fixtures/content_snapshot/nested/leaf_probe.tres"
     var expected_root_path := "res://tests/fixtures/content_snapshot/root_probe.tres"
     if discovered_paths.size() != 2:
@@ -86,8 +86,6 @@ func _test_content_snapshot_recursive_missing_dir_contract(harness) -> Dictionar
         return harness.fail_result("missing recursive snapshot dir should return structured error")
     if String(result.get("error_code", "")) != "invalid_content_snapshot":
         return harness.fail_result("missing recursive snapshot dir should report invalid_content_snapshot")
-    if not sample_factory.collect_tres_paths_recursive("res://tests/fixtures/content_snapshot_missing").is_empty():
-        return harness.fail_result("recursive snapshot wrapper should degrade to empty array on missing dir")
     return harness.pass_result()
 
 func _errors_contain(errors: Array, needle: String) -> bool:

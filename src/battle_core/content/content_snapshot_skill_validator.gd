@@ -139,6 +139,8 @@ func _validate_damage_segments(errors: Array, skill_id: String, skill_definition
         errors.append("skill[%s].damage_segments requires targeting=enemy_active_slot" % skill_id)
     if skill_definition.damage_kind == ContentSchemaScript.DAMAGE_KIND_NONE:
         errors.append("skill[%s].damage_segments requires top-level damage_kind != none" % skill_id)
+    if int(skill_definition.power) != 0:
+        errors.append("skill[%s].power must be 0 when damage_segments is present, got %d" % [skill_id, int(skill_definition.power)])
     for segment_index in range(skill_definition.damage_segments.size()):
         var raw_segment = skill_definition.damage_segments[segment_index]
         if raw_segment == null or not raw_segment is SkillDamageSegmentScript:

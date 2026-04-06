@@ -25,7 +25,7 @@ func _test_sukuna_manager_smoke_contract(harness) -> Dictionary:
 	var manager = context["manager"]
 	var sample_factory = context["sample_factory"]
 	var ritual_loadout := PackedStringArray(["sukuna_kai", "sukuna_hatsu", "sukuna_reverse_ritual"])
-	var battle_setup = sample_factory.build_sample_setup({"P1": {0: ritual_loadout}})
+	var battle_setup = harness.build_sample_setup(sample_factory, {"P1": {0: ritual_loadout}})
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_pyron"])
 	battle_setup.sides[0].starting_index = 0
 	var init_unwrap = _smoke_helper.create_session(manager, sample_factory, 1302, battle_setup)
@@ -137,7 +137,7 @@ func _test_sukuna_manager_domain_lifecycle_public_contract(harness) -> Dictionar
 		return harness.fail_result(str(context["error"]))
 	var manager = context["manager"]
 	var sample_factory = context["sample_factory"]
-	var battle_setup = sample_factory.build_sample_setup()
+	var battle_setup = harness.build_sample_setup(sample_factory)
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_pyron"])
 	battle_setup.sides[0].starting_index = 0
 	battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_mossaur", "sample_pyron", "sample_tidekit"])

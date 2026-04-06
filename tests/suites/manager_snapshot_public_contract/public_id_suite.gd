@@ -24,7 +24,7 @@ func _test_legal_action_public_id_contract(harness) -> Dictionary:
     var init_result = manager.create_session({
         "battle_seed": 302,
         "content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-        "battle_setup": sample_factory.build_sample_setup(),
+        "battle_setup": harness.build_sample_setup(sample_factory),
     })
     var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
     if not bool(init_unwrap.get("ok", false)):
@@ -60,7 +60,7 @@ func _test_initial_selection_mp_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_pyron", "sample_mossaur"])
     battle_setup.sides[0].starting_index = 0
     var content_index = harness.build_loaded_content_index(sample_factory)

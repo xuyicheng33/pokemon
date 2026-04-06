@@ -10,7 +10,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	if sample_factory == null:
 		runner.run_test("formal_pair_smoke_sample_factory_contract", failures, Callable(self, "_test_sample_factory_contract").bind(harness))
 		return
-	var surface_cases: Array = sample_factory.formal_pair_surface_cases()
+	var surface_cases: Array = harness.build_formal_pair_surface_cases(sample_factory)
 	runner.run_test(
 		"formal_pair_smoke_matrix_contract",
 		failures,

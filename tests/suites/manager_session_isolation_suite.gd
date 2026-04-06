@@ -20,8 +20,8 @@ func _test_manager_session_isolation_interleaved_turns(harness) -> Dictionary:
 	if snapshot_paths_payload.has("error"):
 		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var snapshot_paths: PackedStringArray = snapshot_paths_payload.get("paths", PackedStringArray())
-	var init_a = manager.create_session({"battle_seed": 401, "content_snapshot_paths": snapshot_paths, "battle_setup": sample_factory.build_sample_setup()})
-	var init_b = manager.create_session({"battle_seed": 402, "content_snapshot_paths": snapshot_paths, "battle_setup": sample_factory.build_sample_setup()})
+	var init_a = manager.create_session({"battle_seed": 401, "content_snapshot_paths": snapshot_paths, "battle_setup": harness.build_sample_setup(sample_factory)})
+	var init_b = manager.create_session({"battle_seed": 402, "content_snapshot_paths": snapshot_paths, "battle_setup": harness.build_sample_setup(sample_factory)})
 	var init_a_unwrap = _unwrap_ok(init_a, "create_session")
 	var init_b_unwrap = _unwrap_ok(init_b, "create_session")
 	if not bool(init_a_unwrap.get("ok", false)):
@@ -76,7 +76,7 @@ func _test_session_seed_and_replay_hash_isolation(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_input_a = sample_factory.build_demo_replay_input(manager)
+	var replay_input_a = harness.build_demo_replay_input(sample_factory, manager)
 	replay_input_a.battle_seed = 777
 	var replay_a1_unwrap = _unwrap_ok(manager.run_replay(replay_input_a), "run_replay")
 	var replay_a2_unwrap = _unwrap_ok(manager.run_replay(replay_input_a), "run_replay")
@@ -92,7 +92,7 @@ func _test_session_seed_and_replay_hash_isolation(harness) -> Dictionary:
 		return harness.fail_result("same-seed replay hash should be stable")
 	if output_a1.event_log.size() != output_a2.event_log.size():
 		return harness.fail_result("same-seed replay log size should be stable")
-	var replay_input_b = sample_factory.build_demo_replay_input(manager)
+	var replay_input_b = harness.build_demo_replay_input(sample_factory, manager)
 	replay_input_b.battle_seed = 778
 	var replay_b_unwrap = _unwrap_ok(manager.run_replay(replay_input_b), "run_replay")
 	if not bool(replay_b_unwrap.get("ok", false)):
@@ -116,7 +116,7 @@ func _test_replay_isolation_no_session_side_effect(harness) -> Dictionary:
 	if snapshot_paths_payload.has("error"):
 		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var snapshot_paths: PackedStringArray = snapshot_paths_payload.get("paths", PackedStringArray())
-	var init_result = manager.create_session({"battle_seed": 403, "content_snapshot_paths": snapshot_paths, "battle_setup": sample_factory.build_sample_setup()})
+	var init_result = manager.create_session({"battle_seed": 403, "content_snapshot_paths": snapshot_paths, "battle_setup": harness.build_sample_setup(sample_factory)})
 	var init_unwrap = _unwrap_ok(init_result, "create_session")
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
@@ -127,7 +127,7 @@ func _test_replay_isolation_no_session_side_effect(harness) -> Dictionary:
 	if not bool(snapshot_before_replay_unwrap.get("ok", false)):
 		return harness.fail_result(str(snapshot_before_replay_unwrap.get("error", "manager get_public_snapshot failed")))
 	var snapshot_before_replay = snapshot_before_replay_unwrap.get("data", {})
-	var replay_unwrap = _unwrap_ok(manager.run_replay(sample_factory.build_demo_replay_input(manager)), "run_replay")
+	var replay_unwrap = _unwrap_ok(manager.run_replay(harness.build_demo_replay_input(sample_factory, manager)), "run_replay")
 	if not bool(replay_unwrap.get("ok", false)):
 		return harness.fail_result(str(replay_unwrap.get("error", "run_replay failed")))
 	if replay_unwrap.get("data", {}).get("replay_output", null) == null:
@@ -138,7 +138,7 @@ func _test_replay_isolation_no_session_side_effect(harness) -> Dictionary:
 	var snapshot_after_replay = snapshot_after_replay_unwrap.get("data", {})
 	if snapshot_before_replay != snapshot_after_replay:
 		return harness.fail_result("run_replay should not mutate existing sessions")
-	var second_session = manager.create_session({"battle_seed": 404, "content_snapshot_paths": snapshot_paths, "battle_setup": sample_factory.build_sample_setup()})
+	var second_session = manager.create_session({"battle_seed": 404, "content_snapshot_paths": snapshot_paths, "battle_setup": harness.build_sample_setup(sample_factory)})
 	var second_session_unwrap = _unwrap_ok(second_session, "create_session")
 	if not bool(second_session_unwrap.get("ok", false)):
 		return harness.fail_result(str(second_session_unwrap.get("error", "manager second create_session failed")))

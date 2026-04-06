@@ -70,7 +70,7 @@ func _test_setup_loadout_override_validation(harness) -> Dictionary:
     for test_case in cases:
         var content_index = harness.build_loaded_content_index(sample_factory)
         content_index.units["sample_tidekit"].candidate_skill_ids = candidate_pool
-        var battle_setup = sample_factory.build_sample_setup({"P1": test_case["overrides"]})
+        var battle_setup = harness.build_sample_setup(sample_factory, {"P1": test_case["overrides"]})
         battle_setup.sides[0].unit_definition_ids[0] = "sample_tidekit"
         var errors: Array = content_index.validate_setup(battle_setup)
         if not _has_error(errors, test_case["needle"]):
@@ -88,7 +88,7 @@ func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
     var content_index = harness.build_loaded_content_index(sample_factory)
     content_index.units["sample_pyron"].candidate_skill_ids = PackedStringArray(["sample_strike", "sample_field_call", "sample_pyro_blast", "sample_whiff"])
     var override_loadout := PackedStringArray(["sample_strike", "sample_field_call", "sample_whiff"])
-    var battle_setup = sample_factory.build_sample_setup({"P1": {0: override_loadout}})
+    var battle_setup = harness.build_sample_setup(sample_factory, {"P1": {0: override_loadout}})
     battle_setup.sides[0].starting_index = 0
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 901, battle_setup)
     var p1_active = battle_state.get_side("P1").get_active_unit()
@@ -142,7 +142,7 @@ func _test_same_side_duplicate_unit_forbidden(harness) -> Dictionary:
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
     var content_index = harness.build_loaded_content_index(sample_factory)
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_pyron", "sample_tidekit"])
     var errors: Array = content_index.validate_setup(battle_setup)
     if not _has_error(errors, "duplicated unit_definition_id: sample_pyron"):

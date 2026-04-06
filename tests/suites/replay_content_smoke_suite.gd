@@ -18,7 +18,7 @@ func _test_sukuna_content_pack_smoke(harness) -> Dictionary:
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
 	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_setup = sample_factory.build_sample_setup()
+	var battle_setup = harness.build_sample_setup(sample_factory)
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_tidekit"])
 	battle_setup.sides[0].starting_index = 0
 	battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"])
@@ -59,7 +59,7 @@ func _test_field_expire_path(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_output = core.service("replay_runner").run_replay(sample_factory.build_demo_replay_input(core.service("command_builder")))
+	var replay_output = core.service("replay_runner").run_replay(harness.build_demo_replay_input(sample_factory, core.service("command_builder")))
 	if replay_output == null:
 		return harness.fail_result("replay output is null")
 	if replay_output.final_battle_state.field_state != null:

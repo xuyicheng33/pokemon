@@ -76,7 +76,7 @@ func _test_combat_type_default_and_recoil_paths(harness) -> Dictionary:
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
     var content_index = harness.build_loaded_content_index(sample_factory)
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     var battle_state = _build_initialized_battle(core, content_index, battle_setup, 641)
 
     var p1_active = battle_state.get_side("P1").get_active_unit()
@@ -129,7 +129,7 @@ func _test_recoil_ratio_runtime_config_contract(harness) -> Dictionary:
     if format_config == null:
         return harness.fail_result("missing sample battle format")
     format_config.default_recoil_ratio = 0.5
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     var battle_state = _build_initialized_battle(core, content_index, battle_setup, 642)
     var p1_active = battle_state.get_side("P1").get_active_unit()
     var p2_active = battle_state.get_side("P2").get_active_unit()

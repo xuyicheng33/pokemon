@@ -31,7 +31,7 @@ func run_direct_damage_case(harness, core, sample_factory, skill_type_id: String
     content_index.register_resource(direct_skill)
     content_index.units["sample_pyron"].skill_ids[0] = direct_skill.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[1].starting_index = 2
     var battle_state = build_initialized_battle(core, content_index, battle_setup, 501)
 
@@ -125,7 +125,7 @@ func run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
     content_index.register_resource(harmless_skill)
     content_index.units["sample_mossaur"].skill_ids[0] = harmless_skill.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[1].starting_index = 2
     var battle_state = build_initialized_battle(core, content_index, battle_setup, 551)
     var commands: Array = [
@@ -180,7 +180,7 @@ func run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
     content_index.register_resource(passive)
     content_index.units["sample_pyron"].passive_skill_id = passive.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     var battle_state = build_initialized_battle(core, content_index, battle_setup, 601)
     var effect_damage_event = find_effect_damage_event(core.service("battle_logger").event_log)
     if effect_damage_event == null:

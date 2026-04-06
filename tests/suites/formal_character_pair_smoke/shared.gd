@@ -8,7 +8,7 @@ var _smoke_helper = FormalCharacterManagerSmokeHelperScript.new()
 var _helper = _smoke_helper.contracts()
 
 func validate_directed_surface_matrix(harness, sample_factory, cases: Array) -> Dictionary:
-	var formal_character_ids: PackedStringArray = sample_factory.formal_character_ids()
+	var formal_character_ids: PackedStringArray = harness.build_formal_character_ids(sample_factory)
 	if formal_character_ids.size() < 2:
 		return harness.fail_result("formal pair smoke requires at least two formal characters")
 	var known_character_ids := {}
@@ -54,7 +54,7 @@ func validate_directed_surface_matrix(harness, sample_factory, cases: Array) -> 
 	return harness.pass_result()
 
 func validate_unordered_interaction_matrix(harness, sample_factory, cases: Array) -> Dictionary:
-	var formal_character_ids: PackedStringArray = sample_factory.formal_character_ids()
+	var formal_character_ids: PackedStringArray = harness.build_formal_character_ids(sample_factory)
 	if formal_character_ids.size() < 2:
 		return harness.fail_result("formal pair interaction requires at least two formal characters")
 	var known_character_ids := {}

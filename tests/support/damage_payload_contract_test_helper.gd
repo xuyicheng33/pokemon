@@ -64,7 +64,7 @@ func run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
     content_index.register_resource(harmless_skill)
     content_index.units["sample_mossaur"].skill_ids[0] = harmless_skill.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = _build_sample_setup(sample_factory)
     battle_setup.sides[1].starting_index = 2
     var battle_state = build_initialized_battle(core, content_index, battle_setup, 571)
     var actor = battle_state.get_side("P1").get_active_unit()
@@ -132,7 +132,7 @@ func run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
     content_index.register_resource(passive)
     content_index.units["sample_pyron"].passive_skill_id = passive.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = _build_sample_setup(sample_factory)
     var battle_state = build_initialized_battle(core, content_index, battle_setup, 601)
     var actor = battle_state.get_side("P1").get_active_unit()
     _configure_self_special_formula_bias(actor)
@@ -179,6 +179,12 @@ func _run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
 
 func _run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
     return run_non_skill_formula_damage_kind_case(core, sample_factory)
+
+func _build_sample_setup(sample_factory):
+    var result: Dictionary = sample_factory.build_sample_setup_result()
+    if not bool(result.get("ok", false)):
+        return null
+    return result.get("data", null)
 
 func _build_initialized_battle(core, content_index, battle_setup, seed: int):
     return build_initialized_battle(core, content_index, battle_setup, seed)

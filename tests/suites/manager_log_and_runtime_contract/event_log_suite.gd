@@ -127,7 +127,7 @@ func _test_event_log_snapshot_readonly_detached_contract(harness) -> Dictionary:
 	var init_unwrap = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": 3041,
 		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-		"battle_setup": sample_factory.build_sample_setup(),
+		"battle_setup": harness.build_sample_setup(sample_factory),
 	}), "create_session")
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))

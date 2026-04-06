@@ -12,7 +12,7 @@ func load_entries_result() -> Dictionary:
 	if not error_message.is_empty():
 		return error_result(
 			ErrorCodesScript.INVALID_CONTENT_SNAPSHOT,
-			"SampleBattleFactory failed to load formal character registry: %s" % error_message
+			"SampleBattleFactory failed to load formal character runtime registry: %s" % error_message
 		)
 	return ok_result(load_result.get("entries", []))
 

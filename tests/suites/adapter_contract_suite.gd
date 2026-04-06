@@ -12,7 +12,7 @@ func _test_manager_replay_output_runtime_boundary(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_unwrap = _unwrap_ok(manager.run_replay(sample_factory.build_demo_replay_input(manager)), "run_replay")
+	var replay_unwrap = _unwrap_ok(manager.run_replay(harness.build_demo_replay_input(sample_factory, manager)), "run_replay")
 	if not bool(replay_unwrap.get("ok", false)):
 		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
 	var replay_result: Dictionary = replay_unwrap.get("data", {})

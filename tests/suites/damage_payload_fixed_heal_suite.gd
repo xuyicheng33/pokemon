@@ -68,7 +68,7 @@ func _test_fixed_type_resolution(harness) -> Dictionary:
     content_index.register_resource(harmless_skill)
     content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     var battle_state = _build_initialized_battle(core, content_index, battle_setup, 610)
     core.service("battle_logger").reset()
     core.service("turn_loop_controller").run_turn(battle_state, content_index, [
@@ -150,7 +150,7 @@ func _test_heal_percent_resolution(harness) -> Dictionary:
     content_index.register_resource(harmless_skill)
     content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     var battle_state = _build_initialized_battle(core, content_index, battle_setup, 611)
     var actor = battle_state.get_side("P1").get_active_unit()
     actor.current_hp = max(1, int(floor(float(actor.max_hp) / 2.0)))

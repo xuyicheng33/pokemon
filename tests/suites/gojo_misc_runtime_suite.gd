@@ -20,7 +20,7 @@ func _test_gojo_reverse_ritual_heal_contract(harness) -> Dictionary:
 		return harness.fail_result("SampleBattleFactory init failed")
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var ritual_loadout: PackedStringArray = PackedStringArray(["gojo_ao", "gojo_aka", "gojo_reverse_ritual"])
-	var battle_setup = sample_factory.build_setup_by_matchup_id("gojo_vs_sample", {"P1": {0: ritual_loadout}})
+	var battle_setup = harness.build_setup_by_matchup_id(sample_factory, "gojo_vs_sample", {"P1": {0: ritual_loadout}})
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1216, battle_setup)
 	var gojo_unit = battle_state.get_side("P1").get_active_unit()
 	if gojo_unit == null:

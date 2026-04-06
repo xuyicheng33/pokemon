@@ -203,7 +203,7 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
     runtime_content.register_resource(duplicate_item)
     runtime_content.units["sample_pyron"].passive_item_id = duplicate_item.id
     runtime_content.units["sample_mossaur"].passive_item_id = duplicate_item.id
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     var setup_errors: Array = runtime_content.validate_setup(battle_setup)
     var has_duplicate_item_error := false
     for error_msg in setup_errors:

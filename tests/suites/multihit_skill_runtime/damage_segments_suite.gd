@@ -26,7 +26,7 @@ func _test_multihit_skill_per_segment_mod_runtime_contract(harness) -> Dictionar
     content_index.register_resource(skill)
     content_index.units["sample_pyron"].skill_ids[0] = skill.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[1].starting_index = 2
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 840, battle_setup)
     var actor = battle_state.get_side("P1").get_active_unit()
@@ -120,7 +120,7 @@ func _test_multihit_skill_stops_after_faint_contract(harness) -> Dictionary:
     content_index.register_resource(skill)
     content_index.units["sample_pyron"].skill_ids[0] = skill.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[1].starting_index = 2
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 841, battle_setup)
     var actor = battle_state.get_side("P1").get_active_unit()
@@ -173,7 +173,7 @@ func _test_multihit_skill_top_level_power_ignored_contract(harness) -> Dictionar
     content_index.register_resource(skill)
     content_index.units["sample_pyron"].skill_ids[0] = skill.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     battle_setup.sides[1].starting_index = 2
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 842, battle_setup)
     var actor = battle_state.get_side("P1").get_active_unit()

@@ -39,13 +39,13 @@ run_all_text = read_text("tests/run_all.gd")
 pending.extend(collect_suite_refs(run_all_text))
 
 try:
-    registry_payload = json.loads(read_text("config/formal_character_registry.json"))
+    registry_payload = json.loads(read_text("config/formal_character_delivery_registry.json"))
 except Exception as exc:  # pragma: no cover - gate error path
     print(f"SUITE_REACHABILITY_FAILED: invalid registry json: {exc}", file=sys.stderr)
     sys.exit(1)
 
 if not isinstance(registry_payload, list):
-    print("SUITE_REACHABILITY_FAILED: config/formal_character_registry.json expects top-level array", file=sys.stderr)
+    print("SUITE_REACHABILITY_FAILED: config/formal_character_delivery_registry.json expects top-level array", file=sys.stderr)
     sys.exit(1)
 
 for entry in registry_payload:

@@ -29,7 +29,7 @@ func _test_gojo_manager_smoke_contract(harness) -> Dictionary:
 		manager,
 		sample_factory,
 		1301,
-		sample_factory.build_setup_by_matchup_id("gojo_vs_sample", {"P1": {0: ritual_loadout}})
+		harness.build_setup_by_matchup_id(sample_factory, "gojo_vs_sample", {"P1": {0: ritual_loadout}})
 	)
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
@@ -139,7 +139,7 @@ func _test_gojo_manager_domain_public_contract(harness) -> Dictionary:
 		return harness.fail_result(str(context["error"]))
 	var manager = context["manager"]
 	var sample_factory = context["sample_factory"]
-	var battle_setup = sample_factory.build_sample_setup()
+	var battle_setup = harness.build_sample_setup(sample_factory)
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["gojo_satoru", "sample_mossaur", "sample_tidekit"])
 	battle_setup.sides[0].starting_index = 0
 	battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_mossaur", "sample_pyron", "sample_tidekit"])

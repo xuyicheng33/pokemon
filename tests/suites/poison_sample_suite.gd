@@ -22,7 +22,7 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
     if content_index_a.effects.get("sample_poison_sting_burst", null) == null:
         return harness.fail_result("missing sample_poison_sting_burst effect content")
     content_index_a.units["sample_pyron"].skill_ids[0] = "sample_poison_sting"
-    var state_a = harness.build_initialized_battle(core, content_index_a, sample_factory, 3101, sample_factory.build_sample_setup())
+    var state_a = harness.build_initialized_battle(core, content_index_a, sample_factory, 3101, harness.build_sample_setup(sample_factory))
     var attacker_a = state_a.get_side("P1").get_active_unit()
     var target_a = state_a.get_side("P2").get_active_unit()
     if attacker_a == null or target_a == null:
@@ -66,7 +66,7 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
     var content_index_b = harness.build_loaded_content_index(sample_factory)
     content_index_b.units["sample_pyron"].skill_ids[0] = "sample_poison_sting"
     content_index_b.units["sample_tidekit"].combat_type_ids = PackedStringArray(["steel"])
-    var state_b = harness.build_initialized_battle(core, content_index_b, sample_factory, 3102, sample_factory.build_sample_setup())
+    var state_b = harness.build_initialized_battle(core, content_index_b, sample_factory, 3102, harness.build_sample_setup(sample_factory))
     var target_b = state_b.get_side("P2").get_active_unit()
     if target_b == null:
         return harness.fail_result("missing target unit for poison sample case B")

@@ -19,7 +19,7 @@ func _test_full_open_public_snapshot_contract(harness) -> Dictionary:
     var init_result = manager.create_session({
         "battle_seed": 301,
         "content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-        "battle_setup": sample_factory.build_sample_setup(),
+        "battle_setup": harness.build_sample_setup(sample_factory),
     })
     var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
     if not bool(init_unwrap.get("ok", false)):
@@ -96,7 +96,7 @@ func _test_public_snapshot_readonly_detached_contract(harness) -> Dictionary:
     var init_unwrap = _helper.unwrap_ok(manager.create_session({
         "battle_seed": 3011,
         "content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-        "battle_setup": sample_factory.build_sample_setup(),
+        "battle_setup": harness.build_sample_setup(sample_factory),
     }), "create_session")
     if not bool(init_unwrap.get("ok", false)):
         return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))

@@ -27,7 +27,7 @@ func _test_timeout_wait_path(harness) -> Dictionary:
 	var replay_input = preload("res://src/battle_core/contracts/replay_input.gd").new()
 	replay_input.battle_seed = 21
 	replay_input.content_snapshot_paths = snapshot_paths_payload.get("paths", PackedStringArray())
-	replay_input.battle_setup = sample_factory.build_sample_setup()
+	replay_input.battle_setup = harness.build_sample_setup(sample_factory)
 	replay_input.command_stream = [
 		core.service("command_builder").build_command({"turn_index": 1, "command_type": CommandTypesScript.SKILL, "command_source": "manual", "side_id": "P1", "actor_public_id": "P1-A", "skill_id": "sample_strike"}),
 	]
@@ -59,7 +59,7 @@ func _test_resource_forced_default_path(harness) -> Dictionary:
 	battle_state.battle_id = core.service("id_factory").next_id("battle")
 	battle_state.seed = 33
 	battle_state.rng_stream_index = core.service("rng_service").get_stream_index()
-	core.service("battle_initializer").initialize_battle(battle_state, content_index, sample_factory.build_sample_setup())
+	core.service("battle_initializer").initialize_battle(battle_state, content_index, harness.build_sample_setup(sample_factory))
 	var p1 = battle_state.get_side("P1")
 	if p1 == null:
 		return harness.fail_result("side P1 missing after initialize")
@@ -110,7 +110,7 @@ func _test_wait_allowed_non_mp_blocked_path(harness) -> Dictionary:
 	battle_state.battle_id = core.service("id_factory").next_id("battle")
 	battle_state.seed = 34
 	battle_state.rng_stream_index = core.service("rng_service").get_stream_index()
-	core.service("battle_initializer").initialize_battle(battle_state, content_index, sample_factory.build_sample_setup())
+	core.service("battle_initializer").initialize_battle(battle_state, content_index, harness.build_sample_setup(sample_factory))
 	var p1 = battle_state.get_side("P1")
 	if p1 == null:
 		return harness.fail_result("side P1 missing after initialize")

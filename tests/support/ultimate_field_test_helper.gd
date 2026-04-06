@@ -26,7 +26,7 @@ func build_sukuna_vs_sample_state(harness, seed: int) -> Dictionary:
 	if sample_factory == null:
 		return {"error": "SampleBattleFactory init failed"}
 	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_setup = sample_factory.build_sample_setup()
+	var battle_setup = harness.build_sample_setup(sample_factory)
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_tidekit"])
 	battle_setup.sides[0].starting_index = 0
 	battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_mossaur", "sample_tidekit"])

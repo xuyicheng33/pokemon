@@ -52,13 +52,16 @@ func _resolve_demo_mode() -> String:
 
 func _build_replay_input_for_demo_mode(sample_factory, demo_mode: String) -> Variant:
     if demo_mode == "legacy":
-        return sample_factory.build_demo_replay_input(manager)
+        var replay_result: Dictionary = sample_factory.build_demo_replay_input_result(manager)
+        return _unwrap_sample_factory_result(replay_result, "legacy demo replay input")
     return _build_kashimo_demo_replay_input(sample_factory)
 
 func _build_kashimo_demo_replay_input(sample_factory) -> Variant:
-    var battle_setup = sample_factory.build_setup_by_matchup_id("kashimo_vs_sample")
+    var battle_setup = _unwrap_sample_factory_result(
+        sample_factory.build_setup_by_matchup_id_result("kashimo_vs_sample"),
+        "kashimo demo setup"
+    )
     if battle_setup == null:
-        _fail_startup("Battle sandbox failed to build kashimo demo setup")
         return null
     var snapshot_paths_result: Dictionary = sample_factory.content_snapshot_paths_for_setup_result(battle_setup)
     if not bool(snapshot_paths_result.get("ok", false)):
@@ -121,6 +124,14 @@ func _build_kashimo_demo_replay_input(sample_factory) -> Variant:
     if _startup_failed:
         return null
     return replay_input
+
+func _unwrap_sample_factory_result(result: Dictionary, label: String):
+    if bool(result.get("ok", false)):
+        return result.get("data", null)
+    _fail_startup(
+        "Battle sandbox failed to build %s: %s" % [label, str(result.get("error_message", "unknown error"))]
+    )
+    return null
 
 func _cmd(payload: Dictionary) -> Variant:
     var envelope: Dictionary = manager.build_command(payload)

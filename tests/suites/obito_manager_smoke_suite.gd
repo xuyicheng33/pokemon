@@ -27,7 +27,7 @@ func _test_obito_manager_smoke_contract(harness) -> Dictionary:
         return harness.fail_result(str(context["error"]))
     var manager = context["manager"]
     var sample_factory = context["sample_factory"]
-    var init_unwrap = _smoke_helper.create_session(manager, sample_factory, 1550, sample_factory.build_setup_by_matchup_id("obito_vs_sample"))
+    var init_unwrap = _smoke_helper.create_session(manager, sample_factory, 1550, harness.build_setup_by_matchup_id(sample_factory, "obito_vs_sample"))
     if not bool(init_unwrap.get("ok", false)):
         return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
     var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))

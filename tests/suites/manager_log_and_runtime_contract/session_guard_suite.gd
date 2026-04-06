@@ -78,7 +78,7 @@ func _test_manager_invalid_session_read_contract(harness) -> Dictionary:
 	var init_result = manager.create_session({
 		"battle_seed": 307,
 		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-		"battle_setup": sample_factory.build_sample_setup(),
+		"battle_setup": harness.build_sample_setup(sample_factory),
 	})
 	var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
 	if not bool(init_unwrap.get("ok", false)):
@@ -118,7 +118,7 @@ func _test_manager_run_turn_invalid_envelope_contract(harness) -> Dictionary:
 	var init_result = manager.create_session({
 		"battle_seed": 308,
 		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-		"battle_setup": sample_factory.build_sample_setup(),
+		"battle_setup": harness.build_sample_setup(sample_factory),
 	})
 	var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
 	if not bool(init_unwrap.get("ok", false)):
@@ -161,7 +161,7 @@ func _test_manager_unconfigured_dependency_guard_contract(harness) -> Dictionary
 		manager.create_session({
 			"battle_seed": 309,
 			"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-			"battle_setup": sample_factory.build_sample_setup(),
+			"battle_setup": harness.build_sample_setup(sample_factory),
 		}),
 		"create_session",
 		ErrorCodesScript.INVALID_COMPOSITION,
@@ -183,7 +183,7 @@ func _test_manager_create_session_empty_snapshot_paths_contract(harness) -> Dict
 		manager.create_session({
 			"battle_seed": 3091,
 			"content_snapshot_paths": PackedStringArray(),
-			"battle_setup": sample_factory.build_sample_setup(),
+			"battle_setup": harness.build_sample_setup(sample_factory),
 		}),
 		"create_session",
 		ErrorCodesScript.INVALID_MANAGER_REQUEST,
@@ -207,7 +207,7 @@ func _test_manager_event_log_negative_from_index_contract(harness) -> Dictionary
 	var init_unwrap = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": 310,
 		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-		"battle_setup": sample_factory.build_sample_setup(),
+		"battle_setup": harness.build_sample_setup(sample_factory),
 	}), "create_session")
 	if not bool(init_unwrap.get("ok", false)):
 		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
@@ -241,7 +241,7 @@ func _test_manager_disposed_request_guard_contract(harness) -> Dictionary:
 		manager.create_session({
 			"battle_seed": 311,
 			"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-			"battle_setup": sample_factory.build_sample_setup(),
+			"battle_setup": harness.build_sample_setup(sample_factory),
 		}),
 		"create_session_after_dispose",
 		ErrorCodesScript.INVALID_MANAGER_REQUEST,
@@ -270,7 +270,7 @@ func _test_manager_create_session_runtime_guard_contract(harness) -> Dictionary:
 		manager.create_session({
 			"battle_seed": 312,
 			"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-			"battle_setup": sample_factory.build_sample_setup(),
+			"battle_setup": harness.build_sample_setup(sample_factory),
 		}),
 		"create_session",
 		ErrorCodesScript.INVALID_STATE_CORRUPTION,

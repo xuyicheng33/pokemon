@@ -91,7 +91,7 @@ func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictiona
     content_index.register_resource(harmless_skill)
     content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
 
-    var battle_setup = sample_factory.build_sample_setup()
+    var battle_setup = harness.build_sample_setup(sample_factory)
     var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 710, battle_setup)
     var actor = battle_state.get_side("P1").get_active_unit()
     var target = battle_state.get_side("P2").get_active_unit()
