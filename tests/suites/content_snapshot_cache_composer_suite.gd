@@ -4,6 +4,7 @@ class_name ContentSnapshotCacheComposerSuite
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("content_snapshot_cache_composer_stats_contract", failures, Callable(self, "_test_content_snapshot_cache_composer_stats_contract").bind(harness))
 	runner.run_test("content_snapshot_cache_signature_tracks_file_content_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_file_content_contract").bind(harness))
+	runner.run_test("content_snapshot_cache_signature_tracks_shared_dependency_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_shared_dependency_contract").bind(harness))
 
 func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
@@ -82,4 +83,44 @@ func _test_content_snapshot_cache_signature_tracks_file_content_contract(harness
 		return harness.fail_result("cache signature should not be empty for probe file")
 	if first_signature == second_signature:
 		return harness.fail_result("cache signature should change when file content changes under the same path")
+	return harness.pass_result()
+
+func _test_content_snapshot_cache_signature_tracks_shared_dependency_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var composer = manager_payload.get("composer", null)
+	if composer == null:
+		return harness.fail_result("content snapshot cache shared dependency contract requires composer handle")
+	var cache = composer.shared_content_snapshot_cache()
+	if cache == null:
+		return harness.fail_result("shared content snapshot cache should be available")
+	var root_path := "user://content_snapshot_cache_signature_root_probe.tres"
+	var dependency_path := "user://content_snapshot_cache_signature_dependency_probe.tres"
+	var dependency_write = FileAccess.open(dependency_path, FileAccess.WRITE)
+	if dependency_write == null:
+		return harness.fail_result("failed to create cache dependency probe file")
+	dependency_write.store_string("[gd_resource type=\"Resource\" load_steps=1 format=3]\n\n[resource]\nvalue = 1\n")
+	dependency_write.close()
+	var root_write = FileAccess.open(root_path, FileAccess.WRITE)
+	if root_write == null:
+		DirAccess.remove_absolute(dependency_path)
+		return harness.fail_result("failed to create cache root probe file")
+	root_write.store_string("[gd_resource type=\"Resource\" load_steps=2 format=3]\n\n[ext_resource type=\"Resource\" path=\"%s\" id=\"1\"]\n\n[resource]\n" % dependency_path)
+	root_write.close()
+	var first_signature := String(cache._build_signature(PackedStringArray([root_path])))
+	var dependency_rewrite = FileAccess.open(dependency_path, FileAccess.WRITE)
+	if dependency_rewrite == null:
+		DirAccess.remove_absolute(root_path)
+		DirAccess.remove_absolute(dependency_path)
+		return harness.fail_result("failed to rewrite cache dependency probe file")
+	dependency_rewrite.store_string("[gd_resource type=\"Resource\" load_steps=1 format=3]\n\n[resource]\nvalue = 2\n")
+	dependency_rewrite.close()
+	var second_signature := String(cache._build_signature(PackedStringArray([root_path])))
+	DirAccess.remove_absolute(root_path)
+	DirAccess.remove_absolute(dependency_path)
+	if first_signature.is_empty() or second_signature.is_empty():
+		return harness.fail_result("cache signature should not be empty for dependency probe")
+	if first_signature == second_signature:
+		return harness.fail_result("cache signature should change when a referenced shared dependency changes")
 	return harness.pass_result()

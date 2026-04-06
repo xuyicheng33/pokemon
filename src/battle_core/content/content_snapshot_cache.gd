@@ -89,16 +89,13 @@ func _duplicate_resources(resources: Array) -> Array:
     return duplicates
 
 func _build_signature(content_snapshot_paths: PackedStringArray) -> String:
-    var normalized_paths: Array[String] = []
-    for raw_path in content_snapshot_paths:
-        normalized_paths.append(String(raw_path).strip_edges())
-    normalized_paths.sort()
-    if normalized_paths.is_empty():
+    var tracked_paths := _collect_tracked_signature_paths(content_snapshot_paths)
+    if tracked_paths.is_empty():
         return ""
     var hashing_context = HashingContext.new()
     hashing_context.start(HashingContext.HASH_SHA256)
     var signature_parts: Array[String] = []
-    for path in normalized_paths:
+    for path in tracked_paths:
         signature_parts.append(path)
         var md5 := FileAccess.get_md5(path)
         if not md5.is_empty():
@@ -107,3 +104,63 @@ func _build_signature(content_snapshot_paths: PackedStringArray) -> String:
         signature_parts.append("mtime:%d" % FileAccess.get_modified_time(path))
     hashing_context.update("\n".join(signature_parts).to_utf8_buffer())
     return hashing_context.finish().hex_encode()
+
+func _collect_tracked_signature_paths(content_snapshot_paths: PackedStringArray) -> Array[String]:
+    var pending_paths: Array[String] = []
+    for raw_path in content_snapshot_paths:
+        var normalized_path := String(raw_path).strip_edges()
+        if normalized_path.is_empty():
+            continue
+        pending_paths.append(normalized_path)
+    if pending_paths.is_empty():
+        return []
+    var tracked_paths: Array[String] = []
+    var seen_paths: Dictionary = {}
+    while not pending_paths.is_empty():
+        var path := String(pending_paths.pop_back())
+        if path.is_empty() or seen_paths.has(path):
+            continue
+        seen_paths[path] = true
+        tracked_paths.append(path)
+        for dependency_path in _collect_signature_dependency_paths(path):
+            if not seen_paths.has(dependency_path):
+                pending_paths.append(dependency_path)
+    tracked_paths.sort()
+    return tracked_paths
+
+func _collect_signature_dependency_paths(path: String) -> Array[String]:
+    if not path.begins_with("res://") and not path.begins_with("user://"):
+        return []
+    var file := FileAccess.open(path, FileAccess.READ)
+    if file == null:
+        return []
+    var dependency_paths: Array[String] = []
+    for raw_line in file.get_as_text().split("\n"):
+        var line := String(raw_line).strip_edges()
+        if not line.begins_with("[ext_resource"):
+            continue
+        var dependency_path := _extract_dependency_path(line)
+        if not _should_track_dependency_path(dependency_path):
+            continue
+        dependency_paths.append(dependency_path)
+    return dependency_paths
+
+func _extract_dependency_path(ext_resource_line: String) -> String:
+    var marker := 'path="'
+    var start_index := ext_resource_line.find(marker)
+    if start_index == -1:
+        return ""
+    start_index += marker.length()
+    var end_index := ext_resource_line.find('"', start_index)
+    if end_index == -1:
+        return ""
+    return ext_resource_line.substr(start_index, end_index - start_index).strip_edges()
+
+func _should_track_dependency_path(path: String) -> bool:
+    if path.is_empty():
+        return false
+    if path.begins_with("res://content/"):
+        return path.ends_with(".tres") or path.ends_with(".res")
+    if path.begins_with("user://"):
+        return true
+    return false
