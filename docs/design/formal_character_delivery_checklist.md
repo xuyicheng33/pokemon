@@ -41,6 +41,7 @@
 
 - [ ] `SampleBattleFactory` 增加该角色相关构局入口，避免 suite 内手写拼装
 - [ ] `SampleBattleFactory` 公开 builder 名称保持稳定，内部只允许走统一 helper，不再为单角色保留私有手写构局
+- [ ] `SampleBattleFactory` 正式快照路径读取统一走 `content_snapshot_paths_result()`；若保留 `content_snapshot_paths()`，只能作为薄封装，不再承担正式失败语义
 - [ ] `config/formal_character_registry.json` 新增角色条目
 - [ ] registry 至少补齐：
   - [ ] `character_id / display_name / unit_definition_id`
@@ -53,6 +54,7 @@
 - [ ] `design_needles / adjustment_needles`
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
 - [ ] 若补了 `content_validator_script_path`，只登记在 `config/formal_character_registry.json` 对应角色条目里；runtime loader 会直接读取这份 registry 并动态装配 validator，不再维护第二份 runtime 描述表
+- [ ] formal validator 统一放在 `src/battle_core/content/formal_validators/`：`shared/` 放模板与 loader，角色子目录放对应 validator
 - [ ] formal validator 优先复用共享模板 helper；角色 validator 只保留角色差异校验，不再复制 unit / skill / effect / field 的通用断言文案
 - [ ] formal validator 入口固定收口为三桶：`unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts`
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
@@ -75,6 +77,7 @@
 
 - [ ] `tests/suites/<character>_suite.gd` 作为 wrapper
 - [ ] 至少 1 个角色独有 runtime 子 suite
+- [ ] 若共享或角色 wrapper 超过维护阈值，保持原 wrapper 文件名与测试名不变，并把断言本体下沉到 `tests/suites/<wrapper_name_without_.gd>/`
 - [ ] 锁角色主玩法路径，而不是只测通用 contract
 
 ### C. Manager smoke suite

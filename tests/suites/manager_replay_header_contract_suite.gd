@@ -19,7 +19,10 @@ func _test_replay_snapshot_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var live_unwrap = _unwrap_ok(manager.create_session({"battle_seed": 405, "content_snapshot_paths": sample_factory.content_snapshot_paths(), "battle_setup": sample_factory.build_sample_setup()}), "create_session")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+	var live_unwrap = _unwrap_ok(manager.create_session({"battle_seed": 405, "content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()), "battle_setup": sample_factory.build_sample_setup()}), "create_session")
 	if not bool(live_unwrap.get("ok", false)):
 		return harness.fail_result(str(live_unwrap.get("error", "manager create_session failed")))
 	var live_snapshot = live_unwrap.get("data", {}).get("public_snapshot", {})

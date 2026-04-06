@@ -17,7 +17,10 @@ func validate_with_sample_mutation(harness, sample_factory, mutate: Callable) ->
 
 func run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
     var content_index = BattleContentIndexScript.new()
-    content_index.load_snapshot(sample_factory.content_snapshot_paths())
+    var snapshot_paths_result: Dictionary = sample_factory.content_snapshot_paths_result()
+    if not bool(snapshot_paths_result.get("ok", false)):
+        return {"error": str(snapshot_paths_result.get("error_message", "content snapshot path build failed"))}
+    content_index.load_snapshot(snapshot_paths_result.get("data", PackedStringArray()))
 
     var payload = DamagePayloadScript.new()
     payload.payload_type = "damage"
@@ -100,7 +103,10 @@ func run_formula_skill_inherited_kind_case(core, sample_factory) -> Dictionary:
 
 func run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
     var content_index = BattleContentIndexScript.new()
-    content_index.load_snapshot(sample_factory.content_snapshot_paths())
+    var snapshot_paths_result: Dictionary = sample_factory.content_snapshot_paths_result()
+    if not bool(snapshot_paths_result.get("ok", false)):
+        return {"error": str(snapshot_paths_result.get("error_message", "content snapshot path build failed"))}
+    content_index.load_snapshot(snapshot_paths_result.get("data", PackedStringArray()))
 
     var payload = DamagePayloadScript.new()
     payload.payload_type = "damage"

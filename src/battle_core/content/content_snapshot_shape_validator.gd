@@ -6,7 +6,7 @@ const ContentSnapshotSkillValidatorScript := preload("res://src/battle_core/cont
 const ContentSnapshotUnitValidatorScript := preload("res://src/battle_core/content/content_snapshot_unit_validator.gd")
 const ContentSnapshotFieldValidatorScript := preload("res://src/battle_core/content/content_snapshot_field_validator.gd")
 const ContentSnapshotEffectValidatorScript := preload("res://src/battle_core/content/content_snapshot_effect_validator.gd")
-const ContentSnapshotFormalCharacterValidatorScript := preload("res://src/battle_core/content/content_snapshot_formal_character_validator.gd")
+const ContentSnapshotFormalCharacterValidatorScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_validator.gd")
 
 var _content_index = null
 var _payload_validator = null

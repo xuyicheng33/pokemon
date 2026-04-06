@@ -21,9 +21,12 @@ func _test_timeout_wait_path(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var replay_input = preload("res://src/battle_core/contracts/replay_input.gd").new()
 	replay_input.battle_seed = 21
-	replay_input.content_snapshot_paths = sample_factory.content_snapshot_paths()
+	replay_input.content_snapshot_paths = snapshot_paths_payload.get("paths", PackedStringArray())
 	replay_input.battle_setup = sample_factory.build_sample_setup()
 	replay_input.command_stream = [
 		core.service("command_builder").build_command({"turn_index": 1, "command_type": CommandTypesScript.SKILL, "command_source": "manual", "side_id": "P1", "actor_public_id": "P1-A", "skill_id": "sample_strike"}),
@@ -44,8 +47,12 @@ func _test_resource_forced_default_path(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var content_index = BattleContentIndexScript.new()
-	content_index.load_snapshot(sample_factory.content_snapshot_paths())
+	if not content_index.load_snapshot(snapshot_paths_payload.get("paths", PackedStringArray())):
+		return harness.fail_result("content snapshot load failed: %s" % content_index.last_error_message)
 	core.service("rng_service").reset(33)
 	var battle_state = BattleStateScript.new()
 	core.service("id_factory").reset()
@@ -91,8 +98,12 @@ func _test_wait_allowed_non_mp_blocked_path(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var content_index = BattleContentIndexScript.new()
-	content_index.load_snapshot(sample_factory.content_snapshot_paths())
+	if not content_index.load_snapshot(snapshot_paths_payload.get("paths", PackedStringArray())):
+		return harness.fail_result("content snapshot load failed: %s" % content_index.last_error_message)
 	core.service("rng_service").reset(34)
 	var battle_state = BattleStateScript.new()
 	core.service("id_factory").reset()

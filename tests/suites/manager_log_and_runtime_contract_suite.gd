@@ -30,9 +30,12 @@ func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var init_result = manager.create_session({
 		"battle_seed": 304,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 		"battle_setup": sample_factory.build_gojo_vs_sukuna_setup(),
 	})
 	var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
@@ -127,9 +130,12 @@ func _test_event_log_snapshot_readonly_detached_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var init_unwrap = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": 3041,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 		"battle_setup": sample_factory.build_sample_setup(),
 	}), "create_session")
 	if not bool(init_unwrap.get("ok", false)):
@@ -176,9 +182,12 @@ func _test_manager_run_turn_invalid_envelope_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var init_result = manager.create_session({
 		"battle_seed": 308,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 		"battle_setup": sample_factory.build_sample_setup(),
 	})
 	var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
@@ -218,9 +227,12 @@ func _test_manager_invalid_session_read_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var init_result = manager.create_session({
 		"battle_seed": 307,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 		"battle_setup": sample_factory.build_sample_setup(),
 	})
 	var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
@@ -252,10 +264,13 @@ func _test_manager_unconfigured_dependency_guard_contract(harness) -> Dictionary
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var failure = _helper.expect_failure_code(
 		manager.create_session({
 			"battle_seed": 309,
-			"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+			"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 			"battle_setup": sample_factory.build_sample_setup(),
 		}),
 		"create_session",
@@ -320,7 +335,10 @@ func _test_manager_run_replay_null_command_contract(harness) -> Dictionary:
 		return harness.fail_result("SampleBattleFactory init failed")
 	var replay_input = ReplayInputScript.new()
 	replay_input.battle_seed = 3092
-	replay_input.content_snapshot_paths = sample_factory.content_snapshot_paths()
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+	replay_input.content_snapshot_paths = snapshot_paths_payload.get("paths", PackedStringArray())
 	replay_input.battle_setup = sample_factory.build_sample_setup()
 	replay_input.command_stream = [null]
 	var failure = _helper.expect_failure_code(
@@ -341,9 +359,12 @@ func _test_manager_event_log_negative_from_index_contract(harness) -> Dictionary
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var init_unwrap = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": 310,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 		"battle_setup": sample_factory.build_sample_setup(),
 	}), "create_session")
 	if not bool(init_unwrap.get("ok", false)):
@@ -371,10 +392,13 @@ func _test_manager_disposed_request_guard_contract(harness) -> Dictionary:
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
 	manager.dispose()
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var failure = _helper.expect_failure_code(
 		manager.create_session({
 			"battle_seed": 311,
-			"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+			"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 			"battle_setup": sample_factory.build_sample_setup(),
 		}),
 		"create_session_after_dispose",

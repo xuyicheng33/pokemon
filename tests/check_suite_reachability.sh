@@ -14,11 +14,21 @@ import re
 import sys
 
 root = Path(".")
-suite_preload_pattern = re.compile(r'preload\("res://(tests/suites/[^"]+\.gd)"\)')
+suite_ref_patterns = [
+    re.compile(r'preload\("res://(tests/suites/[^"]+\.gd)"\)'),
+    re.compile(r'extends "res://(tests/suites/[^"]+\.gd)"'),
+]
 
 
 def read_text(rel_path: str) -> str:
     return (root / rel_path).read_text(encoding="utf-8")
+
+
+def collect_suite_refs(text: str) -> list[str]:
+    refs: list[str] = []
+    for pattern in suite_ref_patterns:
+        refs.extend(pattern.findall(text))
+    return refs
 
 
 reachable: set[str] = set()
@@ -26,7 +36,7 @@ pending: list[str] = []
 required_suite_paths: set[str] = set()
 
 run_all_text = read_text("tests/run_all.gd")
-pending.extend(suite_preload_pattern.findall(run_all_text))
+pending.extend(collect_suite_refs(run_all_text))
 
 try:
     registry_payload = json.loads(read_text("config/formal_character_registry.json"))
@@ -56,7 +66,7 @@ while pending:
         print(f"SUITE_REACHABILITY_FAILED: missing suite path {suite_path}", file=sys.stderr)
         sys.exit(1)
     reachable.add(suite_path)
-    for child_suite in suite_preload_pattern.findall(read_text(suite_path)):
+    for child_suite in collect_suite_refs(read_text(suite_path)):
         pending.append(child_suite)
 
 for rel_path in sorted(required_suite_paths):
@@ -73,7 +83,7 @@ for rel_path in sorted(required_suite_paths):
 
 all_suite_paths = {
     str(path.relative_to(root))
-    for path in (root / "tests/suites").glob("*.gd")
+    for path in (root / "tests/suites").rglob("*.gd")
 }
 unreachable = sorted(all_suite_paths - reachable)
 if unreachable:
@@ -82,5 +92,5 @@ if unreachable:
         print(f"  - {rel_path}", file=sys.stderr)
     sys.exit(1)
 
-print("SUITE_REACHABILITY_PASSED: every tests/suites/*.gd file is reachable from run_all/registry")
+print("SUITE_REACHABILITY_PASSED: every tests/suites/**/*.gd file is reachable from run_all/registry")
 PY

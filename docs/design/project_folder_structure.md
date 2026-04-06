@@ -10,6 +10,7 @@
   content/
     battle_formats/
     samples/
+    shared/
     combat_types/
     units/
     skills/
@@ -28,6 +29,7 @@
     battle_core/
       runtime/
       content/
+        formal_validators/
       contracts/
       commands/
       turn/
@@ -35,6 +37,7 @@
       math/
       lifecycle/
       effects/
+        payload_handlers/
       passives/
       logging/
       facades/
@@ -54,25 +57,28 @@
 
 |目录|职责|
 |---|---|
-|`content/`|战斗规则资源定义与最小样例|
+|`content/`|战斗规则资源定义、正式角色资源与共享 payload 资源|
 |`config/`|工程级静态配置；当前包含 `formal_character_registry.json`|
 |`content/battle_formats`|战斗格式定义资源|
 |`content/samples`|最小样例资源与样例对局资源|
+|`content/shared`|供正式角色跨资源复用的共享 payload / helper Resource，不直接作为顶层 snapshot 注册项|
 |`content/combat_types`|战斗属性定义资源|
 |`docs/design/`|工程实现方案文档|
 |`docs/rules/`|规则权威文档|
 |`docs/records/`|任务与决策记录|
 |`src/battle_core/runtime`|运行态对象|
 |`src/battle_core/content`|内容 `Resource` 类型|
+|`src/battle_core/content/formal_validators`|formal validator 目录；`shared/` 放共享模板与 registry loader，角色子目录放正式角色 validator|
 |`src/battle_core/contracts`|跨模块强类型契约|
 |`src/battle_core/*`|领域服务|
+|`src/battle_core/effects/payload_handlers`|payload handler 与其子 runtime service；Effects 的正式子域|
 |`src/battle_core/facades`|对外围公开的稳定 facade 与公开快照构建辅助|
 |`src/adapters`|UI/输入/测试适配层|
 |`src/composition`|服务装配入口|
 |`src/shared`|无业务依赖的通用工具和常量|
 |`scenes/boot`|应用启动入口|
 |`scenes/sandbox`|战斗骨架调试场景|
-|`tests/suites`|业务回归测试套件|
+|`tests/suites`|业务回归测试套件；超阈值时保留稳定 wrapper，并把真实断言下沉到同名子目录|
 |`tests/support`|测试 harness 与公共构造器|
 |`tests/fixtures`|回放/样例输入|
 |`tests/helpers`|预留的测试辅助脚本目录|

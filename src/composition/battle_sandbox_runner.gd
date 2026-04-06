@@ -56,9 +56,13 @@ func _build_replay_input_for_demo_mode(sample_factory, demo_mode: String) -> Var
     return _build_kashimo_demo_replay_input(sample_factory)
 
 func _build_kashimo_demo_replay_input(sample_factory) -> Variant:
+    var snapshot_paths_result: Dictionary = sample_factory.content_snapshot_paths_result()
+    if not bool(snapshot_paths_result.get("ok", false)):
+        _fail_startup("Battle sandbox content snapshot build failed: %s" % str(snapshot_paths_result.get("error_message", "unknown error")))
+        return null
     var replay_input = ReplayInputScript.new()
     replay_input.battle_seed = 9101
-    replay_input.content_snapshot_paths = sample_factory.content_snapshot_paths()
+    replay_input.content_snapshot_paths = snapshot_paths_result.get("data", PackedStringArray())
     # NOTE: build_kashimo_vs_sample_setup is wired in SampleBattleFactory (formal delivery surface).
     replay_input.battle_setup = sample_factory.build_kashimo_vs_sample_setup()
 

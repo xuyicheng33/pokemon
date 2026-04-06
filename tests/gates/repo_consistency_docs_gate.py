@@ -57,7 +57,7 @@ ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_e
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_registry.json", "schema formal character single source wording")
-ctx.require_contains("docs/design/battle_content_schema.md", "content_snapshot_formal_character_registry.gd", "schema runtime validator loader wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "formal_validators/shared/content_snapshot_formal_character_registry.gd", "schema runtime validator loader wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "当前 snapshot 实际出现的正式角色", "schema scoped formal validator wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "content_validator_script_path", "schema formal character validator path wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "nullify_field_accuracy", "schema field accuracy nullify contract")

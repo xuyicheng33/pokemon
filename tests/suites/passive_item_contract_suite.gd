@@ -122,10 +122,10 @@ func _test_passive_item_manager_smoke_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var baseline_result = _run_manager_damage_case(manager, sample_factory, sample_factory.build_sample_setup(), 1901)
+	var baseline_result = _run_manager_damage_case(harness, manager, sample_factory, sample_factory.build_sample_setup(), 1901)
 	if baseline_result.has("error"):
 		return harness.fail_result(str(baseline_result["error"]))
-	var item_result = _run_manager_damage_case(manager, sample_factory, sample_factory.build_passive_item_vs_sample_setup(), 1901)
+	var item_result = _run_manager_damage_case(harness, manager, sample_factory, sample_factory.build_passive_item_vs_sample_setup(), 1901)
 	if item_result.has("error"):
 		return harness.fail_result(str(item_result["error"]))
 	if int(item_result.get("damage", 0)) <= int(baseline_result.get("damage", 0)):
@@ -146,10 +146,10 @@ func _test_passive_item_replay_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var baseline_input = _build_single_strike_replay_input(manager, sample_factory, sample_factory.build_sample_setup(), 1901)
+	var baseline_input = _build_single_strike_replay_input(harness, manager, sample_factory, sample_factory.build_sample_setup(), 1901)
 	if baseline_input == null:
 		return harness.fail_result("failed to build baseline replay input")
-	var item_input = _build_single_strike_replay_input(manager, sample_factory, sample_factory.build_passive_item_vs_sample_setup(), 1901)
+	var item_input = _build_single_strike_replay_input(harness, manager, sample_factory, sample_factory.build_passive_item_vs_sample_setup(), 1901)
 	if item_input == null:
 		return harness.fail_result("failed to build passive item replay input")
 	var baseline_unwrap = _helper.unwrap_ok(manager.run_replay(baseline_input), "run_replay_baseline")
@@ -176,10 +176,13 @@ func _test_passive_item_replay_contract(harness) -> Dictionary:
 		return harness.fail_result("passive item replay should keep passive_item_id visible in public snapshot")
 	return harness.pass_result()
 
-func _run_manager_damage_case(manager, sample_factory, battle_setup, battle_seed: int) -> Dictionary:
+func _run_manager_damage_case(harness, manager, sample_factory, battle_setup, battle_seed: int) -> Dictionary:
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return {"error": snapshot_paths_payload.get("error", "content snapshot path build failed")}
 	var init_unwrap = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": battle_seed,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 		"battle_setup": battle_setup,
 	}), "create_session")
 	if not bool(init_unwrap.get("ok", false)):
@@ -220,12 +223,15 @@ func _run_manager_damage_case(manager, sample_factory, battle_setup, battle_seed
 		"prebattle_public_teams": init_data.get("prebattle_public_teams", []),
 	}
 
-func _build_single_strike_replay_input(command_port, sample_factory, battle_setup, battle_seed: int):
+func _build_single_strike_replay_input(harness, command_port, sample_factory, battle_setup, battle_seed: int):
 	if command_port == null or not command_port.has_method("build_command"):
+		return null
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
 		return null
 	var replay_input = ReplayInputScript.new()
 	replay_input.battle_seed = battle_seed
-	replay_input.content_snapshot_paths = sample_factory.content_snapshot_paths()
+	replay_input.content_snapshot_paths = snapshot_paths_payload.get("paths", PackedStringArray())
 	replay_input.battle_setup = battle_setup
 	var p1_command = _helper.unwrap_ok(command_port.build_command({
 		"turn_index": 1,

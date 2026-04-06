@@ -79,9 +79,19 @@ func build_sample_factory():
         return null
     return sample_factory
 
+func build_content_snapshot_paths(sample_factory) -> Dictionary:
+    if sample_factory == null:
+        return {"error": "SampleBattleFactory init failed"}
+    var snapshot_result: Dictionary = sample_factory.content_snapshot_paths_result()
+    if not bool(snapshot_result.get("ok", false)):
+        return {"error": str(snapshot_result.get("error_message", "content snapshot path build failed"))}
+    return {"paths": snapshot_result.get("data", PackedStringArray())}
+
 func build_loaded_content_index(sample_factory):
     var content_index = BattleContentIndexScript.new()
-    var loaded: bool = content_index.load_snapshot(sample_factory.content_snapshot_paths())
+    var snapshot_paths_payload := build_content_snapshot_paths(sample_factory)
+    assert(not snapshot_paths_payload.has("error"), "Content snapshot path build failed: %s" % str(snapshot_paths_payload.get("error", "unknown error")))
+    var loaded: bool = content_index.load_snapshot(snapshot_paths_payload.get("paths", PackedStringArray()))
     assert(loaded, "Content snapshot load failed: %s" % content_index.last_error_message)
     return content_index
 

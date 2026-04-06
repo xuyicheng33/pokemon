@@ -19,9 +19,13 @@ func _test_kashimo_kyokyo_loadout_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+	var snapshot_paths: PackedStringArray = snapshot_paths_payload.get("paths", PackedStringArray())
 	var default_session = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": 851,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths,
 		"battle_setup": _support.build_kashimo_setup(sample_factory),
 	}), "create_session(default kashimo)")
 	if not bool(default_session.get("ok", false)):
@@ -39,7 +43,7 @@ func _test_kashimo_kyokyo_loadout_contract(harness) -> Dictionary:
 	var loadout_override := {0: PackedStringArray(["kashimo_raiken", "kashimo_charge", "kashimo_kyokyo_katsura"])}
 	var override_session = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": 852,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths,
 		"battle_setup": _support.build_kashimo_setup(sample_factory, loadout_override),
 	}), "create_session(kashimo kyokyo loadout)")
 	if not bool(override_session.get("ok", false)):

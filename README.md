@@ -52,6 +52,8 @@ scenes/
   sandbox/              # 原型试跑场景
 src/
   battle_core/          # 核心引擎
+    content/formal_validators/  # 正式角色 formal validator（shared + per-character）
+    effects/payload_handlers/   # payload handler 与 payload 子 runtime service
   composition/          # 依赖装配
   adapters/             # UI/输入适配
   shared/               # 通用常量与工具
@@ -199,7 +201,8 @@ tests/run_with_gate.sh
 - `UnitDefinition.skill_ids` 表示默认装配的 3 个常规技能；`candidate_skill_ids` 表示可供赛前替换的常规技能候选池（为空表示没有额外候选池）
 - 普通技能与奥义优先级约束分离校验
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
-- `SampleBattleFactory.content_snapshot_paths()` 当前固定收集两段内容：`content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 的顶层样例资源，以及 `config/formal_character_registry.json` 里每个正式角色显式登记的 `required_content_paths`；缺目录、缺资源或 registry 漂移时直接 fail-fast
+- `SampleBattleFactory.content_snapshot_paths_result()` 是正式快照路径入口：当前固定收集两段内容，分别是 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 的顶层样例资源，以及 `config/formal_character_registry.json` 里每个正式角色显式登记的 `required_content_paths`；缺目录、缺资源或 registry 漂移时统一返回 `{ ok, data, error_code, error_message }`
+- 旧的 `SampleBattleFactory.content_snapshot_paths()` 只保留为薄封装，内部直接解包结果式 API，不再承担正式失败语义
 - `ContentSnapshotCache` 的签名当前固定包含稳定排序后的路径列表与每个文件的内容指纹；同一路径下只要文件内容变化，就必须重新 miss，而不是继续复用旧 cache entry
 - 若多个正式资源要共享同一份 payload，可把辅助 Resource 放到 `content/shared/`，再由顶层内容资源显式外部引用；`content/shared/` 本身不参与顶层 snapshot 注册
 
@@ -225,9 +228,10 @@ tests/run_with_gate.sh
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
 - 角色注册：`config/formal_character_registry.json`
-- 共享内容校验：若角色有跨资源共享不变量，可在 `config/formal_character_registry.json` 里登记 `content_validator_script_path`；这份 registry 同时是正式角色交付面与可选内容 validator 的单一登记源，runtime 统一由 `src/battle_core/content/content_snapshot_formal_character_registry.gd` 读取它并动态装配 validator
+- 共享内容校验：若角色有跨资源共享不变量，可在 `config/formal_character_registry.json` 里登记 `content_validator_script_path`；这份 registry 同时是正式角色交付面与可选内容 validator 的单一登记源，runtime 统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取它并动态装配 validator
 - 加载期 formal 校验：`ContentSnapshotFormalCharacterValidator` 只会对当前 content snapshot 实际已出现的正式角色执行对应 validator，缺席角色不会误报
 - validator 模板：正式角色 entry validator 固定收口为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶；入口文件只负责 preload 与串联，不再自由追加角色私有逻辑
+- 大型共享 suite 当前统一采用“稳定 wrapper + 子 suite”组织：例如 `tests/suites/multihit_skill_runtime_suite.gd` 只保留入口职责，真实断言下沉到 `tests/suites/multihit_skill_runtime/*.gd`
 - 注册表锚点：除 wrapper `suite_path` 外，还固定登记 `sample_setup_method / required_suite_paths / required_test_names`；其中 `sample_setup_method` 必须精确对应 `SampleBattleFactory` 的 builder 方法名；共享 suite（如 `ultimate_field_suite.gd`）也必须显式挂回角色正式交付面
 - validator 坏例：只要角色登记了 `content_validator_script_path`，就必须同时把 `tests/suites/extension_validation_contract_suite.gd` 和至少一个 `formal_<character>_validator_*bad_case_contract` 锚点挂回 registry
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
@@ -257,9 +261,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-06）
 
-- `src/**/*.gd`：`14769` 行
-- `tests/**/*.gd`：`19056` 行
-- GDScript 合计：`33825` 行
+- `src/**/*.gd`：`14947` 行
+- `tests/**/*.gd`：`19336` 行
+- GDScript 合计：`34283` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

@@ -54,7 +54,10 @@ func _test_content_snapshot_curated_contract(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
-    var snapshot_paths = sample_factory.content_snapshot_paths()
+    var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+    if snapshot_paths_payload.has("error"):
+        return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+    var snapshot_paths: PackedStringArray = snapshot_paths_payload.get("paths", PackedStringArray())
     var required_paths := PackedStringArray([
         "res://content/skills/sample_strike.tres",
         "res://content/units/gojo/gojo_satoru.tres",

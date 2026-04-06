@@ -2,7 +2,7 @@ extends RefCounted
 class_name FormalCharacterRegistry
 
 const REGISTRY_PATH := "res://config/formal_character_registry.json"
-const RuntimeRegistryScript := preload("res://src/battle_core/content/content_snapshot_formal_character_registry.gd")
+const RuntimeRegistryScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd")
 
 func load_entries() -> Array:
 	var load_result: Dictionary = RuntimeRegistryScript.load_entries()

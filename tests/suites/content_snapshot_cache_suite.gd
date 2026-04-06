@@ -24,8 +24,11 @@ func _test_content_snapshot_cache_manager_black_box_contract(harness) -> Diction
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 
-	var content_snapshot_paths = sample_factory.content_snapshot_paths()
+	var content_snapshot_paths: PackedStringArray = snapshot_paths_payload.get("paths", PackedStringArray())
 	var battle_setup = sample_factory.build_sample_setup()
 	var battle_seed := 509
 	var baseline_content_index = harness.build_loaded_content_index(sample_factory)

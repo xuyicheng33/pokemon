@@ -45,9 +45,12 @@ func _test_replay_runs_to_end(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var replay_input = ReplayInputScript.new()
 	replay_input.battle_seed = 15
-	replay_input.content_snapshot_paths = sample_factory.content_snapshot_paths()
+	replay_input.content_snapshot_paths = snapshot_paths_payload.get("paths", PackedStringArray())
 	replay_input.battle_setup = sample_factory.build_sample_setup()
 	replay_input.command_stream = [
 		core.service("command_builder").build_command({"turn_index": 1, "command_type": CommandTypesScript.SKILL, "command_source": "manual", "side_id": "P1", "actor_public_id": "P1-A", "skill_id": "sample_strike"}),
@@ -71,9 +74,12 @@ func _test_miss_path(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var replay_input = ReplayInputScript.new()
 	replay_input.battle_seed = 5
-	replay_input.content_snapshot_paths = sample_factory.content_snapshot_paths()
+	replay_input.content_snapshot_paths = snapshot_paths_payload.get("paths", PackedStringArray())
 	replay_input.battle_setup = sample_factory.build_sample_setup()
 	replay_input.command_stream = [
 		core.service("command_builder").build_command({"turn_index": 1, "command_type": CommandTypesScript.SKILL, "command_source": "manual", "side_id": "P1", "actor_public_id": "P1-A", "skill_id": "sample_strike"}),
@@ -100,8 +106,8 @@ func _test_replay_turn_index_lookup_contract(harness) -> Dictionary:
 	var turn_2_p1 = command_builder.build_command({"turn_index": 2, "command_type": CommandTypesScript.SKILL, "command_source": "manual", "side_id": "P1", "actor_public_id": "P1-A", "skill_id": "sample_strike"})
 	var turn_1_p2 = command_builder.build_command({"turn_index": 1, "command_type": CommandTypesScript.SKILL, "command_source": "manual", "side_id": "P2", "actor_public_id": "P2-A", "skill_id": "sample_strike"})
 	var turn_2_p2 = command_builder.build_command({"turn_index": 2, "command_type": CommandTypesScript.SKILL, "command_source": "manual", "side_id": "P2", "actor_public_id": "P2-A", "skill_id": "sample_whiff"})
-	var mixed_input = _build_replay_input(sample_factory, [turn_2_p1, turn_1_p1, turn_2_p2, turn_1_p2])
-	var normalized_input = _build_replay_input(sample_factory, [turn_1_p1, turn_1_p2, turn_2_p1, turn_2_p2])
+	var mixed_input = _build_replay_input(harness, sample_factory, [turn_2_p1, turn_1_p1, turn_2_p2, turn_1_p2])
+	var normalized_input = _build_replay_input(harness, sample_factory, [turn_1_p1, turn_1_p2, turn_2_p1, turn_2_p2])
 	var mixed_output = core.service("replay_runner").run_replay(mixed_input)
 	var normalized_output = core.service("replay_runner").run_replay(normalized_input)
 	if mixed_output == null or normalized_output == null or not mixed_output.succeeded or not normalized_output.succeeded:
@@ -112,10 +118,12 @@ func _test_replay_turn_index_lookup_contract(harness) -> Dictionary:
 		return harness.fail_result("turn-index grouping must preserve the legacy replay event log")
 	return harness.pass_result()
 
-func _build_replay_input(sample_factory, command_stream: Array) -> ReplayInputScript:
+func _build_replay_input(harness, sample_factory, command_stream: Array) -> ReplayInputScript:
 	var replay_input = ReplayInputScript.new()
 	replay_input.battle_seed = 17
-	replay_input.content_snapshot_paths = sample_factory.content_snapshot_paths()
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	assert(not snapshot_paths_payload.has("error"), "content snapshot path build failed: %s" % str(snapshot_paths_payload.get("error", "unknown error")))
+	replay_input.content_snapshot_paths = snapshot_paths_payload.get("paths", PackedStringArray())
 	replay_input.battle_setup = sample_factory.build_sample_setup()
 	replay_input.command_stream = []
 	for command in command_stream:

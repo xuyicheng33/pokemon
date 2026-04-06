@@ -23,8 +23,12 @@ func _test_fixed_type_resolution(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
+    var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+    if snapshot_paths_payload.has("error"):
+        return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
     var content_index = BattleContentIndexScript.new()
-    content_index.load_snapshot(sample_factory.content_snapshot_paths())
+    if not content_index.load_snapshot(snapshot_paths_payload.get("paths", PackedStringArray())):
+        return harness.fail_result("content snapshot load failed: %s" % content_index.last_error_message)
 
     var payload = DamagePayloadScript.new()
     payload.payload_type = "damage"
@@ -102,8 +106,12 @@ func _test_heal_percent_resolution(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
     if sample_factory == null:
         return harness.fail_result("SampleBattleFactory init failed")
+    var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+    if snapshot_paths_payload.has("error"):
+        return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
     var content_index = BattleContentIndexScript.new()
-    content_index.load_snapshot(sample_factory.content_snapshot_paths())
+    if not content_index.load_snapshot(snapshot_paths_payload.get("paths", PackedStringArray())):
+        return harness.fail_result("content snapshot load failed: %s" % content_index.last_error_message)
 
     var heal_payload = HealPayloadScript.new()
     heal_payload.payload_type = "heal"

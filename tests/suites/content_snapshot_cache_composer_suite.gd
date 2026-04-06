@@ -16,6 +16,9 @@ func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
 		return harness.fail_result(str(core_payload["error"]))
@@ -27,7 +30,7 @@ func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary
 
 	var create_result = manager.create_session({
 		"battle_seed": 509,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 		"battle_setup": sample_factory.build_sample_setup(),
 	})
 	if not bool(create_result.get("ok", false)):

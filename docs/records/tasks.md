@@ -19,7 +19,7 @@
 
 ## 当前波次：扩角前整合修复（2026-04-06）
 
-- 状态：已完成（2026-04-06 二次收口）
+- 状态：已完成（2026-04-06 扩角前整改整合）
 - 目标：
   - 在不新增第 5 名正式角色、不调整四名现有角色数值平衡的前提下，把共享规则、角色高风险边界、formal validator 模板、docs gate 与记录治理统一收口。
 - 范围：
@@ -41,7 +41,12 @@
     - `incoming_heal_final_mod` 白名单与 `stacking_source_key` 枚举
     - `once_per_battle` 与 damage-segment 过滤文档
     - formal registry 路径迁移到 `config/`
-    - `SampleBattleFactory.content_snapshot_paths()` 与文档口径重新对齐
+    - `SampleBattleFactory.content_snapshot_paths_result()`、formal validator 子目录与大 suite wrapper/sub-suite 口径重新对齐
+  - 可扩展性整改：
+    - `ReplayRunner` 拆成输入校验/预分组、执行上下文建立、输出组装三段职责
+    - `SampleBattleFactory` 保留具名 builder 薄壳，但底层改成统一 side spec/helper 装配
+    - formal validator 迁到 `src/battle_core/content/formal_validators/`
+    - `400+` 行 suite 按子域拆到 `tests/suites/<wrapper_name_without_.gd>/`
   - 记录治理：
     - `tasks.md / decisions.md` 活跃文件瘦身
     - 2026-04-05 之前历史闭环条目归档
@@ -57,6 +62,10 @@
 ### 当前执行结果
 
 - 已完成：
+  - 架构整合：
+    - `SampleBattleFactory` 已改成“正式结果式快照路径 API + 具名 builder 薄壳 + 统一 side spec/helper 装配”
+    - `content_snapshot_paths_result()` 现在统一返回 `{ ok, data, error_code, error_message }`
+    - `ReplayRunner` 已拆成 input helper / execution context builder / output helper，`ReplayRunner` 自身只保留编排
   - Obito：
     - `阴阳遁` 的逐段叠层与逐段减伤统一只响应敌方 `skill / ultimate`
     - `求道焦土` 的公开禁疗标记与 `incoming_heal_final_mod` 已补同步过期回归
@@ -68,6 +77,9 @@
     - `sukuna_refresh_love_regen` 已从 `duration=999` 收口为 `duration_mode=permanent`
     - snapshot / formal contract /设计文档已改成长期存在、对位变化 replace 的统一口径
   - formal validator：
+    - 全部脚本已迁到 `src/battle_core/content/formal_validators/`
+    - `shared/` 负责 base / registry loader / 共享 helper
+    - `gojo/ sukuna/ kashimo/ obito/` 各自承载角色 validator
     - 四名正式角色 entry validator 已统一成 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板
     - formal gate 已新增“三桶 wrapper 存在 + entry validator preload/dispatch”结构 smoke
     - Gojo / Sukuna / Kashimo / Obito 现在都补上了 validator 坏例锚点，并统一挂进 `extension_validation_contract_suite.gd`
@@ -75,7 +87,8 @@
     - docs gate 已补 `once_per_battle`、四角色口径、`incoming_heal_final_mod`、完整 `stacking_source_key` 枚举与三桶模板文案检查
     - formal registry 已迁到 `config/formal_character_registry.json`
     - formal registry 已补回本轮新增测试锚点、跨角色 smoke 锚点与设计/调整文档锚点
-    - `SampleBattleFactory.content_snapshot_paths()` 已改成“顶层样例资源 + registry.required_content_paths”显式收口，不再递归扫完整内容树
+    - `SampleBattleFactory.content_snapshot_paths_result()` 已改成“顶层样例资源 + registry.required_content_paths”显式收口，不再递归扫完整内容树
+    - 大型共享 suite 已统一改成“稳定 wrapper + 子 suite”组织，原测试名保持不变
   - records：
     - 已新建 repair-wave archive：
       - `docs/records/archive/tasks_pre_2026-04-05_repair_wave.md`
@@ -85,6 +98,7 @@
 ### 当前验证结果
 
 - 已通过：
+  - `godot --headless --path . --script tests/run_all.gd`
   - `python3 tests/gates/repo_consistency_docs_gate.py`
   - `python3 tests/gates/repo_consistency_formal_character_gate.py`
   - `git diff --check`

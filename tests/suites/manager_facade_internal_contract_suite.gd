@@ -17,9 +17,12 @@ func _test_manager_uses_session_internal_facade_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
 	var init_unwrap = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": 1300,
-		"content_snapshot_paths": sample_factory.content_snapshot_paths(),
+		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
 		"battle_setup": sample_factory.build_sample_setup(),
 	}), "create_session")
 	if not bool(init_unwrap.get("ok", false)):

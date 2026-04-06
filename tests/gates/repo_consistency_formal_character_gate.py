@@ -23,7 +23,7 @@ def validator_test_prefix(script_path: str) -> str:
 formal_character_registry = ctx.load_json_array(REGISTRY_PATH, "formal character registry")
 if not formal_character_registry:
     ctx.failures.append(f"{REGISTRY_PATH} must list at least one formal character")
-runtime_registry_text = ctx.read_text("src/battle_core/content/content_snapshot_formal_character_registry.gd")
+runtime_registry_text = ctx.read_text("src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd")
 if 'REGISTRY_PATH := "res://config/formal_character_registry.json"' not in runtime_registry_text:
     ctx.failures.append("runtime formal character validator registry must read config/formal_character_registry.json directly")
 if "content_validator_script_path" not in runtime_registry_text:
@@ -33,10 +33,37 @@ if "FORMAL_CHARACTER_DESCRIPTORS" in runtime_registry_text or '"validator_script
 
 sample_factory_text = ctx.read_text("src/composition/sample_battle_factory.gd")
 run_all_text = ctx.read_text("tests/run_all.gd")
-suite_preload_pattern = re.compile(r'preload\("res://(tests/suites/[^"]+\.gd)"\)')
+suite_ref_patterns = [
+    re.compile(r'preload\("res://(tests/suites/[^"]+\.gd)"\)'),
+    re.compile(r'extends "res://(tests/suites/[^"]+\.gd)"'),
+]
 seen_formal_characters: set[str] = set()
 reachable_suite_paths: set[str] = set()
-pending_suite_paths: list[str] = suite_preload_pattern.findall(run_all_text)
+
+
+def collect_suite_refs(text: str) -> list[str]:
+    refs: list[str] = []
+    for pattern in suite_ref_patterns:
+        refs.extend(pattern.findall(text))
+    return refs
+
+
+def collect_scope_tree(start_paths: list[str]) -> list[str]:
+    discovered: set[str] = set()
+    pending_paths: list[str] = list(start_paths)
+    while pending_paths:
+        rel_path = pending_paths.pop()
+        if rel_path in discovered:
+            continue
+        if not Path(rel_path).exists():
+            continue
+        discovered.add(rel_path)
+        for child_rel_path in collect_suite_refs(ctx.read_text(rel_path)):
+            pending_paths.append(child_rel_path)
+    return sorted(discovered)
+
+
+pending_suite_paths: list[str] = collect_suite_refs(run_all_text)
 
 for entry in formal_character_registry:
     if not isinstance(entry, dict):
@@ -52,7 +79,7 @@ while pending_suite_paths:
     if not Path(suite_path).exists():
         continue
     reachable_suite_paths.add(suite_path)
-    for child_suite in suite_preload_pattern.findall(ctx.read_text(suite_path)):
+    for child_suite in collect_suite_refs(ctx.read_text(suite_path)):
         pending_suite_paths.append(child_suite)
 
 for entry in formal_character_registry:
@@ -137,8 +164,9 @@ for entry in formal_character_registry:
         ctx.failures.append(f"formal character registry[{character_id}] missing required_test_names")
     else:
         for test_name in required_test_names:
+            scoped_suite_paths = collect_scope_tree(suite_scope_paths)
             ctx.require_contains_any(
-                suite_scope_paths,
+                scoped_suite_paths,
                 'runner.run_test("%s"' % str(test_name),
                 f"{character_id} regression anchor",
             )
