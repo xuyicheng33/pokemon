@@ -9,6 +9,8 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("content_snapshot_cache_signature_tracks_file_content_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_file_content_contract").bind(harness))
 	runner.run_test("content_snapshot_cache_signature_tracks_external_resource_dependency_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_external_resource_dependency_contract").bind(harness))
 	runner.run_test("content_snapshot_cache_signature_tracks_shared_dependency_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_shared_dependency_contract").bind(harness))
+	runner.run_test("content_snapshot_cache_signature_tracks_runtime_registry_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_runtime_registry_contract").bind(harness))
+	runner.run_test("content_snapshot_cache_signature_tracks_content_script_contract", failures, Callable(self, "_test_content_snapshot_cache_signature_tracks_content_script_contract").bind(harness))
 
 func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
@@ -177,4 +179,93 @@ func _test_content_snapshot_cache_signature_tracks_shared_dependency_contract(ha
 		return harness.fail_result("cache signature should not be empty for dependency probe")
 	if first_signature == second_signature:
 		return harness.fail_result("cache signature should change when a referenced shared dependency changes")
+	return harness.pass_result()
+
+func _test_content_snapshot_cache_signature_tracks_runtime_registry_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var composer = manager_payload.get("composer", null)
+	if composer == null:
+		return harness.fail_result("content snapshot cache runtime registry contract requires composer handle")
+	var cache = composer.shared_content_snapshot_cache()
+	if cache == null:
+		return harness.fail_result("shared content snapshot cache should be available")
+	var root_path := "user://content_snapshot_cache_root_probe.txt"
+	var registry_path := "user://content_snapshot_cache_runtime_registry_probe.json"
+	var root_write = FileAccess.open(root_path, FileAccess.WRITE)
+	if root_write == null:
+		return harness.fail_result("failed to create cache root probe file")
+	root_write.store_string("root")
+	root_write.close()
+	var registry_write = FileAccess.open(registry_path, FileAccess.WRITE)
+	if registry_write == null:
+		DirAccess.remove_absolute(root_path)
+		return harness.fail_result("failed to create runtime registry probe file")
+	registry_write.store_string("{\"version\": 1}")
+	registry_write.close()
+	cache.signature_static_file_paths = PackedStringArray([registry_path])
+	cache.signature_static_dir_paths = PackedStringArray()
+	var first_signature := String(cache._build_signature(PackedStringArray([root_path])))
+	var registry_rewrite = FileAccess.open(registry_path, FileAccess.WRITE)
+	if registry_rewrite == null:
+		DirAccess.remove_absolute(root_path)
+		DirAccess.remove_absolute(registry_path)
+		return harness.fail_result("failed to rewrite runtime registry probe file")
+	registry_rewrite.store_string("{\"version\": 2}")
+	registry_rewrite.close()
+	var second_signature := String(cache._build_signature(PackedStringArray([root_path])))
+	DirAccess.remove_absolute(root_path)
+	DirAccess.remove_absolute(registry_path)
+	if first_signature.is_empty() or second_signature.is_empty():
+		return harness.fail_result("cache signature should not be empty for runtime registry probe")
+	if first_signature == second_signature:
+		return harness.fail_result("cache signature should change when tracked runtime registry content changes")
+	return harness.pass_result()
+
+func _test_content_snapshot_cache_signature_tracks_content_script_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var composer = manager_payload.get("composer", null)
+	if composer == null:
+		return harness.fail_result("content snapshot cache content script contract requires composer handle")
+	var cache = composer.shared_content_snapshot_cache()
+	if cache == null:
+		return harness.fail_result("shared content snapshot cache should be available")
+	var root_path := "user://content_snapshot_cache_script_root_probe.txt"
+	var script_dir_path := "user://content_snapshot_cache_script_probe"
+	var script_path := "%s/schema_probe.gd" % script_dir_path
+	DirAccess.make_dir_recursive_absolute(script_dir_path)
+	var root_write = FileAccess.open(root_path, FileAccess.WRITE)
+	if root_write == null:
+		return harness.fail_result("failed to create cache script root probe file")
+	root_write.store_string("root")
+	root_write.close()
+	var script_write = FileAccess.open(script_path, FileAccess.WRITE)
+	if script_write == null:
+		DirAccess.remove_absolute(root_path)
+		DirAccess.remove_absolute(script_dir_path)
+		return harness.fail_result("failed to create content script probe file")
+	script_write.store_string("extends RefCounted\n")
+	script_write.close()
+	cache.signature_static_file_paths = PackedStringArray()
+	cache.signature_static_dir_paths = PackedStringArray([script_dir_path])
+	var first_signature := String(cache._build_signature(PackedStringArray([root_path])))
+	var script_rewrite = FileAccess.open(script_path, FileAccess.WRITE)
+	if script_rewrite == null:
+		DirAccess.remove_absolute(root_path)
+		DirAccess.remove_absolute(script_path)
+		DirAccess.remove_absolute(script_dir_path)
+		return harness.fail_result("failed to rewrite content script probe file")
+	script_rewrite.store_string("extends RefCounted\nclass_name SchemaProbe\n")
+	script_rewrite.close()
+	var second_signature := String(cache._build_signature(PackedStringArray([root_path])))
+	DirAccess.remove_absolute(root_path)
+	DirAccess.remove_absolute(script_path)
+	DirAccess.remove_absolute(script_dir_path)
+	if first_signature.is_empty() or second_signature.is_empty():
+		return harness.fail_result("cache signature should not be empty for content script probe")
+	if first_signature == second_signature:
+		return harness.fail_result("cache signature should change when tracked content script changes")
 	return harness.pass_result()

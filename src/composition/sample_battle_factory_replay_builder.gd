@@ -1,54 +1,15 @@
 extends RefCounted
 class_name SampleBattleFactoryReplayBuilder
 
-const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 func build_demo_replay_input_result(command_port, snapshot_paths_result: Dictionary, battle_setup) -> Dictionary:
-	return _build_replay_input_result(
-		command_port,
-		snapshot_paths_result,
-		battle_setup,
-		17,
-		[
-			{
-				"turn_index": 1,
-				"command_type": CommandTypesScript.SKILL,
-				"command_source": "manual",
-				"side_id": "P1",
-				"actor_public_id": "P1-A",
-				"skill_id": "sample_field_call",
-			},
-			{
-				"turn_index": 1,
-				"command_type": CommandTypesScript.SKILL,
-				"command_source": "manual",
-				"side_id": "P2",
-				"actor_public_id": "P2-A",
-				"skill_id": "sample_strike",
-			},
-			{
-				"turn_index": 2,
-				"command_type": CommandTypesScript.SKILL,
-				"command_source": "manual",
-				"side_id": "P1",
-				"actor_public_id": "P1-A",
-				"skill_id": "sample_strike",
-			},
-			{
-				"turn_index": 2,
-				"command_type": CommandTypesScript.SKILL,
-				"command_source": "manual",
-				"side_id": "P2",
-				"actor_public_id": "P2-A",
-				"skill_id": "sample_whiff",
-			},
-		]
-	)
+	return build_replay_input_result(command_port, snapshot_paths_result, battle_setup, 17, [])
 
 func build_passive_item_demo_replay_input_result(command_port, snapshot_paths_result: Dictionary, battle_setup) -> Dictionary:
-	return _build_replay_input_result(
+	return build_replay_input_result(
 		command_port,
 		snapshot_paths_result,
 		battle_setup,
@@ -72,7 +33,7 @@ func build_passive_item_demo_replay_input_result(command_port, snapshot_paths_re
 		]
 	)
 
-func _build_replay_input_result(
+func build_replay_input_result(
 	command_port,
 	snapshot_paths_result: Dictionary,
 	battle_setup,

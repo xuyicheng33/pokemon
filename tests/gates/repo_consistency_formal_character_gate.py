@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from repo_consistency_common import GateContext
+from repo_consistency_formal_character_gate_pairs import validate_pair_catalog
 from repo_consistency_formal_character_gate_support import (
     collect_scope_tree,
     collect_suite_refs,
@@ -25,6 +26,7 @@ VALIDATOR_BAD_CASE_SUITE_PATH = "tests/suites/extension_validation_contract_suit
 PAIR_SMOKE_SUITE_PATH = "tests/suites/formal_character_pair_smoke_suite.gd"
 PAIR_INTERACTION_SUITE_PATH = "tests/suites/formal_character_pair_smoke/interaction_suite.gd"
 PAIR_INTERACTION_SUPPORT_PATH = "tests/suites/formal_character_pair_smoke/interaction_support.gd"
+PAIR_INTERACTION_SCENARIO_REGISTRY_PATH = "tests/support/formal_pair_interaction/scenario_registry.gd"
 DELIVERY_REGISTRY_HELPER_PATH = "tests/support/formal_character_registry.gd"
 RUNTIME_REGISTRY_HELPER_PATH = "src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd"
 SHARED_SUITE_ROOTS = [
@@ -46,7 +48,6 @@ runtime_registry = ctx.load_json_array(RUNTIME_REGISTRY_PATH, "formal character 
 delivery_registry = ctx.load_json_array(DELIVERY_REGISTRY_PATH, "formal character delivery registry")
 matchup_catalog = ctx.load_json_object(MATCHUP_CATALOG_PATH, "formal matchup catalog")
 matchups = matchup_catalog.get("matchups", {})
-pair_surface_cases = matchup_catalog.get("pair_surface_cases", [])
 pair_interaction_cases = matchup_catalog.get("pair_interaction_cases", [])
 
 if (ctx.root / LEGACY_REGISTRY_PATH).exists():
@@ -58,9 +59,8 @@ if not delivery_registry:
 if not isinstance(matchups, dict):
     ctx.failures.append(f"{MATCHUP_CATALOG_PATH} missing matchups dictionary")
     matchups = {}
-if not isinstance(pair_surface_cases, list):
-    ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_surface_cases must be an array")
-    pair_surface_cases = []
+if "pair_surface_cases" in matchup_catalog:
+    ctx.failures.append(f"{MATCHUP_CATALOG_PATH} must not define pair_surface_cases; surface coverage is generated from matchups + delivery registry")
 if not isinstance(pair_interaction_cases, list):
     ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_interaction_cases must be an array")
     pair_interaction_cases = []
@@ -88,7 +88,15 @@ for needle, label in [
 delivery_registry_text = ctx.read_text(DELIVERY_REGISTRY_HELPER_PATH)
 if f'REGISTRY_PATH := "res://{DELIVERY_REGISTRY_PATH}"' not in delivery_registry_text:
     ctx.failures.append(f"delivery formal character loader must read {DELIVERY_REGISTRY_PATH} directly")
-for needle in ["missing display_name", "missing design_doc", "missing adjustment_doc", "missing suite_path", "missing required_suite_paths", "missing required_test_names"]:
+for needle in [
+    "missing display_name",
+    "missing design_doc",
+    "missing adjustment_doc",
+    "missing surface_smoke_skill_id",
+    "missing suite_path",
+    "missing required_suite_paths",
+    "missing required_test_names",
+]:
     if needle not in delivery_registry_text:
         ctx.failures.append(f"delivery formal character loader must validate {needle}")
 
@@ -139,11 +147,13 @@ for failure in scan_pair_interaction_support_regressions(ctx):
     ctx.failures.append(failure)
 
 character_to_unit: dict[str, str] = {}
+unit_to_character: dict[str, str] = {}
 runtime_character_ids: list[str] = []
 delivery_character_ids: list[str] = []
 seen_runtime_characters: set[str] = set()
 seen_runtime_units: set[str] = set()
 seen_delivery_characters: set[str] = set()
+delivery_surface_skill_ids: dict[str, str] = {}
 
 for entry in runtime_registry:
     character_id = str(entry.get("character_id", "")).strip()
@@ -164,6 +174,8 @@ for entry in runtime_registry:
         ctx.failures.append(f"formal runtime registry duplicated unit_definition_id: {unit_definition_id}")
     seen_runtime_units.add(unit_definition_id)
     character_to_unit[character_id] = unit_definition_id
+    if unit_definition_id:
+        unit_to_character[unit_definition_id] = character_id
     if not formal_setup_matchup_id:
         ctx.failures.append(f"formal runtime registry[{character_id}] missing formal_setup_matchup_id")
     else:
@@ -195,6 +207,7 @@ for entry in delivery_registry:
     display_name = str(entry.get("display_name", "")).strip()
     design_doc = str(entry.get("design_doc", "")).strip()
     adjustment_doc = str(entry.get("adjustment_doc", "")).strip()
+    surface_smoke_skill_id = str(entry.get("surface_smoke_skill_id", "")).strip()
     suite_path = str(entry.get("suite_path", "")).strip()
     required_suite_paths = entry.get("required_suite_paths", [])
     required_test_names = entry.get("required_test_names", [])
@@ -217,6 +230,10 @@ for entry in delivery_registry:
         ctx.failures.append(f"formal delivery registry[{character_id}] missing adjustment_doc")
     else:
         ctx.require_exists(adjustment_doc, f"{character_id} adjustment doc")
+    if not surface_smoke_skill_id:
+        ctx.failures.append(f"formal delivery registry[{character_id}] missing surface_smoke_skill_id")
+    else:
+        delivery_surface_skill_ids[character_id] = surface_smoke_skill_id
     if not suite_path:
         ctx.failures.append(f"formal delivery registry[{character_id}] missing suite_path")
         suite_scope_paths: list[str] = []
@@ -290,82 +307,16 @@ if set(runtime_character_ids) != set(delivery_character_ids):
         f"runtime/delivery formal registry character_id set mismatch: runtime={sorted(set(runtime_character_ids))} delivery={sorted(set(delivery_character_ids))}"
     )
 
-expected_surface_pairs = {
-    f"{left}->{right}"
-    for left in runtime_character_ids
-    for right in runtime_character_ids
-    if left != right
-}
-actual_surface_pairs: set[str] = set()
-for case_index, raw_case in enumerate(pair_surface_cases):
-    if not isinstance(raw_case, dict):
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_surface_cases[{case_index}] must be object")
-        continue
-    matchup_id = str(raw_case.get("matchup_id", "")).strip()
-    p1_character_id = str(raw_case.get("p1_character_id", "")).strip()
-    p2_character_id = str(raw_case.get("p2_character_id", "")).strip()
-    p1_unit_definition_id = str(raw_case.get("p1_unit_definition_id", "")).strip()
-    p2_unit_definition_id = str(raw_case.get("p2_unit_definition_id", "")).strip()
-    if matchup_id not in matchups:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_surface_cases[{case_index}] unknown matchup_id: {matchup_id}")
-    if p1_character_id not in character_to_unit or p2_character_id not in character_to_unit:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_surface_cases[{case_index}] references unknown formal character id")
-        continue
-    if p1_character_id == p2_character_id:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_surface_cases[{case_index}] cannot target the same character twice")
-        continue
-    if p1_unit_definition_id != character_to_unit[p1_character_id]:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_surface_cases[{case_index}] p1_unit_definition_id drifted from runtime registry")
-    if p2_unit_definition_id != character_to_unit[p2_character_id]:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_surface_cases[{case_index}] p2_unit_definition_id drifted from runtime registry")
-    pair_key = f"{p1_character_id}->{p2_character_id}"
-    if pair_key in actual_surface_pairs:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} duplicated directed pair_surface case: {pair_key}")
-    actual_surface_pairs.add(pair_key)
-missing_surface_pairs = sorted(expected_surface_pairs - actual_surface_pairs)
-if missing_surface_pairs:
-    ctx.failures.append(f"{MATCHUP_CATALOG_PATH} missing directed pair_surface coverage: {', '.join(missing_surface_pairs)}")
-extra_surface_pairs = sorted(actual_surface_pairs - expected_surface_pairs)
-if extra_surface_pairs:
-    ctx.failures.append(f"{MATCHUP_CATALOG_PATH} contains non-matrix pair_surface coverage: {', '.join(extra_surface_pairs)}")
-
-expected_interaction_pairs = {
-    "<->".join(sorted([runtime_character_ids[left_index], runtime_character_ids[right_index]]))
-    for left_index in range(len(runtime_character_ids))
-    for right_index in range(left_index + 1, len(runtime_character_ids))
-}
-actual_interaction_pairs: set[str] = set()
-for case_index, raw_case in enumerate(pair_interaction_cases):
-    if not isinstance(raw_case, dict):
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_interaction_cases[{case_index}] must be object")
-        continue
-    scenario_id = str(raw_case.get("scenario_id", "")).strip()
-    matchup_id = str(raw_case.get("matchup_id", "")).strip()
-    character_ids = raw_case.get("character_ids", [])
-    if not scenario_id:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_interaction_cases[{case_index}] missing scenario_id")
-    if matchup_id not in matchups:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_interaction_cases[{case_index}] unknown matchup_id: {matchup_id}")
-    if not isinstance(character_ids, list) or len(character_ids) != 2:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_interaction_cases[{case_index}] must define exactly two character_ids")
-        continue
-    left_character_id = str(character_ids[0]).strip()
-    right_character_id = str(character_ids[1]).strip()
-    if left_character_id not in character_to_unit or right_character_id not in character_to_unit:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_interaction_cases[{case_index}] references unknown formal character id")
-        continue
-    if left_character_id == right_character_id:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} pair_interaction_cases[{case_index}] cannot target the same character twice")
-        continue
-    pair_key = "<->".join(sorted([left_character_id, right_character_id]))
-    if pair_key in actual_interaction_pairs:
-        ctx.failures.append(f"{MATCHUP_CATALOG_PATH} duplicated unordered pair_interaction case: {pair_key}")
-    actual_interaction_pairs.add(pair_key)
-missing_interaction_pairs = sorted(expected_interaction_pairs - actual_interaction_pairs)
-if missing_interaction_pairs:
-    ctx.failures.append(f"{MATCHUP_CATALOG_PATH} missing unordered pair_interaction coverage: {', '.join(missing_interaction_pairs)}")
-extra_interaction_pairs = sorted(actual_interaction_pairs - expected_interaction_pairs)
-if extra_interaction_pairs:
-    ctx.failures.append(f"{MATCHUP_CATALOG_PATH} contains non-matrix pair_interaction coverage: {', '.join(extra_interaction_pairs)}")
+validate_pair_catalog(
+    ctx,
+    runtime_character_ids=runtime_character_ids,
+    delivery_registry=delivery_registry,
+    character_to_unit=character_to_unit,
+    matchups=matchups,
+    pair_interaction_cases=pair_interaction_cases,
+    matchup_catalog_path=MATCHUP_CATALOG_PATH,
+    delivery_registry_path=DELIVERY_REGISTRY_PATH,
+    scenario_registry_path=PAIR_INTERACTION_SCENARIO_REGISTRY_PATH,
+)
 
 ctx.finish("runtime/delivery formal registry split, pair coverage, and anti-regression guards are aligned")

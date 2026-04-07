@@ -10,8 +10,13 @@ var _kashimo_support = KashimoTestSupportScript.new()
 var _obito_contracts = ObitoRuntimeContractSupportScript.new()
 
 func run_gojo_vs_sukuna_domain_cleanup(harness, case_spec: Dictionary) -> Dictionary:
-	var matchup_id := String(case_spec.get("matchup_id", "")).strip_edges()
-	var base_seed := int(case_spec.get("battle_seed", 0))
+	var matchup_id := _require_matchup_id(harness, case_spec)
+	if matchup_id.is_empty():
+		return harness.fail_result("formal pair interaction case missing matchup_id")
+	var battle_seed = case_spec.get("battle_seed", null)
+	if typeof(battle_seed) != TYPE_INT or int(battle_seed) <= 0:
+		return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
+	var base_seed := int(battle_seed)
 	return _run_contracts(harness, [
 		func() -> Dictionary:
 			return _gojo_contracts.run_failed_clash_does_not_revive_action_lock_contract_for_matchup(harness, matchup_id, base_seed),
@@ -25,11 +30,16 @@ func run_gojo_vs_kashimo_kyokyo_nullify_domain_accuracy(harness, case_spec: Dict
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var matchup_id := String(case_spec.get("matchup_id", "")).strip_edges()
+	var matchup_id := _require_matchup_id(harness, case_spec)
+	if matchup_id.is_empty():
+		return harness.fail_result("formal pair interaction case missing matchup_id")
+	var battle_seed = case_spec.get("battle_seed", null)
+	if typeof(battle_seed) != TYPE_INT or int(battle_seed) <= 0:
+		return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
 	var seed_result = _kashimo_support.find_domain_accuracy_probe_seed_for_matchup(
 		harness,
 		sample_factory,
-		int(case_spec.get("battle_seed", 0)),
+		int(battle_seed),
 		128,
 		matchup_id,
 		"gojo_unlimited_void",
@@ -72,8 +82,13 @@ func run_gojo_vs_kashimo_kyokyo_nullify_domain_accuracy(harness, case_spec: Dict
 	return harness.pass_result()
 
 func run_gojo_vs_obito_heal_block_public_contract(harness, case_spec: Dictionary) -> Dictionary:
-	var matchup_id := String(case_spec.get("matchup_id", "")).strip_edges()
-	var base_seed := int(case_spec.get("battle_seed", 0))
+	var matchup_id := _require_matchup_id(harness, case_spec)
+	if matchup_id.is_empty():
+		return harness.fail_result("formal pair interaction case missing matchup_id")
+	var battle_seed = case_spec.get("battle_seed", null)
+	if typeof(battle_seed) != TYPE_INT or int(battle_seed) <= 0:
+		return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
+	var base_seed := int(battle_seed)
 	var gojo_ritual_loadout := {0: PackedStringArray(["gojo_ao", "gojo_aka", "gojo_reverse_ritual"])}
 	return _run_contracts(harness, [
 		func() -> Dictionary:
@@ -90,3 +105,6 @@ func _run_contracts(harness, contracts: Array) -> Dictionary:
 		if not bool(result.get("ok", false)):
 			return result if result.has("error") else harness.fail_result(str(result.get("error_message", "interaction contract failed")))
 	return harness.pass_result()
+
+func _require_matchup_id(_harness, case_spec: Dictionary) -> String:
+	return String(case_spec.get("matchup_id", "")).strip_edges()

@@ -15,12 +15,18 @@ func run_sukuna_vs_obito_field_seal_and_kamado_lifecycle(harness, case_spec: Dic
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var setup_result: Dictionary = sample_factory.build_setup_by_matchup_id_result(String(case_spec.get("matchup_id", "")))
+	var matchup_id := String(case_spec.get("matchup_id", "")).strip_edges()
+	if matchup_id.is_empty():
+		return harness.fail_result("formal pair interaction case missing matchup_id")
+	var battle_seed = case_spec.get("battle_seed", null)
+	if typeof(battle_seed) != TYPE_INT or int(battle_seed) <= 0:
+		return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
+	var setup_result: Dictionary = sample_factory.build_setup_by_matchup_id_result(matchup_id)
 	if not bool(setup_result.get("ok", false)):
 		return harness.fail_result("failed to build sukuna vs obito interaction setup: %s" % String(setup_result.get("error_message", "unknown error")))
 	var battle_setup = setup_result.get("data", null)
 	var content_index = harness.build_loaded_content_index_for_setup(sample_factory, battle_setup)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, int(case_spec.get("battle_seed", 0)), battle_setup)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, int(battle_seed), battle_setup)
 	var sukuna = battle_state.get_side("P1").get_active_unit()
 	var obito = battle_state.get_side("P2").get_active_unit()
 	if sukuna == null or obito == null:

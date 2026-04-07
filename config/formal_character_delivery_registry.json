@@ -4,6 +4,7 @@
     "display_name": "Gojo",
     "design_doc": "docs/design/gojo_satoru_design.md",
     "adjustment_doc": "docs/design/gojo_satoru_adjustments.md",
+    "surface_smoke_skill_id": "gojo_ao",
     "suite_path": "tests/suites/gojo_suite.gd",
     "required_suite_paths": [
       "tests/suites/gojo_setup_and_markers_suite.gd",
@@ -13,6 +14,7 @@
       "tests/suites/gojo_unlimited_void_suite.gd",
       "tests/suites/gojo_misc_runtime_suite.gd",
       "tests/suites/gojo_manager_smoke_suite.gd",
+      "tests/suites/gojo_manager_blackbox_suite.gd",
       "tests/suites/formal_character_pair_smoke_suite.gd",
       "tests/suites/extension_validation_contract_suite.gd",
       "tests/suites/ultimate_field_suite.gd",
@@ -51,6 +53,7 @@
       "gojo_reverse_ritual_heal_contract",
       "gojo_manager_smoke_contract",
       "gojo_manager_domain_public_contract",
+      "gojo_manager_murasaki_combo_public_contract",
       "gojo_plus5_competition_contract",
       "formal_gojo_validator_bad_case_contract",
       "formal_gojo_validator_reverse_bad_case_contract",
@@ -74,6 +77,7 @@
     "display_name": "宿傩",
     "design_doc": "docs/design/sukuna_design.md",
     "adjustment_doc": "docs/design/sukuna_adjustments.md",
+    "surface_smoke_skill_id": "sukuna_kai",
     "suite_path": "tests/suites/sukuna_suite.gd",
     "required_suite_paths": [
       "tests/suites/sukuna_setup_loadout_regen_suite.gd",
@@ -84,6 +88,7 @@
       "tests/suites/sukuna_kamado_suite.gd",
       "tests/suites/sukuna_domain_suite.gd",
       "tests/suites/sukuna_manager_smoke_suite.gd",
+      "tests/suites/sukuna_manager_blackbox_suite.gd",
       "tests/suites/formal_character_pair_smoke_suite.gd",
       "tests/suites/extension_validation_contract_suite.gd",
       "tests/suites/ultimate_field_suite.gd",
@@ -118,7 +123,8 @@
       "sukuna_domain_failed_clash_no_field_no_buff_no_expire_burst_contract",
       "formal_sukuna_validator_bad_case_contract",
       "formal_sukuna_validator_reverse_bad_case_contract",
-      "formal_sukuna_validator_regen_surface_bad_case_contract"
+      "formal_sukuna_validator_regen_surface_bad_case_contract",
+      "sukuna_manager_kamado_on_exit_public_contract"
     ],
     "design_needles": [
       "anchor:sukuna.design.domain-expire-burst-kept",
@@ -141,6 +147,7 @@
     "display_name": "Kashimo",
     "design_doc": "docs/design/kashimo_hajime_design.md",
     "adjustment_doc": "docs/design/kashimo_hajime_adjustments.md",
+    "surface_smoke_skill_id": "kashimo_raiken",
     "suite_path": "tests/suites/kashimo_suite.gd",
     "required_suite_paths": [
       "tests/suites/kashimo_snapshot_suite.gd",
@@ -149,6 +156,7 @@
       "tests/suites/kashimo_setup_loadout_suite.gd",
       "tests/suites/kashimo_amber_suite.gd",
       "tests/suites/kashimo_manager_smoke_suite.gd",
+      "tests/suites/kashimo_manager_blackbox_suite.gd",
       "tests/suites/formal_character_pair_smoke_suite.gd",
       "tests/suites/extension_validation_contract_suite.gd",
       "tests/suites/persistent_stat_stage_suite.gd",
@@ -177,6 +185,7 @@
       "kashimo_phantom_beast_amber_once_per_battle_contract",
       "kashimo_manager_smoke_contract",
       "kashimo_manager_amber_public_contract",
+      "kashimo_manager_water_leak_public_contract",
       "formal_kashimo_validator_bad_case_contract",
       "formal_kashimo_validator_kyokyo_bad_case_contract",
       "formal_kashimo_validator_charge_mark_bad_case_contract",
@@ -203,6 +212,7 @@
     "display_name": "Obito",
     "design_doc": "docs/design/obito_juubi_jinchuriki_design.md",
     "adjustment_doc": "docs/design/obito_juubi_jinchuriki_adjustments.md",
+    "surface_smoke_skill_id": "obito_qiudao_jiaotu",
     "suite_path": "tests/suites/obito_suite.gd",
     "required_suite_paths": [
       "tests/suites/obito_snapshot_suite.gd",
@@ -211,6 +221,7 @@
       "tests/suites/obito_runtime_qiudaoyu_suite.gd",
       "tests/suites/obito_ultimate_suite.gd",
       "tests/suites/obito_manager_smoke_suite.gd",
+      "tests/suites/obito_manager_blackbox_suite.gd",
       "tests/suites/formal_character_pair_smoke_suite.gd",
       "tests/suites/extension_validation_contract_suite.gd",
       "tests/suites/heal_extension_suite.gd",
@@ -241,6 +252,8 @@
       "obito_shiwei_weishouyu_mid_kill_stop_contract",
       "obito_manager_smoke_contract",
       "obito_manager_public_contract",
+      "obito_manager_fenghuo_public_contract",
+      "obito_manager_yinyang_public_contract",
       "formal_obito_validator_heal_block_bad_case_contract",
       "formal_obito_validator_heal_block_surface_bad_case_contract",
       "formal_obito_validator_execute_bad_case_contract",

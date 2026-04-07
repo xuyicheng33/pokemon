@@ -1,0 +1,87 @@
+{
+  "profiles": {
+    "legacy": {
+      "matchup_id": "sample_default",
+      "battle_seed": 17,
+      "commands": [
+        {
+          "turn_index": 1,
+          "command_type": "skill",
+          "command_source": "manual",
+          "side_id": "P1",
+          "actor_public_id": "P1-A",
+          "skill_id": "sample_field_call"
+        },
+        {
+          "turn_index": 1,
+          "command_type": "skill",
+          "command_source": "manual",
+          "side_id": "P2",
+          "actor_public_id": "P2-A",
+          "skill_id": "sample_strike"
+        },
+        {
+          "turn_index": 2,
+          "command_type": "skill",
+          "command_source": "manual",
+          "side_id": "P1",
+          "actor_public_id": "P1-A",
+          "skill_id": "sample_strike"
+        },
+        {
+          "turn_index": 2,
+          "command_type": "skill",
+          "command_source": "manual",
+          "side_id": "P2",
+          "actor_public_id": "P2-A",
+          "skill_id": "sample_whiff"
+        }
+      ]
+    },
+    "kashimo": {
+      "matchup_id": "kashimo_vs_sample",
+      "battle_seed": 9101,
+      "commands": [
+        {
+          "turn_index": 1,
+          "command_type": "skill",
+          "command_source": "manual",
+          "side_id": "P1",
+          "actor_public_id": "P1-A",
+          "skill_id": "kashimo_raiken"
+        },
+        {
+          "turn_index": 2,
+          "command_type": "skill",
+          "command_source": "manual",
+          "side_id": "P1",
+          "actor_public_id": "P1-A",
+          "skill_id": "kashimo_charge"
+        },
+        {
+          "turn_index": 3,
+          "command_type": "skill",
+          "command_source": "manual",
+          "side_id": "P1",
+          "actor_public_id": "P1-A",
+          "skill_id": "kashimo_feedback_strike"
+        },
+        {
+          "turn_index": 4,
+          "command_type": "ultimate",
+          "command_source": "manual",
+          "side_id": "P1",
+          "actor_public_id": "P1-A",
+          "skill_id": "kashimo_phantom_beast_amber"
+        },
+        {
+          "turn_index": 5,
+          "command_type": "wait",
+          "command_source": "manual",
+          "side_id": "P1",
+          "actor_public_id": "P1-A"
+        }
+      ]
+    }
+  }
+}

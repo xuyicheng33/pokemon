@@ -79,7 +79,11 @@ func build_sample_factory():
         return null
     return sample_factory
 
-func build_sample_factory_with_overrides(registry_path_override: String = "", matchup_catalog_path_override: String = ""):
+func build_sample_factory_with_overrides(
+	registry_path_override: String = "",
+	matchup_catalog_path_override: String = "",
+	delivery_registry_path_override: String = ""
+):
     var sample_factory = build_sample_factory()
     if sample_factory == null:
         return null
@@ -87,6 +91,8 @@ func build_sample_factory_with_overrides(registry_path_override: String = "", ma
         sample_factory.configure_registry_path_override(registry_path_override)
     if not String(matchup_catalog_path_override).strip_edges().is_empty():
         sample_factory.configure_matchup_catalog_path_override(matchup_catalog_path_override)
+    if not String(delivery_registry_path_override).strip_edges().is_empty():
+        sample_factory.configure_delivery_registry_path_override(delivery_registry_path_override)
     return sample_factory
 
 func unwrap_sample_factory_result(result: Dictionary, label: String):

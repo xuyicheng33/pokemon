@@ -87,6 +87,8 @@ func validate_unordered_interaction_matrix(harness, sample_factory, cases: Array
 			return harness.fail_result("formal pair interaction case missing scenario_id")
 		if String(case_spec.get("matchup_id", "")).strip_edges().is_empty():
 			return harness.fail_result("formal pair interaction case missing matchup_id")
+		if not _is_positive_whole_number(case_spec.get("battle_seed", null)):
+			return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
 		var pair_key := _unordered_pair_key(left_character_id, right_character_id)
 		if actual_pairs.has(pair_key):
 			return harness.fail_result("formal pair interaction duplicated unordered pair coverage: %s" % pair_key)
@@ -128,14 +130,21 @@ func run_surface_case(harness, sample_factory, case_spec: Dictionary) -> Diction
 			String(battle_setup_result.get("error_message", "unknown error")),
 		])
 	var battle_setup = battle_setup_result.get("data", null)
+	var battle_seed = case_spec.get("battle_seed", null)
+	if not _is_positive_whole_number(battle_seed):
+		return harness.fail_result("formal pair smoke case missing positive integer battle_seed")
+	var p1_skill_id := String(case_spec.get("p1_skill_id", "")).strip_edges()
+	var p2_skill_id := String(case_spec.get("p2_skill_id", "")).strip_edges()
+	if p1_skill_id.is_empty() or p2_skill_id.is_empty():
+		return harness.fail_result("formal pair smoke case missing skill ids")
 	return _run_surface_turn_case(
 		harness,
 		context["manager"],
 		context["sample_factory"],
-		int(case_spec.get("battle_seed", 0)),
+		int(battle_seed),
 		battle_setup,
-		String(case_spec.get("p1_skill_id", "")),
-		String(case_spec.get("p2_skill_id", "")),
+		p1_skill_id,
+		p2_skill_id,
 		String(case_spec.get("p1_unit_definition_id", "")),
 		String(case_spec.get("p2_unit_definition_id", ""))
 	)
@@ -147,6 +156,12 @@ func _unordered_pair_key(left_character_id: String, right_character_id: String) 
 	var ordered_pair := [left_character_id, right_character_id]
 	ordered_pair.sort()
 	return "%s<->%s" % [ordered_pair[0], ordered_pair[1]]
+
+func _is_positive_whole_number(value) -> bool:
+	if typeof(value) != TYPE_INT and typeof(value) != TYPE_FLOAT:
+		return false
+	var numeric_value := float(value)
+	return numeric_value > 0.0 and is_equal_approx(numeric_value, floor(numeric_value))
 
 func _run_surface_turn_case(
 	harness,

@@ -20,6 +20,10 @@ func _test_formal_character_delivery_registry_required_field_guard_contract(harn
 			"expected_error": "missing adjustment_doc",
 		},
 		{
+			"missing_key": "surface_smoke_skill_id",
+			"expected_error": "missing surface_smoke_skill_id",
+		},
+		{
 			"missing_key": "suite_path",
 			"expected_error": "missing suite_path",
 		},
@@ -47,6 +51,7 @@ func _test_formal_character_delivery_registry_required_field_guard_contract(harn
 			"Gojo Alias",
 			"docs/design/gojo_satoru_design.md",
 			"docs/design/gojo_satoru_adjustments.md",
+			"gojo_ao",
 			"tests/suites/gojo_suite.gd",
 			["tests/suites/formal_character_pair_smoke_suite.gd"],
 			["gojo_manager_smoke_contract"],

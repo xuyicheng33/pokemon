@@ -1,0 +1,187 @@
+extends RefCounted
+class_name SampleBattleFactoryMatchupCatalogLoader
+
+const FormalContractsScript := preload("res://src/composition/sample_battle_factory_formal_contracts.gd")
+const RuntimeRegistryScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const DEFAULT_CATALOG_PATH := "res://config/formal_matchup_catalog.json"
+
+var catalog_path_override: String = ""
+var runtime_registry_path_override: String = ""
+
+var _formal_contracts = FormalContractsScript.new()
+
+func load_catalog_result() -> Dictionary:
+	var resolved_catalog_path := _resolve_catalog_path()
+	var file := FileAccess.open(resolved_catalog_path, FileAccess.READ)
+	if file == null:
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory missing matchup catalog: %s" % resolved_catalog_path
+		)
+	var parsed = JSON.parse_string(file.get_as_text())
+	if not (parsed is Dictionary):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory expects top-level dictionary matchup catalog: %s" % resolved_catalog_path
+		)
+	if parsed.has("pair_surface_cases"):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory matchup catalog no longer accepts pair_surface_cases: %s" % resolved_catalog_path
+		)
+	var matchups = parsed.get("matchups", {})
+	if not (matchups is Dictionary):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory matchup catalog missing dictionary matchups: %s" % resolved_catalog_path
+		)
+	var runtime_entries_result := _load_runtime_registry_entries_result()
+	if not bool(runtime_entries_result.get("ok", false)):
+		return runtime_entries_result
+	var runtime_maps_result := _formal_contracts.build_runtime_registry_maps_result(runtime_entries_result.get("data", []))
+	if not bool(runtime_maps_result.get("ok", false)):
+		return runtime_maps_result
+	var runtime_maps: Dictionary = runtime_maps_result.get("data", {})
+	var known_character_ids: Dictionary = {}
+	for raw_character_id in runtime_maps.get("runtime_order", []):
+		known_character_ids[String(raw_character_id)] = true
+	var unit_to_character: Dictionary = runtime_maps.get("unit_to_character", {})
+	for raw_matchup_id in matchups.keys():
+		var matchup_id := String(raw_matchup_id).strip_edges()
+		var matchup_spec = matchups.get(raw_matchup_id, {})
+		if not (matchup_spec is Dictionary):
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"SampleBattleFactory matchup catalog[%s] must be dictionary: %s" % [matchup_id, resolved_catalog_path]
+			)
+		for side_key in ["p1_units", "p2_units"]:
+			var units = matchup_spec.get(side_key, [])
+			if not (units is Array) or units.is_empty():
+				return _error_result(
+					ErrorCodesScript.INVALID_BATTLE_SETUP,
+					"SampleBattleFactory matchup catalog[%s].%s must be non-empty array: %s" % [matchup_id, side_key, resolved_catalog_path]
+				)
+			for raw_unit_id in units:
+				if String(raw_unit_id).strip_edges().is_empty():
+					return _error_result(
+						ErrorCodesScript.INVALID_BATTLE_SETUP,
+						"SampleBattleFactory matchup catalog[%s].%s contains empty unit_definition_id: %s" % [matchup_id, side_key, resolved_catalog_path]
+					)
+	var interaction_cases = parsed.get("pair_interaction_cases", [])
+	if not (interaction_cases is Array):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory matchup catalog[pair_interaction_cases] must be array: %s" % resolved_catalog_path
+		)
+	for case_index in range(interaction_cases.size()):
+		var case_spec = interaction_cases[case_index]
+		if not (case_spec is Dictionary):
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d] must be dictionary: %s" % [case_index, resolved_catalog_path]
+			)
+		for required_key in ["test_name", "matchup_id", "scenario_id"]:
+			if String(case_spec.get(required_key, "")).strip_edges().is_empty():
+				return _error_result(
+					ErrorCodesScript.INVALID_BATTLE_SETUP,
+					"SampleBattleFactory matchup catalog[pair_interaction_cases][%d] missing %s: %s" % [case_index, required_key, resolved_catalog_path]
+				)
+		var matchup_id := String(case_spec.get("matchup_id", "")).strip_edges()
+		if not matchups.has(matchup_id):
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d] unknown matchup_id: %s (%s)" % [
+					case_index,
+					matchup_id,
+					resolved_catalog_path,
+				]
+			)
+		var character_ids = case_spec.get("character_ids", [])
+		if not (character_ids is Array) or character_ids.size() != 2:
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].character_ids must contain exactly two entries: %s" % [case_index, resolved_catalog_path]
+			)
+		var left_character_id := String(character_ids[0]).strip_edges()
+		var right_character_id := String(character_ids[1]).strip_edges()
+		if left_character_id.is_empty() or right_character_id.is_empty() or left_character_id == right_character_id:
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].character_ids must contain two distinct non-empty entries: %s" % [case_index, resolved_catalog_path]
+			)
+		if not known_character_ids.has(left_character_id) or not known_character_ids.has(right_character_id):
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].character_ids must reference known formal characters: %s" % [case_index, resolved_catalog_path]
+			)
+		var matchup_spec: Dictionary = matchups.get(matchup_id, {})
+		var matchup_pair := _matchup_formal_pair(matchup_spec, unit_to_character)
+		var expected_pair := [left_character_id, right_character_id]
+		expected_pair.sort()
+		if matchup_pair != expected_pair:
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].character_ids must match matchup opener formal pair: %s" % [case_index, resolved_catalog_path]
+			)
+		var battle_seed_result := _formal_contracts.parse_positive_int_result(
+			case_spec.get("battle_seed", null),
+			"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].battle_seed must be positive integer: %s" % [
+				case_index,
+				resolved_catalog_path,
+			]
+		)
+		if not bool(battle_seed_result.get("ok", false)):
+			return battle_seed_result
+		case_spec["battle_seed"] = int(battle_seed_result.get("data", 0))
+	return _ok_result(parsed)
+
+func _matchup_formal_pair(matchup_spec: Dictionary, unit_to_character: Dictionary) -> Array:
+	var matchup_pair := ["", ""]
+	var p1_units = matchup_spec.get("p1_units", [])
+	var p2_units = matchup_spec.get("p2_units", [])
+	if p1_units is Array and not p1_units.is_empty():
+		matchup_pair[0] = String(unit_to_character.get(String(p1_units[0]).strip_edges(), "")).strip_edges()
+	if p2_units is Array and not p2_units.is_empty():
+		matchup_pair[1] = String(unit_to_character.get(String(p2_units[0]).strip_edges(), "")).strip_edges()
+	matchup_pair.sort()
+	return matchup_pair
+
+func _load_runtime_registry_entries_result() -> Dictionary:
+	var resolved_override_path := _normalize_optional_path(runtime_registry_path_override)
+	var load_result = RuntimeRegistryScript.load_entries() if resolved_override_path.is_empty() else RuntimeRegistryScript.load_entries_from_path(resolved_override_path)
+	var registry_error := String(load_result.get("error", "")).strip_edges()
+	if not registry_error.is_empty():
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory failed to load formal runtime registry for matchup catalog: %s" % registry_error
+		)
+	return _ok_result(load_result.get("entries", []))
+
+func _resolve_catalog_path() -> String:
+	var trimmed_path := String(catalog_path_override).strip_edges()
+	if trimmed_path.is_empty():
+		return DEFAULT_CATALOG_PATH
+	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+
+func _normalize_optional_path(raw_path: String) -> String:
+	var trimmed_path := String(raw_path).strip_edges()
+	if trimmed_path.is_empty():
+		return ""
+	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+
+func _ok_result(data) -> Dictionary:
+	return {
+		"ok": true,
+		"data": data,
+		"error_code": null,
+		"error_message": null,
+	}
+
+func _error_result(error_code: String, error_message: String) -> Dictionary:
+	return {
+		"ok": false,
+		"data": null,
+		"error_code": error_code,
+		"error_message": error_message,
+	}

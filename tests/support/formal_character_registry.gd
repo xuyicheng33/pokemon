@@ -42,6 +42,8 @@ func load_entries_from_path_result(registry_path: String) -> Dictionary:
 			return _error_result("FormalCharacterRegistry[%s] missing design_doc" % character_id)
 		if String(entry.get("adjustment_doc", "")).strip_edges().is_empty():
 			return _error_result("FormalCharacterRegistry[%s] missing adjustment_doc" % character_id)
+		if String(entry.get("surface_smoke_skill_id", "")).strip_edges().is_empty():
+			return _error_result("FormalCharacterRegistry[%s] missing surface_smoke_skill_id" % character_id)
 		if String(entry.get("suite_path", "")).strip_edges().is_empty():
 			return _error_result("FormalCharacterRegistry[%s] missing suite_path" % character_id)
 		if not (entry.get("required_suite_paths", null) is Array):

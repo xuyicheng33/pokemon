@@ -2,6 +2,8 @@ extends RefCounted
 class_name SampleBattleFactory
 
 const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
+const DeliveryRegistryHelperScript := preload("res://src/composition/sample_battle_factory_delivery_registry_helper.gd")
+const DemoCatalogScript := preload("res://src/composition/sample_battle_factory_demo_catalog.gd")
 const MatchupCatalogScript := preload("res://src/composition/sample_battle_factory_matchup_catalog.gd")
 const ReplayBuilderScript := preload("res://src/composition/sample_battle_factory_replay_builder.gd")
 const RegistryHelperScript := preload("res://src/composition/sample_battle_factory_registry_helper.gd")
@@ -9,6 +11,8 @@ const SetupBuilderScript := preload("res://src/composition/sample_battle_factory
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var _content_paths_helper = ContentPathsHelperScript.new()
+var _delivery_registry_helper = DeliveryRegistryHelperScript.new()
+var _demo_catalog = DemoCatalogScript.new()
 var _matchup_catalog = MatchupCatalogScript.new()
 var _replay_builder = ReplayBuilderScript.new()
 var _registry_helper = RegistryHelperScript.new()
@@ -19,9 +23,17 @@ var last_error_message: String = ""
 func configure_registry_path_override(path: String) -> void:
 	_registry_helper.registry_path_override = path
 	_content_paths_helper.registry_path_override = path
+	_matchup_catalog.runtime_registry_path_override = path
 
 func configure_matchup_catalog_path_override(path: String) -> void:
 	_matchup_catalog.catalog_path_override = path
+
+func configure_delivery_registry_path_override(path: String) -> void:
+	_delivery_registry_helper.registry_path_override = path
+	_matchup_catalog.delivery_registry_path_override = path
+
+func configure_demo_catalog_path_override(path: String) -> void:
+	_demo_catalog.catalog_path_override = path
 
 func error_state() -> Dictionary:
 	return {
@@ -124,10 +136,28 @@ func build_formal_character_setup_result(character_id: String, side_regular_skil
 	return _record_result(_registry_helper.ok_result(setup_result.get("data", null)))
 
 func formal_pair_smoke_cases_result() -> Dictionary:
-	return _record_result(_matchup_catalog.formal_pair_smoke_cases_result())
+	var runtime_entries_result := _registry_helper.load_entries_result()
+	if not bool(runtime_entries_result.get("ok", false)):
+		return _record_result(runtime_entries_result)
+	var delivery_entries_result := _delivery_registry_helper.load_entries_result()
+	if not bool(delivery_entries_result.get("ok", false)):
+		return _record_result(delivery_entries_result)
+	return _record_result(_matchup_catalog.formal_pair_smoke_cases_result(
+		runtime_entries_result.get("data", []),
+		delivery_entries_result.get("data", [])
+	))
 
 func formal_pair_surface_cases_result() -> Dictionary:
-	return _record_result(_matchup_catalog.formal_pair_surface_cases_result())
+	var runtime_entries_result := _registry_helper.load_entries_result()
+	if not bool(runtime_entries_result.get("ok", false)):
+		return _record_result(runtime_entries_result)
+	var delivery_entries_result := _delivery_registry_helper.load_entries_result()
+	if not bool(delivery_entries_result.get("ok", false)):
+		return _record_result(delivery_entries_result)
+	return _record_result(_matchup_catalog.formal_pair_surface_cases_result(
+		runtime_entries_result.get("data", []),
+		delivery_entries_result.get("data", [])
+	))
 
 func formal_pair_interaction_cases_result() -> Dictionary:
 	return _record_result(_matchup_catalog.formal_pair_interaction_cases_result())
@@ -136,14 +166,35 @@ func build_sample_setup_result(side_regular_skill_overrides: Dictionary = {}) ->
 	return build_setup_by_matchup_id_result("sample_default", side_regular_skill_overrides)
 
 func build_demo_replay_input_result(command_port, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	var battle_setup_result := build_sample_setup_result(side_regular_skill_overrides)
+	return build_demo_replay_input_for_profile_result(command_port, "legacy", side_regular_skill_overrides)
+
+func build_demo_replay_input_for_profile_result(command_port, demo_profile_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
+	var profile_result: Dictionary = _demo_catalog.profile_result(demo_profile_id)
+	if not bool(profile_result.get("ok", false)):
+		return _record_result(profile_result)
+	var profile: Dictionary = profile_result.get("data", {})
+	var matchup_id := String(profile.get("matchup_id", "")).strip_edges()
+	var battle_setup_result := build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides)
 	if not bool(battle_setup_result.get("ok", false)):
-		return _record_result(battle_setup_result)
+		return _record_result(_registry_helper.error_result(
+			str(battle_setup_result.get("error_code", ErrorCodesScript.INVALID_BATTLE_SETUP)),
+			"SampleBattleFactory demo replay profile[%s] failed to build matchup %s: %s" % [
+				demo_profile_id,
+				matchup_id,
+				String(battle_setup_result.get("error_message", "unknown error")),
+			]
+		))
 	var battle_setup = battle_setup_result.get("data", null)
 	var snapshot_paths_result := content_snapshot_paths_for_setup_result(battle_setup)
 	if not bool(snapshot_paths_result.get("ok", false)):
 		return _record_result(snapshot_paths_result)
-	return _record_result(_replay_builder.build_demo_replay_input_result(command_port, snapshot_paths_result, battle_setup))
+	return _record_result(_replay_builder.build_replay_input_result(
+		command_port,
+		snapshot_paths_result,
+		battle_setup,
+		int(profile.get("battle_seed", null)),
+		profile.get("commands", null)
+	))
 
 func build_passive_item_demo_replay_input_result(command_port) -> Dictionary:
 	var battle_setup_result := build_setup_by_matchup_id_result("passive_item_vs_sample")
