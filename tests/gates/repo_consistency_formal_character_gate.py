@@ -17,9 +17,36 @@ from repo_consistency_formal_character_gate_support import (
 )
 
 
+def _contract_field_list(ctx: GateContext, bucket: dict, field_key: str, label: str, *, required: bool = True) -> list[str]:
+    values = bucket.get(field_key, [])
+    if not isinstance(values, list):
+        ctx.failures.append(f"{label} must be an array")
+        return []
+    normalized: list[str] = []
+    for raw_value in values:
+        value = str(raw_value).strip()
+        if not value:
+            ctx.failures.append(f"{label} contains empty field name")
+            continue
+        normalized.append(value)
+    if required and not normalized:
+        ctx.failures.append(f"{label} must not be empty")
+    return normalized
+
+
+def _validate_required_contract_fields(ctx: GateContext, entry: dict, required_string_fields: list[str], required_array_fields: list[str], entry_label: str) -> None:
+    for field_name in required_string_fields:
+        if not str(entry.get(field_name, "")).strip():
+            ctx.failures.append(f"{entry_label} missing {field_name}")
+    for field_name in required_array_fields:
+        if not isinstance(entry.get(field_name, None), list):
+            ctx.failures.append(f"{entry_label} missing {field_name}")
+
+
 ctx = GateContext()
 RUNTIME_REGISTRY_PATH = "config/formal_character_runtime_registry.json"
 DELIVERY_REGISTRY_PATH = "config/formal_character_delivery_registry.json"
+FORMAL_REGISTRY_CONTRACTS_PATH = "config/formal_registry_contracts.json"
 LEGACY_REGISTRY_PATH = "config/formal_character_registry.json"
 MATCHUP_CATALOG_PATH = "config/formal_matchup_catalog.json"
 VALIDATOR_BAD_CASE_SUITE_PATH = "tests/suites/extension_validation_contract_suite.gd"
@@ -27,8 +54,11 @@ PAIR_SMOKE_SUITE_PATH = "tests/suites/formal_character_pair_smoke_suite.gd"
 PAIR_INTERACTION_SUITE_PATH = "tests/suites/formal_character_pair_smoke/interaction_suite.gd"
 PAIR_INTERACTION_SUPPORT_PATH = "tests/suites/formal_character_pair_smoke/interaction_support.gd"
 PAIR_INTERACTION_SCENARIO_REGISTRY_PATH = "tests/support/formal_pair_interaction/scenario_registry.gd"
+RUNTIME_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_runtime_registry_loader.gd"
+DELIVERY_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_delivery_registry_loader.gd"
 DELIVERY_REGISTRY_HELPER_PATH = "tests/support/formal_character_registry.gd"
 RUNTIME_REGISTRY_HELPER_PATH = "src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd"
+FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH = "src/shared/formal_registry_contracts.gd"
 SHARED_SUITE_ROOTS = [
     "tests/suites/formal_character_pair_smoke_suite.gd",
     "tests/suites/ultimate_points_contract_suite.gd",
@@ -46,9 +76,18 @@ SHARED_SUITE_ROOTS = [
 
 runtime_registry = ctx.load_json_array(RUNTIME_REGISTRY_PATH, "formal character runtime registry")
 delivery_registry = ctx.load_json_array(DELIVERY_REGISTRY_PATH, "formal character delivery registry")
+formal_registry_contracts = ctx.load_json_object(FORMAL_REGISTRY_CONTRACTS_PATH, "formal registry contracts")
 matchup_catalog = ctx.load_json_object(MATCHUP_CATALOG_PATH, "formal matchup catalog")
 matchups = matchup_catalog.get("matchups", {})
 pair_interaction_cases = matchup_catalog.get("pair_interaction_cases", [])
+runtime_contract_bucket = formal_registry_contracts.get("runtime_registry", {})
+delivery_contract_bucket = formal_registry_contracts.get("delivery_registry", {})
+runtime_required_string_fields = _contract_field_list(ctx, runtime_contract_bucket, "required_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.runtime_registry.required_string_fields")
+runtime_required_array_fields = _contract_field_list(ctx, runtime_contract_bucket, "required_array_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.runtime_registry.required_array_fields")
+_contract_field_list(ctx, runtime_contract_bucket, "optional_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.runtime_registry.optional_string_fields", required=False)
+delivery_required_string_fields = _contract_field_list(ctx, delivery_contract_bucket, "required_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.delivery_registry.required_string_fields")
+delivery_required_array_fields = _contract_field_list(ctx, delivery_contract_bucket, "required_array_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.delivery_registry.required_array_fields")
+_contract_field_list(ctx, delivery_contract_bucket, "optional_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.delivery_registry.optional_string_fields", required=False)
 
 if (ctx.root / LEGACY_REGISTRY_PATH).exists():
     ctx.failures.append(f"{LEGACY_REGISTRY_PATH} must be removed after runtime/delivery registry split")
@@ -68,37 +107,18 @@ if not isinstance(pair_interaction_cases, list):
 runtime_registry_text = ctx.read_text(RUNTIME_REGISTRY_HELPER_PATH)
 if f'REGISTRY_PATH := "res://{RUNTIME_REGISTRY_PATH}"' not in runtime_registry_text:
     ctx.failures.append(f"runtime formal character loader must read {RUNTIME_REGISTRY_PATH} directly")
-for needle, label in [
-    ('entry.get("formal_setup_matchup_id"', "formal_setup_matchup_id runtime field"),
-    ('entry.get("required_content_paths"', "required_content_paths runtime field"),
-    ('entry.get("content_validator_script_path"', "content validator runtime field"),
-]:
-    if needle not in runtime_registry_text:
-        ctx.failures.append(f"runtime formal character loader must validate {label}")
-for needle, label in [
-    ("duplicated character_id", "duplicate runtime character_id guard"),
-    ("duplicated unit_definition_id", "duplicate runtime unit_definition_id guard"),
-    ("missing unit_definition_id", "runtime unit_definition_id guard"),
-    ("missing formal_setup_matchup_id", "runtime formal_setup_matchup_id guard"),
-    ("missing required_content_paths", "runtime required_content_paths guard"),
-]:
-    if needle not in runtime_registry_text:
-        ctx.failures.append(f"runtime formal character loader missing {label}")
-
-delivery_registry_text = ctx.read_text(DELIVERY_REGISTRY_HELPER_PATH)
-if f'REGISTRY_PATH := "res://{DELIVERY_REGISTRY_PATH}"' not in delivery_registry_text:
+runtime_registry_loader_text = ctx.read_text(RUNTIME_REGISTRY_LOADER_PATH)
+if f'preload("res://{FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH}")' not in runtime_registry_loader_text:
+    ctx.failures.append(f"{RUNTIME_REGISTRY_LOADER_PATH} must preload {FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH}")
+if "validate_required_fields_result" not in runtime_registry_loader_text:
+    ctx.failures.append(f"{RUNTIME_REGISTRY_LOADER_PATH} must validate runtime registry fields via shared contracts")
+delivery_registry_loader_text = ctx.read_text(DELIVERY_REGISTRY_LOADER_PATH)
+if f'REGISTRY_PATH := "res://{DELIVERY_REGISTRY_PATH}"' not in delivery_registry_loader_text:
     ctx.failures.append(f"delivery formal character loader must read {DELIVERY_REGISTRY_PATH} directly")
-for needle in [
-    "missing display_name",
-    "missing design_doc",
-    "missing adjustment_doc",
-    "missing surface_smoke_skill_id",
-    "missing suite_path",
-    "missing required_suite_paths",
-    "missing required_test_names",
-]:
-    if needle not in delivery_registry_text:
-        ctx.failures.append(f"delivery formal character loader must validate {needle}")
+if f'preload("res://{FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH}")' not in delivery_registry_loader_text:
+    ctx.failures.append(f"{DELIVERY_REGISTRY_LOADER_PATH} must preload {FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH}")
+if "validate_required_fields_result" not in delivery_registry_loader_text:
+    ctx.failures.append(f"{DELIVERY_REGISTRY_LOADER_PATH} must validate delivery registry fields via shared contracts")
 
 sample_factory_text = ctx.read_text("src/composition/sample_battle_factory.gd")
 if 'entry.get("formal_setup_matchup_id"' not in sample_factory_text:
@@ -137,7 +157,7 @@ if 'preload("res://tests/suites/' in pair_interaction_support_text:
 if "._test_" in pair_interaction_support_text:
     ctx.failures.append(f"{PAIR_INTERACTION_SUPPORT_PATH} must not call suite private _test_* helpers")
 
-for rel_path in [RUNTIME_REGISTRY_HELPER_PATH, DELIVERY_REGISTRY_HELPER_PATH, "tests/check_suite_reachability.sh"]:
+for rel_path in [RUNTIME_REGISTRY_HELPER_PATH, RUNTIME_REGISTRY_LOADER_PATH, DELIVERY_REGISTRY_LOADER_PATH, DELIVERY_REGISTRY_HELPER_PATH, "tests/check_suite_reachability.sh"]:
     ctx.require_absent(rel_path, LEGACY_REGISTRY_PATH, "legacy single formal registry path")
 for failure in scan_legacy_sample_factory_calls(ctx):
     ctx.failures.append(failure)
@@ -161,6 +181,13 @@ for entry in runtime_registry:
     formal_setup_matchup_id = str(entry.get("formal_setup_matchup_id", "")).strip()
     required_content_paths = entry.get("required_content_paths", [])
     validator_script_path = str(entry.get("content_validator_script_path", "")).strip()
+    _validate_required_contract_fields(
+        ctx,
+        entry,
+        runtime_required_string_fields,
+        runtime_required_array_fields,
+        "formal runtime registry entry" if not character_id else f"formal runtime registry[{character_id}]",
+    )
     if not character_id:
         ctx.failures.append("formal runtime registry entry missing character_id")
         continue
@@ -213,6 +240,13 @@ for entry in delivery_registry:
     required_test_names = entry.get("required_test_names", [])
     design_needles = entry.get("design_needles", [])
     adjustment_needles = entry.get("adjustment_needles", [])
+    _validate_required_contract_fields(
+        ctx,
+        entry,
+        delivery_required_string_fields,
+        delivery_required_array_fields,
+        "formal delivery registry entry" if not character_id else f"formal delivery registry[{character_id}]",
+    )
     if not character_id:
         ctx.failures.append("formal delivery registry entry missing character_id")
         continue

@@ -16,8 +16,16 @@ func run_failed_clash_does_not_revive_action_lock_contract_for_matchup(harness, 
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
-	var gojo_unit = battle_state.get_side("P1").get_active_unit()
-	var sukuna_unit = battle_state.get_side("P2").get_active_unit()
+	var gojo_unit = _support.find_unit_on_side(battle_state, "P1", "gojo_satoru")
+	if gojo_unit == null:
+		gojo_unit = _support.find_unit_on_side(battle_state, "P2", "gojo_satoru")
+	var sukuna_unit = _support.find_unit_on_side(battle_state, "P1", "sukuna")
+	if sukuna_unit == null:
+		sukuna_unit = _support.find_unit_on_side(battle_state, "P2", "sukuna")
+	if gojo_unit == null or sukuna_unit == null:
+		return harness.fail_result("missing gojo/sukuna active units for unlimited void clash contract")
+	var gojo_side_id := _side_id_for_public_id(String(gojo_unit.public_id))
+	var sukuna_side_id := _side_id_for_public_id(String(sukuna_unit.public_id))
 	gojo_unit.current_mp = 80
 	gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
 	gojo_unit.base_speed = 999
@@ -25,8 +33,8 @@ func run_failed_clash_does_not_revive_action_lock_contract_for_matchup(harness, 
 	sukuna_unit.ultimate_points = sukuna_unit.ultimate_points_cap
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_support.build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
-		_support.build_ultimate_command(core, 1, "P2", "P2-A", "sukuna_fukuma_mizushi"),
+		_support.build_ultimate_command(core, 1, gojo_side_id, String(gojo_unit.public_id), "gojo_unlimited_void"),
+		_support.build_ultimate_command(core, 1, sukuna_side_id, String(sukuna_unit.public_id), "sukuna_fukuma_mizushi"),
 	])
 	if battle_state.field_state == null or battle_state.field_state.field_def_id != "sukuna_malevolent_shrine_field":
 		return harness.fail_result("Gojo 对拼失败时，最终立场的应是宿傩领域")
@@ -58,25 +66,29 @@ func run_expire_removes_field_buff_contract_for_matchup(harness, matchup_id: Str
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
-	var gojo_unit = battle_state.get_side("P1").get_active_unit()
+	var gojo_unit = _support.find_unit_on_side(battle_state, "P1", "gojo_satoru")
+	if gojo_unit == null:
+		gojo_unit = _support.find_unit_on_side(battle_state, "P2", "gojo_satoru")
 	if gojo_unit == null:
 		return harness.fail_result("missing gojo active unit for unlimited void expire cleanup contract")
+	var gojo_side_id := _side_id_for_public_id(String(gojo_unit.public_id))
+	var opponent_side_id := "P2" if gojo_side_id == "P1" else "P1"
 	gojo_unit.current_mp = gojo_unit.max_mp
 	gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_support.build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
-		_support.build_wait_command(core, 1, "P2", "P2-A"),
+		_support.build_ultimate_command(core, 1, gojo_side_id, String(gojo_unit.public_id), "gojo_unlimited_void"),
+		_support.build_wait_command(core, 1, opponent_side_id, "%s-A" % opponent_side_id),
 	])
 	if int(gojo_unit.stat_stages.get("sp_attack", 0)) != 1:
 		return harness.fail_result("无量空处立住后应先给自己 sp_attack +1")
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_support.build_wait_command(core, 2, "P1", "P1-A"),
-		_support.build_wait_command(core, 2, "P2", "P2-A"),
+		_support.build_wait_command(core, 2, gojo_side_id, String(gojo_unit.public_id)),
+		_support.build_wait_command(core, 2, opponent_side_id, "%s-A" % opponent_side_id),
 	])
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_support.build_wait_command(core, 3, "P1", "P1-A"),
-		_support.build_wait_command(core, 3, "P2", "P2-A"),
+		_support.build_wait_command(core, 3, gojo_side_id, String(gojo_unit.public_id)),
+		_support.build_wait_command(core, 3, opponent_side_id, "%s-A" % opponent_side_id),
 	])
 	if battle_state.field_state != null:
 		return harness.fail_result("无量空处应在第 3 回合结束时自然到期")
@@ -98,21 +110,26 @@ func run_break_removes_field_buff_contract_for_matchup(harness, matchup_id: Stri
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
-	var gojo_unit = battle_state.get_side("P1").get_active_unit()
+	var gojo_unit = _support.find_unit_on_side(battle_state, "P1", "gojo_satoru")
+	if gojo_unit == null:
+		gojo_unit = _support.find_unit_on_side(battle_state, "P2", "gojo_satoru")
 	if gojo_unit == null:
 		return harness.fail_result("missing gojo active unit for unlimited void break cleanup contract")
+	var gojo_side_id := _side_id_for_public_id(String(gojo_unit.public_id))
+	var opponent_side_id := "P2" if gojo_side_id == "P1" else "P1"
+	var bench_public_id := "%s-B" % gojo_side_id
 	gojo_unit.current_mp = gojo_unit.max_mp
 	gojo_unit.ultimate_points = gojo_unit.ultimate_points_cap
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_support.build_ultimate_command(core, 1, "P1", "P1-A", "gojo_unlimited_void"),
-		_support.build_wait_command(core, 1, "P2", "P2-A"),
+		_support.build_ultimate_command(core, 1, gojo_side_id, String(gojo_unit.public_id), "gojo_unlimited_void"),
+		_support.build_wait_command(core, 1, opponent_side_id, "%s-A" % opponent_side_id),
 	])
 	if int(gojo_unit.stat_stages.get("sp_attack", 0)) != 1:
 		return harness.fail_result("无量空处立住后应先给自己 sp_attack +1")
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_support.build_switch_command(core, 2, "P1", "P1-A", "P1-B"),
-		_support.build_wait_command(core, 2, "P2", "P2-A"),
+		_support.build_switch_command(core, 2, gojo_side_id, String(gojo_unit.public_id), bench_public_id),
+		_support.build_wait_command(core, 2, opponent_side_id, "%s-A" % opponent_side_id),
 	])
 	if battle_state.field_state != null:
 		return harness.fail_result("无量空处 creator 离场时应立刻打断")
@@ -123,3 +140,6 @@ func run_break_removes_field_buff_contract_for_matchup(harness, matchup_id: Stri
 	):
 		return harness.fail_result("无量空处被打断时不应误写成自然到期")
 	return harness.pass_result()
+
+func _side_id_for_public_id(public_id: String) -> String:
+	return String(public_id).split("-", true, 1)[0]

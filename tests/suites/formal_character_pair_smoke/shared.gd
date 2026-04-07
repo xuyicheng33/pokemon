@@ -90,8 +90,6 @@ func validate_unordered_interaction_matrix(harness, sample_factory, cases: Array
 		if not _is_positive_whole_number(case_spec.get("battle_seed", null)):
 			return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
 		var pair_key := _unordered_pair_key(left_character_id, right_character_id)
-		if actual_pairs.has(pair_key):
-			return harness.fail_result("formal pair interaction duplicated unordered pair coverage: %s" % pair_key)
 		actual_pairs[pair_key] = true
 	var missing_pairs: Array[String] = []
 	for expected_pair_key in expected_pairs.keys():

@@ -19,6 +19,7 @@ func run_sukuna_vs_kashimo_domain_accuracy_nullified(harness, case_spec: Diction
 	var battle_seed = case_spec.get("battle_seed", null)
 	if typeof(battle_seed) != TYPE_INT or int(battle_seed) <= 0:
 		return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
+	var probe_config := _kashimo_probe_config(matchup_id)
 	var seed_result = _kashimo_support.find_domain_accuracy_probe_seed_for_matchup(
 		harness,
 		sample_factory,
@@ -27,7 +28,8 @@ func run_sukuna_vs_kashimo_domain_accuracy_nullified(harness, case_spec: Diction
 		matchup_id,
 		"sukuna_fukuma_mizushi",
 		"sukuna_hiraku",
-		"sukuna_malevolent_shrine_field"
+		"sukuna_malevolent_shrine_field",
+		probe_config
 	)
 	if not bool(seed_result.get("ok", false)):
 		return harness.fail_result(str(seed_result.get("error", "failed to find sukuna domain accuracy probe seed")))
@@ -40,7 +42,8 @@ func run_sukuna_vs_kashimo_domain_accuracy_nullified(harness, case_spec: Diction
 		matchup_id,
 		"sukuna_fukuma_mizushi",
 		"sukuna_hiraku",
-		"sukuna_malevolent_shrine_field"
+		"sukuna_malevolent_shrine_field",
+		probe_config
 	)
 	if not bool(baseline_result.get("ok", false)):
 		return harness.fail_result(str(baseline_result.get("error", "baseline sukuna domain accuracy case failed")))
@@ -54,7 +57,8 @@ func run_sukuna_vs_kashimo_domain_accuracy_nullified(harness, case_spec: Diction
 		matchup_id,
 		"sukuna_fukuma_mizushi",
 		"sukuna_hiraku",
-		"sukuna_malevolent_shrine_field"
+		"sukuna_malevolent_shrine_field",
+		probe_config
 	)
 	if not bool(protected_result.get("ok", false)):
 		return harness.fail_result(str(protected_result.get("error", "protected sukuna domain accuracy case failed")))
@@ -87,36 +91,60 @@ func run_kashimo_vs_obito_yinyang_and_amber_persistence(harness, case_spec: Dict
 	var battle_setup = setup_result.get("data", null)
 	var content_index = harness.build_loaded_content_index_for_setup(sample_factory, battle_setup)
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, int(battle_seed), battle_setup)
-	var kashimo = battle_state.get_side("P1").get_active_unit()
-	var obito = battle_state.get_side("P2").get_active_unit()
+	var kashimo = _formal_support.find_unit_on_side(battle_state, "P1", "kashimo_hajime")
+	if kashimo == null:
+		kashimo = _formal_support.find_unit_on_side(battle_state, "P2", "kashimo_hajime")
+	var obito = _formal_support.find_unit_on_side(battle_state, "P1", "obito_juubi_jinchuriki")
+	if obito == null:
+		obito = _formal_support.find_unit_on_side(battle_state, "P2", "obito_juubi_jinchuriki")
 	if kashimo == null or obito == null:
 		return harness.fail_result("missing active units for kashimo vs obito interaction")
+	var kashimo_side_id := _side_id_for_public_id(String(kashimo.public_id))
+	var obito_side_id := _side_id_for_public_id(String(obito.public_id))
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_formal_support.build_manual_wait_command(core, 1, "P1", "P1-A"),
-		_formal_support.build_manual_skill_command(core, 1, "P2", "P2-A", "obito_yinyang_dun"),
+		_formal_support.build_manual_wait_command(core, 1, kashimo_side_id, String(kashimo.public_id)),
+		_formal_support.build_manual_skill_command(core, 1, obito_side_id, String(obito.public_id), "obito_yinyang_dun"),
 	])
 	if _formal_support.count_effect_instances(obito, "obito_yinyang_zhili") != 1:
 		return harness.fail_result("obito yinyang guard should seed exactly one stack before the cross-role probe")
 	kashimo.current_mp = kashimo.max_mp
 	kashimo.ultimate_points = kashimo.ultimate_points_cap
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_formal_support.build_manual_ultimate_command(core, 2, "P1", "P1-A", "kashimo_phantom_beast_amber"),
-		_formal_support.build_manual_wait_command(core, 2, "P2", "P2-A"),
+		_formal_support.build_manual_ultimate_command(core, 2, kashimo_side_id, String(kashimo.public_id), "kashimo_phantom_beast_amber"),
+		_formal_support.build_manual_wait_command(core, 2, obito_side_id, String(obito.public_id)),
 	])
 	if not kashimo.has_used_once_per_battle_skill("kashimo_phantom_beast_amber"):
 		return harness.fail_result("amber should persist its once_per_battle usage inside the kashimo vs obito chain")
 	if _formal_support.count_effect_instances(obito, "obito_yinyang_zhili") != 1:
 		return harness.fail_result("obito yinyang listener must ignore amber self-damage and other non-incoming segment side effects")
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_formal_support.build_manual_switch_command(core, 3, "P1", "P1-A", "P1-B"),
-		_formal_support.build_manual_wait_command(core, 3, "P2", "P2-A"),
+		_formal_support.build_manual_switch_command(core, 3, kashimo_side_id, String(kashimo.public_id), "%s-B" % kashimo_side_id),
+		_formal_support.build_manual_wait_command(core, 3, obito_side_id, String(obito.public_id)),
 	])
 	if int(kashimo.persistent_stat_stages.get("attack", 0)) != 2 or int(kashimo.persistent_stat_stages.get("sp_attack", 0)) != 2:
 		return harness.fail_result("amber persistent stages should survive the switch chain against obito")
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_formal_support.build_manual_switch_command(core, 4, "P1", "P1-B", "P1-A"),
-		_formal_support.build_manual_wait_command(core, 4, "P2", "P2-A"),
+		_formal_support.build_manual_switch_command(core, 4, kashimo_side_id, "%s-B" % kashimo_side_id, "%s-A" % kashimo_side_id),
+		_formal_support.build_manual_wait_command(core, 4, obito_side_id, String(obito.public_id)),
 	])
 	if not kashimo.has_used_once_per_battle_skill("kashimo_phantom_beast_amber"):
 		return harness.fail_result("amber once_per_battle usage must not be cleared by the switch chain")
 	return harness.pass_result()
+
+func _kashimo_probe_config(matchup_id: String) -> Dictionary:
+	if matchup_id == "sukuna_vs_kashimo":
+		return {
+			"protected_side_id": "P2",
+			"override_side_id": "P2",
+			"domain_side_id": "P1",
+			"attack_side_id": "P1",
+		}
+	return {
+		"protected_side_id": "P1",
+		"override_side_id": "P1",
+		"domain_side_id": "P2",
+		"attack_side_id": "P2",
+	}
+
+func _side_id_for_public_id(public_id: String) -> String:
+	return String(public_id).split("-", true, 1)[0]

@@ -36,6 +36,7 @@ func run_gojo_vs_kashimo_kyokyo_nullify_domain_accuracy(harness, case_spec: Dict
 	var battle_seed = case_spec.get("battle_seed", null)
 	if typeof(battle_seed) != TYPE_INT or int(battle_seed) <= 0:
 		return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
+	var probe_config := _kashimo_probe_config(matchup_id)
 	var seed_result = _kashimo_support.find_domain_accuracy_probe_seed_for_matchup(
 		harness,
 		sample_factory,
@@ -44,7 +45,8 @@ func run_gojo_vs_kashimo_kyokyo_nullify_domain_accuracy(harness, case_spec: Dict
 		matchup_id,
 		"gojo_unlimited_void",
 		"gojo_ao",
-		"gojo_unlimited_void_field"
+		"gojo_unlimited_void_field",
+		probe_config
 	)
 	if not bool(seed_result.get("ok", false)):
 		return harness.fail_result(str(seed_result.get("error", "failed to find gojo domain accuracy probe seed")))
@@ -57,7 +59,8 @@ func run_gojo_vs_kashimo_kyokyo_nullify_domain_accuracy(harness, case_spec: Dict
 		matchup_id,
 		"gojo_unlimited_void",
 		"gojo_ao",
-		"gojo_unlimited_void_field"
+		"gojo_unlimited_void_field",
+		probe_config
 	)
 	if not bool(baseline_result.get("ok", false)):
 		return harness.fail_result(str(baseline_result.get("error", "baseline kashimo domain accuracy case failed")))
@@ -71,7 +74,8 @@ func run_gojo_vs_kashimo_kyokyo_nullify_domain_accuracy(harness, case_spec: Dict
 		matchup_id,
 		"gojo_unlimited_void",
 		"gojo_ao",
-		"gojo_unlimited_void_field"
+		"gojo_unlimited_void_field",
+		probe_config
 	)
 	if not bool(protected_result.get("ok", false)):
 		return harness.fail_result(str(protected_result.get("error", "protected kashimo domain accuracy case failed")))
@@ -90,9 +94,11 @@ func run_gojo_vs_obito_heal_block_public_contract(harness, case_spec: Dictionary
 		return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
 	var base_seed := int(battle_seed)
 	var gojo_ritual_loadout := {0: PackedStringArray(["gojo_ao", "gojo_aka", "gojo_reverse_ritual"])}
+	var p1_overrides := gojo_ritual_loadout if matchup_id.begins_with("gojo_") else {}
+	var p2_overrides := gojo_ritual_loadout if matchup_id.begins_with("obito_") else {}
 	return _run_contracts(harness, [
 		func() -> Dictionary:
-			return _obito_contracts.run_qiudao_jiaotu_heal_block_contract_for_matchup(harness, matchup_id, base_seed, {}, gojo_ritual_loadout),
+			return _obito_contracts.run_qiudao_jiaotu_heal_block_contract_for_matchup(harness, matchup_id, base_seed, p1_overrides, p2_overrides),
 		func() -> Dictionary:
 			return _obito_contracts.run_qiudao_jiaotu_switch_persist_contract_for_matchup(harness, matchup_id, base_seed + 1),
 		func() -> Dictionary:
@@ -108,3 +114,18 @@ func _run_contracts(harness, contracts: Array) -> Dictionary:
 
 func _require_matchup_id(_harness, case_spec: Dictionary) -> String:
 	return String(case_spec.get("matchup_id", "")).strip_edges()
+
+func _kashimo_probe_config(matchup_id: String) -> Dictionary:
+	if matchup_id == "gojo_vs_kashimo":
+		return {
+			"protected_side_id": "P2",
+			"override_side_id": "P2",
+			"domain_side_id": "P1",
+			"attack_side_id": "P1",
+		}
+	return {
+		"protected_side_id": "P1",
+		"override_side_id": "P1",
+		"domain_side_id": "P2",
+		"attack_side_id": "P2",
+	}

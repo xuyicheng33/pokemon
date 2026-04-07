@@ -52,7 +52,8 @@ func run_domain_accuracy_case_for_matchup(
 	matchup_id: String,
 	domain_skill_id: String,
 	attack_skill_id: String,
-	expected_field_id: String
+	expected_field_id: String,
+	config: Dictionary = {}
 ) -> Dictionary:
 	return _domain_accuracy_probe_support.run_domain_accuracy_case_for_matchup(
 		self,
@@ -63,7 +64,8 @@ func run_domain_accuracy_case_for_matchup(
 		matchup_id,
 		domain_skill_id,
 		attack_skill_id,
-		expected_field_id
+		expected_field_id,
+		config
 	)
 
 func run_sukuna_domain_accuracy_case(harness, sample_factory, use_kyokyo: bool, seed: int) -> Dictionary:
@@ -110,7 +112,8 @@ func find_domain_accuracy_probe_seed_for_matchup(
 	matchup_id: String,
 	domain_skill_id: String,
 	attack_skill_id: String,
-	expected_field_id: String
+	expected_field_id: String,
+	config: Dictionary = {}
 ) -> Dictionary:
 	return _domain_accuracy_probe_support.find_domain_accuracy_probe_seed_for_matchup(
 		self,
@@ -121,7 +124,8 @@ func find_domain_accuracy_probe_seed_for_matchup(
 		matchup_id,
 		domain_skill_id,
 		attack_skill_id,
-		expected_field_id
+		expected_field_id,
+		config
 	)
 
 func calc_expected_fixed_effect_damage(core, content_index, effect_id: String, target_unit) -> int:
