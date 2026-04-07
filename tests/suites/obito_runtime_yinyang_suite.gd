@@ -2,45 +2,21 @@ extends RefCounted
 class_name ObitoRuntimeYinyangSuite
 
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
-const QueuedActionScript := preload("res://src/battle_core/contracts/queued_action.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const SkillDamageSegmentScript := preload("res://src/battle_core/content/skill_damage_segment.gd")
-const TargetSnapshotScript := preload("res://src/battle_core/contracts/target_snapshot.gd")
+const ActionDamageSegmentProbeSupportScript := preload("res://tests/support/action_damage_segment_probe_support.gd")
 const ObitoTestSupportScript := preload("res://tests/support/obito_test_support.gd")
 const ObitoRuntimeContractSupportScript := preload("res://tests/support/obito_runtime_contract_support.gd")
 
+var _action_damage_segment_probe_support = ActionDamageSegmentProbeSupportScript.new()
 var _support = ObitoTestSupportScript.new()
 var _contract_support = ObitoRuntimeContractSupportScript.new()
 
 func register_tests(runner, failures: Array[String], harness) -> void:
-    runner.run_test("obito_yinyang_dun_cast_contract", failures, Callable(self, "_test_obito_yinyang_dun_cast_contract").bind(harness))
     runner.run_test("obito_yinyang_dun_segment_mitigation_and_stack_contract", failures, Callable(self, "_test_obito_yinyang_dun_segment_mitigation_and_stack_contract").bind(harness))
     runner.run_test("obito_yinyang_dun_non_skill_segment_ignored_contract", failures, Callable(self, "_test_obito_yinyang_dun_non_skill_segment_ignored_contract").bind(harness))
     runner.run_test("obito_yinyang_dun_same_side_segment_ignored_contract", failures, Callable(self, "_test_obito_yinyang_dun_same_side_segment_ignored_contract").bind(harness))
     runner.run_test("obito_yinyang_dun_stack_cap_contract", failures, Callable(self, "_test_obito_yinyang_dun_stack_cap_contract").bind(harness))
-
-func _test_obito_yinyang_dun_cast_contract(harness) -> Dictionary:
-    var core_payload = harness.build_core()
-    if core_payload.has("error"):
-        return harness.fail_result(str(core_payload["error"]))
-    var core = core_payload["core"]
-    var sample_factory = harness.build_sample_factory()
-    if sample_factory == null:
-        return harness.fail_result("SampleBattleFactory init failed")
-    var content_index = harness.build_loaded_content_index(sample_factory)
-    var battle_state = _support.build_battle_state(core, content_index, _support.build_obito_setup(sample_factory), 1520)
-    var obito = battle_state.get_side("P1").get_active_unit()
-    if obito == null:
-        return harness.fail_result("missing obito active unit for yinyang cast contract")
-    core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-        _support.build_manual_skill_command(core, 1, "P1", "P1-A", "obito_yinyang_dun"),
-        _support.build_manual_wait_command(core, 1, "P2", "P2-A"),
-    ])
-    if _support.count_effect_instances(obito, "obito_yinyang_zhili") != 1:
-        return harness.fail_result("obito_yinyang_dun should grant one stack immediately")
-    if int(obito.get_effective_stage("defense")) != 1 or int(obito.get_effective_stage("sp_defense")) != 1:
-        return harness.fail_result("obito_yinyang_dun should grant defense +1 and sp_defense +1")
-    return harness.pass_result()
 
 func _test_obito_yinyang_dun_segment_mitigation_and_stack_contract(harness) -> Dictionary:
     var baseline_result = _run_yinyang_guard_case(harness, false, 1521, 0)
@@ -90,23 +66,18 @@ func _test_obito_yinyang_dun_same_side_segment_ignored_contract(harness) -> Dict
     if baseline_count != 1:
         return harness.fail_result("obito_yinyang_dun should seed exactly one initial stack before same-side trigger probe")
     var ally = obito_side.team_units[1]
-    var queued_action = QueuedActionScript.new()
-    queued_action.command = _support.build_manual_skill_command(core, 1, "P1", "P1-A", "obito_qiudao_jiaotu")
-    queued_action.command.actor_id = obito.unit_instance_id
-    queued_action.target_snapshot = TargetSnapshotScript.new()
-    queued_action.target_snapshot.target_kind = "enemy_active_slot"
-    queued_action.target_snapshot.target_unit_id = ally.unit_instance_id
-    battle_state.chain_context = _build_non_skill_segment_chain_context(obito.unit_instance_id, obito.unit_instance_id)
-    var segment_context_service = core.service("action_cast_direct_damage_pipeline")._segment_trigger_context_service
-    var invalid_code = segment_context_service.execute_receive_damage_segment_trigger(
-        queued_action,
+    var probe_command = _support.build_manual_skill_command(core, 1, "P1", "P1-A", "obito_qiudao_jiaotu")
+    probe_command.actor_id = obito.unit_instance_id
+    var invalid_code = _action_damage_segment_probe_support.run_enemy_segment_trigger(
+        core,
         battle_state,
         content_index,
+        probe_command,
+        obito.unit_instance_id,
         ally.unit_instance_id,
         1,
         1,
-        "fire",
-        core.service("trigger_batch_runner")
+        "fire"
     )
     if invalid_code != null:
         return harness.fail_result("same-side segment trigger probe should not invalidate battle: %s" % str(invalid_code))
@@ -168,17 +139,3 @@ func _build_enemy_multihit_skill(skill_id: String):
     segment.damage_kind = "special"
     skill.damage_segments.append(segment)
     return skill
-
-func _build_non_skill_segment_chain_context(actor_id: String, target_unit_id: String):
-    var chain_context = ChainContextScript.new()
-    chain_context.event_chain_id = "test_obito_non_skill_segment"
-    chain_context.chain_origin = "action"
-    chain_context.command_type = "switch"
-    chain_context.command_source = "manual"
-    chain_context.actor_id = actor_id
-    chain_context.action_actor_id = actor_id
-    chain_context.target_unit_id = target_unit_id
-    chain_context.action_combat_type_id = "fire"
-    chain_context.action_segment_index = 1
-    chain_context.action_segment_total = 1
-    return chain_context

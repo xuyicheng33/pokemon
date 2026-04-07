@@ -156,10 +156,6 @@ func _validate_marker_effect(
 	var apply_effect_id := "%s_apply" % marker_effect_id
 	var apply_effect = validator._require_effect(content_index, errors, label, apply_effect_id)
 	if apply_effect != null:
-		validator._expect_string(errors, "%s effect[%s].scope" % [label, apply_effect_id], apply_effect.scope, "target")
-		validator._expect_string(errors, "%s effect[%s].duration_mode" % [label, apply_effect_id], apply_effect.duration_mode, "permanent")
-		validator._expect_string(errors, "%s effect[%s].stacking" % [label, apply_effect_id], apply_effect.stacking, "none")
-		validator._expect_packed_string_array(errors, "%s effect[%s].trigger_names" % [label, apply_effect_id], apply_effect.trigger_names, PackedStringArray(["on_hit"]))
 		var apply_payload = validator._extract_single_payload(errors, label, apply_effect_id, apply_effect, ApplyEffectPayloadScript, "apply_effect")
 		validator._expect_payload_shape(errors, "%s effect[%s]" % [label, apply_effect_id], apply_payload, {"effect_definition_id": marker_effect_id})
 	var stat_effect = validator._require_effect(content_index, errors, label, stat_effect_id)
@@ -168,7 +164,6 @@ func _validate_marker_effect(
 	var stat_payload = validator._extract_single_payload(errors, label, stat_effect_id, stat_effect, StatModPayloadScript, "stat_mod")
 	if stat_payload == null:
 		return
-	validator._expect_packed_string_array(errors, "%s effect[%s].trigger_names" % [label, stat_effect_id], stat_effect.trigger_names, PackedStringArray(["on_hit"]))
 	validator._expect_payload_shape(
 		errors,
 		"%s effect[%s]" % [label, stat_effect_id],

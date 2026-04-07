@@ -33,33 +33,33 @@
 - `docs/records/` 只保留决策、任务入口与归档索引，不再继续承担长篇“现行真相全集”。
 - 历史审查若仍保留在根目录，必须显式注明“历史审查，不再作为现行依据”，避免旧口径继续误导扩角判断。
 
-## 2. formal validator 与双表 registry 继续固定
+## 2. formal manifest 单真源继续固定
 
-- 正式角色继续维持 runtime / delivery 双表：
-  - `config/formal_character_runtime_registry.json` 只承载 runtime 必需字段与可选 `content_validator_script_path`
-  - `config/formal_character_delivery_registry.json` 只承载测试、文档、suite 与交付元数据
+- 正式角色元数据的唯一人工维护配置固定为 `config/formal_character_manifest.json`。
+- manifest 顶层固定三桶：
+  - `characters`
+  - `matchups`
+  - `pair_interaction_cases`
+- `characters[*]` 同时收口 runtime 必需字段、可选 `content_validator_script_path`、测试/文档/suite 元数据与回归锚点。
 - entry validator 固定采用三桶模板：
   - `unit_passive_contracts`
   - `skill_effect_contracts`
   - `ultimate_domain_contracts`
 - formal validator 继续只校验当前 snapshot 实际出现的正式角色；缺席角色的坏 validator 不得把无关快照一起炸掉。
-- delivery registry 的正式必填面现在固定包含 `surface_smoke_skill_id`；它只服务 directed pair surface smoke 的默认黑盒技能选择，不回写 runtime registry。
-- 正式角色注册表当前必须登记角色 effect 资源、wrapper 下属 suite 与关键回归测试名；共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`。
+- `surface_smoke_skill_id` 固定挂在 `characters[*]`，只服务 directed pair surface smoke 的默认黑盒技能选择。
+- 运行时、测试、gate 与文档都只允许从 manifest domain model 派生各自视图；共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`。
 
 ## 3. SampleBattleFactory、sandbox demo 与 cache freshness 统一收口
 
 - `SampleBattleFactory` 对外只保留结果式接口；正式失败统一返回 `{ ok, data, error_code, error_message }`，不再保留另一套降级语义。
 - 运行时 helper 全部统一进 composition 装配；`SampleBattleFactory`、catalog loader、surface case builder、demo catalog 与 replay builder 各自只承载单一职责。
-- `config/formal_matchup_catalog.json` 当前只保留：
-  - `matchups`
-  - `pair_interaction_cases`
-- directed pair surface smoke 不再手写 `pair_surface_cases`；统一由 `matchups + delivery_registry.surface_smoke_skill_id` 自动生成。
+- directed pair surface smoke 不再手写 `pair_surface_cases`；统一由 `matchups + characters[*].surface_smoke_skill_id` 自动生成。
 - `pair_interaction_cases[*]` 固定必填 `scenario_id / matchup_id / character_ids[2] / battle_seed`，并继续与 scenario registry 做一一对应校验。
 - demo replay profile 的单一真相固定为 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选 profile、初始化 manager、错误投影，再把 replay input 构建委托给 builder。
 - `ContentSnapshotCache` 继续采用 composer 级共享 cache + 每次 fresh index；当前 freshness 签名固定覆盖：
   - snapshot 路径列表
   - 顶层资源递归 `.tres/.res` 外部依赖
-  - `config/formal_character_runtime_registry.json`
+  - `config/formal_character_manifest.json`
   - `src/battle_core/content/**/*.gd`
   - `src/battle_core/content/formal_validators/**/*.gd`
 
@@ -80,7 +80,7 @@
 ## 5. 扩第 5 个正式角色前的冻结条件
 
 - 本轮“三波整合”已经把扩角前必须先收口的硬问题压平：
-  - Wave 1：catalog 硬校验、sandbox demo 边界、content snapshot cache freshness
+  - Wave 1：manifest 单真源、sandbox demo 边界、content snapshot cache freshness
   - Wave 2：pair surface 自动生成、interaction `battle_seed` 强校验、scenario registry 对齐
   - Wave 3：四角色 manager/runtime 黑盒补洞、活跃记录收口、README / checklist / 历史审查口径修正
 - 四角色当前新增的黑盒重点固定为：

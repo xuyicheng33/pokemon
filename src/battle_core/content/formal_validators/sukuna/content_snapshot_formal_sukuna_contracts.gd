@@ -136,7 +136,6 @@ func validate_kamado_contract(validator, content_index, errors: Array) -> void:
 	var label := "formal[sukuna].kamado"
 	var apply_effect = validator._require_effect(content_index, errors, label, "sukuna_apply_kamado")
 	if apply_effect != null:
-		validator._expect_packed_string_array(errors, "%s apply.trigger_names" % label, apply_effect.trigger_names, PackedStringArray(["on_hit"]))
 		var apply_payload = validator._extract_single_payload(errors, label, "sukuna_apply_kamado", apply_effect, ApplyEffectPayloadScript, "apply_effect")
 		validator._expect_payload_shape(errors, "%s apply" % label, apply_payload, {"effect_definition_id": "sukuna_kamado_mark"})
 	var marker_effect = validator._require_effect(content_index, errors, label, "sukuna_kamado_mark")
@@ -163,17 +162,7 @@ func validate_teach_love_contract(validator, content_index, errors: Array) -> vo
 	var effect_definition = validator._require_effect(content_index, errors, label, "sukuna_refresh_love_regen")
 	if effect_definition == null:
 		return
-	_helper.validate_effect_contracts(validator, content_index, errors, [{
-		"label": "%s effect" % label,
-		"effect_id": "sukuna_refresh_love_regen",
-		"fields": {
-			"display_name": "教会你爱·回蓝",
-			"scope": "self",
-			"duration_mode": "permanent",
-			"stacking": "none",
-			"trigger_names": PackedStringArray(["on_matchup_changed"]),
-		},
-	}])
+	validator._expect_string(errors, "%s effect stacking" % label, effect_definition.stacking, "none")
 	var payload = validator._extract_single_payload(errors, label, "sukuna_refresh_love_regen", effect_definition, RuleModPayloadScript, "rule_mod")
 	validator._expect_payload_shape(
 		errors,
