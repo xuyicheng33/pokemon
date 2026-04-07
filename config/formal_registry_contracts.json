@@ -1,25 +1,33 @@
 {
-  "manifest_character": {
+  "manifest_character_runtime": {
+    "required_string_fields": [
+      "character_id",
+      "unit_definition_id",
+      "formal_setup_matchup_id"
+    ],
+    "required_array_fields": [
+      "required_content_paths"
+    ],
+    "optional_string_fields": [
+      "content_validator_script_path"
+    ]
+  },
+  "manifest_character_delivery": {
     "required_string_fields": [
       "character_id",
       "display_name",
-      "unit_definition_id",
-      "formal_setup_matchup_id",
       "design_doc",
       "adjustment_doc",
       "surface_smoke_skill_id",
       "suite_path"
     ],
     "required_array_fields": [
-      "required_content_paths",
       "required_suite_paths",
       "required_test_names",
       "design_needles",
       "adjustment_needles"
     ],
-    "optional_string_fields": [
-      "content_validator_script_path"
-    ]
+    "optional_string_fields": []
   },
   "pair_interaction_case": {
     "required_string_fields": [

@@ -27,6 +27,25 @@
   - 不改四角色技能数值与平衡
   - 不扩更多 demo 命令类型
 
+## 当前波次：扩角前整合规范（2026-04-07）
+
+- 状态：进行中
+- 目标：
+  - 在不新增第 5 个正式角色、不改四角色数值与平衡的前提下，把扩角前最容易持续返工的四个热点先收口：
+    - manifest runtime / delivery 视图解耦
+    - 角色事实重复维护面收缩
+    - `SampleBattleFactory` 家族继续按职责拆分
+    - `LegalActionService` 提前拆成稳定子职责
+- 范围：
+  - 第 1 批：runtime loader 不再依赖 delivery/test 字段；manifest/runtime/delivery 合同、gate 与文档同步
+  - 第 2 批：收缩 validator / snapshot 等角色事实重复维护面
+  - 第 3 批：拆分 `SampleBattleFactory` 热点职责
+  - 第 4 批：拆分 `LegalActionService` 热点职责
+- 非范围：
+  - 不改四角色玩法语义
+  - 不新增正式角色
+  - 不改 battle core 主循环规则
+
 ## 本轮交付结果
 
 ### Formal / Sample 收口

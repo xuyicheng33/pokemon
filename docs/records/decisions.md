@@ -26,6 +26,20 @@
   - 当前四角色必须保留 6 组关键 pair 的双向 directional case
 - Kashimo / Sukuna 的 manager 黑盒当前视为正式交付面的一部分；后续角色扩充不得再跳过 manager 级黑盒。
 
+## 0A. manifest 运行时视图与交付视图正式拆开（2026-04-07）
+
+- `config/formal_registry_contracts.json` 当前固定拆成：
+  - `manifest_character_runtime`
+  - `manifest_character_delivery`
+  - `pair_interaction_case`
+- `FormalCharacterManifest.load_manifest_result()` 与 runtime loader 现在只强校验 runtime 视图；delivery/test 字段漂移不得再拖死 runtime loader。
+- delivery loader、repo consistency gate 与交付文档继续强校验 delivery/test 视图，保证正式交付面没有降级。
+- `pair_interaction_cases[*]` 的正式合同补记 `test_name` 必填，避免文档继续落后于 catalog loader 与 gate。
+- 这么定的原因：
+  - 扩角前当前最容易反复返工的不是 battle core 主循环，而是 formal 角色交付链
+  - runtime 被 `suite_path / design_doc / required_test_names` 这类 delivery 字段绑住，会把“文档漂移”升级成“运行时阻塞”
+  - 单真源仍保留在同一个 manifest 上，但消费视图必须拆开，否则 loader 边界名义上分层、实际上仍耦合
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

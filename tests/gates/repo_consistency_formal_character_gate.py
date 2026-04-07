@@ -57,25 +57,45 @@ formal_registry_contracts = ctx.load_json_object(FORMAL_REGISTRY_CONTRACTS_PATH,
 characters = manifest.get("characters", [])
 matchups = manifest.get("matchups", {})
 pair_interaction_cases = manifest.get("pair_interaction_cases", [])
-character_contract_bucket = formal_registry_contracts.get("manifest_character", {})
+character_runtime_contract_bucket = formal_registry_contracts.get("manifest_character_runtime", {})
+character_delivery_contract_bucket = formal_registry_contracts.get("manifest_character_delivery", {})
 pair_case_contract_bucket = formal_registry_contracts.get("pair_interaction_case", {})
-character_required_string_fields = contract_field_list(
+character_runtime_required_string_fields = contract_field_list(
     ctx,
-    character_contract_bucket,
+    character_runtime_contract_bucket,
     "required_string_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character.required_string_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character_runtime.required_string_fields",
 )
-character_required_array_fields = contract_field_list(
+character_runtime_required_array_fields = contract_field_list(
     ctx,
-    character_contract_bucket,
+    character_runtime_contract_bucket,
     "required_array_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character.required_array_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character_runtime.required_array_fields",
 )
 contract_field_list(
     ctx,
-    character_contract_bucket,
+    character_runtime_contract_bucket,
     "optional_string_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character.optional_string_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character_runtime.optional_string_fields",
+    required=False,
+)
+character_delivery_required_string_fields = contract_field_list(
+    ctx,
+    character_delivery_contract_bucket,
+    "required_string_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character_delivery.required_string_fields",
+)
+character_delivery_required_array_fields = contract_field_list(
+    ctx,
+    character_delivery_contract_bucket,
+    "required_array_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character_delivery.required_array_fields",
+)
+contract_field_list(
+    ctx,
+    character_delivery_contract_bucket,
+    "optional_string_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character_delivery.optional_string_fields",
     required=False,
 )
 pair_case_required_string_fields = contract_field_list(
@@ -220,9 +240,16 @@ for entry in characters:
     validate_required_contract_fields(
         ctx,
         entry,
-        character_required_string_fields,
-        character_required_array_fields,
-        "formal manifest character entry" if not character_id else f"formal manifest[{character_id}]",
+        character_runtime_required_string_fields,
+        character_runtime_required_array_fields,
+        "formal manifest runtime entry" if not character_id else f"formal manifest[{character_id}] runtime view",
+    )
+    validate_required_contract_fields(
+        ctx,
+        entry,
+        character_delivery_required_string_fields,
+        character_delivery_required_array_fields,
+        "formal manifest delivery entry" if not character_id else f"formal manifest[{character_id}] delivery view",
     )
     if not character_id:
         ctx.failures.append("formal manifest character entry missing character_id")

@@ -49,7 +49,7 @@ func load_manifest_result(manifest_path: String = "") -> Dictionary:
 			ErrorCodesScript.INVALID_BATTLE_SETUP,
 			"FormalCharacterManifest[%s] must be array: %s" % [PAIR_INTERACTION_CASES_BUCKET, resolved_manifest_path]
 		)
-	var characters_result := _validate_characters_result(characters, resolved_manifest_path)
+	var characters_result := _validate_runtime_characters_result(characters, resolved_manifest_path)
 	if not bool(characters_result.get("ok", false)):
 		return characters_result
 	return _ok_result({
@@ -105,8 +105,16 @@ func build_delivery_entries_result(manifest_path: String = "") -> Dictionary:
 	var delivery_entries: Array = []
 	for raw_entry in entries_result.get("data", []):
 		var entry: Dictionary = raw_entry
+		var character_id := String(entry.get("character_id", "")).strip_edges()
+		var field_result := _registry_contracts.validate_required_fields_result(
+			FormalRegistryContractsScript.MANIFEST_CHARACTER_DELIVERY_BUCKET,
+			entry,
+			"FormalCharacterManifest[%s][%s]" % [CHARACTERS_BUCKET, character_id]
+		)
+		if not bool(field_result.get("ok", false)):
+			return field_result
 		delivery_entries.append({
-			"character_id": String(entry.get("character_id", "")).strip_edges(),
+			"character_id": character_id,
 			"display_name": String(entry.get("display_name", "")).strip_edges(),
 			"design_doc": String(entry.get("design_doc", "")).strip_edges(),
 			"adjustment_doc": String(entry.get("adjustment_doc", "")).strip_edges(),
@@ -129,7 +137,7 @@ func build_catalog_result(manifest_path: String = "") -> Dictionary:
 		"pair_interaction_cases": manifest.get(PAIR_INTERACTION_CASES_BUCKET, []).duplicate(true),
 	})
 
-func _validate_characters_result(characters: Array, manifest_path: String) -> Dictionary:
+func _validate_runtime_characters_result(characters: Array, manifest_path: String) -> Dictionary:
 	var seen_character_ids: Dictionary = {}
 	var seen_unit_definition_ids: Dictionary = {}
 	var entries: Array = []
@@ -143,7 +151,7 @@ func _validate_characters_result(characters: Array, manifest_path: String) -> Di
 		var entry: Dictionary = raw_entry
 		var character_id := String(entry.get("character_id", "")).strip_edges()
 		var field_result := _registry_contracts.validate_required_fields_result(
-			FormalRegistryContractsScript.MANIFEST_CHARACTER_BUCKET,
+			FormalRegistryContractsScript.MANIFEST_CHARACTER_RUNTIME_BUCKET,
 			entry,
 			"FormalCharacterManifest[%s][%s]" % [CHARACTERS_BUCKET, character_id if not character_id.is_empty() else str(entry_index)]
 		)

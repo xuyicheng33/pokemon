@@ -4,6 +4,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("formal_character_validator_registry_runtime_contract", failures, Callable(self, "_test_formal_character_validator_registry_runtime_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_duplicate_unit_definition_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_duplicate_unit_definition_guard_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_required_field_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_required_field_guard_contract").bind(harness))
+	runner.run_test("formal_character_runtime_registry_ignores_delivery_field_contract", failures, Callable(self, "_test_formal_character_runtime_registry_ignores_delivery_field_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_missing_validator_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_missing_validator_guard_contract").bind(harness))
 
 func _test_formal_character_validator_registry_runtime_contract(harness) -> Dictionary:
@@ -43,37 +44,17 @@ func _test_formal_character_validator_registry_runtime_contract(harness) -> Dict
 func _test_formal_character_runtime_registry_duplicate_unit_definition_guard_contract(harness) -> Dictionary:
 	var manifest_path := "user://formal_character_manifest_duplicate_unit_fixture.json"
 	var manifest_payload := JSON.stringify(_build_manifest_payload([
-		_build_manifest_character_entry(
+		_build_runtime_registry_entry(
 			"gojo_alias",
-			"Gojo Alias",
 			"shared_unit",
 			"gojo_vs_sample",
-			["content/units/gojo/gojo_satoru.tres"],
-			"",
-			"docs/design/gojo_satoru_design.md",
-			"docs/design/gojo_satoru_adjustments.md",
-			"gojo_ao",
-			"tests/suites/gojo_suite.gd",
-			["tests/suites/formal_character_pair_smoke_suite.gd"],
-			["gojo_manager_smoke_contract"],
-			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
-			["anchor:gojo.adjust.tests-impacted"]
+			["content/units/gojo/gojo_satoru.tres"]
 		),
-		_build_manifest_character_entry(
+		_build_runtime_registry_entry(
 			"sukuna_alias",
-			"Sukuna Alias",
 			"shared_unit",
 			"sukuna_setup",
-			["content/units/sukuna/sukuna.tres"],
-			"",
-			"docs/design/sukuna_design.md",
-			"docs/design/sukuna_adjustments.md",
-			"sukuna_kai",
-			"tests/suites/sukuna_suite.gd",
-			["tests/suites/formal_character_pair_smoke_suite.gd"],
-			["sukuna_manager_smoke_contract"],
-			["anchor:sukuna.design.domain-expire-burst-kept"],
-			["anchor:sukuna.adjust.tests-impacted"]
+			["content/units/sukuna/sukuna.tres"]
 		),
 	]), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
@@ -103,21 +84,11 @@ func _test_formal_character_runtime_registry_required_field_guard_contract(harne
 		var bad_case: Dictionary = raw_case
 		var missing_key := String(bad_case.get("missing_key", "")).strip_edges()
 		var manifest_path := "user://formal_character_manifest_missing_field_%s_fixture.json" % missing_key
-		var entry := _build_manifest_character_entry(
+		var entry := _build_runtime_registry_entry(
 			"gojo_alias",
-			"Gojo Alias",
 			"gojo_satoru",
 			"gojo_alias_vs_sukuna_alias",
-			["content/units/gojo/gojo_satoru.tres"],
-			"",
-			"docs/design/gojo_satoru_design.md",
-			"docs/design/gojo_satoru_adjustments.md",
-			"gojo_ao",
-			"tests/suites/gojo_suite.gd",
-			["tests/suites/formal_character_pair_smoke_suite.gd"],
-			["gojo_manager_smoke_contract"],
-			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
-			["anchor:gojo.adjust.tests-impacted"]
+			["content/units/gojo/gojo_satoru.tres"]
 		)
 		entry.erase(missing_key)
 		var manifest_payload := JSON.stringify(_build_manifest_payload([entry]), "  ")
@@ -130,24 +101,39 @@ func _test_formal_character_runtime_registry_required_field_guard_contract(harne
 			return harness.fail_result("formal manifest should fail fast on %s, got: %s" % [expected_error, error_message])
 	return harness.pass_result()
 
+func _test_formal_character_runtime_registry_ignores_delivery_field_contract(harness) -> Dictionary:
+	var manifest_path := "user://formal_character_manifest_runtime_only_fixture.json"
+	var manifest_payload := JSON.stringify(_build_manifest_payload([
+		_build_runtime_registry_entry(
+			"gojo_alias",
+			"gojo_satoru",
+			"gojo_vs_sample",
+			["content/units/gojo/gojo_satoru.tres"]
+		),
+	]), "  ")
+	if not _write_json_fixture(manifest_path, manifest_payload):
+		return harness.fail_result("failed to write runtime-only manifest fixture")
+	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
+	var error_message := String(load_result.get("error", ""))
+	if not error_message.is_empty():
+		return harness.fail_result("runtime registry should not depend on delivery-only fields: %s" % error_message)
+	var entries: Array = load_result.get("entries", [])
+	if entries.size() != 1:
+		return harness.fail_result("runtime registry should load runtime-only entry")
+	var entry: Dictionary = entries[0]
+	if String(entry.get("character_id", "")) != "gojo_alias":
+		return harness.fail_result("runtime registry should preserve character_id on runtime-only entry")
+	return harness.pass_result()
+
 func _test_formal_character_runtime_registry_missing_validator_guard_contract(harness) -> Dictionary:
 	var manifest_path := "user://formal_character_manifest_missing_validator_fixture.json"
 	var manifest_payload := JSON.stringify(_build_manifest_payload([
-		_build_manifest_character_entry(
+		_build_runtime_registry_entry(
 			"gojo_alias",
-			"Gojo Alias",
 			"gojo_satoru",
 			"gojo_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
-			"src/battle_core/content/formal_validators/gojo/missing_validator.gd",
-			"docs/design/gojo_satoru_design.md",
-			"docs/design/gojo_satoru_adjustments.md",
-			"gojo_ao",
-			"tests/suites/gojo_suite.gd",
-			["tests/suites/formal_character_pair_smoke_suite.gd"],
-			["gojo_manager_smoke_contract"],
-			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
-			["anchor:gojo.adjust.tests-impacted"]
+			"src/battle_core/content/formal_validators/gojo/missing_validator.gd"
 		),
 	]), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):

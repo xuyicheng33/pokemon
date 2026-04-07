@@ -235,13 +235,17 @@ tests/run_with_gate.sh
 - 样例接线：`SampleBattleFactory`
 - 唯一人工维护配置：`config/formal_character_manifest.json`
 - manifest 顶层固定三桶：`characters / matchups / pair_interaction_cases`
-- `characters[*]` 同时收口 `character_id / display_name / unit_definition_id / formal_setup_matchup_id / required_content_paths / content_validator_script_path / design_doc / adjustment_doc / design_needles / adjustment_needles / suite_path / required_suite_paths / required_test_names / surface_smoke_skill_id`；运行时、测试、gate 与文档都只从 manifest domain model 派生各自视图，不再各自拼 runtime / delivery / matchup 三份事实
+- `characters[*]` 仍承载完整角色条目，但当前固定拆成两份消费视图：
+  - runtime 视图：`character_id / unit_definition_id / formal_setup_matchup_id / required_content_paths`，以及按需补的 `content_validator_script_path`
+  - delivery/test 视图：`character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / design_needles / adjustment_needles`
+- 运行时、测试、gate 与文档都只从 manifest domain model 派生各自视图，不再各自拼 runtime / delivery / matchup 三份事实；runtime loader 不得再被 delivery/test 字段绑死
 - 共享内容校验：若角色有跨资源共享不变量，可在 `config/formal_character_manifest.json.characters[*]` 里登记 `content_validator_script_path`；runtime 统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 manifest 角色条目并动态装配 validator；测试、文档、suite 与回归锚点也统一从这份 manifest 派生
 - 加载期 formal 校验：`ContentSnapshotFormalCharacterValidator` 只会对当前 content snapshot 实际已出现的正式角色执行对应 validator，缺席角色不会误报
 - validator 模板：正式角色 entry validator 固定收口为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶；入口文件只负责 preload 与串联，不再自由追加角色私有逻辑
 - 大型共享 suite 当前统一采用“稳定 wrapper + 子 suite”组织：例如 `tests/suites/multihit_skill_runtime_suite.gd` 只保留入口职责，真实断言下沉到 `tests/suites/multihit_skill_runtime/*.gd`
+- `config/formal_registry_contracts.json` 当前固定拆成 `manifest_character_runtime / manifest_character_delivery / pair_interaction_case` 三组合同桶
 - `characters[*]` 的 runtime 必填面固定为 `character_id / unit_definition_id / formal_setup_matchup_id / required_content_paths`，以及按需补的 `content_validator_script_path`
-- `characters[*]` 的交付必填面固定为 `display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / design_needles / adjustment_needles`
+- `characters[*]` 的交付必填面固定为 `character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / design_needles / adjustment_needles`
 - `required_test_names` 现在只保留角色私有 runtime / validator 坏例锚点；共享 suite 覆盖不再逐角色复制进角色条目，pair surface 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，interaction 继续由 `config/formal_character_manifest.json.pair_interaction_cases` + shared gate 收口
 - sandbox demo 若要给正式角色补固定演示，统一改 `config/demo_replay_catalog.json` profile，不再在 `BattleSandboxRunner` 里写死角色专属命令流
 - validator 坏例：只要角色登记了 `content_validator_script_path`，就必须同时把 `tests/suites/extension_validation_contract_suite.gd` 和至少一个 `formal_<character>_validator_*bad_case_contract` 锚点挂回该角色 manifest 条目的 `required_suite_paths / required_test_names`
@@ -249,7 +253,7 @@ tests/run_with_gate.sh
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 跨角色 smoke：正式角色之间至少补非镜像配对黑盒样例，避免配对覆盖长期偏在单一角色身上
-- `config/formal_character_manifest.json.matchups` 继续承载 formal directed matchup；directed pair surface smoke 改为运行时根据 `matchups + config/formal_character_manifest.json.characters[*].surface_smoke_skill_id` 自动生成；`pair_interaction_cases[*]` 固定必填 `scenario_id / matchup_id / character_ids[2] / battle_seed`，`tests/suites/formal_character_pair_smoke_suite.gd` 仍按生成结果动态注册
+- `config/formal_character_manifest.json.matchups` 继续承载 formal directed matchup；directed pair surface smoke 改为运行时根据 `matchups + config/formal_character_manifest.json.characters[*].surface_smoke_skill_id` 自动生成；`pair_interaction_cases[*]` 固定必填 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`，`tests/suites/formal_character_pair_smoke_suite.gd` 仍按生成结果动态注册
 - 当前四名正式角色的 pair surface 已补到完整有向矩阵，deep interaction 固定为 6 个无向 pair case：`Gojo-Sukuna / Gojo-Kashimo / Gojo-Obito / Sukuna-Kashimo / Sukuna-Obito / Kashimo-Obito`
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 - 当前仓库已内置两组固定诊断入口：`tests/helpers/domain_case_runner.gd`（领域）与 `tests/helpers/kashimo_case_runner.gd`（鹿紫云）
@@ -274,9 +278,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-07）
 
-- `src/**/*.gd`：`17271` 行
-- `tests/**/*.gd`：`23748` 行
-- GDScript 合计：`41019` 行
+- `src/**/*.gd`：`17284` 行
+- `tests/**/*.gd`：`23734` 行
+- GDScript 合计：`41018` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

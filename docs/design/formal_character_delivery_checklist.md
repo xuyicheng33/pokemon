@@ -43,6 +43,9 @@
 - [ ] `SampleBattleFactory` 公开 builder 名称保持稳定，内部只允许走统一 helper，不再为单角色保留私有手写构局
 - [ ] `SampleBattleFactory` 正式快照路径读取统一走 `content_snapshot_paths_result()`；正式失败语义不再允许降级成 `null / [] / PackedStringArray()`
 - [ ] `config/formal_character_manifest.json` 新增或更新该角色的 `characters[*]` 条目
+- [ ] `characters[*]` 继续写在同一个 manifest 条目里，但要按两份消费视图检查：
+  - [ ] runtime 视图：只服务 runtime loader / validator / setup
+  - [ ] delivery/test 视图：只服务 suite / gate / 文档锚点 / 交付检查
 - [ ] `characters[*]` 至少补齐：
   - [ ] `character_id / display_name / unit_definition_id`
   - [ ] `formal_setup_matchup_id`（默认 formal setup 实际要走的 matchup_id；formal runtime 只认 `character_id + formal_setup_matchup_id`）
@@ -67,7 +70,7 @@
 - [ ] 若登记了 `content_validator_script_path`，同时把至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
 - [ ] `config/formal_character_manifest.json` 新增或更新该角色相关 `matchups / pair_interaction_cases`
 - [ ] 确认该角色的 `surface_smoke_skill_id` 能在所有 formal directed matchup 的首发黑盒 smoke 中稳定施放；pair surface 不再手写登记到 catalog
-- [ ] 若补 interaction case，`pair_interaction_cases[*]` 必须显式补齐 `scenario_id / matchup_id / character_ids[2] / battle_seed`
+- [ ] 若补 interaction case，`pair_interaction_cases[*]` 必须显式补齐 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`
 - [ ] 若要给该角色补 sandbox/demo 演示，统一改 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 不再写死角色专属命令流
 
 ## 4. 测试最低面
