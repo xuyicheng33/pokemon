@@ -112,6 +112,16 @@
   - 这层 support helper 的公共调用口已经稳定，最适合做“owner 薄化 + descriptor 协作者”的内部拆分，而不是让各角色 snapshot suite 自己复制字段顺序与归一化逻辑
   - 先把 descriptor 逻辑单独收口，后续不论是继续扩角色还是调整 baseline 字段，都能把改动集中在 support 内部，而不是把 snapshot suite 和 support 一起拉长
 
+## 0I. formal repo consistency gate 固定拆成主入口 + 子校验模块（2026-04-07）
+
+- `repo_consistency_formal_character_gate.py` owner 现在只保留合同装载、主线串联与 `validate_pair_catalog(...)` 收尾。
+- manifest cutover、legacy 路径与 formal setup 入口校验固定下沉到 `tests/gates/repo_consistency_formal_character_gate_cutover.py`。
+- formal character entry、suite reachability 与 regression anchor 校验固定下沉到 `tests/gates/repo_consistency_formal_character_gate_characters.py`。
+- 这么定的原因：
+  - 这份 gate 是扩角前 formal 交付链的最后一层兜底，继续把 cutover、entry、pair coverage 全堆在同一文件里，会让后续新增角色字段或测试锚点时回归面继续集中膨胀
+  - `tests/check_repo_consistency.sh` 的入口脚本和 gate 完成语义已经稳定，最适合做“主入口不变、内部模块化”的拆法
+  - 先把 gate 主线拆成 cutover / character / pair 三段，后续不论是 manifest 合同变化还是 suite/regression 变化，都能在对应子模块里单点演进，不必继续把主入口拉长
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。
