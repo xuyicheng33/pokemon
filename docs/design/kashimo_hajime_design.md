@@ -205,7 +205,7 @@
 | combat_type_id | `thunder` |
 | targeting | `enemy_active_slot` |
 | power_bonus_source | `effect_stack_sum` |
-<!-- anchor:kashimo.design.effect-stack-sum -->
+<!-- anchor:kashimo.design.feedback-strike-dual-charge-burst -->
 | effects_on_cast_ids | `[]` |
 | effects_on_hit_ids | `["kashimo_consume_positive_charges", "kashimo_consume_negative_charges"]` |
 
@@ -252,6 +252,7 @@
 - 机制说明：
   - 自身状态，持续 3 回合。
   - 只影响 `creator_accuracy_override=100` 带来的领域必中。
+  <!-- anchor:kashimo.design.kyokyo-domain-accuracy-only -->
   - 不影响技能本来就写死的 `accuracy=100`。
   - 不影响领域的其他效果，比如加攻、锁技、到期爆炸。
 
@@ -332,6 +333,7 @@
   2. **导电弱点**：当鹿紫云被 `water` 属性的主动技能或奥义命中时：
      - 自身立刻失去 15 MP
      - 攻击者立刻受到 1 次基础值为 15 的 `poison` 固定伤害；最终伤害仍继续吃 `poison` 的属性克制
+  <!-- anchor:kashimo.design.water-hit-punish -->
 - 这里的“命中就触发”固定理解为：
   - 只对 `skill / ultimate` 这两类主动行动生效
   - 不对默认动作、field、被动、持续伤害或其他 effect 连锁伤害生效
@@ -452,7 +454,6 @@
 | `RemoveEffectPayload.remove_mode = all` | 已落地 | 小 | 回授电击命中后一次性清空双方全部电荷层 |
 | `nullify_field_accuracy` | 已落地 | 小 | 弥虚葛笼只中和领域附加必中，不影响技能原生 `100` 命中 |
 | `incoming_action_final_mod` | 已落地 | 中 | 目标侧对“主动技能 / 奥义本次伤害”的减伤读取点；鹿紫云的抗雷走这一条 |
-<!-- anchor:kashimo.design.incoming-action-final-mod -->
 | `on_receive_action_hit` | 已落地 | 中 | 被动在“自己被主动技能 / 奥义命中”时触发，且致死命中仍可反击 |
 | `action_actor` | 已落地 | 小 | 水中外泄的毒返直接打回这次行动的攻击者 |
 | `required_incoming_command_types / required_incoming_combat_type_ids` | 已落地 | 小 | 被动可精确过滤来袭主动技类型与属性 |

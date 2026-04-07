@@ -3,7 +3,7 @@
 <!-- anchor:sukuna.design.first-ultimate-window-turn-4-default -->
 <!-- anchor:sukuna.design.first-ultimate-window-turn-4-ritual -->
 <!-- anchor:sukuna.design.matchup-regen-duration-permanent -->
-<!-- anchor:sukuna.design.shared-domain-rules-outsourced -->
+<!-- anchor:sukuna.design.domain-clash-shared-template -->
 
 ## 0. 审计后冻结结论（2026-03-30）
 
@@ -242,7 +242,7 @@
 - 宿傩当前奥义点配置固定为 `required=3 / cap=3 / regular_skill_cast +1`。
 - 奥义合法性必须同时满足 `current_mp >= 50` 与 `ultimate_points >= 3`；开始施放奥义时奥义点立即清零；换下后点数保留。
 - 若场上已有领域，领域冲突判定、对拼胜负与日志语义统一沿用 `docs/design/domain_field_template.md` 与 `docs/rules/05_items_field_input_and_logging.md`，不在角色稿重复定义。
-<!-- anchor:sukuna.design.shared-domain-rules-outsourced -->
+<!-- anchor:sukuna.design.domain-clash-shared-template -->
   - 宿傩若在领域对拼中失败，则本次领域不落地；`attack +1 / sp_attack +1` 与自然到期终爆都不会成立。
   - `creator_accuracy_override=100` 只在领域成功立住后生效。
   - `伏魔御厨子` 本体是**恶魔属性特殊伤害**，不是咒灵属性。

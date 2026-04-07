@@ -49,7 +49,7 @@
 |Lifecycle|`battle_core/lifecycle`|倒下、离场、补位|
 |Effects|`battle_core/effects`|触发、排序、effect 前置守卫、payload registry 分发与 rule mod 接入；`payload_handlers/` 负责单 payload handler 与子 runtime service|
 |Passives|`battle_core/passives`|被动技能、被动持有物、field 作为 trigger source 接入|
-|Logging|`battle_core/logging`|日志构造、写入、回放|
+|Logging|`battle_core/logging`|日志构造、写入，以及 `ReplayRunner` 的 replay orchestration / input-output helper|
 |Facades|`battle_core/facades`|外围稳定入口、公开快照与事件日志公开快照构建|
 
 补充说明：
@@ -62,14 +62,14 @@
 
 1. `BattleSandboxRunner` 或测试入口请求 `BattleCoreComposer` 创建核心依赖图。
    - sandbox demo profile 的单一真相固定在 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选择 profile，并把 replay input 构建委托给 `SampleBattleFactory`。
-2. `BattleCoreManagerContainerService` / `ReplayRunner` 先通过 `ContentSnapshotCache` 取得“已加载且已校验”的资源数组，再为本次 session / replay 深复制资源并构造 fresh `BattleContentIndex`。
+2. `BattleCoreManagerContainerService` 与位于 `battle_core/logging/` 下的 `ReplayRunner` 都会先通过 `ContentSnapshotCache` 取得“已加载且已校验”的资源数组，再为本次 session / replay 深复制资源并构造 fresh `BattleContentIndex`。
 3. `BattleInitializer` 作为初始化编排 owner，驱动 `BattleInitializerStateBuilder` 生成 fresh `BattleState`，再交给 `BattleInitializerPhaseService` 完成 `battle_header / on_enter / battle_init / 首回合预回蓝`。
 4. `TurnLoopController` 驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`。
 5. `LegalActionService` 产出 `LegalActionSet`；`CommandBuilder` 组装 `Command`；`CommandValidator` 做硬校验。
 6. `ActionQueueBuilder` 生成 `QueuedAction` 列表。
 7. `ActionExecutor` 执行行动，调用 `TargetResolver`、`math`、`effects` 与 `lifecycle`。
 8. `BattleLogger` 与 `LogEventBuilder` 为每个步骤写 `LogEvent`。
-9. `ReplayRunner` 在进入主循环前先按 `turn_index` 预分组 `command_stream`，再重建流程并产出 `ReplayOutput`。
+9. `ReplayRunner` 虽然物理目录放在 `battle_core/logging/`，但当前职责是 replay orchestration owner：进入主循环前先按 `turn_index` 预分组 `command_stream`，再重建流程并产出 `ReplayOutput`。
 
 ## 5. 依赖纪律
 

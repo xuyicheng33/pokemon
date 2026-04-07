@@ -1,7 +1,7 @@
 # 宇智波带土（十尾人柱力）调整记录
 <!-- anchor:obito.adjust.formal-first-delivery -->
-<!-- anchor:obito.adjust.skill-ultimate-filter -->
-<!-- anchor:obito.adjust.sync-expire -->
+<!-- anchor:obito.adjust.yinyang-dun-skill-ultimate-filter -->
+<!-- anchor:obito.adjust.heal-block-sync-expire -->
 <!-- anchor:obito.adjust.no-balance-retune -->
 <!-- anchor:obito.adjust.tests-impacted -->
 
@@ -12,9 +12,9 @@
 - 改了什么：
   - `阴阳遁` 的逐段减伤与叠层监听统一复用现有 `required_incoming_command_types / required_incoming_combat_type_ids` 过滤，不新增角色私有字段
   - 当前明确只响应敌方 `skill / ultimate` 的逐段直接伤害；非主动技段伤害不会再给带土白送叠层
-  <!-- anchor:obito.adjust.skill-ultimate-filter -->
+  <!-- anchor:obito.adjust.yinyang-dun-skill-ultimate-filter -->
   - `求道焦土` 的公开禁疗标记与 `incoming_heal_final_mod` 固定要求在同一 `turn_end` 节点同步过期
-  <!-- anchor:obito.adjust.sync-expire -->
+  <!-- anchor:obito.adjust.heal-block-sync-expire -->
 - 为什么改：
   - 旧口径虽然已经接入 `on_receive_action_damage_segment`，但没有把“哪些段伤害能触发”彻底收回共享过滤 contract，后续扩角会继续留下语义歧义
   - 禁疗标记和 heal block rule mod 若不锁成同窗失效，公开快照与真实治疗行为会发生肉眼可见的漂移

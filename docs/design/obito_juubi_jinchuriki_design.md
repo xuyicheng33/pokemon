@@ -1,9 +1,8 @@
 # 宇智波带土（十尾人柱力）正式角色设计稿
-<!-- anchor:obito.design.incoming-heal-final-mod -->
-<!-- anchor:obito.design.damage-segments -->
-<!-- anchor:obito.design.execute-target-hp-ratio -->
-<!-- anchor:obito.design.on-receive-damage-segment -->
-<!-- anchor:obito.design.enemy-skill-ultimate-filter -->
+<!-- anchor:obito.design.qiudao-jiaotu-heal-block-window -->
+<!-- anchor:obito.design.weishouyu-ten-segment-burst -->
+<!-- anchor:obito.design.qiudaoyu-five-stack-execute -->
+<!-- anchor:obito.design.yinyang-dun-skill-ultimate-segment-filter -->
 
 本稿按 `docs/design/formal_character_design_template.md` 收口，只保留带土自己的资源定义、角色机制、验收矩阵与平衡备注。共享引擎规则统一引用公共文档，不在本稿重复展开。
 
@@ -15,11 +14,11 @@
 |被动主轴|`仙人之力` 在 `turn_start` 按已损生命值 `10%` 回复|
 |核心技能主轴|`阴阳遁 -> 阴阳之力 -> 求道玉`|
 |禁疗入口|`求道焦土` 命中后挂公开禁疗标记；实现上沿用共享禁疗 mod（`incoming_heal_final_mod`）|
-<!-- anchor:obito.design.incoming-heal-final-mod -->
+<!-- anchor:obito.design.qiudao-jiaotu-heal-block-window -->
 |奥义主轴|`十尾尾兽玉` 走固定十段爆发；实现上用 `damage_segments` 固定为 `2 dark + 8 light`|
-<!-- anchor:obito.design.damage-segments -->
+<!-- anchor:obito.design.weishouyu-ten-segment-burst -->
 |处决口径|`求道玉` 满层后具备斩杀线；实现上固定为 `execute_target_hp_ratio_lte = 0.3` + `5` 层阴阳之力|
-<!-- anchor:obito.design.execute-target-hp-ratio -->
+<!-- anchor:obito.design.qiudaoyu-five-stack-execute -->
 |奥义点配置|`3 / 3 / 常规技 +1`|
 |当前平衡结论|首版正式接入，只冻结语义与交付面，不做平衡回调|
 |明确不做|不新增 field；不新增新属性；不改 `on_receive_action_hit` 旧语义|
@@ -150,9 +149,8 @@
     - `stat_mod(defense, +1)`
     - `stat_mod(sp_defense, +1)`
   - `obito_yinyang_dun_guard_rule_mod` 在本回合内对后续敌方 `skill / ultimate` 的每段最终伤害乘 `0.5`
-  <!-- anchor:obito.design.enemy-skill-ultimate-filter -->
+  <!-- anchor:obito.design.yinyang-dun-skill-ultimate-segment-filter -->
   - `obito_yinyang_dun_guard_stack_listener` 监听 `on_receive_action_damage_segment`，并与减伤 rule mod 复用同一组过滤条件：只响应敌方 `skill / ultimate` 的成功直接伤害段；命中后每承受 1 段再补 1 层阴阳之力
-  <!-- anchor:obito.design.on-receive-damage-segment -->
 - 边界：
   - 满 `5` 层后不再继续加层
   - 但双防提升和本回合减伤仍照常生效
@@ -177,6 +175,7 @@
 - 机制说明：
   - `0` 层也可用
   - 满足 `execute_target_hp_ratio_lte = 0.3` 且自身 `5` 层阴阳之力时，命中后、常规伤害前直接处决
+  <!-- anchor:obito.design.qiudaoyu-five-stack-execute -->
   - 使用后通过 `obito_qiudao_yu_clear_yinyang` 清空全部阴阳之力
   - `on_hit / on_miss` 都清层
 - 验收点：处决成功时只写一条 `[execute]` 伤害日志，不再继续走常规公式伤害。
@@ -214,6 +213,7 @@
   - 通过 `damage_segments` 固定写成两段资源：
     - `repeat_count=2, power=12, combat_type_id=dark`
     - `repeat_count=8, power=12, combat_type_id=light`
+  <!-- anchor:obito.design.weishouyu-ten-segment-burst -->
   - 顶层 `power` 当前固定为 `0`；真实伤害只由 `damage_segments` 承担
   - 每段都独立结算伤害、属性克制、减伤与日志
 - 验收点：日志 `payload_summary` 必须带 `segment i/n`；目标中途倒下后后续段停止。

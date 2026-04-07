@@ -60,11 +60,15 @@
 |---|---|---|
 |`event_chain_id`|`String`|当前链唯一 ID|
 |`root_action_id`|`Variant`|根动作 ID；系统链可为空|
+|`chain_origin`|`String`|当前链来源标签；区分 action / effect / system 等主链起点|
+|`step_counter`|`int`|当前链内部步骤计数；日志与调试输出依赖它标定链内时序|
 |`action_queue_index`|`Variant`|当前动作在本回合队列里的顺序快照|
 |`actor_id`|`Variant`|当前链 actor 的运行时实例 ID|
 |`command_type`|`Variant`|根动作类型|
 |`command_source`|`Variant`|根动作来源（如手动、系统注入、超时）|
 |`skill_id`|`Variant`|若当前链由技能或奥义触发，则记录对应 skill id|
+|`select_timeout`|`Variant`|选择阶段是否由超时路径触发；用于 timeout wait / forced default 语义|
+|`select_deadline_ms`|`Variant`|本链选择阶段的 deadline 快照；日志与外层超时判定可复用|
 |`target_unit_id`|`Variant`|当前链锁定的目标单位实例 ID|
 |`target_slot`|`Variant`|当前链目标槽位|
 |`action_actor_id`|`Variant`|来袭动作的施法者实例 ID；`on_receive_action_hit` / `scope=action_actor` 读取这个字段|
@@ -186,6 +190,7 @@
 |`duration_mode`|`String`|`turns / permanent`|
 |`owner_scope`|`String`|挂载域（`unit / field`）|
 |`owner_id`|`String`|挂载对象 ID（单位实例或 `field`）|
+|`field_instance_id`|`String`|若该 mod 跟随具体 field 生命周期，则记录对应 field runtime instance_id|
 |`stacking_key`|`String`|叠加判定键|
 |`remaining`|`int`|剩余回合|
 |`created_turn`|`int`|创建回合|
@@ -195,6 +200,8 @@
 |`source_order_speed_snapshot`|`int`|速度快照|
 |`persists_on_switch`|`bool`|非击倒离场时是否保留该规则修正|
 |`source_stacking_key`|`String`|多来源分组键；当前供 `mp_regen / incoming_accuracy / nullify_field_accuracy / incoming_action_final_mod / incoming_heal_final_mod` 使用|
+|`required_incoming_command_types`|`PackedStringArray`|来袭动作过滤白名单；当前供 `incoming_action_final_mod` 等读取点按 `skill / ultimate` 精确过滤|
+|`required_incoming_combat_type_ids`|`PackedStringArray`|来袭属性过滤白名单；与 `required_incoming_command_types` 共同收窄来袭路径|
 |`priority`|`int`|读取顺序优先级|
 
 补充说明：

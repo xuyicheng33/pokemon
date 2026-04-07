@@ -27,6 +27,7 @@
 
 补充说明：
 
+- `ReplayRunner` 当前物理上位于 `battle_core/logging/`，但语义上是 replay orchestration owner；它可以编排初始化与回放循环，但不得把“日志子服务本身可以改 runtime”误读成 logging 模块放权。
 - 静态 import 面必须继续维持分层单向；runtime wiring 图当前也必须保持 strict DAG。
 - 当前禁止在 composition root 的属性注入图里保留任何 SCC；若新增闭环，`architecture_wiring_graph_gate.py` 必须直接失败。
 - 若后续机制扩展又逼出新的 runtime 环，必须先补设计文档、决策记录与回归，再做新的装配方案评审；不能把闭环偷偷塞回 wiring。

@@ -17,6 +17,8 @@
       "tests/suites/gojo_manager_blackbox_suite.gd",
       "tests/suites/formal_character_pair_smoke_suite.gd",
       "tests/suites/extension_validation_contract_suite.gd",
+      "tests/suites/extension_targeting_accuracy_suite.gd",
+      "tests/suites/replay_turn_suite.gd",
       "tests/suites/ultimate_field_suite.gd",
       "tests/suites/ultimate_points_contract_suite.gd",
       "tests/suites/domain_clash_resolution_suite.gd",
@@ -63,8 +65,7 @@
     ],
     "design_needles": [
       "anchor:gojo.design.success-lock-via-on_success_effect_ids",
-      "anchor:gojo.design.failed-clash-no-field-buff-lock",
-      "anchor:gojo.design.shared-clash-rules-outsourced"
+      "anchor:gojo.design.failed-clash-no-field-buff-lock"
     ],
     "adjustment_needles": [
       "anchor:gojo.adjust.field-bound-action-lock",
@@ -91,6 +92,7 @@
       "tests/suites/sukuna_manager_blackbox_suite.gd",
       "tests/suites/formal_character_pair_smoke_suite.gd",
       "tests/suites/extension_validation_contract_suite.gd",
+      "tests/suites/replay_turn_suite.gd",
       "tests/suites/ultimate_field_suite.gd",
       "tests/suites/domain_clash_resolution_suite.gd",
       "tests/suites/domain_clash_guard_suite.gd",
@@ -132,8 +134,7 @@
       "anchor:sukuna.design.domain-expire-burst-kept",
       "anchor:sukuna.design.first-ultimate-window-turn-4-default",
       "anchor:sukuna.design.first-ultimate-window-turn-4-ritual",
-      "anchor:sukuna.design.matchup-regen-duration-permanent",
-      "anchor:sukuna.design.shared-domain-rules-outsourced"
+      "anchor:sukuna.design.matchup-regen-duration-permanent"
     ],
     "adjustment_needles": [
       "anchor:sukuna.adjust.matchup-regen-permanent",
@@ -162,6 +163,7 @@
       "tests/suites/formal_character_pair_smoke_suite.gd",
       "tests/suites/extension_validation_contract_suite.gd",
       "tests/suites/persistent_stat_stage_suite.gd",
+      "tests/suites/power_bonus_runtime_suite.gd",
       "tests/suites/combat_type_definition_suite.gd",
       "tests/suites/combat_type_runtime_suite.gd",
       "tests/suites/ultimate_points_contract_suite.gd"
@@ -197,18 +199,18 @@
       "formal_kashimo_validator_water_leak_counter_fixed_damage_bad_case_contract"
     ],
     "design_needles": [
-      "anchor:kashimo.design.effect-stack-sum",
-      "anchor:kashimo.design.incoming-action-final-mod",
+      "anchor:kashimo.design.feedback-strike-dual-charge-burst",
+      "anchor:kashimo.design.kyokyo-domain-accuracy-only",
       "anchor:kashimo.design.once-per-battle",
-      "anchor:kashimo.design.persistent-stat-stages"
+      "anchor:kashimo.design.water-hit-punish"
     ],
     "adjustment_needles": [
       "anchor:kashimo.adjust.battle-scoped-usage-record",
       "anchor:kashimo.adjust.once-per-battle",
-      "anchor:kashimo.adjust.refresh-stacking",
-      "anchor:kashimo.adjust.effect-stack-sum",
-      "anchor:kashimo.adjust.persistent-stat-stages",
-      "anchor:kashimo.adjust.same-turn-reentry"
+      "anchor:kashimo.adjust.kyokyo-window-refresh",
+      "anchor:kashimo.adjust.feedback-strike-dual-charge-burst",
+      "anchor:kashimo.adjust.amber-switch-persist",
+      "anchor:kashimo.adjust.amber-same-turn-reentry"
     ]
   },
   {
@@ -229,6 +231,7 @@
       "tests/suites/formal_character_pair_smoke_suite.gd",
       "tests/suites/extension_validation_contract_suite.gd",
       "tests/suites/heal_extension_suite.gd",
+      "tests/suites/power_bonus_runtime_suite.gd",
       "tests/suites/skill_execute_contract_suite.gd",
       "tests/suites/multihit_skill_runtime_suite.gd",
       "tests/suites/ultimate_points_contract_suite.gd"
@@ -266,16 +269,15 @@
       "formal_obito_validator_ultimate_segments_bad_case_contract"
     ],
     "design_needles": [
-      "anchor:obito.design.incoming-heal-final-mod",
-      "anchor:obito.design.damage-segments",
-      "anchor:obito.design.execute-target-hp-ratio",
-      "anchor:obito.design.on-receive-damage-segment",
-      "anchor:obito.design.enemy-skill-ultimate-filter"
+      "anchor:obito.design.qiudao-jiaotu-heal-block-window",
+      "anchor:obito.design.yinyang-dun-skill-ultimate-segment-filter",
+      "anchor:obito.design.qiudaoyu-five-stack-execute",
+      "anchor:obito.design.weishouyu-ten-segment-burst"
     ],
     "adjustment_needles": [
       "anchor:obito.adjust.formal-first-delivery",
-      "anchor:obito.adjust.skill-ultimate-filter",
-      "anchor:obito.adjust.sync-expire",
+      "anchor:obito.adjust.yinyang-dun-skill-ultimate-filter",
+      "anchor:obito.adjust.heal-block-sync-expire",
       "anchor:obito.adjust.no-balance-retune",
       "anchor:obito.adjust.tests-impacted"
     ]
