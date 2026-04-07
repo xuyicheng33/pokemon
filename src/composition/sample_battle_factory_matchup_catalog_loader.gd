@@ -1,8 +1,9 @@
 extends RefCounted
-class_name SampleBattleFactoryMatchupCatalogLoader
+class_name SampleBattleFactoryFormalMatchupCatalogLoader
 
 const FormalContractsScript := preload("res://src/composition/sample_battle_factory_formal_contracts.gd")
-const RuntimeRegistryScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd")
+const MatchupContractsScript := preload("res://src/composition/sample_battle_factory_matchup_contracts.gd")
+const RuntimeRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_runtime_registry_loader.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const DEFAULT_CATALOG_PATH := "res://config/formal_matchup_catalog.json"
 
@@ -10,6 +11,7 @@ var catalog_path_override: String = ""
 var runtime_registry_path_override: String = ""
 
 var _formal_contracts = FormalContractsScript.new()
+var _matchup_contracts = MatchupContractsScript.new()
 
 func load_catalog_result() -> Dictionary:
 	var resolved_catalog_path := _resolve_catalog_path()
@@ -31,11 +33,9 @@ func load_catalog_result() -> Dictionary:
 			"SampleBattleFactory matchup catalog no longer accepts pair_surface_cases: %s" % resolved_catalog_path
 		)
 	var matchups = parsed.get("matchups", {})
-	if not (matchups is Dictionary):
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"SampleBattleFactory matchup catalog missing dictionary matchups: %s" % resolved_catalog_path
-		)
+	var matchups_validation_result := _matchup_contracts.validate_matchups_result(matchups, "formal matchup catalog")
+	if not bool(matchups_validation_result.get("ok", false)):
+		return matchups_validation_result
 	var runtime_entries_result := _load_runtime_registry_entries_result()
 	if not bool(runtime_entries_result.get("ok", false)):
 		return runtime_entries_result
@@ -47,27 +47,6 @@ func load_catalog_result() -> Dictionary:
 	for raw_character_id in runtime_maps.get("runtime_order", []):
 		known_character_ids[String(raw_character_id)] = true
 	var unit_to_character: Dictionary = runtime_maps.get("unit_to_character", {})
-	for raw_matchup_id in matchups.keys():
-		var matchup_id := String(raw_matchup_id).strip_edges()
-		var matchup_spec = matchups.get(raw_matchup_id, {})
-		if not (matchup_spec is Dictionary):
-			return _error_result(
-				ErrorCodesScript.INVALID_BATTLE_SETUP,
-				"SampleBattleFactory matchup catalog[%s] must be dictionary: %s" % [matchup_id, resolved_catalog_path]
-			)
-		for side_key in ["p1_units", "p2_units"]:
-			var units = matchup_spec.get(side_key, [])
-			if not (units is Array) or units.is_empty():
-				return _error_result(
-					ErrorCodesScript.INVALID_BATTLE_SETUP,
-					"SampleBattleFactory matchup catalog[%s].%s must be non-empty array: %s" % [matchup_id, side_key, resolved_catalog_path]
-				)
-			for raw_unit_id in units:
-				if String(raw_unit_id).strip_edges().is_empty():
-					return _error_result(
-						ErrorCodesScript.INVALID_BATTLE_SETUP,
-						"SampleBattleFactory matchup catalog[%s].%s contains empty unit_definition_id: %s" % [matchup_id, side_key, resolved_catalog_path]
-					)
 	var interaction_cases = parsed.get("pair_interaction_cases", [])
 	if not (interaction_cases is Array):
 		return _error_result(
@@ -148,26 +127,20 @@ func _matchup_formal_pair(matchup_spec: Dictionary, unit_to_character: Dictionar
 	return matchup_pair
 
 func _load_runtime_registry_entries_result() -> Dictionary:
-	var resolved_override_path := _normalize_optional_path(runtime_registry_path_override)
-	var load_result = RuntimeRegistryScript.load_entries() if resolved_override_path.is_empty() else RuntimeRegistryScript.load_entries_from_path(resolved_override_path)
-	var registry_error := String(load_result.get("error", "")).strip_edges()
-	if not registry_error.is_empty():
+	var loader = RuntimeRegistryLoaderScript.new()
+	loader.registry_path_override = runtime_registry_path_override
+	var entries_result: Dictionary = loader.load_entries_result()
+	if not bool(entries_result.get("ok", false)):
 		return _error_result(
 			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"SampleBattleFactory failed to load formal runtime registry for matchup catalog: %s" % registry_error
+			"SampleBattleFactory failed to load formal runtime registry for matchup catalog: %s" % String(entries_result.get("error_message", "unknown error"))
 		)
-	return _ok_result(load_result.get("entries", []))
+	return _ok_result(entries_result.get("data", []))
 
 func _resolve_catalog_path() -> String:
 	var trimmed_path := String(catalog_path_override).strip_edges()
 	if trimmed_path.is_empty():
 		return DEFAULT_CATALOG_PATH
-	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
-
-func _normalize_optional_path(raw_path: String) -> String:
-	var trimmed_path := String(raw_path).strip_edges()
-	if trimmed_path.is_empty():
-		return ""
 	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
 
 func _ok_result(data) -> Dictionary:

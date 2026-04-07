@@ -1,6 +1,7 @@
 extends RefCounted
 class_name ContentSnapshotFormalCharacterRegistry
 
+const FormalRegistryContractsScript := preload("res://src/shared/formal_registry_contracts.gd")
 const REGISTRY_PATH := "res://config/formal_character_runtime_registry.json"
 
 static func load_entries() -> Dictionary:
@@ -23,6 +24,7 @@ static func load_entries_from_path(registry_path: String) -> Dictionary:
 	var entries: Array = []
 	var seen_character_ids: Dictionary = {}
 	var seen_unit_definition_ids: Dictionary = {}
+	var contracts = FormalRegistryContractsScript.new()
 	for raw_entry in parsed:
 		if not (raw_entry is Dictionary):
 			return {
@@ -30,12 +32,17 @@ static func load_entries_from_path(registry_path: String) -> Dictionary:
 				"error": "ContentSnapshotFormalCharacterRegistry expects dictionary entries",
 			}
 		var entry: Dictionary = raw_entry
-		var character_id := String(entry.get("character_id", "")).strip_edges()
-		if character_id.is_empty():
+		var contract_result := contracts.validate_required_fields_result(
+			FormalRegistryContractsScript.RUNTIME_REGISTRY_BUCKET,
+			entry,
+			"ContentSnapshotFormalCharacterRegistry entry"
+		)
+		if not bool(contract_result.get("ok", false)):
 			return {
 				"entries": [],
-				"error": "ContentSnapshotFormalCharacterRegistry entry missing character_id",
+				"error": String(contract_result.get("error_message", "ContentSnapshotFormalCharacterRegistry contract validation failed")),
 			}
+		var character_id := String(entry.get("character_id", "")).strip_edges()
 		if seen_character_ids.has(character_id):
 			return {
 				"entries": [],
@@ -55,22 +62,7 @@ static func load_entries_from_path(registry_path: String) -> Dictionary:
 			}
 		seen_unit_definition_ids[unit_definition_id] = true
 		var matchup_id := String(entry.get("formal_setup_matchup_id", "")).strip_edges()
-		if matchup_id.is_empty():
-			return {
-				"entries": [],
-				"error": "ContentSnapshotFormalCharacterRegistry[%s] missing formal_setup_matchup_id" % character_id,
-			}
-		if not entry.has("required_content_paths"):
-			return {
-				"entries": [],
-				"error": "ContentSnapshotFormalCharacterRegistry[%s] missing required_content_paths" % character_id,
-			}
 		var required_content_paths = entry.get("required_content_paths", [])
-		if not (required_content_paths is Array):
-			return {
-				"entries": [],
-				"error": "ContentSnapshotFormalCharacterRegistry[%s] missing required_content_paths" % character_id,
-			}
 		for raw_rel_path in required_content_paths:
 			if String(raw_rel_path).strip_edges().is_empty():
 				return {

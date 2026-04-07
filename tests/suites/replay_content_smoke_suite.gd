@@ -59,7 +59,10 @@ func _test_field_expire_path(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_output = core.service("replay_runner").run_replay(harness.build_demo_replay_input(sample_factory, core.service("command_builder")))
+	var replay_input_result: Dictionary = sample_factory.build_demo_replay_input_for_profile_result(core.service("command_builder"), "legacy")
+	if not bool(replay_input_result.get("ok", false)):
+		return harness.fail_result("legacy replay input build failed: %s" % String(replay_input_result.get("error_message", "unknown error")))
+	var replay_output = core.service("replay_runner").run_replay(replay_input_result.get("data", null))
 	if replay_output == null:
 		return harness.fail_result("replay output is null")
 	if replay_output.final_battle_state.field_state != null:

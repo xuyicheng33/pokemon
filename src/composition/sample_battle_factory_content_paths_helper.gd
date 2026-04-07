@@ -1,7 +1,7 @@
 extends RefCounted
 class_name SampleBattleFactoryContentPathsHelper
 
-const FormalCharacterRegistryScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd")
+const RuntimeRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_runtime_registry_loader.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const BASE_CONTENT_SNAPSHOT_DIRS = [
 	"res://content/battle_formats",
@@ -16,9 +16,21 @@ const BASE_CONTENT_SNAPSHOT_DIRS = [
 ]
 
 var registry_path_override: String = ""
+var baseline_unit_definition_ids: PackedStringArray = PackedStringArray()
 
 func build_snapshot_paths(base_dirs: Array) -> Dictionary:
 	return _build_snapshot_paths_from_registry(base_dirs, {}, false)
+
+func build_base_snapshot_paths(base_dirs: Array) -> Dictionary:
+	var paths: Array[String] = []
+	var seen: Dictionary = {}
+	for raw_dir_path in base_dirs:
+		var dir_result := collect_tres_paths_result(String(raw_dir_path))
+		if not bool(dir_result.get("ok", false)):
+			return dir_result
+		_append_unique_paths(paths, seen, dir_result.get("data", []))
+	paths.sort()
+	return _ok_result(PackedStringArray(paths))
 
 func build_snapshot_paths_for_setup(base_dirs: Array, battle_setup) -> Dictionary:
 	if battle_setup == null:
@@ -33,6 +45,9 @@ func _build_snapshot_paths_from_registry(base_dirs: Array, included_unit_definit
 		if not bool(dir_result.get("ok", false)):
 			return dir_result
 		_append_unique_paths(paths, seen, dir_result.get("data", []))
+	if restrict_registry_entries and _included_units_are_baseline_only(included_unit_definition_ids):
+		paths.sort()
+		return _ok_result(PackedStringArray(paths))
 	var registry_result: Dictionary = _load_registry_entries()
 	var registry_error := String(registry_result.get("error", ""))
 	if not registry_error.is_empty():
@@ -72,6 +87,19 @@ func _collect_unit_definition_ids(battle_setup) -> Dictionary:
 				continue
 			unit_definition_ids[unit_definition_id] = true
 	return unit_definition_ids
+
+func _included_units_are_baseline_only(included_unit_definition_ids: Dictionary) -> bool:
+	if included_unit_definition_ids.is_empty():
+		return true
+	var baseline_lookup: Dictionary = {}
+	for raw_unit_definition_id in baseline_unit_definition_ids:
+		baseline_lookup[String(raw_unit_definition_id)] = true
+	if baseline_lookup.is_empty():
+		return false
+	for raw_unit_definition_id in included_unit_definition_ids.keys():
+		if not baseline_lookup.has(String(raw_unit_definition_id)):
+			return false
+	return true
 
 func collect_tres_paths_result(dir_path: String) -> Dictionary:
 	var dir_access := DirAccess.open(dir_path)
@@ -125,10 +153,18 @@ func _normalize_res_path(raw_path: String) -> String:
 	return "" if trimmed_path.is_empty() else (trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path)
 
 func _load_registry_entries() -> Dictionary:
-	var resolved_override_path := _normalize_res_path(registry_path_override)
-	if resolved_override_path.is_empty():
-		return FormalCharacterRegistryScript.load_entries()
-	return FormalCharacterRegistryScript.load_entries_from_path(resolved_override_path)
+	var loader = RuntimeRegistryLoaderScript.new()
+	loader.registry_path_override = registry_path_override
+	var entries_result: Dictionary = loader.load_entries_for_snapshot_result()
+	if bool(entries_result.get("ok", false)):
+		return {
+			"entries": entries_result.get("data", []),
+			"error": "",
+		}
+	return {
+		"entries": [],
+		"error": String(entries_result.get("error_message", "unknown error")),
+	}
 
 func _ok_result(data) -> Dictionary:
 	return {

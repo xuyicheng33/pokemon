@@ -1,4 +1,5 @@
 {
+  "default_profile_id": "kashimo",
   "profiles": {
     "legacy": {
       "matchup_id": "sample_default",
@@ -76,10 +77,18 @@
         },
         {
           "turn_index": 5,
+          "command_type": "switch",
+          "command_source": "manual",
+          "side_id": "P1",
+          "actor_public_id": "P1-A",
+          "target_public_id": "P1-B"
+        },
+        {
+          "turn_index": 6,
           "command_type": "wait",
           "command_source": "manual",
           "side_id": "P1",
-          "actor_public_id": "P1-A"
+          "actor_public_id": "P1-B"
         }
       ]
     }

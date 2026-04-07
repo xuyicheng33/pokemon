@@ -6,6 +6,12 @@ const DEFAULT_CATALOG_PATH := "res://config/demo_replay_catalog.json"
 
 var catalog_path_override: String = ""
 
+func default_profile_id() -> String:
+	var catalog_result := _load_catalog_result()
+	if not bool(catalog_result.get("ok", false)):
+		return ""
+	return String(catalog_result.get("data", {}).get("default_profile_id", "")).strip_edges()
+
 func profile_result(profile_id: String) -> Dictionary:
 	var catalog_result := _load_catalog_result()
 	if not bool(catalog_result.get("ok", false)):
@@ -38,6 +44,12 @@ func _load_catalog_result() -> Dictionary:
 		return _error_result(
 			ErrorCodesScript.INVALID_REPLAY_INPUT,
 			"SampleBattleFactory demo replay catalog missing dictionary profiles: %s" % resolved_catalog_path
+		)
+	var default_profile_id := String(parsed.get("default_profile_id", "kashimo")).strip_edges()
+	if default_profile_id.is_empty() or not profiles.has(default_profile_id):
+		return _error_result(
+			ErrorCodesScript.INVALID_REPLAY_INPUT,
+			"SampleBattleFactory demo replay catalog missing valid default_profile_id: %s" % resolved_catalog_path
 		)
 	for profile_id in profiles.keys():
 		var profile = profiles.get(profile_id, {})
@@ -107,8 +119,24 @@ func _validate_command_payload(profile_id: String, catalog_path: String, command
 				required_key,
 				catalog_path,
 			]
-	if String(command_payload.get("command_type", "")).strip_edges() == "wait":
+	var command_type := String(command_payload.get("command_type", "")).strip_edges()
+	if command_type == "wait":
 		return ""
+	if command_type == "switch":
+		if String(command_payload.get("target_public_id", "")).strip_edges().is_empty():
+			return "SampleBattleFactory demo replay catalog[%s].commands[%d] missing target_public_id: %s" % [
+				profile_id,
+				command_index,
+				catalog_path,
+			]
+		return ""
+	if command_type != "skill" and command_type != "ultimate":
+		return "SampleBattleFactory demo replay catalog[%s].commands[%d] unsupported command_type=%s: %s" % [
+			profile_id,
+			command_index,
+			command_type,
+			catalog_path,
+		]
 	if String(command_payload.get("skill_id", "")).strip_edges().is_empty():
 		return "SampleBattleFactory demo replay catalog[%s].commands[%d] missing skill_id: %s" % [
 			profile_id,

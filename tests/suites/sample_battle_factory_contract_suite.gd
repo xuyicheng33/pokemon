@@ -1,0 +1,124 @@
+extends RefCounted
+class_name SampleBattleFactoryContractSuite
+
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
+
+const MISSING_RUNTIME_REGISTRY_PATH := "res://tests/fixtures/missing_formal_runtime_registry.json"
+const MISSING_FORMAL_MATCHUP_CATALOG_PATH := "res://tests/fixtures/missing_formal_matchup_catalog.json"
+
+var _helper = ManagerContractTestHelperScript.new()
+
+func register_tests(runner, failures: Array[String], harness) -> void:
+	runner.run_test("sample_factory_baseline_setup_ignores_formal_runtime_registry_failure", failures, Callable(self, "_test_baseline_setup_ignores_formal_runtime_registry_failure").bind(harness))
+	runner.run_test("sample_factory_legacy_demo_ignores_formal_runtime_registry_failure", failures, Callable(self, "_test_legacy_demo_ignores_formal_runtime_registry_failure").bind(harness))
+	runner.run_test("sample_factory_baseline_flow_ignores_formal_matchup_catalog_failure", failures, Callable(self, "_test_baseline_flow_ignores_formal_matchup_catalog_failure").bind(harness))
+	runner.run_test("sample_factory_demo_default_profile_contract", failures, Callable(self, "_test_demo_default_profile_contract").bind(harness))
+	runner.run_test("sample_factory_demo_switch_command_replay_contract", failures, Callable(self, "_test_demo_switch_command_replay_contract").bind(harness))
+
+func _test_baseline_setup_ignores_formal_runtime_registry_failure(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory_with_overrides(MISSING_RUNTIME_REGISTRY_PATH)
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var sample_setup_result: Dictionary = sample_factory.build_sample_setup_result()
+	if not bool(sample_setup_result.get("ok", false)):
+		return harness.fail_result("baseline sample setup should not depend on formal runtime registry: %s" % String(sample_setup_result.get("error_message", "unknown error")))
+	var formal_setup_result: Dictionary = sample_factory.build_formal_character_setup_result("gojo_satoru")
+	var failure = _helper.expect_failure_code(
+		formal_setup_result,
+		"build_formal_character_setup_result(gojo_satoru)",
+		ErrorCodesScript.INVALID_CONTENT_SNAPSHOT,
+		"formal character runtime registry"
+	)
+	if not bool(failure.get("ok", false)):
+		return harness.fail_result(str(failure.get("error", "formal runtime registry failure contract drifted")))
+	return harness.pass_result()
+
+func _test_legacy_demo_ignores_formal_runtime_registry_failure(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory_with_overrides(MISSING_RUNTIME_REGISTRY_PATH)
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var replay_result: Dictionary = sample_factory.build_demo_replay_input_for_profile_result(manager, "legacy")
+	if not bool(replay_result.get("ok", false)):
+		return harness.fail_result("legacy demo should not depend on formal runtime registry: %s" % String(replay_result.get("error_message", "unknown error")))
+	return harness.pass_result()
+
+func _test_baseline_flow_ignores_formal_matchup_catalog_failure(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory_with_overrides("", MISSING_FORMAL_MATCHUP_CATALOG_PATH)
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var sample_setup_result: Dictionary = sample_factory.build_sample_setup_result()
+	if not bool(sample_setup_result.get("ok", false)):
+		return harness.fail_result("baseline sample setup should not depend on formal matchup catalog: %s" % String(sample_setup_result.get("error_message", "unknown error")))
+	var legacy_replay_result: Dictionary = sample_factory.build_demo_replay_input_for_profile_result(manager, "legacy")
+	if not bool(legacy_replay_result.get("ok", false)):
+		return harness.fail_result("legacy demo should not depend on formal matchup catalog: %s" % String(legacy_replay_result.get("error_message", "unknown error")))
+	var formal_setup_result: Dictionary = sample_factory.build_formal_character_setup_result("kashimo_hajime")
+	var failure = _helper.expect_failure_code(
+		formal_setup_result,
+		"build_formal_character_setup_result(kashimo_hajime)",
+		ErrorCodesScript.INVALID_BATTLE_SETUP,
+		"missing matchup catalog"
+	)
+	if not bool(failure.get("ok", false)):
+		return harness.fail_result(str(failure.get("error", "formal matchup catalog failure contract drifted")))
+	return harness.pass_result()
+
+func _test_demo_default_profile_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	if sample_factory.default_demo_profile_id() != "kashimo":
+		return harness.fail_result("default demo profile should stay pinned to kashimo")
+	var default_result: Dictionary = sample_factory.build_demo_replay_input_result(manager)
+	var explicit_result: Dictionary = sample_factory.build_demo_replay_input_for_profile_result(manager, "kashimo")
+	if not bool(default_result.get("ok", false)) or not bool(explicit_result.get("ok", false)):
+		return harness.fail_result("default and explicit kashimo demo replay inputs should both build successfully")
+	var default_input = default_result.get("data", null)
+	var explicit_input = explicit_result.get("data", null)
+	if default_input == null or explicit_input == null:
+		return harness.fail_result("demo replay input should not be null")
+	if int(default_input.battle_seed) != int(explicit_input.battle_seed):
+		return harness.fail_result("default demo profile should reuse the explicit kashimo battle_seed")
+	if default_input.command_stream.size() != explicit_input.command_stream.size():
+		return harness.fail_result("default demo profile should reuse the explicit kashimo command stream")
+	return harness.pass_result()
+
+func _test_demo_switch_command_replay_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var replay_result: Dictionary = sample_factory.build_demo_replay_input_result(manager)
+	if not bool(replay_result.get("ok", false)):
+		return harness.fail_result("default demo replay input build failed: %s" % String(replay_result.get("error_message", "unknown error")))
+	var replay_input = replay_result.get("data", null)
+	if replay_input == null:
+		return harness.fail_result("demo replay input should not be null")
+	var has_switch := false
+	for command_data in replay_input.command_stream:
+		if command_data != null and String(command_data.command_type) == "switch":
+			has_switch = true
+			break
+	if not has_switch:
+		return harness.fail_result("default demo replay input should contain a switch command")
+	var replay_envelope: Dictionary = manager.run_replay(replay_input)
+	var replay_unwrap = _helper.unwrap_ok(replay_envelope, "run_replay(sample_factory default demo)")
+	if not bool(replay_unwrap.get("ok", false)):
+		return harness.fail_result(str(replay_unwrap.get("error", "default demo replay failed")))
+	return harness.pass_result()

@@ -10,6 +10,7 @@ const BattleResultServiceSuiteScript := preload("res://tests/suites/battle_resul
 const ContentLoggingSuiteScript := preload("res://tests/suites/content_logging_suite.gd")
 const ContentIndexSplitSuiteScript := preload("res://tests/suites/content_index_split_suite.gd")
 const SetupLoadoutSuiteScript := preload("res://tests/suites/setup_loadout_suite.gd")
+const SampleBattleFactoryContractSuiteScript := preload("res://tests/suites/sample_battle_factory_contract_suite.gd")
 const ExtensionContractSuiteScript := preload("res://tests/suites/extension_contract_suite.gd")
 const PublicIdAllocatorSuiteScript := preload("res://tests/suites/public_id_allocator_suite.gd")
 const ManagerContractSuiteScript := preload("res://tests/suites/manager_contract_suite.gd")
@@ -44,6 +45,7 @@ func _init() -> void:
         ContentLoggingSuiteScript.new(),
         ContentIndexSplitSuiteScript.new(),
         SetupLoadoutSuiteScript.new(),
+        SampleBattleFactoryContractSuiteScript.new(),
         ExtensionContractSuiteScript.new(),
         PublicIdAllocatorSuiteScript.new(),
         ManagerContractSuiteScript.new(),

@@ -1,0 +1,12 @@
+{
+  "matchups": {
+    "sample_default": {
+      "p1_units": ["sample_pyron", "sample_mossaur", "sample_tidekit"],
+      "p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
+    },
+    "passive_item_vs_sample": {
+      "p1_units": ["sample_pyron_charm", "sample_mossaur", "sample_tidekit"],
+      "p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
+    }
+  }
+}

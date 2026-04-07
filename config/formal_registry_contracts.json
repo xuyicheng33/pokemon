@@ -1,0 +1,32 @@
+{
+  "runtime_registry": {
+    "required_string_fields": [
+      "character_id",
+      "unit_definition_id",
+      "formal_setup_matchup_id"
+    ],
+    "required_array_fields": [
+      "required_content_paths"
+    ],
+    "optional_string_fields": [
+      "content_validator_script_path"
+    ]
+  },
+  "delivery_registry": {
+    "required_string_fields": [
+      "character_id",
+      "display_name",
+      "design_doc",
+      "adjustment_doc",
+      "surface_smoke_skill_id",
+      "suite_path"
+    ],
+    "required_array_fields": [
+      "required_suite_paths",
+      "required_test_names",
+      "design_needles",
+      "adjustment_needles"
+    ],
+    "optional_string_fields": []
+  }
+}

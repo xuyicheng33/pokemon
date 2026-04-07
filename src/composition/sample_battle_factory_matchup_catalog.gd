@@ -1,13 +1,14 @@
 extends RefCounted
-class_name SampleBattleFactoryMatchupCatalog
+class_name SampleBattleFactoryFormalMatchupCatalog
 
 const LoaderScript := preload("res://src/composition/sample_battle_factory_matchup_catalog_loader.gd")
+const MatchupContractsScript := preload("res://src/composition/sample_battle_factory_matchup_contracts.gd")
 const SurfaceBuilderScript := preload("res://src/composition/sample_battle_factory_surface_case_builder.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var catalog_path_override: String = ""
 var runtime_registry_path_override: String = ""
-var delivery_registry_path_override: String = ""
+var _contracts = MatchupContractsScript.new()
 
 func has_matchup(matchup_id: String) -> bool:
 	var catalog_result := _load_catalog_result()
@@ -19,23 +20,8 @@ func build_setup_result(setup_builder, matchup_id: String, side_regular_skill_ov
 	var catalog_result := _load_catalog_result()
 	if not bool(catalog_result.get("ok", false)):
 		return catalog_result
-	var spec: Dictionary = catalog_result.get("data", {}).get("matchups", {}).get(matchup_id, {})
-	if spec.is_empty():
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"SampleBattleFactory unknown matchup_id: %s" % matchup_id
-		)
-	var battle_setup = setup_builder.build_matchup_setup(
-		PackedStringArray(spec.get("p1_units", [])),
-		PackedStringArray(spec.get("p2_units", [])),
-		side_regular_skill_overrides
-	)
-	if battle_setup == null:
-		return _error_result(
-			ErrorCodesScript.INVALID_COMPOSITION,
-			"SampleBattleFactory failed to build matchup setup: %s" % matchup_id
-		)
-	return _ok_result(battle_setup)
+	var matchups: Dictionary = catalog_result.get("data", {}).get("matchups", {})
+	return _contracts.build_setup_result(setup_builder, matchups, matchup_id, side_regular_skill_overrides)
 
 func formal_pair_surface_cases_result(runtime_entries: Array, delivery_entries: Array) -> Dictionary:
 	var catalog_result := _load_catalog_result()

@@ -43,6 +43,9 @@ func _resolve_demo_mode() -> String:
         var arg := String(raw_arg).strip_edges()
         if arg.begins_with("demo="):
             return String(arg.split("=", true, 1)[1]).strip_edges()
+    var sample_factory: Variant = SampleBattleFactoryScript.new()
+    if sample_factory != null and sample_factory.has_method("default_demo_profile_id"):
+        return String(sample_factory.default_demo_profile_id()).strip_edges()
     return "kashimo"
 
 func _build_replay_input_for_demo_mode(sample_factory, demo_mode: String) -> Variant:
