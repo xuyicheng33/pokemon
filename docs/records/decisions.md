@@ -72,6 +72,17 @@
   - 如果 helper 继续反向读取 owner 私有状态，文件虽然分开了，边界其实还是假拆分；后面再补规则很快又会长回另一坨屎山
   - 先把依赖门、cast collector、switch collector 变成稳定内部协作者，可以明显降低继续扩角时对 `get_legal_actions()` 主入口的反复返工
 
+## 0E. BattleResultService owner 继续瘦身为稳定终局 facade（2026-04-07）
+
+- `BattleResultService` owner 现在只保留 invalid termination/runtime fault 落盘、稳定公开入口与 helper 装配。
+- `system` / `battle_end` chain context 构造固定下沉到 `src/battle_core/turn/battle_result_service_chain_builder.gd`。
+- 初始化胜利、标准胜利、投降与 turn limit 的结果判定固定下沉到 `src/battle_core/turn/battle_result_service_outcome_resolver.gd`。
+- 对外方法名与 turn 子域调用面保持不变；`BattleInitializer`、`TurnLoopController`、`TurnResolutionService`、`TurnFieldLifecycleService` 继续只依赖 `BattleResultService` 稳定入口。
+- 这么定的原因：
+  - 前四批收口后，turn 子域里最容易继续长回屎山的热点已经从 sample/legality 转到了终局判定 owner
+  - `BattleResultService` 之前同时承担 invalid/runtime fault 落盘、chain 构造、胜负/投降/turn limit 判定与 battle end 日志，继续扩 turn 规则时最容易反复改同一文件
+  - 先把 chain builder 与 outcome resolver 固化成内部协作者，可以在不改外部语义的前提下继续压缩 turn 子域返工面，并给后续是否重构 `battle_core_manager` 留出更清晰的评估边界
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

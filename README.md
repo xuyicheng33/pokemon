@@ -91,6 +91,7 @@ tests/
 - `logging`：日志构造、回放、确定性校验
 - `facades`：对外稳定接口（唯一稳定 facade 是 `BattleCoreManager`；`BattleCoreSession` 只是内部会话壳）
 - `LegalActionService` owner 当前只保留上下文校验、结果汇总与错误投影；rule gate、技能/奥义候选收集、换人候选收集已拆到 `legal_action_service_rule_gate.gd`、`legal_action_service_cast_option_collector.gd`、`legal_action_service_switch_option_collector.gd`
+- `BattleResultService` owner 当前只保留 invalid termination/runtime fault 落盘与稳定入口；system/battle_end chain 构建、初始化胜利/标准胜利/投降/turn limit 判定已拆到 `battle_result_service_chain_builder.gd`、`battle_result_service_outcome_resolver.gd`
 
 架构约束见：`docs/design/battle_core_architecture_constraints.md`。
 
@@ -280,9 +281,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-07）
 
-- `src/**/*.gd`：`18057` 行
+- `src/**/*.gd`：`18122` 行
 - `tests/**/*.gd`：`23666` 行
-- GDScript 合计：`41723` 行
+- GDScript 合计：`41788` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

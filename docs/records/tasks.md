@@ -31,25 +31,46 @@
 
 - 状态：进行中
 - 目标：
-  - 在不新增第 5 个正式角色、不改四角色数值与平衡的前提下，把扩角前最容易持续返工的四个热点先收口：
+  - 在不新增第 5 个正式角色、不改四角色数值与平衡的前提下，把扩角前最容易持续返工的五个热点先收口：
     - manifest runtime / delivery 视图解耦
     - 角色事实重复维护面收缩
     - `SampleBattleFactory` 家族继续按职责拆分
     - `LegalActionService` 提前拆成稳定子职责
+    - `BattleResultService` 收口成稳定终局 facade + 内部协作者
 - 范围：
   - 第 1 批：runtime loader 不再依赖 delivery/test 字段；manifest/runtime/delivery 合同、gate 与文档同步
   - 第 2 批：收缩 validator / snapshot 等角色事实重复维护面
   - 第 3 批：拆分 `SampleBattleFactory` 热点职责
   - 第 4 批：拆分 `LegalActionService` 热点职责
+  - 第 5 批：拆分 `BattleResultService` 的终局 chain 与 outcome 判定职责
 - 当前进度：
   - 第 1 批已完成：manifest runtime / delivery 视图解耦已落地并通过 gate
   - 第 2 批已完成：formal 角色 baseline 已收口到共享描述层，snapshot suite 与 formal validator 的基础事实开始共用同一份 descriptor
   - 第 3 批已完成：`SampleBattleFactory` owner 已拆出 `override router + setup access`，并把 snapshot 目录扫描下沉到独立 helper；path override 广播、baseline/formal setup 组装与 snapshot 扫描不再继续堆在主入口
   - 第 4 批已完成：`LegalActionService` owner 已拆出 `rule gate + cast option collector + switch option collector`，规则门、技能/奥义候选收集与换人候选收集不再继续缠在主入口
+  - 追加整合批已完成：`BattleResultService` owner 已拆出 `battle_result_service_chain_builder.gd + battle_result_service_outcome_resolver.gd`；system/battle_end chain 构建与 victory/surrender/turn limit 判定不再继续和 invalid/runtime fault 落盘缠在一个入口文件里
 - 非范围：
   - 不改四角色玩法语义
   - 不新增正式角色
   - 不改 battle core 主循环规则
+
+### 继续整合：Turn 热点瘦身
+
+- `BattleResultService` 当前固定采用：
+  - owner：`src/battle_core/turn/battle_result_service.gd`
+  - chain helper：`src/battle_core/turn/battle_result_service_chain_builder.gd`
+  - outcome helper：`src/battle_core/turn/battle_result_service_outcome_resolver.gd`
+- 本批保持对外方法名与主循环语义不变：
+  - `build_system_chain()`
+  - `resolve_initialization_victory()`
+  - `resolve_standard_victory()`
+  - `resolve_surrender()`
+  - `resolve_turn_limit()`
+  - `terminate_invalid_battle() / hard_terminate_invalid_state()`
+- 当前切分边界：
+  - owner 只保留 invalid termination/runtime fault 落盘、稳定 facade 与 helper 装配
+  - chain helper 只负责 `system` / `battle_end` chain 构造与 action-origin 终局链复用
+  - outcome helper 只负责初始化胜利、标准胜利、投降、turn limit 的 battle result 写入与 battle end 日志
 
 ## 本轮交付结果
 
@@ -154,6 +175,7 @@
 
 - 已通过：
   - `godot --headless --path . --script tests/run_all.gd`
+  - `tests/run_with_gate.sh`
 - 本轮完成标准：
   - `tests/run_with_gate.sh`
   - `godot --headless --path . --quit-after 20`
