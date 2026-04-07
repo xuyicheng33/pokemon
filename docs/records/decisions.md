@@ -61,6 +61,17 @@
   - demo builder 直接回调 owner，会让 helper 边界继续虚化，后面再加 demo profile 或 baseline/formal 分支时又会长回去
   - 先把 owner 缩回“稳定 facade + 错误投影”边界，后续扩第 5 个角色时，新增 matchup / demo / manifest 逻辑才更容易落到已有 helper，而不是继续堆回大文件
 
+## 0D. LegalActionService owner 继续瘦身为稳定合法性 facade（2026-04-07）
+
+- `LegalActionService` owner 现在只保留运行态上下文校验、结果汇总、`wait/resource_forced_default` 收尾与错误状态投影。
+- `rule_mod_service / domain_legality_service` 的依赖读取与 structured failure 投影固定下沉到 `src/battle_core/commands/legal_action_service_rule_gate.gd`。
+- 常规技能与奥义候选收集固定下沉到 `src/battle_core/commands/legal_action_service_cast_option_collector.gd`。
+- 换人候选收集固定下沉到 `src/battle_core/commands/legal_action_service_switch_option_collector.gd`。
+- 这么定的原因：
+  - 继续扩角色或扩更多 rule mod 时，最容易膨胀的不是 facade 接口，而是 `LegalActionService` 内部三段职责一起增长
+  - 如果 helper 继续反向读取 owner 私有状态，文件虽然分开了，边界其实还是假拆分；后面再补规则很快又会长回另一坨屎山
+  - 先把依赖门、cast collector、switch collector 变成稳定内部协作者，可以明显降低继续扩角时对 `get_legal_actions()` 主入口的反复返工
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

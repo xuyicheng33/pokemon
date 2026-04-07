@@ -53,6 +53,7 @@
 
 - `LegalActionService`
   - 读取运行态与内容定义。
+  - owner 固定只保留上下文校验、结果汇总与错误投影；规则门与 cast/switch 候选收集固定下沉到内部 helper，不再把三种职责继续堆在同一个 owner 文件里。
   - 常规技能合法性只读取 `UnitState.regular_skill_ids`，不再直接把 `UnitDefinition.skill_ids` 当成“本场已装备技能”。
   - 奥义合法性必须同时检查 `current_mp` 与 `ultimate_points` 是否满足角色配置。
   - 若技能或奥义声明 `SkillDefinition.once_per_battle=true`，合法性必须额外读取 battle-scoped 消耗记录；同一单位本场消耗后不再放出第二次。

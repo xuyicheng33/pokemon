@@ -90,6 +90,7 @@ tests/
 - `passives`：被动技能、被动持有物、field 落地/对拼/生命周期
 - `logging`：日志构造、回放、确定性校验
 - `facades`：对外稳定接口（唯一稳定 facade 是 `BattleCoreManager`；`BattleCoreSession` 只是内部会话壳）
+- `LegalActionService` owner 当前只保留上下文校验、结果汇总与错误投影；rule gate、技能/奥义候选收集、换人候选收集已拆到 `legal_action_service_rule_gate.gd`、`legal_action_service_cast_option_collector.gd`、`legal_action_service_switch_option_collector.gd`
 
 架构约束见：`docs/design/battle_core_architecture_constraints.md`。
 
@@ -279,9 +280,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-07）
 
-- `src/**/*.gd`：`17928` 行
+- `src/**/*.gd`：`18057` 行
 - `tests/**/*.gd`：`23666` 行
-- GDScript 合计：`41594` 行
+- GDScript 合计：`41723` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 
