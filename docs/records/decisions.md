@@ -93,6 +93,16 @@
   - 真正重复增长的是 session 查找、runtime guard、公开快照/事件日志回包这类 session 级样板，而不是 `build_command` 或 replay 入口本身
   - 先把 session 调度固化成内部协作者，可以在不改 facade contract 的前提下压缩 owner 体积，并把后续 manager 热点评估收敛到更清楚的 container/session 两条内部边界
 
+## 0G. formal shared contract helper 固定按资源族拆分（2026-04-07）
+
+- `ContentSnapshotFormalCharacterContractHelper` owner 现在只保留稳定 facade 与资源族协作者转发。
+- `unit / skill / passive_skill` 的共享断言固定下沉到 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_unit_skill_contract_helper.gd`。
+- `effect / field / payload shape` 的共享断言固定下沉到 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_effect_field_contract_helper.gd`。
+- 这么定的原因：
+  - 这个 shared helper 是 formal validator 扩角链路里的公共模板，继续把所有资源族断言堆在同一文件里，会让第 5 个角色开始后的共性回归面继续集中膨胀
+  - 当前角色级 validator 的调用方式天然就是按资源族在用这批断言，顺着资源族拆分，能在不改调用口的前提下压低 shared helper 体积
+  - 先把 owner 收成薄 facade，后续即便再补新的 formal 资源断言，也更容易落到对应资源族 helper，而不是重新长回同一坨 shared 文件
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。
