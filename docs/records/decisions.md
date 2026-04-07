@@ -50,6 +50,17 @@
   - snapshot suite 与 validator 之前双写同一套字段，任何一次数值或 id 微调都要改两到三处
   - 先把基础事实抽成共享 descriptor，可以明显降低扩第 5 个角色前的维护面，同时不把复杂 payload helper 过度抽象成新的屎山
 
+## 0C. SampleBattleFactory owner 继续瘦身为稳定 facade（2026-04-07）
+
+- `SampleBattleFactory` owner 现在只保留 helper 装配、稳定 facade 与错误状态投影。
+- baseline/formal setup 与 matchup 组装固定下沉到 `src/composition/sample_battle_factory_setup_access.gd`。
+- manifest/demo override 广播固定下沉到 `src/composition/sample_battle_factory_override_router.gd`。
+- `SampleBattleFactoryDemoInputBuilder` 不再反向持有 owner 并回调 `build_setup_by_matchup_id_result()`；它现在直接依赖 setup access。
+- 这么定的原因：
+  - 第 3 批的真实热点不是功能缺失，而是 owner 继续同时承担装配、override 广播、setup/matchup facade 与 demo helper 反向回调入口
+  - demo builder 直接回调 owner，会让 helper 边界继续虚化，后面再加 demo profile 或 baseline/formal 分支时又会长回去
+  - 先把 owner 缩回“稳定 facade + 错误投影”边界，后续扩第 5 个角色时，新增 matchup / demo / manifest 逻辑才更容易落到已有 helper，而不是继续堆回大文件
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。
@@ -77,7 +88,7 @@
 
 - `SampleBattleFactory` 对外只保留结果式接口；正式失败统一返回 `{ ok, data, error_code, error_message }`，不再保留另一套降级语义。
 - 运行时 helper 全部统一进 composition 装配；`SampleBattleFactory`、catalog loader、surface case builder、demo catalog 与 replay builder 各自只承载单一职责。
-- `SampleBattleFactory` owner 现在只保留稳定 facade、helper 装配与错误状态投影；manifest/catalog/demo override 广播固定下沉到 `src/composition/sample_battle_factory_override_router.gd`，baseline/formal setup 组装固定下沉到 `src/composition/sample_battle_factory_setup_access.gd`。
+- `SampleBattleFactory` owner 现在只保留稳定 facade、helper 装配与错误状态投影；manifest/catalog/demo override 广播固定下沉到 `src/composition/sample_battle_factory_override_router.gd`，baseline/formal setup 组装固定下沉到 `src/composition/sample_battle_factory_setup_access.gd`，snapshot 目录扫描固定下沉到 `src/composition/sample_battle_factory_snapshot_dir_collector.gd`。
 - directed pair surface smoke 不再手写 `pair_surface_cases`；统一由 `matchups + characters[*].surface_smoke_skill_id` 自动生成。
 - `pair_interaction_cases[*]` 固定必填 `scenario_id / matchup_id / character_ids[2] / battle_seed`，并继续与 scenario registry 做一一对应校验。
 - demo replay profile 的单一真相固定为 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选 profile、初始化 manager、错误投影，再把 replay input 构建委托给 builder。

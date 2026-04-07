@@ -208,7 +208,7 @@ tests/run_with_gate.sh
 - `SampleBattleFactory.content_snapshot_paths_result()` 是正式快照路径入口：当前固定收集两段内容，分别是 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 的顶层样例资源，以及 `config/formal_character_manifest.json.characters[*]` 里显式登记的 `required_content_paths`；缺目录、缺资源或 manifest 漂移时统一返回 `{ ok, data, error_code, error_message }`
 - `SampleBattleFactory.content_snapshot_paths_for_setup_result(battle_setup)` 会在上述样例顶层资源基础上，只补当前 `battle_setup` 里实际出现的正式角色 `required_content_paths`；manager smoke、pair smoke 与 demo replay 统一走这条 setup-scoped 入口，避免继续把所有正式角色内容一锅端进每个对局
 - `SampleBattleFactory` 对外已只保留结果式接口；正式失败语义不再允许降级成 `null / [] / PackedStringArray()`
-- `SampleBattleFactory` 内部当前固定拆成稳定 owner + 子职责 helper：`sample_battle_factory_override_router.gd` 负责 manifest/catalog/demo override 广播，`sample_battle_factory_setup_access.gd` 负责 baseline/formal matchup setup 与 sample setup 组装；外部公开方法名与 envelope 语义不变
+- `SampleBattleFactory` 内部当前固定拆成稳定 owner + 子职责 helper：`sample_battle_factory_override_router.gd` 负责 manifest/catalog/demo override 广播，`sample_battle_factory_setup_access.gd` 负责 baseline/formal matchup setup 与 sample setup 组装，`sample_battle_factory_snapshot_dir_collector.gd` 负责顶层/递归 `.tres` 扫描；外部公开方法名与 envelope 语义不变
 - `SampleBattleFactory` 的 demo replay profile 当前固定收口到 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责解析 `demo=<profile>`、初始化 manager，并委托 `SampleBattleFactory.build_demo_replay_input_for_profile_result()` 生成 replay input，缺 profile、坏 profile 或 builder 失败一律 fail-fast
 - `ContentSnapshotCache` 的签名当前固定包含稳定排序后的 snapshot 路径列表、这些顶层资源递归外部依赖到的 `.tres/.res` 文件指纹、`config/formal_character_manifest.json`，以及 `src/battle_core/content/**/*.gd` 与 `src/battle_core/content/formal_validators/**/*.gd`；因此即使只改了共享 payload、formal validator 或 manifest 角色元数据，也必须重新 miss，而不是继续复用旧 cache entry
 - 若多个正式资源要共享同一份 payload，可把辅助 Resource 放到 `content/shared/`，再由顶层内容资源显式外部引用；`content/shared/` 本身不参与顶层 snapshot 注册
@@ -279,9 +279,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-07）
 
-- `src/**/*.gd`：`17900` 行
+- `src/**/*.gd`：`17928` 行
 - `tests/**/*.gd`：`23666` 行
-- GDScript 合计：`41566` 行
+- GDScript 合计：`41594` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

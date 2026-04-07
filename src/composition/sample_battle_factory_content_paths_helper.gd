@@ -2,6 +2,7 @@ extends RefCounted
 class_name SampleBattleFactoryContentPathsHelper
 
 const RuntimeRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_runtime_registry_loader.gd")
+const SnapshotDirCollectorScript := preload("res://src/composition/sample_battle_factory_snapshot_dir_collector.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const BASE_CONTENT_SNAPSHOT_DIRS = [
 	"res://content/battle_formats",
@@ -17,6 +18,7 @@ const BASE_CONTENT_SNAPSHOT_DIRS = [
 
 var registry_path_override: String = ""
 var baseline_unit_definition_ids: PackedStringArray = PackedStringArray()
+var _dir_collector = SnapshotDirCollectorScript.new()
 
 func build_snapshot_paths(base_dirs: Array) -> Dictionary:
 	return _build_snapshot_paths_from_registry(base_dirs, {}, false)
@@ -25,7 +27,7 @@ func build_base_snapshot_paths(base_dirs: Array) -> Dictionary:
 	var paths: Array[String] = []
 	var seen: Dictionary = {}
 	for raw_dir_path in base_dirs:
-		var dir_result := collect_tres_paths_result(String(raw_dir_path))
+		var dir_result := _dir_collector.collect_tres_paths_result(String(raw_dir_path))
 		if not bool(dir_result.get("ok", false)):
 			return dir_result
 		_append_unique_paths(paths, seen, dir_result.get("data", []))
@@ -41,7 +43,7 @@ func _build_snapshot_paths_from_registry(base_dirs: Array, included_unit_definit
 	var paths: Array[String] = []
 	var seen: Dictionary = {}
 	for raw_dir_path in base_dirs:
-		var dir_result := collect_tres_paths_result(String(raw_dir_path))
+		var dir_result := _dir_collector.collect_tres_paths_result(String(raw_dir_path))
 		if not bool(dir_result.get("ok", false)):
 			return dir_result
 		_append_unique_paths(paths, seen, dir_result.get("data", []))
@@ -102,17 +104,7 @@ func _included_units_are_baseline_only(included_unit_definition_ids: Dictionary)
 	return true
 
 func collect_tres_paths_result(dir_path: String) -> Dictionary:
-	var dir_access := DirAccess.open(dir_path)
-	if dir_access == null:
-		return _error_result("SampleBattleFactory missing snapshot dir: %s" % dir_path)
-	var paths: Array[String] = []
-	for raw_file_name in dir_access.get_files():
-		var file_name := String(raw_file_name)
-		if file_name.get_extension() != "tres":
-			continue
-		paths.append("%s/%s" % [dir_path, file_name])
-	paths.sort()
-	return _ok_result(paths)
+	return _dir_collector.collect_tres_paths_result(dir_path)
 
 func collect_tres_paths_recursive(dir_path: String) -> Array[String]:
 	var result := collect_tres_paths_recursive_result(dir_path)
@@ -121,22 +113,7 @@ func collect_tres_paths_recursive(dir_path: String) -> Array[String]:
 	return result.get("data", [])
 
 func collect_tres_paths_recursive_result(dir_path: String) -> Dictionary:
-	var dir_access := DirAccess.open(dir_path)
-	if dir_access == null:
-		return _error_result("SampleBattleFactory missing snapshot dir: %s" % dir_path)
-	var paths: Array[String] = []
-	for raw_subdir_name in dir_access.get_directories():
-		var child_result := collect_tres_paths_recursive_result("%s/%s" % [dir_path, String(raw_subdir_name)])
-		if not bool(child_result.get("ok", false)):
-			return child_result
-		paths.append_array(child_result.get("data", []))
-	for raw_file_name in dir_access.get_files():
-		var file_name := String(raw_file_name)
-		if file_name.get_extension() != "tres":
-			continue
-		paths.append("%s/%s" % [dir_path, file_name])
-	paths.sort()
-	return _ok_result(paths)
+	return _dir_collector.collect_tres_paths_recursive_result(dir_path)
 
 func _append_unique_paths(paths: Array[String], seen: Dictionary, candidate_paths: Array) -> void:
 	for path in candidate_paths:

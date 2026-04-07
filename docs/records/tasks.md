@@ -44,7 +44,7 @@
 - 当前进度：
   - 第 1 批已完成：manifest runtime / delivery 视图解耦已落地并通过 gate
   - 第 2 批已完成：formal 角色 baseline 已收口到共享描述层，snapshot suite 与 formal validator 的基础事实开始共用同一份 descriptor
-  - 第 3 批已完成：`SampleBattleFactory` owner 已拆出 `override router + setup access`，path override 广播与 baseline/formal setup 组装不再继续堆在主入口
+  - 第 3 批已完成：`SampleBattleFactory` owner 已拆出 `override router + setup access`，并把 snapshot 目录扫描下沉到独立 helper；path override 广播、baseline/formal setup 组装与 snapshot 扫描不再继续堆在主入口
   - 第 4 批待继续推进
 - 非范围：
   - 不改四角色玩法语义
