@@ -160,9 +160,9 @@ func _test_final_state_hash_tracks_once_per_battle_usage_contract(harness) -> Di
 	if not kashimo.has_used_once_per_battle_skill("kashimo_phantom_beast_amber"):
 		return harness.fail_result("amber cast should write once_per_battle usage before final_state_hash probe")
 	var output_helper = ReplayRunnerOutputHelperScript.new()
-	var with_usage_hash := String(output_helper.build_replay_output([], battle_state).final_state_hash)
+	var with_usage_hash := String(output_helper.compute_state_hash(battle_state))
 	kashimo.used_once_per_battle_skill_ids = PackedStringArray()
-	var without_usage_hash := String(output_helper.build_replay_output([], battle_state).final_state_hash)
+	var without_usage_hash := String(output_helper.compute_state_hash(battle_state))
 	if with_usage_hash.is_empty() or without_usage_hash.is_empty():
 		return harness.fail_result("final_state_hash should not be empty in once_per_battle probe")
 	if with_usage_hash == without_usage_hash:

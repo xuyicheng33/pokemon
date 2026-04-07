@@ -28,6 +28,8 @@ var fatal_damage_records_by_target: Dictionary = {}
 var field_rule_mod_instances: Array = []
 var last_matchup_signature: String = ""
 var pre_applied_turn_start_regen_turn_index: int = 0
+var runtime_fault_code: String = ""
+var runtime_fault_message: String = ""
 
 func get_side(side_id: String) -> Variant:
     for side_state in sides:
@@ -96,6 +98,8 @@ func to_stable_dict() -> Dictionary:
         "field_rule_mod_instances": field_rule_mod_dicts,
         "last_matchup_signature": last_matchup_signature,
         "pre_applied_turn_start_regen_turn_index": pre_applied_turn_start_regen_turn_index,
+        "runtime_fault_code": runtime_fault_code,
+        "runtime_fault_message": runtime_fault_message,
         "battle_result": battle_result.to_stable_dict() if battle_result != null else null,
         "rng_stream_index": rng_stream_index,
     }

@@ -48,7 +48,7 @@ func get_legal_actions(battle_state, side_id: String, content_index) -> Variant:
     )
     if domain_legality_service.invalid_battle_code() != null:
         return _fail_invalid_state("LegalActionService detected invalid active field runtime while resolving domain legality")
-    var cast_flags := _collect_cast_action_flags(
+    var cast_flags: Variant = _collect_cast_action_flags(
         battle_state,
         actor,
         unit_definition,
@@ -56,9 +56,13 @@ func get_legal_actions(battle_state, side_id: String, content_index) -> Variant:
         side_domain_recast_blocked,
         legal_action_set
     )
+    if cast_flags == null:
+        return null
     has_non_mp_blocked_option = bool(cast_flags["has_non_mp_blocked_option"])
     has_any_skill_or_ultimate_option = bool(cast_flags["has_any_skill_or_ultimate_option"])
-    var switch_flags := _collect_switch_action_flags(battle_state, side_state, actor, legal_action_set)
+    var switch_flags: Variant = _collect_switch_action_flags(battle_state, side_state, actor, legal_action_set)
+    if switch_flags == null:
+        return null
     if bool(switch_flags["has_non_mp_blocked_option"]):
         has_non_mp_blocked_option = true
     _finalize_wait_and_forced_default(
@@ -76,30 +80,34 @@ func _collect_cast_action_flags(
     content_index,
     side_domain_recast_blocked: bool,
     legal_action_set
-) -> Dictionary:
+):
     var has_non_mp_blocked_option := false
     var has_any_skill_or_ultimate_option := false
     for skill_id in actor.regular_skill_ids:
-        var skill_resolution := _resolve_skill_legality(
+        var skill_resolution: Variant = _resolve_skill_legality(
             battle_state,
             actor,
             skill_id,
             content_index,
             side_domain_recast_blocked
         )
+        if skill_resolution == null:
+            return null
         if bool(skill_resolution["is_legal"]):
             legal_action_set.legal_skill_ids.append(skill_id)
             has_any_skill_or_ultimate_option = true
             continue
         if bool(skill_resolution["blocked_non_mp"]):
             has_non_mp_blocked_option = true
-    var ultimate_resolution := _resolve_ultimate_legality(
+    var ultimate_resolution: Variant = _resolve_ultimate_legality(
         battle_state,
         actor,
         unit_definition,
         content_index,
         side_domain_recast_blocked
     )
+    if ultimate_resolution == null:
+        return null
     if bool(ultimate_resolution["is_legal"]):
         has_any_skill_or_ultimate_option = true
         legal_action_set.legal_ultimate_ids.append(unit_definition.ultimate_skill_id)
@@ -110,7 +118,7 @@ func _collect_cast_action_flags(
         "has_any_skill_or_ultimate_option": has_any_skill_or_ultimate_option,
     }
 
-func _resolve_skill_legality(battle_state, actor, skill_id: String, content_index, side_domain_recast_blocked: bool) -> Dictionary:
+func _resolve_skill_legality(battle_state, actor, skill_id: String, content_index, side_domain_recast_blocked: bool):
     var skill_definition = content_index.skills.get(skill_id)
     if skill_definition == null:
         return {"is_legal": false, "blocked_non_mp": false}
@@ -122,12 +130,14 @@ func _resolve_skill_legality(battle_state, actor, skill_id: String, content_inde
         CommandTypesScript.SKILL,
         skill_id
     )
+    if last_error_code != null:
+        return null
     return {
         "is_legal": actor.current_mp >= skill_definition.mp_cost and allowed_by_rule_mod and not blocked_by_side_domain and not blocked_by_once_per_battle,
         "blocked_non_mp": blocked_by_side_domain or not allowed_by_rule_mod or blocked_by_once_per_battle,
     }
 
-func _resolve_ultimate_legality(battle_state, actor, unit_definition, content_index, side_domain_recast_blocked: bool) -> Dictionary:
+func _resolve_ultimate_legality(battle_state, actor, unit_definition, content_index, side_domain_recast_blocked: bool):
     if unit_definition == null or unit_definition.ultimate_skill_id.is_empty():
         return {"is_legal": false, "blocked_non_mp": false}
     var ultimate_definition = content_index.skills.get(unit_definition.ultimate_skill_id)
@@ -141,6 +151,8 @@ func _resolve_ultimate_legality(battle_state, actor, unit_definition, content_in
         CommandTypesScript.ULTIMATE,
         unit_definition.ultimate_skill_id
     )
+    if last_error_code != null:
+        return null
     return {
         "is_legal": actor.current_mp >= ultimate_definition.mp_cost \
             and actor.ultimate_points >= actor.ultimate_points_required \
@@ -150,12 +162,14 @@ func _resolve_ultimate_legality(battle_state, actor, unit_definition, content_in
         "blocked_non_mp": blocked_by_side_domain or not allowed_by_rule_mod or blocked_by_once_per_battle,
     }
 
-func _collect_switch_action_flags(battle_state, side_state, actor, legal_action_set) -> Dictionary:
+func _collect_switch_action_flags(battle_state, side_state, actor, legal_action_set):
     var switch_allowed_by_rule_mod: bool = _is_action_legal_with_rule_mod(
         battle_state,
         actor.unit_instance_id,
         CommandTypesScript.SWITCH
     )
+    if last_error_code != null:
+        return null
     for bench_unit_id in side_state.bench_order:
         var bench_unit = battle_state.get_unit(bench_unit_id)
         if bench_unit != null and bench_unit.current_hp > 0 and switch_allowed_by_rule_mod:
@@ -190,7 +204,16 @@ func _is_action_legal_with_rule_mod(battle_state, actor_id: String, action_type:
     if rule_mod_service == null:
         _fail_invalid_state("LegalActionService.rule_mod_service is required")
         return false
-    return rule_mod_service.is_action_allowed(battle_state, actor_id, action_type, skill_id)
+    var is_allowed = rule_mod_service.is_action_allowed(battle_state, actor_id, action_type, skill_id)
+    if rule_mod_service != null and rule_mod_service.has_method("error_state"):
+        var error_state: Dictionary = rule_mod_service.error_state()
+        var error_code = error_state.get("code", null)
+        if error_code != null:
+            last_error_code = error_code
+            var error_message := String(error_state.get("message", ""))
+            last_error_message = error_message if not error_message.is_empty() else "LegalActionService failed to resolve rule mod action legality"
+            return false
+    return is_allowed
 
 func _fail_invalid_state(message: String) -> Variant:
     last_error_code = ErrorCodesScript.INVALID_STATE_CORRUPTION

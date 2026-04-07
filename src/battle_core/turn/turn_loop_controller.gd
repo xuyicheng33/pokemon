@@ -24,6 +24,8 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
         return
     if _run_turn_start_phase(battle_state, content_index):
         return
+    if _validate_runtime_or_terminate(battle_state, content_index):
+        return
     var queue_result: Dictionary = _build_action_queue_result(battle_state, content_index, commands)
     if not bool(queue_result.get("ok", false)):
         return
@@ -31,6 +33,8 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
     if _execute_action_queue(battle_state, content_index, queue_result.get("action_queue", [])):
         return
     if _run_turn_end_phase(battle_state, content_index):
+        return
+    if _validate_runtime_or_terminate(battle_state, content_index):
         return
     _finish_turn_progression(battle_state)
 
@@ -140,7 +144,8 @@ func _run_turn_end_phase(battle_state, content_index) -> bool:
     ):
         return true
     turn_resolution_service.decrement_rule_mods_and_log(battle_state, "turn_end", turn_end_event_id)
-    turn_end_event.field_change = field_change
+    if turn_end_event != null:
+        turn_end_event.field_change = field_change
     var turn_end_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
     if turn_end_faint_invalid_code != null:
         battle_result_service.terminate_invalid_battle(battle_state, str(turn_end_faint_invalid_code))
@@ -166,6 +171,9 @@ func _finish_turn_progression(battle_state) -> void:
 
 func _validate_runtime_or_terminate(battle_state, content_index = null) -> bool:
     var invalid_code = runtime_guard_service.validate_runtime_state(battle_state, content_index)
+    if invalid_code == null and battle_logger != null and battle_logger.has_method("error_state"):
+        var logger_error_state: Dictionary = battle_logger.error_state()
+        invalid_code = logger_error_state.get("code", null)
     if invalid_code == null:
         return false
     battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))

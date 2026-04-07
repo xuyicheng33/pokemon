@@ -4,6 +4,7 @@ class_name PayloadDamageRuntimeService
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_logger
 var log_event_builder
@@ -14,6 +15,10 @@ var rule_mod_service
 var faint_killer_attribution_service
 var target_helper
 var effect_event_helper
+var last_invalid_battle_code: Variant = null
+
+func invalid_battle_code() -> Variant:
+    return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
     if battle_logger == null:
@@ -37,6 +42,7 @@ func resolve_missing_dependency() -> String:
     return ""
 
 func apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
+    last_invalid_battle_code = null
     var target_unit = target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
     if not target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
         return
@@ -90,14 +96,12 @@ func apply_damage_payload(payload, effect_definition, effect_event, battle_state
 
 func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event_type: String, summary_tag: String, type_effectiveness: Variant = null) -> void:
     var is_damage_event := event_type == EventTypesScript.EFFECT_DAMAGE
-    assert(
-        (is_damage_event and type_effectiveness != null) or (not is_damage_event and type_effectiveness == null),
-        "type_effectiveness contract mismatch for event_type=%s" % event_type
-    )
-    assert(
-        type_effectiveness == null or typeof(type_effectiveness) == TYPE_FLOAT,
-        "type_effectiveness must be float or null, got %s" % typeof(type_effectiveness)
-    )
+    if (is_damage_event and type_effectiveness == null) or (not is_damage_event and type_effectiveness != null):
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return
+    if type_effectiveness != null and typeof(type_effectiveness) != TYPE_FLOAT:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return
     var before_value: int = target_unit.current_hp
     target_unit.current_hp = clamp(target_unit.current_hp + delta, 0, target_unit.max_hp)
     if before_value == target_unit.current_hp:
@@ -119,6 +123,9 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
         }
     )
     battle_logger.append_event(log_event)
+    if log_event == null:
+        last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+        return
     if is_damage_event:
         faint_killer_attribution_service.record_fatal_damage(
             battle_state,

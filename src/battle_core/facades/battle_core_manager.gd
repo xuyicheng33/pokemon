@@ -89,6 +89,9 @@ func run_turn(session_id: String, commands: Array) -> Dictionary:
     var run_turn_result = session.run_turn_result(normalized_commands)
     if not bool(run_turn_result.get("ok", false)):
         return run_turn_result
+    runtime_error = BattleCoreManagerContractHelperScript.validate_session_runtime_result(session)
+    if runtime_error != null:
+        return runtime_error
     var turn_failure = BattleCoreManagerContractHelperScript.resolve_turn_failure_result(session)
     if turn_failure != null:
         return turn_failure

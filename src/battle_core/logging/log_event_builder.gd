@@ -1,12 +1,28 @@
 extends RefCounted
 class_name LogEventBuilder
 
+const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LogEventScript := preload("res://src/battle_core/contracts/log_event.gd")
 
+var last_error_code: Variant = null
+var last_error_message: String = ""
+
+func error_state() -> Dictionary:
+    return {
+        "code": last_error_code,
+        "message": last_error_message,
+    }
+
 func build_event(event_type: String, battle_state, payload: Dictionary = {}) -> Variant:
+    _clear_error()
+    if battle_state == null:
+        return _fail("LogEventBuilder.build_event requires battle_state")
     var chain_context = battle_state.chain_context
-    assert(chain_context != null, "LogEventBuilder.build_event missing chain_context")
-    assert(not String(chain_context.event_chain_id).is_empty(), "LogEventBuilder.build_event missing event_chain_id")
+    if chain_context == null:
+        return _fail("LogEventBuilder.build_event missing chain_context", battle_state)
+    if String(chain_context.event_chain_id).is_empty():
+        return _fail("LogEventBuilder.build_event missing event_chain_id", battle_state)
     chain_context.step_counter += 1
     var log_event = LogEventScript.new()
     log_event.battle_seed = battle_state.seed
@@ -31,12 +47,36 @@ func build_event(event_type: String, battle_state, payload: Dictionary = {}) -> 
     return log_event
 
 func build_effect_event(event_type: String, battle_state, cause_event_id: String, payload: Dictionary = {}) -> Variant:
-    assert(event_type.begins_with("effect:"), "LogEventBuilder.build_effect_event only accepts effect:* events")
-    assert(not cause_event_id.strip_edges().is_empty(), "LogEventBuilder.build_effect_event requires real cause_event_id")
+    _clear_error()
+    if not event_type.begins_with("effect:"):
+        return _fail("LogEventBuilder.build_effect_event only accepts effect:* events", battle_state)
+    if cause_event_id.strip_edges().is_empty():
+        return _fail("LogEventBuilder.build_effect_event requires real cause_event_id", battle_state)
     var effect_payload := payload.duplicate()
     effect_payload["cause_event_id"] = cause_event_id
     return build_event(event_type, battle_state, effect_payload)
 
 func resolve_event_id(log_event) -> String:
-    assert(log_event != null, "LogEventBuilder.resolve_event_id requires log_event")
+    if log_event == null:
+        _fail("LogEventBuilder.resolve_event_id requires log_event")
+        return ""
     return "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]
+
+func _clear_error() -> void:
+    last_error_code = null
+    last_error_message = ""
+
+func _fail(message: String, battle_state = null) -> Variant:
+    last_error_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+    last_error_message = message
+    if battle_state != null:
+        battle_state.runtime_fault_code = String(last_error_code)
+        battle_state.runtime_fault_message = message
+        if battle_state.battle_result != null and not bool(battle_state.battle_result.finished):
+            battle_state.battle_result.finished = true
+            battle_state.battle_result.winner_side_id = null
+            battle_state.battle_result.result_type = "no_winner"
+            battle_state.battle_result.reason = String(last_error_code)
+            battle_state.phase = BattlePhasesScript.FINISHED
+            battle_state.chain_context = null
+    return null

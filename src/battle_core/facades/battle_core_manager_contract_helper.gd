@@ -123,7 +123,10 @@ static func resolve_turn_failure_result(session) -> Variant:
 	var reason := String(battle_result.reason)
 	if not reason.begins_with("invalid_"):
 		return null
-	return error(reason, "BattleCoreManager run_turn terminated invalid battle: %s" % reason)
+	var runtime_fault_message := String(battle_state.runtime_fault_message)
+	if runtime_fault_message.is_empty():
+		runtime_fault_message = "BattleCoreManager run_turn terminated invalid battle: %s" % reason
+	return error(reason, runtime_fault_message)
 
 static func normalize_command_input(raw_command) -> Dictionary:
 	if raw_command == null:

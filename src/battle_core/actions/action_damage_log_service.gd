@@ -38,7 +38,7 @@ func log_damage_segment(
 		queued_action.action_id,
 		queued_action.priority,
 		queued_action.speed_snapshot,
-		log_event.event_step_id,
+		int(log_event.event_step_id) if log_event != null else 0,
 		source_kind_order_active_skill
 	)
 
@@ -78,7 +78,7 @@ func log_execute_damage(
 		queued_action.action_id,
 		queued_action.priority,
 		queued_action.speed_snapshot,
-		log_event.event_step_id,
+		int(log_event.event_step_id) if log_event != null else 0,
 		source_kind_order_active_skill
 	)
 
@@ -106,7 +106,7 @@ func log_default_recoil(
 		queued_action.action_id,
 		queued_action.priority,
 		queued_action.speed_snapshot,
-		log_event.event_step_id,
+		int(log_event.event_step_id) if log_event != null else 0,
 		source_kind_order_active_skill
 	)
 

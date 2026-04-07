@@ -89,10 +89,47 @@ func run_replay_result(replay_input) -> Dictionary:
         )
         temp_container.dispose()
         return error_result
+    if not bool(internal_replay_output.succeeded):
+        var failure_result := BattleCoreManagerContractHelperScript.service_error(
+            replay_runner,
+            ErrorCodesScript.INVALID_STATE_CORRUPTION,
+            _describe_replay_failure(internal_replay_output)
+        )
+        temp_container.dispose()
+        return failure_result
+    var final_battle_state = internal_replay_output.final_battle_state
+    var content_index = replay_result.get("content_index", null)
+    if final_battle_state == null or content_index == null:
+        var invalid_replay_result := BattleCoreManagerContractHelperScript.error(
+            ErrorCodesScript.INVALID_STATE_CORRUPTION,
+            "BattleCoreManager replay succeeded flag requires final_battle_state and content_index"
+        )
+        temp_container.dispose()
+        return invalid_replay_result
     var public_snapshot = public_snapshot_builder.build_public_snapshot(internal_replay_output.final_battle_state, replay_result["content_index"])
     var replay_output = internal_replay_output.clone_without_runtime_state()
     temp_container.dispose()
     return BattleCoreManagerContractHelperScript.ok({"replay_output": replay_output, "public_snapshot": public_snapshot})
+
+func _describe_replay_failure(replay_output) -> String:
+    if replay_output == null:
+        return "BattleCoreManager replay returned null replay_output"
+    if not String(replay_output.failure_message).is_empty():
+        return String(replay_output.failure_message)
+    var battle_result = replay_output.battle_result
+    if battle_result == null:
+        return "BattleCoreManager replay returned invalid battle_result"
+    if not bool(battle_result.finished):
+        return "BattleCoreManager replay did not complete"
+    var result_type := String(battle_result.result_type)
+    var reason := String(battle_result.reason)
+    if result_type.is_empty() or reason.is_empty():
+        return "BattleCoreManager replay returned invalid battle_result"
+    if result_type == "win" and battle_result.winner_side_id == null:
+        return "BattleCoreManager replay returned invalid battle_result"
+    if (result_type == "draw" or result_type == "no_winner") and battle_result.winner_side_id != null:
+        return "BattleCoreManager replay returned invalid battle_result"
+    return "BattleCoreManager replay log schema validation failed"
 
 func _compose_container_result() -> Dictionary:
     if not container_factory.is_valid():

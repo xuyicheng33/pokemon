@@ -31,6 +31,13 @@ func build_system_chain(command_type: String) -> Variant:
     return chain_context
 
 func terminate_invalid_battle(battle_state, invalid_code: String) -> void:
+    var resolved_message := String(battle_state.runtime_fault_message) if battle_state != null else ""
+    if resolved_message.is_empty():
+        resolved_message = "BattleResultService terminate_invalid_battle: battle_id=%s phase=%s invalid_code=%s" % [
+            str(battle_state.battle_id),
+            str(battle_state.phase),
+            invalid_code,
+        ]
     _report_invalid_termination(
         "BattleResultService terminate_invalid_battle: battle_id=%s phase=%s invalid_code=%s" % [
             str(battle_state.battle_id),
@@ -38,6 +45,7 @@ func terminate_invalid_battle(battle_state, invalid_code: String) -> void:
             invalid_code,
         ]
     )
+    _latch_runtime_fault(battle_state, invalid_code, resolved_message)
     battle_state.battle_result.finished = true
     battle_state.battle_result.winner_side_id = null
     battle_state.battle_result.result_type = "no_winner"
@@ -55,6 +63,14 @@ func terminate_invalid_battle(battle_state, invalid_code: String) -> void:
     ))
 
 func hard_terminate_invalid_state(battle_state, invalid_code: String, missing_dependency: String) -> void:
+    var resolved_message := String(battle_state.runtime_fault_message) if battle_state != null else ""
+    if resolved_message.is_empty():
+        resolved_message = "BattleResultService hard_terminate_invalid_state: battle_id=%s phase=%s invalid_code=%s missing_dependency=%s" % [
+            str(battle_state.battle_id),
+            str(battle_state.phase),
+            invalid_code,
+            missing_dependency,
+        ]
     _report_invalid_termination(
         "BattleResultService hard_terminate_invalid_state: battle_id=%s phase=%s invalid_code=%s missing_dependency=%s" % [
             str(battle_state.battle_id),
@@ -65,6 +81,7 @@ func hard_terminate_invalid_state(battle_state, invalid_code: String, missing_de
     )
     if battle_state.battle_result == null:
         return
+    _latch_runtime_fault(battle_state, invalid_code, resolved_message)
     battle_state.battle_result.finished = true
     battle_state.battle_result.winner_side_id = null
     battle_state.battle_result.result_type = "no_winner"
@@ -217,3 +234,9 @@ func _resolve_chain_origin(command_type: String) -> String:
 
 func _report_invalid_termination(message: String) -> void:
     printerr("INVALID_TERMINATION: %s" % message)
+
+func _latch_runtime_fault(battle_state, invalid_code: String, message: String) -> void:
+    if battle_state == null:
+        return
+    battle_state.runtime_fault_code = invalid_code
+    battle_state.runtime_fault_message = message

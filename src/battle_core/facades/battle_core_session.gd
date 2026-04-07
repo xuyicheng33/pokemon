@@ -15,13 +15,35 @@ func configure_runtime(container, battle_state, content_index) -> void:
 func validate_runtime_result() -> Variant:
     if not _is_ready():
         return _error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
+    if not String(_battle_state.runtime_fault_code).is_empty():
+        return _error(
+            String(_battle_state.runtime_fault_code),
+            String(_battle_state.runtime_fault_message) if not String(_battle_state.runtime_fault_message).is_empty() else "BattleCoreManager runtime state invalid"
+        )
     var runtime_guard_service = _get_container_service("runtime_guard_service")
     if runtime_guard_service == null:
         return _error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: runtime_guard_service")
     var invalid_code = runtime_guard_service.validate_runtime_state(_battle_state, _content_index)
-    if invalid_code == null:
-        return null
-    return _error(str(invalid_code), "BattleCoreManager runtime state invalid: %s" % str(invalid_code))
+    if invalid_code != null:
+        return _error(str(invalid_code), "BattleCoreManager runtime state invalid: %s" % str(invalid_code))
+    if _battle_state.battle_result != null and bool(_battle_state.battle_result.finished):
+        var reason := String(_battle_state.battle_result.reason)
+        if reason.begins_with("invalid_"):
+            return _error(
+                reason,
+                String(_battle_state.runtime_fault_message) if not String(_battle_state.runtime_fault_message).is_empty() else "BattleCoreManager runtime state invalid: %s" % reason
+            )
+    var battle_logger = _get_container_service("battle_logger")
+    if battle_logger != null and battle_logger.has_method("error_state"):
+        var logger_error_state: Dictionary = battle_logger.error_state()
+        var logger_error_code = logger_error_state.get("code", null)
+        var logger_error_message := String(logger_error_state.get("message", ""))
+        if logger_error_code != null:
+            return _error(
+                str(logger_error_code),
+                logger_error_message if not logger_error_message.is_empty() else "BattleCoreManager runtime log state invalid"
+            )
+    return null
 
 func get_legal_actions_result(side_id: String) -> Dictionary:
     if not _is_ready():

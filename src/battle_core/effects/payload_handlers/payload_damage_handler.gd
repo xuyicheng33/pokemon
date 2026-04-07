@@ -23,3 +23,5 @@ func execute(payload, effect_definition, effect_event, battle_state, content_ind
 	if not payload is DamagePayloadScript:
 		return
 	payload_damage_runtime_service.apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index)
+	if payload_damage_runtime_service != null and payload_damage_runtime_service.has_method("invalid_battle_code"):
+		last_invalid_battle_code = payload_damage_runtime_service.invalid_battle_code()

@@ -8,6 +8,14 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var legal_action_service
 var command_builder
 var command_validator
+var last_error_code: Variant = null
+var last_error_message: String = ""
+
+func error_state() -> Dictionary:
+    return {
+        "code": last_error_code,
+        "message": last_error_message,
+    }
 
 func resolve_missing_dependency() -> String:
     if legal_action_service == null:
@@ -25,6 +33,8 @@ func reset_turn_state(battle_state) -> void:
             unit_state.has_acted = false
 
 func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> Dictionary:
+    last_error_code = null
+    last_error_message = ""
     var allowed_side_ids: Dictionary = {}
     for side_state in battle_state.sides:
         allowed_side_ids[side_state.side_id] = true
@@ -36,11 +46,19 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
             return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
         commands_by_side[command.side_id] = command
     var locked_commands: Array = []
+    var pending_selection_results: Array = []
     for side_state in battle_state.sides:
         var active_unit = side_state.get_active_unit()
         if active_unit == null and _side_has_available_unit(side_state):
             return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
         var legal_action_set = legal_action_service.get_legal_actions(battle_state, side_state.side_id, content_index)
+        if legal_action_set == null:
+            var error_state: Dictionary = legal_action_service.error_state() if legal_action_service != null and legal_action_service.has_method("error_state") else {}
+            return _fail_invalid_result(
+                battle_state,
+                String(error_state.get("code", ErrorCodesScript.INVALID_STATE_CORRUPTION)),
+                String(error_state.get("message", "TurnSelectionResolver failed to build legal_action_set"))
+            )
         var provided_command = commands_by_side.get(side_state.side_id, null)
         var resolved_command = null
         if provided_command != null and provided_command.command_type == CommandTypesScript.SURRENDER:
@@ -58,6 +76,13 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
                 "side_id": side_state.side_id,
                 "actor_id": forced_actor.unit_instance_id,
             })
+            if resolved_command == null:
+                return _service_invalid_result(
+                    battle_state,
+                    command_builder,
+                    ErrorCodesScript.INVALID_STATE_CORRUPTION,
+                    "TurnSelectionResolver failed to build forced default command"
+                )
         elif provided_command == null:
             var timeout_actor = active_unit
             if timeout_actor == null:
@@ -69,17 +94,60 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
                 "side_id": side_state.side_id,
                 "actor_id": timeout_actor.unit_instance_id,
             })
+            if resolved_command == null:
+                return _service_invalid_result(
+                    battle_state,
+                    command_builder,
+                    ErrorCodesScript.INVALID_STATE_CORRUPTION,
+                    "TurnSelectionResolver failed to build timeout wait command"
+                )
         else:
             if not command_validator.validate_command(provided_command, battle_state, content_index):
                 return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
             if not _is_command_in_legal_set(provided_command, legal_action_set, battle_state):
                 return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_COMMAND_PAYLOAD}
             resolved_command = provided_command
-        side_state.selection_state.selected_command = resolved_command
-        side_state.selection_state.selection_locked = true
-        side_state.selection_state.timed_out = resolved_command.command_source == "timeout_auto"
+        pending_selection_results.append({
+            "side_state": side_state,
+            "resolved_command": resolved_command,
+            "timed_out": String(resolved_command.command_source) == "timeout_auto",
+        })
         locked_commands.append(resolved_command)
+    for pending_selection_result in pending_selection_results:
+        var pending_side_state = pending_selection_result.get("side_state", null)
+        if pending_side_state == null:
+            continue
+        pending_side_state.selection_state.selected_command = pending_selection_result.get("resolved_command", null)
+        pending_side_state.selection_state.selection_locked = true
+        pending_side_state.selection_state.timed_out = bool(pending_selection_result.get("timed_out", false))
     return {"locked_commands": locked_commands, "invalid_code": null}
+
+func _fail_invalid_result(battle_state, invalid_code: String, message: String) -> Dictionary:
+    last_error_code = invalid_code
+    last_error_message = message
+    _clear_selection_state(battle_state)
+    if battle_state != null:
+        battle_state.runtime_fault_code = invalid_code
+        battle_state.runtime_fault_message = message
+    return {
+        "locked_commands": [],
+        "invalid_code": invalid_code,
+        "invalid_message": message,
+    }
+
+func _service_invalid_result(battle_state, service, fallback_code: String, fallback_message: String) -> Dictionary:
+    var error_state: Dictionary = service.error_state() if service != null and service.has_method("error_state") else {}
+    var invalid_code := String(error_state.get("code", fallback_code))
+    var invalid_message := String(error_state.get("message", fallback_message))
+    if invalid_message.is_empty():
+        invalid_message = fallback_message
+    return _fail_invalid_result(battle_state, invalid_code, invalid_message)
+
+func _clear_selection_state(battle_state) -> void:
+    if battle_state == null:
+        return
+    for side_state in battle_state.sides:
+        side_state.selection_state = SelectionStateScript.new()
 
 func _side_has_available_unit(side_state) -> bool:
     if side_state == null:

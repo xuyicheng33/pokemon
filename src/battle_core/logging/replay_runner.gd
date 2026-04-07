@@ -72,7 +72,12 @@ func run_replay_with_context(replay_input) -> Dictionary:
 	while not battle_state.battle_result.finished and battle_state.turn_index <= max_turn_index:
 		var turn_commands: Array = commands_by_turn.get(battle_state.turn_index, [])
 		turn_loop_controller.run_turn(battle_state, content_index, turn_commands)
-	var replay_output = _output_helper.build_replay_output(battle_logger.snapshot(), battle_state)
+	var logger_error_state: Dictionary = battle_logger.error_state() if battle_logger != null and battle_logger.has_method("error_state") else {}
+	var output_result := _output_helper.build_replay_output_result(battle_logger.snapshot(), battle_state, logger_error_state)
+	var replay_output = output_result.get("replay_output", null)
+	if not bool(output_result.get("ok", false)):
+		last_error_code = output_result.get("error_code", ErrorCodesScript.INVALID_STATE_CORRUPTION)
+		last_error_message = String(output_result.get("error_message", "ReplayRunner failed to build replay output"))
 	return {
 		"replay_output": replay_output,
 		"content_index": content_index,
