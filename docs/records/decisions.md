@@ -40,6 +40,16 @@
   - runtime 被 `suite_path / design_doc / required_test_names` 这类 delivery 字段绑住，会把“文档漂移”升级成“运行时阻塞”
   - 单真源仍保留在同一个 manifest 上，但消费视图必须拆开，否则 loader 边界名义上分层、实际上仍耦合
 
+## 0B. formal 角色基础事实收口到共享 baseline descriptor（2026-04-07）
+
+- `src/shared/formal_character_baselines.gd` 与 `src/shared/formal_character_baselines/*.gd` 现在作为四正式角色基础事实的共享 descriptor 层。
+- unit、skill、passive、部分 effect / field 的基础字段，snapshot suite 与 formal validator 必须优先复用这层 descriptor，不再两边各写一套字面量。
+- payload shape、segment 细节、运行时链路这类“基础字段之外”的断言，继续留在各角色专属 validator / suite helper 里，不强行抽成一张大表。
+- 这么定的原因：
+  - 这轮反复返工里，最容易漂移的是“角色基础事实”而不是 payload 细节
+  - snapshot suite 与 validator 之前双写同一套字段，任何一次数值或 id 微调都要改两到三处
+  - 先把基础事实抽成共享 descriptor，可以明显降低扩第 5 个角色前的维护面，同时不把复杂 payload helper 过度抽象成新的屎山
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

@@ -3,6 +3,7 @@ class_name ContentSnapshotFormalObitoEffectContractHelper
 
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const ContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
+const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 
@@ -12,49 +13,31 @@ func validate_heal_block_contracts(validator, content_index, errors: Array) -> v
 	var label := "formal[obito].heal_block"
 	var apply_effect = validator._require_effect(content_index, errors, label, "obito_qiudao_jiaotu_heal_block_apply")
 	if apply_effect != null:
-		_helper.validate_effect_contracts(validator, content_index, errors, [{
-			"label": "%s apply" % label,
-			"effect_id": "obito_qiudao_jiaotu_heal_block_apply",
-			"fields": {
-				"scope": "target",
-				"duration_mode": "permanent",
-				"stacking": "none",
-				"trigger_names": PackedStringArray(["on_hit"]),
-			},
-		}])
+		_helper.validate_effect_contracts(
+			validator,
+			content_index,
+			errors,
+			[FormalCharacterBaselinesScript.effect_contract("obito", "obito_qiudao_jiaotu_heal_block_apply", "%s apply" % label)]
+		)
 		var apply_payload = validator._extract_single_payload(errors, label, "obito_qiudao_jiaotu_heal_block_apply", apply_effect, ApplyEffectPayloadScript, "apply_effect")
 		validator._expect_payload_shape(errors, "%s apply" % label, apply_payload, {"effect_definition_id": "obito_qiudao_jiaotu_heal_block_mark"})
 	var mark_effect = validator._require_effect(content_index, errors, label, "obito_qiudao_jiaotu_heal_block_mark")
 	if mark_effect != null:
-		_helper.validate_effect_contracts(validator, content_index, errors, [{
-			"label": "%s mark" % label,
-			"effect_id": "obito_qiudao_jiaotu_heal_block_mark",
-			"fields": {
-				"scope": "self",
-				"duration_mode": "turns",
-				"duration": 2,
-				"decrement_on": "turn_end",
-				"stacking": "refresh",
-				"trigger_names": PackedStringArray(),
-				"persists_on_switch": true,
-			},
-		}])
+		_helper.validate_effect_contracts(
+			validator,
+			content_index,
+			errors,
+			[FormalCharacterBaselinesScript.effect_contract("obito", "obito_qiudao_jiaotu_heal_block_mark", "%s mark" % label)]
+		)
 	var rule_mod_effect = validator._require_effect(content_index, errors, label, "obito_qiudao_jiaotu_heal_block_rule_mod")
 	if rule_mod_effect == null:
 		return
-	_helper.validate_effect_contracts(validator, content_index, errors, [{
-		"label": "%s rule_mod" % label,
-		"effect_id": "obito_qiudao_jiaotu_heal_block_rule_mod",
-		"fields": {
-			"scope": "target",
-			"duration_mode": "turns",
-			"duration": 2,
-			"decrement_on": "turn_end",
-			"stacking": "none",
-			"trigger_names": PackedStringArray(["on_hit"]),
-			"persists_on_switch": true,
-		},
-	}])
+	_helper.validate_effect_contracts(
+		validator,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.effect_contract("obito", "obito_qiudao_jiaotu_heal_block_rule_mod", "%s rule_mod" % label)]
+	)
 	var payload = validator._extract_single_payload(errors, label, "obito_qiudao_jiaotu_heal_block_rule_mod", rule_mod_effect, RuleModPayloadScript, "rule_mod")
 	validator._expect_payload_shape(
 		errors,
@@ -78,34 +61,24 @@ func validate_yinyang_dun_contracts(validator, content_index, errors: Array) -> 
 	var label := "formal[obito].yinyang_dun"
 	var boost_effect = validator._require_effect(content_index, errors, label, "obito_yinyang_dun_boost_and_charge")
 	if boost_effect != null:
-		_helper.validate_effect_contracts(validator, content_index, errors, [{
-			"label": "%s boost" % label,
-			"effect_id": "obito_yinyang_dun_boost_and_charge",
-			"fields": {
-				"scope": "self",
-				"duration_mode": "permanent",
-				"stacking": "none",
-				"trigger_names": PackedStringArray(["on_cast"]),
-			},
-		}])
+		_helper.validate_effect_contracts(
+			validator,
+			content_index,
+			errors,
+			[FormalCharacterBaselinesScript.effect_contract("obito", "obito_yinyang_dun_boost_and_charge", "%s boost" % label)]
+		)
 		if boost_effect.payloads.size() != 3:
 			errors.append("%s boost payload count mismatch: expected 3 got %d" % [label, boost_effect.payloads.size()])
 		else:
 			_expect_boost_payloads(validator, errors, label, boost_effect.payloads)
 	var guard_effect = validator._require_effect(content_index, errors, label, "obito_yinyang_dun_guard_rule_mod")
 	if guard_effect != null:
-		_helper.validate_effect_contracts(validator, content_index, errors, [{
-			"label": "%s guard" % label,
-			"effect_id": "obito_yinyang_dun_guard_rule_mod",
-			"fields": {
-				"scope": "self",
-				"duration_mode": "turns",
-				"duration": 1,
-				"decrement_on": "turn_end",
-				"stacking": "none",
-				"trigger_names": PackedStringArray(["on_cast"]),
-			},
-		}])
+		_helper.validate_effect_contracts(
+			validator,
+			content_index,
+			errors,
+			[FormalCharacterBaselinesScript.effect_contract("obito", "obito_yinyang_dun_guard_rule_mod", "%s guard" % label)]
+		)
 		var guard_payload = validator._extract_single_payload(errors, label, "obito_yinyang_dun_guard_rule_mod", guard_effect, RuleModPayloadScript, "rule_mod")
 		validator._expect_payload_shape(errors, "%s guard.payload" % label, guard_payload, {
 			"mod_kind": "incoming_action_final_mod", "mod_op": "mul", "value": 0.5, "scope": "self",
@@ -115,35 +88,23 @@ func validate_yinyang_dun_contracts(validator, content_index, errors: Array) -> 
 		})
 	var listener_apply_effect = validator._require_effect(content_index, errors, label, "obito_yinyang_dun_guard_stack_listener")
 	if listener_apply_effect != null:
-		_helper.validate_effect_contracts(validator, content_index, errors, [{
-			"label": "%s listener_apply" % label,
-			"effect_id": "obito_yinyang_dun_guard_stack_listener",
-			"fields": {
-				"scope": "self",
-				"duration_mode": "permanent",
-				"stacking": "none",
-				"trigger_names": PackedStringArray(["on_cast"]),
-			},
-		}])
+		_helper.validate_effect_contracts(
+			validator,
+			content_index,
+			errors,
+			[FormalCharacterBaselinesScript.effect_contract("obito", "obito_yinyang_dun_guard_stack_listener", "%s listener_apply" % label)]
+		)
 		var listener_apply_payload = validator._extract_single_payload(errors, label, "obito_yinyang_dun_guard_stack_listener", listener_apply_effect, ApplyEffectPayloadScript, "apply_effect")
 		validator._expect_payload_shape(errors, "%s listener_apply.payload" % label, listener_apply_payload, {"effect_definition_id": "obito_yinyang_dun_guard_stack_listener_state"})
 	var listener_state_effect = validator._require_effect(content_index, errors, label, "obito_yinyang_dun_guard_stack_listener_state")
 	if listener_state_effect == null:
 		return
-	_helper.validate_effect_contracts(validator, content_index, errors, [{
-		"label": "%s listener_state" % label,
-		"effect_id": "obito_yinyang_dun_guard_stack_listener_state",
-		"fields": {
-			"scope": "self",
-			"duration_mode": "turns",
-			"duration": 1,
-			"decrement_on": "turn_end",
-			"stacking": "none",
-			"trigger_names": PackedStringArray(["on_receive_action_damage_segment"]),
-			"required_incoming_command_types": PackedStringArray(["skill", "ultimate"]),
-			"persists_on_switch": false,
-		},
-	}])
+	_helper.validate_effect_contracts(
+		validator,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.effect_contract("obito", "obito_yinyang_dun_guard_stack_listener_state", "%s listener_state" % label)]
+	)
 	var listener_state_payload = validator._extract_single_payload(errors, label, "obito_yinyang_dun_guard_stack_listener_state", listener_state_effect, ApplyEffectPayloadScript, "apply_effect")
 	validator._expect_payload_shape(errors, "%s listener_state.payload" % label, listener_state_payload, {"effect_definition_id": "obito_yinyang_zhili"})
 

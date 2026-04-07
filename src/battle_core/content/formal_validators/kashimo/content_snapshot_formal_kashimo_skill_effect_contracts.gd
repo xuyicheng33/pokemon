@@ -9,6 +9,5 @@ var _charge_contracts = KashimoChargeContractsScript.new()
 
 func validate(validator, content_index, errors: Array) -> void:
 	_contracts.validate_core_skill_contract(validator, content_index, errors)
-	_contracts.validate_feedback_strike_contract(validator, content_index, errors)
 	_contracts.validate_kyokyo_contract(validator, content_index, errors)
 	_charge_contracts.validate(validator, content_index, errors)

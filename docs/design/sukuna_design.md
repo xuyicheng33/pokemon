@@ -307,7 +307,7 @@
 正式交付面说明：
 
 - `sukuna_suite.gd` 承担宿傩玩法与行为回归。
-- `sukuna_snapshot_suite.gd` 用字面量断言锁死宿傩单位面板、技能资源与关键 effect / field / passive 资源。
+- `sukuna_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死宿傩单位面板、技能资源与关键 effect / field / passive 资源。
 - `ultimate_field_suite.gd` 中登记到注册表的共享领域回归，同样属于宿傩正式交付面的一部分。
 
 | 编号 | 用例 | 验证点 |

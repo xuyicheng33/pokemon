@@ -41,6 +41,10 @@
   - 第 2 批：收缩 validator / snapshot 等角色事实重复维护面
   - 第 3 批：拆分 `SampleBattleFactory` 热点职责
   - 第 4 批：拆分 `LegalActionService` 热点职责
+- 当前进度：
+  - 第 1 批已完成：manifest runtime / delivery 视图解耦已落地并通过 gate
+  - 第 2 批已完成：formal 角色 baseline 已收口到共享描述层，snapshot suite 与 formal validator 的基础事实开始共用同一份 descriptor
+  - 第 3 批、第 4 批待继续推进
 - 非范围：
   - 不改四角色玩法语义
   - 不新增正式角色

@@ -2,25 +2,25 @@ extends "res://src/battle_core/content/formal_validators/shared/content_snapshot
 class_name ContentSnapshotFormalKashimoUltimateDomainContracts
 
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
+const ContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
+const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 
+var _helper = ContractHelperScript.new()
+
 func validate(validator, content_index, errors: Array) -> void:
+	_helper.validate_skill_contracts(
+		validator,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.skill_contract("kashimo", "kashimo_phantom_beast_amber")]
+	)
 	_validate_amber_contract(validator, content_index, errors)
 
 func _validate_amber_contract(validator, content_index, errors: Array) -> void:
 	var label := "formal[kashimo].amber_contract"
-	var unit_definition = validator._require_unit(content_index, errors, label, "kashimo_hajime")
-	if unit_definition != null:
-		validator._expect_string(errors, "%s unit.ultimate_skill_id" % label, unit_definition.ultimate_skill_id, "kashimo_phantom_beast_amber")
-		if int(unit_definition.ultimate_points_required) != 3 or int(unit_definition.ultimate_points_cap) != 3 or int(unit_definition.ultimate_point_gain_on_regular_skill_cast) != 1:
-			errors.append("%s unit ultimate points mismatch: expected 3/3/1 got %d/%d/%d" % [
-				label,
-				int(unit_definition.ultimate_points_required),
-				int(unit_definition.ultimate_points_cap),
-				int(unit_definition.ultimate_point_gain_on_regular_skill_cast),
-			])
 	var amber_effect = validator._require_effect(content_index, errors, label, "kashimo_amber_self_transform")
 	var amber_bleed = validator._require_effect(content_index, errors, label, "kashimo_amber_bleed")
 	if amber_effect == null or amber_bleed == null:
@@ -56,9 +56,12 @@ func _validate_amber_contract(validator, content_index, errors: Array) -> void:
 			])
 		if not bool(amber_lock.persists_on_switch):
 			errors.append("%s amber ultimate lock must persist_on_switch=true" % label)
-	validator._expect_packed_string_array(errors, "%s bleed.trigger_names" % label, amber_bleed.trigger_names, PackedStringArray(["turn_end"]))
-	if not bool(amber_bleed.persists_on_switch):
-		errors.append("%s amber bleed must persist_on_switch=true" % label)
+	_helper.validate_effect_contracts(
+		validator,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_amber_bleed", "%s bleed" % label)]
+	)
 	var bleed_payload = validator._extract_single_payload(
 		errors,
 		label,

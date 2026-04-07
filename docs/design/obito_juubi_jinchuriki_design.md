@@ -223,8 +223,8 @@
 |编号|场景|断言|
 |---|---|---|
 | 1 | 单位快照 | 双属性、六维、MP、奥义点、默认配招、候选池固定 |
-| 2 | 技能快照 | `求道焦土 / 阴阳遁 / 求道玉 / 六道十字奉火 / 十尾尾兽玉` 字面量固定 |
-| 3 | 关键资源快照 | `obito_yinyang_zhili`、禁疗标记、`incoming_heal_final_mod`、`damage_segments`、`execute_target_hp_ratio_lte` 固定 |
+| 2 | 技能快照 | `求道焦土 / 阴阳遁 / 求道玉 / 六道十字奉火 / 十尾尾兽玉` 由共享 formal baseline 固定 |
+| 3 | 关键资源快照 | `obito_yinyang_zhili`、禁疗标记、`incoming_heal_final_mod`、`damage_segments`、`execute_target_hp_ratio_lte` 由共享 formal baseline + 显式断言固定 |
 | 4 | 被动回复 | `仙人之力` 在 `turn_start` 按已损生命值 `10%` 回复 |
 | 5 | 禁疗路径 | `求道焦土` 命中后公开标记与 heal block 同步落地，换人不清 |
 | 6 | 防反叠层 | `阴阳遁` 本回合按 `on_receive_action_damage_segment` 逐段减伤并加层 |

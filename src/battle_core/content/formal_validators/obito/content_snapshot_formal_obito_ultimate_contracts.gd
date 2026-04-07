@@ -2,31 +2,18 @@ extends RefCounted
 class_name ContentSnapshotFormalObitoUltimateContracts
 
 const ContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
+const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
 const SkillDamageSegmentScript := preload("res://src/battle_core/content/skill_damage_segment.gd")
 
 var _helper = ContractHelperScript.new()
 
 func validate(validator, content_index, errors: Array) -> void:
-	_helper.validate_skill_contracts(validator, content_index, errors, [
-		{
-			"label": "formal[obito].shiwei_weishouyu",
-			"skill_id": "obito_shiwei_weishouyu",
-			"fields": {
-				"display_name": "十尾尾兽玉",
-				"damage_kind": "special",
-					"power": 0,
-				"accuracy": 100,
-				"mp_cost": 50,
-				"priority": 5,
-				"combat_type_id": "",
-				"targeting": "enemy_active_slot",
-				"effects_on_cast_ids": PackedStringArray(),
-				"effects_on_hit_ids": PackedStringArray(),
-				"effects_on_miss_ids": PackedStringArray(),
-				"effects_on_kill_ids": PackedStringArray(),
-			},
-		},
-	])
+	_helper.validate_skill_contracts(
+		validator,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.skill_contract("obito", "obito_shiwei_weishouyu")]
+	)
 	var label := "formal[obito].shiwei_weishouyu"
 	var skill_definition = validator._require_skill(content_index, errors, label, "obito_shiwei_weishouyu")
 	if skill_definition == null:

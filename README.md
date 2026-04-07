@@ -250,7 +250,7 @@ tests/run_with_gate.sh
 - sandbox demo 若要给正式角色补固定演示，统一改 `config/demo_replay_catalog.json` profile，不再在 `BattleSandboxRunner` 里写死角色专属命令流
 - validator 坏例：只要角色登记了 `content_validator_script_path`，就必须同时把 `tests/suites/extension_validation_contract_suite.gd` 和至少一个 `formal_<character>_validator_*bad_case_contract` 锚点挂回该角色 manifest 条目的 `required_suite_paths / required_test_names`
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
-- 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
+- 资源快照：`tests/suites/<character>_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 跨角色 smoke：正式角色之间至少补非镜像配对黑盒样例，避免配对覆盖长期偏在单一角色身上
 - `config/formal_character_manifest.json.matchups` 继续承载 formal directed matchup；directed pair surface smoke 改为运行时根据 `matchups + config/formal_character_manifest.json.characters[*].surface_smoke_skill_id` 自动生成；`pair_interaction_cases[*]` 固定必填 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`，`tests/suites/formal_character_pair_smoke_suite.gd` 仍按生成结果动态注册
@@ -278,9 +278,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-07）
 
-- `src/**/*.gd`：`17284` 行
-- `tests/**/*.gd`：`23734` 行
-- GDScript 合计：`41018` 行
+- `src/**/*.gd`：`17825` 行
+- `tests/**/*.gd`：`23666` 行
+- GDScript 合计：`41491` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

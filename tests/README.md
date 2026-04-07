@@ -40,7 +40,7 @@
 - runtime formal validator 当前统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 `config/formal_character_manifest.json`；loader 只校验 runtime 视图与 validator 路径存在性，真正的 validator 实例化延迟到 `ContentSnapshotFormalCharacterValidator.validate()` 按 present-only 角色执行。测试、文档、suite reachability 与回归锚点也统一读取 manifest 派生视图；delivery/test 字段漂移不得拖死 runtime loader。
 - `ContentSnapshotFormalCharacterValidator` 只校验当前快照里实际出现的正式角色，不会因为缺席角色而误炸。
 - 正式角色 entry validator 当前固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板组织；tests 侧只验证这三个入口仍可实例化并回挂到 wrapper 子树。
-- 正式角色的 `required_suite_paths` 可以同时挂角色专属子套件与共享 suite；例如 `gojo_snapshot_suite.gd` / `sukuna_snapshot_suite.gd` 用来锁资源快照，`ultimate_field_suite.gd` 用来把共享领域回归正式挂回角色交付面。
+- 正式角色的 `required_suite_paths` 可以同时挂角色专属子套件与共享 suite；例如 `gojo_snapshot_suite.gd` / `sukuna_snapshot_suite.gd` 现在统一从共享 formal baseline 读取角色基线，再锁资源快照，`ultimate_field_suite.gd` 用来把共享领域回归正式挂回角色交付面。
 - 只要角色登记了 `content_validator_script_path`，`required_suite_paths` 里就必须显式挂 `tests/suites/extension_validation_contract_suite.gd`，`required_test_names` 里也必须挂至少一个对应角色的 validator 坏例锚点。
 - 带土当前也按同一机制挂接：`obito_suite.gd` 负责 wrapper，`obito_*` 子 suite 负责角色专项回归，`heal_extension_suite.gd / skill_execute_contract_suite.gd / multihit_skill_runtime_suite.gd` 作为带土依赖面的共享锚点继续挂在其 manifest 条目的 `required_suite_paths` 里。
 - `config/formal_character_manifest.json.matchups` 与 `pair_interaction_cases` 继续承载 formal pair 覆盖；directed pair surface smoke 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，`tests/suites/formal_character_pair_smoke_suite.gd` 只负责按生成结果动态注册和执行。

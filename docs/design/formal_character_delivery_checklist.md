@@ -79,7 +79,7 @@
 
 ### A. Snapshot suite
 
-- [ ] `tests/suites/<character>_snapshot_suite.gd`
+- [ ] `tests/suites/<character>_snapshot_suite.gd`（优先复用共享 formal baseline，避免 validator / snapshot 双边手抄）
 - [ ] 优先复用共享 snapshot helper / formal character test support，不再为单角色复制 `_build_content_index()` 与 `_run_checks()` 模板
 - [ ] 锁 `UnitDefinition` 字面量
 - [ ] 锁技能资源字面量

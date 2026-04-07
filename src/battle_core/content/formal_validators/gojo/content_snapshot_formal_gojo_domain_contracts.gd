@@ -3,6 +3,7 @@ class_name ContentSnapshotFormalGojoDomainContracts
 
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const ContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
+const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 
@@ -17,18 +18,12 @@ func _validate_domain_followup(validator, content_index, errors: Array) -> void:
 	var effect_definition = validator._require_effect(content_index, errors, label, "gojo_apply_domain_field")
 	if effect_definition == null:
 		return
-	_helper.validate_effect_contracts(validator, content_index, errors, [{
-		"label": label,
-		"effect_id": "gojo_apply_domain_field",
-		"fields": {
-			"scope": "field",
-			"duration_mode": "turns",
-			"duration": 3,
-			"decrement_on": "turn_end",
-			"stacking": "replace",
-			"trigger_names": PackedStringArray(["on_hit"]),
-		},
-	}])
+	_helper.validate_effect_contracts(
+		validator,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.effect_contract("gojo", "gojo_apply_domain_field", label)]
+	)
 	var apply_field_payload = validator._extract_single_payload(
 		errors,
 		label,
@@ -59,17 +54,12 @@ func _validate_domain_followup(validator, content_index, errors: Array) -> void:
 
 func _validate_domain_buff_contract(validator, content_index, errors: Array) -> void:
 	var label := "formal[gojo].domain_buff_contract"
-	_helper.validate_field_contracts(validator, content_index, errors, [{
-		"label": "%s field" % label,
-		"field_id": "gojo_unlimited_void_field",
-		"fields": {
-			"field_kind": "domain",
-			"effect_ids": PackedStringArray(["gojo_domain_cast_buff"]),
-			"on_expire_effect_ids": PackedStringArray(["gojo_domain_buff_remove"]),
-			"on_break_effect_ids": PackedStringArray(["gojo_domain_buff_remove"]),
-			"creator_accuracy_override": 100,
-		},
-	}])
+	_helper.validate_field_contracts(
+		validator,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.field_contract("gojo", "gojo_unlimited_void_field", "%s field" % label)]
+	)
 	var action_lock_effect = validator._require_effect(content_index, errors, label, "gojo_domain_action_lock")
 	if action_lock_effect != null:
 		_helper.validate_effect_contracts(validator, content_index, errors, [{

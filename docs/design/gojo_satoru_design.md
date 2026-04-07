@@ -407,7 +407,7 @@
 正式交付面说明：
 
 - `gojo_suite.gd` 承担五条悟玩法与行为回归。
-- `gojo_snapshot_suite.gd` 用字面量断言锁死五条悟单位面板、技能资源与关键 effect / field / passive 资源。
+- `gojo_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死五条悟单位面板、技能资源与关键 effect / field / passive 资源。
 - `ultimate_field_suite.gd` 中登记到注册表的共享领域回归，同样属于五条悟正式交付面的一部分。
 
 | 编号 | 用例 | 验证点 |
