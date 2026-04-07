@@ -8,30 +8,25 @@ var baseline_matchup_catalog
 var content_paths_helper
 var demo_catalog
 var replay_builder
+var setup_access
 
-func build_demo_replay_input_result(sample_factory, command_port, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
+func build_demo_replay_input_result(command_port, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	var default_profile_result: Dictionary = demo_catalog.default_profile_id_result()
 	if not bool(default_profile_result.get("ok", false)):
 		return default_profile_result
 	return build_demo_replay_input_for_profile_result(
-		sample_factory,
 		command_port,
 		String(default_profile_result.get("data", "")).strip_edges(),
 		side_regular_skill_overrides
 	)
 
-func build_demo_replay_input_for_profile_result(
-	sample_factory,
-	command_port,
-	demo_profile_id: String,
-	side_regular_skill_overrides: Dictionary = {}
-) -> Dictionary:
+func build_demo_replay_input_for_profile_result(command_port, demo_profile_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	var profile_result: Dictionary = demo_catalog.profile_result(demo_profile_id)
 	if not bool(profile_result.get("ok", false)):
 		return profile_result
 	var profile: Dictionary = profile_result.get("data", {})
 	var matchup_id := String(profile.get("matchup_id", "")).strip_edges()
-	var battle_setup_result: Dictionary = sample_factory.build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides)
+	var battle_setup_result: Dictionary = setup_access.build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides)
 	if not bool(battle_setup_result.get("ok", false)):
 		return _error_result(
 			str(battle_setup_result.get("error_code", ErrorCodesScript.INVALID_BATTLE_SETUP)),
@@ -53,8 +48,8 @@ func build_demo_replay_input_for_profile_result(
 		profile.get("commands", null)
 	)
 
-func build_passive_item_demo_replay_input_result(sample_factory, command_port) -> Dictionary:
-	var battle_setup_result: Dictionary = sample_factory.build_setup_by_matchup_id_result("passive_item_vs_sample")
+func build_passive_item_demo_replay_input_result(command_port) -> Dictionary:
+	var battle_setup_result: Dictionary = setup_access.build_setup_by_matchup_id_result("passive_item_vs_sample")
 	if not bool(battle_setup_result.get("ok", false)):
 		return battle_setup_result
 	var snapshot_paths_result: Dictionary = content_paths_helper.build_base_snapshot_paths(

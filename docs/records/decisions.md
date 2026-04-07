@@ -77,6 +77,7 @@
 
 - `SampleBattleFactory` 对外只保留结果式接口；正式失败统一返回 `{ ok, data, error_code, error_message }`，不再保留另一套降级语义。
 - 运行时 helper 全部统一进 composition 装配；`SampleBattleFactory`、catalog loader、surface case builder、demo catalog 与 replay builder 各自只承载单一职责。
+- `SampleBattleFactory` owner 现在只保留稳定 facade、helper 装配与错误状态投影；manifest/catalog/demo override 广播固定下沉到 `src/composition/sample_battle_factory_override_router.gd`，baseline/formal setup 组装固定下沉到 `src/composition/sample_battle_factory_setup_access.gd`。
 - directed pair surface smoke 不再手写 `pair_surface_cases`；统一由 `matchups + characters[*].surface_smoke_skill_id` 自动生成。
 - `pair_interaction_cases[*]` 固定必填 `scenario_id / matchup_id / character_ids[2] / battle_seed`，并继续与 scenario registry 做一一对应校验。
 - demo replay profile 的单一真相固定为 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选 profile、初始化 manager、错误投影，再把 replay input 构建委托给 builder。
