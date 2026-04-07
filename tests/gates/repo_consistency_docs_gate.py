@@ -9,11 +9,6 @@ from repo_consistency_common import GateContext
 
 
 ctx = GateContext()
-
-decision_record_paths = [
-    "docs/records/decisions.md",
-    "docs/records/archive/decisions_pre_2026-04-05_repair_wave.md",
-]
 formal_validator_buckets = [
     "unit_passive_contracts",
     "skill_effect_contracts",
@@ -146,28 +141,11 @@ ctx.require_contains("docs/rules/05_items_field_input_and_logging.md", "当前�
 ctx.require_contains("docs/rules/05_items_field_input_and_logging.md", "creator_public_id", "rules field creator public id contract")
 ctx.require_contains("docs/rules/05_items_field_input_and_logging.md", "不返回任何公开快照", "rules create_session runtime guard wording")
 ctx.require_contains("docs/rules/04_status_switch_and_lifecycle.md", "reentered_turn_index = 当前 turn_index", "rules replacement reentry state wording")
+ctx.require_exists("docs/records/decisions.md", "active decisions record")
+ctx.require_exists("docs/records/tasks.md", "active tasks record")
 ctx.require_exists("docs/records/archive/decisions_pre_2026-04-05_repair_wave.md", "decisions repair-wave archive")
 ctx.require_exists("docs/records/archive/tasks_pre_2026-04-05_repair_wave.md", "tasks repair-wave archive")
-ctx.require_contains("docs/records/decisions.md", "decisions_pre_2026-04-05_repair_wave.md", "active decisions archive pointer")
-ctx.require_contains("docs/records/tasks.md", "tasks_pre_2026-04-05_repair_wave.md", "active tasks archive pointer")
-ctx.require_contains("docs/records/decisions.md", "entry validator 固定采用三桶模板", "active decision tri-bucket wording")
-ctx.require_contains("docs/records/decisions.md", "on_receive_action_damage_segment", "active decision damage-segment filter wording")
-ctx.require_contains("docs/records/decisions.md", "once_per_battle", "active decision once-per-battle wording")
-ctx.require_contains("docs/records/decisions.md", "duration_mode = permanent", "active decision sukuna permanent regen wording")
-ctx.require_contains_any(decision_record_paths, "固定可复查案例作为角色与规则复查入口", "fixed-case decision wording")
-ctx.require_contains_any(decision_record_paths, "外层输入与公开快照继续只使用 `public_id`。", "public input decision wording")
-ctx.require_contains_any(decision_record_paths, "若未来恢复自动选指，必须重新补齐规则、设计文档与接线任务，不得直接回填历史实现。", "future auto-selection recovery gate")
-ctx.require_contains_any(decision_record_paths, "effect dedupe key 必须包含 effect_instance_id", "effect-instance dedupe decision wording")
-ctx.require_contains_any(decision_record_paths, "field_break / field_expire 链上创建的 successor field 必须保留", "field successor cleanup decision wording")
-ctx.require_contains_any(decision_record_paths, "正式角色注册表当前必须登记角色 effect 资源、wrapper 下属 suite 与关键回归测试名", "formal registry expansion decision wording")
-ctx.require_contains_any(decision_record_paths, "BattleCoreManager` 公开 contract 统一为严格 envelope", "manager envelope decision wording")
-ctx.require_contains_any(decision_record_paths, "宿傩“灶”正式写死为 3 层硬上限，满层后忽略新层", "sukuna kamado cap decision wording")
-ctx.require_contains_any(decision_record_paths, "运行时 helper 全部统一进 composition 装配", "runtime helper composition decision wording")
-ctx.require_contains_any(decision_record_paths, "suite 可达性闸门", "suite reachability decision wording")
-ctx.require_contains_any(decision_record_paths, "跨模块用户可见错误读取统一走 `error_state()` / `invalid_battle_code()`", "explicit error-state decision wording")
-ctx.require_contains_any(decision_record_paths, "Runtime wiring 图重新收口为严格 DAG", "runtime DAG decision wording")
-ctx.require_contains_any(decision_record_paths, "composer 级共享 cache + 每次 fresh index", "content snapshot cache decision wording")
-ctx.require_contains("docs/records/review_2026-04-04_foundation_stabilization_audit.md", "基础稳定化审查记录", "foundation stabilization review record")
+ctx.require_exists("docs/records/review_2026-04-04_foundation_stabilization_audit.md", "foundation stabilization review record")
 ctx.require_contains("README.md", "content_validator_script_path", "README runtime validator registry doc")
 ctx.require_contains("README.md", "formal_setup_matchup_id", "README formal setup matchup doc")
 ctx.require_contains("README.md", "当前 content snapshot 实际已出现的正式角色", "README scoped formal validator doc")
@@ -195,8 +173,6 @@ for rel_path in [
     "docs/design/formal_character_design_template.md",
     "docs/design/project_folder_structure.md",
     "docs/design/kashimo_hajime_adjustments.md",
-    "docs/records/decisions.md",
-    "docs/records/tasks.md",
 ]:
     ctx.require_absent(rel_path, "docs/records/formal_character_registry.json", "stale docs-side formal registry path")
 for rel_path in [
@@ -207,8 +183,6 @@ for rel_path in [
     "docs/design/formal_character_design_template.md",
     "docs/design/project_folder_structure.md",
     "docs/design/kashimo_hajime_adjustments.md",
-    "docs/records/decisions.md",
-    "docs/records/tasks.md",
 ]:
     ctx.require_absent(rel_path, "config/formal_character_registry.json", "stale single formal registry path")
 for rel_path in [
@@ -216,12 +190,9 @@ for rel_path in [
     "tests/README.md",
     "docs/design/formal_character_delivery_checklist.md",
     "docs/design/battle_content_schema.md",
-    "docs/records/decisions.md",
 ]:
     ctx.require_absent(rel_path, "代码侧描述源", "stale code-side formal registry wording")
-ctx.require_absent("docs/records/decisions.md", "runtime formal validator 改由 code-side registry 装配", "stale dual-registry decision wording")
 ctx.require_absent("docs/design/formal_character_delivery_checklist.md", "sample_setup_method", "retired sample_setup_method wording")
-ctx.require_absent("docs/records/tasks.md", "formal registry 已迁到 `config/formal_character_registry.json`", "stale single formal registry task wording")
 
 stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",
@@ -234,7 +205,6 @@ for rel_path in [
     "README.md",
     "content/README.md",
     "docs/design/battle_content_schema.md",
-    "docs/records/decisions.md",
 ]:
     for needle in stale_candidate_wording:
         ctx.require_absent(rel_path, needle, "candidate skill pool drift wording")

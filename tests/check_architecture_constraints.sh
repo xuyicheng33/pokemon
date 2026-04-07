@@ -79,8 +79,6 @@ root = Path(".")
 
 size_review_rules = {}
 
-decisions_text = (root / "docs/records/decisions.md").read_text(encoding="utf-8")
-
 review_required = []
 warning_review = []
 for source_root in [root / "src/battle_core", root / "src/composition"]:
@@ -120,17 +118,6 @@ if allowlist_overflow:
     print("ARCH_GATE_FAILED: allowlisted files exceeded temporary max_lines cap:", file=sys.stderr)
     for rel, line_count, max_lines in allowlist_overflow:
         print(f"  - {rel} ({line_count} lines > {max_lines})", file=sys.stderr)
-    sys.exit(1)
-
-missing_decision_notes = []
-for rel, _line_count in review_required:
-    if rel not in decisions_text:
-        missing_decision_notes.append(rel)
-
-if missing_decision_notes:
-    print("ARCH_GATE_FAILED: allowlisted large files must be explicitly recorded in docs/records/decisions.md:", file=sys.stderr)
-    for rel in missing_decision_notes:
-        print(f"  - {rel}", file=sys.stderr)
     sys.exit(1)
 
 if warning_review:

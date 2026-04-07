@@ -10,6 +10,22 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 0. 正式角色整合修复波次的新固定决定
+
+- `docs/records/` 以后只承担记录、决策入口与归档索引，不再继续承担现行规则机器约束。
+- formal 共享字段定义只保留一份真相：
+  - `config/formal_registry_contracts.json`
+  - `src/shared/formal_registry_contracts.gd`
+- `SampleBattleFactory` 继续保留现有结果式公开 API，但内部固定拆成：
+  - baseline flow：只服务 `sample_default`、`passive_item_vs_sample` 与 legacy/sample demo
+  - formal flow：只服务 formal setup、formal pair smoke、formal pair interaction、formal demo
+- demo 默认 profile 的单一真相固定为 `kashimo`，并且只能从 `config/demo_replay_catalog.json` 读取。
+- pair interaction 覆盖模型固定改为：
+  - 每个无序正式角色对至少 1 条 interaction case
+  - 允许同 pair 多 case
+  - 当前四角色必须保留 6 组关键 pair 的双向 directional case
+- Kashimo / Sukuna 的 manager 黑盒当前视为正式交付面的一部分；后续角色扩充不得再跳过 manager 级黑盒。
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

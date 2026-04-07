@@ -10,6 +10,64 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前波次：正式角色整合修复波次（2026-04-07）
+
+- 状态：已完成
+- 目标：
+  - 在不扩第 5 个正式角色、不改四角色数值平衡的前提下，把 formal 合同源、sample/demo 基线、pair interaction 覆盖、manager 黑盒与测试 support/gate 重新收成一套稳定底座。
+- 范围：
+  - formal runtime / delivery 注册表字段收口到共享合同源
+  - `SampleBattleFactory` baseline / formal flow 解耦
+  - `docs/records` 从机器约束里降级为记录与归档索引
+  - pair interaction 改为“每对可多 case + 当前 6 组关键 pair 双向覆盖”
+  - Kashimo / Sukuna manager 黑盒补洞
+  - support / gate 热点拆分并补结构性回归
+- 非范围：
+  - 不新增正式角色
+  - 不改四角色技能数值与平衡
+  - 不扩更多 demo 命令类型
+
+## 本轮交付结果
+
+### Formal / Sample 收口
+
+- formal registry 字段真相已统一到共享合同文件：
+  - `config/formal_registry_contracts.json`
+  - `src/shared/formal_registry_contracts.gd`
+- `SampleBattleFactory` 当前固定采用：
+  - baseline catalog：`config/sample_matchup_catalog.json`
+  - baseline loader：`src/composition/sample_battle_factory_baseline_matchup_catalog.gd`
+  - runtime loader：`src/composition/sample_battle_factory_runtime_registry_loader.gd`
+  - delivery loader：`src/composition/sample_battle_factory_delivery_registry_loader.gd`
+- `build_setup_by_matchup_id_result()` 现行为 baseline 优先、formal fallback。
+- `build_sample_setup_result()`、legacy demo、passive item demo 已不再依赖 formal runtime registry / formal matchup catalog 健康度。
+- demo 默认 profile 已固定收口为 `kashimo`，并由 `config/demo_replay_catalog.json` 提供单一真相。
+
+### Pair / Gate 重做
+
+- `config/formal_matchup_catalog.json` 当前允许同一无序正式角色对登记多条 interaction case。
+- 当前四正式角色已显式补齐 6 组关键 pair 的双向 interaction case，共 12 条 directional case。
+- repo consistency gate 当前固定检查：
+  - `scenario_id` 唯一
+  - case 字段完整
+  - 每个无序正式角色对至少 1 条 case
+  - 当前约定的 12 条关键 directional case 都存在
+- `docs/records/tasks.md` / `docs/records/decisions.md` 的措辞漂移不再触发机器 gate 失败。
+
+### 黑盒 / Support 拆分
+
+- Kashimo manager 黑盒已补：
+  - `feedback_strike`
+  - `kyokyo`
+- Sukuna manager 黑盒已补：
+  - `hatsu`
+  - `teach_love`
+- support 热点已拆分：
+  - `battle_core_test_harness` -> facade + pool/sample helper
+  - `combat_type_test_helper` -> facade + cases
+  - `damage_payload_contract_test_helper` -> facade + cases
+  - `obito_runtime_contract_support` -> facade + heal_block / yinyang helper
+
 ## 当前波次：正式角色稳定化三波整合（2026-04-07）
 
 - 状态：已完成
