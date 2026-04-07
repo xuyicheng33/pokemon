@@ -102,6 +102,7 @@ godot --path .
 ```
 
 默认会进入 `BattleSandbox` 并运行 Kashimo 演示回放；如需保留旧样例演示，可追加命令行参数 `demo=legacy`。
+演示 profile 的单一真相在 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选择 profile、初始化 manager，并把 replay input 构建委托给 `SampleBattleFactory`。
 
 ### 5.2 运行完整闸门（推荐）
 
@@ -207,7 +208,8 @@ tests/run_with_gate.sh
 - `SampleBattleFactory.content_snapshot_paths_result()` 是正式快照路径入口：当前固定收集两段内容，分别是 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 的顶层样例资源，以及 `config/formal_character_runtime_registry.json` 里每个正式角色显式登记的 `required_content_paths`；缺目录、缺资源或 runtime registry 漂移时统一返回 `{ ok, data, error_code, error_message }`
 - `SampleBattleFactory.content_snapshot_paths_for_setup_result(battle_setup)` 会在上述样例顶层资源基础上，只补当前 `battle_setup` 里实际出现的正式角色 `required_content_paths`；manager smoke、pair smoke 与 demo replay 统一走这条 setup-scoped 入口，避免继续把所有正式角色内容一锅端进每个对局
 - `SampleBattleFactory` 对外已只保留结果式接口；正式失败语义不再允许降级成 `null / [] / PackedStringArray()`
-- `ContentSnapshotCache` 的签名当前固定包含稳定排序后的路径列表、以及这些顶层资源递归外部依赖到的 `.tres/.res` 文件指纹；因此即使只改了 `content/shared/` 里被正式资源引用的共享 payload，也必须重新 miss，而不是继续复用旧 cache entry
+- `SampleBattleFactory` 的 demo replay profile 当前固定收口到 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责解析 `demo=<profile>`、初始化 manager，并委托 `SampleBattleFactory.build_demo_replay_input_for_profile_result()` 生成 replay input，缺 profile、坏 profile 或 builder 失败一律 fail-fast
+- `ContentSnapshotCache` 的签名当前固定包含稳定排序后的 snapshot 路径列表、这些顶层资源递归外部依赖到的 `.tres/.res` 文件指纹、`config/formal_character_runtime_registry.json`，以及 `src/battle_core/content/**/*.gd` 与 `src/battle_core/content/formal_validators/**/*.gd`；因此即使只改了共享 payload、formal validator 或 runtime registry，也必须重新 miss，而不是继续复用旧 cache entry
 - 若多个正式资源要共享同一份 payload，可把辅助 Resource 放到 `content/shared/`，再由顶层内容资源显式外部引用；`content/shared/` 本身不参与顶层 snapshot 注册
 
 ### 8.1 正式角色资源
@@ -238,14 +240,15 @@ tests/run_with_gate.sh
 - validator 模板：正式角色 entry validator 固定收口为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶；入口文件只负责 preload 与串联，不再自由追加角色私有逻辑
 - 大型共享 suite 当前统一采用“稳定 wrapper + 子 suite”组织：例如 `tests/suites/multihit_skill_runtime_suite.gd` 只保留入口职责，真实断言下沉到 `tests/suites/multihit_skill_runtime/*.gd`
 - runtime 注册字段固定为 `character_id / unit_definition_id / formal_setup_matchup_id / required_content_paths`，以及按需补的 `content_validator_script_path`
-- delivery 注册字段固定为 `character_id / display_name / design_doc / adjustment_doc / suite_path / required_suite_paths / required_test_names / design_needles / adjustment_needles`
-- `required_test_names` 现在只保留角色私有 runtime / validator 坏例锚点；共享 suite 覆盖不再逐角色复制进 registry，pair surface / interaction 统一由 `config/formal_matchup_catalog.json` + shared gate 收口
+- delivery 注册字段固定为 `character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / design_needles / adjustment_needles`
+- `required_test_names` 现在只保留角色私有 runtime / validator 坏例锚点；共享 suite 覆盖不再逐角色复制进 registry，pair surface 统一由 `matchups + surface_smoke_skill_id` 运行时生成，interaction 继续由 `config/formal_matchup_catalog.json` + shared gate 收口
+- sandbox demo 若要给正式角色补固定演示，统一改 `config/demo_replay_catalog.json` profile，不再在 `BattleSandboxRunner` 里写死角色专属命令流
 - validator 坏例：只要角色登记了 `content_validator_script_path`，就必须同时把 `tests/suites/extension_validation_contract_suite.gd` 和至少一个 `formal_<character>_validator_*bad_case_contract` 锚点挂回 delivery registry
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 用显式字面量断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 跨角色 smoke：正式角色之间至少补非镜像配对黑盒样例，避免配对覆盖长期偏在单一角色身上
-- `config/formal_matchup_catalog.json` 现在是 formal matchup、pair surface smoke 与 deep interaction case 的单一真相；`tests/suites/formal_character_pair_smoke_suite.gd` 只按 catalog 动态注册，不再靠多份手抄名单同步
+- `config/formal_matchup_catalog.json` 现在只保留 formal matchup 与 `pair_interaction_cases`；directed pair surface smoke 改为运行时根据 `matchups + config/formal_character_delivery_registry.json.surface_smoke_skill_id` 自动生成，`pair_interaction_cases[*]` 固定必填 `scenario_id / matchup_id / character_ids[2] / battle_seed`，`tests/suites/formal_character_pair_smoke_suite.gd` 仍按生成结果动态注册
 - 当前四名正式角色的 pair surface 已补到完整有向矩阵，deep interaction 固定为 6 个无向 pair case：`Gojo-Sukuna / Gojo-Kashimo / Gojo-Obito / Sukuna-Kashimo / Sukuna-Obito / Kashimo-Obito`
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 - 当前仓库已内置两组固定诊断入口：`tests/helpers/domain_case_runner.gd`（领域）与 `tests/helpers/kashimo_case_runner.gd`（鹿紫云）
@@ -268,11 +271,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-06）
+## 10. 当前代码规模（2026-04-07）
 
-- `src/**/*.gd`：`15640` 行
-- `tests/**/*.gd`：`21929` 行
-- GDScript 合计：`37569` 行
+- `src/**/*.gd`：`16204` 行
+- `tests/**/*.gd`：`22592` 行
+- GDScript 合计：`38796` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

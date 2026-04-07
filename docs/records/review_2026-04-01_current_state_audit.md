@@ -1,5 +1,8 @@
 # 2026-04-01 当前项目完整审查记录
 
+> 历史审查，不再作为现行依据。
+> 本记录成稿于 runtime / delivery registry 拆分之前；文中出现的 `docs/records/formal_character_registry.json` 等旧口径只代表当时状态，当前实现与门禁请以 `docs/design/`、`docs/rules/`、`docs/records/decisions.md` 与 `docs/records/tasks.md` 为准。
+
 ## 结论
 
 - 当前主线没有发现会阻断继续开发的红灯问题。

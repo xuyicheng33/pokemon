@@ -61,6 +61,7 @@
 ## 4. 数据流
 
 1. `BattleSandboxRunner` 或测试入口请求 `BattleCoreComposer` 创建核心依赖图。
+   - sandbox demo profile 的单一真相固定在 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选择 profile，并把 replay input 构建委托给 `SampleBattleFactory`。
 2. `BattleCoreManagerContainerService` / `ReplayRunner` 先通过 `ContentSnapshotCache` 取得“已加载且已校验”的资源数组，再为本次 session / replay 深复制资源并构造 fresh `BattleContentIndex`。
 3. `BattleInitializer` 作为初始化编排 owner，驱动 `BattleInitializerStateBuilder` 生成 fresh `BattleState`，再交给 `BattleInitializerPhaseService` 完成 `battle_header / on_enter / battle_init / 首回合预回蓝`。
 4. `TurnLoopController` 驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`。
@@ -91,6 +92,7 @@
 - `scenes/sandbox/BattleSandbox.tscn`
   - 作为战斗骨架试跑入口。
   - 挂载 `BattleSandboxRunner`。
+  - 只负责解析 demo profile、初始化 manager、触发 replay；角色专属 demo 命令流与 setup 不再写死在 runner 内。
 - `src/composition/battle_core_composer.gd`
   - 负责创建 RNG、ID、commands、turn、effects、logging 等服务对象。
   - 负责维护 composer 级共享 `content_snapshot_cache`，供同一 manager 下的多 session / replay 复用。

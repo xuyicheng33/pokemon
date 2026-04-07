@@ -52,6 +52,7 @@
 - [ ] delivery registry 至少补齐：
   - [ ] `character_id / display_name`
   - [ ] `design_doc / adjustment_doc`
+  - [ ] `surface_smoke_skill_id`（该正式角色用于自动生成 directed pair surface smoke 的默认黑盒技能）
   - [ ] `suite_path`
   - [ ] `required_suite_paths / required_test_names`
   - [ ] `design_needles / adjustment_needles`（显式 anchor id，不再写自然语言句子）
@@ -67,7 +68,10 @@
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
 - [ ] 若登记了 `content_validator_script_path`，同时把 `tests/suites/extension_validation_contract_suite.gd` 挂进 `required_suite_paths`
 - [ ] 若登记了 `content_validator_script_path`，同时把至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
-- [ ] `config/formal_matchup_catalog.json` 新增或更新该角色相关 `matchup / pair_surface_cases / pair_interaction_cases`
+- [ ] `config/formal_matchup_catalog.json` 新增或更新该角色相关 `matchup / pair_interaction_cases`
+- [ ] 确认该角色的 `surface_smoke_skill_id` 能在所有 formal directed matchup 的首发黑盒 smoke 中稳定施放；pair surface 不再手写登记到 catalog
+- [ ] 若补 interaction case，`pair_interaction_cases[*]` 必须显式补齐 `scenario_id / matchup_id / character_ids[2] / battle_seed`
+- [ ] 若要给该角色补 sandbox/demo 演示，统一改 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 不再写死角色专属命令流
 
 ## 4. 测试最低面
 

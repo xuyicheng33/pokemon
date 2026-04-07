@@ -8,7 +8,7 @@
 |---|---|
 |`battle_logger.gd`|写入与快照完整 `LogEvent` 列表|
 |`log_event_builder.gd`|按 `ChainContext` 统一构造 `LogEvent` 字段|
-|`content_snapshot_cache.gd`|按稳定 `content_snapshot_paths` 签名复用“已加载且已校验”的资源数组，再为每次 session / replay 构造 fresh `BattleContentIndex`|
+|`content_snapshot_cache.gd`|按稳定 `content_snapshot_paths` 签名复用“已加载且已校验”的资源数组，再为每次 session / replay 构造 fresh `BattleContentIndex`；签名同时覆盖递归外部 `.tres/.res` 依赖、formal runtime registry 与内容/validator 脚本|
 |`replay_runner.gd`|按 `ReplayInput` 还原整场对局并产出 `ReplayOutput`|
 |`tests/run_with_gate.sh`|测试闸门：断言失败或引擎错误日志任一命中即失败|
 
@@ -122,6 +122,7 @@
 - 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`，且 `cause_event_id` 不得等于当前日志事件自身 ID）。
 - `run_replay` 使用临时容器隔离执行，不读写活跃会话池；回放完成后释放临时容器。
 - 相同 `content_snapshot_paths` 的重复 session / replay 可以命中 `ContentSnapshotCache`；但 cache 里只允许共享“已校验资源数组”，不允许跨会话共享可变 `BattleContentIndex` 或运行态对象。
+- cache freshness 当前不只看 snapshot 路径本身；只要递归依赖的共享 payload、`config/formal_character_runtime_registry.json`、`src/battle_core/content/**/*.gd` 或 `src/battle_core/content/formal_validators/**/*.gd` 发生变化，都必须重新 miss。
 
 ## 4. Manager 初始化公开契约
 
