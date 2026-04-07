@@ -103,6 +103,15 @@
   - 当前角色级 validator 的调用方式天然就是按资源族在用这批断言，顺着资源族拆分，能在不改调用口的前提下压低 shared helper 体积
   - 先把 owner 收成薄 facade，后续即便再补新的 formal 资源断言，也更容易落到对应资源族 helper，而不是重新长回同一坨 shared 文件
 
+## 0H. formal snapshot support helper 固定拆出 descriptor helper（2026-04-07）
+
+- `FormalCharacterSnapshotTestHelper` owner 现在只保留 content index 装配、断言执行与 facade 转发。
+- descriptor 字段顺序、descriptor 检查构造与 actual/expected 归一化固定下沉到 `tests/support/formal_character_snapshot_descriptor_helper.gd`。
+- 这么定的原因：
+  - snapshot suite 会随着 formal 角色与基线字段继续增长，字段顺序和 descriptor 构造样板如果继续和执行逻辑缠在同一个 helper 里，测试 support 很快又会回到高体量预警区
+  - 这层 support helper 的公共调用口已经稳定，最适合做“owner 薄化 + descriptor 协作者”的内部拆分，而不是让各角色 snapshot suite 自己复制字段顺序与归一化逻辑
+  - 先把 descriptor 逻辑单独收口，后续不论是继续扩角色还是调整 baseline 字段，都能把改动集中在 support 内部，而不是把 snapshot suite 和 support 一起拉长
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

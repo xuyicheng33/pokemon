@@ -31,7 +31,7 @@
 
 - 状态：进行中
 - 目标：
-  - 在不新增第 5 个正式角色、不改四角色数值与平衡的前提下，把扩角前最容易持续返工的七个热点先收口：
+  - 在不新增第 5 个正式角色、不改四角色数值与平衡的前提下，把扩角前最容易持续返工的八个热点先收口：
     - manifest runtime / delivery 视图解耦
     - 角色事实重复维护面收缩
     - `SampleBattleFactory` 家族继续按职责拆分
@@ -39,6 +39,7 @@
     - `BattleResultService` 收口成稳定终局 facade + 内部协作者
     - `BattleCoreManager` 收口成更薄的稳定 facade + session 内部协作者
     - formal shared contract helper 按资源族拆分
+    - formal snapshot support helper 收口成薄 facade + descriptor helper
 - 范围：
   - 第 1 批：runtime loader 不再依赖 delivery/test 字段；manifest/runtime/delivery 合同、gate 与文档同步
   - 第 2 批：收缩 validator / snapshot 等角色事实重复维护面
@@ -47,6 +48,7 @@
   - 第 5 批：拆分 `BattleResultService` 的终局 chain 与 outcome 判定职责
   - 第 6 批：拆分 `BattleCoreManager` 的 session 级 facade 调度职责
   - 第 7 批：拆分 `ContentSnapshotFormalCharacterContractHelper` 的资源族共享断言职责
+  - 第 8 批：拆分 `FormalCharacterSnapshotTestHelper` 的 descriptor 构造职责
 - 当前进度：
   - 第 1 批已完成：manifest runtime / delivery 视图解耦已落地并通过 gate
   - 第 2 批已完成：formal 角色 baseline 已收口到共享描述层，snapshot suite 与 formal validator 的基础事实开始共用同一份 descriptor
@@ -55,6 +57,7 @@
   - 追加整合批已完成：`BattleResultService` owner 已拆出 `battle_result_service_chain_builder.gd + battle_result_service_outcome_resolver.gd`；system/battle_end chain 构建与 victory/surrender/turn limit 判定不再继续和 invalid/runtime fault 落盘缠在一个入口文件里
   - 第 6 批已完成：`BattleCoreManager` owner 已拆出 `battle_core_manager_session_service.gd`；create/read/turn/close 的 session 级 facade 调度不再继续和 dependency guard、端口同步、`build_command/run_replay` 混排在同一个 owner 文件里
   - 第 7 批已完成：`ContentSnapshotFormalCharacterContractHelper` owner 已拆出 `content_snapshot_formal_character_unit_skill_contract_helper.gd + content_snapshot_formal_character_effect_field_contract_helper.gd`；`unit/skill/passive_skill` 与 `effect/field/payload shape` 的共享断言不再继续堆在一个 shared helper 文件里
+  - 第 8 批已完成：`FormalCharacterSnapshotTestHelper` owner 已拆出 `formal_character_snapshot_descriptor_helper.gd`；字段顺序、descriptor 检查构造与 actual/expected 归一化不再继续和 content index 装配、断言执行混排在一个 support helper 里
 - 非范围：
   - 不改四角色玩法语义
   - 不新增正式角色
@@ -117,6 +120,22 @@
   - owner 只保留稳定 facade 与资源族协作者转发
   - unit/skill/passive helper 只负责单位、技能、被动技能的共享断言
   - effect/field helper 只负责效果、领域与 payload shape 的共享断言
+
+### 继续整合：Snapshot Support 瘦身
+
+- `FormalCharacterSnapshotTestHelper` 当前固定采用：
+  - owner：`tests/support/formal_character_snapshot_test_helper.gd`
+  - descriptor helper：`tests/support/formal_character_snapshot_descriptor_helper.gd`
+- 本批保持 snapshot suite 调用口不变：
+  - `build_content_index()`
+  - `build_content_index_for_setup()`
+  - `append_*_checks()`
+  - `run_checks()`
+  - `run_descriptor_checks()`
+  - `build_descriptor_checks()`
+- 当前切分边界：
+  - owner 只保留 content index 装配、断言执行与 facade 转发
+  - descriptor helper 只负责字段顺序、descriptor 检查构造与 actual/expected 归一化
 
 ## 本轮交付结果
 
