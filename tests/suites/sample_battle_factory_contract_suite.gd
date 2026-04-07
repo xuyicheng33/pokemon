@@ -6,6 +6,7 @@ const ManagerContractTestHelperScript := preload("res://tests/support/manager_co
 
 const MISSING_RUNTIME_REGISTRY_PATH := "res://tests/fixtures/missing_formal_runtime_registry.json"
 const MISSING_FORMAL_MATCHUP_CATALOG_PATH := "res://tests/fixtures/missing_formal_matchup_catalog.json"
+const INVALID_DEMO_REPLAY_CATALOG_PATH := "res://tests/fixtures/invalid_demo_replay_catalog.json"
 
 var _helper = ManagerContractTestHelperScript.new()
 
@@ -14,6 +15,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("sample_factory_legacy_demo_ignores_formal_runtime_registry_failure", failures, Callable(self, "_test_legacy_demo_ignores_formal_runtime_registry_failure").bind(harness))
 	runner.run_test("sample_factory_baseline_flow_ignores_formal_matchup_catalog_failure", failures, Callable(self, "_test_baseline_flow_ignores_formal_matchup_catalog_failure").bind(harness))
 	runner.run_test("sample_factory_demo_default_profile_contract", failures, Callable(self, "_test_demo_default_profile_contract").bind(harness))
+	runner.run_test("sample_factory_demo_invalid_default_profile_contract", failures, Callable(self, "_test_demo_invalid_default_profile_contract").bind(harness))
 	runner.run_test("sample_factory_demo_switch_command_replay_contract", failures, Callable(self, "_test_demo_switch_command_replay_contract").bind(harness))
 
 func _test_baseline_setup_ignores_formal_runtime_registry_failure(harness) -> Dictionary:
@@ -94,6 +96,29 @@ func _test_demo_default_profile_contract(harness) -> Dictionary:
 		return harness.fail_result("default demo profile should reuse the explicit kashimo battle_seed")
 	if default_input.command_stream.size() != explicit_input.command_stream.size():
 		return harness.fail_result("default demo profile should reuse the explicit kashimo command stream")
+	return harness.pass_result()
+
+func _test_demo_invalid_default_profile_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	sample_factory.configure_demo_catalog_path_override(INVALID_DEMO_REPLAY_CATALOG_PATH)
+	var default_profile_result: Dictionary = sample_factory.default_demo_profile_id_result()
+	if bool(default_profile_result.get("ok", true)):
+		return harness.fail_result("invalid demo catalog should fail fast when default_profile_id drifts")
+	if String(default_profile_result.get("error_code", "")) != ErrorCodesScript.INVALID_REPLAY_INPUT:
+		return harness.fail_result("invalid demo catalog should report invalid_replay_input for bad default_profile_id")
+	if String(default_profile_result.get("error_message", "")).find("default_profile_id") == -1:
+		return harness.fail_result("invalid demo catalog should mention default_profile_id drift")
+	var replay_result: Dictionary = sample_factory.build_demo_replay_input_result(manager)
+	if bool(replay_result.get("ok", true)):
+		return harness.fail_result("build_demo_replay_input_result should not fall back to kashimo when default_profile_id is invalid")
+	if String(replay_result.get("error_message", "")).find("default_profile_id") == -1:
+		return harness.fail_result("default demo replay build failure should preserve default_profile_id error")
 	return harness.pass_result()
 
 func _test_demo_switch_command_replay_contract(harness) -> Dictionary:

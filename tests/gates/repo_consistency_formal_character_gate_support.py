@@ -6,6 +6,38 @@ from pathlib import Path
 from repo_consistency_common import GateContext
 
 
+def contract_field_list(ctx: GateContext, bucket: dict, field_key: str, label: str, *, required: bool = True) -> list[str]:
+    values = bucket.get(field_key, [])
+    if not isinstance(values, list):
+        ctx.failures.append(f"{label} must be an array")
+        return []
+    normalized: list[str] = []
+    for raw_value in values:
+        value = str(raw_value).strip()
+        if not value:
+            ctx.failures.append(f"{label} contains empty field name")
+            continue
+        normalized.append(value)
+    if required and not normalized:
+        ctx.failures.append(f"{label} must not be empty")
+    return normalized
+
+
+def validate_required_contract_fields(
+    ctx: GateContext,
+    entry: dict,
+    required_string_fields: list[str],
+    required_array_fields: list[str],
+    entry_label: str,
+) -> None:
+    for field_name in required_string_fields:
+        if not str(entry.get(field_name, "")).strip():
+            ctx.failures.append(f"{entry_label} missing {field_name}")
+    for field_name in required_array_fields:
+        if not isinstance(entry.get(field_name, None), list):
+            ctx.failures.append(f"{entry_label} missing {field_name}")
+
+
 def validator_test_prefix(script_path: str) -> str:
     stem = Path(script_path).stem
     match = re.fullmatch(r"content_snapshot_formal_(.+)_validator", stem)

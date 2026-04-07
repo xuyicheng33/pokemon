@@ -1,0 +1,19 @@
+{
+  "default_profile_id": "missing_profile",
+  "profiles": {
+    "kashimo": {
+      "matchup_id": "kashimo_vs_sample",
+      "battle_seed": 9101,
+      "commands": [
+        {
+          "turn_index": 1,
+          "command_type": "skill",
+          "command_source": "manual",
+          "side_id": "P1",
+          "actor_public_id": "P1-A",
+          "skill_id": "kashimo_raiken"
+        }
+      ]
+    }
+  }
+}

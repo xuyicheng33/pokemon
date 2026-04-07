@@ -3,8 +3,10 @@ class_name SampleBattleFactory
 
 const BaselineMatchupCatalogScript := preload("res://src/composition/sample_battle_factory_baseline_matchup_catalog.gd")
 const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
+const DemoInputBuilderScript := preload("res://src/composition/sample_battle_factory_demo_input_builder.gd")
 const DeliveryRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_delivery_registry_loader.gd")
 const DemoCatalogScript := preload("res://src/composition/sample_battle_factory_demo_catalog.gd")
+const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
 const MatchupCatalogScript := preload("res://src/composition/sample_battle_factory_matchup_catalog.gd")
 const ReplayBuilderScript := preload("res://src/composition/sample_battle_factory_replay_builder.gd")
 const RuntimeRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_runtime_registry_loader.gd")
@@ -13,8 +15,10 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var _baseline_matchup_catalog = BaselineMatchupCatalogScript.new()
 var _content_paths_helper = ContentPathsHelperScript.new()
+var _demo_input_builder = DemoInputBuilderScript.new()
 var _delivery_registry_loader = DeliveryRegistryLoaderScript.new()
 var _demo_catalog = DemoCatalogScript.new()
+var _formal_access = FormalAccessScript.new()
 var _formal_matchup_catalog = MatchupCatalogScript.new()
 var _replay_builder = ReplayBuilderScript.new()
 var _runtime_registry_loader = RuntimeRegistryLoaderScript.new()
@@ -23,6 +27,14 @@ var last_error_code: Variant = null
 var last_error_message: String = ""
 
 func _init() -> void:
+	_demo_input_builder.baseline_matchup_catalog = _baseline_matchup_catalog
+	_demo_input_builder.content_paths_helper = _content_paths_helper
+	_demo_input_builder.demo_catalog = _demo_catalog
+	_demo_input_builder.replay_builder = _replay_builder
+	_formal_access.delivery_registry_loader = _delivery_registry_loader
+	_formal_access.formal_matchup_catalog = _formal_matchup_catalog
+	_formal_access.runtime_registry_loader = _runtime_registry_loader
+	_formal_access.setup_builder = _setup_builder
 	_refresh_baseline_unit_definition_ids()
 
 func configure_registry_path_override(path: String) -> void:
@@ -44,7 +56,13 @@ func configure_demo_catalog_path_override(path: String) -> void:
 	_demo_catalog.catalog_path_override = path
 
 func default_demo_profile_id() -> String:
-	return _demo_catalog.default_profile_id()
+	var result := default_demo_profile_id_result()
+	if not bool(result.get("ok", false)):
+		return ""
+	return String(result.get("data", "")).strip_edges()
+
+func default_demo_profile_id_result() -> Dictionary:
+	return _record_result(_demo_catalog.default_profile_id_result())
 
 func error_state() -> Dictionary:
 	return {
@@ -107,117 +125,43 @@ func build_matchup_setup_result(
 	return _record_result(_ok_result(battle_setup))
 
 func formal_character_ids_result() -> Dictionary:
-	return _formal_ids_result("character_id")
+	return _record_result(_formal_access.formal_ids_result("character_id"))
 
 func formal_unit_definition_ids_result() -> Dictionary:
-	return _formal_ids_result("unit_definition_id")
-
-func _formal_ids_result(entry_key: String) -> Dictionary:
-	var ids := PackedStringArray()
-	var entries_result := _runtime_registry_loader.load_entries_result()
-	if not bool(entries_result.get("ok", false)):
-		return _record_result(entries_result)
-	for raw_entry in entries_result.get("data", []):
-		var entry: Dictionary = raw_entry
-		var entry_id := str(entry.get(entry_key, "")).strip_edges()
-		if entry_id.is_empty():
-			continue
-		ids.append(entry_id)
-	return _record_result(_ok_result(ids))
+	return _record_result(_formal_access.formal_ids_result("unit_definition_id"))
 
 func build_formal_character_setup_result(character_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	var entry_result := _runtime_registry_loader.find_entry_result(character_id)
-	if not bool(entry_result.get("ok", false)):
-		return _record_result(entry_result)
-	var entry: Dictionary = entry_result.get("data", {})
-	var matchup_id := str(entry.get("formal_setup_matchup_id", "")).strip_edges()
-	if matchup_id.is_empty():
-		return _record_result(_error_result(
-			ErrorCodesScript.INVALID_CONTENT_SNAPSHOT,
-			"SampleBattleFactory registry[%s] missing formal_setup_matchup_id" % character_id
-		))
-	var setup_result := _formal_matchup_catalog.build_setup_result(_setup_builder, matchup_id, side_regular_skill_overrides)
-	if not bool(setup_result.get("ok", false)):
-		return _record_result(_error_result(
-			str(setup_result.get("error_code", ErrorCodesScript.INVALID_BATTLE_SETUP)),
-			"SampleBattleFactory registry[%s] failed to build formal setup matchup %s: %s" % [
-				character_id,
-				matchup_id,
-				String(setup_result.get("error_message", "unknown error")),
-			]
-		))
-	return _record_result(_ok_result(setup_result.get("data", null)))
+	return _record_result(_formal_access.build_formal_character_setup_result(character_id, side_regular_skill_overrides))
 
 func formal_pair_smoke_cases_result() -> Dictionary:
-	var runtime_entries_result := _runtime_registry_loader.load_entries_result()
-	if not bool(runtime_entries_result.get("ok", false)):
-		return _record_result(runtime_entries_result)
-	var delivery_entries_result := _delivery_registry_loader.load_entries_result()
-	if not bool(delivery_entries_result.get("ok", false)):
-		return _record_result(delivery_entries_result)
-	return _record_result(_formal_matchup_catalog.formal_pair_smoke_cases_result(
-		runtime_entries_result.get("data", []),
-		delivery_entries_result.get("data", [])
-	))
+	return _record_result(_formal_access.formal_pair_smoke_cases_result())
 
 func formal_pair_surface_cases_result() -> Dictionary:
-	var runtime_entries_result := _runtime_registry_loader.load_entries_result()
-	if not bool(runtime_entries_result.get("ok", false)):
-		return _record_result(runtime_entries_result)
-	var delivery_entries_result := _delivery_registry_loader.load_entries_result()
-	if not bool(delivery_entries_result.get("ok", false)):
-		return _record_result(delivery_entries_result)
-	return _record_result(_formal_matchup_catalog.formal_pair_surface_cases_result(
-		runtime_entries_result.get("data", []),
-		delivery_entries_result.get("data", [])
-	))
+	return _record_result(_formal_access.formal_pair_surface_cases_result())
 
 func formal_pair_interaction_cases_result() -> Dictionary:
-	return _record_result(_formal_matchup_catalog.formal_pair_interaction_cases_result())
+	return _record_result(_formal_access.formal_pair_interaction_cases_result())
 
 func build_sample_setup_result(side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	return _record_result(_baseline_matchup_catalog.build_setup_result(_setup_builder, "sample_default", side_regular_skill_overrides))
 
 func build_demo_replay_input_result(command_port, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	return build_demo_replay_input_for_profile_result(command_port, default_demo_profile_id(), side_regular_skill_overrides)
+	return _record_result(_demo_input_builder.build_demo_replay_input_result(
+		self,
+		command_port,
+		side_regular_skill_overrides
+	))
 
 func build_demo_replay_input_for_profile_result(command_port, demo_profile_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	var profile_result: Dictionary = _demo_catalog.profile_result(demo_profile_id)
-	if not bool(profile_result.get("ok", false)):
-		return _record_result(profile_result)
-	var profile: Dictionary = profile_result.get("data", {})
-	var matchup_id := String(profile.get("matchup_id", "")).strip_edges()
-	var battle_setup_result := build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides)
-	if not bool(battle_setup_result.get("ok", false)):
-		return _record_result(_error_result(
-			str(battle_setup_result.get("error_code", ErrorCodesScript.INVALID_BATTLE_SETUP)),
-			"SampleBattleFactory demo replay profile[%s] failed to build matchup %s: %s" % [
-				demo_profile_id,
-				matchup_id,
-				String(battle_setup_result.get("error_message", "unknown error")),
-			]
-		))
-	var battle_setup = battle_setup_result.get("data", null)
-	var snapshot_paths_result := _content_paths_helper.build_base_snapshot_paths(ContentPathsHelperScript.BASE_CONTENT_SNAPSHOT_DIRS) if _baseline_matchup_catalog.has_matchup(matchup_id) else content_snapshot_paths_for_setup_result(battle_setup)
-	if not bool(snapshot_paths_result.get("ok", false)):
-		return _record_result(snapshot_paths_result)
-	return _record_result(_replay_builder.build_replay_input_result(
+	return _record_result(_demo_input_builder.build_demo_replay_input_for_profile_result(
+		self,
 		command_port,
-		snapshot_paths_result,
-		battle_setup,
-		int(profile.get("battle_seed", null)),
-		profile.get("commands", null)
+		demo_profile_id,
+		side_regular_skill_overrides
 	))
 
 func build_passive_item_demo_replay_input_result(command_port) -> Dictionary:
-	var battle_setup_result := _baseline_matchup_catalog.build_setup_result(_setup_builder, "passive_item_vs_sample")
-	if not bool(battle_setup_result.get("ok", false)):
-		return _record_result(battle_setup_result)
-	var battle_setup = battle_setup_result.get("data", null)
-	var snapshot_paths_result := _content_paths_helper.build_base_snapshot_paths(ContentPathsHelperScript.BASE_CONTENT_SNAPSHOT_DIRS)
-	if not bool(snapshot_paths_result.get("ok", false)):
-		return _record_result(snapshot_paths_result)
-	return _record_result(_replay_builder.build_passive_item_demo_replay_input_result(command_port, snapshot_paths_result, battle_setup))
+	return _record_result(_demo_input_builder.build_passive_item_demo_replay_input_result(self, command_port))
 
 func _refresh_baseline_unit_definition_ids() -> void:
 	var baseline_units_result: Dictionary = _baseline_matchup_catalog.baseline_unit_definition_ids_result()

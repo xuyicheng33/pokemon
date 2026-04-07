@@ -25,7 +25,14 @@ func _ready() -> void:
     if sample_factory == null:
         _fail_startup("Battle sandbox failed to construct sample battle factory")
         return
-    var demo_mode := _resolve_demo_mode()
+    var demo_mode_result := _resolve_demo_mode_result(sample_factory)
+    if not bool(demo_mode_result.get("ok", false)):
+        _fail_startup("Battle sandbox failed to resolve demo profile: %s" % str(demo_mode_result.get("error_message", "unknown error")))
+        return
+    var demo_mode := String(demo_mode_result.get("data", "")).strip_edges()
+    if demo_mode.is_empty():
+        _fail_startup("Battle sandbox resolved empty demo profile")
+        return
     var replay_input = _build_replay_input_for_demo_mode(sample_factory, demo_mode)
     if _startup_failed:
         return
@@ -38,15 +45,33 @@ func _ready() -> void:
         _fail_startup("Battle sandbox replay failed: %s" % str(replay_envelope.get("error_message", "unknown error")))
         return
 
-func _resolve_demo_mode() -> String:
+func _resolve_demo_mode_result(sample_factory) -> Dictionary:
     for raw_arg in OS.get_cmdline_user_args():
         var arg := String(raw_arg).strip_edges()
         if arg.begins_with("demo="):
-            return String(arg.split("=", true, 1)[1]).strip_edges()
-    var sample_factory: Variant = SampleBattleFactoryScript.new()
-    if sample_factory != null and sample_factory.has_method("default_demo_profile_id"):
-        return String(sample_factory.default_demo_profile_id()).strip_edges()
-    return "kashimo"
+            return {
+                "ok": true,
+                "data": String(arg.split("=", true, 1)[1]).strip_edges(),
+                "error_message": null,
+            }
+    if sample_factory == null or not sample_factory.has_method("default_demo_profile_id_result"):
+        return {
+            "ok": false,
+            "data": null,
+            "error_message": "sample factory missing default_demo_profile_id_result",
+        }
+    var default_profile_result: Dictionary = sample_factory.default_demo_profile_id_result()
+    if not bool(default_profile_result.get("ok", false)):
+        return {
+            "ok": false,
+            "data": null,
+            "error_message": default_profile_result.get("error_message", "unknown error"),
+        }
+    return {
+        "ok": true,
+        "data": String(default_profile_result.get("data", "")).strip_edges(),
+        "error_message": null,
+    }
 
 func _build_replay_input_for_demo_mode(sample_factory, demo_mode: String) -> Variant:
     var replay_result: Dictionary = sample_factory.build_demo_replay_input_for_profile_result(manager, demo_mode)

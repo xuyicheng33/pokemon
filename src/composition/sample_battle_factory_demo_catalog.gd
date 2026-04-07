@@ -7,10 +7,16 @@ const DEFAULT_CATALOG_PATH := "res://config/demo_replay_catalog.json"
 var catalog_path_override: String = ""
 
 func default_profile_id() -> String:
-	var catalog_result := _load_catalog_result()
+	var catalog_result := default_profile_id_result()
 	if not bool(catalog_result.get("ok", false)):
 		return ""
-	return String(catalog_result.get("data", {}).get("default_profile_id", "")).strip_edges()
+	return String(catalog_result.get("data", "")).strip_edges()
+
+func default_profile_id_result() -> Dictionary:
+	var catalog_result := _load_catalog_result()
+	if not bool(catalog_result.get("ok", false)):
+		return catalog_result
+	return _ok_result(String(catalog_result.get("data", {}).get("default_profile_id", "")).strip_edges())
 
 func profile_result(profile_id: String) -> Dictionary:
 	var catalog_result := _load_catalog_result()
@@ -45,7 +51,7 @@ func _load_catalog_result() -> Dictionary:
 			ErrorCodesScript.INVALID_REPLAY_INPUT,
 			"SampleBattleFactory demo replay catalog missing dictionary profiles: %s" % resolved_catalog_path
 		)
-	var default_profile_id := String(parsed.get("default_profile_id", "kashimo")).strip_edges()
+	var default_profile_id := String(parsed.get("default_profile_id", "")).strip_edges()
 	if default_profile_id.is_empty() or not profiles.has(default_profile_id):
 		return _error_result(
 			ErrorCodesScript.INVALID_REPLAY_INPUT,

@@ -9,6 +9,8 @@ from repo_consistency_common import GateContext
 
 
 ctx = GateContext()
+BASELINE_MATCHUP_CATALOG_PATH = "config/sample_matchup_catalog.json"
+FORMAL_MATCHUP_CATALOG_PATH = "config/formal_matchup_catalog.json"
 
 src_count = ctx.gd_line_count("src")
 tests_count = ctx.gd_line_count("tests")
@@ -159,5 +161,21 @@ ctx.require_absent("tests/README.md", "policy_decision_suite.gd", "removed auto-
 ctx.require_absent("tests/README.md", "gojo_sukuna_batch_probe.gd", "removed batch simulation doc")
 ctx.require_contains("tests/run_with_gate.sh", "check_suite_reachability.sh", "suite reachability gate wiring")
 ctx.require_contains("tests/check_architecture_constraints.sh", "architecture_wiring_graph_gate.py", "runtime wiring DAG gate wiring")
+
+baseline_matchup_catalog = ctx.load_json_object(BASELINE_MATCHUP_CATALOG_PATH, "baseline matchup catalog")
+formal_matchup_catalog = ctx.load_json_object(FORMAL_MATCHUP_CATALOG_PATH, "formal matchup catalog")
+baseline_matchups = baseline_matchup_catalog.get("matchups", {})
+formal_matchups = formal_matchup_catalog.get("matchups", {})
+if isinstance(baseline_matchups, dict) and isinstance(formal_matchups, dict):
+    overlap = sorted(
+        matchup_id
+        for matchup_id in {str(raw_id).strip() for raw_id in baseline_matchups.keys()}
+        if matchup_id and matchup_id in {str(raw_id).strip() for raw_id in formal_matchups.keys()}
+    )
+    if overlap:
+        ctx.failures.append(
+            "baseline/formal matchup catalog must not share matchup_id because SampleBattleFactory baseline lookup wins first: "
+            + ", ".join(overlap)
+        )
 
 ctx.finish("surface wiring, regression anchors, and README/test docs are aligned")

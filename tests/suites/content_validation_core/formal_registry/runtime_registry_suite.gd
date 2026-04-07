@@ -65,7 +65,6 @@ func _test_formal_character_runtime_registry_duplicate_unit_definition_guard_con
 	return harness.pass_result()
 
 func _test_formal_character_runtime_registry_required_field_guard_contract(harness) -> Dictionary:
-	var runtime_registry_path := "user://formal_character_runtime_registry_missing_field_fixture.json"
 	var bad_cases: Array = [
 		{
 			"missing_key": "unit_definition_id",
@@ -82,13 +81,15 @@ func _test_formal_character_runtime_registry_required_field_guard_contract(harne
 	]
 	for raw_case in bad_cases:
 		var bad_case: Dictionary = raw_case
+		var missing_key := String(bad_case.get("missing_key", "")).strip_edges()
+		var runtime_registry_path := "user://formal_character_runtime_registry_missing_field_%s_fixture.json" % missing_key
 		var entry := _build_runtime_registry_entry(
 			"gojo_alias",
 			"gojo_satoru",
 			"gojo_alias_vs_sukuna_alias",
 			["content/units/gojo/gojo_satoru.tres"]
 		)
-		entry.erase(String(bad_case.get("missing_key", "")))
+		entry.erase(missing_key)
 		var runtime_registry_payload := JSON.stringify([entry], "  ")
 		if not _write_json_fixture(runtime_registry_path, runtime_registry_payload):
 			return harness.fail_result("failed to write missing-field runtime registry fixture")

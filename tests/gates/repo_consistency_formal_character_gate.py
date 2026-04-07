@@ -10,37 +10,13 @@ from repo_consistency_formal_character_gate_pairs import validate_pair_catalog
 from repo_consistency_formal_character_gate_support import (
     collect_scope_tree,
     collect_suite_refs,
+    contract_field_list,
     scan_legacy_registry_refs,
     scan_legacy_sample_factory_calls,
     scan_pair_interaction_support_regressions,
+    validate_required_contract_fields,
     validator_test_prefix,
 )
-
-
-def _contract_field_list(ctx: GateContext, bucket: dict, field_key: str, label: str, *, required: bool = True) -> list[str]:
-    values = bucket.get(field_key, [])
-    if not isinstance(values, list):
-        ctx.failures.append(f"{label} must be an array")
-        return []
-    normalized: list[str] = []
-    for raw_value in values:
-        value = str(raw_value).strip()
-        if not value:
-            ctx.failures.append(f"{label} contains empty field name")
-            continue
-        normalized.append(value)
-    if required and not normalized:
-        ctx.failures.append(f"{label} must not be empty")
-    return normalized
-
-
-def _validate_required_contract_fields(ctx: GateContext, entry: dict, required_string_fields: list[str], required_array_fields: list[str], entry_label: str) -> None:
-    for field_name in required_string_fields:
-        if not str(entry.get(field_name, "")).strip():
-            ctx.failures.append(f"{entry_label} missing {field_name}")
-    for field_name in required_array_fields:
-        if not isinstance(entry.get(field_name, None), list):
-            ctx.failures.append(f"{entry_label} missing {field_name}")
 
 
 ctx = GateContext()
@@ -54,6 +30,7 @@ PAIR_SMOKE_SUITE_PATH = "tests/suites/formal_character_pair_smoke_suite.gd"
 PAIR_INTERACTION_SUITE_PATH = "tests/suites/formal_character_pair_smoke/interaction_suite.gd"
 PAIR_INTERACTION_SUPPORT_PATH = "tests/suites/formal_character_pair_smoke/interaction_support.gd"
 PAIR_INTERACTION_SCENARIO_REGISTRY_PATH = "tests/support/formal_pair_interaction/scenario_registry.gd"
+FORMAL_ACCESS_SCRIPT_PATH = "src/composition/sample_battle_factory_formal_access.gd"
 RUNTIME_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_runtime_registry_loader.gd"
 DELIVERY_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_delivery_registry_loader.gd"
 DELIVERY_REGISTRY_HELPER_PATH = "tests/support/formal_character_registry.gd"
@@ -82,12 +59,12 @@ matchups = matchup_catalog.get("matchups", {})
 pair_interaction_cases = matchup_catalog.get("pair_interaction_cases", [])
 runtime_contract_bucket = formal_registry_contracts.get("runtime_registry", {})
 delivery_contract_bucket = formal_registry_contracts.get("delivery_registry", {})
-runtime_required_string_fields = _contract_field_list(ctx, runtime_contract_bucket, "required_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.runtime_registry.required_string_fields")
-runtime_required_array_fields = _contract_field_list(ctx, runtime_contract_bucket, "required_array_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.runtime_registry.required_array_fields")
-_contract_field_list(ctx, runtime_contract_bucket, "optional_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.runtime_registry.optional_string_fields", required=False)
-delivery_required_string_fields = _contract_field_list(ctx, delivery_contract_bucket, "required_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.delivery_registry.required_string_fields")
-delivery_required_array_fields = _contract_field_list(ctx, delivery_contract_bucket, "required_array_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.delivery_registry.required_array_fields")
-_contract_field_list(ctx, delivery_contract_bucket, "optional_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.delivery_registry.optional_string_fields", required=False)
+runtime_required_string_fields = contract_field_list(ctx, runtime_contract_bucket, "required_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.runtime_registry.required_string_fields")
+runtime_required_array_fields = contract_field_list(ctx, runtime_contract_bucket, "required_array_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.runtime_registry.required_array_fields")
+contract_field_list(ctx, runtime_contract_bucket, "optional_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.runtime_registry.optional_string_fields", required=False)
+delivery_required_string_fields = contract_field_list(ctx, delivery_contract_bucket, "required_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.delivery_registry.required_string_fields")
+delivery_required_array_fields = contract_field_list(ctx, delivery_contract_bucket, "required_array_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.delivery_registry.required_array_fields")
+contract_field_list(ctx, delivery_contract_bucket, "optional_string_fields", f"{FORMAL_REGISTRY_CONTRACTS_PATH}.delivery_registry.optional_string_fields", required=False)
 
 if (ctx.root / LEGACY_REGISTRY_PATH).exists():
     ctx.failures.append(f"{LEGACY_REGISTRY_PATH} must be removed after runtime/delivery registry split")
@@ -121,8 +98,11 @@ if "validate_required_fields_result" not in delivery_registry_loader_text:
     ctx.failures.append(f"{DELIVERY_REGISTRY_LOADER_PATH} must validate delivery registry fields via shared contracts")
 
 sample_factory_text = ctx.read_text("src/composition/sample_battle_factory.gd")
-if 'entry.get("formal_setup_matchup_id"' not in sample_factory_text:
-    ctx.failures.append("SampleBattleFactory.build_formal_character_setup_result must read formal_setup_matchup_id from runtime registry")
+formal_access_text = ctx.read_text(FORMAL_ACCESS_SCRIPT_PATH)
+if 'preload("res://%s"' % FORMAL_ACCESS_SCRIPT_PATH not in sample_factory_text:
+    ctx.failures.append(f"SampleBattleFactory must delegate formal setup orchestration via {FORMAL_ACCESS_SCRIPT_PATH}")
+if 'entry.get("formal_setup_matchup_id"' not in formal_access_text:
+    ctx.failures.append("SampleBattleFactory formal setup helper must read formal_setup_matchup_id from runtime registry")
 for legacy_wrapper in [
     "func build_setup_from_side_specs(",
     "func content_snapshot_paths(",
@@ -181,7 +161,7 @@ for entry in runtime_registry:
     formal_setup_matchup_id = str(entry.get("formal_setup_matchup_id", "")).strip()
     required_content_paths = entry.get("required_content_paths", [])
     validator_script_path = str(entry.get("content_validator_script_path", "")).strip()
-    _validate_required_contract_fields(
+    validate_required_contract_fields(
         ctx,
         entry,
         runtime_required_string_fields,
@@ -240,7 +220,7 @@ for entry in delivery_registry:
     required_test_names = entry.get("required_test_names", [])
     design_needles = entry.get("design_needles", [])
     adjustment_needles = entry.get("adjustment_needles", [])
-    _validate_required_contract_fields(
+    validate_required_contract_fields(
         ctx,
         entry,
         delivery_required_string_fields,

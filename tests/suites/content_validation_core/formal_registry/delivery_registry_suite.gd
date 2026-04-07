@@ -4,7 +4,6 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("formal_character_delivery_registry_required_field_guard_contract", failures, Callable(self, "_test_formal_character_delivery_registry_required_field_guard_contract").bind(harness))
 
 func _test_formal_character_delivery_registry_required_field_guard_contract(harness) -> Dictionary:
-	var delivery_registry_path := "user://formal_character_delivery_registry_missing_field_fixture.json"
 	var delivery_registry := FormalCharacterRegistryScript.new()
 	var bad_cases: Array = [
 		{
@@ -46,6 +45,8 @@ func _test_formal_character_delivery_registry_required_field_guard_contract(harn
 	]
 	for raw_case in bad_cases:
 		var bad_case: Dictionary = raw_case
+		var missing_key := String(bad_case.get("missing_key", "")).strip_edges()
+		var delivery_registry_path := "user://formal_character_delivery_registry_missing_field_%s_fixture.json" % missing_key
 		var entry := _build_delivery_registry_entry(
 			"gojo_alias",
 			"Gojo Alias",
@@ -58,7 +59,7 @@ func _test_formal_character_delivery_registry_required_field_guard_contract(harn
 			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
 			["anchor:gojo.adjust.tests-impacted"]
 		)
-		entry.erase(String(bad_case.get("missing_key", "")))
+		entry.erase(missing_key)
 		var delivery_registry_payload := JSON.stringify([entry], "  ")
 		if not _write_json_fixture(delivery_registry_path, delivery_registry_payload):
 			return harness.fail_result("failed to write missing-field delivery registry fixture")

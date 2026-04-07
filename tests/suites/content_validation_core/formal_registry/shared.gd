@@ -11,6 +11,8 @@ func _write_json_fixture(path: String, payload: String) -> bool:
 	if file == null:
 		return false
 	file.store_string(payload)
+	file.flush()
+	file.close()
 	return true
 
 func _setup_signature(battle_setup) -> Array:

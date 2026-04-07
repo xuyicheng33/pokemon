@@ -12,6 +12,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("same_side_active_domain_recast_block_contract", failures, Callable(self, "_test_same_side_active_domain_recast_block_contract").bind(harness))
 	runner.run_test("active_domain_missing_creator_fails_fast_contract", failures, Callable(self, "_test_active_domain_missing_creator_fails_fast_contract").bind(harness))
 	runner.run_test("active_domain_missing_creator_legal_actions_fail_fast_contract", failures, Callable(self, "_test_active_domain_missing_creator_legal_actions_fail_fast_contract").bind(harness))
+	runner.run_test("active_domain_inactive_creator_fails_fast_contract", failures, Callable(self, "_test_active_domain_inactive_creator_fails_fast_contract").bind(harness))
 	runner.run_test("active_field_missing_creator_local_guard_contract", failures, Callable(self, "_test_active_field_missing_creator_local_guard_contract").bind(harness))
 	runner.run_test("same_side_domain_recast_main_path_fails_fast_contract", failures, Callable(self, "_test_same_side_domain_recast_main_path_fails_fast_contract").bind(harness))
 
@@ -86,6 +87,31 @@ func _test_active_domain_missing_creator_legal_actions_fail_fast_contract(harnes
 		return harness.fail_result("legal_action_service should fail-fast instead of treating broken domain state as no active domain")
 	if core.service("legal_action_service").last_error_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
 		return harness.fail_result("broken active domain state should surface invalid_state_corruption in legal_action_service")
+	return harness.pass_result()
+
+func _test_active_domain_inactive_creator_fails_fast_contract(harness) -> Dictionary:
+	var state_payload = _helper.build_gojo_vs_sukuna_state(harness, 22133)
+	if state_payload.has("error"):
+		return harness.fail_result(str(state_payload["error"]))
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var creator_unit = battle_state.get_side("P1").get_active_unit()
+	if creator_unit == null:
+		return harness.fail_result("missing creator unit for inactive creator guard contract")
+	var invalid_field = FieldStateScript.new()
+	invalid_field.field_def_id = "gojo_unlimited_void_field"
+	invalid_field.instance_id = "test_invalid_domain_field_inactive_creator"
+	invalid_field.creator = creator_unit.unit_instance_id
+	invalid_field.remaining_turns = 2
+	battle_state.field_state = invalid_field
+	creator_unit.current_hp = 0
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		_helper.build_wait_command(core, 1, "P1", "P1-A"),
+		_helper.build_wait_command(core, 1, "P2", "P2-A"),
+	])
+	if not battle_state.battle_result.finished or battle_state.battle_result.reason != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+		return harness.fail_result("active domain with inactive creator should fail-fast as invalid_state_corruption")
 	return harness.pass_result()
 
 func _test_active_field_missing_creator_local_guard_contract(harness) -> Dictionary:
