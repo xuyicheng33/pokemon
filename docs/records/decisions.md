@@ -83,6 +83,16 @@
   - `BattleResultService` 之前同时承担 invalid/runtime fault 落盘、chain 构造、胜负/投降/turn limit 判定与 battle end 日志，继续扩 turn 规则时最容易反复改同一文件
   - 先把 chain builder 与 outcome resolver 固化成内部协作者，可以在不改外部语义的前提下继续压缩 turn 子域返工面，并给后续是否重构 `battle_core_manager` 留出更清晰的评估边界
 
+## 0F. BattleCoreManager owner 继续瘦身为稳定 facade（2026-04-07）
+
+- `BattleCoreManager` owner 现在只保留依赖守卫、`build_command / run_replay`、session 计数、端口同步与 dispose。
+- session 建立与 replay 容器编排继续固定留在 `src/battle_core/facades/battle_core_manager_container_service.gd`。
+- `create_session / get_legal_actions / run_turn / get_public_snapshot / get_event_log_snapshot / close_session` 这类 session 级 facade 调度固定下沉到 `src/battle_core/facades/battle_core_manager_session_service.gd`。
+- 这么定的原因：
+  - `BattleCoreManager` 是唯一稳定 facade，不能为了降行数去拆出新的公开边界，但 owner 里继续堆 session 调度会让 facade 本体越来越像混合大文件
+  - 真正重复增长的是 session 查找、runtime guard、公开快照/事件日志回包这类 session 级样板，而不是 `build_command` 或 replay 入口本身
+  - 先把 session 调度固化成内部协作者，可以在不改 facade contract 的前提下压缩 owner 体积，并把后续 manager 热点评估收敛到更清楚的 container/session 两条内部边界
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。
