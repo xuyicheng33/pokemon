@@ -124,7 +124,9 @@
       "formal_sukuna_validator_bad_case_contract",
       "formal_sukuna_validator_reverse_bad_case_contract",
       "formal_sukuna_validator_regen_surface_bad_case_contract",
-      "sukuna_manager_kamado_on_exit_public_contract"
+      "sukuna_manager_kamado_on_exit_public_contract",
+      "sukuna_manager_hatsu_public_contract",
+      "sukuna_manager_teach_love_public_contract"
     ],
     "design_needles": [
       "anchor:sukuna.design.domain-expire-burst-kept",
@@ -186,6 +188,8 @@
       "kashimo_manager_smoke_contract",
       "kashimo_manager_amber_public_contract",
       "kashimo_manager_water_leak_public_contract",
+      "kashimo_manager_feedback_strike_public_contract",
+      "kashimo_manager_kyokyo_public_contract",
       "formal_kashimo_validator_bad_case_contract",
       "formal_kashimo_validator_kyokyo_bad_case_contract",
       "formal_kashimo_validator_charge_mark_bad_case_contract",
