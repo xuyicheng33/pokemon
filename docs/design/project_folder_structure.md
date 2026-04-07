@@ -58,7 +58,7 @@
 |目录|职责|
 |---|---|
 |`content/`|战斗规则资源定义、正式角色资源与共享 payload 资源|
-|`config/`|工程级静态配置；当前包含 `formal_character_runtime_registry.json / formal_character_delivery_registry.json / formal_matchup_catalog.json / demo_replay_catalog.json`|
+|`config/`|工程级静态配置；当前包含 `formal_character_manifest.json / sample_matchup_catalog.json / demo_replay_catalog.json`|
 |`content/battle_formats`|战斗格式定义资源|
 |`content/samples`|最小样例资源与样例对局资源|
 |`content/shared`|供正式角色跨资源复用的共享 payload / helper Resource，不直接作为顶层 snapshot 注册项|

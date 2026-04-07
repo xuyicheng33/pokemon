@@ -1,86 +1,24 @@
 extends RefCounted
 class_name ContentSnapshotFormalCharacterRegistry
 
-const FormalRegistryContractsScript := preload("res://src/shared/formal_registry_contracts.gd")
-const REGISTRY_PATH := "res://config/formal_character_runtime_registry.json"
+const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
+const REGISTRY_PATH := "res://config/formal_character_manifest.json"
 
 static func load_entries() -> Dictionary:
 	return load_entries_from_path(REGISTRY_PATH)
 
 static func load_entries_from_path(registry_path: String) -> Dictionary:
-	var resolved_registry_path := _resolve_registry_path(registry_path)
-	var file := FileAccess.open(resolved_registry_path, FileAccess.READ)
-	if file == null:
+	var manifest = FormalCharacterManifestScript.new()
+	manifest.manifest_path_override = _resolve_registry_path(registry_path)
+	var entries_result := manifest.build_runtime_entries_result()
+	if bool(entries_result.get("ok", false)):
 		return {
-			"entries": [],
-			"error": "ContentSnapshotFormalCharacterRegistry missing registry: %s" % resolved_registry_path,
+			"entries": entries_result.get("data", []),
+			"error": "",
 		}
-	var parsed = JSON.parse_string(file.get_as_text())
-	if not (parsed is Array):
-		return {
-			"entries": [],
-			"error": "ContentSnapshotFormalCharacterRegistry expects top-level array: %s" % resolved_registry_path,
-		}
-	var entries: Array = []
-	var seen_character_ids: Dictionary = {}
-	var seen_unit_definition_ids: Dictionary = {}
-	var contracts = FormalRegistryContractsScript.new()
-	for raw_entry in parsed:
-		if not (raw_entry is Dictionary):
-			return {
-				"entries": [],
-				"error": "ContentSnapshotFormalCharacterRegistry expects dictionary entries",
-			}
-		var entry: Dictionary = raw_entry
-		var contract_result := contracts.validate_required_fields_result(
-			FormalRegistryContractsScript.RUNTIME_REGISTRY_BUCKET,
-			entry,
-			"ContentSnapshotFormalCharacterRegistry entry"
-		)
-		if not bool(contract_result.get("ok", false)):
-			return {
-				"entries": [],
-				"error": String(contract_result.get("error_message", "ContentSnapshotFormalCharacterRegistry contract validation failed")),
-			}
-		var character_id := String(entry.get("character_id", "")).strip_edges()
-		if seen_character_ids.has(character_id):
-			return {
-				"entries": [],
-				"error": "ContentSnapshotFormalCharacterRegistry duplicated character_id: %s" % character_id,
-			}
-		seen_character_ids[character_id] = true
-		var unit_definition_id := String(entry.get("unit_definition_id", "")).strip_edges()
-		if unit_definition_id.is_empty():
-			return {
-				"entries": [],
-				"error": "ContentSnapshotFormalCharacterRegistry[%s] missing unit_definition_id" % character_id,
-			}
-		if seen_unit_definition_ids.has(unit_definition_id):
-			return {
-				"entries": [],
-				"error": "ContentSnapshotFormalCharacterRegistry duplicated unit_definition_id: %s" % unit_definition_id,
-			}
-		seen_unit_definition_ids[unit_definition_id] = true
-		var matchup_id := String(entry.get("formal_setup_matchup_id", "")).strip_edges()
-		var required_content_paths = entry.get("required_content_paths", [])
-		for raw_rel_path in required_content_paths:
-			if String(raw_rel_path).strip_edges().is_empty():
-				return {
-					"entries": [],
-					"error": "ContentSnapshotFormalCharacterRegistry[%s] has empty required_content_paths entry" % character_id,
-				}
-		var validator_path := String(entry.get("content_validator_script_path", "")).strip_edges()
-		if not validator_path.is_empty():
-			var resolved_validator_path := validator_path if validator_path.begins_with("res://") else "res://%s" % validator_path
-			if not ResourceLoader.exists(resolved_validator_path):
-				return {
-					"entries": [],
-					"error": "ContentSnapshotFormalCharacterRegistry[%s] missing validator: %s" % [character_id, resolved_validator_path],
-				}
-		entries.append(entry.duplicate(true))
 	return {
-		"entries": entries,
-		"error": "",
+		"entries": [],
+		"error": String(entries_result.get("error_message", "unknown manifest error")),
 	}
 
 static func build_validator_descriptors() -> Dictionary:

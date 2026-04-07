@@ -1,0 +1,545 @@
+{
+  "characters": [
+    {
+      "character_id": "gojo_satoru",
+      "display_name": "Gojo",
+      "unit_definition_id": "gojo_satoru",
+      "formal_setup_matchup_id": "gojo_vs_sample",
+      "required_content_paths": [
+        "content/units/gojo/gojo_satoru.tres",
+        "content/skills/gojo/gojo_ao.tres",
+        "content/skills/gojo/gojo_aka.tres",
+        "content/skills/gojo/gojo_murasaki.tres",
+        "content/skills/gojo/gojo_reverse_ritual.tres",
+        "content/skills/gojo/gojo_unlimited_void.tres",
+        "content/effects/gojo/gojo_ao_speed_up.tres",
+        "content/effects/gojo/gojo_ao_mark_apply.tres",
+        "content/effects/gojo/gojo_ao_mark.tres",
+        "content/effects/gojo/gojo_aka_slow_down.tres",
+        "content/effects/gojo/gojo_aka_mark_apply.tres",
+        "content/effects/gojo/gojo_aka_mark.tres",
+        "content/effects/gojo/gojo_murasaki_conditional_burst.tres",
+        "content/effects/gojo/gojo_reverse_heal.tres",
+        "content/effects/gojo/gojo_apply_domain_field.tres",
+        "content/effects/gojo/gojo_domain_action_lock.tres",
+        "content/effects/gojo/gojo_domain_cast_buff.tres",
+        "content/effects/gojo/gojo_domain_buff_remove.tres",
+        "content/effects/gojo/gojo_mugen_incoming_accuracy_down.tres",
+        "content/passive_skills/gojo/gojo_mugen.tres",
+        "content/fields/gojo/gojo_unlimited_void_field.tres"
+      ],
+      "content_validator_script_path": "src/battle_core/content/formal_validators/gojo/content_snapshot_formal_gojo_validator.gd",
+      "design_doc": "docs/design/gojo_satoru_design.md",
+      "adjustment_doc": "docs/design/gojo_satoru_adjustments.md",
+      "design_needles": [
+        "anchor:gojo.design.success-lock-via-on_success_effect_ids",
+        "anchor:gojo.design.failed-clash-no-field-buff-lock"
+      ],
+      "adjustment_needles": [
+        "anchor:gojo.adjust.field-bound-action-lock",
+        "anchor:gojo.adjust.field-bound-cast-buff",
+        "anchor:gojo.adjust.tests-impacted"
+      ],
+      "suite_path": "tests/suites/gojo_suite.gd",
+      "required_suite_paths": [
+        "tests/suites/gojo_setup_and_markers_suite.gd",
+        "tests/suites/gojo_snapshot_suite.gd",
+        "tests/suites/gojo_murasaki_suite.gd",
+        "tests/suites/gojo_mugen_suite.gd",
+        "tests/suites/gojo_unlimited_void_suite.gd",
+        "tests/suites/gojo_misc_runtime_suite.gd",
+        "tests/suites/gojo_manager_smoke_suite.gd",
+        "tests/suites/gojo_manager_blackbox_suite.gd",
+        "tests/suites/formal_character_pair_smoke_suite.gd",
+        "tests/suites/extension_validation_contract_suite.gd",
+        "tests/suites/extension_targeting_accuracy_suite.gd",
+        "tests/suites/replay_turn_suite.gd",
+        "tests/suites/ultimate_field_suite.gd",
+        "tests/suites/ultimate_points_contract_suite.gd",
+        "tests/suites/domain_clash_resolution_suite.gd",
+        "tests/suites/domain_clash_guard_suite.gd",
+        "tests/suites/field_lifecycle_contract_suite.gd"
+      ],
+      "required_test_names": [
+        "gojo_unit_snapshot_contract",
+        "gojo_skill_snapshot_contract",
+        "gojo_effect_snapshot_contract",
+        "gojo_content_and_setup_contract",
+        "gojo_first_turn_mp_contract",
+        "gojo_ao_hit_contract",
+        "gojo_ao_miss_contract",
+        "gojo_aka_hit_contract",
+        "gojo_aka_miss_contract",
+        "gojo_marker_switch_lifecycle_contract",
+        "gojo_marker_refresh_contract",
+        "gojo_murasaki_no_marks_contract",
+        "gojo_murasaki_double_mark_burst_contract",
+        "gojo_murasaki_same_owner_contract",
+        "gojo_murasaki_no_recoil_contract",
+        "gojo_murasaki_base_kill_contract",
+        "gojo_murasaki_burst_kill_contract",
+        "gojo_murasaki_retargeted_switch_contract",
+        "gojo_mugen_incoming_accuracy_contract",
+        "gojo_mugen_reentry_contract",
+        "gojo_unlimited_void_runtime_contract",
+        "gojo_unlimited_void_action_lock_wait_contract",
+        "gojo_unlimited_void_cancelled_pre_start_contract",
+        "gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract",
+        "gojo_unlimited_void_expire_removes_field_buff_contract",
+        "gojo_unlimited_void_break_removes_field_buff_contract",
+        "gojo_reverse_ritual_heal_contract",
+        "gojo_manager_smoke_contract",
+        "gojo_manager_domain_public_contract",
+        "gojo_manager_murasaki_combo_public_contract",
+        "gojo_plus5_competition_contract",
+        "formal_gojo_validator_bad_case_contract",
+        "formal_gojo_validator_reverse_bad_case_contract",
+        "formal_gojo_validator_murasaki_cleanup_bad_case_contract",
+        "formal_gojo_validator_action_lock_surface_bad_case_contract",
+        "formal_gojo_validator_action_lock_stacking_bad_case_contract"
+      ],
+      "surface_smoke_skill_id": "gojo_ao"
+    },
+    {
+      "character_id": "sukuna",
+      "display_name": "宿傩",
+      "unit_definition_id": "sukuna",
+      "formal_setup_matchup_id": "sukuna_setup",
+      "required_content_paths": [
+        "content/units/sukuna/sukuna.tres",
+        "content/skills/sukuna/sukuna_kai.tres",
+        "content/skills/sukuna/sukuna_hatsu.tres",
+        "content/skills/sukuna/sukuna_hiraku.tres",
+        "content/skills/sukuna/sukuna_reverse_ritual.tres",
+        "content/skills/sukuna/sukuna_fukuma_mizushi.tres",
+        "content/effects/sukuna/sukuna_apply_kamado.tres",
+        "content/effects/sukuna/sukuna_kamado_mark.tres",
+        "content/effects/sukuna/sukuna_kamado_explode.tres",
+        "content/effects/sukuna/sukuna_reverse_heal.tres",
+        "content/effects/sukuna/sukuna_apply_domain_field.tres",
+        "content/effects/sukuna/sukuna_domain_cast_buff.tres",
+        "content/effects/sukuna/sukuna_domain_buff_remove.tres",
+        "content/effects/sukuna/sukuna_domain_expire_burst.tres",
+        "content/effects/sukuna/sukuna_refresh_love_regen.tres",
+        "content/passive_skills/sukuna/sukuna_teach_love.tres",
+        "content/fields/sukuna/sukuna_malevolent_shrine_field.tres"
+      ],
+      "content_validator_script_path": "src/battle_core/content/formal_validators/sukuna/content_snapshot_formal_sukuna_validator.gd",
+      "design_doc": "docs/design/sukuna_design.md",
+      "adjustment_doc": "docs/design/sukuna_adjustments.md",
+      "design_needles": [
+        "anchor:sukuna.design.domain-expire-burst-kept",
+        "anchor:sukuna.design.first-ultimate-window-turn-4-default",
+        "anchor:sukuna.design.first-ultimate-window-turn-4-ritual",
+        "anchor:sukuna.design.matchup-regen-duration-permanent"
+      ],
+      "adjustment_needles": [
+        "anchor:sukuna.adjust.matchup-regen-permanent",
+        "anchor:sukuna.adjust.replace-long-term-regen",
+        "anchor:sukuna.adjust.remove-999-turn-fallback",
+        "anchor:sukuna.adjust.first-ultimate-window-turn-4",
+        "anchor:sukuna.adjust.mp_regen-add",
+        "anchor:sukuna.adjust.tests-impacted"
+      ],
+      "suite_path": "tests/suites/sukuna_suite.gd",
+      "required_suite_paths": [
+        "tests/suites/sukuna_setup_loadout_regen_suite.gd",
+        "tests/suites/sukuna_teach_love_band_suite.gd",
+        "tests/suites/sukuna_setup_skill_runtime_suite.gd",
+        "tests/suites/sukuna_setup_ultimate_window_suite.gd",
+        "tests/suites/sukuna_snapshot_suite.gd",
+        "tests/suites/sukuna_kamado_suite.gd",
+        "tests/suites/sukuna_domain_suite.gd",
+        "tests/suites/sukuna_manager_smoke_suite.gd",
+        "tests/suites/sukuna_manager_blackbox_suite.gd",
+        "tests/suites/formal_character_pair_smoke_suite.gd",
+        "tests/suites/extension_validation_contract_suite.gd",
+        "tests/suites/replay_turn_suite.gd",
+        "tests/suites/ultimate_field_suite.gd",
+        "tests/suites/domain_clash_resolution_suite.gd",
+        "tests/suites/domain_clash_guard_suite.gd",
+        "tests/suites/field_lifecycle_contract_suite.gd"
+      ],
+      "required_test_names": [
+        "sukuna_unit_snapshot_contract",
+        "sukuna_skill_snapshot_contract",
+        "sukuna_effect_snapshot_contract",
+        "sukuna_default_loadout_contract",
+        "sukuna_matchup_regen_runtime_path",
+        "sukuna_matchup_bst_includes_max_mp_contract",
+        "sukuna_teach_love_band_table_contract",
+        "sukuna_teach_love_replace_on_matchup_change_contract",
+        "sukuna_reverse_ritual_heal_path",
+        "sukuna_manager_smoke_contract",
+        "sukuna_manager_domain_lifecycle_public_contract",
+        "sukuna_kai_priority_damage_contract",
+        "sukuna_hatsu_mp_diff_contract",
+        "sukuna_default_loadout_first_ultimate_window_contract",
+        "sukuna_ritual_loadout_first_ultimate_window_contract",
+        "sukuna_kamado_stack_on_exit_path",
+        "sukuna_kamado_natural_expire_path",
+        "sukuna_kamado_stack_cap_path",
+        "sukuna_kamado_forced_replace_on_exit_path",
+        "sukuna_domain_expire_chain_path",
+        "sukuna_domain_break_chain_path",
+        "sukuna_domain_break_on_faint_path",
+        "sukuna_field_accuracy_override_path",
+        "sukuna_domain_failed_clash_no_field_no_buff_no_expire_burst_contract",
+        "formal_sukuna_validator_bad_case_contract",
+        "formal_sukuna_validator_reverse_bad_case_contract",
+        "formal_sukuna_validator_regen_surface_bad_case_contract",
+        "sukuna_manager_kamado_on_exit_public_contract",
+        "sukuna_manager_hatsu_public_contract",
+        "sukuna_manager_teach_love_public_contract"
+      ],
+      "surface_smoke_skill_id": "sukuna_kai"
+    },
+    {
+      "character_id": "kashimo_hajime",
+      "display_name": "Kashimo",
+      "unit_definition_id": "kashimo_hajime",
+      "formal_setup_matchup_id": "kashimo_vs_sample",
+      "required_content_paths": [
+        "content/units/kashimo/kashimo_hajime.tres",
+        "content/skills/kashimo/kashimo_raiken.tres",
+        "content/skills/kashimo/kashimo_charge.tres",
+        "content/skills/kashimo/kashimo_feedback_strike.tres",
+        "content/skills/kashimo/kashimo_kyokyo_katsura.tres",
+        "content/skills/kashimo/kashimo_phantom_beast_amber.tres",
+        "content/effects/kashimo/kashimo_apply_negative_charge.tres",
+        "content/effects/kashimo/kashimo_negative_charge_mark.tres",
+        "content/effects/kashimo/kashimo_apply_positive_charge.tres",
+        "content/effects/kashimo/kashimo_positive_charge_mark.tres",
+        "content/effects/kashimo/kashimo_consume_positive_charges.tres",
+        "content/effects/kashimo/kashimo_consume_negative_charges.tres",
+        "content/effects/kashimo/kashimo_kyokyo_nullify.tres",
+        "content/effects/kashimo/kashimo_thunder_resist.tres",
+        "content/effects/kashimo/kashimo_apply_water_leak_listeners.tres",
+        "content/effects/kashimo/kashimo_water_leak_self_listener.tres",
+        "content/effects/kashimo/kashimo_water_leak_counter_listener.tres",
+        "content/effects/kashimo/kashimo_amber_self_transform.tres",
+        "content/effects/kashimo/kashimo_amber_bleed.tres",
+        "content/passive_skills/kashimo/kashimo_charge_separation.tres",
+        "content/combat_types/poison.tres"
+      ],
+      "content_validator_script_path": "src/battle_core/content/formal_validators/kashimo/content_snapshot_formal_kashimo_validator.gd",
+      "design_doc": "docs/design/kashimo_hajime_design.md",
+      "adjustment_doc": "docs/design/kashimo_hajime_adjustments.md",
+      "design_needles": [
+        "anchor:kashimo.design.feedback-strike-dual-charge-burst",
+        "anchor:kashimo.design.kyokyo-domain-accuracy-only",
+        "anchor:kashimo.design.once-per-battle",
+        "anchor:kashimo.design.water-hit-punish"
+      ],
+      "adjustment_needles": [
+        "anchor:kashimo.adjust.battle-scoped-usage-record",
+        "anchor:kashimo.adjust.once-per-battle",
+        "anchor:kashimo.adjust.kyokyo-window-refresh",
+        "anchor:kashimo.adjust.feedback-strike-dual-charge-burst",
+        "anchor:kashimo.adjust.amber-switch-persist",
+        "anchor:kashimo.adjust.amber-same-turn-reentry"
+      ],
+      "suite_path": "tests/suites/kashimo_suite.gd",
+      "required_suite_paths": [
+        "tests/suites/kashimo_snapshot_suite.gd",
+        "tests/suites/kashimo_runtime_suite.gd",
+        "tests/suites/kashimo_charge_lifecycle_suite.gd",
+        "tests/suites/kashimo_setup_loadout_suite.gd",
+        "tests/suites/kashimo_amber_suite.gd",
+        "tests/suites/kashimo_manager_smoke_suite.gd",
+        "tests/suites/kashimo_manager_blackbox_suite.gd",
+        "tests/suites/formal_character_pair_smoke_suite.gd",
+        "tests/suites/extension_validation_contract_suite.gd",
+        "tests/suites/persistent_stat_stage_suite.gd",
+        "tests/suites/power_bonus_runtime_suite.gd",
+        "tests/suites/combat_type_definition_suite.gd",
+        "tests/suites/combat_type_runtime_suite.gd",
+        "tests/suites/ultimate_points_contract_suite.gd"
+      ],
+      "required_test_names": [
+        "kashimo_unit_snapshot_contract",
+        "kashimo_skill_snapshot_contract",
+        "kashimo_effect_snapshot_contract",
+        "kashimo_raiken_negative_charge_contract",
+        "kashimo_charge_positive_charge_contract",
+        "kashimo_negative_charge_overflow_and_roll_contract",
+        "kashimo_negative_charge_switch_clear_contract",
+        "kashimo_positive_charge_overflow_and_switch_clear_contract",
+        "kashimo_feedback_strike_dynamic_power_and_clear_contract",
+        "kashimo_kyokyo_loadout_contract",
+        "kashimo_kyokyo_katsura_refresh_contract",
+        "kashimo_kyokyo_vs_gojo_unlimited_void_contract",
+        "kashimo_thunder_resist_contract",
+        "kashimo_water_leak_counter_contract",
+        "kashimo_water_leak_ultimate_counter_contract",
+        "kashimo_phantom_beast_amber_persistent_stage_contract",
+        "kashimo_phantom_beast_amber_once_per_battle_contract",
+        "kashimo_manager_smoke_contract",
+        "kashimo_manager_amber_public_contract",
+        "kashimo_manager_water_leak_public_contract",
+        "kashimo_manager_feedback_strike_public_contract",
+        "kashimo_manager_kyokyo_public_contract",
+        "formal_kashimo_validator_bad_case_contract",
+        "formal_kashimo_validator_kyokyo_bad_case_contract",
+        "formal_kashimo_validator_charge_mark_bad_case_contract",
+        "formal_kashimo_validator_thunder_resist_surface_bad_case_contract",
+        "formal_kashimo_validator_water_leak_counter_fixed_damage_bad_case_contract"
+      ],
+      "surface_smoke_skill_id": "kashimo_raiken"
+    },
+    {
+      "character_id": "obito_juubi_jinchuriki",
+      "display_name": "Obito",
+      "unit_definition_id": "obito_juubi_jinchuriki",
+      "formal_setup_matchup_id": "obito_vs_sample",
+      "required_content_paths": [
+        "content/units/obito/obito_juubi_jinchuriki.tres",
+        "content/skills/obito/obito_qiudao_jiaotu.tres",
+        "content/skills/obito/obito_yinyang_dun.tres",
+        "content/skills/obito/obito_qiudao_yu.tres",
+        "content/skills/obito/obito_liudao_shizi_fenghuo.tres",
+        "content/skills/obito/obito_shiwei_weishouyu.tres",
+        "content/effects/obito/obito_xianren_zhili_heal.tres",
+        "content/effects/obito/obito_yinyang_zhili.tres",
+        "content/effects/obito/obito_qiudao_jiaotu_heal_block_mark.tres",
+        "content/effects/obito/obito_qiudao_jiaotu_heal_block_apply.tres",
+        "content/effects/obito/obito_qiudao_jiaotu_heal_block_rule_mod.tres",
+        "content/effects/obito/obito_yinyang_dun_boost_and_charge.tres",
+        "content/effects/obito/obito_yinyang_dun_guard_rule_mod.tres",
+        "content/effects/obito/obito_yinyang_dun_guard_stack_listener.tres",
+        "content/effects/obito/obito_yinyang_dun_guard_stack_listener_state.tres",
+        "content/effects/obito/obito_qiudao_yu_clear_yinyang.tres",
+        "content/passive_skills/obito/obito_xianren_zhili.tres"
+      ],
+      "content_validator_script_path": "src/battle_core/content/formal_validators/obito/content_snapshot_formal_obito_validator.gd",
+      "design_doc": "docs/design/obito_juubi_jinchuriki_design.md",
+      "adjustment_doc": "docs/design/obito_juubi_jinchuriki_adjustments.md",
+      "design_needles": [
+        "anchor:obito.design.qiudao-jiaotu-heal-block-window",
+        "anchor:obito.design.yinyang-dun-skill-ultimate-segment-filter",
+        "anchor:obito.design.qiudaoyu-five-stack-execute",
+        "anchor:obito.design.weishouyu-ten-segment-burst"
+      ],
+      "adjustment_needles": [
+        "anchor:obito.adjust.formal-first-delivery",
+        "anchor:obito.adjust.yinyang-dun-skill-ultimate-filter",
+        "anchor:obito.adjust.heal-block-sync-expire",
+        "anchor:obito.adjust.no-balance-retune",
+        "anchor:obito.adjust.tests-impacted"
+      ],
+      "suite_path": "tests/suites/obito_suite.gd",
+      "required_suite_paths": [
+        "tests/suites/obito_snapshot_suite.gd",
+        "tests/suites/obito_runtime_passive_and_seal_suite.gd",
+        "tests/suites/obito_runtime_yinyang_suite.gd",
+        "tests/suites/obito_runtime_qiudaoyu_suite.gd",
+        "tests/suites/obito_ultimate_suite.gd",
+        "tests/suites/obito_manager_smoke_suite.gd",
+        "tests/suites/obito_manager_blackbox_suite.gd",
+        "tests/suites/formal_character_pair_smoke_suite.gd",
+        "tests/suites/extension_validation_contract_suite.gd",
+        "tests/suites/heal_extension_suite.gd",
+        "tests/suites/power_bonus_runtime_suite.gd",
+        "tests/suites/skill_execute_contract_suite.gd",
+        "tests/suites/multihit_skill_runtime_suite.gd",
+        "tests/suites/ultimate_points_contract_suite.gd"
+      ],
+      "required_test_names": [
+        "obito_unit_snapshot_contract",
+        "obito_skill_snapshot_contract",
+        "obito_effect_snapshot_contract",
+        "obito_candidate_loadout_contract",
+        "obito_passive_missing_hp_heal_contract",
+        "obito_qiudao_jiaotu_heal_block_contract",
+        "obito_qiudao_jiaotu_expire_sync_contract",
+        "obito_qiudao_jiaotu_switch_persist_contract",
+        "obito_yinyang_dun_segment_mitigation_and_stack_contract",
+        "obito_yinyang_dun_non_skill_segment_ignored_contract",
+        "obito_yinyang_dun_same_side_segment_ignored_contract",
+        "obito_yinyang_dun_stack_cap_contract",
+        "obito_qiudaoyu_power_bonus_contract",
+        "obito_qiudaoyu_execute_contract",
+        "obito_qiudaoyu_execute_short_circuit_contract",
+        "obito_qiudaoyu_hit_and_miss_clear_contract",
+        "obito_shiwei_weishouyu_segment_order_contract",
+        "obito_shiwei_weishouyu_segment_damage_log_contract",
+        "obito_shiwei_weishouyu_mid_kill_stop_contract",
+        "obito_manager_smoke_contract",
+        "obito_manager_public_contract",
+        "obito_manager_fenghuo_public_contract",
+        "obito_manager_yinyang_public_contract",
+        "formal_obito_validator_heal_block_bad_case_contract",
+        "formal_obito_validator_heal_block_surface_bad_case_contract",
+        "formal_obito_validator_execute_bad_case_contract",
+        "formal_obito_validator_yinyang_guard_surface_bad_case_contract",
+        "formal_obito_validator_yinyang_listener_surface_bad_case_contract",
+        "formal_obito_validator_ultimate_segments_bad_case_contract"
+      ],
+      "surface_smoke_skill_id": "obito_qiudao_jiaotu"
+    }
+  ],
+  "matchups": {
+    "gojo_vs_sample": {
+      "p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
+      "p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
+    },
+    "sample_vs_gojo": {
+      "p1_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"],
+      "p2_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"]
+    },
+    "gojo_vs_sukuna": {
+      "p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
+    },
+    "sukuna_vs_gojo": {
+      "p1_units": ["sukuna", "sample_tidekit", "sample_mossaur"],
+      "p2_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"]
+    },
+    "gojo_vs_kashimo": {
+      "p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["kashimo_hajime", "sample_tidekit", "sample_mossaur"]
+    },
+    "kashimo_vs_gojo": {
+      "p1_units": ["kashimo_hajime", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"]
+    },
+    "gojo_vs_obito": {
+      "p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"]
+    },
+    "obito_vs_gojo": {
+      "p1_units": ["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"]
+    },
+    "sukuna_vs_sample": {
+      "p1_units": ["sukuna", "sample_mossaur", "sample_tidekit"],
+      "p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
+    },
+    "sukuna_setup": {
+      "p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
+    },
+    "sukuna_vs_kashimo": {
+      "p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["kashimo_hajime", "sample_tidekit", "sample_mossaur"]
+    },
+    "kashimo_vs_sukuna": {
+      "p1_units": ["kashimo_hajime", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
+    },
+    "sukuna_vs_obito": {
+      "p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"]
+    },
+    "obito_vs_sukuna": {
+      "p1_units": ["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
+    },
+    "kashimo_vs_sample": {
+      "p1_units": ["kashimo_hajime", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
+    },
+    "kashimo_vs_obito": {
+      "p1_units": ["kashimo_hajime", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"]
+    },
+    "obito_vs_kashimo": {
+      "p1_units": ["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["kashimo_hajime", "sample_tidekit", "sample_mossaur"]
+    },
+    "obito_vs_sample": {
+      "p1_units": ["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
+    },
+    "obito_mirror": {
+      "p1_units": ["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"],
+      "p2_units": ["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"]
+    }
+  },
+  "pair_interaction_cases": [
+    {
+      "test_name": "formal_pair_gojo_vs_sukuna_interaction_contract",
+      "scenario_id": "gojo_vs_sukuna_domain_cleanup",
+      "character_ids": ["gojo_satoru", "sukuna"],
+      "matchup_id": "gojo_vs_sukuna",
+      "battle_seed": 2661
+    },
+    {
+      "test_name": "formal_pair_sukuna_vs_gojo_interaction_contract",
+      "scenario_id": "sukuna_vs_gojo_domain_cleanup",
+      "character_ids": ["sukuna", "gojo_satoru"],
+      "matchup_id": "sukuna_vs_gojo",
+      "battle_seed": 2667
+    },
+    {
+      "test_name": "formal_pair_gojo_vs_kashimo_interaction_contract",
+      "scenario_id": "gojo_vs_kashimo_kyokyo_nullify_domain_accuracy",
+      "character_ids": ["gojo_satoru", "kashimo_hajime"],
+      "matchup_id": "gojo_vs_kashimo",
+      "battle_seed": 2662
+    },
+    {
+      "test_name": "formal_pair_kashimo_vs_gojo_interaction_contract",
+      "scenario_id": "kashimo_vs_gojo_kyokyo_nullify_domain_accuracy",
+      "character_ids": ["kashimo_hajime", "gojo_satoru"],
+      "matchup_id": "kashimo_vs_gojo",
+      "battle_seed": 2668
+    },
+    {
+      "test_name": "formal_pair_gojo_vs_obito_interaction_contract",
+      "scenario_id": "gojo_vs_obito_heal_block_public_contract",
+      "character_ids": ["gojo_satoru", "obito_juubi_jinchuriki"],
+      "matchup_id": "gojo_vs_obito",
+      "battle_seed": 2663
+    },
+    {
+      "test_name": "formal_pair_obito_vs_gojo_interaction_contract",
+      "scenario_id": "obito_vs_gojo_heal_block_public_contract",
+      "character_ids": ["obito_juubi_jinchuriki", "gojo_satoru"],
+      "matchup_id": "obito_vs_gojo",
+      "battle_seed": 2669
+    },
+    {
+      "test_name": "formal_pair_sukuna_vs_kashimo_interaction_contract",
+      "scenario_id": "sukuna_vs_kashimo_domain_accuracy_nullified",
+      "character_ids": ["sukuna", "kashimo_hajime"],
+      "matchup_id": "sukuna_vs_kashimo",
+      "battle_seed": 2664
+    },
+    {
+      "test_name": "formal_pair_kashimo_vs_sukuna_interaction_contract",
+      "scenario_id": "kashimo_vs_sukuna_domain_accuracy_nullified",
+      "character_ids": ["kashimo_hajime", "sukuna"],
+      "matchup_id": "kashimo_vs_sukuna",
+      "battle_seed": 2670
+    },
+    {
+      "test_name": "formal_pair_sukuna_vs_obito_interaction_contract",
+      "scenario_id": "sukuna_vs_obito_field_seal_and_kamado_lifecycle",
+      "character_ids": ["sukuna", "obito_juubi_jinchuriki"],
+      "matchup_id": "sukuna_vs_obito",
+      "battle_seed": 2665
+    },
+    {
+      "test_name": "formal_pair_obito_vs_sukuna_interaction_contract",
+      "scenario_id": "obito_vs_sukuna_field_seal_and_kamado_lifecycle",
+      "character_ids": ["obito_juubi_jinchuriki", "sukuna"],
+      "matchup_id": "obito_vs_sukuna",
+      "battle_seed": 2671
+    },
+    {
+      "test_name": "formal_pair_kashimo_vs_obito_interaction_contract",
+      "scenario_id": "kashimo_vs_obito_yinyang_and_amber_persistence",
+      "character_ids": ["kashimo_hajime", "obito_juubi_jinchuriki"],
+      "matchup_id": "kashimo_vs_obito",
+      "battle_seed": 2666
+    },
+    {
+      "test_name": "formal_pair_obito_vs_kashimo_interaction_contract",
+      "scenario_id": "obito_vs_kashimo_yinyang_and_amber_persistence",
+      "character_ids": ["obito_juubi_jinchuriki", "kashimo_hajime"],
+      "matchup_id": "obito_vs_kashimo",
+      "battle_seed": 2672
+    }
+  ]
+}

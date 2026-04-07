@@ -1,12 +1,11 @@
 extends RefCounted
 class_name SampleBattleFactoryRuntimeRegistryLoader
 
-const FormalRegistryContractsScript := preload("res://src/shared/formal_registry_contracts.gd")
-const FormalCharacterRegistryScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 
 var registry_path_override: String = ""
-var _registry_contracts = FormalRegistryContractsScript.new()
+var _manifest = FormalCharacterManifestScript.new()
 
 func load_entries_result() -> Dictionary:
 	var load_result: Dictionary = _load_entries()
@@ -37,9 +36,6 @@ func load_entries_for_snapshot_result() -> Dictionary:
 	var entries_result := load_entries_result()
 	if not bool(entries_result.get("ok", false)):
 		return entries_result
-	var contracts_result := _registry_contracts.load_contracts_result()
-	if not bool(contracts_result.get("ok", false)):
-		return contracts_result
 	var entries: Array = entries_result.get("data", [])
 	for raw_entry in entries:
 		if not (raw_entry is Dictionary):
@@ -49,16 +45,6 @@ func load_entries_for_snapshot_result() -> Dictionary:
 			)
 		var entry: Dictionary = raw_entry
 		var character_id := String(entry.get("character_id", "")).strip_edges()
-		var field_result := _registry_contracts.validate_required_fields_result(
-			FormalRegistryContractsScript.RUNTIME_REGISTRY_BUCKET,
-			entry,
-			"SampleBattleFactory registry[%s]" % character_id
-		)
-		if not bool(field_result.get("ok", false)):
-			return _error_result(
-				ErrorCodesScript.INVALID_CONTENT_SNAPSHOT,
-				String(field_result.get("error_message", "unknown field validation error"))
-			)
 		for raw_rel_path in entry.get("required_content_paths", []):
 			var resource_path := _normalize_path(String(raw_rel_path))
 			if resource_path.is_empty():
@@ -74,10 +60,17 @@ func load_entries_for_snapshot_result() -> Dictionary:
 	return _ok_result(entries)
 
 func _load_entries() -> Dictionary:
-	var resolved_override_path := _normalize_path(registry_path_override)
-	if resolved_override_path.is_empty():
-		return FormalCharacterRegistryScript.load_entries()
-	return FormalCharacterRegistryScript.load_entries_from_path(resolved_override_path)
+	_manifest.manifest_path_override = registry_path_override
+	var entries_result := _manifest.build_runtime_entries_result()
+	if bool(entries_result.get("ok", false)):
+		return {
+			"entries": entries_result.get("data", []),
+			"error": "",
+		}
+	return {
+		"entries": [],
+		"error": String(entries_result.get("error_message", "unknown manifest error")),
+	}
 
 func _normalize_path(raw_path: String) -> String:
 	var trimmed_path := String(raw_path).strip_edges()

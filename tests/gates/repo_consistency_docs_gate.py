@@ -51,9 +51,8 @@ ctx.require_contains("docs/design/battle_content_schema.md", "effect_stack_sum",
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_effect_ids", "schema power bonus self effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
-ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_runtime_registry.json", "schema formal character runtime registry wording")
-ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_delivery_registry.json", "schema formal character delivery registry wording")
-ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_matchup_catalog.json", "schema formal matchup catalog wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_manifest.json", "schema formal character manifest wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "characters / matchups / pair_interaction_cases", "schema formal manifest bucket wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "formal_validators/shared/content_snapshot_formal_character_registry.gd", "schema runtime validator loader wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "当前 snapshot 实际出现的正式角色", "schema scoped formal validator wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "content_validator_script_path", "schema formal character validator path wording")
@@ -163,8 +162,21 @@ for rel_path in [
     "tests/README.md",
     "docs/design/formal_character_delivery_checklist.md",
     "docs/design/battle_content_schema.md",
+    "docs/design/formal_character_design_template.md",
+    "docs/design/project_folder_structure.md",
 ]:
     ctx.require_absent(rel_path, "formal_character_validator_registry.json", "removed code-side validator registry wording")
+for rel_path in [
+    "README.md",
+    "tests/README.md",
+    "docs/design/formal_character_delivery_checklist.md",
+    "docs/design/battle_content_schema.md",
+    "docs/design/formal_character_design_template.md",
+    "docs/design/project_folder_structure.md",
+]:
+    ctx.require_absent(rel_path, "config/formal_character_runtime_registry.json", "removed split runtime registry wording")
+    ctx.require_absent(rel_path, "config/formal_character_delivery_registry.json", "removed split delivery registry wording")
+    ctx.require_absent(rel_path, "config/formal_matchup_catalog.json", "removed split matchup catalog wording")
 for rel_path in [
     "README.md",
     "tests/README.md",

@@ -2,7 +2,7 @@ extends RefCounted
 class_name FormalCharacterRegistry
 
 const DeliveryRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_delivery_registry_loader.gd")
-const REGISTRY_PATH := "res://config/formal_character_delivery_registry.json"
+const REGISTRY_PATH := "res://config/formal_character_manifest.json"
 
 func load_entries() -> Array:
 	var load_result := load_entries_result()

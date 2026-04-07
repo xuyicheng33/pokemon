@@ -46,10 +46,14 @@ func _test_formal_character_delivery_registry_required_field_guard_contract(harn
 	for raw_case in bad_cases:
 		var bad_case: Dictionary = raw_case
 		var missing_key := String(bad_case.get("missing_key", "")).strip_edges()
-		var delivery_registry_path := "user://formal_character_delivery_registry_missing_field_%s_fixture.json" % missing_key
-		var entry := _build_delivery_registry_entry(
+		var manifest_path := "user://formal_character_manifest_delivery_missing_field_%s_fixture.json" % missing_key
+		var entry := _build_manifest_character_entry(
 			"gojo_alias",
 			"Gojo Alias",
+			"gojo_satoru",
+			"gojo_vs_sample",
+			["content/units/gojo/gojo_satoru.tres"],
+			"",
 			"docs/design/gojo_satoru_design.md",
 			"docs/design/gojo_satoru_adjustments.md",
 			"gojo_ao",
@@ -60,14 +64,14 @@ func _test_formal_character_delivery_registry_required_field_guard_contract(harn
 			["anchor:gojo.adjust.tests-impacted"]
 		)
 		entry.erase(missing_key)
-		var delivery_registry_payload := JSON.stringify([entry], "  ")
-		if not _write_json_fixture(delivery_registry_path, delivery_registry_payload):
-			return harness.fail_result("failed to write missing-field delivery registry fixture")
-		var load_result: Dictionary = delivery_registry.load_entries_from_path_result(delivery_registry_path)
+		var manifest_payload := JSON.stringify(_build_manifest_payload([entry]), "  ")
+		if not _write_json_fixture(manifest_path, manifest_payload):
+			return harness.fail_result("failed to write missing-field manifest fixture")
+		var load_result: Dictionary = delivery_registry.load_entries_from_path_result(manifest_path)
 		if bool(load_result.get("ok", false)):
-			return harness.fail_result("delivery registry should fail fast on %s" % String(bad_case.get("expected_error", "")))
+			return harness.fail_result("formal manifest should fail fast on %s" % String(bad_case.get("expected_error", "")))
 		var error_message := String(load_result.get("error", ""))
 		var expected_error := String(bad_case.get("expected_error", ""))
 		if error_message.find(expected_error) == -1:
-			return harness.fail_result("delivery registry should report %s, got: %s" % [expected_error, error_message])
+			return harness.fail_result("formal manifest should report %s, got: %s" % [expected_error, error_message])
 	return harness.pass_result()

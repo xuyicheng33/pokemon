@@ -41,6 +41,7 @@ func configure_registry_path_override(path: String) -> void:
 	_runtime_registry_loader.registry_path_override = path
 	_content_paths_helper.registry_path_override = path
 	_formal_matchup_catalog.runtime_registry_path_override = path
+	_delivery_registry_loader.registry_path_override = path
 
 func configure_baseline_matchup_catalog_path_override(path: String) -> void:
 	_baseline_matchup_catalog.catalog_path_override = path
@@ -48,9 +49,21 @@ func configure_baseline_matchup_catalog_path_override(path: String) -> void:
 
 func configure_matchup_catalog_path_override(path: String) -> void:
 	_formal_matchup_catalog.catalog_path_override = path
+	_runtime_registry_loader.registry_path_override = path
+	_content_paths_helper.registry_path_override = path
+	_delivery_registry_loader.registry_path_override = path
 
 func configure_delivery_registry_path_override(path: String) -> void:
 	_delivery_registry_loader.registry_path_override = path
+	_runtime_registry_loader.registry_path_override = path
+	_content_paths_helper.registry_path_override = path
+	_formal_matchup_catalog.runtime_registry_path_override = path
+	_formal_matchup_catalog.catalog_path_override = path
+
+func configure_formal_manifest_path_override(path: String) -> void:
+	configure_registry_path_override(path)
+	configure_matchup_catalog_path_override(path)
+	configure_delivery_registry_path_override(path)
 
 func configure_demo_catalog_path_override(path: String) -> void:
 	_demo_catalog.catalog_path_override = path

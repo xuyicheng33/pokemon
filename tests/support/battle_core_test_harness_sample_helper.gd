@@ -18,12 +18,13 @@ func build_sample_factory_with_overrides(
 	var sample_factory = build_sample_factory()
 	if sample_factory == null:
 		return null
-	if not String(registry_path_override).strip_edges().is_empty():
-		sample_factory.configure_registry_path_override(registry_path_override)
-	if not String(matchup_catalog_path_override).strip_edges().is_empty():
-		sample_factory.configure_matchup_catalog_path_override(matchup_catalog_path_override)
-	if not String(delivery_registry_path_override).strip_edges().is_empty():
-		sample_factory.configure_delivery_registry_path_override(delivery_registry_path_override)
+	var manifest_path_override := String(registry_path_override).strip_edges()
+	if manifest_path_override.is_empty():
+		manifest_path_override = String(matchup_catalog_path_override).strip_edges()
+	if manifest_path_override.is_empty():
+		manifest_path_override = String(delivery_registry_path_override).strip_edges()
+	if not manifest_path_override.is_empty():
+		sample_factory.configure_formal_manifest_path_override(manifest_path_override)
 	return sample_factory
 
 func unwrap_sample_factory_result(result: Dictionary, label: String):

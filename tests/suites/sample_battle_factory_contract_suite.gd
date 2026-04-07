@@ -67,11 +67,11 @@ func _test_baseline_flow_ignores_formal_matchup_catalog_failure(harness) -> Dict
 	var failure = _helper.expect_failure_code(
 		formal_setup_result,
 		"build_formal_character_setup_result(kashimo_hajime)",
-		ErrorCodesScript.INVALID_BATTLE_SETUP,
-		"missing matchup catalog"
+		ErrorCodesScript.INVALID_CONTENT_SNAPSHOT,
+		"formal character runtime registry"
 	)
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "formal matchup catalog failure contract drifted")))
+		return harness.fail_result(str(failure.get("error", "formal manifest failure contract drifted")))
 	return harness.pass_result()
 
 func _test_demo_default_profile_contract(harness) -> Dictionary:

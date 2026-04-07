@@ -39,16 +39,21 @@ run_all_text = read_text("tests/run_all.gd")
 pending.extend(collect_suite_refs(run_all_text))
 
 try:
-    registry_payload = json.loads(read_text("config/formal_character_delivery_registry.json"))
+    manifest_payload = json.loads(read_text("config/formal_character_manifest.json"))
 except Exception as exc:  # pragma: no cover - gate error path
-    print(f"SUITE_REACHABILITY_FAILED: invalid registry json: {exc}", file=sys.stderr)
+    print(f"SUITE_REACHABILITY_FAILED: invalid manifest json: {exc}", file=sys.stderr)
     sys.exit(1)
 
-if not isinstance(registry_payload, list):
-    print("SUITE_REACHABILITY_FAILED: config/formal_character_delivery_registry.json expects top-level array", file=sys.stderr)
+if not isinstance(manifest_payload, dict):
+    print("SUITE_REACHABILITY_FAILED: config/formal_character_manifest.json expects top-level dictionary", file=sys.stderr)
     sys.exit(1)
 
-for entry in registry_payload:
+characters = manifest_payload.get("characters", [])
+if not isinstance(characters, list):
+    print("SUITE_REACHABILITY_FAILED: config/formal_character_manifest.json expects top-level characters array", file=sys.stderr)
+    sys.exit(1)
+
+for entry in characters:
     if not isinstance(entry, dict):
         continue
     suite_path = str(entry.get("suite_path", ""))

@@ -38,9 +38,13 @@ func _build_runtime_registry_entry(character_id: String, unit_definition_id: Str
 		entry["content_validator_script_path"] = validator_path
 	return entry
 
-func _build_delivery_registry_entry(
+func _build_manifest_character_entry(
 	character_id: String,
 	display_name: String,
+	unit_definition_id: String,
+	matchup_id: String,
+	required_content_paths: Array,
+	validator_path: String,
 	design_doc: String,
 	adjustment_doc: String,
 	surface_smoke_skill_id: String,
@@ -50,9 +54,12 @@ func _build_delivery_registry_entry(
 	design_needles: Array,
 	adjustment_needles: Array
 ) -> Dictionary:
-	return {
+	var entry := {
 		"character_id": character_id,
 		"display_name": display_name,
+		"unit_definition_id": unit_definition_id,
+		"formal_setup_matchup_id": matchup_id,
+		"required_content_paths": required_content_paths,
 		"design_doc": design_doc,
 		"adjustment_doc": adjustment_doc,
 		"surface_smoke_skill_id": surface_smoke_skill_id,
@@ -61,4 +68,14 @@ func _build_delivery_registry_entry(
 		"required_test_names": required_test_names,
 		"design_needles": design_needles,
 		"adjustment_needles": adjustment_needles,
+	}
+	if not validator_path.is_empty():
+		entry["content_validator_script_path"] = validator_path
+	return entry
+
+func _build_manifest_payload(characters: Array, matchups: Dictionary = {}, pair_interaction_cases: Array = []) -> Dictionary:
+	return {
+		"characters": characters,
+		"matchups": matchups,
+		"pair_interaction_cases": pair_interaction_cases,
 	}

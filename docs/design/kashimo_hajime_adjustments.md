@@ -48,11 +48,11 @@
   <!-- anchor:kashimo.adjust.amber-switch-persist -->
   - `persists_on_switch=true` 的持续效果在“同回合重上场”时，继续暂停普通 `turn_start / turn_end` 触发；下一整回合再恢复
   <!-- anchor:kashimo.adjust.amber-same-turn-reentry -->
-  - 鹿紫云正式接入 `formal_character_runtime_registry.json / formal_character_delivery_registry.json`，`tests/run_all.gd` 删掉临时手动接线，统一走 formal registry
+  - 鹿紫云正式接入 `formal_character_manifest.json`，`tests/run_all.gd` 删掉临时手动接线，统一走 formal registry
 - 为什么改：
   - Phase 1 的临时禁奥义只适合做主循环隔离交付，不能作为正式角色交付形态留在主线里
   - `effect_stack_sum`、`persistent_stat_stages` 和同回合重上场暂停语义已经变成共享能力，必须落到正式文档与正式回归面，而不是继续留在临时测试口径里
-  - formal registry 现在拆成 runtime / delivery 双表真相，鹿紫云不能再靠 `run_all` 的临时直连维持
+  - formal 角色元数据现在统一收口到 `formal_character_manifest.json` 单真源，鹿紫云不能再靠 `run_all` 的临时直连维持
 - 影响测试：
   - `tests/suites/kashimo_suite.gd`
   - `tests/suites/kashimo_amber_suite.gd`

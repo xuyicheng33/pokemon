@@ -3,8 +3,8 @@ class_name FormalRegistryContracts
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const DEFAULT_CONTRACT_PATH := "res://config/formal_registry_contracts.json"
-const RUNTIME_REGISTRY_BUCKET := "runtime_registry"
-const DELIVERY_REGISTRY_BUCKET := "delivery_registry"
+const MANIFEST_CHARACTER_BUCKET := "manifest_character"
+const PAIR_INTERACTION_CASE_BUCKET := "pair_interaction_case"
 
 var contract_path_override: String = ""
 
@@ -42,7 +42,7 @@ func load_contracts_result() -> Dictionary:
 	var parsed = JSON.parse_string(file.get_as_text())
 	if not (parsed is Dictionary):
 		return _error_result("FormalRegistryContracts expects top-level dictionary: %s" % resolved_contract_path)
-	for bucket_name in [RUNTIME_REGISTRY_BUCKET, DELIVERY_REGISTRY_BUCKET]:
+	for bucket_name in [MANIFEST_CHARACTER_BUCKET, PAIR_INTERACTION_CASE_BUCKET]:
 		var bucket = parsed.get(bucket_name, {})
 		if not (bucket is Dictionary):
 			return _error_result("FormalRegistryContracts missing dictionary bucket %s: %s" % [bucket_name, resolved_contract_path])

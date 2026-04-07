@@ -10,7 +10,7 @@ from repo_consistency_common import GateContext
 
 ctx = GateContext()
 BASELINE_MATCHUP_CATALOG_PATH = "config/sample_matchup_catalog.json"
-FORMAL_MATCHUP_CATALOG_PATH = "config/formal_matchup_catalog.json"
+FORMAL_MANIFEST_PATH = "config/formal_character_manifest.json"
 
 src_count = ctx.gd_line_count("src")
 tests_count = ctx.gd_line_count("tests")
@@ -66,7 +66,7 @@ ctx.require_contains("tests/run_all.gd", 'const PassiveItemContractSuiteScript :
 ctx.require_contains("tests/run_all.gd", "PassiveItemContractSuiteScript.new()", "passive item suite execution")
 ctx.require_contains("tests/run_all.gd", 'const FormalCharacterRegistryScript := preload("res://tests/support/formal_character_registry.gd")', "formal character registry loader")
 ctx.require_contains("tests/run_all.gd", "FormalCharacterRegistryScript.new().build_suite_instances()", "formal character suite expansion")
-ctx.require_contains("tests/support/formal_character_registry.gd", 'const REGISTRY_PATH := "res://config/formal_character_delivery_registry.json"', "formal character delivery registry path")
+ctx.require_contains("tests/support/formal_character_registry.gd", 'const REGISTRY_PATH := "res://config/formal_character_manifest.json"', "formal character manifest path")
 ctx.require_contains("tests/support/formal_character_registry.gd", 'load("res://%s" % suite_path)', "formal character suite dynamic load")
 ctx.require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("candidate_skill_pool_validation"', "candidate skill pool dedicated regression")
 ctx.require_contains("tests/suites/setup_loadout_suite.gd", 'runner.run_test("setup_loadout_override_validation"', "setup override dedicated regression")
@@ -117,8 +117,7 @@ for rel_path in [
 ctx.require_contains("README.md", "candidate_skill_ids", "README candidate skill pool contract")
 ctx.require_contains("README.md", "regular_skill_loadout_overrides", "README setup override contract")
 ctx.require_contains("README.md", "设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite", "README character delivery workflow")
-ctx.require_contains("README.md", "config/formal_character_runtime_registry.json", "README formal character runtime registry")
-ctx.require_contains("README.md", "config/formal_character_delivery_registry.json", "README formal character delivery registry")
+ctx.require_contains("README.md", "config/formal_character_manifest.json", "README formal character manifest")
 ctx.require_contains("README.md", "content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples", "README content snapshot path coverage")
 ctx.require_contains("README.md", "check_suite_reachability.sh", "README suite reachability gate")
 ctx.require_absent("README.md", "policy_decision_suite.gd", "removed auto-selection regression workflow")
@@ -150,8 +149,7 @@ for rel_path in [
         ctx.require_absent(rel_path, needle, label)
 
 ctx.require_contains("tests/README.md", "domain_case_runner.gd", "tests fixed domain case runner doc")
-ctx.require_contains("tests/README.md", "formal_character_runtime_registry.json", "tests formal character runtime registry doc")
-ctx.require_contains("tests/README.md", "formal_character_delivery_registry.json", "tests formal character delivery registry doc")
+ctx.require_contains("tests/README.md", "formal_character_manifest.json", "tests formal character manifest doc")
 ctx.require_contains("tests/README.md", "check_suite_reachability.sh", "tests suite reachability gate doc")
 ctx.require_contains("tests/README.md", "architecture_wiring_graph_gate.py", "tests wiring DAG gate doc")
 ctx.require_contains("tests/README.md", "required_suite_paths", "tests registry suite anchor doc")
@@ -163,9 +161,9 @@ ctx.require_contains("tests/run_with_gate.sh", "check_suite_reachability.sh", "s
 ctx.require_contains("tests/check_architecture_constraints.sh", "architecture_wiring_graph_gate.py", "runtime wiring DAG gate wiring")
 
 baseline_matchup_catalog = ctx.load_json_object(BASELINE_MATCHUP_CATALOG_PATH, "baseline matchup catalog")
-formal_matchup_catalog = ctx.load_json_object(FORMAL_MATCHUP_CATALOG_PATH, "formal matchup catalog")
+formal_manifest = ctx.load_json_object(FORMAL_MANIFEST_PATH, "formal character manifest")
 baseline_matchups = baseline_matchup_catalog.get("matchups", {})
-formal_matchups = formal_matchup_catalog.get("matchups", {})
+formal_matchups = formal_manifest.get("matchups", {})
 if isinstance(baseline_matchups, dict) and isinstance(formal_matchups, dict):
     overlap = sorted(
         matchup_id

@@ -56,25 +56,43 @@ func _test_formal_character_validator_absent_bad_validator_ignored_contract(harn
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var runtime_registry_path := "user://formal_character_runtime_registry_absent_bad_validator_fixture.json"
-	var runtime_registry_payload := JSON.stringify([
-		_build_runtime_registry_entry(
+	var manifest_path := "user://formal_character_manifest_absent_bad_validator_fixture.json"
+	var manifest_payload := JSON.stringify(_build_manifest_payload([
+		_build_manifest_character_entry(
 			"gojo_satoru",
+			"Gojo",
 			"gojo_satoru",
 			"gojo_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
-			"src/battle_core/content/formal_validators/gojo/content_snapshot_formal_gojo_validator.gd"
+			"src/battle_core/content/formal_validators/gojo/content_snapshot_formal_gojo_validator.gd",
+			"docs/design/gojo_satoru_design.md",
+			"docs/design/gojo_satoru_adjustments.md",
+			"gojo_ao",
+			"tests/suites/gojo_suite.gd",
+			["tests/suites/formal_character_pair_smoke_suite.gd"],
+			["gojo_manager_smoke_contract"],
+			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
+			["anchor:gojo.adjust.tests-impacted"]
 		),
-		_build_runtime_registry_entry(
+		_build_manifest_character_entry(
 			"sukuna",
+			"宿傩",
 			"sukuna",
 			"sukuna_setup",
 			["content/units/sukuna/sukuna.tres"],
-			InvalidValidatorFixturePath
+			InvalidValidatorFixturePath,
+			"docs/design/sukuna_design.md",
+			"docs/design/sukuna_adjustments.md",
+			"sukuna_kai",
+			"tests/suites/sukuna_suite.gd",
+			["tests/suites/formal_character_pair_smoke_suite.gd"],
+			["sukuna_manager_smoke_contract"],
+			["anchor:sukuna.design.domain-expire-burst-kept"],
+			["anchor:sukuna.adjust.tests-impacted"]
 		),
-	], "  ")
-	if not _write_json_fixture(runtime_registry_path, runtime_registry_payload):
-		return harness.fail_result("failed to write absent-bad-validator runtime registry fixture")
+	]), "  ")
+	if not _write_json_fixture(manifest_path, manifest_payload):
+		return harness.fail_result("failed to write absent-bad-validator manifest fixture")
 	var gojo_only_paths: Variant = _build_filtered_snapshot_paths(harness, sample_factory, PackedStringArray(["/sukuna/", "/kashimo/", "/obito/"]))
 	if gojo_only_paths is Dictionary and gojo_only_paths.has("error"):
 		return harness.fail_result(str(gojo_only_paths.get("error", "gojo-only snapshot path build failed")))
@@ -82,7 +100,7 @@ func _test_formal_character_validator_absent_bad_validator_ignored_contract(harn
 	if not content_index.load_snapshot(gojo_only_paths):
 		return harness.fail_result("gojo-only snapshot should load for absent-bad-validator contract: %s" % content_index.last_error_message)
 	var validator = ContentSnapshotFormalCharacterValidatorScript.new()
-	validator.registry_path_override = runtime_registry_path
+	validator.registry_path_override = manifest_path
 	var errors: Array = []
 	validator.validate(content_index, errors)
 	if not errors.is_empty():
@@ -93,18 +111,27 @@ func _test_formal_character_validator_present_bad_validator_fail_fast_contract(h
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
-	var runtime_registry_path := "user://formal_character_runtime_registry_present_bad_validator_fixture.json"
-	var runtime_registry_payload := JSON.stringify([
-		_build_runtime_registry_entry(
+	var manifest_path := "user://formal_character_manifest_present_bad_validator_fixture.json"
+	var manifest_payload := JSON.stringify(_build_manifest_payload([
+		_build_manifest_character_entry(
 			"gojo_satoru",
+			"Gojo",
 			"gojo_satoru",
 			"gojo_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
-			InvalidValidatorFixturePath
+			InvalidValidatorFixturePath,
+			"docs/design/gojo_satoru_design.md",
+			"docs/design/gojo_satoru_adjustments.md",
+			"gojo_ao",
+			"tests/suites/gojo_suite.gd",
+			["tests/suites/formal_character_pair_smoke_suite.gd"],
+			["gojo_manager_smoke_contract"],
+			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
+			["anchor:gojo.adjust.tests-impacted"]
 		),
-	], "  ")
-	if not _write_json_fixture(runtime_registry_path, runtime_registry_payload):
-		return harness.fail_result("failed to write present-bad-validator runtime registry fixture")
+	]), "  ")
+	if not _write_json_fixture(manifest_path, manifest_payload):
+		return harness.fail_result("failed to write present-bad-validator manifest fixture")
 	var gojo_only_paths: Variant = _build_filtered_snapshot_paths(harness, sample_factory, PackedStringArray(["/sukuna/", "/kashimo/", "/obito/"]))
 	if gojo_only_paths is Dictionary and gojo_only_paths.has("error"):
 		return harness.fail_result(str(gojo_only_paths.get("error", "gojo-only snapshot path build failed")))
@@ -112,7 +139,7 @@ func _test_formal_character_validator_present_bad_validator_fail_fast_contract(h
 	if not content_index.load_snapshot(gojo_only_paths):
 		return harness.fail_result("gojo-only snapshot should load for present-bad-validator contract: %s" % content_index.last_error_message)
 	var validator = ContentSnapshotFormalCharacterValidatorScript.new()
-	validator.registry_path_override = runtime_registry_path
+	validator.registry_path_override = manifest_path
 	var errors: Array = []
 	validator.validate(content_index, errors)
 	if errors.is_empty():
