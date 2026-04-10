@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_service_specs.gd"
 WIRING_SPECS_PATH = ROOT / "src/composition/battle_core_wiring_specs.gd"
+WIRING_SPECS_DIR = ROOT / "src/composition/battle_core_wiring_specs"
 CONTAINER_PATH = ROOT / "src/composition/battle_core_container.gd"
 COMPOSER_PATH = ROOT / "src/composition/battle_core_composer.gd"
 
@@ -39,6 +40,11 @@ def _duplicate_names(names: list[str]) -> list[str]:
 
 service_specs_text = SERVICE_SPECS_PATH.read_text(encoding="utf-8")
 wiring_specs_text = WIRING_SPECS_PATH.read_text(encoding="utf-8")
+wiring_child_texts = []
+for path in sorted(WIRING_SPECS_DIR.glob("*.gd")):
+    wiring_child_texts.append(path.read_text(encoding="utf-8"))
+if not wiring_child_texts:
+    fail("battle_core_wiring_specs must aggregate child spec files", [str(WIRING_SPECS_DIR.relative_to(ROOT))])
 container_text = CONTAINER_PATH.read_text(encoding="utf-8")
 composer_text = COMPOSER_PATH.read_text(encoding="utf-8")
 
@@ -51,14 +57,33 @@ service_slots = re.findall(r'"slot": "([^"]+)"', service_descriptors_block)
 script_slots = re.findall(r'"slot": "([^"]+)", "script": preload\("([^"]+)"\)', service_descriptors_block)
 slot_pattern = "|".join(re.escape(slot) for slot in service_slots)
 
-wiring_owner_source_pairs = re.findall(
-    r'\{"owner": "([^"]+)", "dependency": "([^"]+)", "source": "([^"]+)"\}',
-    wiring_specs_text,
-)
+wiring_owner_source_pairs = []
+for child_text in wiring_child_texts:
+    wiring_owner_source_pairs.extend(
+        re.findall(r'\{"owner": "([^"]+)", "dependency": "([^"]+)", "source": "([^"]+)"\}', child_text)
+    )
 reset_owner_pairs = re.findall(
     r'\{"owner": "([^"]+)", "field": "([^"]+)", "value":',
     wiring_specs_text,
 )
+
+required_wiring_specs_helpers = [
+    "static func wiring_specs() -> Array:",
+    "static func reset_specs() -> Array:",
+]
+missing_wiring_specs_helpers = [
+    helper for helper in required_wiring_specs_helpers if helper not in wiring_specs_text
+]
+if missing_wiring_specs_helpers:
+    fail(
+        "battle_core_wiring_specs must expose aggregated helpers",
+        missing_wiring_specs_helpers,
+    )
+if "src/composition/battle_core_wiring_specs/" not in wiring_specs_text:
+    fail(
+        "battle_core_wiring_specs must preload child spec files from the split directory",
+        [str(WIRING_SPECS_DIR.relative_to(ROOT))],
+    )
 
 for label, names in [
     ("SERVICE_DESCRIPTORS slots", service_slots),
@@ -147,6 +172,10 @@ if "ServiceSpecsScript.service_slots()" not in composer_text:
     composer_issues.append("composer must iterate ServiceSpecsScript.service_slots()")
 if "ServiceSpecsScript.script_by_slot(" not in composer_text:
     composer_issues.append("composer must resolve scripts via ServiceSpecsScript.script_by_slot()")
+if "WiringSpecsScript.wiring_specs()" not in composer_text:
+    composer_issues.append("composer must resolve wiring specs via WiringSpecsScript.wiring_specs()")
+if "WiringSpecsScript.reset_specs()" not in composer_text:
+    composer_issues.append("composer must resolve reset specs via WiringSpecsScript.reset_specs()")
 if "container.get(" in composer_text:
     composer_issues.append("composer must not use container.get")
 if "container.set(" in composer_text:

@@ -45,13 +45,15 @@ func shared_content_snapshot_cache() -> Variant:
 func compose() -> Variant:
     last_error_code = null
     last_error_message = ""
+    var wiring_specs := WiringSpecsScript.wiring_specs()
+    var reset_specs := WiringSpecsScript.reset_specs()
     var container = BattleCoreContainerScript.new()
     if not _instantiate_services(container):
         return null
-    if not _wire_dependencies(container):
+    if not _wire_dependencies(container, wiring_specs):
         return null
-    container.configure_dispose_specs(_resolve_service_slots(), WiringSpecsScript.WIRING_SPECS, WiringSpecsScript.RESET_SPECS)
-    if not _validate_container_dependencies(container):
+    container.configure_dispose_specs(_resolve_service_slots(), wiring_specs, reset_specs)
+    if not _validate_container_dependencies(container, wiring_specs):
         container.dispose()
         return null
     return container
@@ -112,8 +114,8 @@ func _instantiate_services(container) -> bool:
         container.set_service(slot_name, script_ref.new())
     return true
 
-func _wire_dependencies(container) -> bool:
-    for wiring_spec in WiringSpecsScript.WIRING_SPECS:
+func _wire_dependencies(container, wiring_specs: Array) -> bool:
+    for wiring_spec in wiring_specs:
         var owner_name := str(wiring_spec["owner"])
         var dependency_name := str(wiring_spec["dependency"])
         var source_name := str(wiring_spec["source"])
@@ -128,8 +130,8 @@ func _wire_dependencies(container) -> bool:
         owner.set(dependency_name, dependency)
     return true
 
-func _validate_container_dependencies(container) -> bool:
-    for wiring_spec in WiringSpecsScript.WIRING_SPECS:
+func _validate_container_dependencies(container, wiring_specs: Array) -> bool:
+    for wiring_spec in wiring_specs:
         var owner_name := str(wiring_spec["owner"])
         var dependency_name := str(wiring_spec["dependency"])
         var owner = container.service(owner_name)

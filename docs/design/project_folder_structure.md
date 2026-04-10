@@ -43,6 +43,7 @@
       facades/
     adapters/
     composition/
+      battle_core_wiring_specs/
     shared/
   tests/
     suites/
@@ -74,7 +75,7 @@
 |`src/battle_core/effects/payload_handlers`|payload handler 与其子 runtime service；Effects 的正式子域|
 |`src/battle_core/facades`|对外围公开的稳定 facade 与公开快照构建辅助|
 |`src/adapters`|UI/输入/测试适配层|
-|`src/composition`|服务装配入口|
+|`src/composition`|服务装配入口；`battle_core_wiring_specs/` 收口分域 wiring spec，`battle_core_wiring_specs.gd` 只负责聚合|
 |`src/shared`|无业务依赖的通用工具和常量|
 |`scenes/boot`|应用启动入口|
 |`scenes/sandbox`|战斗骨架调试场景|

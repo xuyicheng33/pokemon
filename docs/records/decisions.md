@@ -167,6 +167,28 @@
   - 如果只靠角色稿或 `required_suite_paths` 零散补共享回归，很快又会回到“每扩一角就要到处找补丁点”的老路
   - 把 `shared_capability_ids + capability catalog + gate` 一起钉死后，新增角色时只需要先回答两件事：这是不是现有共享入口；如果是，要不要已经到 `stop_and_specialize_when` 该停的边界
 
+## 0L. battle_core wiring specs 固定改为子域拆分 + 聚合入口（2026-04-10）
+
+- `src/composition/battle_core_wiring_specs.gd` 当前固定只保留聚合职责；真实 wiring spec 固定下沉到 `src/composition/battle_core_wiring_specs/*.gd`。
+- wiring spec 当前固定按子域拆分：
+  - `commands`
+  - `turn`
+  - `lifecycle`
+  - `passives`
+  - `effects_core`
+  - `payload_handlers`
+  - `actions`
+- `BattleCoreComposer` 当前固定继续只认一个聚合入口，但不再直接读取单个超长常量表；统一改从 `BattleCoreWiringSpecs.wiring_specs() / reset_specs()` 取装配事实。
+- `tests/gates/architecture_composition_consistency_gate.py` 与 `tests/gates/architecture_wiring_graph_gate.py` 当前固定直接扫描 split wiring 目录，继续硬校验：
+  - wiring owner/source 必须都落在 `SERVICE_DESCRIPTORS`
+  - owner/dependency 对不得重复
+  - runtime wiring 图必须保持 strict DAG
+  - composer 必须继续通过聚合入口读取 wiring / reset specs
+- 这么定的原因：
+  - `battle_core_wiring_specs.gd` 虽然还没超 250 行，但已经明显进入“继续扩 helper 或 service 就会重新变热”的趋势
+  - 这份文件承载的是装配事实，不是新抽象；最短路径就是按现有子域把 spec 表拆开，再保留一个稳定聚合入口给 composer 和 gate
+  - 先把 wiring 声明结构拉回到可维护状态，后续扩 service 或拆 owner 时，改动就能落在对应子域 spec，而不是重新把所有装配事实堆回一个中心文件
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

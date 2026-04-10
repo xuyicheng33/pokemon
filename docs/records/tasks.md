@@ -45,6 +45,12 @@
       - 角色内容 / validator / 设计稿 / 调整记录 / wrapper 必须能扫到实际消费证据
     - `README.md`、`tests/README.md`、`docs/design/formal_character_delivery_checklist.md`、`docs/design/formal_character_design_template.md`、`docs/design/battle_content_schema.md`、`docs/design/project_folder_structure.md` 已同步 capability catalog 与 `shared_capability_ids` 口径
     - 已补 `docs/design/formal_character_capability_catalog.md`，把共享能力目录职责、字段、接入顺序与 gate 硬约束收成单文档
+  - 第 3 阶段已完成：
+    - `src/composition/battle_core_wiring_specs.gd` 已收成聚合入口，真实 wiring spec 拆到 `src/composition/battle_core_wiring_specs/*.gd`
+    - wiring spec 当前固定按子域拆分为 `commands / turn / lifecycle / passives / effects_core / payload_handlers / actions`
+    - `BattleCoreComposer` 仍只走统一聚合入口装配，但 wiring / reset spec 已改为通过 `BattleCoreWiringSpecs.wiring_specs() / reset_specs()` 统一派发
+    - composition consistency gate 与 wiring DAG gate 已改为直接扫描 split wiring 目录，继续锁 `SERVICE_DESCRIPTORS / container API / wiring specs / strict DAG` 一致性
+    - `docs/design/project_folder_structure.md` 与 `README.md` 已同步新增 wiring specs 聚合目录与最新代码规模统计
 - 第 1 阶段验收结果：
   - 仓库中已不存在旧短别名 baseline 分发路径
   - 四角色 snapshot / validator / runtime 全量回归通过
@@ -61,6 +67,15 @@
 - 第 2 阶段验证：
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `git diff --check`
+- 第 3 阶段验收结果：
+  - wiring spec 不再继续堆在单文件里，接线层热点已按子域拆开
+  - composer 装配结果不变，runtime wiring 图仍保持 strict DAG
+  - battle core 主回合语义与四角色回归未受影响
+- 第 3 阶段验证：
+  - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_suite_reachability.sh`
   - `godot --headless --path . --script tests/run_all.gd`
   - `git diff --check`
