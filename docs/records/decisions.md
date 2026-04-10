@@ -122,6 +122,29 @@
   - `tests/check_repo_consistency.sh` 的入口脚本和 gate 完成语义已经稳定，最适合做“主入口不变、内部模块化”的拆法
   - 先把 gate 主线拆成 cutover / character / pair 三段，后续不论是 manifest 合同变化还是 suite/regression 变化，都能在对应子模块里单点演进，不必继续把主入口拉长
 
+## 0J. formal baseline 只认 manifest 正式 ID，并把 shared baseline 热点纳入 gate（2026-04-10）
+
+- `src/shared/formal_character_baselines.gd` 的中心分发表当前固定只认 manifest 正式 ID：
+  - `gojo_satoru`
+  - `sukuna`
+  - `kashimo_hajime`
+  - `obito_juubi_jinchuriki`
+- baseline 主入口当前固定只保留稳定 facade：
+  - `unit_contract()`
+  - `regular_skill_contracts()`
+  - `ultimate_skill_contract()`
+  - `passive_skill_contract()`
+  - `field_contracts()`
+- `effect_contracts()` 已固定拆到独立 helper；复杂奥义 / 领域合同也已固定拆到独立 helper，避免角色 baseline 再回到 250+ 行热点。
+- `tests/check_architecture_constraints.sh` 当前固定把 `src/shared/formal_character_baselines/**` 与 `src/shared/formal_character_baselines.gd` 纳入大文件强校验。
+- `tests/gates/repo_consistency_formal_character_gate.py` 当前固定新增两条硬约束：
+  - baseline 分发表 key 必须和 manifest `characters[*].character_id` 顺序一致
+  - baseline / validator / snapshot suite / support / gate 不允许残留旧短别名 `gojo / kashimo / obito`
+- 这么定的原因：
+  - 上一轮虽然把角色基础事实收口到了 shared baseline，但中心分发仍停留在短别名口径，扩第 5 个角色时仍会留下“manifest 已是正式 ID、descriptor 调用却还认旧别名”的双真相裂缝
+  - baseline 真热点已经转移到 `src/shared/formal_character_baselines/**`，如果 gate 还只盯 `src/battle_core` / `src/composition`，后续最先失控的会是角色合同层，而不是 battle core owner
+  - 先把正式 ID 与目录治理一起锁死，后续再做 capability catalog 与 wiring 拆分时，角色交付链的根不会继续漂
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

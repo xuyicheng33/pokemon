@@ -17,7 +17,7 @@ func validate(validator, content_index, errors: Array) -> void:
 	_validate_murasaki_burst(validator, content_index, errors)
 
 func _validate_reverse_ritual_contract(validator, content_index, errors: Array) -> void:
-	var label := "formal[gojo].reverse_ritual"
+	var label := "formal[gojo_satoru].reverse_ritual"
 	var effect_definition = validator._require_effect(content_index, errors, label, "gojo_reverse_heal")
 	if effect_definition == null:
 		return
@@ -50,7 +50,7 @@ func _validate_reverse_ritual_contract(validator, content_index, errors: Array) 
 	)
 
 func _validate_murasaki_burst(validator, content_index, errors: Array) -> void:
-	var label := "formal[gojo].murasaki_burst"
+	var label := "formal[gojo_satoru].murasaki_burst"
 	var effect_definition = validator._require_effect(content_index, errors, label, "gojo_murasaki_conditional_burst")
 	if effect_definition == null:
 		return

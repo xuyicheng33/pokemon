@@ -19,7 +19,7 @@ func _test_formal_obito_validator_heal_block_bad_case_contract(harness) -> Dicti
 		return harness.fail_result("missing obito_qiudao_jiaotu_heal_block_rule_mod payload")
 	heal_block_effect.payloads[0].value = 1.0
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, "formal[obito].heal_block payload.value mismatch: expected 0.0 got 1.0"):
+	if not _has_error(errors, "formal[obito_juubi_jinchuriki].heal_block payload.value mismatch: expected 0.0 got 1.0"):
 		return harness.fail_result("obito formal validator should fail-fast when heal-block payload drifts")
 	return harness.pass_result()
 
@@ -33,7 +33,7 @@ func _test_formal_obito_validator_heal_block_surface_bad_case_contract(harness) 
 		return harness.fail_result("missing obito_qiudao_jiaotu_heal_block_rule_mod")
 	heal_block_effect.persists_on_switch = false
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, "formal[obito].heal_block rule_mod persists_on_switch mismatch"):
+	if not _has_error(errors, "formal[obito_juubi_jinchuriki].heal_block rule_mod persists_on_switch mismatch"):
 		return harness.fail_result("obito formal validator should fail-fast when heal-block surface drifts")
 	return harness.pass_result()
 
@@ -47,7 +47,7 @@ func _test_formal_obito_validator_execute_bad_case_contract(harness) -> Dictiona
 		return harness.fail_result("missing obito_qiudao_yu")
 	qiudaoyu.execute_required_total_stacks = 4
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, "formal[obito].qiudao_yu execute_required_total_stacks mismatch: expected 5 got 4"):
+	if not _has_error(errors, "formal[obito_juubi_jinchuriki].qiudao_yu execute_required_total_stacks mismatch: expected 5 got 4"):
 		return harness.fail_result("obito formal validator should fail-fast when execute stack threshold drifts")
 	return harness.pass_result()
 
@@ -61,7 +61,7 @@ func _test_formal_obito_validator_yinyang_guard_surface_bad_case_contract(harnes
 		return harness.fail_result("missing obito_yinyang_dun_guard_rule_mod")
 	guard_effect.trigger_names = PackedStringArray(["on_hit"])
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, "formal[obito].yinyang_dun guard trigger_names mismatch"):
+	if not _has_error(errors, "formal[obito_juubi_jinchuriki].yinyang_dun guard trigger_names mismatch"):
 		return harness.fail_result("obito formal validator should fail-fast when yinyang guard surface drifts")
 	return harness.pass_result()
 
@@ -75,7 +75,7 @@ func _test_formal_obito_validator_yinyang_listener_surface_bad_case_contract(har
 		return harness.fail_result("missing obito_yinyang_dun_guard_stack_listener_state")
 	listener_state.trigger_names = PackedStringArray(["on_hit"])
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, "formal[obito].yinyang_dun listener_state trigger_names mismatch"):
+	if not _has_error(errors, "formal[obito_juubi_jinchuriki].yinyang_dun listener_state trigger_names mismatch"):
 		return harness.fail_result("obito formal validator should fail-fast when yinyang listener surface drifts")
 	return harness.pass_result()
 
@@ -89,6 +89,6 @@ func _test_formal_obito_validator_ultimate_segments_bad_case_contract(harness) -
 		return harness.fail_result("missing obito_shiwei_weishouyu damage_segments")
 	ultimate.damage_segments[1].repeat_count = 7
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, "formal[obito].shiwei_weishouyu damage_segments[1].repeat_count mismatch: expected 8 got 7"):
+	if not _has_error(errors, "formal[obito_juubi_jinchuriki].shiwei_weishouyu damage_segments[1].repeat_count mismatch: expected 8 got 7"):
 		return harness.fail_result("obito formal validator should fail-fast when ultimate segment count drifts")
 	return harness.pass_result()

@@ -13,6 +13,6 @@ func validate(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.skill_contract("gojo", "gojo_unlimited_void")]
+		[FormalCharacterBaselinesScript.skill_contract("gojo_satoru", "gojo_unlimited_void")]
 	)
 	_domain_contracts.validate(validator, content_index, errors)

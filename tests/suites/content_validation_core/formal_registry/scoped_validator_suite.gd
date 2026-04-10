@@ -44,9 +44,9 @@ func _test_formal_character_validator_present_character_scope_contract(harness) 
 	var saw_gojo_scope_error := false
 	for error_msg in errors:
 		var msg := str(error_msg)
-		if msg.find("formal[gojo].murasaki_burst required_target_same_owner must be true") != -1:
+		if msg.find("formal[gojo_satoru].murasaki_burst required_target_same_owner must be true") != -1:
 			saw_gojo_scope_error = true
-		if msg.find("formal[sukuna]") != -1 or msg.find("formal[kashimo]") != -1:
+		if msg.find("formal[sukuna]") != -1 or msg.find("formal[kashimo_hajime]") != -1:
 			return harness.fail_result("scoped formal validator should not report unrelated characters when only Gojo is loaded")
 	if not saw_gojo_scope_error:
 		return harness.fail_result("scoped formal validator should still enforce Gojo contracts when Gojo is present")

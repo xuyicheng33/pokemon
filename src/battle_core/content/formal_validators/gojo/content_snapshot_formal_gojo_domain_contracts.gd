@@ -14,7 +14,7 @@ func validate(validator, content_index, errors: Array) -> void:
 	_validate_domain_buff_contract(validator, content_index, errors)
 
 func _validate_domain_followup(validator, content_index, errors: Array) -> void:
-	var label := "formal[gojo].domain_followup"
+	var label := "formal[gojo_satoru].domain_followup"
 	var effect_definition = validator._require_effect(content_index, errors, label, "gojo_apply_domain_field")
 	if effect_definition == null:
 		return
@@ -22,7 +22,7 @@ func _validate_domain_followup(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("gojo", "gojo_apply_domain_field", label)]
+		[FormalCharacterBaselinesScript.effect_contract("gojo_satoru", "gojo_apply_domain_field", label)]
 	)
 	var apply_field_payload = validator._extract_single_payload(
 		errors,
@@ -53,12 +53,12 @@ func _validate_domain_followup(validator, content_index, errors: Array) -> void:
 	)
 
 func _validate_domain_buff_contract(validator, content_index, errors: Array) -> void:
-	var label := "formal[gojo].domain_buff_contract"
+	var label := "formal[gojo_satoru].domain_buff_contract"
 	_helper.validate_field_contracts(
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.field_contract("gojo", "gojo_unlimited_void_field", "%s field" % label)]
+		[FormalCharacterBaselinesScript.field_contract("gojo_satoru", "gojo_unlimited_void_field", "%s field" % label)]
 	)
 	var action_lock_effect = validator._require_effect(content_index, errors, label, "gojo_domain_action_lock")
 	if action_lock_effect != null:

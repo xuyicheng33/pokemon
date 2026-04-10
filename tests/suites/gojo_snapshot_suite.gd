@@ -18,7 +18,7 @@ func _test_gojo_unit_snapshot_contract(harness) -> Dictionary:
     return _helper.run_descriptor_checks(
         harness,
         content_index.units,
-        [FormalCharacterBaselinesScript.unit_contract("gojo")],
+        [FormalCharacterBaselinesScript.unit_contract("gojo_satoru")],
         "unit_id",
         "missing gojo unit definition"
     )
@@ -30,7 +30,7 @@ func _test_gojo_skill_snapshot_contract(harness) -> Dictionary:
     return _helper.run_descriptor_checks(
         harness,
         content_index.skills,
-        FormalCharacterBaselinesScript.skill_contracts("gojo"),
+        FormalCharacterBaselinesScript.skill_contracts("gojo_satoru"),
         "skill_id",
         "missing gojo snapshot skill resource"
     )
@@ -60,13 +60,13 @@ func _test_gojo_effect_snapshot_contract(harness) -> Dictionary:
     var domain_lock_payload = domain_lock.payloads[0]
     var mugen_payload = mugen_effect.payloads[0]
     var checks: Array[Dictionary] = []
-    _helper.append_effect_checks(checks, ao_mark, FormalCharacterBaselinesScript.effect_contract("gojo", "gojo_ao_mark"))
-    _helper.append_effect_checks(checks, aka_mark, FormalCharacterBaselinesScript.effect_contract("gojo", "gojo_aka_mark"))
-    _helper.append_effect_checks(checks, murasaki_burst, FormalCharacterBaselinesScript.effect_contract("gojo", "gojo_murasaki_conditional_burst"))
-    _helper.append_effect_checks(checks, apply_domain, FormalCharacterBaselinesScript.effect_contract("gojo", "gojo_apply_domain_field"))
-    _helper.append_effect_checks(checks, mugen_effect, FormalCharacterBaselinesScript.effect_contract("gojo", "gojo_mugen_incoming_accuracy_down"))
-    _helper.append_passive_checks(checks, mugen, FormalCharacterBaselinesScript.passive_contract("gojo", "gojo_mugen"))
-    _helper.append_field_checks(checks, domain_field, FormalCharacterBaselinesScript.field_contract("gojo", "gojo_unlimited_void_field"))
+    _helper.append_effect_checks(checks, ao_mark, FormalCharacterBaselinesScript.effect_contract("gojo_satoru", "gojo_ao_mark"))
+    _helper.append_effect_checks(checks, aka_mark, FormalCharacterBaselinesScript.effect_contract("gojo_satoru", "gojo_aka_mark"))
+    _helper.append_effect_checks(checks, murasaki_burst, FormalCharacterBaselinesScript.effect_contract("gojo_satoru", "gojo_murasaki_conditional_burst"))
+    _helper.append_effect_checks(checks, apply_domain, FormalCharacterBaselinesScript.effect_contract("gojo_satoru", "gojo_apply_domain_field"))
+    _helper.append_effect_checks(checks, mugen_effect, FormalCharacterBaselinesScript.effect_contract("gojo_satoru", "gojo_mugen_incoming_accuracy_down"))
+    _helper.append_passive_checks(checks, mugen, FormalCharacterBaselinesScript.passive_contract("gojo_satoru", "gojo_mugen"))
+    _helper.append_field_checks(checks, domain_field, FormalCharacterBaselinesScript.field_contract("gojo_satoru", "gojo_unlimited_void_field"))
     checks.append_array([
         {"label": "gojo_ao_speed_up stat_name", "actual": String(ao_speed_payload.stat_name), "expected": "speed"},
         {"label": "gojo_ao_speed_up stage_delta", "actual": int(ao_speed_payload.stage_delta), "expected": 1},

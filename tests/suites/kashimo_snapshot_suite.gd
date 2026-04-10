@@ -18,7 +18,7 @@ func _test_kashimo_unit_snapshot_contract(harness) -> Dictionary:
     return _helper.run_descriptor_checks(
         harness,
         content_index.units,
-        [FormalCharacterBaselinesScript.unit_contract("kashimo")],
+        [FormalCharacterBaselinesScript.unit_contract("kashimo_hajime")],
         "unit_id",
         "missing kashimo unit definition"
     )
@@ -30,7 +30,7 @@ func _test_kashimo_skill_snapshot_contract(harness) -> Dictionary:
     return _helper.run_descriptor_checks(
         harness,
         content_index.skills,
-        FormalCharacterBaselinesScript.skill_contracts("kashimo"),
+        FormalCharacterBaselinesScript.skill_contracts("kashimo_hajime"),
         "skill_id",
         "missing kashimo snapshot skill resource"
     )
@@ -70,13 +70,13 @@ func _test_kashimo_effect_snapshot_contract(harness) -> Dictionary:
     var amber_ult_lock_payload = amber_transform.payloads[4]
     var amber_bleed_payload = amber_bleed.payloads[0]
     var checks: Array[Dictionary] = []
-    _helper.append_effect_checks(checks, negative_mark, FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_negative_charge_mark"))
-    _helper.append_effect_checks(checks, positive_mark, FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_positive_charge_mark"))
-    _helper.append_effect_checks(checks, kyokyo, FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_kyokyo_nullify"))
-    _helper.append_effect_checks(checks, water_self, FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_water_leak_self_listener"))
-    _helper.append_effect_checks(checks, water_counter, FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_water_leak_counter_listener"))
-    _helper.append_effect_checks(checks, amber_bleed, FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_amber_bleed"))
-    _helper.append_passive_checks(checks, passive, FormalCharacterBaselinesScript.passive_contract("kashimo", "kashimo_charge_separation"))
+    _helper.append_effect_checks(checks, negative_mark, FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_negative_charge_mark"))
+    _helper.append_effect_checks(checks, positive_mark, FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_positive_charge_mark"))
+    _helper.append_effect_checks(checks, kyokyo, FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_kyokyo_nullify"))
+    _helper.append_effect_checks(checks, water_self, FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_water_leak_self_listener"))
+    _helper.append_effect_checks(checks, water_counter, FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_water_leak_counter_listener"))
+    _helper.append_effect_checks(checks, amber_bleed, FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_amber_bleed"))
+    _helper.append_passive_checks(checks, passive, FormalCharacterBaselinesScript.passive_contract("kashimo_hajime", "kashimo_charge_separation"))
     checks.append_array([
         {"label": "kashimo_negative_mark amount", "actual": int(negative_payload.amount), "expected": 8},
         {"label": "kashimo_negative_mark combat_type_id", "actual": String(negative_payload.combat_type_id), "expected": "thunder"},

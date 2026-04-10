@@ -78,10 +78,15 @@ import sys
 root = Path(".")
 
 size_review_rules = {}
+review_roots = [
+    root / "src/battle_core",
+    root / "src/composition",
+    root / "src/shared/formal_character_baselines",
+]
 
 review_required = []
 warning_review = []
-for source_root in [root / "src/battle_core", root / "src/composition"]:
+for source_root in review_roots:
     for path in source_root.rglob("*.gd"):
         rel = str(path.relative_to(root))
         line_count = len(path.read_text(encoding="utf-8").splitlines())
@@ -89,6 +94,15 @@ for source_root in [root / "src/battle_core", root / "src/composition"]:
             warning_review.append((rel, line_count))
         if line_count > 250:
             review_required.append((rel, line_count))
+
+formal_baseline_entry = root / "src/shared/formal_character_baselines.gd"
+if formal_baseline_entry.exists():
+    rel = str(formal_baseline_entry.relative_to(root))
+    line_count = len(formal_baseline_entry.read_text(encoding="utf-8").splitlines())
+    if 220 <= line_count <= 250:
+        warning_review.append((rel, line_count))
+    if line_count > 250:
+        review_required.append((rel, line_count))
 
 missing_review_allowlist = []
 for rel, line_count in review_required:

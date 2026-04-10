@@ -14,12 +14,12 @@ func validate(validator, content_index, errors: Array) -> void:
 	_validate_mugen_contract(validator, content_index, errors)
 
 func _validate_mugen_contract(validator, content_index, errors: Array) -> void:
-	var label := "formal[gojo].mugen"
+	var label := "formal[gojo_satoru].mugen"
 	_helper.validate_passive_skill_contracts(
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.passive_contract("gojo", "gojo_mugen", label)]
+		[FormalCharacterBaselinesScript.passive_contract("gojo_satoru", "gojo_mugen", label)]
 	)
 	var effect_definition = validator._require_effect(content_index, errors, label, "gojo_mugen_incoming_accuracy_down")
 	if effect_definition == null:
@@ -28,7 +28,7 @@ func _validate_mugen_contract(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("gojo", "gojo_mugen_incoming_accuracy_down", "%s effect" % label)]
+		[FormalCharacterBaselinesScript.effect_contract("gojo_satoru", "gojo_mugen_incoming_accuracy_down", "%s effect" % label)]
 	)
 	var payload = validator._extract_single_payload(errors, label, "gojo_mugen_incoming_accuracy_down", effect_definition, RuleModPayloadScript, "rule_mod")
 	if payload == null:

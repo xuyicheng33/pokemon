@@ -17,16 +17,16 @@ func _validate_unit_contract(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		FormalCharacterBaselinesScript.unit_contract("obito")
+		FormalCharacterBaselinesScript.unit_contract("obito_juubi_jinchuriki")
 	)
 
 func _validate_passive_contract(validator, content_index, errors: Array) -> void:
-	var label := "formal[obito].xianren_zhili"
+	var label := "formal[obito_juubi_jinchuriki].xianren_zhili"
 	_helper.validate_passive_skill_contracts(
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.passive_contract("obito", "obito_xianren_zhili", label)]
+		[FormalCharacterBaselinesScript.passive_contract("obito_juubi_jinchuriki", "obito_xianren_zhili", label)]
 	)
 	var effect_definition = validator._require_effect(content_index, errors, label, "obito_xianren_zhili_heal")
 	if effect_definition == null:
@@ -35,7 +35,7 @@ func _validate_passive_contract(validator, content_index, errors: Array) -> void
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("obito", "obito_xianren_zhili_heal", "%s effect" % label)]
+		[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_xianren_zhili_heal", "%s effect" % label)]
 	)
 	var heal_payload = validator._extract_single_payload(
 		errors,
@@ -61,5 +61,5 @@ func _validate_yinyang_stack_contract(validator, content_index, errors: Array) -
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("obito", "obito_yinyang_zhili")]
+		[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_yinyang_zhili")]
 	)

@@ -33,6 +33,7 @@ DELIVERY_REGISTRY_HELPER_PATH = "tests/support/formal_character_registry.gd"
 RUNTIME_REGISTRY_HELPER_PATH = "src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd"
 FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH = "src/shared/formal_registry_contracts.gd"
 FORMAL_MANIFEST_SCRIPT_PATH = "src/shared/formal_character_manifest.gd"
+FORMAL_BASELINES_PATH = "src/shared/formal_character_baselines.gd"
 SHARED_SUITE_ROOTS = [
     "tests/suites/formal_character_pair_smoke_suite.gd",
     "tests/suites/ultimate_points_contract_suite.gd",
@@ -148,6 +149,7 @@ validate_manifest_cutover(
 character_validation = validate_character_entries(
     ctx,
     manifest_path=MANIFEST_PATH,
+    baseline_registry_path=FORMAL_BASELINES_PATH,
     characters=characters,
     matchups=matchups,
     character_runtime_required_string_fields=character_runtime_required_string_fields,

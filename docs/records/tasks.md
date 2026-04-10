@@ -10,6 +10,40 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前波次：formal contract 扩角前硬收口（2026-04-10）
+
+- 状态：进行中
+- 目标：
+  - 一次性切掉 formal baseline、角色接入链和接线层继续膨胀的根因，不改 battle core 主回合语义，不改四正式角色玩法与数值。
+- 范围：
+  - 第 1 阶段：formal baseline 与角色 ID 收口
+  - 第 2 阶段：manifest + shared capability catalog 模板化
+  - 第 3 阶段：composition / wiring specs 按子域拆分
+  - 第 4 阶段：文档、gate、记录与最终验收对齐
+- 非范围：
+  - 不新增第 5 个正式角色
+  - 不给旧短别名、旧分发路径、旧接口补兼容
+  - 不改 battle core 对外 contract 与四角色主玩法语义
+- 当前进度：
+  - 第 1 阶段已完成：
+    - `FormalCharacterBaselines` 已删掉 `gojo / kashimo / obito` 短别名分发，中心分发表只认 manifest 正式 ID：`gojo_satoru / sukuna / kashimo_hajime / obito_juubi_jinchuriki`
+    - 四角色 baseline 已按“主 facade / effect contracts / ultimate-domain contracts”重切；角色主入口当前只保留 `unit / passive / regular skill / ultimate / field` 稳定 facade
+    - Gojo / Kashimo / Obito 的 baseline label、snapshot label、formal validator、snapshot suite 与专项坏例回归已统一改到正式 ID
+    - `tests/check_architecture_constraints.sh` 已把 `src/shared/formal_character_baselines/**` 与 `src/shared/formal_character_baselines.gd` 纳入大文件强校验
+    - formal registry 专项回归已补 `formal_character_baseline_manifest_id_contract`
+    - repo consistency gate 已新增：
+      - baseline 分发表 key 必须与 manifest `characters[*].character_id` 顺序一致
+      - baseline / validator / snapshot suite / support / gate 中不允许残留旧短别名 `gojo / kashimo / obito`
+- 第 1 阶段验收结果：
+  - 仓库中已不存在旧短别名 baseline 分发路径
+  - 四角色 snapshot / validator / runtime 全量回归通过
+  - baseline 目录已进入 architecture size gate
+- 第 1 阶段验证：
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `godot --headless --path . --script tests/run_all.gd`
+
 ## 当前波次：正式角色整合修复波次（2026-04-07）
 
 - 状态：已完成

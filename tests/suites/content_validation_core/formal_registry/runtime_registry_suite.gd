@@ -1,7 +1,10 @@
 extends "res://tests/suites/content_validation_core/formal_registry/shared.gd"
 
+const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
+
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("formal_character_validator_registry_runtime_contract", failures, Callable(self, "_test_formal_character_validator_registry_runtime_contract").bind(harness))
+	runner.run_test("formal_character_baseline_manifest_id_contract", failures, Callable(self, "_test_formal_character_baseline_manifest_id_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_duplicate_unit_definition_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_duplicate_unit_definition_guard_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_required_field_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_required_field_guard_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_ignores_delivery_field_contract", failures, Callable(self, "_test_formal_character_runtime_registry_ignores_delivery_field_contract").bind(harness))
@@ -39,6 +42,19 @@ func _test_formal_character_validator_registry_runtime_contract(harness) -> Dict
 		var validator = instantiate_result.get("validator", null)
 		if validator == null or not validator.has_method("validate"):
 			return harness.fail_result("formal character validator registry returned invalid validator instance")
+	return harness.pass_result()
+
+func _test_formal_character_baseline_manifest_id_contract(harness) -> Dictionary:
+	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries()
+	var error_message := String(load_result.get("error", ""))
+	if not error_message.is_empty():
+		return harness.fail_result("formal character validator registry should load cleanly for baseline id contract: %s" % error_message)
+	var expected_ids := PackedStringArray()
+	for raw_entry in load_result.get("entries", []):
+		var entry: Dictionary = raw_entry
+		expected_ids.append(String(entry.get("character_id", "")).strip_edges())
+	if FormalCharacterBaselinesScript.character_ids() != expected_ids:
+		return harness.fail_result("formal character baselines must expose manifest-order official ids only")
 	return harness.pass_result()
 
 func _test_formal_character_runtime_registry_duplicate_unit_definition_guard_contract(harness) -> Dictionary:

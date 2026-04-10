@@ -13,7 +13,7 @@ func validate_unit_contract(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		FormalCharacterBaselinesScript.unit_contract("gojo")
+		FormalCharacterBaselinesScript.unit_contract("gojo_satoru")
 	)
 
 func validate_core_skill_contract(validator, content_index, errors: Array) -> void:
@@ -22,14 +22,14 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 		content_index,
 		errors,
 		FormalCharacterBaselinesScript.skill_contracts(
-			"gojo",
+			"gojo_satoru",
 			PackedStringArray(["gojo_ao", "gojo_aka", "gojo_murasaki", "gojo_reverse_ritual"])
 		)
 	)
 
 func validate_marker_contract(validator, content_index, errors: Array) -> void:
-	_validate_marker_effect(validator, content_index, errors, "formal[gojo].ao_mark", "gojo_ao_mark", "gojo_ao_speed_up", "speed", 1)
-	_validate_marker_effect(validator, content_index, errors, "formal[gojo].aka_mark", "gojo_aka_mark", "gojo_aka_slow_down", "speed", -1)
+	_validate_marker_effect(validator, content_index, errors, "formal[gojo_satoru].ao_mark", "gojo_ao_mark", "gojo_ao_speed_up", "speed", 1)
+	_validate_marker_effect(validator, content_index, errors, "formal[gojo_satoru].aka_mark", "gojo_aka_mark", "gojo_aka_slow_down", "speed", -1)
 
 func _validate_marker_effect(
 	validator,
@@ -47,7 +47,7 @@ func _validate_marker_effect(
 			validator,
 			content_index,
 			errors,
-			[FormalCharacterBaselinesScript.effect_contract("gojo", marker_effect_id, label)]
+			[FormalCharacterBaselinesScript.effect_contract("gojo_satoru", marker_effect_id, label)]
 		)
 	var apply_effect_id := "%s_apply" % marker_effect_id
 	var apply_effect = validator._require_effect(content_index, errors, label, apply_effect_id)

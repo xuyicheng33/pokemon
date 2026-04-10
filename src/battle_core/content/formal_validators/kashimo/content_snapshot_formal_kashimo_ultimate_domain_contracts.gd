@@ -15,12 +15,12 @@ func validate(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.skill_contract("kashimo", "kashimo_phantom_beast_amber")]
+		[FormalCharacterBaselinesScript.skill_contract("kashimo_hajime", "kashimo_phantom_beast_amber")]
 	)
 	_validate_amber_contract(validator, content_index, errors)
 
 func _validate_amber_contract(validator, content_index, errors: Array) -> void:
-	var label := "formal[kashimo].amber_contract"
+	var label := "formal[kashimo_hajime].amber_contract"
 	var amber_effect = validator._require_effect(content_index, errors, label, "kashimo_amber_self_transform")
 	var amber_bleed = validator._require_effect(content_index, errors, label, "kashimo_amber_bleed")
 	if amber_effect == null or amber_bleed == null:
@@ -60,7 +60,7 @@ func _validate_amber_contract(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_amber_bleed", "%s bleed" % label)]
+		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_amber_bleed", "%s bleed" % label)]
 	)
 	var bleed_payload = validator._extract_single_payload(
 		errors,

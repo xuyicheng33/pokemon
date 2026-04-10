@@ -15,7 +15,7 @@ func validate_charge_separation_contract(validator, content_index, errors: Array
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.passive_contract("kashimo", "kashimo_charge_separation")]
+		[FormalCharacterBaselinesScript.passive_contract("kashimo_hajime", "kashimo_charge_separation")]
 	)
 
 func validate_charge_separation_effects(validator, content_index, errors: Array) -> void:
@@ -25,7 +25,7 @@ func validate_charge_separation_effects(validator, content_index, errors: Array)
 	_validate_water_leak_counter(validator, content_index, errors)
 
 func _validate_thunder_resist(validator, content_index, errors: Array) -> void:
-	var label := "formal[kashimo].thunder_resist"
+	var label := "formal[kashimo_hajime].thunder_resist"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_thunder_resist")
 	if effect_definition == null:
 		return
@@ -33,7 +33,7 @@ func _validate_thunder_resist(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_thunder_resist", label)]
+		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_thunder_resist", label)]
 	)
 	var payload = validator._extract_single_payload(errors, label, "kashimo_thunder_resist", effect_definition, RuleModPayloadScript, "rule_mod")
 	if payload == null:
@@ -46,7 +46,7 @@ func _validate_thunder_resist(validator, content_index, errors: Array) -> void:
 	validator._expect_packed_string_array(errors, "%s required_incoming_combat_type_ids" % label, payload.required_incoming_combat_type_ids, PackedStringArray(["thunder"]))
 
 func _validate_apply_water_leak_listeners(validator, content_index, errors: Array) -> void:
-	var label := "formal[kashimo].water_leak_listeners"
+	var label := "formal[kashimo_hajime].water_leak_listeners"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_apply_water_leak_listeners")
 	if effect_definition == null:
 		return
@@ -54,7 +54,7 @@ func _validate_apply_water_leak_listeners(validator, content_index, errors: Arra
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_apply_water_leak_listeners", label)]
+		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_apply_water_leak_listeners", label)]
 	)
 	if effect_definition.payloads.size() != 2:
 		errors.append("%s payload count mismatch: expected 2 got %d" % [label, effect_definition.payloads.size()])
@@ -68,7 +68,7 @@ func _validate_apply_water_leak_listeners(validator, content_index, errors: Arra
 		validator._expect_payload_shape(errors, "%s payload[%d]" % [label, payload_index], payload, {"effect_definition_id": expected_effect_ids[payload_index]})
 
 func _validate_water_leak_self(validator, content_index, errors: Array) -> void:
-	var label := "formal[kashimo].water_leak_self"
+	var label := "formal[kashimo_hajime].water_leak_self"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_water_leak_self_listener")
 	if effect_definition == null:
 		return
@@ -76,13 +76,13 @@ func _validate_water_leak_self(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_water_leak_self_listener", label)]
+		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_water_leak_self_listener", label)]
 	)
 	var payload = validator._extract_single_payload(errors, label, "kashimo_water_leak_self_listener", effect_definition, ResourceModPayloadScript, "resource_mod")
 	validator._expect_payload_shape(errors, "%s effect" % label, payload, {"resource_key": "mp", "amount": -15})
 
 func _validate_water_leak_counter(validator, content_index, errors: Array) -> void:
-	var label := "formal[kashimo].water_leak_counter"
+	var label := "formal[kashimo_hajime].water_leak_counter"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_water_leak_counter_listener")
 	if effect_definition == null:
 		return
@@ -90,7 +90,7 @@ func _validate_water_leak_counter(validator, content_index, errors: Array) -> vo
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_water_leak_counter_listener", label)]
+		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_water_leak_counter_listener", label)]
 	)
 	var payload = validator._extract_single_payload(errors, label, "kashimo_water_leak_counter_listener", effect_definition, DamagePayloadScript, "damage")
 	if payload == null:

@@ -12,9 +12,9 @@ func validate(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.skill_contract("obito", "obito_shiwei_weishouyu")]
+		[FormalCharacterBaselinesScript.skill_contract("obito_juubi_jinchuriki", "obito_shiwei_weishouyu")]
 	)
-	var label := "formal[obito].shiwei_weishouyu"
+	var label := "formal[obito_juubi_jinchuriki].shiwei_weishouyu"
 	var skill_definition = validator._require_skill(content_index, errors, label, "obito_shiwei_weishouyu")
 	if skill_definition == null:
 		return

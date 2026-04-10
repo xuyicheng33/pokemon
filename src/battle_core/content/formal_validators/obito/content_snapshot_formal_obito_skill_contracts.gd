@@ -22,7 +22,7 @@ func _validate_skill_contracts(validator, content_index, errors: Array) -> void:
 		content_index,
 		errors,
 		FormalCharacterBaselinesScript.skill_contracts(
-			"obito",
+			"obito_juubi_jinchuriki",
 			PackedStringArray([
 				"obito_qiudao_jiaotu",
 				"obito_yinyang_dun",
@@ -33,7 +33,7 @@ func _validate_skill_contracts(validator, content_index, errors: Array) -> void:
 	)
 
 func _validate_qiudaoyu_contracts(validator, content_index, errors: Array) -> void:
-	var label := "formal[obito].qiudao_yu"
+	var label := "formal[obito_juubi_jinchuriki].qiudao_yu"
 	var clear_effect = validator._require_effect(content_index, errors, label, "obito_qiudao_yu_clear_yinyang")
 	if clear_effect == null:
 		return
@@ -41,7 +41,7 @@ func _validate_qiudaoyu_contracts(validator, content_index, errors: Array) -> vo
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("obito", "obito_qiudao_yu_clear_yinyang", "%s clear" % label)]
+		[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_qiudao_yu_clear_yinyang", "%s clear" % label)]
 	)
 	var clear_payload = validator._extract_single_payload(
 		errors,

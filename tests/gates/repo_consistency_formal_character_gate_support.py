@@ -6,6 +6,19 @@ from pathlib import Path
 from repo_consistency_common import GateContext
 
 
+LEGACY_FORMAL_CHARACTER_ID_RULES = [
+    (re.compile(r'FormalCharacterBaselines(?:Script)?\.[A-Za-z_]+\("gojo"(?:,|\))'), "legacy short formal character id gojo"),
+    (re.compile(r'FormalCharacterBaselines(?:Script)?\.[A-Za-z_]+\("kashimo"(?:,|\))'), "legacy short formal character id kashimo"),
+    (re.compile(r'FormalCharacterBaselines(?:Script)?\.[A-Za-z_]+\("obito"(?:,|\))'), "legacy short formal character id obito"),
+    (re.compile(r"formal\[gojo\]"), "legacy short formal contract label gojo"),
+    (re.compile(r"formal\[kashimo\]"), "legacy short formal contract label kashimo"),
+    (re.compile(r"formal\[obito\]"), "legacy short formal contract label obito"),
+    (re.compile(r'"snapshot_label": "gojo"'), "legacy short formal snapshot label gojo"),
+    (re.compile(r'"snapshot_label": "kashimo"'), "legacy short formal snapshot label kashimo"),
+    (re.compile(r'"snapshot_label": "obito"'), "legacy short formal snapshot label obito"),
+]
+
+
 def contract_field_list(ctx: GateContext, bucket: dict, field_key: str, label: str, *, required: bool = True) -> list[str]:
     values = bucket.get(field_key, [])
     if not isinstance(values, list):
@@ -42,6 +55,36 @@ def validator_test_prefix(script_path: str) -> str:
     stem = Path(script_path).stem
     match = re.fullmatch(r"content_snapshot_formal_(.+)_validator", stem)
     return "" if match is None else match.group(1)
+
+
+def baseline_registry_character_ids(ctx: GateContext, rel_path: str) -> list[str]:
+    text = ctx.read_text(rel_path)
+    match = re.search(r"const BASELINE_SCRIPT_BY_CHARACTER_ID := \{(.*?)\}\n", text, re.S)
+    if match is None:
+        ctx.failures.append(f"{rel_path} missing BASELINE_SCRIPT_BY_CHARACTER_ID")
+        return []
+    return re.findall(r'"([^"]+)": [A-Za-z_][A-Za-z0-9_]*', match.group(1))
+
+
+def scan_legacy_formal_character_id_refs(ctx: GateContext) -> list[str]:
+    failures: list[str] = []
+    scan_specs = [
+        (ctx.root / "src" / "shared", "*.gd"),
+        (ctx.root / "src" / "battle_core" / "content" / "formal_validators", "*.gd"),
+        (ctx.root / "tests" / "suites", "*.gd"),
+        (ctx.root / "tests" / "support", "*.gd"),
+        (ctx.root / "tests" / "gates", "*.py"),
+    ]
+    for scan_root, pattern in scan_specs:
+        for path in sorted(scan_root.rglob(pattern)):
+            rel_path = str(path.relative_to(ctx.root))
+            if rel_path == "tests/gates/repo_consistency_formal_character_gate_support.py":
+                continue
+            for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+                for regex, label in LEGACY_FORMAL_CHARACTER_ID_RULES:
+                    if regex.search(line):
+                        failures.append(f"{rel_path}:{line_no} still contains {label}: {line.strip()}")
+    return failures
 
 
 def collect_gd_refs(text: str, prefix: str) -> list[str]:

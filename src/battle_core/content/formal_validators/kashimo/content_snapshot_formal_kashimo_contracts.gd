@@ -12,7 +12,7 @@ func validate_unit_contract(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		FormalCharacterBaselinesScript.unit_contract("kashimo")
+		FormalCharacterBaselinesScript.unit_contract("kashimo_hajime")
 	)
 
 func validate_core_skill_contract(validator, content_index, errors: Array) -> void:
@@ -26,11 +26,11 @@ func validate_core_skill_contract(validator, content_index, errors: Array) -> vo
 		validator,
 		content_index,
 		errors,
-		FormalCharacterBaselinesScript.skill_contracts("kashimo", regular_skill_ids)
+		FormalCharacterBaselinesScript.skill_contracts("kashimo_hajime", regular_skill_ids)
 	)
 
 func validate_kyokyo_contract(validator, content_index, errors: Array) -> void:
-	var label := "formal[kashimo].kyokyo"
+	var label := "formal[kashimo_hajime].kyokyo"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_kyokyo_nullify")
 	if effect_definition == null:
 		return
@@ -38,7 +38,7 @@ func validate_kyokyo_contract(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo", "kashimo_kyokyo_nullify", label)]
+		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_kyokyo_nullify", label)]
 	)
 	var payload = validator._extract_single_payload(errors, label, "kashimo_kyokyo_nullify", effect_definition, RuleModPayloadScript, "rule_mod")
 	validator._expect_payload_shape(

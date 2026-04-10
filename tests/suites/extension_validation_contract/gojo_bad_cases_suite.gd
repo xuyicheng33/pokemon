@@ -18,7 +18,7 @@ func _test_formal_gojo_validator_bad_case_contract(harness) -> Dictionary:
 		return harness.fail_result("missing gojo_ao")
 	gojo_ao.power = 45
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, "formal[gojo].ao power mismatch: expected 44 got 45"):
+	if not _has_error(errors, "formal[gojo_satoru].ao power mismatch: expected 44 got 45"):
 		return harness.fail_result("gojo formal validator should fail-fast when ao power drifts")
 	return harness.pass_result()
 
@@ -32,7 +32,7 @@ func _test_formal_gojo_validator_reverse_bad_case_contract(harness) -> Dictionar
 		return harness.fail_result("missing gojo_reverse_ritual")
 	gojo_reverse_ritual.mp_cost = 15
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, "formal[gojo].reverse_ritual mp_cost mismatch: expected 14 got 15"):
+	if not _has_error(errors, "formal[gojo_satoru].reverse_ritual mp_cost mismatch: expected 14 got 15"):
 		return harness.fail_result("gojo formal validator should fail-fast when reverse_ritual mp_cost drifts")
 	return harness.pass_result()
 
@@ -46,7 +46,7 @@ func _test_formal_gojo_validator_murasaki_cleanup_bad_case_contract(harness) -> 
 		return harness.fail_result("missing gojo_murasaki_conditional_burst cleanup payloads")
 	murasaki_burst.payloads[1].effect_definition_id = "gojo_aka_mark"
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, 'formal[gojo].murasaki_burst payload[1].effect_definition_id mismatch: expected "gojo_ao_mark" got "gojo_aka_mark"'):
+	if not _has_error(errors, 'formal[gojo_satoru].murasaki_burst payload[1].effect_definition_id mismatch: expected "gojo_ao_mark" got "gojo_aka_mark"'):
 		return harness.fail_result("gojo formal validator should fail-fast when murasaki cleanup payload drifts")
 	return harness.pass_result()
 
@@ -60,7 +60,7 @@ func _test_formal_gojo_validator_action_lock_surface_bad_case_contract(harness) 
 		return harness.fail_result("missing gojo_domain_action_lock")
 	action_lock.scope = "self"
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, "formal[gojo].domain_buff_contract action_lock scope mismatch: expected target got self"):
+	if not _has_error(errors, "formal[gojo_satoru].domain_buff_contract action_lock scope mismatch: expected target got self"):
 		return harness.fail_result("gojo formal validator should fail-fast when action_lock surface drifts")
 	return harness.pass_result()
 
@@ -74,6 +74,6 @@ func _test_formal_gojo_validator_action_lock_stacking_bad_case_contract(harness)
 		return harness.fail_result("missing gojo_domain_action_lock payload")
 	action_lock.payloads[0].stacking = "refresh"
 	var errors: Array = content_index.validate_snapshot()
-	if not _has_error(errors, 'formal[gojo].domain_buff_contract action_lock.stacking mismatch: expected "replace" got "refresh"'):
+	if not _has_error(errors, 'formal[gojo_satoru].domain_buff_contract action_lock.stacking mismatch: expected "replace" got "refresh"'):
 		return harness.fail_result("gojo formal validator should fail-fast when action_lock stacking drifts")
 	return harness.pass_result()

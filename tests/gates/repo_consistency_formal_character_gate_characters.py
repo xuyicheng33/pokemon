@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from repo_consistency_formal_character_gate_support import (
+    baseline_registry_character_ids,
     collect_scope_tree,
     collect_suite_refs,
+    scan_legacy_formal_character_id_refs,
     validate_required_contract_fields,
     validator_test_prefix,
 )
@@ -12,6 +14,7 @@ def validate_character_entries(
     ctx,
     *,
     manifest_path: str,
+    baseline_registry_path: str,
     characters: list,
     matchups: dict,
     character_runtime_required_string_fields: list[str],
@@ -28,6 +31,12 @@ def validate_character_entries(
     reachable_suite_paths: set[str] = set()
     pending_suite_paths: list[str] = collect_suite_refs(ctx.read_text("tests/run_all.gd"))
     shared_suite_scope_paths = collect_scope_tree(ctx, shared_suite_roots)
+    manifest_character_ids = [str(entry.get("character_id", "")).strip() for entry in characters if isinstance(entry, dict)]
+    baseline_character_ids = baseline_registry_character_ids(ctx, baseline_registry_path)
+    if baseline_character_ids and baseline_character_ids != manifest_character_ids:
+        ctx.failures.append(
+            f"{baseline_registry_path} BASELINE_SCRIPT_BY_CHARACTER_ID must match {manifest_path} character order: {baseline_character_ids} != {manifest_character_ids}"
+        )
 
     for entry in characters:
         character_id = str(entry.get("character_id", "")).strip()
@@ -179,6 +188,8 @@ def validate_character_entries(
                 ctx.failures.append(
                     f"formal manifest[{character_id}] required_suite_path is not reachable from tests/run_all.gd wrapper tree: {rel_path}"
                 )
+
+    ctx.failures.extend(scan_legacy_formal_character_id_refs(ctx))
 
     return {
         "character_to_unit": character_to_unit,

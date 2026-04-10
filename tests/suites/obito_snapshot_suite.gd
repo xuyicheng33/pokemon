@@ -21,7 +21,7 @@ func _test_obito_unit_snapshot_contract(harness) -> Dictionary:
     return _helper.run_descriptor_checks(
         harness,
         content_index.units,
-        [FormalCharacterBaselinesScript.unit_contract("obito")],
+        [FormalCharacterBaselinesScript.unit_contract("obito_juubi_jinchuriki")],
         "unit_id",
         "missing obito unit definition"
     )
@@ -33,7 +33,7 @@ func _test_obito_skill_snapshot_contract(harness) -> Dictionary:
     var contract_result = _helper.run_descriptor_checks(
         harness,
         content_index.skills,
-        FormalCharacterBaselinesScript.skill_contracts("obito"),
+        FormalCharacterBaselinesScript.skill_contracts("obito_juubi_jinchuriki"),
         "skill_id",
         "missing obito snapshot skill resource"
     )
@@ -74,16 +74,16 @@ func _test_obito_effect_snapshot_contract(harness) -> Dictionary:
     var listener_state_payload = listener_state.payloads[0]
     var clear_payload = clear.payloads[0]
     var checks: Array[Dictionary] = []
-    _helper.append_passive_checks(checks, passive, FormalCharacterBaselinesScript.passive_contract("obito", "obito_xianren_zhili"))
-    _helper.append_effect_checks(checks, heal, FormalCharacterBaselinesScript.effect_contract("obito", "obito_xianren_zhili_heal"))
-    _helper.append_effect_checks(checks, yinyang, FormalCharacterBaselinesScript.effect_contract("obito", "obito_yinyang_zhili"))
-    _helper.append_effect_checks(checks, mark_apply, FormalCharacterBaselinesScript.effect_contract("obito", "obito_qiudao_jiaotu_heal_block_apply"))
-    _helper.append_effect_checks(checks, mark, FormalCharacterBaselinesScript.effect_contract("obito", "obito_qiudao_jiaotu_heal_block_mark"))
-    _helper.append_effect_checks(checks, rule_mod, FormalCharacterBaselinesScript.effect_contract("obito", "obito_qiudao_jiaotu_heal_block_rule_mod"))
-    _helper.append_effect_checks(checks, guard, FormalCharacterBaselinesScript.effect_contract("obito", "obito_yinyang_dun_guard_rule_mod"))
-    _helper.append_effect_checks(checks, listener_apply, FormalCharacterBaselinesScript.effect_contract("obito", "obito_yinyang_dun_guard_stack_listener"))
-    _helper.append_effect_checks(checks, listener_state, FormalCharacterBaselinesScript.effect_contract("obito", "obito_yinyang_dun_guard_stack_listener_state"))
-    _helper.append_effect_checks(checks, clear, FormalCharacterBaselinesScript.effect_contract("obito", "obito_qiudao_yu_clear_yinyang"))
+    _helper.append_passive_checks(checks, passive, FormalCharacterBaselinesScript.passive_contract("obito_juubi_jinchuriki", "obito_xianren_zhili"))
+    _helper.append_effect_checks(checks, heal, FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_xianren_zhili_heal"))
+    _helper.append_effect_checks(checks, yinyang, FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_yinyang_zhili"))
+    _helper.append_effect_checks(checks, mark_apply, FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_qiudao_jiaotu_heal_block_apply"))
+    _helper.append_effect_checks(checks, mark, FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_qiudao_jiaotu_heal_block_mark"))
+    _helper.append_effect_checks(checks, rule_mod, FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_qiudao_jiaotu_heal_block_rule_mod"))
+    _helper.append_effect_checks(checks, guard, FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_yinyang_dun_guard_rule_mod"))
+    _helper.append_effect_checks(checks, listener_apply, FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_yinyang_dun_guard_stack_listener"))
+    _helper.append_effect_checks(checks, listener_state, FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_yinyang_dun_guard_stack_listener_state"))
+    _helper.append_effect_checks(checks, clear, FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_qiudao_yu_clear_yinyang"))
     checks.append_array([
         {"label": "obito_xianren_zhili_heal percent", "actual": int(heal_payload.percent), "expected": 10},
         {"label": "obito_xianren_zhili_heal percent_base", "actual": String(heal_payload.percent_base), "expected": "missing_hp"},

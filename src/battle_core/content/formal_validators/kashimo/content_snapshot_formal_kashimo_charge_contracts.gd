@@ -14,7 +14,7 @@ func validate(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		"formal[kashimo].apply_negative_charge",
+		"formal[kashimo_hajime].apply_negative_charge",
 		"kashimo_apply_negative_charge",
 		"target",
 		"on_hit",
@@ -24,7 +24,7 @@ func validate(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		"formal[kashimo].apply_positive_charge",
+		"formal[kashimo_hajime].apply_positive_charge",
 		"kashimo_apply_positive_charge",
 		"self",
 		"on_cast",
@@ -36,7 +36,7 @@ func validate(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		"formal[kashimo].consume_positive_charge",
+		"formal[kashimo_hajime].consume_positive_charge",
 		"kashimo_consume_positive_charges",
 		"self",
 		"kashimo_positive_charge_mark"
@@ -45,7 +45,7 @@ func validate(validator, content_index, errors: Array) -> void:
 		validator,
 		content_index,
 		errors,
-		"formal[kashimo].consume_negative_charge",
+		"formal[kashimo_hajime].consume_negative_charge",
 		"kashimo_consume_negative_charges",
 		"target",
 		"kashimo_negative_charge_mark"
@@ -81,7 +81,7 @@ func _validate_apply_charge(
 	)
 
 func _validate_negative_charge_mark(validator, content_index, errors: Array) -> void:
-	var label := "formal[kashimo].negative_charge_mark"
+	var label := "formal[kashimo_hajime].negative_charge_mark"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_negative_charge_mark")
 	if effect_definition == null:
 		return
@@ -115,7 +115,7 @@ func _validate_negative_charge_mark(validator, content_index, errors: Array) -> 
 	)
 
 func _validate_positive_charge_mark(validator, content_index, errors: Array) -> void:
-	var label := "formal[kashimo].positive_charge_mark"
+	var label := "formal[kashimo_hajime].positive_charge_mark"
 	var effect_definition = validator._require_effect(content_index, errors, label, "kashimo_positive_charge_mark")
 	if effect_definition == null:
 		return
