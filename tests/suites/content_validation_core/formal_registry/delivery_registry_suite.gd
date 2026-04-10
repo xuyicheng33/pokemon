@@ -35,6 +35,10 @@ func _test_formal_character_delivery_registry_required_field_guard_contract(harn
 			"expected_error": "missing required_test_names",
 		},
 		{
+			"missing_key": "shared_capability_ids",
+			"expected_error": "missing shared_capability_ids",
+		},
+		{
 			"missing_key": "design_needles",
 			"expected_error": "missing design_needles",
 		},

@@ -52,7 +52,8 @@ func _build_manifest_character_entry(
 	required_suite_paths: Array,
 	required_test_names: Array,
 	design_needles: Array,
-	adjustment_needles: Array
+	adjustment_needles: Array,
+	shared_capability_ids: Array = []
 ) -> Dictionary:
 	var entry := {
 		"character_id": character_id,
@@ -66,6 +67,7 @@ func _build_manifest_character_entry(
 		"suite_path": suite_path,
 		"required_suite_paths": required_suite_paths,
 		"required_test_names": required_test_names,
+		"shared_capability_ids": shared_capability_ids,
 		"design_needles": design_needles,
 		"adjustment_needles": adjustment_needles,
 	}

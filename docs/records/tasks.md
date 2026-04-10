@@ -34,6 +34,17 @@
     - repo consistency gate 已新增：
       - baseline 分发表 key 必须与 manifest `characters[*].character_id` 顺序一致
       - baseline / validator / snapshot suite / support / gate 中不允许残留旧短别名 `gojo / kashimo / obito`
+  - 第 2 阶段已完成：
+    - `config/formal_character_manifest.json.characters[*]` 的 delivery/test 视图已新增 `shared_capability_ids`
+    - `config/formal_character_capability_catalog.json` 已成为共享能力目录单真相；当前每个 entry 固定登记 `capability_id / rule_doc_paths / consumer_character_ids / required_suite_paths / coverage_needles / stop_and_specialize_when`
+    - `src/shared/formal_character_capability_catalog.gd`、formal registry contract、fixture builder 与 capability catalog suite 已落地，formal delivery 模板开始围绕 manifest + capability catalog 收口
+    - repo consistency gate 已新增共享能力硬约束：
+      - `shared_capability_ids` 只能引用 capability catalog 已登记入口
+      - catalog `consumer_character_ids` 必须和 manifest 声明完全一致
+      - catalog `required_suite_paths` 必须全部挂回角色条目
+      - 角色内容 / validator / 设计稿 / 调整记录 / wrapper 必须能扫到实际消费证据
+    - `README.md`、`tests/README.md`、`docs/design/formal_character_delivery_checklist.md`、`docs/design/formal_character_design_template.md`、`docs/design/battle_content_schema.md`、`docs/design/project_folder_structure.md` 已同步 capability catalog 与 `shared_capability_ids` 口径
+    - 已补 `docs/design/formal_character_capability_catalog.md`，把共享能力目录职责、字段、接入顺序与 gate 硬约束收成单文档
 - 第 1 阶段验收结果：
   - 仓库中已不存在旧短别名 baseline 分发路径
   - 四角色 snapshot / validator / runtime 全量回归通过
@@ -43,6 +54,16 @@
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/check_suite_reachability.sh`
   - `godot --headless --path . --script tests/run_all.gd`
+- 第 2 阶段验收结果：
+  - manifest + capability catalog 已成为角色接入模板骨架，不再需要额外中心补丁点
+  - 新共享入口未登记、已登记但 suite/消费者/证据未对齐时，会被 repo consistency gate 直接拦下
+  - 文档、README 与 tests README 已和 capability catalog 口径对齐
+- 第 2 阶段验证：
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `git diff --check`
 
 ## 当前波次：正式角色整合修复波次（2026-04-07）
 

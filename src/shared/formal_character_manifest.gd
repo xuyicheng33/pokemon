@@ -122,6 +122,7 @@ func build_delivery_entries_result(manifest_path: String = "") -> Dictionary:
 			"suite_path": String(entry.get("suite_path", "")).strip_edges(),
 			"required_suite_paths": entry.get("required_suite_paths", []).duplicate(true),
 			"required_test_names": entry.get("required_test_names", []).duplicate(true),
+			"shared_capability_ids": entry.get("shared_capability_ids", []).duplicate(true),
 			"design_needles": entry.get("design_needles", []).duplicate(true),
 			"adjustment_needles": entry.get("adjustment_needles", []).duplicate(true),
 		})

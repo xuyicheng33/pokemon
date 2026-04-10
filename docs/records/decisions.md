@@ -145,6 +145,28 @@
   - baseline 真热点已经转移到 `src/shared/formal_character_baselines/**`，如果 gate 还只盯 `src/battle_core` / `src/composition`，后续最先失控的会是角色合同层，而不是 battle core owner
   - 先把正式 ID 与目录治理一起锁死，后续再做 capability catalog 与 wiring 拆分时，角色交付链的根不会继续漂
 
+## 0K. shared capability catalog 固定成为扩角模板的一部分（2026-04-10）
+
+- 共享能力目录的唯一人工维护配置固定为 `config/formal_character_capability_catalog.json`。
+- `config/formal_character_manifest.json.characters[*]` 的 delivery/test 视图当前固定新增 `shared_capability_ids`；无共享能力也必须显式填空数组。
+- capability catalog entry 当前固定包含：
+  - `capability_id`
+  - `rule_doc_paths`
+  - `consumer_character_ids`
+  - `required_suite_paths`
+  - `coverage_needles`
+  - `stop_and_specialize_when`
+- `tests/gates/repo_consistency_formal_character_gate_capabilities.py` 当前固定执行四类硬校验：
+  - manifest 的 `shared_capability_ids` 只能引用 catalog 里已有的 `capability_id`
+  - catalog 的 `consumer_character_ids` 必须和 manifest 双向一致
+  - catalog 的 `required_suite_paths` 必须全部回挂到角色 manifest 条目
+  - 角色内容 / validator / 设计稿 / 调整记录 / wrapper 必须能扫到 capability 的实际使用证据
+- 共享能力目录的设计文档固定为 `docs/design/formal_character_capability_catalog.md`；接入清单、角色模板、README 与 tests README 都必须引用同一套口径。
+- 这么定的原因：
+  - 角色接入链现在最容易继续返工的，不是角色条目有没有写进去，而是共享机制到底是不是“还能继续复用的正式入口”
+  - 如果只靠角色稿或 `required_suite_paths` 零散补共享回归，很快又会回到“每扩一角就要到处找补丁点”的老路
+  - 把 `shared_capability_ids + capability catalog + gate` 一起钉死后，新增角色时只需要先回答两件事：这是不是现有共享入口；如果是，要不要已经到 `stop_and_specialize_when` 该停的边界
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

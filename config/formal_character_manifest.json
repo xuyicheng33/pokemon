@@ -40,6 +40,10 @@
         "anchor:gojo.adjust.field-bound-cast-buff",
         "anchor:gojo.adjust.tests-impacted"
       ],
+      "shared_capability_ids": [
+        "target_marker_preconditions",
+        "incoming_accuracy_mod"
+      ],
       "suite_path": "tests/suites/gojo_suite.gd",
       "required_suite_paths": [
         "tests/suites/gojo_setup_and_markers_suite.gd",
@@ -141,6 +145,7 @@
         "anchor:sukuna.adjust.mp_regen-add",
         "anchor:sukuna.adjust.tests-impacted"
       ],
+      "shared_capability_ids": [],
       "suite_path": "tests/suites/sukuna_suite.gd",
       "required_suite_paths": [
         "tests/suites/sukuna_setup_loadout_regen_suite.gd",
@@ -239,6 +244,12 @@
         "anchor:kashimo.adjust.amber-switch-persist",
         "anchor:kashimo.adjust.amber-same-turn-reentry"
       ],
+      "shared_capability_ids": [
+        "nullify_field_accuracy_mod",
+        "effect_stack_sum_power_bonus",
+        "once_per_battle_skill",
+        "persistent_stat_stages"
+      ],
       "suite_path": "tests/suites/kashimo_suite.gd",
       "required_suite_paths": [
         "tests/suites/kashimo_snapshot_suite.gd",
@@ -250,10 +261,12 @@
         "tests/suites/kashimo_manager_blackbox_suite.gd",
         "tests/suites/formal_character_pair_smoke_suite.gd",
         "tests/suites/extension_validation_contract_suite.gd",
+        "tests/suites/rule_mod_runtime_extension_suite.gd",
         "tests/suites/persistent_stat_stage_suite.gd",
         "tests/suites/power_bonus_runtime_suite.gd",
         "tests/suites/combat_type_definition_suite.gd",
         "tests/suites/combat_type_runtime_suite.gd",
+        "tests/suites/replay_turn_suite.gd",
         "tests/suites/ultimate_points_contract_suite.gd"
       ],
       "required_test_names": [
@@ -326,6 +339,14 @@
         "anchor:obito.adjust.heal-block-sync-expire",
         "anchor:obito.adjust.no-balance-retune",
         "anchor:obito.adjust.tests-impacted"
+      ],
+      "shared_capability_ids": [
+        "effect_stack_sum_power_bonus",
+        "missing_hp_heal",
+        "incoming_heal_final_mod",
+        "execute_finisher",
+        "damage_segments",
+        "on_receive_action_damage_segment"
       ],
       "suite_path": "tests/suites/obito_suite.gd",
       "required_suite_paths": [

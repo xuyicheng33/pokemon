@@ -6,8 +6,9 @@
 
 1. 先按本模板写角色稿。
 2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、manifest 条目、suite 和记录；正式角色元数据的单一维护入口固定为 `config/formal_character_manifest.json`，其中 `characters[*]` 收口角色条目，`matchups / pair_interaction_cases` 收口 formal 配对事实。
-3. 若角色带领域机制，只在本稿末尾追加“领域角色差异附录”，公共规则继续引用 `docs/design/domain_field_template.md`。
-4. 若角色需要 `content_validator_script_path`，entry validator 固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板落地。
+3. 若角色复用共享机制，先对齐 `config/formal_character_capability_catalog.json`，确认现有入口是否能承接；不满足时先补 capability catalog，再继续扩内容。
+4. 若角色带领域机制，只在本稿末尾追加“领域角色差异附录”，公共规则继续引用 `docs/design/domain_field_template.md`。
+5. 若角色需要 `content_validator_script_path`，entry validator 固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板落地。
 
 ## 固定范围
 
@@ -29,6 +30,7 @@
 |共享治疗 / 处决 / 多段主动伤害 contract|`docs/rules/03_stats_resources_and_damage.md` + `docs/rules/06_effect_schema_and_extension.md`|
 |运行时模型与 `EffectInstance / RuleModInstance` 字段|`docs/design/battle_runtime_model.md`|
 |内容资源字段与加载期校验|`docs/design/battle_content_schema.md`|
+|共享能力入口、消费者与扩权止损线|`docs/design/formal_character_capability_catalog.md`|
 |正式角色交付清单与测试最低面|`docs/design/formal_character_delivery_checklist.md`|
 |领域公共流程、对拼与 field_apply_success|`docs/design/domain_field_template.md`|
 
@@ -106,6 +108,7 @@
 
 - 每个常规技能 / 奥义都要写出资源字段和玩法语义
 - 若某技能依赖共享能力，只写“本角色怎么用”，不重复写完整 schema / 读写路径 / 全局排序链
+- 若角色复用了共享能力，交付阶段必须能把该能力回挂到 `config/formal_character_manifest.json.characters[*].shared_capability_ids`，并与 capability catalog 对齐
 - 若角色依赖 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、技能级 `execute_*`、`damage_segments` 或 `on_receive_action_damage_segment`，只写“本角色怎么用”，不在角色稿里重复讲共享 runtime 细节、排序链或 schema 全表
 - 关键 effect / field / passive 资源必须显式列出，不允许把核心语义藏在“见资源文件”
 - 若有“必须满足的跨资源不变量”，要在角色稿里写清，并在 checklist 阶段决定是否需要 `content_validator_script_path`；若需要，直接登记进 `config/formal_character_manifest.json.characters[*]`，runtime 会统一从这份 manifest 装配
@@ -144,6 +147,7 @@
 - 至少覆盖 `snapshot / runtime / manager smoke` 三类视角
 - 只列“这个角色必须长期锁死什么”，不要把通用测试说明重抄一遍
 - 若共享 suite 是正式交付面的一部分，要写明“通过 manifest 角色条目的 required_suite_paths 回挂”；单一维护入口仍是 `config/formal_character_manifest.json`
+- 若共享能力属于正式交付面的一部分，要写明“通过 manifest 角色条目的 shared_capability_ids 声明，并由 capability catalog 补 suite / rule doc / 停止扩权边界”
 
 推荐骨架：
 

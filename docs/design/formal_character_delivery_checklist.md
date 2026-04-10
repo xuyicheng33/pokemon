@@ -43,6 +43,7 @@
 - [ ] `SampleBattleFactory` 公开 builder 名称保持稳定，内部只允许走统一 helper，不再为单角色保留私有手写构局
 - [ ] `SampleBattleFactory` 正式快照路径读取统一走 `content_snapshot_paths_result()`；正式失败语义不再允许降级成 `null / [] / PackedStringArray()`
 - [ ] `config/formal_character_manifest.json` 新增或更新该角色的 `characters[*]` 条目
+- [ ] 若角色复用共享扩展，先对齐 `config/formal_character_capability_catalog.json` 对应 entry；不属于现有 capability 时，先补目录与规则归属，再继续写角色资源
 - [ ] `characters[*]` 继续写在同一个 manifest 条目里，但要按两份消费视图检查：
   - [ ] runtime 视图：只服务 runtime loader / validator / setup
   - [ ] delivery/test 视图：只服务 suite / gate / 文档锚点 / 交付检查
@@ -55,10 +56,12 @@
   - [ ] `surface_smoke_skill_id`（该正式角色用于自动生成 directed pair surface smoke 的默认黑盒技能）
   - [ ] `suite_path`
   - [ ] `required_suite_paths / required_test_names`
+  - [ ] `shared_capability_ids`（无共享能力也要显式填 `[]`；只允许填 `config/formal_character_capability_catalog.json` 已登记的正式 capability_id）
   - [ ] `design_needles / adjustment_needles`（显式 anchor id，不再写自然语言句子）
 - [ ] `required_content_paths`
 - [ ] `required_suite_paths`
 - [ ] `required_test_names`（只保留角色私有 runtime / validator 坏例锚点；共享 pair surface / interaction 由 catalog + shared gate 统一兜）
+- [ ] `shared_capability_ids` 与 capability catalog 的 `consumer_character_ids` 双向一致；catalog 里列出的 `required_suite_paths` 必须全部挂回角色条目
 - [ ] `design_needles / adjustment_needles`（显式 anchor id；要指向“该角色如何消费共享机制”的私有语义锚点，不能直接把共享机制名本身当交付锚点）
 - [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
 - [ ] 若补了 `content_validator_script_path`，只登记在 `config/formal_character_manifest.json.characters[*]` 对应角色条目里；runtime loader 会直接读取 manifest 角色条目并动态装配 validator
@@ -104,6 +107,7 @@
 - [ ] 若共享领域 / 奥义点 / 合法性 suite 属于正式交付面，必须显式挂到 `required_suite_paths`
 - [ ] 若角色依赖共享 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 等扩展能力，对应共享 suite 也必须显式挂到 `required_suite_paths`
 - [ ] 若角色依赖共享 `required_target_effects / incoming_accuracy / power_bonus_source=effect_stack_sum` 等扩展能力，对应共享 suite 也必须显式挂到 `required_suite_paths`
+- [ ] 共享 suite 回挂以 `config/formal_character_capability_catalog.json` 为准，不再靠角色条目外的零散补丁；catalog 新增 `required_suite_paths` 时，相关角色 manifest 必须同步补齐
 - [ ] 共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`；统一改在 `config/formal_character_manifest.json.matchups / pair_interaction_cases` 收口并由 shared gate 校验覆盖完整性
 - [ ] 不允许只靠通用 contract suite 兜角色回归
 - [ ] 至少补一组“该角色 + 另一名正式角色”的黑盒 smoke，避免正式角色配对覆盖只堆在单一对局上

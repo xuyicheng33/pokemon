@@ -7,6 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from repo_consistency_common import GateContext
 from repo_consistency_formal_character_gate_characters import validate_character_entries
+from repo_consistency_formal_character_gate_capabilities import validate_capability_catalog
 from repo_consistency_formal_character_gate_cutover import validate_manifest_cutover
 from repo_consistency_formal_character_gate_pairs import validate_pair_catalog
 from repo_consistency_formal_character_gate_support import (
@@ -18,6 +19,7 @@ from repo_consistency_formal_character_gate_support import (
 ctx = GateContext()
 MANIFEST_PATH = "config/formal_character_manifest.json"
 FORMAL_REGISTRY_CONTRACTS_PATH = "config/formal_registry_contracts.json"
+CAPABILITY_CATALOG_PATH = "config/formal_character_capability_catalog.json"
 LEGACY_REGISTRY_PATH = "config/formal_character_registry.json"
 LEGACY_RUNTIME_REGISTRY_PATH = "config/formal_character_runtime_registry.json"
 LEGACY_DELIVERY_REGISTRY_PATH = "config/formal_character_delivery_registry.json"
@@ -158,6 +160,12 @@ character_validation = validate_character_entries(
     character_delivery_required_array_fields=character_delivery_required_array_fields,
     validator_bad_case_suite_path=VALIDATOR_BAD_CASE_SUITE_PATH,
     shared_suite_roots=SHARED_SUITE_ROOTS,
+)
+
+validate_capability_catalog(
+    ctx,
+    capability_catalog_path=CAPABILITY_CATALOG_PATH,
+    characters=characters,
 )
 
 for case_index, case_spec in enumerate(pair_interaction_cases):
