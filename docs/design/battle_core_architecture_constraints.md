@@ -35,6 +35,7 @@
 Composition 补充约束：
 
 - `BattleCoreServiceSpecs` 只允许维护一份 `SERVICE_DESCRIPTORS` 单一描述源，不再分裂维护 `SERVICE_SLOTS / SCRIPT_BY_SLOT` 双清单。
+- `BattleCoreWiringSpecs` 只允许保留聚合职责；真实 wiring spec 固定拆在 `src/composition/battle_core_wiring_specs/*.gd`，并由 `wiring_specs() / reset_specs()` 向 composer 暴露统一入口。
 - `BattleCoreContainer` 只允许暴露：
   - `set_service`
   - `service`
@@ -43,6 +44,7 @@ Composition 补充约束：
   - `configure_dispose_specs`
   - `dispose`
 - 仓库内对 battle core 容器的服务读取统一使用 `core.service("slot")`；不再依赖 `core.<service>` 显式 slot 属性面。
+- composition consistency gate 与 wiring DAG gate 必须直接覆盖 split wiring 目录，不能只盯聚合入口文件名。
 
 ## 3. Rule Mod 约束
 

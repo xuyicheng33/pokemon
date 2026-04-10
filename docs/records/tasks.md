@@ -51,6 +51,10 @@
     - `BattleCoreComposer` 仍只走统一聚合入口装配，但 wiring / reset spec 已改为通过 `BattleCoreWiringSpecs.wiring_specs() / reset_specs()` 统一派发
     - composition consistency gate 与 wiring DAG gate 已改为直接扫描 split wiring 目录，继续锁 `SERVICE_DESCRIPTORS / container API / wiring specs / strict DAG` 一致性
     - `docs/design/project_folder_structure.md` 与 `README.md` 已同步新增 wiring specs 聚合目录与最新代码规模统计
+  - 第 4 阶段已完成：
+    - `docs/design/architecture_overview.md` 与 `docs/design/battle_core_architecture_constraints.md` 已同步 wiring specs 聚合目录与 `BattleCoreWiringSpecs.wiring_specs() / reset_specs()` 入口
+    - `docs/records/tasks.md`、`docs/records/decisions.md` 已补齐四个阶段的目标落点、架构决定与验证结果
+    - 已完成最终全量检查：当前未再发现新的 gate 漂移、回归失败、装配断裂或 README/设计文档偏差
 - 第 1 阶段验收结果：
   - 仓库中已不存在旧短别名 baseline 分发路径
   - 四角色 snapshot / validator / runtime 全量回归通过
@@ -78,6 +82,13 @@
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_suite_reachability.sh`
   - `godot --headless --path . --script tests/run_all.gd`
+  - `git diff --check`
+- 第 4 阶段验收结果：
+  - architecture / delivery / capability catalog / composition 相关设计文档、记录与 gate 已对齐
+  - 最终全量 gate、全量测试与差异检查全部通过
+  - 对当前项目实现做完一轮最终检查后，未发现新的潜在阻断问题
+- 第 4 阶段验证：
+  - `bash tests/run_with_gate.sh`
   - `git diff --check`
 
 ## 当前波次：正式角色整合修复波次（2026-04-07）

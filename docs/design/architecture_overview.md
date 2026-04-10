@@ -96,7 +96,8 @@
 - `src/composition/battle_core_composer.gd`
   - 负责创建 RNG、ID、commands、turn、effects、logging 等服务对象。
   - 负责维护 composer 级共享 `content_snapshot_cache`，供同一 manager 下的多 session / replay 复用。
-  - 通过 `BattleCoreServiceSpecs.SERVICE_DESCRIPTORS` 驱动装配。
+  - 通过 `BattleCoreServiceSpecs.SERVICE_DESCRIPTORS` 与 `BattleCoreWiringSpecs.wiring_specs() / reset_specs()` 驱动装配。
+  - `src/composition/battle_core_wiring_specs.gd` 只保留聚合职责；真实 wiring spec 固定拆在 `src/composition/battle_core_wiring_specs/*.gd`。
   - 返回一个 dictionary-backed 的 `BattleCoreContainer`。
 - `src/composition/battle_core_container.gd`
   - 不再暴露显式 slot 属性。
