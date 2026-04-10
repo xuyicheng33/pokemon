@@ -10,6 +10,29 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 临时复查：最近提交与扩展治理方向审查（2026-04-10）
+
+- 状态：已完成
+- 目标：
+  - 复查最近几次围绕 formal 角色交付链、shared capability catalog、wiring specs、manifest helper 与共享注册表的修补，确认架构、实现和设计文档是否仍然对齐，并判断修复方向是否正确。
+- 范围：
+  - 审查最近提交 `f077b8b / d9cc721 / 0e7c60e / 49109b1 / e7a336b / 7f501bd`
+  - 核对 `docs/design/`、核心实现、formal 角色交付链与 gate/test 状态
+- 验收标准：
+  - 给出明确结论：是否存在阻断问题，当前修复方向是否继续成立
+  - 至少完成一次静态 gate 与一次全量回归验证
+- 结果：
+  - 本轮未发现新的阻断或重要实现问题
+  - 共享治理修复方向成立，且已真实落到代码与 gate
+  - 遗留风险主要仍在“新增机制还需要改几个中心文件”，不是 battle core 主循环或四角色语义失控
+- 记录：
+  - 详细复查结论见 `docs/records/review_2026-04-10_recent_management_fix_direction_audit.md`
+- 验证：
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前波次：formal contract 扩角前硬收口（2026-04-10）
 
 - 状态：已完成
