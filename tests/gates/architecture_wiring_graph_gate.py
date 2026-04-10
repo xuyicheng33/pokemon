@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_service_specs.gd"
 WIRING_SPECS_DIR = ROOT / "src/composition/battle_core_wiring_specs"
+PAYLOAD_CONTRACT_REGISTRY_PATH = ROOT / "src/battle_core/content/payload_contract_registry.gd"
 
 def fail(message: str, details: list[str] | None = None) -> None:
     print(f"ARCH_GATE_FAILED: {message}", file=sys.stderr)
@@ -23,6 +24,10 @@ def parse_service_slots(text: str) -> set[str]:
 
 def parse_wiring_edges(text: str) -> list[tuple[str, str]]:
     return re.findall(r'\{"owner": "([^"]+)", "dependency": "[^"]+", "source": "([^"]+)"\}', text)
+
+
+def parse_payload_registry_edges(text: str) -> list[tuple[str, str]]:
+    return [("payload_handler_registry", slot) for slot in re.findall(r'"handler_slot": "([^"]+)"', text)]
 
 
 def build_graph(nodes: set[str], edges: list[tuple[str, str]]) -> dict[str, set[str]]:
@@ -110,6 +115,7 @@ def main() -> None:
     edges: list[tuple[str, str]] = []
     for path in wiring_spec_paths:
         edges.extend(parse_wiring_edges(path.read_text(encoding="utf-8")))
+    edges.extend(parse_payload_registry_edges(PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")))
     if not service_slots:
         fail("failed to parse service slots for runtime wiring graph gate")
     if not edges:

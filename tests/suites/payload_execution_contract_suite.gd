@@ -4,6 +4,7 @@ class_name PayloadExecutionContractSuite
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const EffectPayloadScript := preload("res://src/battle_core/content/effect_payload.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
+const PayloadContractRegistryScript := preload("res://src/battle_core/content/payload_contract_registry.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ActionGuardStateIntegrityTestSupportScript := preload("res://tests/support/action_guard_state_integrity_test_support.gd")
 
@@ -22,17 +23,7 @@ func _test_payload_handler_registry_completeness_contract(harness) -> Dictionary
 	var registry = core.service("payload_handler_registry")
 	if registry == null:
 		return harness.fail_result("payload_handler_registry should be composed")
-	var expected_paths := PackedStringArray([
-		"res://src/battle_core/content/damage_payload.gd",
-		"res://src/battle_core/content/heal_payload.gd",
-		"res://src/battle_core/content/resource_mod_payload.gd",
-		"res://src/battle_core/content/stat_mod_payload.gd",
-		"res://src/battle_core/content/apply_field_payload.gd",
-		"res://src/battle_core/content/apply_effect_payload.gd",
-		"res://src/battle_core/content/remove_effect_payload.gd",
-		"res://src/battle_core/content/rule_mod_payload.gd",
-		"res://src/battle_core/content/forced_replace_payload.gd",
-	])
+	var expected_paths := PayloadContractRegistryScript.registered_payload_script_paths()
 	if registry.registered_payload_script_paths() != expected_paths:
 		return harness.fail_result("payload handler registry drifted: expected=%s actual=%s" % [
 			var_to_str(expected_paths),

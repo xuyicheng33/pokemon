@@ -58,6 +58,10 @@
   - 后续对齐修补已完成：
     - `pair_interaction_case` 共享合同已补 `battle_seed` 正整数约束，不再只靠 catalog loader / shared gate 各自补校验
     - `docs/records/review_2026-04-10_four_character_architecture_audit.md` 已显式标记为历史审查，不再作为现行依据
+    - `FormalCharacterManifest` 已拆成 facade + `formal_character_manifest_loader/views` helper，并把入口文件与 helper 目录一起纳入 architecture size gate
+    - payload script / handler slot / validator key 已收口到 `src/battle_core/content/payload_contract_registry.gd`；payload validator、handler registry、effects wiring 与 payload contract suite 统一从注册表派生
+    - `power_bonus_source` 的 source 列表、schema 校验与运行时解析已统一收口到 `src/battle_core/content/power_bonus_source_registry.gd`
+    - `docs/records/review_2026-04-10_post_refactor_alignment_audit.md` 已显式标记为历史审查，并新增修补后复查记录 `docs/records/review_2026-04-10_fix_followup_audit.md`
 - 第 1 阶段验收结果：
   - 仓库中已不存在旧短别名 baseline 分发路径
   - 四角色 snapshot / validator / runtime 全量回归通过

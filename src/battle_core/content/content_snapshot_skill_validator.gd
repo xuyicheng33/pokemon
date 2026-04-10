@@ -7,7 +7,6 @@ const SkillDamageSegmentScript := preload("res://src/battle_core/content/skill_d
 
 var _content_index = null
 var _payload_validator = null
-const EFFECT_STACK_SUM := PowerBonusSourceRegistryScript.EFFECT_STACK_SUM
 
 func validate(content_index, errors: Array, payload_validator, regular_skill_refs: Dictionary, ultimate_skill_refs: Dictionary) -> void:
     _content_index = content_index
@@ -72,29 +71,7 @@ func _validate_skills(errors: Array, regular_skill_refs: Dictionary, ultimate_sk
             errors.append("skill[%s] applies domain field and must set is_domain_skill=true" % skill_id)
 
 func _validate_power_bonus_contract(errors: Array, skill_id: String, skill_definition) -> void:
-    if String(skill_definition.power_bonus_source) != EFFECT_STACK_SUM:
-        return
-    var has_any_effect_id := false
-    for effect_id in skill_definition.power_bonus_self_effect_ids:
-        var normalized_effect_id := String(effect_id).strip_edges()
-        if normalized_effect_id.is_empty():
-            errors.append("skill[%s].power_bonus_self_effect_ids must not contain empty entry" % skill_id)
-            continue
-        has_any_effect_id = true
-        if not _content_index.effects.has(normalized_effect_id):
-            errors.append("skill[%s].power_bonus_self_effect_ids missing effect: %s" % [skill_id, normalized_effect_id])
-    for effect_id in skill_definition.power_bonus_target_effect_ids:
-        var normalized_effect_id := String(effect_id).strip_edges()
-        if normalized_effect_id.is_empty():
-            errors.append("skill[%s].power_bonus_target_effect_ids must not contain empty entry" % skill_id)
-            continue
-        has_any_effect_id = true
-        if not _content_index.effects.has(normalized_effect_id):
-            errors.append("skill[%s].power_bonus_target_effect_ids missing effect: %s" % [skill_id, normalized_effect_id])
-    if not has_any_effect_id:
-        errors.append("skill[%s].effect_stack_sum requires at least one power bonus effect id" % skill_id)
-    if int(skill_definition.power_bonus_per_stack) <= 0:
-        errors.append("skill[%s].power_bonus_per_stack must be > 0 for effect_stack_sum, got %d" % [skill_id, int(skill_definition.power_bonus_per_stack)])
+    PowerBonusSourceRegistryScript.validate_skill_contract(errors, skill_id, skill_definition, _content_index)
 
 func _validate_execute_contract(errors: Array, skill_id: String, skill_definition) -> void:
     var execute_ratio := float(skill_definition.execute_target_hp_ratio_lte)

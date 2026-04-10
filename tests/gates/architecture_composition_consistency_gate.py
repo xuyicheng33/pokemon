@@ -13,6 +13,7 @@ WIRING_SPECS_PATH = ROOT / "src/composition/battle_core_wiring_specs.gd"
 WIRING_SPECS_DIR = ROOT / "src/composition/battle_core_wiring_specs"
 CONTAINER_PATH = ROOT / "src/composition/battle_core_container.gd"
 COMPOSER_PATH = ROOT / "src/composition/battle_core_composer.gd"
+PAYLOAD_CONTRACT_REGISTRY_PATH = ROOT / "src/battle_core/content/payload_contract_registry.gd"
 
 
 def fail(message: str, details: list[str] | None = None) -> None:
@@ -47,6 +48,7 @@ if not wiring_child_texts:
     fail("battle_core_wiring_specs must aggregate child spec files", [str(WIRING_SPECS_DIR.relative_to(ROOT))])
 container_text = CONTAINER_PATH.read_text(encoding="utf-8")
 composer_text = COMPOSER_PATH.read_text(encoding="utf-8")
+payload_contract_registry_text = PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")
 
 service_descriptors_block = _extract_named_block(
     service_specs_text,
@@ -62,6 +64,10 @@ for child_text in wiring_child_texts:
     wiring_owner_source_pairs.extend(
         re.findall(r'\{"owner": "([^"]+)", "dependency": "([^"]+)", "source": "([^"]+)"\}', child_text)
     )
+payload_handler_slots = re.findall(r'"handler_slot": "([^"]+)"', payload_contract_registry_text)
+wiring_owner_source_pairs.extend(
+    ("payload_handler_registry", handler_slot, handler_slot) for handler_slot in payload_handler_slots
+)
 reset_owner_pairs = re.findall(
     r'\{"owner": "([^"]+)", "field": "([^"]+)", "value":',
     wiring_specs_text,
@@ -83,6 +89,16 @@ if "src/composition/battle_core_wiring_specs/" not in wiring_specs_text:
     fail(
         "battle_core_wiring_specs must preload child spec files from the split directory",
         [str(WIRING_SPECS_DIR.relative_to(ROOT))],
+    )
+if "EffectsCoreWiringSpecsScript.wiring_specs()" not in wiring_specs_text:
+    fail(
+        "battle_core_wiring_specs must build effects-core wiring through the helper",
+        ["EffectsCoreWiringSpecsScript.wiring_specs()"],
+    )
+if "registry_wiring_specs" not in payload_contract_registry_text:
+    fail(
+        "payload contract registry must expose payload_handler_registry wiring facts",
+        [str(PAYLOAD_CONTRACT_REGISTRY_PATH.relative_to(ROOT))],
     )
 
 for label, names in [

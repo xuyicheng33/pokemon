@@ -1,6 +1,8 @@
 extends RefCounted
 
-const WIRING_SPECS := [
+const PayloadContractRegistryScript := preload("res://src/battle_core/content/payload_contract_registry.gd")
+
+const BASE_WIRING_SPECS := [
 	{"owner": "trigger_dispatcher", "dependency": "id_factory", "source": "id_factory"},
 	{"owner": "trigger_batch_runner", "dependency": "passive_skill_service", "source": "passive_skill_service"},
 	{"owner": "trigger_batch_runner", "dependency": "passive_item_service", "source": "passive_item_service"},
@@ -12,15 +14,9 @@ const WIRING_SPECS := [
 	{"owner": "effect_instance_service", "dependency": "id_factory", "source": "id_factory"},
 	{"owner": "effect_instance_dispatcher", "dependency": "id_factory", "source": "id_factory"},
 	{"owner": "rule_mod_service", "dependency": "id_factory", "source": "id_factory"},
-	{"owner": "payload_handler_registry", "dependency": "payload_damage_handler", "source": "payload_damage_handler"},
-	{"owner": "payload_handler_registry", "dependency": "payload_heal_handler", "source": "payload_heal_handler"},
-	{"owner": "payload_handler_registry", "dependency": "payload_resource_mod_handler", "source": "payload_resource_mod_handler"},
-	{"owner": "payload_handler_registry", "dependency": "payload_stat_mod_handler", "source": "payload_stat_mod_handler"},
-	{"owner": "payload_handler_registry", "dependency": "payload_apply_field_handler", "source": "payload_apply_field_handler"},
-	{"owner": "payload_handler_registry", "dependency": "payload_apply_effect_handler", "source": "payload_apply_effect_handler"},
-	{"owner": "payload_handler_registry", "dependency": "payload_remove_effect_handler", "source": "payload_remove_effect_handler"},
-	{"owner": "payload_handler_registry", "dependency": "payload_rule_mod_handler", "source": "payload_rule_mod_handler"},
-	{"owner": "payload_handler_registry", "dependency": "payload_forced_replace_handler", "source": "payload_forced_replace_handler"},
 	{"owner": "payload_executor", "dependency": "effect_precondition_service", "source": "effect_precondition_service"},
 	{"owner": "payload_executor", "dependency": "payload_handler_registry", "source": "payload_handler_registry"},
 ]
+
+static func wiring_specs() -> Array:
+	return PayloadContractRegistryScript.registry_wiring_specs() + BASE_WIRING_SPECS.duplicate(true)

@@ -82,6 +82,7 @@ review_roots = [
     root / "src/battle_core",
     root / "src/composition",
     root / "src/shared/formal_character_baselines",
+    root / "src/shared/formal_character_manifest",
 ]
 
 review_required = []
@@ -99,6 +100,15 @@ formal_baseline_entry = root / "src/shared/formal_character_baselines.gd"
 if formal_baseline_entry.exists():
     rel = str(formal_baseline_entry.relative_to(root))
     line_count = len(formal_baseline_entry.read_text(encoding="utf-8").splitlines())
+    if 220 <= line_count <= 250:
+        warning_review.append((rel, line_count))
+    if line_count > 250:
+        review_required.append((rel, line_count))
+
+formal_manifest_entry = root / "src/shared/formal_character_manifest.gd"
+if formal_manifest_entry.exists():
+    rel = str(formal_manifest_entry.relative_to(root))
+    line_count = len(formal_manifest_entry.read_text(encoding="utf-8").splitlines())
     if 220 <= line_count <= 250:
         warning_review.append((rel, line_count))
     if line_count > 250:

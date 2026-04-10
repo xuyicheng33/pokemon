@@ -189,6 +189,31 @@
   - 这份文件承载的是装配事实，不是新抽象；最短路径就是按现有子域把 spec 表拆开，再保留一个稳定聚合入口给 composer 和 gate
   - 先把 wiring 声明结构拉回到可维护状态，后续扩 service 或拆 owner 时，改动就能落在对应子域 spec，而不是重新把所有装配事实堆回一个中心文件
 
+## 0M. `FormalCharacterManifest` 固定改为薄 facade + helper，并纳入体量闸门（2026-04-10）
+
+- `src/shared/formal_character_manifest.gd` 当前固定只保留公开 facade、视图入口与错误投影。
+- manifest 文件读取、顶层桶校验与路径归一化固定下沉到 `src/shared/formal_character_manifest/formal_character_manifest_loader.gd`。
+- runtime / delivery / pair interaction 视图校验固定下沉到 `src/shared/formal_character_manifest/formal_character_manifest_views.gd`。
+- `tests/check_architecture_constraints.sh` 当前固定把 `src/shared/formal_character_manifest/**` 与入口文件一起纳入体量闸门。
+- 这么定的原因：
+  - `FormalCharacterManifest` 已经成为正式角色接入链新的中心热点；继续把读取、校验和多种视图投影堆在一个入口里，会很快回到旧热点模式
+  - 只拆 baseline 目录、不把 manifest 入口纳入同级治理，等于把热点从一处挪到另一处
+  - 先把 manifest owner 收回稳定 facade，再把 helper 纳入 size gate，后续扩角色时才不会重新把正式角色交付链堆回一个中心文件
+
+## 0N. payload 与 power bonus 的共享注册事实固定单点收口（2026-04-10）
+
+- payload 的 `payload script -> handler slot -> validator key` 当前固定只维护在 `src/battle_core/content/payload_contract_registry.gd`。
+- `ContentPayloadValidator`、`PayloadHandlerRegistry`、`battle_core_wiring_specs_effects_core.gd` 与 payload contract suite 当前统一从这份注册表派生，不再各自手抄 payload 名单。
+- `power_bonus_source` 当前固定只维护一份共享注册事实：
+  - source 列表
+  - 额外 schema 校验
+  - 运行时 bonus 解析
+  都统一收口到 `src/battle_core/content/power_bonus_source_registry.gd`。
+- 这么定的原因：
+  - 这轮修补要解决的不是 battle core 主循环失控，而是“新增一个共享扩展点就要改多处中心入口”的返工面
+  - payload 与 power bonus 都已经出现“名单、校验、运行时分支各写一份”的漂移风险；继续扩角色时，这类共享入口会先比玩法规则更快失控
+  - 先把共享注册事实收成单点后，新增同类扩展时改动就能优先落在注册表和专属实现，而不是继续在 validator、registry、wiring 和测试里同步抄名单
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

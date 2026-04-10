@@ -19,7 +19,7 @@ static func wiring_specs() -> Array:
 		+ TurnWiringSpecsScript.WIRING_SPECS
 		+ LifecycleWiringSpecsScript.WIRING_SPECS
 		+ PassivesWiringSpecsScript.WIRING_SPECS
-		+ EffectsCoreWiringSpecsScript.WIRING_SPECS
+		+ EffectsCoreWiringSpecsScript.wiring_specs()
 		+ PayloadHandlerWiringSpecsScript.WIRING_SPECS
 		+ ActionWiringSpecsScript.WIRING_SPECS
 	)
