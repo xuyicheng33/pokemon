@@ -328,6 +328,7 @@
 
 ## 7. 运行前校验（BattleSetup）
 
+- `battle_setup.sides[*].side_id` 必须非空，且在同一场 battle setup 内唯一。
 - 同一 side 的队伍中，被动持有物 `passive_item_id` 不可重复。
 - 同一 side 的队伍中，`unit_definition_id` 不可重复；若同队出现重复角色，建局前直接 fail-fast。
 - `SideSetup.regular_skill_loadout_overrides` 固定为 `Dictionary<int, PackedStringArray>`：

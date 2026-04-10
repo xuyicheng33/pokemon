@@ -60,6 +60,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("manager_run_turn_invalid_envelope_contract", failures, Callable(self, "_test_manager_run_turn_invalid_envelope_contract").bind(harness))
 	runner.run_test("manager_unconfigured_dependency_guard_contract", failures, Callable(self, "_test_manager_unconfigured_dependency_guard_contract").bind(harness))
 	runner.run_test("manager_create_session_empty_snapshot_paths_contract", failures, Callable(self, "_test_manager_create_session_empty_snapshot_paths_contract").bind(harness))
+	runner.run_test("manager_create_session_invalid_side_id_contract", failures, Callable(self, "_test_manager_create_session_invalid_side_id_contract").bind(harness))
 	runner.run_test("manager_event_log_negative_from_index_contract", failures, Callable(self, "_test_manager_event_log_negative_from_index_contract").bind(harness))
 	runner.run_test("manager_disposed_request_guard_contract", failures, Callable(self, "_test_manager_disposed_request_guard_contract").bind(harness))
 	runner.run_test("manager_create_session_runtime_guard_contract", failures, Callable(self, "_test_manager_create_session_runtime_guard_contract").bind(harness))
@@ -191,6 +192,39 @@ func _test_manager_create_session_empty_snapshot_paths_contract(harness) -> Dict
 	)
 	if not bool(failure.get("ok", false)):
 		return harness.fail_result(str(failure.get("error", "manager create_session empty snapshot paths contract failed")))
+	return harness.pass_result()
+
+func _test_manager_create_session_invalid_side_id_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+	var cases: Array = [
+		{"p1_side_id": "", "p2_side_id": "P2", "needle": "battle_setup.sides[0].side_id to be non-empty"},
+		{"p1_side_id": "P1", "p2_side_id": "P1", "needle": "duplicated battle_setup side_id: P1"},
+	]
+	for test_case in cases:
+		var battle_setup = harness.build_sample_setup(sample_factory)
+		battle_setup.sides[0].side_id = String(test_case["p1_side_id"])
+		battle_setup.sides[1].side_id = String(test_case["p2_side_id"])
+		var failure = _helper.expect_failure_code(
+			manager.create_session({
+				"battle_seed": 3092,
+				"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
+				"battle_setup": battle_setup,
+			}),
+			"create_session",
+			ErrorCodesScript.INVALID_MANAGER_REQUEST,
+			String(test_case["needle"])
+		)
+		if not bool(failure.get("ok", false)):
+			return harness.fail_result(str(failure.get("error", "manager create_session invalid side_id contract failed")))
 	return harness.pass_result()
 
 func _test_manager_event_log_negative_from_index_contract(harness) -> Dictionary:

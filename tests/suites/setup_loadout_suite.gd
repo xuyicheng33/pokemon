@@ -8,6 +8,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("setup_loadout_override_validation", failures, Callable(self, "_test_setup_loadout_override_validation").bind(harness))
     runner.run_test("runtime_regular_skill_loadout_contract", failures, Callable(self, "_test_runtime_regular_skill_loadout_contract").bind(harness))
     runner.run_test("same_side_duplicate_unit_forbidden", failures, Callable(self, "_test_same_side_duplicate_unit_forbidden").bind(harness))
+    runner.run_test("battle_setup_side_id_validation", failures, Callable(self, "_test_battle_setup_side_id_validation").bind(harness))
 
 func _test_candidate_skill_pool_validation(harness) -> Dictionary:
     var sample_factory = harness.build_sample_factory()
@@ -147,6 +148,32 @@ func _test_same_side_duplicate_unit_forbidden(harness) -> Dictionary:
     var errors: Array = content_index.validate_setup(battle_setup)
     if not _has_error(errors, "duplicated unit_definition_id: sample_pyron"):
         return harness.fail_result("same-side duplicate units should fail fast once duplicate-role ban is live")
+    return harness.pass_result()
+
+func _test_battle_setup_side_id_validation(harness) -> Dictionary:
+    var sample_factory = harness.build_sample_factory()
+    if sample_factory == null:
+        return harness.fail_result("SampleBattleFactory init failed")
+    var cases: Array = [
+        {
+            "p1_side_id": "",
+            "p2_side_id": "P2",
+            "needle": "battle_setup.sides[0].side_id must be non-empty",
+        },
+        {
+            "p1_side_id": "P1",
+            "p2_side_id": "P1",
+            "needle": "battle_setup duplicated side_id: P1",
+        },
+    ]
+    for test_case in cases:
+        var content_index = harness.build_loaded_content_index(sample_factory)
+        var battle_setup = harness.build_sample_setup(sample_factory)
+        battle_setup.sides[0].side_id = String(test_case["p1_side_id"])
+        battle_setup.sides[1].side_id = String(test_case["p2_side_id"])
+        var errors: Array = content_index.validate_setup(battle_setup)
+        if not _has_error(errors, String(test_case["needle"])):
+            return harness.fail_result("battle_setup side_id validation missing error: %s" % String(test_case["needle"]))
     return harness.pass_result()
 
 func _has_error(errors: Array, needle: String) -> bool:

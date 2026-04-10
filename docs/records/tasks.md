@@ -10,6 +10,28 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前修补：battle_setup side_id 输入校验（2026-04-10）
+
+- 状态：已完成
+- 目标：
+  - 把 `battle_setup.sides[*].side_id` 的非空和唯一性校验补回公开入口、初始化校验和回放入口，避免坏输入漏到运行态 `assert()` 或公开快照。
+- 范围：
+  - `BattleCoreManager` 的 create/replay 入参校验
+  - `BattleSetupValidator` 的运行前校验
+  - manager/setup 相关回归测试
+  - 设计文档与活跃任务记录对齐
+- 验收标准：
+  - 空 side_id 和重复 side_id 在 `create_session / run_replay / validate_setup` 上都会 fail-fast
+  - 不再出现“公开返回成功但内部打印 assertion”的路径
+  - 相关测试与完整 gate 通过
+- 结果：
+  - `battle_setup.side_id` 现在会在 facade 入口和 setup validator 上同时校验
+  - manager create/replay 与 setup 校验已补回归
+  - 设计文档和任务记录已同步到当前口径
+- 验证：
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_with_gate.sh`
+
 ## 临时复查：最近提交与扩展治理方向审查（2026-04-10）
 
 - 状态：已完成
@@ -140,7 +162,7 @@
 
 ## 当前波次：扩角前整合规范（2026-04-07）
 
-- 状态：进行中
+- 状态：已完成
 - 目标：
   - 在不新增第 5 个正式角色、不改四角色数值与平衡的前提下，把扩角前最容易持续返工的九个热点先收口：
     - manifest runtime / delivery 视图解耦

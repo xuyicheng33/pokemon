@@ -90,6 +90,7 @@
 
 - `ReplayRunner` 在进入主循环前必须先把 `command_stream` 预分组到 `Dictionary<int, Array>`，每回合只读取当前 `turn_index` 的命令数组。
 - 同回合命令的相对顺序必须严格保留输入顺序，不能因为预分组改变 deterministic 行为。
+- `battle_setup.sides[*].side_id` 必须非空且唯一；回放入口不得把空 side_id 或重复 side_id 漏到运行态。
 
 ### 3.2 ReplayOutput（内部：ReplayRunner）
 

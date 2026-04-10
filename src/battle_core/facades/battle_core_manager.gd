@@ -76,8 +76,9 @@ func run_replay(replay_input) -> Dictionary:
     var dependency_error = _validate_core_dependencies_result()
     if dependency_error != null:
         return dependency_error
-    if replay_input == null:
-        return BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_REPLAY_INPUT, "BattleCoreManager.run_replay requires replay_input")
+    var payload_error = BattleCoreManagerContractHelperScript.validate_replay_input(replay_input)
+    if payload_error != null:
+        return payload_error
     _sync_container_service()
     return _container_service.run_replay_result(replay_input)
 

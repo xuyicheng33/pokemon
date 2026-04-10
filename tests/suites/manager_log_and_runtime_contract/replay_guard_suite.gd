@@ -100,6 +100,7 @@ class DomainLegalityServiceClearStub:
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("manager_run_replay_empty_snapshot_paths_contract", failures, Callable(self, "_test_manager_run_replay_empty_snapshot_paths_contract").bind(harness))
 	runner.run_test("manager_run_replay_null_command_contract", failures, Callable(self, "_test_manager_run_replay_null_command_contract").bind(harness))
+	runner.run_test("manager_run_replay_invalid_side_id_contract", failures, Callable(self, "_test_manager_run_replay_invalid_side_id_contract").bind(harness))
 	runner.run_test("manager_container_run_replay_failed_output_contract", failures, Callable(self, "_test_manager_container_run_replay_failed_output_contract"))
 	runner.run_test("replay_output_helper_runtime_fault_contract", failures, Callable(self, "_test_replay_output_helper_runtime_fault_contract"))
 	runner.run_test("replay_output_helper_logger_fault_contract", failures, Callable(self, "_test_replay_output_helper_logger_fault_contract"))
@@ -156,6 +157,34 @@ func _test_manager_run_replay_null_command_contract(harness) -> Dictionary:
 	)
 	if not bool(failure.get("ok", false)):
 		return harness.fail_result(str(failure.get("error", "manager run_replay null command contract failed")))
+	return harness.pass_result()
+
+func _test_manager_run_replay_invalid_side_id_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var cases: Array = [
+		{"p1_side_id": "", "p2_side_id": "P2", "needle": "battle_setup.sides[0].side_id to be non-empty"},
+		{"p1_side_id": "P1", "p2_side_id": "P1", "needle": "duplicated battle_setup side_id: P1"},
+	]
+	for test_case in cases:
+		var replay_input = harness.build_demo_replay_input(sample_factory, manager)
+		if replay_input == null:
+			return harness.fail_result("demo replay input build failed")
+		replay_input.battle_setup.sides[0].side_id = String(test_case["p1_side_id"])
+		replay_input.battle_setup.sides[1].side_id = String(test_case["p2_side_id"])
+		var failure = _helper.expect_failure_code(
+			manager.run_replay(replay_input),
+			"run_replay",
+			ErrorCodesScript.INVALID_REPLAY_INPUT,
+			String(test_case["needle"])
+		)
+		if not bool(failure.get("ok", false)):
+			return harness.fail_result(str(failure.get("error", "manager run_replay invalid side_id contract failed")))
 	return harness.pass_result()
 
 func _test_manager_container_run_replay_failed_output_contract() -> Dictionary:

@@ -14,6 +14,19 @@ func validate_replay_input(replay_input) -> String:
 	var sides = battle_setup.get("sides")
 	if typeof(sides) != TYPE_ARRAY or sides.is_empty():
 		return "ReplayRunner.run_replay_with_context requires battle_setup.sides to be a non-empty Array"
+	var seen_side_ids: Dictionary = {}
+	for side_index in range(sides.size()):
+		var side_setup = sides[side_index]
+		if side_setup == null:
+			return "ReplayRunner.run_replay_with_context requires battle_setup.sides[%d]" % side_index
+		if not _has_property(side_setup, "side_id"):
+			return "ReplayRunner.run_replay_with_context requires battle_setup.sides[%d].side_id" % side_index
+		var side_id := String(_read_property(side_setup, "side_id", "")).strip_edges()
+		if side_id.is_empty():
+			return "ReplayRunner.run_replay_with_context requires battle_setup.sides[%d].side_id to be non-empty" % side_index
+		if seen_side_ids.has(side_id):
+			return "ReplayRunner.run_replay_with_context duplicated battle_setup side_id: %s" % side_id
+		seen_side_ids[side_id] = true
 	if not _has_property(replay_input, "content_snapshot_paths"):
 		return "ReplayRunner.run_replay_with_context requires content_snapshot_paths"
 	var content_snapshot_paths = replay_input.get("content_snapshot_paths")
@@ -61,3 +74,12 @@ func _has_property(value, property_name: String) -> bool:
 		if String(property_info.get("name", "")) == property_name:
 			return true
 	return false
+
+func _read_property(value, property_name: String, default_value = null):
+	if value == null or property_name.is_empty():
+		return default_value
+	if typeof(value) == TYPE_DICTIONARY:
+		return value.get(property_name, default_value)
+	if not _has_property(value, property_name):
+		return default_value
+	return value.get(property_name)

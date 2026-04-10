@@ -10,10 +10,29 @@ func validate(content_index, battle_setup) -> Array:
         errors.append("battle_setup missing")
         _content_index = null
         return errors
+    if typeof(battle_setup.sides) != TYPE_ARRAY:
+        errors.append("battle_setup.sides must be Array")
+        _content_index = null
+        return errors
     var format_definition = _content_index.battle_formats.get(String(battle_setup.format_id).strip_edges(), null)
     if format_definition == null:
         errors.append("battle_setup.format_id missing battle format: %s" % String(battle_setup.format_id))
+    var seen_side_ids: Dictionary = {}
+    for side_index in range(battle_setup.sides.size()):
+        var side_setup = battle_setup.sides[side_index]
+        if side_setup == null:
+            errors.append("battle_setup.sides[%d] must not be null" % side_index)
+            continue
+        var side_id := String(side_setup.side_id).strip_edges()
+        if side_id.is_empty():
+            errors.append("battle_setup.sides[%d].side_id must be non-empty" % side_index)
+        elif seen_side_ids.has(side_id):
+            errors.append("battle_setup duplicated side_id: %s" % side_id)
+        else:
+            seen_side_ids[side_id] = true
     for side_setup in battle_setup.sides:
+        if side_setup == null:
+            continue
         var side_id: String = str(side_setup.side_id)
         var seen_unit_definition_ids: Dictionary = {}
         var seen_passive_items: Dictionary = {}

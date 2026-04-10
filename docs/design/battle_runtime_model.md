@@ -89,7 +89,7 @@
 
 |字段|类型|说明|
 |---|---|---|
-|`side_id`|`String`|`P1 / P2`|
+|`side_id`|`String`|非空 side 标识；当前基线为 `P1 / P2`，且同一场战斗内必须唯一|
 |`team_units`|`Array[UnitState]`|全部队伍成员|
 |`active_slots`|`Dictionary`|当前在场槽位映射（当前基线仅使用 `active_0`）|
 |`bench_order`|`Array[String]`|bench 顺序|
