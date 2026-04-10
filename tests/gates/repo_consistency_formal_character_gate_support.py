@@ -42,6 +42,7 @@ def validate_required_contract_fields(
     required_string_fields: list[str],
     required_array_fields: list[str],
     entry_label: str,
+    required_positive_int_fields: list[str] | None = None,
 ) -> None:
     for field_name in required_string_fields:
         if not str(entry.get(field_name, "")).strip():
@@ -49,6 +50,19 @@ def validate_required_contract_fields(
     for field_name in required_array_fields:
         if not isinstance(entry.get(field_name, None), list):
             ctx.failures.append(f"{entry_label} missing {field_name}")
+    for field_name in required_positive_int_fields or []:
+        if not _is_positive_int_like(entry.get(field_name, None)):
+            ctx.failures.append(f"{entry_label} {field_name} must be positive integer")
+
+
+def _is_positive_int_like(value: object) -> bool:
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, int):
+        return value > 0
+    if isinstance(value, float):
+        return value.is_integer() and value > 0
+    return False
 
 
 def validator_test_prefix(script_path: str) -> str:

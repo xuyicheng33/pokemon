@@ -105,9 +105,6 @@ def validate_pair_catalog(
             continue
         left_character_id = str(character_ids[0]).strip()
         right_character_id = str(character_ids[1]).strip()
-        battle_seed = raw_case.get("battle_seed", None)
-        if not isinstance(battle_seed, int) or battle_seed <= 0:
-            ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] missing positive integer battle_seed")
         if left_character_id not in character_to_unit or right_character_id not in character_to_unit:
             ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] references unknown formal character id")
             continue

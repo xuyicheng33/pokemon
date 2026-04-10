@@ -8,6 +8,7 @@
     "required_array_fields": [
       "required_content_paths"
     ],
+    "required_positive_int_fields": [],
     "optional_string_fields": [
       "content_validator_script_path"
     ]
@@ -28,6 +29,7 @@
       "design_needles",
       "adjustment_needles"
     ],
+    "required_positive_int_fields": [],
     "optional_string_fields": []
   },
   "pair_interaction_case": {
@@ -38,6 +40,9 @@
     ],
     "required_array_fields": [
       "character_ids"
+    ],
+    "required_positive_int_fields": [
+      "battle_seed"
     ],
     "optional_string_fields": []
   }

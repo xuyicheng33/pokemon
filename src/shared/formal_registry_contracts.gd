@@ -15,8 +15,11 @@ func required_string_fields_result(bucket_name: String) -> Dictionary:
 func required_array_fields_result(bucket_name: String) -> Dictionary:
 	return _field_list_result(bucket_name, "required_array_fields")
 
+func required_positive_int_fields_result(bucket_name: String) -> Dictionary:
+	return _field_list_result(bucket_name, "required_positive_int_fields", true, true)
+
 func optional_string_fields_result(bucket_name: String) -> Dictionary:
-	return _field_list_result(bucket_name, "optional_string_fields", false)
+	return _field_list_result(bucket_name, "optional_string_fields", false, true)
 
 func validate_required_fields_result(bucket_name: String, entry: Dictionary, error_prefix: String) -> Dictionary:
 	var string_fields_result := required_string_fields_result(bucket_name)
@@ -33,6 +36,18 @@ func validate_required_fields_result(bucket_name: String, entry: Dictionary, err
 		var field_name := String(raw_field_name)
 		if not (entry.get(field_name, null) is Array):
 			return _error_result("%s missing %s" % [error_prefix, field_name])
+	var positive_int_fields_result := required_positive_int_fields_result(bucket_name)
+	if not bool(positive_int_fields_result.get("ok", false)):
+		return positive_int_fields_result
+	for raw_field_name in positive_int_fields_result.get("data", PackedStringArray()):
+		var field_name := String(raw_field_name)
+		var positive_int_result := _parse_positive_int_result(
+			entry.get(field_name, null),
+			"%s %s must be positive integer" % [error_prefix, field_name]
+		)
+		if not bool(positive_int_result.get("ok", false)):
+			return positive_int_result
+		entry[field_name] = int(positive_int_result.get("data", 0))
 	return _ok_result(true)
 
 func load_contracts_result() -> Dictionary:
@@ -55,6 +70,15 @@ func load_contracts_result() -> Dictionary:
 			var field_list_result := _read_field_list_result(bucket, field_key, "%s.%s" % [bucket_name, field_key], true)
 			if not bool(field_list_result.get("ok", false)):
 				return field_list_result
+		var positive_int_fields_result := _read_field_list_result(
+			bucket,
+			"required_positive_int_fields",
+			"%s.required_positive_int_fields" % bucket_name,
+			true,
+			true
+		)
+		if not bool(positive_int_fields_result.get("ok", false)):
+			return positive_int_fields_result
 		var optional_fields_result := _read_field_list_result(bucket, "optional_string_fields", "%s.optional_string_fields" % bucket_name, false)
 		if not bool(optional_fields_result.get("ok", false)):
 			return optional_fields_result
@@ -66,15 +90,15 @@ func normalize_resource_path(raw_path: String) -> String:
 		return ""
 	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
 
-func _field_list_result(bucket_name: String, field_key: String, required: bool = true) -> Dictionary:
+func _field_list_result(bucket_name: String, field_key: String, required: bool = true, allow_empty: bool = false) -> Dictionary:
 	var contracts_result := load_contracts_result()
 	if not bool(contracts_result.get("ok", false)):
 		return contracts_result
 	var contracts: Dictionary = contracts_result.get("data", {})
 	var bucket: Dictionary = contracts.get(bucket_name, {})
-	return _read_field_list_result(bucket, field_key, "%s.%s" % [bucket_name, field_key], required)
+	return _read_field_list_result(bucket, field_key, "%s.%s" % [bucket_name, field_key], required, allow_empty)
 
-func _read_field_list_result(bucket: Dictionary, field_key: String, label: String, required: bool) -> Dictionary:
+func _read_field_list_result(bucket: Dictionary, field_key: String, label: String, required: bool, allow_empty: bool = false) -> Dictionary:
 	if not bucket.has(field_key):
 		return _ok_result(PackedStringArray()) if not required else _error_result("FormalRegistryContracts missing %s" % label)
 	var raw_fields = bucket.get(field_key, [])
@@ -86,9 +110,21 @@ func _read_field_list_result(bucket: Dictionary, field_key: String, label: Strin
 		if field_name.is_empty():
 			return _error_result("FormalRegistryContracts %s contains empty field name" % label)
 		fields.append(field_name)
-	if required and fields.is_empty():
+	if required and not allow_empty and fields.is_empty():
 		return _error_result("FormalRegistryContracts %s must not be empty" % label)
 	return _ok_result(fields)
+
+func _parse_positive_int_result(value, error_message: String) -> Dictionary:
+	if typeof(value) == TYPE_INT:
+		if int(value) > 0:
+			return _ok_result(int(value))
+		return _error_result(error_message)
+	if typeof(value) == TYPE_FLOAT:
+		var float_value := float(value)
+		var int_value := int(float_value)
+		if float_value == float(int_value) and int_value > 0:
+			return _ok_result(int_value)
+	return _error_result(error_message)
 
 func _resolve_resource_path(raw_path: String, default_path: String = "") -> String:
 	var normalized_path := normalize_resource_path(raw_path)

@@ -8,6 +8,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("formal_character_runtime_registry_duplicate_unit_definition_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_duplicate_unit_definition_guard_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_required_field_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_required_field_guard_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_ignores_delivery_field_contract", failures, Callable(self, "_test_formal_character_runtime_registry_ignores_delivery_field_contract").bind(harness))
+	runner.run_test("formal_character_runtime_registry_ignores_pair_interaction_catalog_contract", failures, Callable(self, "_test_formal_character_runtime_registry_ignores_pair_interaction_catalog_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_missing_validator_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_missing_validator_guard_contract").bind(harness))
 
 func _test_formal_character_validator_registry_runtime_contract(harness) -> Dictionary:
@@ -139,6 +140,40 @@ func _test_formal_character_runtime_registry_ignores_delivery_field_contract(har
 	var entry: Dictionary = entries[0]
 	if String(entry.get("character_id", "")) != "gojo_alias":
 		return harness.fail_result("runtime registry should preserve character_id on runtime-only entry")
+	return harness.pass_result()
+
+func _test_formal_character_runtime_registry_ignores_pair_interaction_catalog_contract(harness) -> Dictionary:
+	var manifest_path := "user://formal_character_manifest_runtime_pair_case_fixture.json"
+	var manifest_payload := JSON.stringify(_build_manifest_payload([
+		_build_runtime_registry_entry(
+			"gojo_alias",
+			"gojo_satoru",
+			"gojo_vs_sample",
+			["content/units/gojo/gojo_satoru.tres"]
+		),
+		_build_runtime_registry_entry(
+			"sukuna_alias",
+			"sukuna",
+			"sukuna_setup",
+			["content/units/sukuna/sukuna.tres"]
+		),
+	], {}, [
+		{
+			"test_name": "formal_pair_gojo_vs_sukuna_interaction_contract",
+			"scenario_id": "gojo_vs_sukuna_domain_cleanup",
+			"matchup_id": "gojo_vs_sukuna",
+			"character_ids": ["gojo_alias", "sukuna_alias"],
+		}
+	]), "  ")
+	if not _write_json_fixture(manifest_path, manifest_payload):
+		return harness.fail_result("failed to write runtime/pair-case manifest fixture")
+	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
+	var error_message := String(load_result.get("error", ""))
+	if not error_message.is_empty():
+		return harness.fail_result("runtime registry should ignore pair_interaction_cases contract drift: %s" % error_message)
+	var entries: Array = load_result.get("entries", [])
+	if entries.size() != 2:
+		return harness.fail_result("runtime registry should still load runtime entries when pair_interaction_cases drift")
 	return harness.pass_result()
 
 func _test_formal_character_runtime_registry_missing_validator_guard_contract(harness) -> Dictionary:

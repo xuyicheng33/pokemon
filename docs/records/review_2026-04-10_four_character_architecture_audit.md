@@ -1,5 +1,8 @@
 # 2026-04-10 四角色与架构审查记录
 
+> 历史审查，不再作为现行依据。
+> 本记录成稿于 `f077b8b / d9cc721 / 0e7c60e / 49109b1` 之前；文中的旧 formal baseline 路径、文件行数与热点判断只代表当时状态，当前实现请以 `docs/design/`、`docs/records/decisions.md`、`docs/records/tasks.md` 与后续审查记录为准。
+
 ## 结论
 
 - 当前项目没有出现“已经跑不动、必须推倒重来”的信号。

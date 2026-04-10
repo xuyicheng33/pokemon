@@ -91,16 +91,6 @@ func load_catalog_result() -> Dictionary:
 				ErrorCodesScript.INVALID_BATTLE_SETUP,
 				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].character_ids must match matchup opener formal pair: %s" % [case_index, resolved_manifest_path]
 			)
-		var battle_seed_result := _formal_contracts.parse_positive_int_result(
-			case_spec.get("battle_seed", null),
-			"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].battle_seed must be positive integer: %s" % [
-				case_index,
-				resolved_manifest_path,
-			]
-		)
-		if not bool(battle_seed_result.get("ok", false)):
-			return battle_seed_result
-		case_spec["battle_seed"] = int(battle_seed_result.get("data", 0))
 	return _ok_result(parsed)
 
 func _matchup_formal_pair(matchup_spec: Dictionary, unit_to_character: Dictionary) -> Array:

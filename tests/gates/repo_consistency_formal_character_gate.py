@@ -109,6 +109,12 @@ pair_case_required_array_fields = contract_field_list(
     "required_array_fields",
     f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_case.required_array_fields",
 )
+pair_case_required_positive_int_fields = contract_field_list(
+    ctx,
+    pair_case_contract_bucket,
+    "required_positive_int_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_case.required_positive_int_fields",
+)
 contract_field_list(
     ctx,
     pair_case_contract_bucket,
@@ -178,6 +184,7 @@ for case_index, case_spec in enumerate(pair_interaction_cases):
         pair_case_required_string_fields,
         pair_case_required_array_fields,
         f"{MANIFEST_PATH} pair_interaction_cases[{case_index}]",
+        pair_case_required_positive_int_fields,
     )
 
 validate_pair_catalog(

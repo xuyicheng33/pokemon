@@ -13,49 +13,19 @@ var manifest_path_override: String = ""
 var _registry_contracts = FormalRegistryContractsScript.new()
 
 func load_manifest_result(manifest_path: String = "") -> Dictionary:
+	var manifest_result := _load_manifest_payload_result(manifest_path)
+	if not bool(manifest_result.get("ok", false)):
+		return manifest_result
+	var manifest: Dictionary = manifest_result.get("data", {})
 	var resolved_manifest_path := _resolve_manifest_path(manifest_path)
-	var file := FileAccess.open(resolved_manifest_path, FileAccess.READ)
-	if file == null:
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"FormalCharacterManifest missing manifest: %s" % resolved_manifest_path
-		)
-	var parsed = JSON.parse_string(file.get_as_text())
-	if not (parsed is Dictionary):
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"FormalCharacterManifest expects top-level dictionary: %s" % resolved_manifest_path
-		)
-	if parsed.has("pair_surface_cases"):
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"FormalCharacterManifest no longer accepts pair_surface_cases: %s" % resolved_manifest_path
-		)
-	var characters = parsed.get(CHARACTERS_BUCKET, null)
-	if not (characters is Array):
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"FormalCharacterManifest[%s] must be array: %s" % [CHARACTERS_BUCKET, resolved_manifest_path]
-		)
-	var matchups = parsed.get(MATCHUPS_BUCKET, null)
-	if not (matchups is Dictionary):
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"FormalCharacterManifest[%s] must be dictionary: %s" % [MATCHUPS_BUCKET, resolved_manifest_path]
-		)
-	var pair_interaction_cases = parsed.get(PAIR_INTERACTION_CASES_BUCKET, null)
-	if not (pair_interaction_cases is Array):
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"FormalCharacterManifest[%s] must be array: %s" % [PAIR_INTERACTION_CASES_BUCKET, resolved_manifest_path]
-		)
+	var characters = manifest.get(CHARACTERS_BUCKET, [])
 	var characters_result := _validate_runtime_characters_result(characters, resolved_manifest_path)
 	if not bool(characters_result.get("ok", false)):
 		return characters_result
 	return _ok_result({
 		CHARACTERS_BUCKET: characters_result.get("data", []).duplicate(true),
-		MATCHUPS_BUCKET: matchups.duplicate(true),
-		PAIR_INTERACTION_CASES_BUCKET: pair_interaction_cases.duplicate(true),
+		MATCHUPS_BUCKET: manifest.get(MATCHUPS_BUCKET, {}).duplicate(true),
+		PAIR_INTERACTION_CASES_BUCKET: manifest.get(PAIR_INTERACTION_CASES_BUCKET, []).duplicate(true),
 	})
 
 func build_character_entries_result(manifest_path: String = "") -> Dictionary:
@@ -129,13 +99,62 @@ func build_delivery_entries_result(manifest_path: String = "") -> Dictionary:
 	return _ok_result(delivery_entries)
 
 func build_catalog_result(manifest_path: String = "") -> Dictionary:
-	var manifest_result := load_manifest_result(manifest_path)
+	var manifest_result := _load_manifest_payload_result(manifest_path)
 	if not bool(manifest_result.get("ok", false)):
 		return manifest_result
 	var manifest: Dictionary = manifest_result.get("data", {})
+	var pair_cases_result := _validate_pair_interaction_cases_result(
+		manifest.get(PAIR_INTERACTION_CASES_BUCKET, []),
+		_resolve_manifest_path(manifest_path)
+	)
+	if not bool(pair_cases_result.get("ok", false)):
+		return pair_cases_result
 	return _ok_result({
 		"matchups": manifest.get(MATCHUPS_BUCKET, {}).duplicate(true),
-		"pair_interaction_cases": manifest.get(PAIR_INTERACTION_CASES_BUCKET, []).duplicate(true),
+		"pair_interaction_cases": pair_cases_result.get("data", []).duplicate(true),
+	})
+
+func _load_manifest_payload_result(manifest_path: String = "") -> Dictionary:
+	var resolved_manifest_path := _resolve_manifest_path(manifest_path)
+	var file := FileAccess.open(resolved_manifest_path, FileAccess.READ)
+	if file == null:
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"FormalCharacterManifest missing manifest: %s" % resolved_manifest_path
+		)
+	var parsed = JSON.parse_string(file.get_as_text())
+	if not (parsed is Dictionary):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"FormalCharacterManifest expects top-level dictionary: %s" % resolved_manifest_path
+		)
+	if parsed.has("pair_surface_cases"):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"FormalCharacterManifest no longer accepts pair_surface_cases: %s" % resolved_manifest_path
+		)
+	var characters = parsed.get(CHARACTERS_BUCKET, null)
+	if not (characters is Array):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"FormalCharacterManifest[%s] must be array: %s" % [CHARACTERS_BUCKET, resolved_manifest_path]
+		)
+	var matchups = parsed.get(MATCHUPS_BUCKET, null)
+	if not (matchups is Dictionary):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"FormalCharacterManifest[%s] must be dictionary: %s" % [MATCHUPS_BUCKET, resolved_manifest_path]
+		)
+	var pair_interaction_cases = parsed.get(PAIR_INTERACTION_CASES_BUCKET, null)
+	if not (pair_interaction_cases is Array):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"FormalCharacterManifest[%s] must be array: %s" % [PAIR_INTERACTION_CASES_BUCKET, resolved_manifest_path]
+		)
+	return _ok_result({
+		CHARACTERS_BUCKET: characters.duplicate(true),
+		MATCHUPS_BUCKET: matchups.duplicate(true),
+		PAIR_INTERACTION_CASES_BUCKET: pair_interaction_cases.duplicate(true),
 	})
 
 func _validate_runtime_characters_result(characters: Array, manifest_path: String) -> Dictionary:
@@ -188,6 +207,26 @@ func _validate_runtime_characters_result(characters: Array, manifest_path: Strin
 			entry["content_validator_script_path"] = resolved_validator_path
 		entries.append(entry.duplicate(true))
 	return _ok_result(entries)
+
+func _validate_pair_interaction_cases_result(pair_interaction_cases: Array, manifest_path: String) -> Dictionary:
+	var normalized_cases: Array = []
+	for case_index in range(pair_interaction_cases.size()):
+		var raw_case = pair_interaction_cases[case_index]
+		if not (raw_case is Dictionary):
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"FormalCharacterManifest[%s][%d] must be dictionary: %s" % [PAIR_INTERACTION_CASES_BUCKET, case_index, manifest_path]
+			)
+		var case_spec: Dictionary = raw_case.duplicate(true)
+		var field_result := _registry_contracts.validate_required_fields_result(
+			FormalRegistryContractsScript.PAIR_INTERACTION_CASE_BUCKET,
+			case_spec,
+			"FormalCharacterManifest[%s][%d]" % [PAIR_INTERACTION_CASES_BUCKET, case_index]
+		)
+		if not bool(field_result.get("ok", false)):
+			return field_result
+		normalized_cases.append(case_spec)
+	return _ok_result(normalized_cases)
 
 func _resolve_manifest_path(manifest_path: String) -> String:
 	var normalized_path := _normalize_resource_path(manifest_path)

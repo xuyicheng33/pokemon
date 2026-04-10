@@ -12,7 +12,7 @@
 
 ## 当前波次：formal contract 扩角前硬收口（2026-04-10）
 
-- 状态：进行中
+- 状态：已完成
 - 目标：
   - 一次性切掉 formal baseline、角色接入链和接线层继续膨胀的根因，不改 battle core 主回合语义，不改四正式角色玩法与数值。
 - 范围：
@@ -55,6 +55,9 @@
     - `docs/design/architecture_overview.md` 与 `docs/design/battle_core_architecture_constraints.md` 已同步 wiring specs 聚合目录与 `BattleCoreWiringSpecs.wiring_specs() / reset_specs()` 入口
     - `docs/records/tasks.md`、`docs/records/decisions.md` 已补齐四个阶段的目标落点、架构决定与验证结果
     - 已完成最终全量检查：当前未再发现新的 gate 漂移、回归失败、装配断裂或 README/设计文档偏差
+  - 后续对齐修补已完成：
+    - `pair_interaction_case` 共享合同已补 `battle_seed` 正整数约束，不再只靠 catalog loader / shared gate 各自补校验
+    - `docs/records/review_2026-04-10_four_character_architecture_audit.md` 已显式标记为历史审查，不再作为现行依据
 - 第 1 阶段验收结果：
   - 仓库中已不存在旧短别名 baseline 分发路径
   - 四角色 snapshot / validator / runtime 全量回归通过
