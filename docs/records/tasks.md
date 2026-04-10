@@ -10,6 +10,32 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前复查：项目实现全景审查（2026-04-10）
+
+- 状态：已完成
+- 目标：
+  - 复查当前主线的架构实现、设计文档对齐、四角色交付链和最近几次管理修复方向，并核验外部 Claude 审查结论里哪些还能成立。
+- 范围：
+  - `docs/design/` 与核心实现抽查
+  - 最近提交 `14580aa / 445bdb5 / 9d1bd03 / ac3383e / d9cc721 / 0e7c60e / 7f501bd / fff2e62`
+  - 四角色 formal 角色合同、validator、suite、shared capability catalog 与 gate 状态
+  - 外部 Claude 审查里关于 `assert()`、architecture gate、manifest/交付清单口径的结论
+- 验收标准：
+  - 给出当前主线是否存在阻断或重要实现问题的明确结论
+  - 明确判断最近管理修复方向是否继续成立
+  - 至少完成一次完整 gate 验证
+- 结果：
+  - 当前未发现阻断或重要实现问题
+  - 最近这轮管理修复方向成立，且已真实落到代码、gate 和文档
+  - 外部 Claude 审查中关于 `assert()` 违规、architecture gate 未执行、manifest 合同口径的结论已不适合作为现行依据
+- 记录：
+  - 详细结论见 `docs/records/review_2026-04-10_current_project_full_check.md`
+- 验证：
+  - `bash tests/check_suite_reachability.sh`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前修补：battle_setup side_id 输入校验（2026-04-10）
 
 - 状态：已完成
