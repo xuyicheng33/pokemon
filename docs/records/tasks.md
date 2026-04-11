@@ -10,6 +10,34 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前修补：边界 fail-fast 与扩角治理补强（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 修掉项目全景审查里确认的剩余边界问题，避免公共输入坏类型或坏 setup 继续漏到更深层才失败。
+  - 再补一层扩角治理约束，防止 `pair interaction` case 被重名遮蔽，或新增 `power_bonus_source` 时只改注册表不改 resolver。
+- 范围：
+  - `BattleInputContractHelper` 的错误类型保护
+  - `SampleBattleFactory.content_snapshot_paths_for_setup_result()` 的 setup-scoped 失败语义
+  - `formal pair interaction` 的 `test_name` 唯一性校验
+  - `power bonus` 注册表与 resolver 覆盖回归
+  - README 代码规模统计与活跃任务记录
+- 验收标准：
+  - manager/replay 对坏输入继续返回结构化错误，不再因为错误类型触发脚本错误
+  - setup-scoped content snapshot 对坏 `battle_setup` 直接结果式失败，不再静默回退 baseline 路径
+  - pair interaction case 若出现重复 `test_name`，suite 与 repo consistency gate 至少有一层会直接拦下
+  - 新增 `power_bonus_source` 若没补 resolver 覆盖，会被测试直接拦下
+  - 完整 gate 通过并保持工作区干净
+- 结果：
+  - `BattleInputContractHelper` 现在会先拦非 `Object/Dictionary` 输入，坏类型不再直接触发属性访问脚本错误
+  - `SampleBattleFactory.content_snapshot_paths_for_setup_result()` 已统一复用 battle_setup 合同校验，并对缺失 `unit_definition_ids` 的 side 直接返回错误
+  - formal pair interaction 现在会校验 `test_name` 非空且唯一；repo consistency gate 也同步补了重复名检查
+  - `PowerBonusResolver` 已新增注册表覆盖回归，后续新增 source 若未补 resolver，会被 suite 直接拦下
+- 验证：
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前修补：输入合同收口与 power bonus 层级纠偏（2026-04-11）
 
 - 状态：已完成
@@ -167,7 +195,7 @@
   - `bash tests/check_suite_reachability.sh`
   - `godot --headless --path . --script tests/run_all.gd`
 - 第 2 阶段验收结果：
-  - manifest + capability catalog 已成为角色接入模板骨架，不再需要额外中心补丁点
+  - manifest + capability catalog 已成为角色接入模板骨架，已明显减少额外中心补丁点
   - 新共享入口未登记、已登记但 suite/消费者/证据未对齐时，会被 repo consistency gate 直接拦下
   - 文档、README 与 tests README 已和 capability catalog 口径对齐
 - 第 2 阶段验证：

@@ -1,6 +1,7 @@
 extends RefCounted
 class_name SampleBattleFactoryContentPathsHelper
 
+const BattleInputContractHelperScript := preload("res://src/battle_core/contracts/battle_input_contract_helper.gd")
 const RuntimeRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_runtime_registry_loader.gd")
 const SnapshotDirCollectorScript := preload("res://src/composition/sample_battle_factory_snapshot_dir_collector.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -37,7 +38,20 @@ func build_base_snapshot_paths(base_dirs: Array) -> Dictionary:
 func build_snapshot_paths_for_setup(base_dirs: Array, battle_setup) -> Dictionary:
 	if battle_setup == null:
 		return _error_result("SampleBattleFactory requires battle_setup to build setup-scoped content snapshot paths")
-	return _build_snapshot_paths_from_registry(base_dirs, _collect_unit_definition_ids(battle_setup), true)
+	var battle_setup_error := BattleInputContractHelperScript.validate_battle_setup_error(
+		battle_setup,
+		"SampleBattleFactory.content_snapshot_paths_for_setup_result"
+	)
+	if not battle_setup_error.is_empty():
+		return _error_result(battle_setup_error)
+	var unit_definition_ids_result := _collect_unit_definition_ids_result(battle_setup)
+	if not bool(unit_definition_ids_result.get("ok", false)):
+		return unit_definition_ids_result
+	return _build_snapshot_paths_from_registry(
+		base_dirs,
+		unit_definition_ids_result.get("data", {}),
+		true
+	)
 
 func _build_snapshot_paths_from_registry(base_dirs: Array, included_unit_definition_ids: Dictionary, restrict_registry_entries: bool) -> Dictionary:
 	var paths: Array[String] = []
@@ -75,20 +89,28 @@ func _build_snapshot_paths_from_registry(base_dirs: Array, included_unit_definit
 	paths.sort()
 	return _ok_result(PackedStringArray(paths))
 
-func _collect_unit_definition_ids(battle_setup) -> Dictionary:
+func _collect_unit_definition_ids_result(battle_setup) -> Dictionary:
 	var unit_definition_ids: Dictionary = {}
-	var sides = battle_setup.get("sides") if battle_setup != null else []
-	if not (sides is Array):
-		return unit_definition_ids
-	for side_setup in sides:
+	var sides = _read_property(battle_setup, "sides", [])
+	for side_index in range(sides.size()):
+		var side_setup = sides[side_index]
 		if side_setup == null:
 			continue
-		for raw_unit_definition_id in side_setup.unit_definition_ids:
+		if not _has_property(side_setup, "unit_definition_ids"):
+			return _error_result(
+				"SampleBattleFactory.content_snapshot_paths_for_setup_result requires battle_setup.sides[%d].unit_definition_ids" % side_index
+			)
+		var raw_unit_definition_ids = _read_property(side_setup, "unit_definition_ids", null)
+		if typeof(raw_unit_definition_ids) != TYPE_PACKED_STRING_ARRAY and typeof(raw_unit_definition_ids) != TYPE_ARRAY:
+			return _error_result(
+				"SampleBattleFactory.content_snapshot_paths_for_setup_result requires battle_setup.sides[%d].unit_definition_ids to be Array-like" % side_index
+			)
+		for raw_unit_definition_id in raw_unit_definition_ids:
 			var unit_definition_id := String(raw_unit_definition_id).strip_edges()
 			if unit_definition_id.is_empty():
 				continue
 			unit_definition_ids[unit_definition_id] = true
-	return unit_definition_ids
+	return _ok_result(unit_definition_ids)
 
 func _included_units_are_baseline_only(included_unit_definition_ids: Dictionary) -> bool:
 	if included_unit_definition_ids.is_empty():
@@ -128,6 +150,29 @@ func _append_unique_path(paths: Array[String], seen: Dictionary, path: String) -
 func _normalize_res_path(raw_path: String) -> String:
 	var trimmed_path := raw_path.strip_edges()
 	return "" if trimmed_path.is_empty() else (trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path)
+
+func _has_property(value, property_name: String) -> bool:
+	if value == null or property_name.is_empty():
+		return false
+	if typeof(value) == TYPE_DICTIONARY:
+		return value.has(property_name)
+	if typeof(value) != TYPE_OBJECT:
+		return false
+	for property_info in value.get_property_list():
+		if String(property_info.get("name", "")) == property_name:
+			return true
+	return false
+
+func _read_property(value, property_name: String, default_value = null):
+	if value == null or property_name.is_empty():
+		return default_value
+	if typeof(value) == TYPE_DICTIONARY:
+		return value.get(property_name, default_value)
+	if typeof(value) != TYPE_OBJECT:
+		return default_value
+	if not _has_property(value, property_name):
+		return default_value
+	return value.get(property_name)
 
 func _load_registry_entries() -> Dictionary:
 	var loader = RuntimeRegistryLoaderScript.new()

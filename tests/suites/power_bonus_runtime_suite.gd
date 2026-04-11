@@ -5,9 +5,19 @@ const SkillDefinitionScript := preload("res://src/battle_core/content/skill_defi
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const PowerBonusResolverScript := preload("res://src/battle_core/actions/power_bonus_resolver.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
+    runner.run_test("power_bonus_registered_source_coverage_contract", failures, Callable(self, "_test_power_bonus_registered_source_coverage_contract").bind(harness))
     runner.run_test("effect_stack_sum_and_remove_all_runtime_contract", failures, Callable(self, "_test_effect_stack_sum_and_remove_all_runtime_contract").bind(harness))
+
+func _test_power_bonus_registered_source_coverage_contract(harness) -> Dictionary:
+    var unresolved_sources := PowerBonusResolverScript.unresolved_registered_sources()
+    if unresolved_sources.is_empty():
+        return harness.pass_result()
+    return harness.fail_result(
+        "PowerBonusResolver missing registered source coverage: %s" % ", ".join(unresolved_sources)
+    )
 
 func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()

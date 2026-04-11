@@ -80,6 +80,7 @@ def validate_pair_catalog(
     }
     actual_interaction_pairs: set[str] = set()
     actual_directional_cases: set[tuple[str, str, str, str]] = set()
+    actual_test_names: set[str] = set()
     scenario_registry_text = ctx.read_text(scenario_registry_path)
     registered_scenario_ids = set(re.findall(r'"([^"]+)": Callable', scenario_registry_text))
     actual_scenario_ids: set[str] = set()
@@ -87,9 +88,16 @@ def validate_pair_catalog(
         if not isinstance(raw_case, dict):
             ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] must be object")
             continue
+        test_name = str(raw_case.get("test_name", "")).strip()
         scenario_id = str(raw_case.get("scenario_id", "")).strip()
         matchup_id = str(raw_case.get("matchup_id", "")).strip()
         character_ids = raw_case.get("character_ids", [])
+        if not test_name:
+            ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] missing test_name")
+        elif test_name in actual_test_names:
+            ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases duplicated test_name: {test_name}")
+        else:
+            actual_test_names.add(test_name)
         if not scenario_id:
             ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] missing scenario_id")
         else:

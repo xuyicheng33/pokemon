@@ -99,6 +99,7 @@ class DomainLegalityServiceClearStub:
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("manager_run_replay_empty_snapshot_paths_contract", failures, Callable(self, "_test_manager_run_replay_empty_snapshot_paths_contract").bind(harness))
+	runner.run_test("manager_run_replay_invalid_input_type_contract", failures, Callable(self, "_test_manager_run_replay_invalid_input_type_contract").bind(harness))
 	runner.run_test("manager_run_replay_null_command_contract", failures, Callable(self, "_test_manager_run_replay_null_command_contract").bind(harness))
 	runner.run_test("manager_run_replay_invalid_side_id_contract", failures, Callable(self, "_test_manager_run_replay_invalid_side_id_contract").bind(harness))
 	runner.run_test("manager_container_run_replay_failed_output_contract", failures, Callable(self, "_test_manager_container_run_replay_failed_output_contract"))
@@ -131,6 +132,21 @@ func _test_manager_run_replay_empty_snapshot_paths_contract(harness) -> Dictiona
 	)
 	if not bool(failure.get("ok", false)):
 		return harness.fail_result(str(failure.get("error", "manager run_replay empty snapshot paths contract failed")))
+	return harness.pass_result()
+
+func _test_manager_run_replay_invalid_input_type_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var failure = _helper.expect_failure_code(
+		manager.run_replay(123),
+		"run_replay",
+		ErrorCodesScript.INVALID_REPLAY_INPUT,
+		"requires battle_setup"
+	)
+	if not bool(failure.get("ok", false)):
+		return harness.fail_result(str(failure.get("error", "manager run_replay invalid input type contract failed")))
 	return harness.pass_result()
 
 func _test_manager_run_replay_null_command_contract(harness) -> Dictionary:

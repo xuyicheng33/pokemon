@@ -14,6 +14,7 @@ func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("sample_factory_baseline_setup_ignores_formal_runtime_registry_failure", failures, Callable(self, "_test_baseline_setup_ignores_formal_runtime_registry_failure").bind(harness))
 	runner.run_test("sample_factory_legacy_demo_ignores_formal_runtime_registry_failure", failures, Callable(self, "_test_legacy_demo_ignores_formal_runtime_registry_failure").bind(harness))
 	runner.run_test("sample_factory_baseline_flow_ignores_formal_matchup_catalog_failure", failures, Callable(self, "_test_baseline_flow_ignores_formal_matchup_catalog_failure").bind(harness))
+	runner.run_test("sample_factory_setup_snapshot_invalid_battle_setup_contract", failures, Callable(self, "_test_setup_snapshot_invalid_battle_setup_contract").bind(harness))
 	runner.run_test("sample_factory_demo_default_profile_contract", failures, Callable(self, "_test_demo_default_profile_contract").bind(harness))
 	runner.run_test("sample_factory_demo_invalid_default_profile_contract", failures, Callable(self, "_test_demo_invalid_default_profile_contract").bind(harness))
 	runner.run_test("sample_factory_demo_switch_command_replay_contract", failures, Callable(self, "_test_demo_switch_command_replay_contract").bind(harness))
@@ -72,6 +73,38 @@ func _test_baseline_flow_ignores_formal_matchup_catalog_failure(harness) -> Dict
 	)
 	if not bool(failure.get("ok", false)):
 		return harness.fail_result(str(failure.get("error", "formal manifest failure contract drifted")))
+	return harness.pass_result()
+
+func _test_setup_snapshot_invalid_battle_setup_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var cases: Array = [
+		{
+			"label": "missing sides",
+			"battle_setup": {},
+			"needle": "requires battle_setup.sides",
+		},
+		{
+			"label": "missing unit_definition_ids",
+			"battle_setup": {
+				"sides": [
+					{"side_id": "P1"},
+					{"side_id": "P2", "unit_definition_ids": PackedStringArray(["sample_pyron"])},
+				],
+			},
+			"needle": "battle_setup.sides[0].unit_definition_ids",
+		},
+	]
+	for test_case in cases:
+		var failure = _helper.expect_failure_code(
+			sample_factory.content_snapshot_paths_for_setup_result(test_case.get("battle_setup", null)),
+			"content_snapshot_paths_for_setup_result(%s)" % String(test_case.get("label", "invalid battle_setup")),
+			ErrorCodesScript.INVALID_CONTENT_SNAPSHOT,
+			String(test_case.get("needle", ""))
+		)
+		if not bool(failure.get("ok", false)):
+			return harness.fail_result(str(failure.get("error", "sample factory invalid battle_setup contract failed")))
 	return harness.pass_result()
 
 func _test_demo_default_profile_contract(harness) -> Dictionary:

@@ -122,6 +122,8 @@ static func _has_property(value, property_name: String) -> bool:
         return false
     if typeof(value) == TYPE_DICTIONARY:
         return value.has(property_name)
+    if typeof(value) != TYPE_OBJECT:
+        return false
     for property_info in value.get_property_list():
         if String(property_info.get("name", "")) == property_name:
             return true
@@ -132,6 +134,8 @@ static func _read_property(value, property_name: String, default_value = null):
         return default_value
     if typeof(value) == TYPE_DICTIONARY:
         return value.get(property_name, default_value)
+    if typeof(value) != TYPE_OBJECT:
+        return default_value
     if not _has_property(value, property_name):
         return default_value
     return value.get(property_name)

@@ -8,9 +8,15 @@ var _runners: Dictionary = _registry.build_runners()
 
 func validate_case_catalog(harness, interaction_cases: Array) -> Dictionary:
 	var seen_scenario_ids: Dictionary = {}
+	var seen_test_names: Dictionary = {}
 	for raw_case_spec in interaction_cases:
 		if not (raw_case_spec is Dictionary):
 			return harness.fail_result("formal pair interaction case must be Dictionary")
+		var test_name := String(raw_case_spec.get("test_name", "")).strip_edges()
+		if test_name.is_empty():
+			return harness.fail_result("formal pair interaction case missing test_name")
+		if seen_test_names.has(test_name):
+			return harness.fail_result("formal pair interaction duplicated test_name: %s" % test_name)
 		var scenario_id := String(raw_case_spec.get("scenario_id", "")).strip_edges()
 		if scenario_id.is_empty():
 			return harness.fail_result("formal pair interaction case missing scenario_id")
@@ -20,6 +26,7 @@ func validate_case_catalog(harness, interaction_cases: Array) -> Dictionary:
 			return harness.fail_result("formal pair interaction case missing positive integer battle_seed")
 		if not _runners.has(scenario_id):
 			return harness.fail_result("formal pair interaction unsupported scenario_id: %s" % scenario_id)
+		seen_test_names[test_name] = true
 		seen_scenario_ids[scenario_id] = true
 	for scenario_id in _runners.keys():
 		if not seen_scenario_ids.has(String(scenario_id)):

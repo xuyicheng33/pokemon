@@ -6,6 +6,20 @@ const PowerBonusSourceRegistryScript := preload("res://src/battle_core/content/p
 static func registered_sources() -> PackedStringArray:
 	return PowerBonusSourceRegistryScript.registered_sources()
 
+static func unresolved_registered_sources() -> PackedStringArray:
+	var supported_lookup := {
+		"": true,
+		String(PowerBonusSourceRegistryScript.MP_DIFF_CLAMPED): true,
+		String(PowerBonusSourceRegistryScript.EFFECT_STACK_SUM): true,
+	}
+	var unresolved := PackedStringArray()
+	for raw_source in PowerBonusSourceRegistryScript.registered_sources():
+		var source := String(raw_source)
+		if supported_lookup.has(source):
+			continue
+		unresolved.append(source)
+	return unresolved
+
 func resolve_power_bonus(skill_definition, actor, target, actor_mp_after_cost: int, target_mp_before_cast: int) -> int:
 	if skill_definition == null:
 		return 0
