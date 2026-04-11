@@ -311,6 +311,7 @@
   - validator key
   - handler 依赖 wiring
 - payload 相关 service script 与 shared runtime service wiring 当前固定收口到 `src/composition/battle_core_payload_service_specs.gd`。
+- payload handler script 当前固定按 `handler_slot -> res://src/battle_core/effects/payload_handlers/<handler_slot>.gd` 的命名约定，由 composition helper 解析，不再单独维护一份 slot -> script 映射表。
 - `src/composition/battle_core_service_specs.gd` 当前固定采用：
   - `SERVICE_DESCRIPTORS` 只保留非 payload 的基础服务
   - `payload_service_descriptors()` 负责从 payload service specs helper 派生 payload services
@@ -322,6 +323,7 @@
   - payload handler / runtime service 的 script 与 shared wiring 本质上属于 composition 真相，不该继续挂在 `content` 层
   - 但若继续把这部分手抄留在 `BattleCoreServiceSpecs` 和 payload wiring spec 文件里，新增 payload 时中心热点仍然过热
   - 把 payload 合同事实和 composition 装配事实拆成“两处明确 seam”后，`content` 层不再反向 import `effects/*`，同时 `BattleCoreServiceSpecs` 也不必继续手抄整段 payload services
+  - handler script 若能按 slot 命名约定解析，就没有必要继续保留单独映射表；新增 payload 时也能再少碰一个中心常量
 
 - `src/battle_core/content/power_bonus_source_registry.gd` 当前固定采用 source descriptor：
   - `source`
@@ -333,12 +335,13 @@
   - 改成 descriptor 后，source 真相固定回到 registry；resolver 只关心自己支持哪些 resolver kind
   - 若后续出现“多个 source 共用同一套 runtime 求值”的情况，只需要改 registry descriptor，不必继续给 resolver 新开一条 source 分支
 
-## 0P. payload handler 映射漂移必须由静态 gate 直接拦住（2026-04-11）
+## 0P. payload handler script 漂移必须由静态 gate 直接拦住（2026-04-11）
 
-- `PayloadContractRegistry` 的 `handler_slot` 与 `BattleCorePayloadServiceSpecs.HANDLER_SCRIPTS_BY_SLOT` 当前视为同一条装配合同的两面：
-  - 前者声明 payload 要挂到哪个 handler slot
-  - 后者声明该 handler slot 具体实例化哪个 handler script
-- `tests/gates/architecture_composition_consistency_gate.py` 与 `tests/gates/architecture_wiring_graph_gate.py` 现在都必须直接校验这两份清单一一对应；缺映射或残留映射都要立即失败。
+- payload handler script 当前固定按 `handler_slot` 命名约定解析到 `src/battle_core/effects/payload_handlers/<handler_slot>.gd`。
+- `tests/gates/architecture_composition_consistency_gate.py` 与 `tests/gates/architecture_wiring_graph_gate.py` 现在都必须直接校验：
+  - registry 里的每个 `handler_slot` 都存在对应 handler script 文件
+  - `payload_handlers/` 目录下每个 `payload_*_handler.gd` 都有对应 registry slot
+- 缺文件或残留文件都要立即失败。
 - 这么定的原因：
-  - 这轮 payload seam 收口后，新增 payload 不再回写 `BattleCoreServiceSpecs`，但如果 gate 仍把 registry 里的 `handler_slot` 直接当成“必然存在的 service script”，漏配 `HANDLER_SCRIPTS_BY_SLOT` 时就会被静态检查漏掉
+  - 这轮 payload seam 收口后，新增 payload 不再回写 `BattleCoreServiceSpecs`；如果还保留独立的 handler script 映射表，只会留下新的中心维护点
   - 这类错误应该在 architecture gate 阶段 fail-fast，而不是拖到 composer 实例化或运行时才暴露

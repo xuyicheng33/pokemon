@@ -88,6 +88,7 @@
   - `payload script -> handler slot -> validator key`
   - handler 直接依赖 wiring facts
   - `payload_handler_registry` 与 payload handler wiring 所需的 descriptor 视图
+- payload handler 的具体 script 当前不再单独维护映射表；`BattleCorePayloadServiceSpecs` 会按 `handler_slot -> src/battle_core/effects/payload_handlers/<handler_slot>.gd` 的命名约定解析，静态 gate 同时校验 registry slot 与目录下实际 handler 文件一一对应
 - `payload_damage_runtime_service / payload_resource_runtime_service / payload_stat_mod_runtime_service` 保留为稳定数值执行层，不借分派重构改语义。
 
 fail-fast 约束：

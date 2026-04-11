@@ -5,18 +5,10 @@ const PayloadContractRegistryScript := preload("res://src/battle_core/content/pa
 const PayloadHandlerRegistryScript := preload("res://src/battle_core/effects/payload_handler_registry.gd")
 const PayloadUnitTargetHelperScript := preload("res://src/battle_core/effects/payload_handlers/payload_unit_target_helper.gd")
 const PayloadEffectEventHelperScript := preload("res://src/battle_core/effects/payload_handlers/payload_effect_event_helper.gd")
-const PayloadDamageHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_damage_handler.gd")
-const PayloadHealHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_heal_handler.gd")
-const PayloadResourceModHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_resource_mod_handler.gd")
-const PayloadStatModHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_stat_mod_handler.gd")
-const PayloadApplyFieldHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_apply_field_handler.gd")
-const PayloadApplyEffectHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_apply_effect_handler.gd")
-const PayloadRemoveEffectHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_remove_effect_handler.gd")
-const PayloadRuleModHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_rule_mod_handler.gd")
-const PayloadForcedReplaceHandlerScript := preload("res://src/battle_core/effects/payload_handlers/payload_forced_replace_handler.gd")
 const PayloadDamageRuntimeServiceScript := preload("res://src/battle_core/effects/payload_handlers/payload_damage_runtime_service.gd")
 const PayloadResourceRuntimeServiceScript := preload("res://src/battle_core/effects/payload_handlers/payload_resource_runtime_service.gd")
 const PayloadStatModRuntimeServiceScript := preload("res://src/battle_core/effects/payload_handlers/payload_stat_mod_runtime_service.gd")
+const PAYLOAD_HANDLER_SCRIPT_ROOT := "res://src/battle_core/effects/payload_handlers"
 
 const SHARED_SERVICE_DESCRIPTORS := [
 	{"slot": "payload_handler_registry", "script": PayloadHandlerRegistryScript},
@@ -60,29 +52,13 @@ const SHARED_SERVICE_DESCRIPTORS := [
 	},
 ]
 
-const HANDLER_SCRIPTS_BY_SLOT := {
-	"payload_damage_handler": PayloadDamageHandlerScript,
-	"payload_heal_handler": PayloadHealHandlerScript,
-	"payload_resource_mod_handler": PayloadResourceModHandlerScript,
-	"payload_stat_mod_handler": PayloadStatModHandlerScript,
-	"payload_apply_field_handler": PayloadApplyFieldHandlerScript,
-	"payload_apply_effect_handler": PayloadApplyEffectHandlerScript,
-	"payload_remove_effect_handler": PayloadRemoveEffectHandlerScript,
-	"payload_rule_mod_handler": PayloadRuleModHandlerScript,
-	"payload_forced_replace_handler": PayloadForcedReplaceHandlerScript,
-}
-
 static func service_descriptors() -> Array:
 	var descriptors := SHARED_SERVICE_DESCRIPTORS.duplicate(true)
 	for payload_descriptor in PayloadContractRegistryScript.descriptors():
 		var handler_slot := String(payload_descriptor.get("handler_slot", ""))
-		var handler_script = HANDLER_SCRIPTS_BY_SLOT.get(handler_slot, null)
-		if handler_script == null:
+		if handler_slot.is_empty():
 			continue
-		descriptors.append({
-			"slot": handler_slot,
-			"script": handler_script,
-		})
+		descriptors.append(_handler_service_descriptor(handler_slot))
 	return descriptors
 
 static func shared_service_wiring_specs() -> Array:
@@ -95,5 +71,23 @@ static func shared_service_wiring_specs() -> Array:
 				"owner": owner,
 				"dependency": String(dependency_spec.get("dependency", "")),
 				"source": String(dependency_spec.get("source", "")),
-			})
+				})
 	return wiring_specs
+
+static func handler_script_path_for_slot(handler_slot: String) -> String:
+	var normalized_slot := handler_slot.strip_edges()
+	if normalized_slot.is_empty():
+		return ""
+	return "%s/%s.gd" % [PAYLOAD_HANDLER_SCRIPT_ROOT, normalized_slot]
+
+static func _handler_service_descriptor(handler_slot: String) -> Dictionary:
+	return {
+		"slot": handler_slot,
+		"script": _load_handler_script(handler_slot),
+	}
+
+static func _load_handler_script(handler_slot: String):
+	var script_path := handler_script_path_for_slot(handler_slot)
+	if script_path.is_empty() or not ResourceLoader.exists(script_path):
+		return null
+	return load(script_path)

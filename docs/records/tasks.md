@@ -27,25 +27,52 @@
 - 验证：
   - `bash tests/check_repo_consistency.sh`
 
-## 当前修补：payload handler 静态 gate 补齐映射校验（2026-04-11）
+## 当前优化：payload handler script 去掉独立映射表（2026-04-11）
 
 - 状态：已完成
 - 目标：
-  - 把 payload handler 扩展链里最后一处静态漏检补上，避免 `handler_slot` 已登记但 `HANDLER_SCRIPTS_BY_SLOT` 漏配时仍能通过 architecture gate。
+  - 继续压缩 payload 扩展链的中心维护点，去掉 `BattleCorePayloadServiceSpecs` 里独立的 handler script 映射表，避免新增 payload 时还要再补一份 slot -> script 常量。
+- 范围：
+  - `src/composition/battle_core_payload_service_specs.gd`
+  - `tests/gates/architecture_composition_consistency_gate.py`
+  - `tests/gates/architecture_wiring_graph_gate.py`
+  - `docs/design/effect_engine.md`
+  - `docs/design/battle_core_architecture_constraints.md`
+  - `docs/records/decisions.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - payload handler script 固定按 `handler_slot -> src/battle_core/effects/payload_handlers/<handler_slot>.gd` 命名约定解析
+  - `BattleCorePayloadServiceSpecs` 不再维护独立 `HANDLER_SCRIPTS_BY_SLOT`
+  - 两个 architecture gate 都能直接拦下“registry 有 slot 但缺 handler 文件”以及“目录里有残留 handler 文件但 registry 没登记”
+  - 完整 gate 通过
+- 结果：
+  - payload handler script 已改为由 composition helper 按 slot 命名约定动态解析，不再手抄 slot -> script 映射表
+  - composition consistency gate 与 wiring DAG gate 已从“比对映射表”改成“比对 registry slot 与目录实际 handler 文件”
+  - effect engine 与 architecture 约束文档已同步到新的单点维护口径
+- 验证：
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
+## 当前修补：payload handler 静态 gate 补齐旧映射校验（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 在当时仍保留独立 handler script 映射表的前提下，把 payload handler 扩展链里最后一处静态漏检补上，避免 `handler_slot` 已登记但旧映射漏配时仍能通过 architecture gate。
 - 范围：
   - `tests/gates/architecture_composition_consistency_gate.py`
   - `tests/gates/architecture_wiring_graph_gate.py`
   - `docs/design/battle_core_architecture_constraints.md`
   - `docs/records/decisions.md`
 - 验收标准：
-  - payload registry 新增 `handler_slot` 但没有对应 handler script 映射时，两个 architecture gate 都会直接失败
-  - `HANDLER_SCRIPTS_BY_SLOT` 出现残留旧映射时，两个 architecture gate 也会直接失败
+  - payload registry 新增 `handler_slot` 但没有对应旧 handler script 映射时，两个 architecture gate 都会直接失败
+  - 旧的 `HANDLER_SCRIPTS_BY_SLOT` 出现残留映射时，两个 architecture gate 也会直接失败
   - 架构约束文档明确写出这条一一对应要求
   - 完整 gate 通过
 - 结果：
-  - composition consistency gate 已改为显式比对 `handler_slot` 与 `HANDLER_SCRIPTS_BY_SLOT`，不再把 registry slot 直接当成已存在 script
-  - wiring DAG gate 也已同步补齐这条映射漂移校验，避免漏配 handler script 时继续把 wiring 图算成“合法”
-  - 架构约束与决策记录已补齐 payload handler 映射必须 fail-fast 的口径
+  - composition consistency gate 当时已改为显式比对 `handler_slot` 与旧的 `HANDLER_SCRIPTS_BY_SLOT`，不再把 registry slot 直接当成已存在 script
+  - wiring DAG gate 也同步补齐了那一版映射漂移校验，避免漏配 handler script 时继续把 wiring 图算成“合法”
+  - 架构约束与决策记录已先补齐“payload handler script 漂移必须 fail-fast”的底线；本轮再把旧映射表彻底去掉
 - 验证：
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/run_with_gate.sh`

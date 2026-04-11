@@ -15,6 +15,7 @@ CONTAINER_PATH = ROOT / "src/composition/battle_core_container.gd"
 COMPOSER_PATH = ROOT / "src/composition/battle_core_composer.gd"
 PAYLOAD_CONTRACT_REGISTRY_PATH = ROOT / "src/battle_core/content/payload_contract_registry.gd"
 PAYLOAD_SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_payload_service_specs.gd"
+PAYLOAD_HANDLER_DIR = ROOT / "src/battle_core/effects/payload_handlers"
 
 
 def fail(message: str, details: list[str] | None = None) -> None:
@@ -65,26 +66,23 @@ def parse_payload_handler_dependency_edges(text: str) -> list[tuple[str, str, st
 def parse_payload_shared_service_slots(payload_service_specs_text: str) -> list[str]:
     block = _extract_named_block(
         payload_service_specs_text,
-        r"const SHARED_SERVICE_DESCRIPTORS := \[(.*?)\]\n\nconst HANDLER_SCRIPTS_BY_SLOT",
+        r"const SHARED_SERVICE_DESCRIPTORS := \[(.*?)\]\n\nstatic func service_descriptors",
         "SHARED_SERVICE_DESCRIPTORS",
     )
     return re.findall(r'"slot": "([^"]+)"', block)
 
 
-def parse_payload_handler_script_slots(payload_service_specs_text: str) -> list[str]:
-    block = _extract_named_block(
-        payload_service_specs_text,
-        r"const HANDLER_SCRIPTS_BY_SLOT := \{(.*?)\}\n",
-        "HANDLER_SCRIPTS_BY_SLOT",
-    )
-    return re.findall(r'"([^"]+)": [A-Za-z_][A-Za-z0-9_]*', block)
+def scan_payload_handler_script_slots() -> list[str]:
+    if not PAYLOAD_HANDLER_DIR.exists():
+        fail("payload handler directory is missing", [str(PAYLOAD_HANDLER_DIR.relative_to(ROOT))])
+    return sorted(path.stem for path in PAYLOAD_HANDLER_DIR.glob("payload_*_handler.gd"))
 
 
 def parse_payload_service_descriptors(payload_registry_text: str, payload_service_specs_text: str) -> list[tuple[str, str]]:
     descriptors: list[tuple[str, str]] = []
     for slot_name in parse_payload_shared_service_slots(payload_service_specs_text):
         descriptors.append((slot_name, slot_name))
-    for slot_name in parse_payload_handler_script_slots(payload_service_specs_text):
+    for slot_name in scan_payload_handler_script_slots():
         descriptors.append((slot_name, slot_name))
     return descriptors
 
@@ -139,7 +137,6 @@ for child_text in wiring_child_texts:
         re.findall(r'\{"owner": "([^"]+)", "dependency": "([^"]+)", "source": "([^"]+)"\}', child_text)
     )
 payload_handler_slots = re.findall(r'"handler_slot": "([^"]+)"', payload_contract_registry_text)
-payload_handler_script_slots = parse_payload_handler_script_slots(payload_service_specs_text)
 wiring_owner_source_pairs.extend(
     ("payload_handler_registry", handler_slot, handler_slot) for handler_slot in payload_handler_slots
 )
@@ -227,20 +224,20 @@ if "shared_service_wiring_specs" not in payload_service_specs_text:
         [str(PAYLOAD_SERVICE_SPECS_PATH.relative_to(ROOT))],
     )
 payload_handler_slot_set = set(payload_handler_slots)
-payload_handler_script_slot_set = set(payload_handler_script_slots)
+payload_handler_script_slot_set = set(scan_payload_handler_script_slots())
 missing_payload_handler_scripts = sorted(payload_handler_slot_set - payload_handler_script_slot_set)
 stale_payload_handler_scripts = sorted(payload_handler_script_slot_set - payload_handler_slot_set)
 if missing_payload_handler_scripts or stale_payload_handler_scripts:
     details: list[str] = []
     details.extend(
-        f"payload handler slot missing HANDLER_SCRIPTS_BY_SLOT mapping: {slot}"
+        f"payload handler slot missing convention-based script file: {slot}"
         for slot in missing_payload_handler_scripts
     )
     details.extend(
-        f"HANDLER_SCRIPTS_BY_SLOT stale mapping without payload registry slot: {slot}"
+        f"payload handler script file missing payload registry slot: {slot}"
         for slot in stale_payload_handler_scripts
     )
-    fail("payload handler slot/script mappings drifted apart", details)
+    fail("payload handler slot/script coverage drifted apart", details)
 
 unknown_wiring_slots: list[str] = []
 duplicate_wiring_keys = _duplicate_names(

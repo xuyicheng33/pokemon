@@ -36,7 +36,7 @@ Composition 补充约束：
 
 - `BattleCoreServiceSpecs` 只允许维护一份 `SERVICE_DESCRIPTORS` 单一描述源，不再分裂维护 `SERVICE_SLOTS / SCRIPT_BY_SLOT` 双清单。
 - payload 相关 service descriptor 不再手抄回 `BattleCoreServiceSpecs`；它们固定由 `src/composition/battle_core_payload_service_specs.gd` 派生，再通过 `service_slots() / script_by_slot()` 并入统一服务视图。
-- `PayloadContractRegistry` 的 `handler_slot` 与 `BattleCorePayloadServiceSpecs.HANDLER_SCRIPTS_BY_SLOT` 必须保持一一对应；缺映射或残留映射都必须由 composition consistency gate 与 wiring DAG gate 直接失败。
+- payload handler script 固定按命名约定解析为 `src/battle_core/effects/payload_handlers/<handler_slot>.gd`；`PayloadContractRegistry` 里的 `handler_slot` 与该目录下的实际 handler script 文件必须保持一一对应，缺文件或残留文件都必须由 composition consistency gate 与 wiring DAG gate 直接失败。
 - `BattleCoreWiringSpecs` 只允许保留聚合职责；真实 wiring spec 固定拆在 `src/composition/battle_core_wiring_specs/*.gd`，并由 `wiring_specs() / reset_specs()` 向 composer 暴露统一入口。
 - `BattleCoreContainer` 只允许暴露：
   - `set_service`
