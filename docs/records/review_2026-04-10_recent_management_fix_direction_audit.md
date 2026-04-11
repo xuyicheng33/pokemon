@@ -40,11 +40,11 @@
 - power bonus 当前已经从“名单 + 校验 + 运行时分支”三处分裂收成“注册表 + resolver”两处明确接缝，但新增 source 仍要同时补合同校验和运行时解析。
 - 这说明当前状态已经从“分散重复维护”修到了“有清晰 seam 的集中维护”，方向正确，但还不是最终形态。
 
-### 2. capability 证据门禁目前偏文本匹配
+### 2. capability 证据门禁目前偏“语义事实对照”，还不是完整依赖图
 
-- `repo_consistency_formal_character_gate_capabilities.py` 现在会扫描角色内容、validator、设计稿、调整稿和 suite 中的 `coverage_needles`。
-- 这能有效拦“在用却没声明”的问题，但它本质上仍是文本证据，不是语义级依赖图。
-- 后面如果继续重构设计稿措辞或 validator 命名，需要注意不要把这层文本 gate 当成玩法语义正确性的替代品。
+- `repo_consistency_formal_character_gate_capabilities.py` 现在会读取 formal 角色 `required_content_paths`，导出语义事实，再拿 `coverage_needles` 去对照实际消费证据。
+- 这能有效拦“在用却没声明”的问题，但它仍然不是完整的语义级依赖图。
+- 后面如果继续扩共享能力，需要注意不要把这层语义事实 gate 当成玩法语义正确性的替代品。
 
 ## 验证
 

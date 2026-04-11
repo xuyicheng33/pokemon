@@ -42,13 +42,13 @@
 - `ContentSnapshotFormalCharacterValidator` 只校验当前快照里实际出现的正式角色，不会因为缺席角色而误炸。
 - 正式角色 entry validator 当前固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板组织；tests 侧只验证这三个入口仍可实例化并回挂到 wrapper 子树。
 - 正式角色的 `required_suite_paths` 不再手抄共享 capability suite 与 validator suite；这两类会自动并入 delivery/test 视图。角色专属子套件仍由 manifest 显式维护，部分共享但不属于 capability 派生的正式交付 suite 也可以继续显式挂在这里。
-- 只要角色在 `shared_capability_ids` 里声明了共享入口，repo consistency gate 就会同时检查 capability catalog 是否存在该入口、catalog 要求的 `required_suite_paths` 是否已被自动派生、以及内容/validator/设计稿/调整记录/wrapper 是否真的能扫到对应使用证据。
+- 只要角色在 `shared_capability_ids` 里声明了共享入口，repo consistency gate 就会同时检查 capability catalog 是否存在该入口、catalog 要求的 `required_suite_paths` 是否已被自动派生、以及角色 `required_content_paths` 导出的语义事实是否真的对上对应使用证据。
 - 只要角色登记了 `content_validator_script_path`，delivery/test 视图就会自动并入 `tests/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个对应角色的 validator 坏例锚点。
 - 共享能力未先登记进 capability catalog、或登记后没把对应 suite / manifest 消费声明 / 使用证据补齐时，`check_repo_consistency.sh` 会直接失败。
 - `config/formal_character_manifest.json.matchups` 与 `pair_interaction_cases` 继续承载 formal pair 覆盖；directed pair surface smoke 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，`tests/suites/formal_character_pair_smoke_suite.gd` 只负责按生成结果动态注册和执行。
 - `matchups[*].test_only` 可选；用于 `obito_mirror` 这类只服务测试/手动 setup 的 matchup。被标成 `test_only` 的 matchup 不会进入 directed surface smoke 矩阵，同角色 mirror matchup 也必须显式打这个标记。
 - `tests/support/formal_pair_interaction/scenario_registry.gd` 当前是 pair interaction scenario runner 的单一真相；catalog 校验和运行分发都只能读这张映射，不再允许双维护场景列表。
-- `pair_interaction_cases[*]` 必须显式填写 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`；catalog loader 与 shared gate 都会对空值、类型错误和不一致开局直接 fail-fast。
+- `pair_interaction_cases[*]` 必须显式填写 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`；`character_ids` 顺序必须匹配 `matchup_id` 的 opener 方向，且不得引用 `test_only` matchup；catalog loader 与 shared gate 都会对空值、类型错误和这类不一致直接 fail-fast。
 - shared gate 现在直接按 manifest 里的非 `test_only` directed matchup 推导必备 interaction 覆盖；每个正式方向至少要有一条 `pair_interaction_case`，不再额外维护 Python 里的手写场景常量表。
 - 共享 pair surface / interaction 已不再逐角色手抄进 `required_test_names`；覆盖完整性统一由 shared gate 和 suite matrix contract 校验。
 - `check_suite_reachability.sh` 只把 `run_all.gd` 和注册表里的 wrapper 当作入口；`required_suite_paths` 必须真的能从这些入口沿 `preload(...)` 子树走到，不能靠注册表直接兜底；当 wrapper 超过维护阈值时，真实断言统一下沉到同名子目录，例如 `tests/suites/manager_snapshot_public_contract_suite.gd` + `tests/suites/manager_snapshot_public_contract/*.gd`

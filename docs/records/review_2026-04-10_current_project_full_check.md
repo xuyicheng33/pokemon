@@ -89,7 +89,7 @@
 ## 仍需保留的现实判断
 
 - 新增 payload 或 power bonus source 还没有做到近似零中心改动；当前只是从“多处重复手抄”收口成“有明确 seam 的集中维护”。
-- capability catalog gate 现在依赖 `coverage_needles` 做文本证据扫描，这能拦声明漂移，但不是语义级依赖图。
+- capability catalog gate 现在已经改成拿 `coverage_needles` 去对照 `required_content_paths` 导出的语义事实；这能拦声明漂移，但还不是完整的语义级依赖图。
 - 这两点都属于中长期治理观察，不是当前阻断。
 
 ## 验证

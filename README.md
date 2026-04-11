@@ -261,7 +261,7 @@ tests/run_with_gate.sh
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 跨角色 smoke：正式角色之间至少补非镜像配对黑盒样例，避免配对覆盖长期偏在单一角色身上
-- `config/formal_character_manifest.json.matchups` 继续承载 formal directed matchup；directed pair surface smoke 改为运行时根据 `matchups + config/formal_character_manifest.json.characters[*].surface_smoke_skill_id` 自动生成；`pair_interaction_cases[*]` 固定必填 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`，`tests/suites/formal_character_pair_smoke_suite.gd` 仍按生成结果动态注册
+- `config/formal_character_manifest.json.matchups` 继续承载 formal directed matchup；directed pair surface smoke 改为运行时根据 `matchups + config/formal_character_manifest.json.characters[*].surface_smoke_skill_id` 自动生成；`pair_interaction_cases[*]` 固定必填 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`，`character_ids` 顺序必须匹配 matchup opener 方向，且不得引用 `test_only` matchup；`tests/suites/formal_character_pair_smoke_suite.gd` 仍按生成结果动态注册
 - 当前四名正式角色的 pair surface 已补到完整有向矩阵，deep interaction 固定为 6 个无向 pair case：`Gojo-Sukuna / Gojo-Kashimo / Gojo-Obito / Sukuna-Kashimo / Sukuna-Obito / Kashimo-Obito`
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 - 当前仓库已内置两组固定诊断入口：`tests/helpers/domain_case_runner.gd`（领域）与 `tests/helpers/kashimo_case_runner.gd`（鹿紫云）
@@ -287,8 +287,8 @@ tests/run_with_gate.sh
 ## 10. 当前代码规模（2026-04-11）
 
 - `src/**/*.gd`：`18928` 行
-- `tests/**/*.gd`：`24256` 行
-- GDScript 合计：`43184` 行
+- `tests/**/*.gd`：`24385` 行
+- GDScript 合计：`43313` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

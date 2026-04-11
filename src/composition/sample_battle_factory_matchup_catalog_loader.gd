@@ -64,6 +64,16 @@ func load_catalog_result() -> Dictionary:
 					resolved_manifest_path,
 				]
 			)
+		var matchup_spec: Dictionary = matchups.get(matchup_id, {})
+		if bool(matchup_spec.get("test_only", false)):
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d] must not reference test_only matchup_id: %s (%s)" % [
+					case_index,
+					matchup_id,
+					resolved_manifest_path,
+				]
+			)
 		var character_ids = case_spec.get("character_ids", [])
 		if not (character_ids is Array) or character_ids.size() != 2:
 			return _error_result(
@@ -82,27 +92,27 @@ func load_catalog_result() -> Dictionary:
 				ErrorCodesScript.INVALID_BATTLE_SETUP,
 				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].character_ids must reference known formal characters: %s" % [case_index, resolved_manifest_path]
 			)
-		var matchup_spec: Dictionary = matchups.get(matchup_id, {})
-		var matchup_pair := _matchup_formal_pair(matchup_spec, unit_to_character)
-		var expected_pair := [left_character_id, right_character_id]
-		expected_pair.sort()
-		if matchup_pair != expected_pair:
+		var matchup_direction := _matchup_formal_direction(matchup_spec, unit_to_character)
+		if matchup_direction[0] != left_character_id or matchup_direction[1] != right_character_id:
 			return _error_result(
 				ErrorCodesScript.INVALID_BATTLE_SETUP,
-				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].character_ids must match matchup opener formal pair: %s" % [case_index, resolved_manifest_path]
+				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d].character_ids must match matchup opener direction: %s (%s)" % [
+					case_index,
+					matchup_id,
+					resolved_manifest_path,
+				]
 			)
 	return _ok_result(parsed)
 
-func _matchup_formal_pair(matchup_spec: Dictionary, unit_to_character: Dictionary) -> Array:
-	var matchup_pair := ["", ""]
+func _matchup_formal_direction(matchup_spec: Dictionary, unit_to_character: Dictionary) -> Array:
+	var matchup_direction := ["", ""]
 	var p1_units = matchup_spec.get("p1_units", [])
 	var p2_units = matchup_spec.get("p2_units", [])
 	if p1_units is Array and not p1_units.is_empty():
-		matchup_pair[0] = String(unit_to_character.get(String(p1_units[0]).strip_edges(), "")).strip_edges()
+		matchup_direction[0] = String(unit_to_character.get(String(p1_units[0]).strip_edges(), "")).strip_edges()
 	if p2_units is Array and not p2_units.is_empty():
-		matchup_pair[1] = String(unit_to_character.get(String(p2_units[0]).strip_edges(), "")).strip_edges()
-	matchup_pair.sort()
-	return matchup_pair
+		matchup_direction[1] = String(unit_to_character.get(String(p2_units[0]).strip_edges(), "")).strip_edges()
+	return matchup_direction
 
 func _load_runtime_registry_entries_result() -> Dictionary:
 	var loader = RuntimeRegistryLoaderScript.new()

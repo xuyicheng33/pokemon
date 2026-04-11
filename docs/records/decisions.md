@@ -212,12 +212,9 @@
 - payload 的 `payload script -> handler slot -> validator key` 当前固定只维护在 `src/battle_core/content/payload_contract_registry.gd`。
 - payload handler 的直接依赖 wiring facts 也继续收口到同一个 registry descriptor；`PayloadHandlerRegistry` 依赖槽位声明与 `battle_core_wiring_specs_payload_handlers.gd` 的 handler wiring 都从这里派生。
 - `ContentPayloadValidator`、`PayloadHandlerRegistry`、`battle_core_wiring_specs_effects_core.gd`、`battle_core_wiring_specs_payload_handlers.gd` 与 payload contract suite 当前统一从这份注册表派生，不再各自手抄 payload 名单或 handler 依赖边。
-- `power_bonus_source` 当前固定只维护一份共享注册事实：
-  - source 列表
-  - 额外 schema 校验
-  - runtime 分发描述
-  都统一收口到 `src/battle_core/content/power_bonus_source_registry.gd`。
-  - `src/battle_core/actions/power_bonus_resolver.gd` 当前只保留对外解析入口与委托职责，不再重复维护 source 分支。
+- `power_bonus_source` 当前固定拆成两处明确接缝：
+  - `src/battle_core/content/power_bonus_source_registry.gd` 只负责 source 列表与额外 schema/内容合同校验
+  - `src/battle_core/actions/power_bonus_resolver.gd` 只负责 runtime 覆盖检查与实际 bonus 求值
 - 这么定的原因：
   - 这轮修补要解决的不是 battle core 主循环失控，而是“新增一个共享扩展点就要改多处中心入口”的返工面
   - payload 与 power bonus 都已经出现“名单、校验、运行时分支各写一份”的漂移风险；继续扩角色时，这类共享入口会先比玩法规则更快失控
@@ -254,7 +251,7 @@
 - 运行时 helper 全部统一进 composition 装配；`SampleBattleFactory`、catalog loader、surface case builder、demo catalog 与 replay builder 各自只承载单一职责。
 - `SampleBattleFactory` owner 现在只保留稳定 facade、helper 装配与错误状态投影；manifest/catalog/demo override 广播固定下沉到 `src/composition/sample_battle_factory_override_router.gd`，baseline/formal setup 组装固定下沉到 `src/composition/sample_battle_factory_setup_access.gd`，snapshot 目录扫描固定下沉到 `src/composition/sample_battle_factory_snapshot_dir_collector.gd`。
 - directed pair surface smoke 不再手写 `pair_surface_cases`；统一由 `matchups + characters[*].surface_smoke_skill_id` 自动生成。
-- `pair_interaction_cases[*]` 固定必填 `scenario_id / matchup_id / character_ids[2] / battle_seed`，并继续与 scenario registry 做一一对应校验。
+- `pair_interaction_cases[*]` 固定必填 `scenario_id / matchup_id / character_ids[2] / battle_seed`，并继续与 scenario registry 做一一对应校验；`character_ids` 顺序必须匹配 `matchup_id` 的 opener 方向，且不得引用 `test_only` matchup。
 - demo replay profile 的单一真相固定为 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选 profile、初始化 manager、错误投影，再把 replay input 构建委托给 builder。
 - `ContentSnapshotCache` 继续采用 composer 级共享 cache + 每次 fresh index；当前 freshness 签名固定覆盖：
   - snapshot 路径列表

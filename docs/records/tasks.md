@@ -22,13 +22,13 @@
   - pair interaction 约束数据化
   - capability 证据改为结构化语义校验
 - 验收标准：
-  - 新增 `power_bonus_source` 时不再需要在 registry 和 resolver 各自手抄分支
+  - 新增 `power_bonus_source` 时，source 列表与内容合同只改 registry，运行时解析只改 resolver
   - payload 扩展链的中心维护点继续减少
   - `obito_mirror` 这类测试专用 matchup 有显式身份
   - pair interaction gate 不再依赖代码里的手写必备案例常量
   - capability gate 不再靠角色内容/文档的纯文本扫描判断共享能力使用证据
 - 当前进展：
-  - 已完成 `power_bonus_source` 真单点化：source 列表、schema 校验与 runtime 分发都收口到 `power_bonus_source_registry.gd`
+  - 已完成 `power_bonus_source` 接缝收口：source 列表与 schema 校验固定留在 `power_bonus_source_registry.gd`，runtime 分发固定留在 `PowerBonusResolver`
   - 已完成 payload handler 扩展链第一轮收口：handler 直接依赖 wiring facts 收回 `payload_contract_registry.gd`，`payload_handler_registry.gd` 不再手抄整排 handler 槽位声明
   - 已完成 formal matchup 测试身份显式化：`matchups[*].test_only` 现在是正式元数据，`obito_mirror` 已显式打标，surface smoke 生成与 shared gate 会跳过这类 matchup
   - 已完成 pair interaction 约束数据化：shared gate 现在直接按 manifest 中非 `test_only` 的 directed matchup 推导必备 interaction 覆盖，不再额外维护 Python 常量表
@@ -132,6 +132,31 @@
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/check_suite_reachability.sh`
+  - `bash tests/run_with_gate.sh`
+
+## 当前修补：pair interaction 合同与 power bonus 真收边（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 把最近这轮管理修复里还剩的三处真实漂移收平：`pair_interaction_cases` 的运行时 loader 合同、`power bonus` 的分层边界、活跃说明文档口径。
+- 范围：
+  - `SampleBattleFactoryFormalMatchupCatalogLoader`
+  - `PowerBonusSourceRegistry / PowerBonusResolver`
+  - formal registry/catalog 回归坏例
+  - tests README、设计文档、活跃复查记录、任务/决策记录
+- 验收标准：
+  - `pair_interaction_cases[*].character_ids` 在运行时 loader 与 shared gate 都按 matchup opener 方向校验
+  - `pair_interaction_cases[*]` 在运行时 loader 与 shared gate 都禁止引用 `test_only` matchup
+  - `content` 层不再直接承担 power bonus 的运行时求值
+  - capability 证据说明统一改成“从 `required_content_paths` 导出的语义事实”
+  - 完整 gate 通过
+- 结果：
+  - formal matchup catalog loader 已从“无序配对一致”改成“必须匹配 matchup opener 方向”，并直接拒绝 `test_only` matchup
+  - formal registry/catalog suite 已补反向 `character_ids` 与引用 `test_only` matchup 的 fail-fast 坏例
+  - `PowerBonusResolver` 已重新承接 `mp_diff_clamped / effect_stack_sum` 的 runtime 求值与覆盖检查；`PowerBonusSourceRegistry` 只保留 source 常量、source 列表与内容合同校验
+  - tests README、设计文档、复查记录、任务/决策记录已统一到当前语义事实与分层边界口径
+- 验证：
+  - `bash tests/check_repo_consistency.sh`
   - `bash tests/run_with_gate.sh`
 
 ## 当前复查：项目实现全景审查（2026-04-10）
