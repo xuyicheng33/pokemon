@@ -26,8 +26,7 @@
         "tests/suites/extension_targeting_accuracy_suite.gd"
       ],
       "coverage_needles": [
-        "gojo_mugen_incoming_accuracy_down",
-        "mod_kind=\"incoming_accuracy\""
+        "incoming_accuracy"
       ],
       "stop_and_specialize_when": "当新角色需要把命中修正拆成多段来源、命中特判或非标准读取时，停止继续扩共享 incoming_accuracy，改做专用命中机制。"
     },

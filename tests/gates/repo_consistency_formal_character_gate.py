@@ -34,6 +34,7 @@ RUNTIME_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_runtime_re
 DELIVERY_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_delivery_registry_loader.gd"
 DELIVERY_REGISTRY_HELPER_PATH = "tests/support/formal_character_registry.gd"
 DELIVERY_REGISTRY_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_delivery_registry.gd"
+CAPABILITY_FACTS_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_capability_facts.gd"
 RUNTIME_REGISTRY_HELPER_PATH = "src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd"
 FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH = "src/shared/formal_registry_contracts.gd"
 FORMAL_MANIFEST_SCRIPT_PATH = "src/shared/formal_character_manifest.gd"
@@ -186,6 +187,8 @@ validate_capability_catalog(
     ctx,
     capability_catalog_path=CAPABILITY_CATALOG_PATH,
     characters=characters,
+    manifest_path=MANIFEST_PATH,
+    export_script_path=CAPABILITY_FACTS_EXPORT_SCRIPT_PATH,
 )
 
 for case_index, case_spec in enumerate(pair_interaction_cases):

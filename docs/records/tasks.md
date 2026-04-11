@@ -32,6 +32,7 @@
   - 已完成 payload handler 扩展链第一轮收口：handler 直接依赖 wiring facts 收回 `payload_contract_registry.gd`，`payload_handler_registry.gd` 不再手抄整排 handler 槽位声明
   - 已完成 formal matchup 测试身份显式化：`matchups[*].test_only` 现在是正式元数据，`obito_mirror` 已显式打标，surface smoke 生成与 shared gate 会跳过这类 matchup
   - 已完成 pair interaction 约束数据化：shared gate 现在直接按 manifest 中非 `test_only` 的 directed matchup 推导必备 interaction 覆盖，不再额外维护 Python 常量表
+  - 已完成 capability 证据语义化：`coverage_needles` 现在表示 formal 角色内容导出的语义事实 ID，shared gate 不再拼接全文做文本扫描
 
 ## 当前修补：审查发现对齐（2026-04-11）
 

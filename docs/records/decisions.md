@@ -163,7 +163,8 @@
   - manifest 的 `shared_capability_ids` 只能引用 catalog 里已有的 `capability_id`
   - catalog entry 必须至少有一个 manifest 消费者
   - catalog 的 `required_suite_paths` 必须能通过 delivery/test 派生视图进入角色套件面
-  - 角色内容 / validator / 设计稿 / 调整记录 / wrapper 必须能扫到 capability 的实际使用证据
+  - 角色 `required_content_paths` 导出的语义事实必须能对上 capability 的实际使用证据
+- formal 角色 capability 证据当前统一由 `tests/helpers/export_formal_capability_facts.gd` 导出；`coverage_needles` 字段名继续保留，但语义已固定为 fact id，不再表示文本 needle。
 - delivery/test 视图当前固定自动并入两类派生 suite：
   - `shared_capability_ids` 对应 capability catalog 的 `required_suite_paths`
   - 非空 `content_validator_script_path` 对应的 `tests/suites/extension_validation_contract_suite.gd`
