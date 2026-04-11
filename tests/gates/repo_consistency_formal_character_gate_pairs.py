@@ -3,22 +3,6 @@ from __future__ import annotations
 import re
 
 
-REQUIRED_DIRECTIONAL_INTERACTION_CASES = [
-    ("gojo_satoru", "sukuna", "gojo_vs_sukuna", "gojo_vs_sukuna_domain_cleanup"),
-    ("sukuna", "gojo_satoru", "sukuna_vs_gojo", "sukuna_vs_gojo_domain_cleanup"),
-    ("gojo_satoru", "kashimo_hajime", "gojo_vs_kashimo", "gojo_vs_kashimo_kyokyo_nullify_domain_accuracy"),
-    ("kashimo_hajime", "gojo_satoru", "kashimo_vs_gojo", "kashimo_vs_gojo_kyokyo_nullify_domain_accuracy"),
-    ("gojo_satoru", "obito_juubi_jinchuriki", "gojo_vs_obito", "gojo_vs_obito_heal_block_public_contract"),
-    ("obito_juubi_jinchuriki", "gojo_satoru", "obito_vs_gojo", "obito_vs_gojo_heal_block_public_contract"),
-    ("sukuna", "kashimo_hajime", "sukuna_vs_kashimo", "sukuna_vs_kashimo_domain_accuracy_nullified"),
-    ("kashimo_hajime", "sukuna", "kashimo_vs_sukuna", "kashimo_vs_sukuna_domain_accuracy_nullified"),
-    ("sukuna", "obito_juubi_jinchuriki", "sukuna_vs_obito", "sukuna_vs_obito_field_seal_and_kamado_lifecycle"),
-    ("obito_juubi_jinchuriki", "sukuna", "obito_vs_sukuna", "obito_vs_sukuna_field_seal_and_kamado_lifecycle"),
-    ("kashimo_hajime", "obito_juubi_jinchuriki", "kashimo_vs_obito", "kashimo_vs_obito_yinyang_and_amber_persistence"),
-    ("obito_juubi_jinchuriki", "kashimo_hajime", "obito_vs_kashimo", "obito_vs_kashimo_yinyang_and_amber_persistence"),
-]
-
-
 def _unordered_pair_key(left_character_id: str, right_character_id: str) -> str:
     return "<->".join(sorted([left_character_id, right_character_id]))
 
@@ -56,11 +40,15 @@ def validate_pair_catalog(
         for right in runtime_character_ids
         if left != right
     }
+    matchup_direction_by_id: dict[str, tuple[str, str]] = {}
+    expected_directional_interaction_cases: set[tuple[str, str, str]] = set()
+    test_only_matchup_ids: set[str] = set()
     actual_surface_pairs: set[str] = set()
     for matchup_id, raw_matchup in matchups.items():
         if not isinstance(raw_matchup, dict):
             continue
-        test_only = _matchup_test_only(ctx, matchup_catalog_path, str(matchup_id), raw_matchup)
+        normalized_matchup_id = str(matchup_id)
+        test_only = _matchup_test_only(ctx, matchup_catalog_path, normalized_matchup_id, raw_matchup)
         p1_units = raw_matchup.get("p1_units", [])
         p2_units = raw_matchup.get("p2_units", [])
         if not isinstance(p1_units, list) or not p1_units or not isinstance(p2_units, list) or not p2_units:
@@ -69,10 +57,14 @@ def validate_pair_catalog(
         p2_character_id = next((character_id for character_id, unit_id in character_to_unit.items() if unit_id == str(p2_units[0]).strip()), "")
         if not p1_character_id or not p2_character_id:
             continue
+        matchup_direction_by_id[normalized_matchup_id] = (p1_character_id, p2_character_id)
+        if test_only:
+            test_only_matchup_ids.add(normalized_matchup_id)
         if p1_character_id == p2_character_id and not test_only:
-            ctx.failures.append(f"{matchup_catalog_path} same-character matchup must declare test_only: {matchup_id}")
+            ctx.failures.append(f"{matchup_catalog_path} same-character matchup must declare test_only: {normalized_matchup_id}")
         if test_only or p1_character_id == p2_character_id:
             continue
+        expected_directional_interaction_cases.add((p1_character_id, p2_character_id, normalized_matchup_id))
         pair_key = f"{p1_character_id}->{p2_character_id}"
         if pair_key in actual_surface_pairs:
             ctx.failures.append(f"{matchup_catalog_path} duplicated formal directed matchup for generated surface coverage: {pair_key}")
@@ -94,7 +86,7 @@ def validate_pair_catalog(
         for right_index in range(left_index + 1, len(runtime_character_ids))
     }
     actual_interaction_pairs: set[str] = set()
-    actual_directional_cases: set[tuple[str, str, str, str]] = set()
+    actual_directional_cases: set[tuple[str, str, str]] = set()
     actual_test_names: set[str] = set()
     scenario_registry_text = ctx.read_text(scenario_registry_path)
     registered_scenario_ids = set(re.findall(r'"([^"]+)": Callable', scenario_registry_text))
@@ -137,8 +129,19 @@ def validate_pair_catalog(
         if left_character_id == right_character_id:
             ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] cannot target the same character twice")
             continue
+        if matchup_id in test_only_matchup_ids:
+            ctx.failures.append(
+                f"{matchup_catalog_path} pair_interaction_cases[{case_index}] must not reference test_only matchup_id: {matchup_id}"
+            )
+            continue
+        expected_direction = matchup_direction_by_id.get(matchup_id)
+        if expected_direction is not None and expected_direction != (left_character_id, right_character_id):
+            ctx.failures.append(
+                f"{matchup_catalog_path} pair_interaction_cases[{case_index}] character_ids must match matchup opener direction: {matchup_id}"
+            )
+            continue
         actual_interaction_pairs.add(_unordered_pair_key(left_character_id, right_character_id))
-        actual_directional_cases.add((left_character_id, right_character_id, matchup_id, scenario_id))
+        actual_directional_cases.add((left_character_id, right_character_id, matchup_id))
     missing_registered_scenarios = sorted(registered_scenario_ids - actual_scenario_ids)
     if missing_registered_scenarios:
         ctx.failures.append(
@@ -157,11 +160,18 @@ def validate_pair_catalog(
         ctx.failures.append(f"{matchup_catalog_path} contains non-matrix pair_interaction coverage: {', '.join(extra_interaction_pairs)}")
 
     missing_required_directional_cases = [
-        f"{left}->{right}:{matchup_id}:{scenario_id}"
-        for left, right, matchup_id, scenario_id in REQUIRED_DIRECTIONAL_INTERACTION_CASES
-        if (left, right, matchup_id, scenario_id) not in actual_directional_cases
+        f"{left}->{right}:{matchup_id}"
+        for left, right, matchup_id in sorted(expected_directional_interaction_cases - actual_directional_cases)
     ]
     if missing_required_directional_cases:
         ctx.failures.append(
             f"{matchup_catalog_path} missing required directional pair_interaction cases: {', '.join(missing_required_directional_cases)}"
+        )
+    extra_directional_cases = [
+        f"{left}->{right}:{matchup_id}"
+        for left, right, matchup_id in sorted(actual_directional_cases - expected_directional_interaction_cases)
+    ]
+    if extra_directional_cases:
+        ctx.failures.append(
+            f"{matchup_catalog_path} contains non-matrix directional pair_interaction cases: {', '.join(extra_directional_cases)}"
         )

@@ -75,6 +75,7 @@
 - [ ] 若新增只服务测试或手动 setup 的 matchup（例如 mirror 对局），在对应 `matchups[*]` 上显式标 `test_only: true`
 - [ ] 确认该角色的 `surface_smoke_skill_id` 能在所有 formal directed matchup 的首发黑盒 smoke 中稳定施放；pair surface 不再手写登记到 catalog
 - [ ] 若补 interaction case，`pair_interaction_cases[*]` 必须显式补齐 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`
+- [ ] 每个非 `test_only` 的 directed formal matchup 都至少补一条对应的 `pair_interaction_case`，不要再额外维护代码侧必备场景名单
 - [ ] 若要给该角色补 sandbox/demo 演示，统一改 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 不再写死角色专属命令流
 
 ## 4. 测试最低面

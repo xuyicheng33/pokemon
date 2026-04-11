@@ -49,6 +49,7 @@
 - `matchups[*].test_only` 可选；用于 `obito_mirror` 这类只服务测试/手动 setup 的 matchup。被标成 `test_only` 的 matchup 不会进入 directed surface smoke 矩阵，同角色 mirror matchup 也必须显式打这个标记。
 - `tests/support/formal_pair_interaction/scenario_registry.gd` 当前是 pair interaction scenario runner 的单一真相；catalog 校验和运行分发都只能读这张映射，不再允许双维护场景列表。
 - `pair_interaction_cases[*]` 必须显式填写 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`；catalog loader 与 shared gate 都会对空值、类型错误和不一致开局直接 fail-fast。
+- shared gate 现在直接按 manifest 里的非 `test_only` directed matchup 推导必备 interaction 覆盖；每个正式方向至少要有一条 `pair_interaction_case`，不再额外维护 Python 里的手写场景常量表。
 - 共享 pair surface / interaction 已不再逐角色手抄进 `required_test_names`；覆盖完整性统一由 shared gate 和 suite matrix contract 校验。
 - `check_suite_reachability.sh` 只把 `run_all.gd` 和注册表里的 wrapper 当作入口；`required_suite_paths` 必须真的能从这些入口沿 `preload(...)` 子树走到，不能靠注册表直接兜底；当 wrapper 超过维护阈值时，真实断言统一下沉到同名子目录，例如 `tests/suites/manager_snapshot_public_contract_suite.gd` + `tests/suites/manager_snapshot_public_contract/*.gd`
 - manager smoke 与 manager public contract 现在不允许再通过 `_debug_session` 之类私有钩子钻进内部 session。

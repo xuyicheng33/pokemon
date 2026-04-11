@@ -244,6 +244,7 @@
 - formal validator 继续只校验当前 snapshot 实际出现的正式角色；缺席角色的坏 validator 不得把无关快照一起炸掉。
 - `surface_smoke_skill_id` 固定挂在 `characters[*]`，只服务 directed pair surface smoke 的默认黑盒技能选择。
 - `matchups[*]` 允许可选 `test_only: true` 元数据；这类 matchup 仍可用于手动 setup / 测试夹具，但不再参与 directed pair surface smoke 矩阵，同角色 mirror matchup 也必须显式打标。
+- pair interaction 覆盖当前固定直接由 manifest 里的非 `test_only` directed matchup 推导；shared gate 只要求“每个正式方向至少有一条 interaction case”，不再在 Python 里额外手抄一张 scenario 常量表。
 - 运行时、测试、gate 与文档都只允许从 manifest domain model 派生各自视图；共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`。
 
 ## 3. SampleBattleFactory、sandbox demo 与 cache freshness 统一收口
