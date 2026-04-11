@@ -6,6 +6,30 @@ const PayloadContractRegistryScript := preload("res://src/battle_core/content/pa
 const RuleModSchemaScript := preload("res://src/battle_core/content/rule_mod_schema.gd")
 
 var _rule_mod_schema = RuleModSchemaScript.new()
+var _allowed_stat_names := PackedStringArray([
+	"attack",
+	"defense",
+	"sp_attack",
+	"sp_defense",
+	"speed",
+])
+var _allowed_stat_retention_modes := PackedStringArray(["normal", "persist_on_switch"])
+
+static func validator_method_name_for_key(validator_key: String) -> String:
+	var normalized_key := validator_key.strip_edges()
+	if normalized_key.is_empty():
+		return ""
+	return "_validate_%s_payload" % normalized_key
+
+func missing_registered_validator_keys() -> PackedStringArray:
+	var missing_keys := PackedStringArray()
+	for raw_validator_key in PayloadContractRegistryScript.registered_validator_keys():
+		var validator_key := String(raw_validator_key).strip_edges()
+		var method_name := validator_method_name_for_key(validator_key)
+		if method_name.is_empty() or has_method(method_name):
+			continue
+		missing_keys.append(validator_key)
+	return missing_keys
 
 func validate_effect_refs(errors: Array, label: String, effect_ids: PackedStringArray, effects: Dictionary) -> void:
 	for effect_id in effect_ids:
@@ -13,41 +37,20 @@ func validate_effect_refs(errors: Array, label: String, effect_ids: PackedString
 			errors.append("%s missing effect: %s" % [label, effect_id])
 
 func validate_payload(errors: Array, effect_id: String, payload, content_index) -> void:
-	var allowed_stat_names: PackedStringArray = PackedStringArray([
-		"attack",
-		"defense",
-		"sp_attack",
-		"sp_defense",
-		"speed",
-	])
-	var allowed_stat_retention_modes := PackedStringArray(["normal", "persist_on_switch"])
 	if payload == null:
 		errors.append("effect[%s].payloads contains null" % effect_id)
 		return
 	var validator_key := PayloadContractRegistryScript.validator_key_for_payload(payload)
-	match validator_key:
-		"damage":
-			_validate_damage_payload(errors, effect_id, payload, content_index)
-		"heal":
-			_validate_heal_payload(errors, effect_id, payload)
-		"resource_mod":
-			_validate_resource_mod_payload(errors, effect_id, payload)
-		"stat_mod":
-			_validate_stat_mod_payload(errors, effect_id, payload, allowed_stat_names, allowed_stat_retention_modes)
-		"apply_field":
-			_validate_apply_field_payload(errors, effect_id, payload, content_index)
-		"apply_effect":
-			_validate_apply_effect_payload(errors, effect_id, payload, content_index)
-		"remove_effect":
-			_validate_remove_effect_payload(errors, effect_id, payload, content_index)
-		"rule_mod":
-			_validate_rule_mod_payload(errors, effect_id, payload, content_index)
-		"forced_replace":
-			_validate_forced_replace_payload(errors, effect_id, payload)
-		_:
-			errors.append("effect[%s].payloads invalid type: %s" % [effect_id, payload])
+	var validator_method_name := validator_method_name_for_key(validator_key)
+	if validator_method_name.is_empty():
+		errors.append("effect[%s].payloads invalid type: %s" % [effect_id, payload])
+		return
+	if not has_method(validator_method_name):
+		errors.append("effect[%s].payloads missing validator dispatcher: %s" % [effect_id, validator_key])
+		return
+	call(validator_method_name, errors, effect_id, payload, content_index)
 
-func _validate_damage_payload(errors: Array, effect_id: String, payload, content_index) -> void:
+func _validate_damage_payload(errors: Array, effect_id: String, payload, content_index = null) -> void:
 	if int(payload.amount) <= 0:
 		errors.append("effect[%s].damage amount must be > 0, got %d" % [effect_id, int(payload.amount)])
 	if bool(payload.use_formula):
@@ -57,7 +60,7 @@ func _validate_damage_payload(errors: Array, effect_id: String, payload, content
 	elif not String(payload.combat_type_id).is_empty() and not content_index.combat_types.has(String(payload.combat_type_id)):
 		errors.append("effect[%s].damage combat_type_id missing combat type: %s" % [effect_id, String(payload.combat_type_id)])
 
-func _validate_heal_payload(errors: Array, effect_id: String, payload) -> void:
+func _validate_heal_payload(errors: Array, effect_id: String, payload, _content_index = null) -> void:
 	if bool(payload.use_percent):
 		if int(payload.percent) < 1 or int(payload.percent) > 100:
 			errors.append("effect[%s].heal percent out of range: %d" % [effect_id, int(payload.percent)])
@@ -67,20 +70,14 @@ func _validate_heal_payload(errors: Array, effect_id: String, payload) -> void:
 	elif int(payload.amount) <= 0:
 		errors.append("effect[%s].heal amount must be > 0, got %d" % [effect_id, int(payload.amount)])
 
-func _validate_resource_mod_payload(errors: Array, effect_id: String, payload) -> void:
+func _validate_resource_mod_payload(errors: Array, effect_id: String, payload, _content_index = null) -> void:
 	if String(payload.resource_key) != "mp":
 		errors.append("effect[%s].resource_mod invalid resource_key: %s" % [effect_id, payload.resource_key])
 
-func _validate_stat_mod_payload(
-	errors: Array,
-	effect_id: String,
-	payload,
-	allowed_stat_names: PackedStringArray,
-	allowed_stat_retention_modes: PackedStringArray
-) -> void:
-	if not allowed_stat_names.has(String(payload.stat_name)):
+func _validate_stat_mod_payload(errors: Array, effect_id: String, payload, _content_index = null) -> void:
+	if not _allowed_stat_names.has(String(payload.stat_name)):
 		errors.append("effect[%s].stat_mod invalid stat_name: %s" % [effect_id, payload.stat_name])
-	if not allowed_stat_retention_modes.has(String(payload.retention_mode)):
+	if not _allowed_stat_retention_modes.has(String(payload.retention_mode)):
 		errors.append("effect[%s].stat_mod invalid retention_mode: %s" % [effect_id, String(payload.retention_mode)])
 
 func _validate_apply_field_payload(errors: Array, effect_id: String, payload, content_index) -> void:
@@ -103,7 +100,7 @@ func _validate_rule_mod_payload(errors: Array, effect_id: String, payload, conte
 	for error_msg in rule_mod_errors:
 		errors.append("effect[%s].rule_mod invalid: %s" % [effect_id, error_msg])
 
-func _validate_forced_replace_payload(errors: Array, effect_id: String, payload) -> void:
+func _validate_forced_replace_payload(errors: Array, effect_id: String, payload, _content_index = null) -> void:
 	if payload.scope != "self" and payload.scope != "target":
 		errors.append("effect[%s].forced_replace invalid scope: %s" % [effect_id, payload.scope])
 	if String(payload.selector_reason).strip_edges().is_empty():

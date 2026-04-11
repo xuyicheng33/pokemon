@@ -14,6 +14,7 @@ WIRING_SPECS_DIR = ROOT / "src/composition/battle_core_wiring_specs"
 CONTAINER_PATH = ROOT / "src/composition/battle_core_container.gd"
 COMPOSER_PATH = ROOT / "src/composition/battle_core_composer.gd"
 PAYLOAD_CONTRACT_REGISTRY_PATH = ROOT / "src/battle_core/content/payload_contract_registry.gd"
+CONTENT_PAYLOAD_VALIDATOR_PATH = ROOT / "src/battle_core/content/content_payload_validator.gd"
 PAYLOAD_SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_payload_service_specs.gd"
 PAYLOAD_HANDLER_DIR = ROOT / "src/battle_core/effects/payload_handlers"
 
@@ -119,6 +120,7 @@ if not wiring_child_texts:
 container_text = CONTAINER_PATH.read_text(encoding="utf-8")
 composer_text = COMPOSER_PATH.read_text(encoding="utf-8")
 payload_contract_registry_text = PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")
+content_payload_validator_text = CONTENT_PAYLOAD_VALIDATOR_PATH.read_text(encoding="utf-8")
 payload_service_specs_text = PAYLOAD_SERVICE_SPECS_PATH.read_text(encoding="utf-8")
 
 service_descriptors_block = _extract_named_block(
@@ -238,6 +240,29 @@ if missing_payload_handler_scripts or stale_payload_handler_scripts:
         for slot in stale_payload_handler_scripts
     )
     fail("payload handler slot/script coverage drifted apart", details)
+
+payload_validator_keys = sorted({
+    validator_key
+    for validator_key in re.findall(r'"validator_key": "([^"]*)"', payload_contract_registry_text)
+    if validator_key
+})
+payload_validator_methods = {
+    method_name.removeprefix("_validate_").removesuffix("_payload")
+    for method_name in re.findall(r"func (_validate_[a-z0-9_]+_payload)\(", content_payload_validator_text)
+}
+missing_payload_validator_methods = sorted(set(payload_validator_keys) - payload_validator_methods)
+stale_payload_validator_methods = sorted(payload_validator_methods - set(payload_validator_keys))
+if missing_payload_validator_methods or stale_payload_validator_methods:
+    details: list[str] = []
+    details.extend(
+        f"payload validator key missing dispatcher method: {validator_key}"
+        for validator_key in missing_payload_validator_methods
+    )
+    details.extend(
+        f"payload validator dispatcher missing registry key: {validator_key}"
+        for validator_key in stale_payload_validator_methods
+    )
+    fail("payload validator dispatch coverage drifted apart", details)
 
 unknown_wiring_slots: list[str] = []
 duplicate_wiring_keys = _duplicate_names(

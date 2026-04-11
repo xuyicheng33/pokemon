@@ -10,6 +10,34 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前优化：payload validator 分发继续收口（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 继续压缩新增 payload 时的中心改动面，去掉 `ContentPayloadValidator` 里手写 `validator_key -> 校验函数` 分发表，避免 payload 合同已经登记但内容校验分发仍靠另一份中心 `match` 维护。
+- 范围：
+  - `src/battle_core/content/payload_contract_registry.gd`
+  - `src/battle_core/content/content_payload_validator.gd`
+  - `tests/gates/architecture_composition_consistency_gate.py`
+  - `tests/suites/content_validation_core_suite.gd`
+  - `tests/suites/content_validation_core/payload_dispatch_suite.gd`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `ContentPayloadValidator` 固定按 `validator_key -> _validate_<validator_key>_payload` 命名约定派发
+  - registry 新增 `validator_key` 但 `ContentPayloadValidator` 缺少对应 dispatcher 方法时，architecture gate 直接失败
+  - content validation contract 补一条回归，覆盖“已登记 validator_key 都能派发到实现”
+  - 完整 `tests/run_with_gate.sh` 通过
+- 结果：
+  - `PayloadContractRegistry` 已新增 `registered_validator_keys()`，payload validator key 现在可从 registry 单点派生
+  - `ContentPayloadValidator` 已改成动态拼接 dispatcher 方法名，不再维护手写 `match` 分发表
+  - architecture composition consistency gate 已补 `validator_key <-> _validate_<key>_payload` 一一对应检查
+  - content validation core 已新增 `content_payload_validator_registry_dispatch_contract`，覆盖 dispatcher 覆盖率与动态分发主路径
+- 验证：
+  - `bash tests/check_architecture_constraints.sh`
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前修补：Kashimo 设计稿角色数量口径纠正（2026-04-11）
 
 - 状态：已完成

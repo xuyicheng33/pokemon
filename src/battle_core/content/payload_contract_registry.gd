@@ -117,6 +117,17 @@ static func registered_handler_slots() -> PackedStringArray:
 		slots.append(String(descriptor.get("handler_slot", "")))
 	return slots
 
+static func registered_validator_keys() -> PackedStringArray:
+	var validator_keys := PackedStringArray()
+	var seen_validator_keys: Dictionary = {}
+	for descriptor in PAYLOAD_DESCRIPTORS:
+		var validator_key := String(descriptor.get("validator_key", "")).strip_edges()
+		if validator_key.is_empty() or seen_validator_keys.has(validator_key):
+			continue
+		seen_validator_keys[validator_key] = true
+		validator_keys.append(validator_key)
+	return validator_keys
+
 static func registry_wiring_specs() -> Array:
 	var wiring_specs: Array = []
 	for handler_slot in registered_handler_slots():

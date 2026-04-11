@@ -345,3 +345,18 @@
 - 这么定的原因：
   - 这轮 payload seam 收口后，新增 payload 不再回写 `BattleCoreServiceSpecs`；如果还保留独立的 handler script 映射表，只会留下新的中心维护点
   - 这类错误应该在 architecture gate 阶段 fail-fast，而不是拖到 composer 实例化或运行时才暴露
+
+## 0Q. payload validator dispatcher 固定按 validator key 命名约定派发（2026-04-11）
+
+- `src/battle_core/content/payload_contract_registry.gd` 当前固定额外暴露 `registered_validator_keys()`，作为 payload 内容校验 dispatcher 的唯一 key 视图。
+- `src/battle_core/content/content_payload_validator.gd` 当前不再维护手写 `match validator_key` 分发表；统一改为按 `_validate_<validator_key>_payload` 命名约定派发。
+- `tests/gates/architecture_composition_consistency_gate.py` 当前固定直接校验：
+  - registry 里的每个非空 `validator_key` 都存在对应 `_validate_<validator_key>_payload`
+  - `ContentPayloadValidator` 里的 payload dispatcher 方法也都必须能在 registry 找到对应 key
+- `tests/suites/content_validation_core/payload_dispatch_suite.gd` 当前固定补 content validation 回归，覆盖：
+  - registry 已登记 validator key 没有漏 dispatcher
+  - 动态派发仍能真正命中已登记 payload 的校验逻辑
+- 这么定的原因：
+  - payload handler slot、handler script 与 shared wiring 已经收口到 registry/descriptor/命名约定三段 seam，但 content validation 入口之前还残留一份手写 `match`
+  - 继续保留这份分发表，新增 payload 时仍要多碰一个中心文件，而且 registry 漂移只能等运行内容校验时才暴露
+  - 把 dispatcher 也改成 registry key 派生后，payload 合同侧就只剩“登记 key”和“实现对应方法”两件事；再补静态 gate，才能把这条 seam 真正锁住
