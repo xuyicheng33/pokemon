@@ -1,6 +1,8 @@
 extends RefCounted
 class_name BattleCoreServiceSpecs
 
+const PayloadServiceSpecsScript := preload("res://src/composition/battle_core_payload_service_specs.gd")
+
 const SERVICE_DESCRIPTORS := [
 	{"slot": "id_factory", "script": preload("res://src/shared/id_factory.gd")},
 	{"slot": "rng_service", "script": preload("res://src/shared/rng_service.gd")},
@@ -49,21 +51,6 @@ const SERVICE_DESCRIPTORS := [
 	{"slot": "effect_queue_service", "script": preload("res://src/battle_core/effects/effect_queue_service.gd")},
 	{"slot": "effect_precondition_service", "script": preload("res://src/battle_core/effects/effect_precondition_service.gd")},
 	{"slot": "payload_executor", "script": preload("res://src/battle_core/effects/payload_executor.gd")},
-	{"slot": "payload_handler_registry", "script": preload("res://src/battle_core/effects/payload_handler_registry.gd")},
-	{"slot": "payload_unit_target_helper", "script": preload("res://src/battle_core/effects/payload_handlers/payload_unit_target_helper.gd")},
-	{"slot": "payload_effect_event_helper", "script": preload("res://src/battle_core/effects/payload_handlers/payload_effect_event_helper.gd")},
-	{"slot": "payload_damage_handler", "script": preload("res://src/battle_core/effects/payload_handlers/payload_damage_handler.gd")},
-	{"slot": "payload_heal_handler", "script": preload("res://src/battle_core/effects/payload_handlers/payload_heal_handler.gd")},
-	{"slot": "payload_resource_mod_handler", "script": preload("res://src/battle_core/effects/payload_handlers/payload_resource_mod_handler.gd")},
-	{"slot": "payload_stat_mod_handler", "script": preload("res://src/battle_core/effects/payload_handlers/payload_stat_mod_handler.gd")},
-	{"slot": "payload_apply_field_handler", "script": preload("res://src/battle_core/effects/payload_handlers/payload_apply_field_handler.gd")},
-	{"slot": "payload_apply_effect_handler", "script": preload("res://src/battle_core/effects/payload_handlers/payload_apply_effect_handler.gd")},
-	{"slot": "payload_remove_effect_handler", "script": preload("res://src/battle_core/effects/payload_handlers/payload_remove_effect_handler.gd")},
-	{"slot": "payload_rule_mod_handler", "script": preload("res://src/battle_core/effects/payload_handlers/payload_rule_mod_handler.gd")},
-	{"slot": "payload_damage_runtime_service", "script": preload("res://src/battle_core/effects/payload_handlers/payload_damage_runtime_service.gd")},
-	{"slot": "payload_resource_runtime_service", "script": preload("res://src/battle_core/effects/payload_handlers/payload_resource_runtime_service.gd")},
-	{"slot": "payload_stat_mod_runtime_service", "script": preload("res://src/battle_core/effects/payload_handlers/payload_stat_mod_runtime_service.gd")},
-	{"slot": "payload_forced_replace_handler", "script": preload("res://src/battle_core/effects/payload_handlers/payload_forced_replace_handler.gd")},
 	{"slot": "effect_instance_service", "script": preload("res://src/battle_core/effects/effect_instance_service.gd")},
 	{"slot": "effect_instance_dispatcher", "script": preload("res://src/battle_core/effects/effect_instance_dispatcher.gd")},
 	{"slot": "rule_mod_service", "script": preload("res://src/battle_core/effects/rule_mod_service.gd")},
@@ -83,14 +70,20 @@ const SERVICE_DESCRIPTORS := [
 	{"slot": "replay_runner", "script": preload("res://src/battle_core/logging/replay_runner.gd")},
 ]
 
+static func payload_service_descriptors() -> Array:
+	return PayloadServiceSpecsScript.service_descriptors()
+
+static func all_service_descriptors() -> Array:
+	return SERVICE_DESCRIPTORS + payload_service_descriptors()
+
 static func service_slots() -> PackedStringArray:
 	var slots := PackedStringArray()
-	for descriptor in SERVICE_DESCRIPTORS:
+	for descriptor in all_service_descriptors():
 		slots.append(String(descriptor.get("slot", "")))
 	return slots
 
 static func script_by_slot(slot_name: String):
-	for descriptor in SERVICE_DESCRIPTORS:
+	for descriptor in all_service_descriptors():
 		if String(descriptor.get("slot", "")) == slot_name:
 			return descriptor.get("script", null)
 	return null

@@ -14,6 +14,7 @@ WIRING_SPECS_DIR = ROOT / "src/composition/battle_core_wiring_specs"
 CONTAINER_PATH = ROOT / "src/composition/battle_core_container.gd"
 COMPOSER_PATH = ROOT / "src/composition/battle_core_composer.gd"
 PAYLOAD_CONTRACT_REGISTRY_PATH = ROOT / "src/battle_core/content/payload_contract_registry.gd"
+PAYLOAD_SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_payload_service_specs.gd"
 
 
 def fail(message: str, details: list[str] | None = None) -> None:
@@ -61,6 +62,46 @@ def parse_payload_handler_dependency_edges(text: str) -> list[tuple[str, str, st
     return edges
 
 
+def parse_payload_service_descriptors(payload_registry_text: str, payload_service_specs_text: str) -> list[tuple[str, str]]:
+    descriptors: list[tuple[str, str]] = []
+    for raw_line in payload_service_specs_text.splitlines():
+        line = raw_line.strip()
+        slot_match = re.search(r'"slot": "([^"]+)"', line)
+        if slot_match is not None:
+            slot_name = slot_match.group(1)
+            descriptors.append((slot_name, slot_name))
+    current_handler_slot: str | None = None
+    for raw_line in payload_registry_text.splitlines():
+        line = raw_line.strip()
+        slot_match = re.search(r'"handler_slot": "([^"]+)"', line)
+        if slot_match is not None:
+            current_handler_slot = slot_match.group(1)
+            descriptors.append((current_handler_slot, current_handler_slot))
+    return descriptors
+
+
+def parse_payload_shared_service_dependency_edges(text: str) -> list[tuple[str, str, str]]:
+    edges: list[tuple[str, str, str]] = []
+    current_slot: str | None = None
+    in_dependencies = False
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        slot_match = re.search(r'"slot": "([^"]+)"', line)
+        if slot_match is not None:
+            current_slot = slot_match.group(1)
+        if '"dependencies": [' in line:
+            in_dependencies = True
+            continue
+        if not in_dependencies:
+            continue
+        dependency_match = re.search(r'\{"dependency": "([^"]+)", "source": "([^"]+)"\}', line)
+        if dependency_match is not None and current_slot is not None:
+            edges.append((current_slot, dependency_match.group(1), dependency_match.group(2)))
+        if line == "]," or line == "]":
+            in_dependencies = False
+    return edges
+
+
 service_specs_text = SERVICE_SPECS_PATH.read_text(encoding="utf-8")
 wiring_specs_text = WIRING_SPECS_PATH.read_text(encoding="utf-8")
 wiring_child_texts = []
@@ -71,14 +112,16 @@ if not wiring_child_texts:
 container_text = CONTAINER_PATH.read_text(encoding="utf-8")
 composer_text = COMPOSER_PATH.read_text(encoding="utf-8")
 payload_contract_registry_text = PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")
+payload_service_specs_text = PAYLOAD_SERVICE_SPECS_PATH.read_text(encoding="utf-8")
 
 service_descriptors_block = _extract_named_block(
     service_specs_text,
     r"const SERVICE_DESCRIPTORS := \[(.*?)\]\n",
     "SERVICE_DESCRIPTORS",
 )
-service_slots = re.findall(r'"slot": "([^"]+)"', service_descriptors_block)
-script_slots = re.findall(r'"slot": "([^"]+)", "script": preload\("([^"]+)"\)', service_descriptors_block)
+payload_service_descriptors = parse_payload_service_descriptors(payload_contract_registry_text, payload_service_specs_text)
+service_slots = re.findall(r'"slot": "([^"]+)"', service_descriptors_block) + [slot for slot, _script in payload_service_descriptors]
+script_slots = re.findall(r'"slot": "([^"]+)", "script": preload\("([^"]+)"\)', service_descriptors_block) + payload_service_descriptors
 slot_pattern = "|".join(re.escape(slot) for slot in service_slots)
 
 wiring_owner_source_pairs = []
@@ -91,6 +134,7 @@ wiring_owner_source_pairs.extend(
     ("payload_handler_registry", handler_slot, handler_slot) for handler_slot in payload_handler_slots
 )
 wiring_owner_source_pairs.extend(parse_payload_handler_dependency_edges(payload_contract_registry_text))
+wiring_owner_source_pairs.extend(parse_payload_shared_service_dependency_edges(payload_service_specs_text))
 reset_owner_pairs = re.findall(
     r'\{"owner": "([^"]+)", "field": "([^"]+)", "value":',
     wiring_specs_text,
@@ -149,6 +193,8 @@ if missing_script_slots or stale_script_slots:
     fail("battle_core_service_specs descriptors drifted apart", details)
 
 required_service_specs_helpers = [
+    "static func payload_service_descriptors() -> Array:",
+    "static func all_service_descriptors() -> Array:",
     "static func service_slots()",
     "static func script_by_slot(slot_name: String):",
 ]
@@ -159,6 +205,16 @@ if missing_service_specs_helpers:
     fail(
         "battle_core_service_specs must expose helpers derived from SERVICE_DESCRIPTORS",
         missing_service_specs_helpers,
+    )
+if "PayloadServiceSpecsScript.service_descriptors()" not in service_specs_text:
+    fail(
+        "battle_core_service_specs must derive payload service descriptors from payload service specs helper",
+        [str(PAYLOAD_SERVICE_SPECS_PATH.relative_to(ROOT))],
+    )
+if "shared_service_wiring_specs" not in payload_service_specs_text:
+    fail(
+        "payload service specs helper must expose shared service wiring facts",
+        [str(PAYLOAD_SERVICE_SPECS_PATH.relative_to(ROOT))],
     )
 
 unknown_wiring_slots: list[str] = []

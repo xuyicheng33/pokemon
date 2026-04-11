@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[2]
 SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_service_specs.gd"
 WIRING_SPECS_DIR = ROOT / "src/composition/battle_core_wiring_specs"
 PAYLOAD_CONTRACT_REGISTRY_PATH = ROOT / "src/battle_core/content/payload_contract_registry.gd"
+PAYLOAD_SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_payload_service_specs.gd"
 
 def fail(message: str, details: list[str] | None = None) -> None:
     print(f"ARCH_GATE_FAILED: {message}", file=sys.stderr)
@@ -20,6 +21,23 @@ def fail(message: str, details: list[str] | None = None) -> None:
 
 def parse_service_slots(text: str) -> set[str]:
     return set(re.findall(r'\{"slot": "([^"]+)"', text))
+
+
+def parse_payload_service_slots(payload_registry_text: str, payload_service_specs_text: str) -> set[str]:
+    slots: set[str] = set()
+    current_handler_slot: str | None = None
+    for raw_line in payload_service_specs_text.splitlines():
+        line = raw_line.strip()
+        slot_match = re.search(r'"slot": "([^"]+)"', line)
+        if slot_match is not None:
+            slots.add(slot_match.group(1))
+    for raw_line in payload_registry_text.splitlines():
+        line = raw_line.strip()
+        slot_match = re.search(r'"handler_slot": "([^"]+)"', line)
+        if slot_match is not None:
+            current_handler_slot = slot_match.group(1)
+            slots.add(current_handler_slot)
+    return slots
 
 
 def parse_wiring_edges(text: str) -> list[tuple[str, str]]:
@@ -49,6 +67,28 @@ def parse_payload_handler_dependency_edges(text: str) -> list[tuple[str, str]]:
             edges.append((current_handler_slot, dependency_match.group(2)))
         if line == "]," or line == "]":
             in_handler_dependencies = False
+    return edges
+
+
+def parse_payload_shared_service_dependency_edges(text: str) -> list[tuple[str, str]]:
+    edges: list[tuple[str, str]] = []
+    current_slot: str | None = None
+    in_dependencies = False
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        slot_match = re.search(r'"slot": "([^"]+)"', line)
+        if slot_match is not None:
+            current_slot = slot_match.group(1)
+        if '"dependencies": [' in line:
+            in_dependencies = True
+            continue
+        if not in_dependencies:
+            continue
+        dependency_match = re.search(r'\{"dependency": "([^"]+)", "source": "([^"]+)"\}', line)
+        if dependency_match is not None and current_slot is not None:
+            edges.append((current_slot, dependency_match.group(2)))
+        if line == "]," or line == "]":
+            in_dependencies = False
     return edges
 
 
@@ -130,16 +170,19 @@ def run_self_test() -> None:
 
 
 def main() -> None:
-    service_slots = parse_service_slots(SERVICE_SPECS_PATH.read_text(encoding="utf-8"))
+    service_specs_text = SERVICE_SPECS_PATH.read_text(encoding="utf-8")
+    payload_registry_text = PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")
+    payload_service_specs_text = PAYLOAD_SERVICE_SPECS_PATH.read_text(encoding="utf-8")
+    service_slots = parse_service_slots(service_specs_text) | parse_payload_service_slots(payload_registry_text, payload_service_specs_text)
     wiring_spec_paths = sorted(WIRING_SPECS_DIR.glob("*.gd"))
     if not wiring_spec_paths:
         fail("failed to find split wiring spec files", [str(WIRING_SPECS_DIR.relative_to(ROOT))])
     edges: list[tuple[str, str]] = []
     for path in wiring_spec_paths:
         edges.extend(parse_wiring_edges(path.read_text(encoding="utf-8")))
-    payload_registry_text = PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")
     edges.extend(parse_payload_registry_edges(payload_registry_text))
     edges.extend(parse_payload_handler_dependency_edges(payload_registry_text))
+    edges.extend(parse_payload_shared_service_dependency_edges(payload_service_specs_text))
     if not service_slots:
         fail("failed to parse service slots for runtime wiring graph gate")
     if not edges:

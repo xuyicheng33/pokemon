@@ -300,3 +300,33 @@
   - Obito：`六道十字奉火` 与 `阴阳遁` manager 黑盒路径
 - 固定可复查案例作为角色与规则复查入口；角色扩充前优先先看共享 case、pair smoke、pair interaction 和 manager 黑盒是否仍保持全绿。
 - 若未来恢复自动选指，必须重新补齐规则、设计文档与接线任务，不得直接回填历史实现。
+
+## 0O. payload service descriptor 固定收口到 composition helper，power bonus source 固定改为 descriptor（2026-04-11）
+
+- `src/battle_core/content/payload_contract_registry.gd` 当前只负责 payload 合同事实：
+  - payload script
+  - handler slot
+  - validator key
+  - handler 依赖 wiring
+- payload 相关 service script 与 shared runtime service wiring 当前固定收口到 `src/composition/battle_core_payload_service_specs.gd`。
+- `src/composition/battle_core_service_specs.gd` 当前固定采用：
+  - `SERVICE_DESCRIPTORS` 只保留非 payload 的基础服务
+  - `payload_service_descriptors()` 负责从 payload service specs helper 派生 payload services
+  - `service_slots()` / `script_by_slot()` 统一走组合后的全量服务视图
+- `src/composition/battle_core_wiring_specs/battle_core_wiring_specs_payload_handlers.gd` 当前固定只保留两段拼装：
+  - `PayloadContractRegistry.handler_wiring_specs()`
+  - `BattleCorePayloadServiceSpecs.shared_service_wiring_specs()`
+- 这么定的原因：
+  - payload handler / runtime service 的 script 与 shared wiring 本质上属于 composition 真相，不该继续挂在 `content` 层
+  - 但若继续把这部分手抄留在 `BattleCoreServiceSpecs` 和 payload wiring spec 文件里，新增 payload 时中心热点仍然过热
+  - 把 payload 合同事实和 composition 装配事实拆成“两处明确 seam”后，`content` 层不再反向 import `effects/*`，同时 `BattleCoreServiceSpecs` 也不必继续手抄整段 payload services
+
+- `src/battle_core/content/power_bonus_source_registry.gd` 当前固定采用 source descriptor：
+  - `source`
+  - `resolver_kind`
+  - `validator_kind`
+- `src/battle_core/actions/power_bonus_resolver.gd` 当前按 `resolver_kind` 分发，而不是直接硬编码 source 名单。
+- 这么定的原因：
+  - 新增 source 时，source 名单和 resolver 分支原先是两处同时维护，source 越多越容易漂
+  - 改成 descriptor 后，source 真相固定回到 registry；resolver 只关心自己支持哪些 resolver kind
+  - 若后续出现“多个 source 共用同一套 runtime 求值”的情况，只需要改 registry descriptor，不必继续给 resolver 新开一条 source 分支

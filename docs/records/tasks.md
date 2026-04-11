@@ -589,3 +589,26 @@
 - 可启动：`godot --headless --path . --quit-after 20`
 - 可操作：sandbox 默认 demo 能启动并完整跑完
 - 无致命错误：不得出现 `BATTLE_SANDBOX_FAILED:`、`SCRIPT ERROR:`、`Compile Error:`、`Parse Error:`
+
+## 当前任务：payload / power bonus seam 再收口（2026-04-11）
+
+|字段|说明|
+|---|---|
+|目标|继续降低新增复杂机制时的中心改动面，把 `payload` 相关 service 注册从 `BattleCoreServiceSpecs` 手抄列表里移走，并把 `power_bonus_source` 改成 descriptor 驱动|
+|范围|1. 新增 `src/composition/battle_core_payload_service_specs.gd`，集中维护 payload shared service descriptor 与 shared wiring<br>2. `BattleCoreServiceSpecs` 改成基础服务 + payload 派生服务<br>3. `battle_core_wiring_specs_payload_handlers.gd` 改为复用新的 payload service specs helper<br>4. `PowerBonusSourceRegistry` 改为 source descriptor，`PowerBonusResolver` 按 resolver kind 分发<br>5. 同步 architecture gate 识别新的 payload service / wiring 派生入口|
+|验收标准|1. `content/payload_contract_registry.gd` 不再反向 import `effects/*`<br>2. payload 相关 service slot 仍能被 composer 正常实例化并通过 wiring gate<br>3. `power_bonus_registered_source_coverage_contract` 继续通过<br>4. 完整 `tests/run_with_gate.sh` 通过|
+
+### 本轮结果
+
+- `src/composition/battle_core_payload_service_specs.gd` 已成为 payload shared service descriptor 与 shared wiring 的唯一 composition 入口。
+- `src/battle_core/content/payload_contract_registry.gd` 已回到纯 payload 合同事实，只保留 `payload -> handler slot -> validator key -> handler deps`。
+- `src/composition/battle_core_service_specs.gd` 当前固定采用“基础服务常量表 + `payload_service_descriptors()` 派生服务表”。
+- `src/battle_core/content/power_bonus_source_registry.gd` 已把 source 真相收成 descriptor；`src/battle_core/actions/power_bonus_resolver.gd` 当前按 resolver kind 分发，不再硬编码 source 名单。
+- architecture gate 已同步识别新的 payload service helper，不再把 payload 相关 service slot 误判为未知节点。
+
+### 验证
+
+- `bash tests/check_architecture_constraints.sh`
+- `godot --headless --path . --script tests/run_all.gd --filter power_bonus_runtime_suite`
+- `godot --headless --path . --script tests/run_all.gd --filter payload_execution_contract_suite`
+- `bash tests/run_with_gate.sh`
