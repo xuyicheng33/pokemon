@@ -6,9 +6,6 @@
         "docs/design/battle_content_schema.md",
         "docs/rules/06_effect_schema_and_extension.md"
       ],
-      "consumer_character_ids": [
-        "gojo_satoru"
-      ],
       "required_suite_paths": [
         "tests/suites/extension_targeting_accuracy_suite.gd"
       ],
@@ -24,9 +21,6 @@
         "docs/design/battle_content_schema.md",
         "docs/rules/06_effect_schema_and_extension.md",
         "docs/design/effect_engine.md"
-      ],
-      "consumer_character_ids": [
-        "gojo_satoru"
       ],
       "required_suite_paths": [
         "tests/suites/extension_targeting_accuracy_suite.gd"
@@ -44,9 +38,6 @@
         "docs/rules/06_effect_schema_and_extension.md",
         "docs/design/effect_engine.md"
       ],
-      "consumer_character_ids": [
-        "kashimo_hajime"
-      ],
       "required_suite_paths": [
         "tests/suites/rule_mod_runtime_extension_suite.gd"
       ],
@@ -61,10 +52,6 @@
         "docs/design/battle_content_schema.md",
         "docs/design/action_execution.md",
         "docs/rules/03_stats_resources_and_damage.md"
-      ],
-      "consumer_character_ids": [
-        "kashimo_hajime",
-        "obito_juubi_jinchuriki"
       ],
       "required_suite_paths": [
         "tests/suites/power_bonus_runtime_suite.gd"
@@ -81,9 +68,6 @@
         "docs/design/command_and_legality.md",
         "docs/design/battle_runtime_model.md"
       ],
-      "consumer_character_ids": [
-        "kashimo_hajime"
-      ],
       "required_suite_paths": [
         "tests/suites/replay_turn_suite.gd"
       ],
@@ -99,9 +83,6 @@
         "docs/design/battle_runtime_model.md",
         "docs/rules/06_effect_schema_and_extension.md"
       ],
-      "consumer_character_ids": [
-        "kashimo_hajime"
-      ],
       "required_suite_paths": [
         "tests/suites/persistent_stat_stage_suite.gd"
       ],
@@ -115,9 +96,6 @@
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/rules/03_stats_resources_and_damage.md"
-      ],
-      "consumer_character_ids": [
-        "obito_juubi_jinchuriki"
       ],
       "required_suite_paths": [
         "tests/suites/heal_extension_suite.gd"
@@ -134,9 +112,6 @@
         "docs/rules/03_stats_resources_and_damage.md",
         "docs/rules/06_effect_schema_and_extension.md"
       ],
-      "consumer_character_ids": [
-        "obito_juubi_jinchuriki"
-      ],
       "required_suite_paths": [
         "tests/suites/heal_extension_suite.gd"
       ],
@@ -151,9 +126,6 @@
         "docs/design/battle_content_schema.md",
         "docs/design/action_execution.md",
         "docs/rules/03_stats_resources_and_damage.md"
-      ],
-      "consumer_character_ids": [
-        "obito_juubi_jinchuriki"
       ],
       "required_suite_paths": [
         "tests/suites/skill_execute_contract_suite.gd"
@@ -171,9 +143,6 @@
         "docs/design/action_execution.md",
         "docs/rules/03_stats_resources_and_damage.md"
       ],
-      "consumer_character_ids": [
-        "obito_juubi_jinchuriki"
-      ],
       "required_suite_paths": [
         "tests/suites/multihit_skill_runtime_suite.gd"
       ],
@@ -189,9 +158,6 @@
         "docs/design/effect_engine.md",
         "docs/rules/03_stats_resources_and_damage.md",
         "docs/rules/06_effect_schema_and_extension.md"
-      ],
-      "consumer_character_ids": [
-        "obito_juubi_jinchuriki"
       ],
       "required_suite_paths": [
         "tests/suites/multihit_skill_runtime_suite.gd"

@@ -108,7 +108,7 @@
 
 - 每个常规技能 / 奥义都要写出资源字段和玩法语义
 - 若某技能依赖共享能力，只写“本角色怎么用”，不重复写完整 schema / 读写路径 / 全局排序链
-- 若角色复用了共享能力，交付阶段必须能把该能力回挂到 `config/formal_character_manifest.json.characters[*].shared_capability_ids`，并与 capability catalog 对齐
+- 若角色复用了共享能力，交付阶段只需要把该能力登记到 `config/formal_character_manifest.json.characters[*].shared_capability_ids`；共享 suite 与消费者信息统一从 manifest + capability catalog 派生
 - 若角色依赖 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、技能级 `execute_*`、`damage_segments` 或 `on_receive_action_damage_segment`，只写“本角色怎么用”，不在角色稿里重复讲共享 runtime 细节、排序链或 schema 全表
 - 关键 effect / field / passive 资源必须显式列出，不允许把核心语义藏在“见资源文件”
 - 若有“必须满足的跨资源不变量”，要在角色稿里写清，并在 checklist 阶段决定是否需要 `content_validator_script_path`；若需要，直接登记进 `config/formal_character_manifest.json.characters[*]`，runtime 会统一从这份 manifest 装配
@@ -146,8 +146,8 @@
 
 - 至少覆盖 `snapshot / runtime / manager smoke` 三类视角
 - 只列“这个角色必须长期锁死什么”，不要把通用测试说明重抄一遍
-- 若共享 suite 是正式交付面的一部分，要写明“通过 manifest 角色条目的 required_suite_paths 回挂”；单一维护入口仍是 `config/formal_character_manifest.json`
-- 若共享能力属于正式交付面的一部分，要写明“通过 manifest 角色条目的 shared_capability_ids 声明，并由 capability catalog 补 suite / rule doc / 停止扩权边界”
+- 若共享 suite 是正式交付面的一部分，要写明“角色专属 suite 仍通过 manifest 角色条目的 required_suite_paths 维护，共享 suite 由 capability catalog 或 validator 视图自动补齐”
+- 若共享能力属于正式交付面的一部分，要写明“通过 manifest 角色条目的 shared_capability_ids 声明，并由 capability catalog 补 rule doc / suite / 停止扩权边界”
 
 推荐骨架：
 

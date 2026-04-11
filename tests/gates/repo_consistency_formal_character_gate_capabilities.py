@@ -58,11 +58,6 @@ def validate_capability_catalog(
             capability.get("rule_doc_paths", []),
             f"{capability_catalog_path}[{capability_id}].rule_doc_paths",
         )
-        consumer_character_ids = _normalized_string_list(
-            ctx,
-            capability.get("consumer_character_ids", []),
-            f"{capability_catalog_path}[{capability_id}].consumer_character_ids",
-        )
         required_suite_paths = _normalized_string_list(
             ctx,
             capability.get("required_suite_paths", []),
@@ -76,8 +71,6 @@ def validate_capability_catalog(
         stop_and_specialize_when = str(capability.get("stop_and_specialize_when", "")).strip()
         if not stop_and_specialize_when:
             ctx.failures.append(f"{capability_catalog_path}[{capability_id}] missing stop_and_specialize_when")
-        if len(set(consumer_character_ids)) != len(consumer_character_ids):
-            ctx.failures.append(f"{capability_catalog_path}[{capability_id}].consumer_character_ids contains duplicates")
         if len(set(required_suite_paths)) != len(required_suite_paths):
             ctx.failures.append(f"{capability_catalog_path}[{capability_id}].required_suite_paths contains duplicates")
         if len(set(coverage_needles)) != len(coverage_needles):
@@ -87,40 +80,14 @@ def validate_capability_catalog(
         for rel_path in required_suite_paths:
             ctx.require_exists(rel_path, f"{capability_id} required suite")
         capability_entries[capability_id] = {
-            "consumer_character_ids": consumer_character_ids,
             "required_suite_paths": required_suite_paths,
             "coverage_needles": coverage_needles,
         }
 
-    for character_id, capability_ids in declared_capabilities_by_character.items():
-        entry = character_entries.get(character_id, {})
-        required_suite_paths = set(_normalized_string_list(
-            ctx,
-            entry.get("required_suite_paths", []),
-            f"formal manifest[{character_id}] required_suite_paths",
-            allow_empty=True,
-        ))
-        for capability_id in sorted(capability_ids):
-            capability = capability_entries.get(capability_id)
-            if capability is None:
-                ctx.failures.append(f"formal manifest[{character_id}] unknown shared_capability_id: {capability_id}")
-                continue
-            for required_suite_path in capability["required_suite_paths"]:
-                if required_suite_path not in required_suite_paths:
-                    ctx.failures.append(
-                        f"formal manifest[{character_id}] capability[{capability_id}] missing required suite: {required_suite_path}"
-                    )
-
     for capability_id, capability in capability_entries.items():
-        catalog_consumers = sorted(capability["consumer_character_ids"])
         actual_consumers = sorted(manifest_consumers.get(capability_id, []))
-        if catalog_consumers != actual_consumers:
-            ctx.failures.append(
-                f"{capability_catalog_path}[{capability_id}] consumer_character_ids must match manifest shared_capability_ids: {catalog_consumers} != {actual_consumers}"
-            )
-        for character_id in capability["consumer_character_ids"]:
-            if character_id not in character_entries:
-                ctx.failures.append(f"{capability_catalog_path}[{capability_id}] references unknown character_id: {character_id}")
+        if not actual_consumers:
+            ctx.failures.append(f"{capability_catalog_path}[{capability_id}] has no manifest consumers")
 
     for character_id, entry in character_entries.items():
         evidence_paths = _capability_evidence_paths(entry)

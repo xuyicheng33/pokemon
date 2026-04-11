@@ -40,15 +40,19 @@
   - runtime 被 `suite_path / design_doc / required_test_names` 这类 delivery 字段绑住，会把“文档漂移”升级成“运行时阻塞”
   - 单真源仍保留在同一个 manifest 上，但消费视图必须拆开，否则 loader 边界名义上分层、实际上仍耦合
 
-## 0B. formal 角色基础事实收口到共享 baseline descriptor（2026-04-07）
+## 0B. formal 角色基础事实收口到共享 baseline descriptor（2026-04-07，2026-04-11 更新）
 
-- `src/shared/formal_character_baselines.gd` 与 `src/shared/formal_character_baselines/*.gd` 现在作为四正式角色基础事实的共享 descriptor 层。
+- `src/shared/formal_character_baselines.gd` 与 `src/shared/formal_character_baselines/*.gd` 现在作为正式角色基础事实的共享 descriptor 层。
 - unit、skill、passive、部分 effect / field 的基础字段，snapshot suite 与 formal validator 必须优先复用这层 descriptor，不再两边各写一套字面量。
 - payload shape、segment 细节、运行时链路这类“基础字段之外”的断言，继续留在各角色专属 validator / suite helper 里，不强行抽成一张大表。
 - 这么定的原因：
   - 这轮反复返工里，最容易漂移的是“角色基础事实”而不是 payload 细节
   - snapshot suite 与 validator 之前双写同一套字段，任何一次数值或 id 微调都要改两到三处
-  - 先把基础事实抽成共享 descriptor，可以明显降低扩第 5 个角色前的维护面，同时不把复杂 payload helper 过度抽象成新的屎山
+- 先把基础事实抽成共享 descriptor，可以明显降低扩第 5 个角色前的维护面，同时不把复杂 payload helper 过度抽象成新的屎山
+- `src/shared/formal_character_baselines.gd` 当前不再手写 `CHARACTER_IDS / BASELINE_SCRIPT_BY_CHARACTER_ID` 这类中心分发表；正式角色列表统一从 manifest 读取，baseline 脚本路径固定按 `src/shared/formal_character_baselines/<character_id>/<character_id>_formal_character_baseline.gd` 约定推导。
+- 这么定的原因：
+  - 新增角色时，再要求同时改 manifest 和 baseline 总表，本质上还是双真相
+  - baseline 路径已经稳定遵循角色正式 ID 命名，最短路径就是让 manifest 成为唯一人工入口，baseline 总表退化成约定加载器
 
 ## 0C. SampleBattleFactory owner 继续瘦身为稳定 facade（2026-04-07）
 
@@ -145,27 +149,29 @@
   - baseline 真热点已经转移到 `src/shared/formal_character_baselines/**`，如果 gate 还只盯 `src/battle_core` / `src/composition`，后续最先失控的会是角色合同层，而不是 battle core owner
   - 先把正式 ID 与目录治理一起锁死，后续再做 capability catalog 与 wiring 拆分时，角色交付链的根不会继续漂
 
-## 0K. shared capability catalog 固定成为扩角模板的一部分（2026-04-10）
+## 0K. shared capability catalog 固定成为扩角模板的一部分（2026-04-10，2026-04-11 更新）
 
 - 共享能力目录的唯一人工维护配置固定为 `config/formal_character_capability_catalog.json`。
 - `config/formal_character_manifest.json.characters[*]` 的 delivery/test 视图当前固定新增 `shared_capability_ids`；无共享能力也必须显式填空数组。
 - capability catalog entry 当前固定包含：
   - `capability_id`
   - `rule_doc_paths`
-  - `consumer_character_ids`
   - `required_suite_paths`
   - `coverage_needles`
   - `stop_and_specialize_when`
 - `tests/gates/repo_consistency_formal_character_gate_capabilities.py` 当前固定执行四类硬校验：
   - manifest 的 `shared_capability_ids` 只能引用 catalog 里已有的 `capability_id`
-  - catalog 的 `consumer_character_ids` 必须和 manifest 双向一致
-  - catalog 的 `required_suite_paths` 必须全部回挂到角色 manifest 条目
+  - catalog entry 必须至少有一个 manifest 消费者
+  - catalog 的 `required_suite_paths` 必须能通过 delivery/test 派生视图进入角色套件面
   - 角色内容 / validator / 设计稿 / 调整记录 / wrapper 必须能扫到 capability 的实际使用证据
+- delivery/test 视图当前固定自动并入两类派生 suite：
+  - `shared_capability_ids` 对应 capability catalog 的 `required_suite_paths`
+  - 非空 `content_validator_script_path` 对应的 `tests/suites/extension_validation_contract_suite.gd`
 - 共享能力目录的设计文档固定为 `docs/design/formal_character_capability_catalog.md`；接入清单、角色模板、README 与 tests README 都必须引用同一套口径。
 - 这么定的原因：
   - 角色接入链现在最容易继续返工的，不是角色条目有没有写进去，而是共享机制到底是不是“还能继续复用的正式入口”
-  - 如果只靠角色稿或 `required_suite_paths` 零散补共享回归，很快又会回到“每扩一角就要到处找补丁点”的老路
-  - 把 `shared_capability_ids + capability catalog + gate` 一起钉死后，新增角色时只需要先回答两件事：这是不是现有共享入口；如果是，要不要已经到 `stop_and_specialize_when` 该停的边界
+  - 如果继续要求 manifest 同时手填 capability 消费者和共享 suite 回挂，新增角色时仍然会在多处做同一件事
+  - 把消费者与共享 suite 都改成派生后，新增角色时只需要先回答两件事：这是不是现有共享入口；如果是，要不要已经到 `stop_and_specialize_when` 该停的边界
 
 ## 0L. battle_core wiring specs 固定改为子域拆分 + 聚合入口（2026-04-10）
 

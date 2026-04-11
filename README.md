@@ -252,11 +252,11 @@ tests/run_with_gate.sh
 - `config/formal_registry_contracts.json` 当前固定拆成 `manifest_character_runtime / manifest_character_delivery / pair_interaction_case` 三组合同桶
 - `characters[*]` 的 runtime 必填面固定为 `character_id / unit_definition_id / formal_setup_matchup_id / required_content_paths`，以及按需补的 `content_validator_script_path`
 - `characters[*]` 的交付必填面固定为 `character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / shared_capability_ids / design_needles / adjustment_needles`
-- 共享能力目录固定收口到 `config/formal_character_capability_catalog.json`：每个 entry 都必须登记 `capability_id / rule_doc_paths / consumer_character_ids / required_suite_paths / coverage_needles / stop_and_specialize_when`
-- `shared_capability_ids` 只允许引用 capability catalog 里已登记的正式入口；manifest 声明的消费者、catalog 的 `consumer_character_ids`、角色实际回挂的共享 suite、内容/validator/文档里的使用证据必须全量对齐
+- 共享能力目录固定收口到 `config/formal_character_capability_catalog.json`：每个 entry 都必须登记 `capability_id / rule_doc_paths / required_suite_paths / coverage_needles / stop_and_specialize_when`
+- `shared_capability_ids` 只允许引用 capability catalog 里已登记的正式入口；共享入口的实际消费者统一从 manifest 派生，不再在 catalog 里重复手填 `consumer_character_ids`
 - `required_test_names` 现在只保留角色私有 runtime / validator 坏例锚点；共享 suite 覆盖不再逐角色复制进角色条目，pair surface 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，interaction 继续由 `config/formal_character_manifest.json.pair_interaction_cases` + shared gate 收口
 - sandbox demo 若要给正式角色补固定演示，统一改 `config/demo_replay_catalog.json` profile，不再在 `BattleSandboxRunner` 里写死角色专属命令流
-- validator 坏例：只要角色登记了 `content_validator_script_path`，就必须同时把 `tests/suites/extension_validation_contract_suite.gd` 和至少一个 `formal_<character>_validator_*bad_case_contract` 锚点挂回该角色 manifest 条目的 `required_suite_paths / required_test_names`
+- validator 坏例：只要角色登记了 `content_validator_script_path`，delivery/test 视图会自动并入 `tests/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个 `formal_<character>_validator_*bad_case_contract` 锚点
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
@@ -265,7 +265,7 @@ tests/run_with_gate.sh
 - 当前四名正式角色的 pair surface 已补到完整有向矩阵，deep interaction 固定为 6 个无向 pair case：`Gojo-Sukuna / Gojo-Kashimo / Gojo-Obito / Sukuna-Kashimo / Sukuna-Obito / Kashimo-Obito`
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 - 当前仓库已内置两组固定诊断入口：`tests/helpers/domain_case_runner.gd`（领域）与 `tests/helpers/kashimo_case_runner.gd`（鹿紫云）
-- 若角色依赖共享扩展（如 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、`execute_*`、`damage_segments`、`on_receive_action_damage_segment`），则必须先在 capability catalog 登记，再把对应共享 suite 一并挂回该角色 manifest 条目的 `required_suite_paths`
+- 若角色依赖共享扩展（如 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、`execute_*`、`damage_segments`、`on_receive_action_damage_segment`），则必须先在 capability catalog 登记；对应共享 suite 会自动并入 delivery/test 视图，不再要求角色条目重复回挂
 
 当前已落地的固定案例入口：
 
@@ -286,9 +286,9 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-11）
 
-- `src/**/*.gd`：`18770` 行
-- `tests/**/*.gd`：`23968` 行
-- GDScript 合计：`42738` 行
+- `src/**/*.gd`：`18829` 行
+- `tests/**/*.gd`：`23970` 行
+- GDScript 合计：`42799` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

@@ -158,6 +158,7 @@ character_validation = validate_character_entries(
     ctx,
     manifest_path=MANIFEST_PATH,
     baseline_registry_path=FORMAL_BASELINES_PATH,
+    capability_catalog_path=CAPABILITY_CATALOG_PATH,
     characters=characters,
     matchups=matchups,
     character_runtime_required_string_fields=character_runtime_required_string_fields,

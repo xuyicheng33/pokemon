@@ -15,7 +15,7 @@
 - 角色接入模板：`docs/design/formal_character_delivery_checklist.md`
 - 角色稿引用方式：`docs/design/formal_character_design_template.md`
 
-共享能力目录不是另一个角色注册表，它只描述“哪些共享入口允许继续复用，以及它们现在由谁在用”。
+共享能力目录不是另一个角色注册表，它只描述“哪些共享入口允许继续复用、这些入口要求哪些共享回归，以及什么时候应该停止继续扩权”。实际消费者统一从 manifest 的 `shared_capability_ids` 派生。
 
 ## 3. catalog entry 合同
 
@@ -23,7 +23,6 @@
 
 - `capability_id`
 - `rule_doc_paths`
-- `consumer_character_ids`
 - `required_suite_paths`
 - `coverage_needles`
 - `stop_and_specialize_when`
@@ -32,8 +31,7 @@
 
 - `capability_id`：共享入口正式 ID；manifest 的 `shared_capability_ids` 只能引用这里已有的值。
 - `rule_doc_paths`：这项能力的规则归属文档；角色稿只写“怎么用”，共享规则本体回到这些文档。
-- `consumer_character_ids`：当前实际消费该能力的正式角色 ID，必须和 manifest 双向一致。
-- `required_suite_paths`：只要角色声明消费该能力，就必须把这些共享 suite 挂回自己的 `required_suite_paths`。
+- `required_suite_paths`：只要角色声明消费该能力，delivery/test 视图就会自动并入这些共享 suite，不再要求角色 manifest 条目重复手抄。
 - `coverage_needles`：repo consistency gate 用来反查角色内容、validator、设计稿、调整记录或 wrapper 是否真的在用这项能力。
 - `stop_and_specialize_when`：扩权止损线；一旦新需求越过这条线，就停止继续给共享入口堆规则，改做专用机制。
 
@@ -42,8 +40,8 @@
 新增或调整正式角色时，按这个顺序处理：
 
 1. 先判断角色需求是否属于现有 `capability_id`。
-2. 若属于现有入口，把该 ID 写进 `shared_capability_ids`，并补齐 catalog 要求的 `required_suite_paths`。
-3. 若不属于现有入口，先更新 capability catalog，写清规则归属、消费者、回归和 `stop_and_specialize_when`，再继续改角色资源与 suite。
+2. 若属于现有入口，只把该 ID 写进 `shared_capability_ids`；catalog 要求的共享 suite 会自动派生到 delivery/test 视图。
+3. 若不属于现有入口，先更新 capability catalog，写清规则归属、共享回归和 `stop_and_specialize_when`，再继续改角色资源与 suite。
 4. 若需求已经越过某个入口的 `stop_and_specialize_when`，不要继续往共享入口里加分支，直接立新的专用机制。
 
 ## 5. gate 硬约束
@@ -51,8 +49,8 @@
 repo consistency gate 当前固定检查：
 
 - manifest 的 `shared_capability_ids` 必须引用已登记的 `capability_id`
-- capability catalog 的 `consumer_character_ids` 必须和 manifest 完全一致
-- capability catalog 要求的 `required_suite_paths` 必须全部挂回角色 manifest 条目
+- capability catalog entry 必须至少有一个 manifest 消费者
+- capability catalog 要求的 `required_suite_paths` 必须能通过 delivery/test 派生结果进入角色套件视图
 - `coverage_needles` 必须能在角色内容、validator、设计稿、调整记录或 wrapper 的扫描范围里找到实际使用证据
 - 新共享入口未登记、已登记但没人用、或角色在用却没声明，都会直接失败
 

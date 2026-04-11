@@ -1,27 +1,15 @@
 extends RefCounted
 class_name FormalCharacterBaselines
 
-const GojoSatoruBaselineScript := preload("res://src/shared/formal_character_baselines/gojo_satoru/gojo_satoru_formal_character_baseline.gd")
-const SukunaBaselineScript := preload("res://src/shared/formal_character_baselines/sukuna/sukuna_formal_character_baseline.gd")
-const KashimoHajimeBaselineScript := preload("res://src/shared/formal_character_baselines/kashimo_hajime/kashimo_hajime_formal_character_baseline.gd")
-const ObitoJuubiJinchurikiBaselineScript := preload("res://src/shared/formal_character_baselines/obito_juubi_jinchuriki/obito_juubi_jinchuriki_formal_character_baseline.gd")
-
-const CHARACTER_IDS := [
-	"gojo_satoru",
-	"sukuna",
-	"kashimo_hajime",
-	"obito_juubi_jinchuriki",
-]
-
-const BASELINE_SCRIPT_BY_CHARACTER_ID := {
-	"gojo_satoru": GojoSatoruBaselineScript,
-	"sukuna": SukunaBaselineScript,
-	"kashimo_hajime": KashimoHajimeBaselineScript,
-	"obito_juubi_jinchuriki": ObitoJuubiJinchurikiBaselineScript,
-}
+const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
+const BASELINE_SCRIPT_ROOT := "res://src/shared/formal_character_baselines"
 
 static func character_ids() -> PackedStringArray:
-	return PackedStringArray(CHARACTER_IDS)
+	var resolved_ids := PackedStringArray()
+	for raw_entry in _character_entries():
+		var entry: Dictionary = raw_entry
+		resolved_ids.append(String(entry.get("character_id", "")).strip_edges())
+	return resolved_ids
 
 static func unit_contract(character_id: String, label_override: String = "") -> Dictionary:
 	return _resolve_descriptor(_character_baseline(character_id).unit_contract(), label_override)
@@ -51,11 +39,26 @@ static func field_contracts(character_id: String, field_ids = []) -> Array[Dicti
 	return _resolve_descriptor_array(_character_baseline(character_id).field_contracts(), "field_id", field_ids)
 
 static func _character_baseline(character_id: String):
-	var baseline_script = BASELINE_SCRIPT_BY_CHARACTER_ID.get(character_id, null)
-	if baseline_script != null:
-		return baseline_script.new()
-	assert(false, "Unknown formal character baseline: %s" % character_id)
-	return null
+	var script_path := _baseline_script_path(character_id)
+	assert(ResourceLoader.exists(script_path), "Missing formal character baseline script: %s" % script_path)
+	var baseline_script = load(script_path)
+	assert(baseline_script is Script and baseline_script.can_instantiate(), "Formal character baseline is not instantiable: %s" % script_path)
+	return baseline_script.new()
+
+static func _character_entries() -> Array:
+	var manifest = FormalCharacterManifestScript.new()
+	var entries_result := manifest.build_runtime_entries_result()
+	assert(bool(entries_result.get("ok", false)), "Failed to load formal character manifest for baselines: %s" % str(entries_result.get("error_message", "unknown error")))
+	return entries_result.get("data", [])
+
+static func _baseline_script_path(character_id: String) -> String:
+	var normalized_id := character_id.strip_edges()
+	assert(not normalized_id.is_empty(), "Formal character baseline lookup id must not be empty")
+	return "%s/%s/%s_formal_character_baseline.gd" % [
+		BASELINE_SCRIPT_ROOT,
+		normalized_id,
+		normalized_id,
+	]
 
 static func _skill_contract_pool(character_id: String) -> Array[Dictionary]:
 	var baseline = _character_baseline(character_id)

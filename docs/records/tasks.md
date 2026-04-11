@@ -10,6 +10,30 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前修补：formal 角色接入面继续去中心化（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 继续压缩新增角色时的重复维护面，避免“manifest 已登记，但还要去改 baseline 总表、capability 消费者清单、共享 suite 回挂”。
+- 范围：
+  - `FormalCharacterBaselines` 改为 manifest + 命名约定自动发现
+  - capability catalog 消费者从 manifest 派生
+  - delivery/test 视图自动并入 capability/validator 派生 suite
+  - 当前 manifest 冗余共享 suite 回挂清理
+- 验收标准：
+  - 新增角色时不再需要额外修改 baseline 中心分发表
+  - 复用已有共享 capability 时，不再需要再改 capability catalog 的 `consumer_character_ids`
+  - validator suite 与 capability suite 不再要求逐角色重复写进 manifest `required_suite_paths`
+  - 完整 gate 通过
+- 结果：
+  - `FormalCharacterBaselines` 已改为从 manifest 读取正式角色 ID，并按目录约定自动加载 baseline 脚本
+  - `config/formal_character_capability_catalog.json` 已移除 `consumer_character_ids`；共享入口消费者统一从 manifest `shared_capability_ids` 派生
+  - delivery/test 视图已自动并入 capability `required_suite_paths` 与 validator suite，当前 manifest 已删掉一批重复共享 suite 回挂
+- 验证：
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前修补：边界 fail-fast 与扩角治理补强（2026-04-11）
 
 - 状态：已完成
@@ -159,12 +183,12 @@
       - baseline / validator / snapshot suite / support / gate 中不允许残留旧短别名 `gojo / kashimo / obito`
   - 第 2 阶段已完成：
     - `config/formal_character_manifest.json.characters[*]` 的 delivery/test 视图已新增 `shared_capability_ids`
-    - `config/formal_character_capability_catalog.json` 已成为共享能力目录单真相；当前每个 entry 固定登记 `capability_id / rule_doc_paths / consumer_character_ids / required_suite_paths / coverage_needles / stop_and_specialize_when`
+    - `config/formal_character_capability_catalog.json` 已成为共享能力目录单真相；当前每个 entry 固定登记 `capability_id / rule_doc_paths / required_suite_paths / coverage_needles / stop_and_specialize_when`
     - `src/shared/formal_character_capability_catalog.gd`、formal registry contract、fixture builder 与 capability catalog suite 已落地，formal delivery 模板开始围绕 manifest + capability catalog 收口
     - repo consistency gate 已新增共享能力硬约束：
       - `shared_capability_ids` 只能引用 capability catalog 已登记入口
-      - catalog `consumer_character_ids` 必须和 manifest 声明完全一致
-      - catalog `required_suite_paths` 必须全部挂回角色条目
+      - catalog 实际消费者统一从 manifest `shared_capability_ids` 派生
+      - catalog `required_suite_paths` 统一由 delivery/test 视图自动并入，不再要求角色条目重复回挂
       - 角色内容 / validator / 设计稿 / 调整记录 / wrapper 必须能扫到实际消费证据
     - `README.md`、`tests/README.md`、`docs/design/formal_character_delivery_checklist.md`、`docs/design/formal_character_design_template.md`、`docs/design/battle_content_schema.md`、`docs/design/project_folder_structure.md` 已同步 capability catalog 与 `shared_capability_ids` 口径
     - 已补 `docs/design/formal_character_capability_catalog.md`，把共享能力目录职责、字段、接入顺序与 gate 硬约束收成单文档

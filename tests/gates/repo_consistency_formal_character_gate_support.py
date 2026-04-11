@@ -71,13 +71,9 @@ def validator_test_prefix(script_path: str) -> str:
     return "" if match is None else match.group(1)
 
 
-def baseline_registry_character_ids(ctx: GateContext, rel_path: str) -> list[str]:
-    text = ctx.read_text(rel_path)
-    match = re.search(r"const BASELINE_SCRIPT_BY_CHARACTER_ID := \{(.*?)\}\n", text, re.S)
-    if match is None:
-        ctx.failures.append(f"{rel_path} missing BASELINE_SCRIPT_BY_CHARACTER_ID")
-        return []
-    return re.findall(r'"([^"]+)": [A-Za-z_][A-Za-z0-9_]*', match.group(1))
+def baseline_script_path_for_character_id(character_id: str) -> str:
+    normalized_id = character_id.strip()
+    return f"src/shared/formal_character_baselines/{normalized_id}/{normalized_id}_formal_character_baseline.gd"
 
 
 def scan_legacy_formal_character_id_refs(ctx: GateContext) -> list[str]:

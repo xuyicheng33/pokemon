@@ -55,8 +55,6 @@
         "tests/suites/gojo_manager_smoke_suite.gd",
         "tests/suites/gojo_manager_blackbox_suite.gd",
         "tests/suites/formal_character_pair_smoke_suite.gd",
-        "tests/suites/extension_validation_contract_suite.gd",
-        "tests/suites/extension_targeting_accuracy_suite.gd",
         "tests/suites/replay_turn_suite.gd",
         "tests/suites/ultimate_field_suite.gd",
         "tests/suites/ultimate_points_contract_suite.gd",
@@ -158,7 +156,6 @@
         "tests/suites/sukuna_manager_smoke_suite.gd",
         "tests/suites/sukuna_manager_blackbox_suite.gd",
         "tests/suites/formal_character_pair_smoke_suite.gd",
-        "tests/suites/extension_validation_contract_suite.gd",
         "tests/suites/replay_turn_suite.gd",
         "tests/suites/ultimate_field_suite.gd",
         "tests/suites/domain_clash_resolution_suite.gd",
@@ -260,13 +257,8 @@
         "tests/suites/kashimo_manager_smoke_suite.gd",
         "tests/suites/kashimo_manager_blackbox_suite.gd",
         "tests/suites/formal_character_pair_smoke_suite.gd",
-        "tests/suites/extension_validation_contract_suite.gd",
-        "tests/suites/rule_mod_runtime_extension_suite.gd",
-        "tests/suites/persistent_stat_stage_suite.gd",
-        "tests/suites/power_bonus_runtime_suite.gd",
         "tests/suites/combat_type_definition_suite.gd",
         "tests/suites/combat_type_runtime_suite.gd",
-        "tests/suites/replay_turn_suite.gd",
         "tests/suites/ultimate_points_contract_suite.gd"
       ],
       "required_test_names": [
@@ -358,11 +350,6 @@
         "tests/suites/obito_manager_smoke_suite.gd",
         "tests/suites/obito_manager_blackbox_suite.gd",
         "tests/suites/formal_character_pair_smoke_suite.gd",
-        "tests/suites/extension_validation_contract_suite.gd",
-        "tests/suites/heal_extension_suite.gd",
-        "tests/suites/power_bonus_runtime_suite.gd",
-        "tests/suites/skill_execute_contract_suite.gd",
-        "tests/suites/multihit_skill_runtime_suite.gd",
         "tests/suites/ultimate_points_contract_suite.gd"
       ],
       "required_test_names": [

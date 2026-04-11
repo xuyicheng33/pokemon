@@ -8,7 +8,6 @@ const CAPABILITIES_BUCKET := "capabilities"
 const REQUIRED_STRING_FIELDS := ["capability_id", "stop_and_specialize_when"]
 const REQUIRED_ARRAY_FIELDS := [
 	"rule_doc_paths",
-	"consumer_character_ids",
 	"required_suite_paths",
 	"coverage_needles",
 ]

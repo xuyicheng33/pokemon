@@ -18,29 +18,31 @@ func _test_formal_character_capability_catalog_manifest_alignment_contract(harne
 	for raw_entry in delivery_result.get("entries", []):
 		var entry: Dictionary = raw_entry
 		manifest_capabilities_by_character[String(entry.get("character_id", "")).strip_edges()] = PackedStringArray(entry.get("shared_capability_ids", []))
+	var observed_consumer_count: Dictionary = {}
 	for raw_entry in catalog_result.get("data", []):
 		var entry: Dictionary = raw_entry
 		var capability_id := String(entry.get("capability_id", "")).strip_edges()
 		var required_suite_paths: PackedStringArray = PackedStringArray(entry.get("required_suite_paths", []))
-		for raw_character_id in entry.get("consumer_character_ids", []):
-			var character_id := String(raw_character_id).strip_edges()
-			if not manifest_capabilities_by_character.has(character_id):
-				return harness.fail_result("capability catalog references unknown manifest character: %s" % character_id)
-			var declared_capability_ids: PackedStringArray = manifest_capabilities_by_character.get(character_id, PackedStringArray())
-			if declared_capability_ids.find(capability_id) == -1:
-				return harness.fail_result("manifest[%s] missing shared_capability_id: %s" % [character_id, capability_id])
+		var observed_consumers := 0
 		for raw_delivery_entry in delivery_result.get("entries", []):
 			var delivery_entry: Dictionary = raw_delivery_entry
 			var character_id := String(delivery_entry.get("character_id", "")).strip_edges()
 			var declared_capability_ids: PackedStringArray = manifest_capabilities_by_character.get(character_id, PackedStringArray())
 			if declared_capability_ids.find(capability_id) == -1:
 				continue
+			observed_consumers += 1
 			var required_suite_paths_actual: PackedStringArray = PackedStringArray(delivery_entry.get("required_suite_paths", []))
 			for required_suite_path in required_suite_paths:
 				if required_suite_paths_actual.find(required_suite_path) == -1:
 					return harness.fail_result("manifest[%s] capability[%s] missing required suite: %s" % [
 						character_id,
 						capability_id,
-						required_suite_path,
-					])
+							required_suite_path,
+						])
+		observed_consumer_count[capability_id] = observed_consumers
+	for raw_entry in catalog_result.get("data", []):
+		var entry: Dictionary = raw_entry
+		var capability_id := String(entry.get("capability_id", "")).strip_edges()
+		if int(observed_consumer_count.get(capability_id, 0)) <= 0:
+			return harness.fail_result("capability catalog entry must have at least one manifest consumer: %s" % capability_id)
 	return harness.pass_result()

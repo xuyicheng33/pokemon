@@ -34,17 +34,17 @@
 - 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback。
 - 正式角色 wrapper 统一登记在 `config/formal_character_manifest.json.characters[*]`，由 `tests/run_all.gd` 自动加载。
 - `config/formal_character_manifest.json` 是 formal 角色元数据的唯一人工真源；顶层固定三桶：`characters / matchups / pair_interaction_cases`。
-- `config/formal_character_capability_catalog.json` 是共享能力目录的唯一人工真源；共享入口、规则归属、消费者、必挂 suite 和“该停下来改专用机制”的边界都收在这里。
+- `config/formal_character_capability_catalog.json` 是共享能力目录的唯一人工真源；这里只维护共享入口定义、规则归属、必挂 suite 和“该停下来改专用机制”的边界。实际消费者统一从 manifest 的 `shared_capability_ids` 派生。
 - `characters[*]` 当前固定拆成 runtime 视图与 delivery/test 视图：
   - runtime：`character_id / unit_definition_id / formal_setup_matchup_id / required_content_paths`，以及按需补的 `content_validator_script_path`
   - delivery/test：`character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / shared_capability_ids / design_needles / adjustment_needles`
 - runtime formal validator 当前统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 `config/formal_character_manifest.json`；loader 只校验 runtime 视图与 validator 路径存在性，真正的 validator 实例化延迟到 `ContentSnapshotFormalCharacterValidator.validate()` 按 present-only 角色执行。测试、文档、suite reachability 与回归锚点也统一读取 manifest 派生视图；delivery/test 字段漂移不得拖死 runtime loader。
 - `ContentSnapshotFormalCharacterValidator` 只校验当前快照里实际出现的正式角色，不会因为缺席角色而误炸。
 - 正式角色 entry validator 当前固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板组织；tests 侧只验证这三个入口仍可实例化并回挂到 wrapper 子树。
-- 正式角色的 `required_suite_paths` 可以同时挂角色专属子套件与共享 suite；例如 `gojo_snapshot_suite.gd` / `sukuna_snapshot_suite.gd` 现在统一从共享 formal baseline 读取角色基线，再锁资源快照，`ultimate_field_suite.gd` 用来把共享领域回归正式挂回角色交付面。
-- 只要角色在 `shared_capability_ids` 里声明了共享入口，repo consistency gate 就会同时检查 capability catalog 是否存在该入口、`consumer_character_ids` 是否和 manifest 双向一致、catalog 要求的 `required_suite_paths` 是否全部挂回角色条目，以及内容/validator/设计稿/调整记录/wrapper 是否真的能扫到对应使用证据。
-- 只要角色登记了 `content_validator_script_path`，`required_suite_paths` 里就必须显式挂 `tests/suites/extension_validation_contract_suite.gd`，`required_test_names` 里也必须挂至少一个对应角色的 validator 坏例锚点。
-- 共享能力未先登记进 capability catalog、或登记后没把对应 suite / 消费者 / 使用证据补齐时，`check_repo_consistency.sh` 会直接失败。
+- 正式角色的 `required_suite_paths` 不再手抄共享 capability suite 与 validator suite；这两类会自动并入 delivery/test 视图。角色专属子套件仍由 manifest 显式维护，部分共享但不属于 capability 派生的正式交付 suite 也可以继续显式挂在这里。
+- 只要角色在 `shared_capability_ids` 里声明了共享入口，repo consistency gate 就会同时检查 capability catalog 是否存在该入口、catalog 要求的 `required_suite_paths` 是否已被自动派生、以及内容/validator/设计稿/调整记录/wrapper 是否真的能扫到对应使用证据。
+- 只要角色登记了 `content_validator_script_path`，delivery/test 视图就会自动并入 `tests/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个对应角色的 validator 坏例锚点。
+- 共享能力未先登记进 capability catalog、或登记后没把对应 suite / manifest 消费声明 / 使用证据补齐时，`check_repo_consistency.sh` 会直接失败。
 - `config/formal_character_manifest.json.matchups` 与 `pair_interaction_cases` 继续承载 formal pair 覆盖；directed pair surface smoke 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，`tests/suites/formal_character_pair_smoke_suite.gd` 只负责按生成结果动态注册和执行。
 - `tests/support/formal_pair_interaction/scenario_registry.gd` 当前是 pair interaction scenario runner 的单一真相；catalog 校验和运行分发都只能读这张映射，不再允许双维护场景列表。
 - `pair_interaction_cases[*]` 必须显式填写 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`；catalog loader 与 shared gate 都会对空值、类型错误和不一致开局直接 fail-fast。
