@@ -14,7 +14,7 @@
 |`action_damage_segment_resolution_service.gd`|处理多段伤害的段解析、倍率读取与最终 HP 结算|
 |`action_damage_log_service.gd`|统一直伤 / execute / 默认反伤日志与致死归因|
 |`action_damage_segment_trigger_context_service.gd`|统一保护多段伤害逐段 trigger 的 `chain_context` 恢复|
-|`power_bonus_resolver.gd`|统一解析 `SkillDefinition.power_bonus_source` 对应的额外威力来源|
+|`power_bonus_resolver.gd`|对外暴露额外威力解析入口；实际 source 注册、合同校验与 runtime 分发统一委托给 `power_bonus_source_registry.gd`|
 |`action_cast_skill_effect_dispatch_pipeline.gd`|按 `on_cast / on_hit / on_miss` 分发技能 effect 链|
 |`action_domain_guard.gd`|行动开始前做领域重开与 `action_legality` 的二次合法性拦截|
 |`switch_action_service.gd`|执行手动换人行动链|

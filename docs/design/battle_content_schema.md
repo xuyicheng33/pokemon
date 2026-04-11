@@ -308,7 +308,7 @@
 - `UnitDefinition.candidate_skill_ids` 为空时表示没有额外候选池；非空时必须满足：长度至少 3、不能重复、不能含空串、必须命中已注册常规技能、必须完整包含默认 `skill_ids`、不得包含 `ultimate_skill_id`。
 - `UnitDefinition.ultimate_points_required / ultimate_points_cap / ultimate_point_gain_on_regular_skill_cast` 必须 `>= 0`，且 `ultimate_points_cap >= ultimate_points_required`；没有 `ultimate_skill_id` 的单位不得声明非零奥义点配置。
 - `SkillDefinition.combat_type_id` 可为空；非空时必须命中已注册 `combat_type`。
-- `SkillDefinition.power_bonus_source` 当前只允许 `PowerBonusResolver` 已注册的来源；正式主线现阶段开放空串、`mp_diff_clamped` 与 `effect_stack_sum`。
+- `SkillDefinition.power_bonus_source` 当前只允许 `PowerBonusSourceRegistry` 已注册的来源；正式主线现阶段开放空串、`mp_diff_clamped` 与 `effect_stack_sum`。
 - `SkillDefinition.power_bonus_source = effect_stack_sum` 时，`power_bonus_self_effect_ids / power_bonus_target_effect_ids` 至少有一侧非空，且 `power_bonus_per_stack > 0`。
 - `BattleFormatConfig.default_recoil_ratio / domain_clash_tie_threshold` 必须落在 `0.0..1.0`。
 - `BattleFormatConfig.combat_type_chart` 只接受 `CombatTypeChartEntry`；`atk / def` 必填且必须命中已注册 `combat_type`；`mul` 只允许 `2.0 / 1.0 / 0.5`；同一 `(atk, def)` pair 不得重复。

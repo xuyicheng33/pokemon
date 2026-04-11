@@ -10,6 +10,24 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前优化：shared 扩展注册继续收口（2026-04-11）
+
+- 状态：进行中
+- 目标：
+  - 继续压缩 shared 扩展点的重复维护面，把 `power_bonus_source`、payload 装配链、formal pair 约束和 capability 证据校验都往更稳定的单点收。
+- 范围：
+  - `power_bonus_source` 真单点化
+  - payload handler 扩展链去中心化
+  - formal matchup 的测试专用标记
+  - pair interaction 约束数据化
+  - capability 证据改为结构化语义校验
+- 验收标准：
+  - 新增 `power_bonus_source` 时不再需要在 registry 和 resolver 各自手抄分支
+  - payload 扩展链的中心维护点继续减少
+  - `obito_mirror` 这类测试专用 matchup 有显式身份
+  - pair interaction gate 不再依赖代码里的手写必备案例常量
+  - capability gate 不再靠角色内容/文档的纯文本扫描判断共享能力使用证据
+
 ## 当前修补：审查发现对齐（2026-04-11）
 
 - 状态：已完成

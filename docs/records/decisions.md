@@ -213,8 +213,9 @@
 - `power_bonus_source` 当前固定只维护一份共享注册事实：
   - source 列表
   - 额外 schema 校验
+  - runtime 分发描述
   都统一收口到 `src/battle_core/content/power_bonus_source_registry.gd`。
-  - 运行时 bonus 解析继续固定收口到 `src/battle_core/actions/power_bonus_resolver.gd`。
+  - `src/battle_core/actions/power_bonus_resolver.gd` 当前只保留对外解析入口与委托职责，不再重复维护 source 分支。
 - 这么定的原因：
   - 这轮修补要解决的不是 battle core 主循环失控，而是“新增一个共享扩展点就要改多处中心入口”的返工面
   - payload 与 power bonus 都已经出现“名单、校验、运行时分支各写一份”的漂移风险；继续扩角色时，这类共享入口会先比玩法规则更快失控
