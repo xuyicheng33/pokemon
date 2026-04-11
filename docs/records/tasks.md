@@ -27,6 +27,9 @@
   - `obito_mirror` 这类测试专用 matchup 有显式身份
   - pair interaction gate 不再依赖代码里的手写必备案例常量
   - capability gate 不再靠角色内容/文档的纯文本扫描判断共享能力使用证据
+- 当前进展：
+  - 已完成 `power_bonus_source` 真单点化：source 列表、schema 校验与 runtime 分发都收口到 `power_bonus_source_registry.gd`
+  - 已完成 payload handler 扩展链第一轮收口：handler 直接依赖 wiring facts 收回 `payload_contract_registry.gd`，`payload_handler_registry.gd` 不再手抄整排 handler 槽位声明
 
 ## 当前修补：审查发现对齐（2026-04-11）
 

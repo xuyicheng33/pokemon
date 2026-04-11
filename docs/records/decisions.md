@@ -209,7 +209,8 @@
 ## 0N. payload 与 power bonus 的共享注册事实固定单点收口（2026-04-10）
 
 - payload 的 `payload script -> handler slot -> validator key` 当前固定只维护在 `src/battle_core/content/payload_contract_registry.gd`。
-- `ContentPayloadValidator`、`PayloadHandlerRegistry`、`battle_core_wiring_specs_effects_core.gd` 与 payload contract suite 当前统一从这份注册表派生，不再各自手抄 payload 名单。
+- payload handler 的直接依赖 wiring facts 也继续收口到同一个 registry descriptor；`PayloadHandlerRegistry` 依赖槽位声明与 `battle_core_wiring_specs_payload_handlers.gd` 的 handler wiring 都从这里派生。
+- `ContentPayloadValidator`、`PayloadHandlerRegistry`、`battle_core_wiring_specs_effects_core.gd`、`battle_core_wiring_specs_payload_handlers.gd` 与 payload contract suite 当前统一从这份注册表派生，不再各自手抄 payload 名单或 handler 依赖边。
 - `power_bonus_source` 当前固定只维护一份共享注册事实：
   - source 列表
   - 额外 schema 校验

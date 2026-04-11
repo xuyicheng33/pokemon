@@ -12,15 +12,92 @@ const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_pa
 const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
 
 const PAYLOAD_DESCRIPTORS := [
-	{"script": DamagePayloadScript, "handler_slot": "payload_damage_handler", "validator_key": "damage"},
-	{"script": HealPayloadScript, "handler_slot": "payload_heal_handler", "validator_key": "heal"},
-	{"script": ResourceModPayloadScript, "handler_slot": "payload_resource_mod_handler", "validator_key": "resource_mod"},
-	{"script": StatModPayloadScript, "handler_slot": "payload_stat_mod_handler", "validator_key": "stat_mod"},
-	{"script": ApplyFieldPayloadScript, "handler_slot": "payload_apply_field_handler", "validator_key": "apply_field"},
-	{"script": ApplyEffectPayloadScript, "handler_slot": "payload_apply_effect_handler", "validator_key": "apply_effect"},
-	{"script": RemoveEffectPayloadScript, "handler_slot": "payload_remove_effect_handler", "validator_key": "remove_effect"},
-	{"script": RuleModPayloadScript, "handler_slot": "payload_rule_mod_handler", "validator_key": "rule_mod"},
-	{"script": ForcedReplacePayloadScript, "handler_slot": "payload_forced_replace_handler", "validator_key": "forced_replace"},
+	{
+		"script": DamagePayloadScript,
+		"handler_slot": "payload_damage_handler",
+		"validator_key": "damage",
+		"handler_dependencies": [
+			{"dependency": "payload_damage_runtime_service", "source": "payload_damage_runtime_service"},
+		],
+	},
+	{
+		"script": HealPayloadScript,
+		"handler_slot": "payload_heal_handler",
+		"validator_key": "heal",
+		"handler_dependencies": [
+			{"dependency": "payload_resource_runtime_service", "source": "payload_resource_runtime_service"},
+		],
+	},
+	{
+		"script": ResourceModPayloadScript,
+		"handler_slot": "payload_resource_mod_handler",
+		"validator_key": "resource_mod",
+		"handler_dependencies": [
+			{"dependency": "payload_resource_runtime_service", "source": "payload_resource_runtime_service"},
+		],
+	},
+	{
+		"script": StatModPayloadScript,
+		"handler_slot": "payload_stat_mod_handler",
+		"validator_key": "stat_mod",
+		"handler_dependencies": [
+			{"dependency": "payload_stat_mod_runtime_service", "source": "payload_stat_mod_runtime_service"},
+		],
+	},
+	{
+		"script": ApplyFieldPayloadScript,
+		"handler_slot": "payload_apply_field_handler",
+		"validator_key": "apply_field",
+		"handler_dependencies": [
+			{"dependency": "field_apply_service", "source": "field_apply_service"},
+		],
+	},
+	{
+		"script": ApplyEffectPayloadScript,
+		"handler_slot": "payload_apply_effect_handler",
+		"validator_key": "apply_effect",
+		"handler_dependencies": [
+			{"dependency": "battle_logger", "source": "battle_logger"},
+			{"dependency": "log_event_builder", "source": "log_event_builder"},
+			{"dependency": "effect_instance_service", "source": "effect_instance_service"},
+			{"dependency": "target_helper", "source": "payload_unit_target_helper"},
+			{"dependency": "effect_event_helper", "source": "payload_effect_event_helper"},
+		],
+	},
+	{
+		"script": RemoveEffectPayloadScript,
+		"handler_slot": "payload_remove_effect_handler",
+		"validator_key": "remove_effect",
+		"handler_dependencies": [
+			{"dependency": "battle_logger", "source": "battle_logger"},
+			{"dependency": "log_event_builder", "source": "log_event_builder"},
+			{"dependency": "effect_instance_service", "source": "effect_instance_service"},
+			{"dependency": "target_helper", "source": "payload_unit_target_helper"},
+			{"dependency": "effect_event_helper", "source": "payload_effect_event_helper"},
+		],
+	},
+	{
+		"script": RuleModPayloadScript,
+		"handler_slot": "payload_rule_mod_handler",
+		"validator_key": "rule_mod",
+		"handler_dependencies": [
+			{"dependency": "battle_logger", "source": "battle_logger"},
+			{"dependency": "log_event_builder", "source": "log_event_builder"},
+			{"dependency": "rule_mod_service", "source": "rule_mod_service"},
+			{"dependency": "rule_mod_value_resolver", "source": "rule_mod_value_resolver"},
+			{"dependency": "target_helper", "source": "payload_unit_target_helper"},
+			{"dependency": "effect_event_helper", "source": "payload_effect_event_helper"},
+		],
+	},
+	{
+		"script": ForcedReplacePayloadScript,
+		"handler_slot": "payload_forced_replace_handler",
+		"validator_key": "forced_replace",
+		"handler_dependencies": [
+			{"dependency": "replacement_service", "source": "replacement_service"},
+			{"dependency": "target_helper", "source": "payload_unit_target_helper"},
+		],
+	},
 ]
 
 static func descriptors() -> Array:
@@ -48,6 +125,19 @@ static func registry_wiring_specs() -> Array:
 			"dependency": handler_slot,
 			"source": handler_slot,
 		})
+	return wiring_specs
+
+static func handler_wiring_specs() -> Array:
+	var wiring_specs: Array = []
+	for descriptor in PAYLOAD_DESCRIPTORS:
+		var handler_slot := String(descriptor.get("handler_slot", ""))
+		for raw_dependency_spec in Array(descriptor.get("handler_dependencies", [])):
+			var dependency_spec := Dictionary(raw_dependency_spec)
+			wiring_specs.append({
+				"owner": handler_slot,
+				"dependency": String(dependency_spec.get("dependency", "")),
+				"source": String(dependency_spec.get("source", "")),
+			})
 	return wiring_specs
 
 static func handler_slot_for_payload(payload) -> String:

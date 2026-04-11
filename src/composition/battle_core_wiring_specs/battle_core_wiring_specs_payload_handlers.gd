@@ -1,27 +1,8 @@
 extends RefCounted
 
-const WIRING_SPECS := [
-	{"owner": "payload_damage_handler", "dependency": "payload_damage_runtime_service", "source": "payload_damage_runtime_service"},
-	{"owner": "payload_heal_handler", "dependency": "payload_resource_runtime_service", "source": "payload_resource_runtime_service"},
-	{"owner": "payload_resource_mod_handler", "dependency": "payload_resource_runtime_service", "source": "payload_resource_runtime_service"},
-	{"owner": "payload_stat_mod_handler", "dependency": "payload_stat_mod_runtime_service", "source": "payload_stat_mod_runtime_service"},
-	{"owner": "payload_apply_field_handler", "dependency": "field_apply_service", "source": "field_apply_service"},
-	{"owner": "payload_apply_effect_handler", "dependency": "battle_logger", "source": "battle_logger"},
-	{"owner": "payload_apply_effect_handler", "dependency": "log_event_builder", "source": "log_event_builder"},
-	{"owner": "payload_apply_effect_handler", "dependency": "effect_instance_service", "source": "effect_instance_service"},
-	{"owner": "payload_apply_effect_handler", "dependency": "target_helper", "source": "payload_unit_target_helper"},
-	{"owner": "payload_apply_effect_handler", "dependency": "effect_event_helper", "source": "payload_effect_event_helper"},
-	{"owner": "payload_remove_effect_handler", "dependency": "battle_logger", "source": "battle_logger"},
-	{"owner": "payload_remove_effect_handler", "dependency": "log_event_builder", "source": "log_event_builder"},
-	{"owner": "payload_remove_effect_handler", "dependency": "effect_instance_service", "source": "effect_instance_service"},
-	{"owner": "payload_remove_effect_handler", "dependency": "target_helper", "source": "payload_unit_target_helper"},
-	{"owner": "payload_remove_effect_handler", "dependency": "effect_event_helper", "source": "payload_effect_event_helper"},
-	{"owner": "payload_rule_mod_handler", "dependency": "battle_logger", "source": "battle_logger"},
-	{"owner": "payload_rule_mod_handler", "dependency": "log_event_builder", "source": "log_event_builder"},
-	{"owner": "payload_rule_mod_handler", "dependency": "rule_mod_service", "source": "rule_mod_service"},
-	{"owner": "payload_rule_mod_handler", "dependency": "rule_mod_value_resolver", "source": "rule_mod_value_resolver"},
-	{"owner": "payload_rule_mod_handler", "dependency": "target_helper", "source": "payload_unit_target_helper"},
-	{"owner": "payload_rule_mod_handler", "dependency": "effect_event_helper", "source": "payload_effect_event_helper"},
+const PayloadContractRegistryScript := preload("res://src/battle_core/content/payload_contract_registry.gd")
+
+const BASE_WIRING_SPECS := [
 	{"owner": "payload_damage_runtime_service", "dependency": "battle_logger", "source": "battle_logger"},
 	{"owner": "payload_damage_runtime_service", "dependency": "log_event_builder", "source": "log_event_builder"},
 	{"owner": "payload_damage_runtime_service", "dependency": "damage_service", "source": "damage_service"},
@@ -40,6 +21,7 @@ const WIRING_SPECS := [
 	{"owner": "payload_stat_mod_runtime_service", "dependency": "log_event_builder", "source": "log_event_builder"},
 	{"owner": "payload_stat_mod_runtime_service", "dependency": "target_helper", "source": "payload_unit_target_helper"},
 	{"owner": "payload_stat_mod_runtime_service", "dependency": "effect_event_helper", "source": "payload_effect_event_helper"},
-	{"owner": "payload_forced_replace_handler", "dependency": "replacement_service", "source": "replacement_service"},
-	{"owner": "payload_forced_replace_handler", "dependency": "target_helper", "source": "payload_unit_target_helper"},
 ]
+
+static func wiring_specs() -> Array:
+	return PayloadContractRegistryScript.handler_wiring_specs() + BASE_WIRING_SPECS.duplicate(true)

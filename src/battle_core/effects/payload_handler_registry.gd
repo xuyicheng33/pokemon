@@ -3,20 +3,11 @@ class_name PayloadHandlerRegistry
 
 const PayloadContractRegistryScript := preload("res://src/battle_core/content/payload_contract_registry.gd")
 
-var payload_damage_handler
-var payload_heal_handler
-var payload_resource_mod_handler
-var payload_stat_mod_handler
-var payload_apply_field_handler
-var payload_apply_effect_handler
-var payload_remove_effect_handler
-var payload_rule_mod_handler
-var payload_forced_replace_handler
+var _handlers: Dictionary = {}
 
 func resolve_missing_dependency() -> String:
-	for spec in _handler_specs():
-		var slot_name := String(spec["slot"])
-		var handler = get(slot_name)
+	for slot_name in registered_handler_slots():
+		var handler = handler_by_slot(String(slot_name))
 		if handler == null:
 			return slot_name
 		if handler.has_method("resolve_missing_dependency"):
@@ -29,7 +20,7 @@ func handler_for(payload) -> Variant:
 	if payload == null:
 		return null
 	var handler_slot := PayloadContractRegistryScript.handler_slot_for_payload(payload)
-	return null if handler_slot.is_empty() else get(handler_slot)
+	return handler_by_slot(handler_slot)
 
 func registered_payload_script_paths() -> PackedStringArray:
 	return PayloadContractRegistryScript.registered_payload_script_paths()
@@ -37,11 +28,33 @@ func registered_payload_script_paths() -> PackedStringArray:
 func registered_handler_slots() -> PackedStringArray:
 	return PayloadContractRegistryScript.registered_handler_slots()
 
-func _handler_specs() -> Array:
-	var specs: Array = []
-	for descriptor in PayloadContractRegistryScript.descriptors():
-		specs.append({
-			"script": descriptor.get("script", null),
-			"slot": String(descriptor.get("handler_slot", "")),
+func handler_by_slot(handler_slot: String) -> Variant:
+	if handler_slot.is_empty():
+		return null
+	return _handlers.get(handler_slot, null)
+
+func _get_property_list() -> Array:
+	var properties: Array = []
+	for slot_name in registered_handler_slots():
+		properties.append({
+			"name": String(slot_name),
+			"type": TYPE_OBJECT,
+			"usage": PROPERTY_USAGE_DEFAULT,
 		})
-	return specs
+	return properties
+
+func _get(property):
+	return handler_by_slot(String(property))
+
+func _set(property, value) -> bool:
+	var property_name := String(property)
+	if not _has_handler_slot(property_name):
+		return false
+	_handlers[property_name] = value
+	return true
+
+func _has_handler_slot(handler_slot: String) -> bool:
+	for slot_name in registered_handler_slots():
+		if String(slot_name) == handler_slot:
+			return true
+	return false

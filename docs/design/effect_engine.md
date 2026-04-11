@@ -12,7 +12,7 @@
 |`effect_queue_service.gd`|对同批次 `EffectEvent` 排序|
 |`payload_executor.gd`|执行 effect guard、前置守卫与 payload 分派|
 |`effect_precondition_service.gd`|处理 `required_target_*` 与 incoming action 过滤前置守卫|
-|`payload_handler_registry.gd`|声明 payload script 到单 payload handler 的唯一映射|
+|`payload_handler_registry.gd`|对外暴露 payload script 到单 payload handler 的唯一映射；实际 handler 槽位声明由 `payload_contract_registry.gd` 动态派生|
 |`effect_instance_service.gd`|管理持续效果实例|
 |`rule_mod_service.gd`|`rule_mod` facade，对外维持单入口|
 |`rule_mod_read_service.gd`|`rule_mod` 读取查询（合法性、命中、最终倍率、回蓝）|
@@ -84,6 +84,10 @@
   - `remove_effect -> PayloadRemoveEffectHandler`
   - `rule_mod -> PayloadRuleModHandler`
   - `forced_replace -> PayloadForcedReplaceHandler`
+- `payload_contract_registry.gd` 当前同时维护：
+  - `payload script -> handler slot -> validator key`
+  - handler 直接依赖 wiring facts
+  - `payload_handler_registry` 与 payload handler wiring 所需的 descriptor 视图
 - `payload_damage_runtime_service / payload_resource_runtime_service / payload_stat_mod_runtime_service` 保留为稳定数值执行层，不借分派重构改语义。
 
 fail-fast 约束：

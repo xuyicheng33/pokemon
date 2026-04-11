@@ -39,6 +39,28 @@ def _duplicate_names(names: list[str]) -> list[str]:
     return sorted(name for name, count in counter.items() if count > 1)
 
 
+def parse_payload_handler_dependency_edges(text: str) -> list[tuple[str, str, str]]:
+    edges: list[tuple[str, str, str]] = []
+    current_handler_slot: str | None = None
+    in_handler_dependencies = False
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        slot_match = re.search(r'"handler_slot": "([^"]+)"', line)
+        if slot_match is not None:
+            current_handler_slot = slot_match.group(1)
+        if '"handler_dependencies": [' in line:
+            in_handler_dependencies = True
+            continue
+        if not in_handler_dependencies:
+            continue
+        dependency_match = re.search(r'\{"dependency": "([^"]+)", "source": "([^"]+)"\}', line)
+        if dependency_match is not None and current_handler_slot is not None:
+            edges.append((current_handler_slot, dependency_match.group(1), dependency_match.group(2)))
+        if line == "]," or line == "]":
+            in_handler_dependencies = False
+    return edges
+
+
 service_specs_text = SERVICE_SPECS_PATH.read_text(encoding="utf-8")
 wiring_specs_text = WIRING_SPECS_PATH.read_text(encoding="utf-8")
 wiring_child_texts = []
@@ -68,6 +90,7 @@ payload_handler_slots = re.findall(r'"handler_slot": "([^"]+)"', payload_contrac
 wiring_owner_source_pairs.extend(
     ("payload_handler_registry", handler_slot, handler_slot) for handler_slot in payload_handler_slots
 )
+wiring_owner_source_pairs.extend(parse_payload_handler_dependency_edges(payload_contract_registry_text))
 reset_owner_pairs = re.findall(
     r'\{"owner": "([^"]+)", "field": "([^"]+)", "value":',
     wiring_specs_text,
@@ -98,6 +121,11 @@ if "EffectsCoreWiringSpecsScript.wiring_specs()" not in wiring_specs_text:
 if "registry_wiring_specs" not in payload_contract_registry_text:
     fail(
         "payload contract registry must expose payload_handler_registry wiring facts",
+        [str(PAYLOAD_CONTRACT_REGISTRY_PATH.relative_to(ROOT))],
+    )
+if "handler_wiring_specs" not in payload_contract_registry_text:
+    fail(
+        "payload contract registry must expose payload handler wiring facts",
         [str(PAYLOAD_CONTRACT_REGISTRY_PATH.relative_to(ROOT))],
     )
 

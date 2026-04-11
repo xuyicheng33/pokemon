@@ -30,6 +30,28 @@ def parse_payload_registry_edges(text: str) -> list[tuple[str, str]]:
     return [("payload_handler_registry", slot) for slot in re.findall(r'"handler_slot": "([^"]+)"', text)]
 
 
+def parse_payload_handler_dependency_edges(text: str) -> list[tuple[str, str]]:
+    edges: list[tuple[str, str]] = []
+    current_handler_slot: str | None = None
+    in_handler_dependencies = False
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        slot_match = re.search(r'"handler_slot": "([^"]+)"', line)
+        if slot_match is not None:
+            current_handler_slot = slot_match.group(1)
+        if '"handler_dependencies": [' in line:
+            in_handler_dependencies = True
+            continue
+        if not in_handler_dependencies:
+            continue
+        dependency_match = re.search(r'\{"dependency": "([^"]+)", "source": "([^"]+)"\}', line)
+        if dependency_match is not None and current_handler_slot is not None:
+            edges.append((current_handler_slot, dependency_match.group(2)))
+        if line == "]," or line == "]":
+            in_handler_dependencies = False
+    return edges
+
+
 def build_graph(nodes: set[str], edges: list[tuple[str, str]]) -> dict[str, set[str]]:
     graph: dict[str, set[str]] = defaultdict(set)
     for node in nodes:
@@ -115,7 +137,9 @@ def main() -> None:
     edges: list[tuple[str, str]] = []
     for path in wiring_spec_paths:
         edges.extend(parse_wiring_edges(path.read_text(encoding="utf-8")))
-    edges.extend(parse_payload_registry_edges(PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")))
+    payload_registry_text = PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")
+    edges.extend(parse_payload_registry_edges(payload_registry_text))
+    edges.extend(parse_payload_handler_dependency_edges(payload_registry_text))
     if not service_slots:
         fail("failed to parse service slots for runtime wiring graph gate")
     if not edges:
