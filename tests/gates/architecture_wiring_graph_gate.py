@@ -23,21 +23,34 @@ def parse_service_slots(text: str) -> set[str]:
     return set(re.findall(r'\{"slot": "([^"]+)"', text))
 
 
+def extract_named_block(text: str, pattern: str, label: str) -> str:
+    match = re.search(pattern, text, re.S)
+    if match is None:
+        fail(f"missing {label} block", [label])
+    return match.group(1)
+
+
+def parse_payload_shared_service_slots(payload_service_specs_text: str) -> set[str]:
+    block = extract_named_block(
+        payload_service_specs_text,
+        r"const SHARED_SERVICE_DESCRIPTORS := \[(.*?)\]\n\nconst HANDLER_SCRIPTS_BY_SLOT",
+        "SHARED_SERVICE_DESCRIPTORS",
+    )
+    return set(re.findall(r'"slot": "([^"]+)"', block))
+
+
+def parse_payload_handler_script_slots(payload_service_specs_text: str) -> set[str]:
+    block = extract_named_block(
+        payload_service_specs_text,
+        r"const HANDLER_SCRIPTS_BY_SLOT := \{(.*?)\}\n",
+        "HANDLER_SCRIPTS_BY_SLOT",
+    )
+    return set(re.findall(r'"([^"]+)": [A-Za-z_][A-Za-z0-9_]*', block))
+
+
 def parse_payload_service_slots(payload_registry_text: str, payload_service_specs_text: str) -> set[str]:
-    slots: set[str] = set()
-    current_handler_slot: str | None = None
-    for raw_line in payload_service_specs_text.splitlines():
-        line = raw_line.strip()
-        slot_match = re.search(r'"slot": "([^"]+)"', line)
-        if slot_match is not None:
-            slots.add(slot_match.group(1))
-    for raw_line in payload_registry_text.splitlines():
-        line = raw_line.strip()
-        slot_match = re.search(r'"handler_slot": "([^"]+)"', line)
-        if slot_match is not None:
-            current_handler_slot = slot_match.group(1)
-            slots.add(current_handler_slot)
-    return slots
+    del payload_registry_text
+    return parse_payload_shared_service_slots(payload_service_specs_text) | parse_payload_handler_script_slots(payload_service_specs_text)
 
 
 def parse_wiring_edges(text: str) -> list[tuple[str, str]]:
@@ -173,6 +186,21 @@ def main() -> None:
     service_specs_text = SERVICE_SPECS_PATH.read_text(encoding="utf-8")
     payload_registry_text = PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")
     payload_service_specs_text = PAYLOAD_SERVICE_SPECS_PATH.read_text(encoding="utf-8")
+    payload_handler_slots = set(re.findall(r'"handler_slot": "([^"]+)"', payload_registry_text))
+    payload_handler_script_slots = parse_payload_handler_script_slots(payload_service_specs_text)
+    missing_payload_handler_scripts = sorted(payload_handler_slots - payload_handler_script_slots)
+    stale_payload_handler_scripts = sorted(payload_handler_script_slots - payload_handler_slots)
+    if missing_payload_handler_scripts or stale_payload_handler_scripts:
+        details: list[str] = []
+        details.extend(
+            f"payload handler slot missing HANDLER_SCRIPTS_BY_SLOT mapping: {slot}"
+            for slot in missing_payload_handler_scripts
+        )
+        details.extend(
+            f"HANDLER_SCRIPTS_BY_SLOT stale mapping without payload registry slot: {slot}"
+            for slot in stale_payload_handler_scripts
+        )
+        fail("payload handler slot/script mappings drifted apart", details)
     service_slots = parse_service_slots(service_specs_text) | parse_payload_service_slots(payload_registry_text, payload_service_specs_text)
     wiring_spec_paths = sorted(WIRING_SPECS_DIR.glob("*.gd"))
     if not wiring_spec_paths:

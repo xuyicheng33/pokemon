@@ -10,6 +10,29 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前修补：payload handler 静态 gate 补齐映射校验（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 把 payload handler 扩展链里最后一处静态漏检补上，避免 `handler_slot` 已登记但 `HANDLER_SCRIPTS_BY_SLOT` 漏配时仍能通过 architecture gate。
+- 范围：
+  - `tests/gates/architecture_composition_consistency_gate.py`
+  - `tests/gates/architecture_wiring_graph_gate.py`
+  - `docs/design/battle_core_architecture_constraints.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - payload registry 新增 `handler_slot` 但没有对应 handler script 映射时，两个 architecture gate 都会直接失败
+  - `HANDLER_SCRIPTS_BY_SLOT` 出现残留旧映射时，两个 architecture gate 也会直接失败
+  - 架构约束文档明确写出这条一一对应要求
+  - 完整 gate 通过
+- 结果：
+  - composition consistency gate 已改为显式比对 `handler_slot` 与 `HANDLER_SCRIPTS_BY_SLOT`，不再把 registry slot 直接当成已存在 script
+  - wiring DAG gate 也已同步补齐这条映射漂移校验，避免漏配 handler script 时继续把 wiring 图算成“合法”
+  - 架构约束与决策记录已补齐 payload handler 映射必须 fail-fast 的口径
+- 验证：
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前修补：formal baseline fail-fast 与 payload 装配文档对齐（2026-04-11）
 
 - 状态：已完成

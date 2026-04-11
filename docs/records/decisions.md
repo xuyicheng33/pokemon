@@ -330,3 +330,13 @@
   - 新增 source 时，source 名单和 resolver 分支原先是两处同时维护，source 越多越容易漂
   - 改成 descriptor 后，source 真相固定回到 registry；resolver 只关心自己支持哪些 resolver kind
   - 若后续出现“多个 source 共用同一套 runtime 求值”的情况，只需要改 registry descriptor，不必继续给 resolver 新开一条 source 分支
+
+## 0P. payload handler 映射漂移必须由静态 gate 直接拦住（2026-04-11）
+
+- `PayloadContractRegistry` 的 `handler_slot` 与 `BattleCorePayloadServiceSpecs.HANDLER_SCRIPTS_BY_SLOT` 当前视为同一条装配合同的两面：
+  - 前者声明 payload 要挂到哪个 handler slot
+  - 后者声明该 handler slot 具体实例化哪个 handler script
+- `tests/gates/architecture_composition_consistency_gate.py` 与 `tests/gates/architecture_wiring_graph_gate.py` 现在都必须直接校验这两份清单一一对应；缺映射或残留映射都要立即失败。
+- 这么定的原因：
+  - 这轮 payload seam 收口后，新增 payload 不再回写 `BattleCoreServiceSpecs`，但如果 gate 仍把 registry 里的 `handler_slot` 直接当成“必然存在的 service script”，漏配 `HANDLER_SCRIPTS_BY_SLOT` 时就会被静态检查漏掉
+  - 这类错误应该在 architecture gate 阶段 fail-fast，而不是拖到 composer 实例化或运行时才暴露
