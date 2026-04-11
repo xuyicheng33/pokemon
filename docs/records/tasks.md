@@ -756,3 +756,24 @@
 - `godot --headless --path . --script tests/run_all.gd --filter power_bonus_runtime_suite`
 - `godot --headless --path . --script tests/run_all.gd --filter payload_execution_contract_suite`
 - `bash tests/run_with_gate.sh`
+
+## 当前任务：拆分 composition consistency gate 热点（2026-04-12）
+
+|字段|说明|
+|---|---|
+|目标|把 `tests/gates/architecture_composition_consistency_gate.py` 从接近阈值的单热点拆成主入口 + helper，保持校验语义不变|
+|范围|1. 新增 gate support / checks helper，承接文本装载、descriptor facts 构建与校验细节<br>2. 主入口脚本只保留异常投影与完成输出<br>3. 补任务记录与治理决策记录|
+|验收标准|1. composition consistency gate 输出语义保持不变<br>2. 新增 helper 后每个 gate 文件都低于 tests/gates 的 350 行预警线<br>3. `bash tests/check_architecture_constraints.sh` 与 `bash tests/run_with_gate.sh` 通过|
+
+### 本轮结果
+
+- `tests/gates/architecture_composition_consistency_gate.py` 已收回到纯入口文件，只保留 `run()` 调度、失败输出与通过输出。
+- `tests/gates/architecture_composition_consistency_gate_support.py` 现负责路径常量、文本装载、payload seam 解析与 descriptor facts 构建。
+- `tests/gates/architecture_composition_consistency_gate_checks.py` 现负责 wiring/spec entry point、service descriptor、payload seam、container API、composer API 与 container usage 校验。
+- 原先 364 行的单文件 gate 已拆成 `17 + 194 + 204` 行，后续继续扩 composition 校验时，不必再把新规则堆回一个中心脚本。
+
+### 验证
+
+- `python3 tests/gates/architecture_composition_consistency_gate.py`
+- `bash tests/check_architecture_constraints.sh`
+- `bash tests/run_with_gate.sh`

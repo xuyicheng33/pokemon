@@ -357,6 +357,24 @@
   - registry 已登记 validator key 没有漏 dispatcher
   - 动态派发仍能真正命中已登记 payload 的校验逻辑
 - 这么定的原因：
-  - payload handler slot、handler script 与 shared wiring 已经收口到 registry/descriptor/命名约定三段 seam，但 content validation 入口之前还残留一份手写 `match`
-  - 继续保留这份分发表，新增 payload 时仍要多碰一个中心文件，而且 registry 漂移只能等运行内容校验时才暴露
-  - 把 dispatcher 也改成 registry key 派生后，payload 合同侧就只剩“登记 key”和“实现对应方法”两件事；再补静态 gate，才能把这条 seam 真正锁住
+- payload handler slot、handler script 与 shared wiring 已经收口到 registry/descriptor/命名约定三段 seam，但 content validation 入口之前还残留一份手写 `match`
+- 继续保留这份分发表，新增 payload 时仍要多碰一个中心文件，而且 registry 漂移只能等运行内容校验时才暴露
+- 把 dispatcher 也改成 registry key 派生后，payload 合同侧就只剩“登记 key”和“实现对应方法”两件事；再补静态 gate，才能把这条 seam 真正锁住
+
+## 0R. composition consistency gate 固定拆为入口 + helper（2026-04-12）
+
+- `tests/gates/architecture_composition_consistency_gate.py` 当前固定只保留入口职责：
+  - 调用 `run()`
+  - 投影 `ARCH_GATE_FAILED`
+  - 输出通过语句
+- 文本装载、descriptor facts 构建与基础解析固定下沉到 `tests/gates/architecture_composition_consistency_gate_support.py`。
+- 具体校验逻辑固定下沉到 `tests/gates/architecture_composition_consistency_gate_checks.py`，当前覆盖：
+  - wiring/spec 聚合入口
+  - service descriptor 漂移
+  - payload handler / validator seam
+  - container API / composer API
+  - legacy container slot 访问与 `service("slot")` 字面量校验
+- 这么定的原因：
+  - `architecture_composition_consistency_gate.py` 已经逼近 tests gate 的 350 行预警线，继续堆校验规则只会把治理脚本本身重新变成热点
+  - 这类脚本的稳定边界是“入口语义不变、错误输出不变”，不是“所有解析和校验细节都必须继续塞在一个文件里”
+  - 先把入口和 helper 边界定死，后续新增 composition 校验时才能按“解析事实”和“消费事实”分层扩展，而不是再回到单文件追加常量和正则
