@@ -50,9 +50,11 @@
   - snapshot suite 与 validator 之前双写同一套字段，任何一次数值或 id 微调都要改两到三处
 - 先把基础事实抽成共享 descriptor，可以明显降低扩第 5 个角色前的维护面，同时不把复杂 payload helper 过度抽象成新的屎山
 - `src/shared/formal_character_baselines.gd` 当前不再手写 `CHARACTER_IDS / BASELINE_SCRIPT_BY_CHARACTER_ID` 这类中心分发表；正式角色列表统一从 manifest 读取，baseline 脚本路径固定按 `src/shared/formal_character_baselines/<character_id>/<character_id>_formal_character_baseline.gd` 约定推导。
+- `src/shared/formal_character_baselines.gd` 当前也固定只保留 descriptor facade、descriptor 错误投影与 descriptor pool 解析；manifest 读取、baseline 脚本路径推导与实例化 fail-fast 路径下沉到 `src/shared/formal_character_baselines/formal_character_baseline_loader.gd`。
 - 这么定的原因：
   - 新增角色时，再要求同时改 manifest 和 baseline 总表，本质上还是双真相
   - baseline 路径已经稳定遵循角色正式 ID 命名，最短路径就是让 manifest 成为唯一人工入口，baseline 总表退化成约定加载器
+  - 继续把 manifest 读取和 baseline 装载留在 facade owner 里，只会让共享 baseline 入口重新长回新的体量热点；把这段稳定职责单独沉到 helper，能把后续扩角返工继续压在 helper 内部，而不是反复碰 facade
 
 ## 0C. SampleBattleFactory owner 继续瘦身为稳定 facade（2026-04-07）
 

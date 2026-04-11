@@ -33,6 +33,29 @@
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/run_with_gate.sh`
 
+## 当前优化：shared baseline 入口继续瘦身（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 把 `FormalCharacterBaselines` 里已经稳定的“manifest 读取 + baseline 脚本定位/实例化”职责下沉到独立 helper，避免共享 baseline 入口重新长回体量预警区。
+- 范围：
+  - `src/shared/formal_character_baselines.gd`
+  - `src/shared/formal_character_baselines/formal_character_baseline_loader.gd`
+  - 活跃任务/决策记录
+- 验收标准：
+  - `FormalCharacterBaselines` 对外 facade API 不变
+  - manifest 驱动的角色 ID 读取与 baseline fail-fast 路径仍保持原语义
+  - `src/shared/formal_character_baselines.gd` 不再落在 architecture warning 区间
+  - 完整 gate 通过
+- 结果：
+  - `FormalCharacterBaselines` 现在只保留 descriptor facade 与错误描述符处理；manifest 读取和 baseline 脚本装载已固定下沉到 `formal_character_baseline_loader.gd`
+  - 共享 baseline 的 manifest-order ID、缺脚本、不可实例化与缺 descriptor 路径语义保持不变
+  - baseline 主入口已脱离当前 architecture warning 观察名单
+- 验证：
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前修补：formal baseline fail-fast 与 payload 装配文档对齐（2026-04-11）
 
 - 状态：已完成

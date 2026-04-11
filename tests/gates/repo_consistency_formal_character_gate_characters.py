@@ -36,8 +36,14 @@ def validate_character_entries(
     baseline_registry_text = ctx.read_text(baseline_registry_path)
     if "BASELINE_SCRIPT_BY_CHARACTER_ID" in baseline_registry_text or "const CHARACTER_IDS" in baseline_registry_text:
         ctx.failures.append(f"{baseline_registry_path} must not keep manual baseline registry constants")
+    baseline_loader_path = "src/shared/formal_character_baselines/formal_character_baseline_loader.gd"
     if "FormalCharacterManifestScript" not in baseline_registry_text:
-        ctx.failures.append(f"{baseline_registry_path} must load manifest-backed formal character ids")
+        if "BaselineLoaderScript" not in baseline_registry_text:
+            ctx.failures.append(f"{baseline_registry_path} must load manifest-backed formal character ids")
+        else:
+            baseline_loader_text = ctx.read_text(baseline_loader_path)
+            if "FormalCharacterManifestScript" not in baseline_loader_text:
+                ctx.failures.append(f"{baseline_loader_path} must load manifest-backed formal character ids")
 
     for entry in characters:
         character_id = str(entry.get("character_id", "")).strip()

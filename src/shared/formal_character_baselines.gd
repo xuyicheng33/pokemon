@@ -1,19 +1,11 @@
 extends RefCounted
 class_name FormalCharacterBaselines
 
-const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
-const BASELINE_SCRIPT_ROOT := "res://src/shared/formal_character_baselines"
+const BaselineLoaderScript := preload("res://src/shared/formal_character_baselines/formal_character_baseline_loader.gd")
 const ERROR_MESSAGE_KEY := "__formal_baseline_error_message"
 
 static func character_ids() -> PackedStringArray:
-	var resolved_ids := PackedStringArray()
-	var entries_result := _character_entries_result()
-	if not bool(entries_result.get("ok", false)):
-		return resolved_ids
-	for raw_entry in entries_result.get("data", []):
-		var entry: Dictionary = raw_entry
-		resolved_ids.append(String(entry.get("character_id", "")).strip_edges())
-	return resolved_ids
+	return BaselineLoaderScript.character_ids()
 
 static func descriptor_error_message(descriptor) -> String:
 	if not (descriptor is Dictionary):
@@ -21,7 +13,7 @@ static func descriptor_error_message(descriptor) -> String:
 	return String(descriptor.get(ERROR_MESSAGE_KEY, "")).strip_edges()
 
 static func unit_contract(character_id: String, label_override: String = "") -> Dictionary:
-	var baseline_result := _character_baseline_result(character_id)
+	var baseline_result := BaselineLoaderScript.baseline_result(character_id)
 	if not bool(baseline_result.get("ok", false)):
 		return _error_descriptor(String(baseline_result.get("error_message", "unknown formal baseline error")))
 	return _resolve_descriptor(
@@ -110,57 +102,8 @@ static func field_contracts(character_id: String, field_ids = []) -> Array[Dicti
 		character_id
 	)
 
-static func _character_baseline_result(character_id: String, context: String = "") -> Dictionary:
-	var script_path_result := _baseline_script_path_result(character_id)
-	if not bool(script_path_result.get("ok", false)):
-		return script_path_result
-	var normalized_id := character_id.strip_edges()
-	var script_path := String(script_path_result.get("data", ""))
-	if not ResourceLoader.exists(script_path):
-		return _error_result(
-			"FormalCharacterBaselines[%s] missing baseline script%s: %s" % [
-				normalized_id,
-				_context_suffix(context),
-				script_path,
-			]
-		)
-	var baseline_script = load(script_path)
-	if not (baseline_script is Script) or not baseline_script.can_instantiate():
-		return _error_result(
-			"FormalCharacterBaselines[%s] baseline script is not instantiable%s: %s" % [
-				normalized_id,
-				_context_suffix(context),
-				script_path,
-			]
-		)
-	var baseline = baseline_script.new()
-	if baseline == null:
-		return _error_result(
-			"FormalCharacterBaselines[%s] failed to instantiate baseline%s: %s" % [
-				normalized_id,
-				_context_suffix(context),
-				script_path,
-			]
-		)
-	return _ok_result(baseline)
-
-static func _character_entries_result() -> Dictionary:
-	var manifest = FormalCharacterManifestScript.new()
-	var entries_result := manifest.build_runtime_entries_result()
-	if not bool(entries_result.get("ok", false)):
-		return _error_result(
-			"FormalCharacterBaselines failed to load manifest entries: %s" % String(entries_result.get("error_message", "unknown error"))
-		)
-	return _ok_result(entries_result.get("data", []))
-
-static func _baseline_script_path_result(character_id: String) -> Dictionary:
-	var normalized_id := character_id.strip_edges()
-	if normalized_id.is_empty():
-		return _error_result("FormalCharacterBaselines lookup character_id must not be empty")
-	return _ok_result("%s/%s/%s_formal_character_baseline.gd" % [BASELINE_SCRIPT_ROOT, normalized_id, normalized_id])
-
 static func _skill_contract_pool(character_id: String):
-	var baseline_result := _character_baseline_result(character_id, "skill contract lookup")
+	var baseline_result := BaselineLoaderScript.baseline_result(character_id, "skill contract lookup")
 	if not bool(baseline_result.get("ok", false)):
 		return baseline_result
 	var baseline = baseline_result.get("data")
@@ -169,19 +112,19 @@ static func _skill_contract_pool(character_id: String):
 	return _ok_result(descriptors)
 
 static func _passive_contract_pool(character_id: String):
-	var baseline_result := _character_baseline_result(character_id, "passive contract lookup")
+	var baseline_result := BaselineLoaderScript.baseline_result(character_id, "passive contract lookup")
 	if not bool(baseline_result.get("ok", false)):
 		return baseline_result
 	return _ok_result([baseline_result.get("data").passive_skill_contract()])
 
 static func _effect_contract_pool(character_id: String):
-	var baseline_result := _character_baseline_result(character_id, "effect contract lookup")
+	var baseline_result := BaselineLoaderScript.baseline_result(character_id, "effect contract lookup")
 	if not bool(baseline_result.get("ok", false)):
 		return baseline_result
 	return _ok_result(baseline_result.get("data").effect_contracts())
 
 static func _field_contract_pool(character_id: String):
-	var baseline_result := _character_baseline_result(character_id, "field contract lookup")
+	var baseline_result := BaselineLoaderScript.baseline_result(character_id, "field contract lookup")
 	if not bool(baseline_result.get("ok", false)):
 		return baseline_result
 	return _ok_result(baseline_result.get("data").field_contracts())
@@ -230,9 +173,6 @@ static func _find_descriptor_result(descriptor_pool_result, id_key: String, requ
 		if String(descriptor.get(id_key, "")) == normalized_id:
 			return _ok_result(descriptor)
 	return _error_result(error_message)
-
-static func _context_suffix(context: String) -> String:
-	return "" if context.strip_edges().is_empty() else " during %s" % context.strip_edges()
 
 static func _error_descriptor(error_message: String) -> Dictionary:
 	return {ERROR_MESSAGE_KEY: error_message.strip_edges()}
