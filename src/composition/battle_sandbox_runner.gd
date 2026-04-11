@@ -1,6 +1,7 @@
 extends Node
 class_name BattleSandboxRunner
 
+const BattleInputContractHelperScript := preload("res://src/battle_core/contracts/battle_input_contract_helper.gd")
 const BattleCoreComposerScript := preload("res://src/composition/battle_core_composer.gd")
 const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_factory.gd")
 
@@ -88,16 +89,7 @@ func _unwrap_sample_factory_result(result: Dictionary, label: String):
 func _validate_replay_input(replay_input) -> String:
     if replay_input == null:
         return "Battle sandbox failed to build replay input"
-    if replay_input.battle_setup == null:
-        return "Battle sandbox replay input missing battle_setup"
-    if replay_input.content_snapshot_paths.is_empty():
-        return "Battle sandbox replay input missing content_snapshot_paths"
-    if replay_input.command_stream.is_empty():
-        return "Battle sandbox replay input missing command_stream"
-    for command_index in range(replay_input.command_stream.size()):
-        if replay_input.command_stream[command_index] == null:
-            return "Battle sandbox replay input contains null command at index %d" % command_index
-    return ""
+    return BattleInputContractHelperScript.validate_replay_input_error(replay_input, "Battle sandbox replay input")
 
 func _fail_startup(message: String) -> void:
     if _startup_failed:

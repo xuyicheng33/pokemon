@@ -209,8 +209,8 @@ tests/run_with_gate.sh
 - 普通技能与奥义优先级约束分离校验
 - `BattleSetup.sides[*].regular_skill_loadout_overrides` 已开放赛前常规三技能覆盖，键固定为队伍槽位下标，值固定为本场实际装配的 3 个常规技能
 - `SampleBattleFactory.content_snapshot_paths_result()` 是正式快照路径入口：当前固定收集两段内容，分别是 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples` 的顶层样例资源，以及 `config/formal_character_manifest.json.characters[*]` 里显式登记的 `required_content_paths`；缺目录、缺资源或 manifest 漂移时统一返回 `{ ok, data, error_code, error_message }`
-- `SampleBattleFactory.content_snapshot_paths_for_setup_result(battle_setup)` 会在上述样例顶层资源基础上，只补当前 `battle_setup` 里实际出现的正式角色 `required_content_paths`；manager smoke、pair smoke 与 demo replay 统一走这条 setup-scoped 入口，避免继续把所有正式角色内容一锅端进每个对局
-- `SampleBattleFactory` 对外已只保留结果式接口；正式失败语义不再允许降级成 `null / [] / PackedStringArray()`
+- `SampleBattleFactory.content_snapshot_paths_for_setup_result(battle_setup)` 会在上述样例顶层资源基础上，只补当前 `battle_setup` 里实际出现的正式角色 `required_content_paths`；manager smoke、pair smoke 与 formal demo replay 统一走这条 setup-scoped 入口，baseline demo 仍走顶层样例快照入口，避免继续把所有正式角色内容一锅端进每个对局
+- `SampleBattleFactory` 的正式失败路径当前统一走结果式接口；仍保留少量便捷 helper（如 `default_demo_profile_id()`、`build_side_spec()`、`collect_tres_paths_recursive()`）直接返回值或空数组，但不再承担正式失败语义
 - `SampleBattleFactory` 内部当前固定拆成稳定 owner + 子职责 helper：`sample_battle_factory_override_router.gd` 负责 manifest/catalog/demo override 广播，`sample_battle_factory_setup_access.gd` 负责 baseline/formal matchup setup 与 sample setup 组装，`sample_battle_factory_snapshot_dir_collector.gd` 负责顶层/递归 `.tres` 扫描；外部公开方法名与 envelope 语义不变
 - `SampleBattleFactory` 的 demo replay profile 当前固定收口到 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责解析 `demo=<profile>`、初始化 manager，并委托 `SampleBattleFactory.build_demo_replay_input_for_profile_result()` 生成 replay input，缺 profile、坏 profile 或 builder 失败一律 fail-fast
 - `ContentSnapshotCache` 的签名当前固定包含稳定排序后的 snapshot 路径列表、这些顶层资源递归外部依赖到的 `.tres/.res` 文件指纹、`config/formal_character_manifest.json`，以及 `src/battle_core/content/**/*.gd` 与 `src/battle_core/content/formal_validators/**/*.gd`；因此即使只改了共享 payload、formal validator 或 manifest 角色元数据，也必须重新 miss，而不是继续复用旧 cache entry
@@ -238,7 +238,7 @@ tests/run_with_gate.sh
 - 共享能力目录说明：`docs/design/formal_character_capability_catalog.md`
 - 内容资源：`content/units|skills|effects|fields|passive_skills`
 - 样例接线：`SampleBattleFactory`
-- 唯一人工维护配置：`config/formal_character_manifest.json`
+- 正式角色条目的唯一人工维护配置：`config/formal_character_manifest.json`
 - 共享能力唯一维护配置：`config/formal_character_capability_catalog.json`
 - manifest 顶层固定三桶：`characters / matchups / pair_interaction_cases`
 - `characters[*]` 仍承载完整角色条目，但当前固定拆成两份消费视图：
@@ -284,11 +284,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-10）
+## 10. 当前代码规模（2026-04-11）
 
-- `src/**/*.gd`：`18748` 行
+- `src/**/*.gd`：`18707` 行
 - `tests/**/*.gd`：`23876` 行
-- GDScript 合计：`42624` 行
+- GDScript 合计：`42583` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

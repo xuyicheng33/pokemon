@@ -356,7 +356,7 @@
 
 补充施工边界：
 
-- 下列 `.tres` 已落盘，并已进入 `SampleBattleFactory.content_snapshot_paths_result()` 的正式收口面；`SampleBattleFactory` 对外已只保留结果式接口。
+- 下列 `.tres` 已落盘，并已进入 `SampleBattleFactory.content_snapshot_paths_result()` 的正式收口面；正式失败路径统一走结果式接口，少量便捷 helper 仍保留直接返回值。
 - 统一闸门当前已注册 `gojo_suite`；后续新增角色应沿用同一“资源清单 + SampleFactory 接线 + suite 注册”模板。
 
 ### B.1 `content/units/`

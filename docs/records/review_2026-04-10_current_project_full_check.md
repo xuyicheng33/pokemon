@@ -23,7 +23,7 @@
 - `BattleState` 仍是运行态唯一真相，composition root 继续显式装配，不依赖 autoload。
 - effect 主链仍是 `trigger_dispatcher -> effect_queue_service -> payload_executor -> payload_handler_registry -> single handler`。
 - `PayloadContractRegistry` 已成为 payload script -> handler slot -> validator key 的单点事实源；`ContentPayloadValidator`、`PayloadHandlerRegistry` 和 effects-core wiring 都从它派生。
-- `PowerBonusSourceRegistry` 已收口 source 列表、合同校验和运行时解析；`PowerBonusResolver` 当前只保留稳定委托入口。
+- `PowerBonusSourceRegistry` 已收口 source 列表与内容侧合同校验；运行时 bonus 解析当前回到 `PowerBonusResolver`，避免把运行态求值继续塞在 `content` 层。
 
 ### 3. 最近提交方向
 

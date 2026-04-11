@@ -25,8 +25,8 @@
 
 ### 3. power bonus 共享注册事实已收口
 
-- `src/battle_core/content/power_bonus_source_registry.gd` 当前同时收口 source 列表、schema 校验与运行时解析。
-- `ContentSnapshotSkillValidator` 与 `PowerBonusResolver` 已统一走这份注册表，不再一边改 source 名单、一边改验证和结算分支。
+- `src/battle_core/content/power_bonus_source_registry.gd` 当前固定只收口 source 列表与内容侧 schema 校验。
+- `PowerBonusResolver` 当前重新承担运行时 bonus 解析；新增 source 时仍只需要改注册表和 resolver 这两个明确接缝，不再把运行态逻辑继续堆进 `content` 层。
 
 ### 4. 历史审查口径已补齐
 

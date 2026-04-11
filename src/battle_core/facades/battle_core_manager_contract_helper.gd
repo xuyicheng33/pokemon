@@ -1,6 +1,7 @@
 extends RefCounted
 class_name BattleCoreManagerContractHelper
 
+const BattleInputContractHelperScript := preload("res://src/battle_core/contracts/battle_input_contract_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 static func ok(data) -> Dictionary:
@@ -52,51 +53,11 @@ static func validate_create_session_payload(init_payload) -> Variant:
 	return null
 
 static func validate_replay_input(replay_input) -> Variant:
-	if replay_input == null:
-		return error(ErrorCodesScript.INVALID_REPLAY_INPUT, "ReplayRunner.run_replay_with_context requires replay_input")
-	if not _has_property(replay_input, "battle_setup"):
-		return error(ErrorCodesScript.INVALID_REPLAY_INPUT, "ReplayRunner.run_replay_with_context requires battle_setup")
-	var battle_setup_error = _validate_battle_setup(
-		replay_input.get("battle_setup"),
-		ErrorCodesScript.INVALID_REPLAY_INPUT,
+	var replay_input_error := BattleInputContractHelperScript.validate_replay_input_error(
+		replay_input,
 		"ReplayRunner.run_replay_with_context"
 	)
-	if battle_setup_error != null:
-		return battle_setup_error
-	if not _has_property(replay_input, "content_snapshot_paths"):
-		return error(ErrorCodesScript.INVALID_REPLAY_INPUT, "ReplayRunner.run_replay_with_context requires content_snapshot_paths")
-	var content_paths_error = _validate_content_snapshot_paths(
-		replay_input.get("content_snapshot_paths"),
-		ErrorCodesScript.INVALID_REPLAY_INPUT,
-		"ReplayRunner.run_replay_with_context"
-	)
-	if content_paths_error != null:
-		return content_paths_error
-	if _has_property(replay_input, "battle_seed") and typeof(replay_input.get("battle_seed")) != TYPE_INT:
-		return error(ErrorCodesScript.INVALID_REPLAY_INPUT, "ReplayRunner.run_replay_with_context requires integer battle_seed")
-	if not _has_property(replay_input, "command_stream"):
-		return error(ErrorCodesScript.INVALID_REPLAY_INPUT, "ReplayRunner.run_replay_with_context requires command_stream")
-	var command_stream = replay_input.get("command_stream")
-	if typeof(command_stream) != TYPE_ARRAY:
-		return error(ErrorCodesScript.INVALID_REPLAY_INPUT, "ReplayRunner.run_replay_with_context requires Array command_stream")
-	for command_index in range(command_stream.size()):
-		var command = command_stream[command_index]
-		if command == null:
-			return error(
-				ErrorCodesScript.INVALID_REPLAY_INPUT,
-				"ReplayRunner.run_replay_with_context command_stream[%d] must not be null" % command_index
-			)
-		if not _has_property(command, "turn_index"):
-			return error(
-				ErrorCodesScript.INVALID_REPLAY_INPUT,
-				"ReplayRunner.run_replay_with_context command_stream[%d] missing turn_index" % command_index
-			)
-		if int(command.get("turn_index")) <= 0:
-			return error(
-				ErrorCodesScript.INVALID_REPLAY_INPUT,
-				"ReplayRunner.run_replay_with_context command_stream[%d] requires turn_index > 0" % command_index
-			)
-	return null
+	return null if replay_input_error.is_empty() else error(ErrorCodesScript.INVALID_REPLAY_INPUT, replay_input_error)
 
 static func get_session_result(sessions: Dictionary, session_id: String) -> Dictionary:
 	if session_id.is_empty():
@@ -157,60 +118,12 @@ static func service_error(service, fallback_code: String, fallback_message: Stri
 	return error(resolved_code, resolved_message)
 
 static func _validate_battle_setup(battle_setup, error_code: String, operation_label: String) -> Variant:
-	if battle_setup == null:
-		return error(error_code, "%s requires battle_setup" % operation_label)
-	if not _has_property(battle_setup, "sides"):
-		return error(error_code, "%s requires battle_setup.sides" % operation_label)
-	var sides = battle_setup.get("sides")
-	if typeof(sides) != TYPE_ARRAY or sides.is_empty():
-		return error(error_code, "%s requires battle_setup.sides to be a non-empty Array" % operation_label)
-	var seen_side_ids: Dictionary = {}
-	for side_index in range(sides.size()):
-		var side_setup = sides[side_index]
-		if side_setup == null:
-			return error(error_code, "%s requires battle_setup.sides[%d]" % [operation_label, side_index])
-		if not _has_property(side_setup, "side_id"):
-			return error(error_code, "%s requires battle_setup.sides[%d].side_id" % [operation_label, side_index])
-		var side_id := String(_read_property(side_setup, "side_id", "")).strip_edges()
-		if side_id.is_empty():
-			return error(
-				error_code,
-				"%s requires battle_setup.sides[%d].side_id to be non-empty" % [operation_label, side_index]
-			)
-		if seen_side_ids.has(side_id):
-			return error(error_code, "%s duplicated battle_setup side_id: %s" % [operation_label, side_id])
-		seen_side_ids[side_id] = true
-	return null
+	var battle_setup_error := BattleInputContractHelperScript.validate_battle_setup_error(battle_setup, operation_label)
+	return null if battle_setup_error.is_empty() else error(error_code, battle_setup_error)
 
 static func _validate_content_snapshot_paths(content_snapshot_paths, error_code: String, operation_label: String) -> Variant:
-	if typeof(content_snapshot_paths) != TYPE_PACKED_STRING_ARRAY:
-		return error(error_code, "%s requires PackedStringArray content_snapshot_paths" % operation_label)
-	if content_snapshot_paths.is_empty():
-		return error(error_code, "%s requires non-empty content_snapshot_paths" % operation_label)
-	for path_index in range(content_snapshot_paths.size()):
-		var path := String(content_snapshot_paths[path_index]).strip_edges()
-		if path.is_empty():
-			return error(
-				error_code,
-				"%s content_snapshot_paths[%d] must be non-empty" % [operation_label, path_index]
-			)
-	return null
-
-static func _has_property(value, property_name: String) -> bool:
-	if value == null or property_name.is_empty():
-		return false
-	if typeof(value) == TYPE_DICTIONARY:
-		return value.has(property_name)
-	for property_info in value.get_property_list():
-		if String(property_info.get("name", "")) == property_name:
-			return true
-	return false
-
-static func _read_property(value, property_name: String, default_value = null):
-	if value == null or property_name.is_empty():
-		return default_value
-	if typeof(value) == TYPE_DICTIONARY:
-		return value.get(property_name, default_value)
-	if not _has_property(value, property_name):
-		return default_value
-	return value.get(property_name)
+	var content_paths_error := BattleInputContractHelperScript.validate_content_snapshot_paths_error(
+		content_snapshot_paths,
+		operation_label
+	)
+	return null if content_paths_error.is_empty() else error(error_code, content_paths_error)

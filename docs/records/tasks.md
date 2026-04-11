@@ -10,6 +10,30 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前修补：输入合同收口与 power bonus 层级纠偏（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 修掉项目全景审查里确认的剩余问题：共享输入合同重复维护、`power bonus` runtime 逻辑越层，以及 README/审计文档口径超前于当前实现。
+- 范围：
+  - `battle_setup / replay_input / content_snapshot_paths / command_stream` 的共享输入合同
+  - `PowerBonusSourceRegistry / PowerBonusResolver` 的职责边界
+  - README、设计文档、审计记录与活跃决策/任务记录
+- 验收标准：
+  - side_id 与 replay 输入形状校验不再分别散落在 manager/replay/sandbox/setup 多处手写循环里
+  - `content` 层不再直接承担 power bonus 的运行态求值
+  - 文档不再把 `SampleBattleFactory`、manifest 单真相与 power bonus 注册表的现状写得比实现更绝对
+  - 完整 gate 通过并保持工作区干净
+- 结果：
+  - 已新增 `src/battle_core/contracts/battle_input_contract_helper.gd`，并由 manager/replay/sandbox/setup 统一复用
+  - `PowerBonusSourceRegistry` 已回退为 source 列表与内容侧合同 owner；运行时求值已回到 `PowerBonusResolver`
+  - README、设计文档、审计记录、决策记录已同步到当前实现口径
+- 验证：
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前复查：项目实现全景审查（2026-04-10）
 
 - 状态：已完成
@@ -131,7 +155,7 @@
     - `docs/records/review_2026-04-10_four_character_architecture_audit.md` 已显式标记为历史审查，不再作为现行依据
     - `FormalCharacterManifest` 已拆成 facade + `formal_character_manifest_loader/views` helper，并把入口文件与 helper 目录一起纳入 architecture size gate
     - payload script / handler slot / validator key 已收口到 `src/battle_core/content/payload_contract_registry.gd`；payload validator、handler registry、effects wiring 与 payload contract suite 统一从注册表派生
-    - `power_bonus_source` 的 source 列表、schema 校验与运行时解析已统一收口到 `src/battle_core/content/power_bonus_source_registry.gd`
+    - `power_bonus_source` 的 source 列表与 schema 校验已收口到 `src/battle_core/content/power_bonus_source_registry.gd`；运行时解析当前由 `src/battle_core/actions/power_bonus_resolver.gd` 负责
     - `docs/records/review_2026-04-10_post_refactor_alignment_audit.md` 已显式标记为历史审查，并新增修补后复查记录 `docs/records/review_2026-04-10_fix_followup_audit.md`
 - 第 1 阶段验收结果：
   - 仓库中已不存在旧短别名 baseline 分发路径

@@ -207,8 +207,8 @@
 - `power_bonus_source` 当前固定只维护一份共享注册事实：
   - source 列表
   - 额外 schema 校验
-  - 运行时 bonus 解析
   都统一收口到 `src/battle_core/content/power_bonus_source_registry.gd`。
+  - 运行时 bonus 解析继续固定收口到 `src/battle_core/actions/power_bonus_resolver.gd`。
 - 这么定的原因：
   - 这轮修补要解决的不是 battle core 主循环失控，而是“新增一个共享扩展点就要改多处中心入口”的返工面
   - payload 与 power bonus 都已经出现“名单、校验、运行时分支各写一份”的漂移风险；继续扩角色时，这类共享入口会先比玩法规则更快失控
@@ -223,7 +223,7 @@
 
 ## 2. formal manifest 单真源继续固定
 
-- 正式角色元数据的唯一人工维护配置固定为 `config/formal_character_manifest.json`。
+- 正式角色条目的唯一人工维护配置固定为 `config/formal_character_manifest.json`；共享字段合同继续固定在 `config/formal_registry_contracts.json`。
 - manifest 顶层固定三桶：
   - `characters`
   - `matchups`
@@ -239,7 +239,7 @@
 
 ## 3. SampleBattleFactory、sandbox demo 与 cache freshness 统一收口
 
-- `SampleBattleFactory` 对外只保留结果式接口；正式失败统一返回 `{ ok, data, error_code, error_message }`，不再保留另一套降级语义。
+- `SampleBattleFactory` 的正式失败路径统一返回 `{ ok, data, error_code, error_message }`；便捷 helper 可以继续直接返回值，但不再承担正式失败语义。
 - 运行时 helper 全部统一进 composition 装配；`SampleBattleFactory`、catalog loader、surface case builder、demo catalog 与 replay builder 各自只承载单一职责。
 - `SampleBattleFactory` owner 现在只保留稳定 facade、helper 装配与错误状态投影；manifest/catalog/demo override 广播固定下沉到 `src/composition/sample_battle_factory_override_router.gd`，baseline/formal setup 组装固定下沉到 `src/composition/sample_battle_factory_setup_access.gd`，snapshot 目录扫描固定下沉到 `src/composition/sample_battle_factory_snapshot_dir_collector.gd`。
 - directed pair surface smoke 不再手写 `pair_surface_cases`；统一由 `matchups + characters[*].surface_smoke_skill_id` 自动生成。
@@ -251,6 +251,19 @@
   - `config/formal_character_manifest.json`
   - `src/battle_core/content/**/*.gd`
   - `src/battle_core/content/formal_validators/**/*.gd`
+
+## 4. battle 输入合同与 power bonus 边界继续收口（2026-04-11）
+
+- `battle_setup.sides[*].side_id`、`content_snapshot_paths` 与 replay `command_stream` 的共享输入合同，当前统一由 `src/battle_core/contracts/battle_input_contract_helper.gd` 维护。
+- `BattleCoreManagerContractHelper`、`ReplayRunnerInputHelper`、`BattleSandboxRunner` 与 `BattleSetupValidator` 只允许复用这份共享 helper，不再各自重复写 side_id 遍历和 replay 输入形状校验。
+- 这么定的原因：
+  - `fff2e62` 虽然补齐了输入防线，但 battle setup / replay 输入合同当时仍分散在多个入口，后续一旦再改 setup 规则，维护面会重新散开。
+  - 这类校验属于共享输入 contract，不该继续同时长在 facade、logging、composition 和 content 各自的局部 helper 里。
+
+- `PowerBonusSourceRegistry` 当前只负责 source 列表和内容侧 schema/合同校验；运行时 bonus 求值固定回到 `src/battle_core/actions/power_bonus_resolver.gd`。
+- 这么定的原因：
+  - `content` 层的职责是静态声明与内容合同，不该继续承载直接读取 `unit_state.effect_instances` 的运行态逻辑。
+  - 保留“注册表负责声明面，resolver 负责运行时分支”这条边界后，新增 source 仍然只会改少数明确接缝，但不会再把运行态求值塞回 `content` 层。
 
 ## 4. 共享 runtime contract 继续只留一份真相
 
