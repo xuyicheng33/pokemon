@@ -10,6 +10,23 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前修补：Kashimo 设计稿角色数量口径纠正（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 修正文档里仍沿用“三人”阶段口径的描述，避免四角色阶段继续误导数值比较与平衡复查。
+- 范围：
+  - `docs/design/kashimo_hajime_design.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - Kashimo 设计稿里涉及角色横向比较的描述统一改成当前四角色口径
+  - 仓库一致性检查继续通过
+- 结果：
+  - `base_hp / base_attack / base_sp_defense / base_speed / regen_per_turn` 的比较描述已统一改成“当前四名正式角色”
+  - MP 压力说明也已同步改成当前四角色口径，避免继续混入旧阶段语义
+- 验证：
+  - `bash tests/check_repo_consistency.sh`
+
 ## 当前修补：payload handler 静态 gate 补齐映射校验（2026-04-11）
 
 - 状态：已完成
