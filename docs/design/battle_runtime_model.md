@@ -7,6 +7,7 @@
 - `BattleState` 是一场战斗的唯一真相。
 - 所有服务都读写同一个 `BattleState` 实例，不自行缓存分叉副本。
 - 运行态字段分为“持久字段”和“回合临时字段”；临时字段必须在明确节点重置。
+- `runtime_fault_code / runtime_fault_message` 属于运行态坏状态粘附字段；一旦写入，manager/session runtime guard 必须优先把它们当成正式失败出口，而不是继续对外投影半坏快照。
 
 ## 2. Runtime 文件清单
 
@@ -53,6 +54,8 @@
 |`field_rule_mod_instances`|`Array[RuleModInstance]`|挂载在全场作用域的规则修正实例|
 |`last_matchup_signature`|`String`|最近一次已结算 `on_matchup_changed` 的对位签名，用于去重|
 |`pre_applied_turn_start_regen_turn_index`|`int`|建局后为首回合选指预先应用过 `turn_start` 回蓝时写入对应回合号；首个 `run_turn` 用它避免重复回蓝|
+|`runtime_fault_code`|`String`|运行态已判定坏状态时写入的结构化错误码；manager/session runtime guard 优先读取它并停止继续投影半坏状态|
+|`runtime_fault_message`|`String`|与 `runtime_fault_code` 对应的错误信息；若战斗已进入 invalid termination 或 runtime/logging guard 已发现坏状态，外围错误投影优先复用这里的消息|
 
 ### 4.1 ChainContext
 

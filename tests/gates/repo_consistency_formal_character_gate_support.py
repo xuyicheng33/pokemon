@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
 import re
+import subprocess
+import tempfile
 from pathlib import Path
 
 from repo_consistency_common import GateContext
@@ -74,6 +77,63 @@ def validator_test_prefix(script_path: str) -> str:
 def baseline_script_path_for_character_id(character_id: str) -> str:
     normalized_id = character_id.strip()
     return f"src/shared/formal_character_baselines/{normalized_id}/{normalized_id}_formal_character_baseline.gd"
+
+
+def load_delivery_registry_entries(ctx: GateContext, *, export_script_path: str, manifest_path: str) -> list[dict]:
+    if not (ctx.root / export_script_path).exists():
+        ctx.failures.append(f"missing delivery registry export script: {export_script_path}")
+        return []
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as handle:
+        output_path = Path(handle.name)
+    try:
+        result = subprocess.run(
+            [
+                "godot",
+                "--headless",
+                "--path",
+                ".",
+                "--script",
+                export_script_path,
+                "--",
+                str(output_path),
+                manifest_path,
+            ],
+            cwd=ctx.root,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            stderr = result.stderr.strip()
+            stdout = result.stdout.strip()
+            combined_output = " | ".join(chunk for chunk in [stderr, stdout] if chunk)
+            ctx.failures.append(
+                f"{export_script_path} failed to export delivery registry view: {combined_output or f'exit={result.returncode}'}"
+            )
+            return []
+        try:
+            payload = json.loads(output_path.read_text(encoding="utf-8"))
+        except Exception as exc:
+            ctx.failures.append(f"{export_script_path} wrote invalid JSON: {exc}")
+            return []
+        if not isinstance(payload, dict):
+            ctx.failures.append(f"{export_script_path} must export top-level object")
+            return []
+        entries = payload.get("entries", [])
+        if not isinstance(entries, list):
+            ctx.failures.append(f"{export_script_path} missing entries array")
+            return []
+        normalized_entries: list[dict] = []
+        for entry_index, raw_entry in enumerate(entries):
+            if not isinstance(raw_entry, dict):
+                ctx.failures.append(f"{export_script_path} entries[{entry_index}] must be object")
+                continue
+            normalized_entries.append(raw_entry)
+        return normalized_entries
+    except FileNotFoundError:
+        ctx.failures.append(f"{export_script_path} requires godot in PATH")
+        return []
+    finally:
+        output_path.unlink(missing_ok=True)
 
 
 def scan_legacy_formal_character_id_refs(ctx: GateContext) -> list[str]:

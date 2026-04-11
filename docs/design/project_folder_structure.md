@@ -59,7 +59,7 @@
 |目录|职责|
 |---|---|
 |`content/`|战斗规则资源定义、正式角色资源与共享 payload 资源|
-|`config/`|工程级静态配置；当前包含 `formal_character_manifest.json / formal_character_capability_catalog.json / sample_matchup_catalog.json / demo_replay_catalog.json`|
+|`config/`|工程级静态配置；当前包含 `formal_character_manifest.json / formal_character_capability_catalog.json / formal_registry_contracts.json / sample_matchup_catalog.json / demo_replay_catalog.json`|
 |`content/battle_formats`|战斗格式定义资源|
 |`content/samples`|最小样例资源与样例对局资源|
 |`content/shared`|供正式角色跨资源复用的共享 payload / helper Resource，不直接作为顶层 snapshot 注册项|
@@ -76,7 +76,7 @@
 |`src/battle_core/facades`|对外围公开的稳定 facade 与公开快照构建辅助|
 |`src/adapters`|UI/输入/测试适配层|
 |`src/composition`|服务装配入口；`battle_core_wiring_specs/` 收口分域 wiring spec，`battle_core_wiring_specs.gd` 只负责聚合|
-|`src/shared`|无业务依赖的通用工具和常量|
+|`src/shared`|不依赖 `battle_core` 的共享工具、常量，以及 formal manifest / capability catalog / registry contracts 这类跨子域治理入口|
 |`scenes/boot`|应用启动入口|
 |`scenes/sandbox`|战斗骨架调试场景|
 |`tests/suites`|业务回归测试套件；超阈值时保留稳定 wrapper，并把真实断言下沉到同名子目录|
@@ -103,5 +103,5 @@
 1. `content/` 与 `assets/` 语义必须分离，战斗定义资源不允许继续堆到 `assets/`。
 2. `battle_core` 不依赖 `adapters`、`composition`、`scenes`。
 3. `composition` 可以依赖 `battle_core` 与 `shared`，但不能反向被它们依赖。
-4. `shared` 只放通用工具、常量和无领域依赖代码。
+4. `shared` 只放不依赖 `battle_core` 的共享代码；允许承载 formal registry / contract 这类跨子域治理入口，但不能反向依赖核心实现。
 5. `tests/` 可以依赖全部公开接口，但不能成为正式运行时依赖。

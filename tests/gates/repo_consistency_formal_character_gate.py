@@ -12,6 +12,7 @@ from repo_consistency_formal_character_gate_cutover import validate_manifest_cut
 from repo_consistency_formal_character_gate_pairs import validate_pair_catalog
 from repo_consistency_formal_character_gate_support import (
     contract_field_list,
+    load_delivery_registry_entries,
     validate_required_contract_fields,
 )
 
@@ -32,6 +33,7 @@ FORMAL_ACCESS_SCRIPT_PATH = "src/composition/sample_battle_factory_formal_access
 RUNTIME_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_runtime_registry_loader.gd"
 DELIVERY_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_delivery_registry_loader.gd"
 DELIVERY_REGISTRY_HELPER_PATH = "tests/support/formal_character_registry.gd"
+DELIVERY_REGISTRY_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_delivery_registry.gd"
 RUNTIME_REGISTRY_HELPER_PATH = "src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd"
 FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH = "src/shared/formal_registry_contracts.gd"
 FORMAL_MANIFEST_SCRIPT_PATH = "src/shared/formal_character_manifest.gd"
@@ -137,6 +139,17 @@ if not isinstance(pair_interaction_cases, list):
     ctx.failures.append(f"{MANIFEST_PATH} pair_interaction_cases must be an array")
     pair_interaction_cases = []
 
+delivery_registry = load_delivery_registry_entries(
+    ctx,
+    export_script_path=DELIVERY_REGISTRY_EXPORT_SCRIPT_PATH,
+    manifest_path=MANIFEST_PATH,
+)
+delivery_entries_by_character = {
+    str(entry.get("character_id", "")).strip(): entry
+    for entry in delivery_registry
+    if isinstance(entry, dict) and str(entry.get("character_id", "")).strip()
+}
+
 validate_manifest_cutover(
     ctx,
     manifest_path=MANIFEST_PATH,
@@ -158,8 +171,8 @@ character_validation = validate_character_entries(
     ctx,
     manifest_path=MANIFEST_PATH,
     baseline_registry_path=FORMAL_BASELINES_PATH,
-    capability_catalog_path=CAPABILITY_CATALOG_PATH,
     characters=characters,
+    delivery_entries_by_character=delivery_entries_by_character,
     matchups=matchups,
     character_runtime_required_string_fields=character_runtime_required_string_fields,
     character_runtime_required_array_fields=character_runtime_required_array_fields,
@@ -191,7 +204,7 @@ for case_index, case_spec in enumerate(pair_interaction_cases):
 validate_pair_catalog(
     ctx,
     runtime_character_ids=character_validation["runtime_character_ids"],
-    delivery_registry=characters,
+    delivery_registry=delivery_registry,
     character_to_unit=character_validation["character_to_unit"],
     matchups=matchups,
     pair_interaction_cases=pair_interaction_cases,

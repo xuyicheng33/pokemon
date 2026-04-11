@@ -15,8 +15,8 @@ def validate_character_entries(
     *,
     manifest_path: str,
     baseline_registry_path: str,
-    capability_catalog_path: str,
     characters: list,
+    delivery_entries_by_character: dict[str, dict],
     matchups: dict,
     character_runtime_required_string_fields: list[str],
     character_runtime_required_array_fields: list[str],
@@ -32,13 +32,12 @@ def validate_character_entries(
     reachable_suite_paths: set[str] = set()
     pending_suite_paths: list[str] = collect_suite_refs(ctx.read_text("tests/run_all.gd"))
     shared_suite_scope_paths = collect_scope_tree(ctx, shared_suite_roots)
-    effective_required_suite_paths_by_character: dict[str, list[str]] = {}
+    delivery_required_suite_paths_by_character: dict[str, list[str]] = {}
     baseline_registry_text = ctx.read_text(baseline_registry_path)
     if "BASELINE_SCRIPT_BY_CHARACTER_ID" in baseline_registry_text or "const CHARACTER_IDS" in baseline_registry_text:
         ctx.failures.append(f"{baseline_registry_path} must not keep manual baseline registry constants")
     if "FormalCharacterManifestScript" not in baseline_registry_text:
         ctx.failures.append(f"{baseline_registry_path} must load manifest-backed formal character ids")
-    capability_required_suite_paths = _capability_required_suite_paths(ctx, capability_catalog_path)
 
     for entry in characters:
         character_id = str(entry.get("character_id", "")).strip()
@@ -74,6 +73,9 @@ def validate_character_entries(
             ctx.failures.append("formal manifest character entry missing character_id")
             continue
         ctx.require_exists(baseline_script_path_for_character_id(character_id), f"{character_id} formal baseline script")
+        delivery_entry = delivery_entries_by_character.get(character_id, {})
+        if not delivery_entry:
+            ctx.failures.append(f"formal delivery view missing character_id: {character_id}")
         if character_id in seen_characters:
             ctx.failures.append(f"formal manifest duplicated character_id: {character_id}")
         seen_characters.add(character_id)
@@ -121,46 +123,60 @@ def validate_character_entries(
         if not surface_smoke_skill_id:
             ctx.failures.append(f"formal manifest[{character_id}] missing surface_smoke_skill_id")
 
-        if not suite_path:
+        validate_required_contract_fields(
+            ctx,
+            delivery_entry,
+            character_delivery_required_string_fields,
+            character_delivery_required_array_fields,
+            f"formal delivery view[{character_id}]",
+        )
+        delivery_suite_path = str(delivery_entry.get("suite_path", suite_path)).strip() if isinstance(delivery_entry, dict) else suite_path
+        delivery_required_suite_paths = delivery_entry.get("required_suite_paths", required_suite_paths) if isinstance(delivery_entry, dict) else required_suite_paths
+        delivery_required_test_names = delivery_entry.get("required_test_names", required_test_names) if isinstance(delivery_entry, dict) else required_test_names
+        delivery_design_needles = delivery_entry.get("design_needles", design_needles) if isinstance(delivery_entry, dict) else design_needles
+        delivery_adjustment_needles = delivery_entry.get("adjustment_needles", adjustment_needles) if isinstance(delivery_entry, dict) else adjustment_needles
+        delivery_surface_smoke_skill_id = str(delivery_entry.get("surface_smoke_skill_id", surface_smoke_skill_id)).strip() if isinstance(delivery_entry, dict) else surface_smoke_skill_id
+
+        if not delivery_surface_smoke_skill_id:
+            ctx.failures.append(f"formal delivery view[{character_id}] missing surface_smoke_skill_id")
+
+        if not delivery_suite_path:
             ctx.failures.append(f"formal manifest[{character_id}] missing suite_path")
             suite_scope_paths: list[str] = []
         else:
-            ctx.require_exists(suite_path, f"{character_id} suite")
-            pending_suite_paths.append(suite_path)
-            suite_scope_paths = [suite_path]
+            ctx.require_exists(delivery_suite_path, f"{character_id} suite")
+            pending_suite_paths.append(delivery_suite_path)
+            suite_scope_paths = [delivery_suite_path]
 
-        if not isinstance(required_suite_paths, list):
-            ctx.failures.append(f"formal manifest[{character_id}] missing required_suite_paths")
-            required_suite_paths = []
-        effective_required_suite_paths = _effective_required_suite_paths(
-            required_suite_paths,
-            entry.get("shared_capability_ids", []),
-            validator_script_path,
-            validator_bad_case_suite_path,
-            capability_required_suite_paths,
-        )
-        effective_required_suite_paths_by_character[character_id] = effective_required_suite_paths
-        for rel_path in effective_required_suite_paths:
+        if not isinstance(delivery_required_suite_paths, list):
+            ctx.failures.append(f"formal delivery view[{character_id}] missing required_suite_paths")
+            delivery_required_suite_paths = []
+        delivery_required_suite_paths_by_character[character_id] = [
+            str(rel_path).strip()
+            for rel_path in delivery_required_suite_paths
+            if str(rel_path).strip()
+        ]
+        for rel_path in delivery_required_suite_paths_by_character[character_id]:
             rel_path = str(rel_path)
             ctx.require_exists(rel_path, f"{character_id} required suite")
             suite_scope_paths.append(rel_path)
 
-        if not isinstance(required_test_names, list) or not required_test_names:
-            ctx.failures.append(f"formal manifest[{character_id}] missing required_test_names")
-        if not isinstance(design_needles, list) or not design_needles:
-            ctx.failures.append(f"formal manifest[{character_id}] missing design_needles")
-        if not isinstance(adjustment_needles, list) or not adjustment_needles:
-            ctx.failures.append(f"formal manifest[{character_id}] missing adjustment_needles")
+        if not isinstance(delivery_required_test_names, list) or not delivery_required_test_names:
+            ctx.failures.append(f"formal delivery view[{character_id}] missing required_test_names")
+        if not isinstance(delivery_design_needles, list) or not delivery_design_needles:
+            ctx.failures.append(f"formal delivery view[{character_id}] missing design_needles")
+        if not isinstance(delivery_adjustment_needles, list) or not delivery_adjustment_needles:
+            ctx.failures.append(f"formal delivery view[{character_id}] missing adjustment_needles")
 
         if design_doc:
-            for anchor_id in design_needles if isinstance(design_needles, list) else []:
+            for anchor_id in delivery_design_needles if isinstance(delivery_design_needles, list) else []:
                 ctx.require_anchor(design_doc, str(anchor_id), f"{character_id} design anchor")
         if adjustment_doc:
-            for anchor_id in adjustment_needles if isinstance(adjustment_needles, list) else []:
+            for anchor_id in delivery_adjustment_needles if isinstance(delivery_adjustment_needles, list) else []:
                 ctx.require_anchor(adjustment_doc, str(anchor_id), f"{character_id} adjustment anchor")
 
         scoped_suite_paths = collect_scope_tree(ctx, suite_scope_paths)
-        for test_name in required_test_names if isinstance(required_test_names, list) else []:
+        for test_name in delivery_required_test_names if isinstance(delivery_required_test_names, list) else []:
             ctx.require_contains_any(scoped_suite_paths, f'runner.run_test("{str(test_name)}"', f"{character_id} regression anchor")
             if any(f'runner.run_test("{str(test_name)}"' in ctx.read_text(shared_path) for shared_path in shared_suite_scope_paths):
                 ctx.failures.append(
@@ -168,17 +184,17 @@ def validate_character_entries(
                 )
 
         if validator_script_path:
-            if validator_bad_case_suite_path not in effective_required_suite_paths:
+            if validator_bad_case_suite_path not in delivery_required_suite_paths_by_character[character_id]:
                 ctx.failures.append(
-                    f"formal manifest[{character_id}] validator-backed character must expose {validator_bad_case_suite_path} in effective required_suite_paths"
+                    f"formal delivery view[{character_id}] validator-backed character must expose {validator_bad_case_suite_path} in required_suite_paths"
                 )
             validator_prefix = validator_test_prefix(validator_script_path)
             if validator_prefix and not any(
                 str(test_name).startswith(f"formal_{validator_prefix}_validator_") and "bad_case_contract" in str(test_name)
-                for test_name in required_test_names if isinstance(required_test_names, list)
+                for test_name in delivery_required_test_names if isinstance(delivery_required_test_names, list)
             ):
                 ctx.failures.append(
-                    f"formal manifest[{character_id}] validator-backed character must include formal_{validator_prefix}_validator_*bad_case_contract regression anchors"
+                    f"formal delivery view[{character_id}] validator-backed character must include formal_{validator_prefix}_validator_*bad_case_contract regression anchors"
                 )
 
     while pending_suite_paths:
@@ -193,11 +209,11 @@ def validate_character_entries(
 
     for entry in characters:
         character_id = str(entry.get("character_id", "")).strip()
-        for rel_path in effective_required_suite_paths_by_character.get(character_id, []):
+        for rel_path in delivery_required_suite_paths_by_character.get(character_id, []):
             rel_path = str(rel_path)
             if rel_path and rel_path not in reachable_suite_paths:
                 ctx.failures.append(
-                    f"formal manifest[{character_id}] required_suite_path is not reachable from tests/run_all.gd wrapper tree: {rel_path}"
+                    f"formal delivery view[{character_id}] required_suite_path is not reachable from tests/run_all.gd wrapper tree: {rel_path}"
                 )
 
     ctx.failures.extend(scan_legacy_formal_character_id_refs(ctx))
@@ -206,62 +222,3 @@ def validate_character_entries(
         "character_to_unit": character_to_unit,
         "runtime_character_ids": runtime_character_ids,
     }
-
-
-def _capability_required_suite_paths(ctx, capability_catalog_path: str) -> dict[str, list[str]]:
-    payload = ctx.load_json_object(capability_catalog_path, "formal character capability catalog")
-    raw_capabilities = payload.get("capabilities", [])
-    if not isinstance(raw_capabilities, list):
-        ctx.failures.append(f"{capability_catalog_path} missing capabilities array")
-        return {}
-    required_suite_paths_by_capability: dict[str, list[str]] = {}
-    for capability_index, raw_capability in enumerate(raw_capabilities):
-        if not isinstance(raw_capability, dict):
-            ctx.failures.append(f"{capability_catalog_path} capabilities[{capability_index}] must be object")
-            continue
-        capability_id = str(raw_capability.get("capability_id", "")).strip()
-        if not capability_id:
-            ctx.failures.append(f"{capability_catalog_path} capabilities[{capability_index}] missing capability_id")
-            continue
-        raw_required_suite_paths = raw_capability.get("required_suite_paths", [])
-        if not isinstance(raw_required_suite_paths, list):
-            ctx.failures.append(f"{capability_catalog_path}[{capability_id}].required_suite_paths must be array")
-            continue
-        required_suite_paths_by_capability[capability_id] = [
-            str(raw_path).strip()
-            for raw_path in raw_required_suite_paths
-            if str(raw_path).strip()
-        ]
-    return required_suite_paths_by_capability
-
-
-def _effective_required_suite_paths(
-    explicit_required_suite_paths,
-    shared_capability_ids,
-    validator_script_path: str,
-    validator_bad_case_suite_path: str,
-    capability_required_suite_paths: dict[str, list[str]],
-) -> list[str]:
-    resolved_paths: list[str] = []
-    seen_paths: set[str] = set()
-
-    def append_path(raw_path: object) -> None:
-        path = str(raw_path).strip()
-        if not path or path in seen_paths:
-            return
-        seen_paths.add(path)
-        resolved_paths.append(path)
-
-    if isinstance(explicit_required_suite_paths, list):
-        for raw_path in explicit_required_suite_paths:
-            append_path(raw_path)
-    if isinstance(shared_capability_ids, list):
-        for raw_capability_id in shared_capability_ids:
-            capability_id = str(raw_capability_id).strip()
-            if not capability_id:
-                continue
-            for raw_path in capability_required_suite_paths.get(capability_id, []):
-                append_path(raw_path)
-    if str(validator_script_path).strip():
-        append_path(validator_bad_case_suite_path)
-    return resolved_paths

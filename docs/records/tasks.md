@@ -10,6 +10,30 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前修补：审查发现对齐（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 修掉本轮完整审查确认的三处真实问题，避免文档继续落后于运行态合同，也避免 formal delivery suite 派生规则在 gate 和 GDScript 间各维护一份。
+- 范围：
+  - `BattleState.runtime_fault_*` 运行时模型文档补齐
+  - `project_folder_structure` 中 `config/` 与 `src/shared` 职责口径修正
+  - repo consistency gate 改为直接读取 GDScript 导出的 delivery 视图，不再在 Python 里重复推导 `required_suite_paths`
+- 验收标准：
+  - `docs/design/battle_runtime_model.md` 明确写出 runtime fault 字段及其 guard 语义
+  - `docs/design/project_folder_structure.md` 能准确反映 formal registry/contracts 的当前落点
+  - formal delivery suite 派生规则在仓库里只保留一套正式实现；repo consistency gate 只消费导出的 delivery 视图结果
+  - 完整 gate 通过
+- 结果：
+  - 运行时模型已补齐 `runtime_fault_code / runtime_fault_message`
+  - 目录文档已补 `formal_registry_contracts.json`，并把 `src/shared` 改成当前正式治理职责描述
+  - repo consistency gate 现在会先导出 delivery 视图，再用导出结果校验 `required_suite_paths / required_test_names / suite reachability`
+- 验证：
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前修补：formal 角色接入面继续去中心化（2026-04-11）
 
 - 状态：已完成

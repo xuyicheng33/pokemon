@@ -6,6 +6,7 @@ source "$ROOT_DIR/tests/require_tools.sh"
 cd "$ROOT_DIR"
 
 require_command python3 "repository consistency gate"
+require_command godot "exporting formal delivery registry view for repository consistency gate"
 
 for gate_path in \
   tests/gates/repo_consistency_surface_gate.py \
