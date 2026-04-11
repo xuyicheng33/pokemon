@@ -461,7 +461,8 @@
     },
     "obito_mirror": {
       "p1_units": ["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"],
-      "p2_units": ["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"]
+      "p2_units": ["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"],
+      "test_only": true
     }
   },
   "pair_interaction_cases": [

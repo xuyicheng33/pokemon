@@ -23,6 +23,16 @@ def _unordered_pair_key(left_character_id: str, right_character_id: str) -> str:
     return "<->".join(sorted([left_character_id, right_character_id]))
 
 
+def _matchup_test_only(ctx, matchup_catalog_path: str, matchup_id: str, raw_matchup: dict) -> bool:
+    if "test_only" not in raw_matchup:
+        return False
+    test_only = raw_matchup.get("test_only")
+    if not isinstance(test_only, bool):
+        ctx.failures.append(f"{matchup_catalog_path} matchup[{matchup_id}].test_only must be boolean")
+        return False
+    return test_only
+
+
 def validate_pair_catalog(
     ctx,
     *,
@@ -50,13 +60,18 @@ def validate_pair_catalog(
     for matchup_id, raw_matchup in matchups.items():
         if not isinstance(raw_matchup, dict):
             continue
+        test_only = _matchup_test_only(ctx, matchup_catalog_path, str(matchup_id), raw_matchup)
         p1_units = raw_matchup.get("p1_units", [])
         p2_units = raw_matchup.get("p2_units", [])
         if not isinstance(p1_units, list) or not p1_units or not isinstance(p2_units, list) or not p2_units:
             continue
         p1_character_id = next((character_id for character_id, unit_id in character_to_unit.items() if unit_id == str(p1_units[0]).strip()), "")
         p2_character_id = next((character_id for character_id, unit_id in character_to_unit.items() if unit_id == str(p2_units[0]).strip()), "")
-        if not p1_character_id or not p2_character_id or p1_character_id == p2_character_id:
+        if not p1_character_id or not p2_character_id:
+            continue
+        if p1_character_id == p2_character_id and not test_only:
+            ctx.failures.append(f"{matchup_catalog_path} same-character matchup must declare test_only: {matchup_id}")
+        if test_only or p1_character_id == p2_character_id:
             continue
         pair_key = f"{p1_character_id}->{p2_character_id}"
         if pair_key in actual_surface_pairs:

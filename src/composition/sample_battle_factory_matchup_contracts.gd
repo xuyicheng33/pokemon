@@ -11,6 +11,8 @@ func validate_matchups_result(matchups, source_label: String) -> Dictionary:
 		var matchup_spec = matchups.get(raw_matchup_id, {})
 		if not (matchup_spec is Dictionary):
 			return _error_result("SampleBattleFactory %s[%s] must be dictionary" % [source_label, matchup_id])
+		if matchup_spec.has("test_only") and not (matchup_spec.get("test_only") is bool):
+			return _error_result("SampleBattleFactory %s[%s].test_only must be boolean" % [source_label, matchup_id])
 		for side_key in ["p1_units", "p2_units"]:
 			var units = matchup_spec.get(side_key, [])
 			if not (units is Array) or units.is_empty():

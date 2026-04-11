@@ -30,6 +30,7 @@
 - 当前进展：
   - 已完成 `power_bonus_source` 真单点化：source 列表、schema 校验与 runtime 分发都收口到 `power_bonus_source_registry.gd`
   - 已完成 payload handler 扩展链第一轮收口：handler 直接依赖 wiring facts 收回 `payload_contract_registry.gd`，`payload_handler_registry.gd` 不再手抄整排 handler 槽位声明
+  - 已完成 formal matchup 测试身份显式化：`matchups[*].test_only` 现在是正式元数据，`obito_mirror` 已显式打标，surface smoke 生成与 shared gate 会跳过这类 matchup
 
 ## 当前修补：审查发现对齐（2026-04-11）
 

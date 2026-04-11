@@ -96,6 +96,8 @@ func _build_surface_matchup_pairs_result(matchups: Dictionary, unit_to_character
 				ErrorCodesScript.INVALID_BATTLE_SETUP,
 				"SampleBattleFactory matchup catalog[%s] must define non-empty p1_units/p2_units" % matchup_id
 			)
+		if bool(matchup_spec.get("test_only", false)):
+			continue
 		var p1_character_id := String(unit_to_character.get(String(p1_units[0]).strip_edges(), "")).strip_edges()
 		var p2_character_id := String(unit_to_character.get(String(p2_units[0]).strip_edges(), "")).strip_edges()
 		if p1_character_id.is_empty() or p2_character_id.is_empty() or p1_character_id == p2_character_id:

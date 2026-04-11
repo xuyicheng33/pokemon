@@ -96,6 +96,10 @@ def validate_character_entries(
             if not isinstance(matchup_spec, dict) or not matchup_spec:
                 ctx.failures.append(f"formal manifest[{character_id}] formal_setup_matchup_id missing from {manifest_path}: {formal_setup_matchup_id}")
             else:
+                if matchup_spec.get("test_only") is True:
+                    ctx.failures.append(
+                        f"formal manifest[{character_id}] formal_setup_matchup_id must not point to test_only matchup: {formal_setup_matchup_id}"
+                    )
                 p1_units = matchup_spec.get("p1_units", [])
                 if not isinstance(p1_units, list) or not p1_units:
                     ctx.failures.append(f"formal manifest[{character_id}] formal_setup_matchup_id must define non-empty p1_units: {formal_setup_matchup_id}")

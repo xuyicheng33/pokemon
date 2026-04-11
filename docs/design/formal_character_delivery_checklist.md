@@ -72,6 +72,7 @@
 - [ ] 若登记了 `content_validator_script_path`，确认 delivery/test 视图会自动并入 `tests/suites/extension_validation_contract_suite.gd`
 - [ ] 若登记了 `content_validator_script_path`，同时把至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
 - [ ] `config/formal_character_manifest.json` 新增或更新该角色相关 `matchups / pair_interaction_cases`
+- [ ] 若新增只服务测试或手动 setup 的 matchup（例如 mirror 对局），在对应 `matchups[*]` 上显式标 `test_only: true`
 - [ ] 确认该角色的 `surface_smoke_skill_id` 能在所有 formal directed matchup 的首发黑盒 smoke 中稳定施放；pair surface 不再手写登记到 catalog
 - [ ] 若补 interaction case，`pair_interaction_cases[*]` 必须显式补齐 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`
 - [ ] 若要给该角色补 sandbox/demo 演示，统一改 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 不再写死角色专属命令流

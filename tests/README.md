@@ -46,6 +46,7 @@
 - 只要角色登记了 `content_validator_script_path`，delivery/test 视图就会自动并入 `tests/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个对应角色的 validator 坏例锚点。
 - 共享能力未先登记进 capability catalog、或登记后没把对应 suite / manifest 消费声明 / 使用证据补齐时，`check_repo_consistency.sh` 会直接失败。
 - `config/formal_character_manifest.json.matchups` 与 `pair_interaction_cases` 继续承载 formal pair 覆盖；directed pair surface smoke 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，`tests/suites/formal_character_pair_smoke_suite.gd` 只负责按生成结果动态注册和执行。
+- `matchups[*].test_only` 可选；用于 `obito_mirror` 这类只服务测试/手动 setup 的 matchup。被标成 `test_only` 的 matchup 不会进入 directed surface smoke 矩阵，同角色 mirror matchup 也必须显式打这个标记。
 - `tests/support/formal_pair_interaction/scenario_registry.gd` 当前是 pair interaction scenario runner 的单一真相；catalog 校验和运行分发都只能读这张映射，不再允许双维护场景列表。
 - `pair_interaction_cases[*]` 必须显式填写 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`；catalog loader 与 shared gate 都会对空值、类型错误和不一致开局直接 fail-fast。
 - 共享 pair surface / interaction 已不再逐角色手抄进 `required_test_names`；覆盖完整性统一由 shared gate 和 suite matrix contract 校验。
