@@ -1,6 +1,15 @@
 extends RefCounted
 class_name ContentSnapshotFormalCharacterValidatorBase
 
+const BaselineErrorRegistryScript := preload("res://src/shared/formal_character_baselines.gd")
+
+func _consume_formal_baseline_error(errors: Array, descriptor) -> bool:
+	var error_message := BaselineErrorRegistryScript.descriptor_error_message(descriptor)
+	if error_message.is_empty():
+		return false
+	errors.append(error_message)
+	return true
+
 func _require_unit(content_index, errors: Array, label: String, unit_id: String) -> Variant:
 	var unit_definition = content_index.units.get(unit_id, null)
 	if unit_definition == null:

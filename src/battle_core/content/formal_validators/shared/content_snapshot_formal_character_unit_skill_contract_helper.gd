@@ -44,6 +44,8 @@ func validate_unit_contract(
 	return unit_definition
 
 func validate_unit_contract_descriptor(validator, content_index, errors: Array, descriptor: Dictionary) -> Variant:
+	if validator._consume_formal_baseline_error(errors, descriptor):
+		return null
 	var label := String(descriptor.get("label", "")).strip_edges()
 	var unit_id := String(descriptor.get("unit_id", "")).strip_edges()
 	var expected_fields: Dictionary = descriptor.get("fields", {})
@@ -57,6 +59,8 @@ func validate_skill_contracts(validator, content_index, errors: Array, descripto
 		if not (raw_descriptor is Dictionary):
 			errors.append("formal skill contract descriptor must be Dictionary")
 			continue
+		if validator._consume_formal_baseline_error(errors, raw_descriptor):
+			continue
 		_validate_skill_contract(validator, content_index, errors, raw_descriptor)
 
 func validate_passive_skill_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
@@ -64,9 +68,13 @@ func validate_passive_skill_contracts(validator, content_index, errors: Array, d
 		if not (raw_descriptor is Dictionary):
 			errors.append("formal passive contract descriptor must be Dictionary")
 			continue
+		if validator._consume_formal_baseline_error(errors, raw_descriptor):
+			continue
 		_validate_passive_skill_contract(validator, content_index, errors, raw_descriptor)
 
 func _validate_skill_contract(validator, content_index, errors: Array, descriptor: Dictionary) -> void:
+	if validator._consume_formal_baseline_error(errors, descriptor):
+		return
 	var label := String(descriptor.get("label", "")).strip_edges()
 	var skill_id := String(descriptor.get("skill_id", "")).strip_edges()
 	var expected_fields: Dictionary = descriptor.get("fields", {})
@@ -107,6 +115,8 @@ func _validate_skill_contract(validator, content_index, errors: Array, descripto
 			)
 
 func _validate_passive_skill_contract(validator, content_index, errors: Array, descriptor: Dictionary) -> void:
+	if validator._consume_formal_baseline_error(errors, descriptor):
+		return
 	var label := String(descriptor.get("label", "")).strip_edges()
 	var passive_skill_id := String(descriptor.get("passive_skill_id", "")).strip_edges()
 	var expected_fields: Dictionary = descriptor.get("fields", {})

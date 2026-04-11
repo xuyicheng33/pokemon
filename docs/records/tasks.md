@@ -10,6 +10,32 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前修补：formal baseline fail-fast 与 payload 装配文档对齐（2026-04-11）
+
+- 状态：已完成
+- 目标：
+  - 修掉 formal baseline 在正式 content validation 链路里仍靠 `assert()` 报错的问题，并把 payload 装配接缝的设计文档补到当前实现口径。
+- 范围：
+  - `FormalCharacterBaselines` 错误路径
+  - formal validator shared helper 的错误传播
+  - baseline 错误描述符回归
+  - architecture 设计文档对齐
+- 验收标准：
+  - baseline 脚本缺失或 descriptor 漂移时，不再靠 raw `assert()` 中断正式快照校验
+  - formal validator helper 能把 baseline 错误转成结构化 validation error
+  - `architecture_overview` / `battle_core_architecture_constraints` 明确写出 payload service specs 的当前接缝
+  - 完整 gate 通过
+- 结果：
+  - `FormalCharacterBaselines` 已改为结果式内部解析 + 错误描述符输出；缺 baseline 脚本、manifest 漂移或 descriptor 缺失时会回到 formal validator 的正常错误列表
+  - formal validator shared helper 已统一消费 baseline 错误描述符，不再把这类问题降级成缺字段噪音或脚本断言
+  - `runtime_registry_suite` 已补 baseline 错误描述符回归，覆盖“缺 baseline 脚本”和“缺 skill descriptor”两条路径
+  - architecture 设计文档已补齐 `BattleCorePayloadServiceSpecs` 与 `payload_service_descriptors()` 的当前装配语义
+- 验证：
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前优化：shared 扩展注册继续收口（2026-04-11）
 
 - 状态：进行中

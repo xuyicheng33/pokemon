@@ -1,10 +1,13 @@
 extends "res://tests/suites/content_validation_core/formal_registry/shared.gd"
 
+const ContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
+const GojoValidatorScript := preload("res://src/battle_core/content/formal_validators/gojo/content_snapshot_formal_gojo_validator.gd")
 const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("formal_character_validator_registry_runtime_contract", failures, Callable(self, "_test_formal_character_validator_registry_runtime_contract").bind(harness))
 	runner.run_test("formal_character_baseline_manifest_id_contract", failures, Callable(self, "_test_formal_character_baseline_manifest_id_contract").bind(harness))
+	runner.run_test("formal_character_baseline_descriptor_error_contract", failures, Callable(self, "_test_formal_character_baseline_descriptor_error_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_duplicate_unit_definition_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_duplicate_unit_definition_guard_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_required_field_guard_contract", failures, Callable(self, "_test_formal_character_runtime_registry_required_field_guard_contract").bind(harness))
 	runner.run_test("formal_character_runtime_registry_ignores_delivery_field_contract", failures, Callable(self, "_test_formal_character_runtime_registry_ignores_delivery_field_contract").bind(harness))
@@ -56,6 +59,30 @@ func _test_formal_character_baseline_manifest_id_contract(harness) -> Dictionary
 		expected_ids.append(String(entry.get("character_id", "")).strip_edges())
 	if FormalCharacterBaselinesScript.character_ids() != expected_ids:
 		return harness.fail_result("formal character baselines must expose manifest-order official ids only")
+	return harness.pass_result()
+
+func _test_formal_character_baseline_descriptor_error_contract(harness) -> Dictionary:
+	var helper = ContractHelperScript.new()
+	var validator = GojoValidatorScript.new()
+	var errors: Array = []
+	helper.validate_unit_contract_descriptor(
+		validator,
+		null,
+		errors,
+		FormalCharacterBaselinesScript.unit_contract("missing_formal_character")
+	)
+	helper.validate_skill_contracts(
+		validator,
+		null,
+		errors,
+		[FormalCharacterBaselinesScript.skill_contract("gojo_satoru", "missing_gojo_skill")]
+	)
+	if errors.size() != 2:
+		return harness.fail_result("baseline descriptor errors should surface as structured validation errors, got: %s" % var_to_str(errors))
+	if String(errors[0]).find("missing baseline script") == -1:
+		return harness.fail_result("missing baseline script error should stay structured, got: %s" % String(errors[0]))
+	if String(errors[1]).find("missing skill descriptor") == -1:
+		return harness.fail_result("missing skill descriptor error should stay structured, got: %s" % String(errors[1]))
 	return harness.pass_result()
 
 func _test_formal_character_runtime_registry_duplicate_unit_definition_guard_contract(harness) -> Dictionary:

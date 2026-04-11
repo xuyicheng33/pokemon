@@ -6,12 +6,16 @@ func validate_effect_contracts(validator, content_index, errors: Array, descript
 		if not (raw_descriptor is Dictionary):
 			errors.append("formal effect contract descriptor must be Dictionary")
 			continue
+		if validator._consume_formal_baseline_error(errors, raw_descriptor):
+			continue
 		_validate_effect_contract(validator, content_index, errors, raw_descriptor)
 
 func validate_field_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
 	for raw_descriptor in descriptors:
 		if not (raw_descriptor is Dictionary):
 			errors.append("formal field contract descriptor must be Dictionary")
+			continue
+		if validator._consume_formal_baseline_error(errors, raw_descriptor):
 			continue
 		_validate_field_contract(validator, content_index, errors, raw_descriptor)
 
@@ -37,6 +41,8 @@ func expect_single_payload_shape(
 	return payload
 
 func _validate_effect_contract(validator, content_index, errors: Array, descriptor: Dictionary) -> void:
+	if validator._consume_formal_baseline_error(errors, descriptor):
+		return
 	var label := String(descriptor.get("label", "")).strip_edges()
 	var effect_id := String(descriptor.get("effect_id", "")).strip_edges()
 	var expected_fields: Dictionary = descriptor.get("fields", {})
@@ -71,6 +77,8 @@ func _validate_effect_contract(validator, content_index, errors: Array, descript
 			)
 
 func _validate_field_contract(validator, content_index, errors: Array, descriptor: Dictionary) -> void:
+	if validator._consume_formal_baseline_error(errors, descriptor):
+		return
 	var label := String(descriptor.get("label", "")).strip_edges()
 	var field_id := String(descriptor.get("field_id", "")).strip_edges()
 	var expected_fields: Dictionary = descriptor.get("fields", {})
