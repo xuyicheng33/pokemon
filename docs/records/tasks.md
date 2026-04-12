@@ -777,3 +777,35 @@
 - `python3 tests/gates/architecture_composition_consistency_gate.py`
 - `bash tests/check_architecture_constraints.sh`
 - `bash tests/run_with_gate.sh`
+
+## 当前任务：正式角色接入主线文档口径收口（2026-04-12）
+
+- 状态：已完成
+- 目标：
+  - 把正式角色接入主线的权威文档口径同步到当前实现，清掉旧的 `pair_interaction_cases / coverage_needles / content_snapshot_paths_result()` 主路径描述，避免后续扩角继续按旧入口施工。
+- 范围：
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/battle_content_schema.md`
+  - `docs/design/formal_character_delivery_checklist.md`
+  - `docs/design/formal_character_design_template.md`
+  - `docs/design/formal_character_capability_catalog.md`
+  - `docs/design/project_folder_structure.md`
+  - `docs/rules/06_effect_schema_and_extension.md`
+  - `tests/gates/repo_consistency_docs_gate.py`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - 文档明确 `remove_effect` 正式支持 `single / all`
+  - 文档明确 formal pair 输入改为 `pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids + pair_interaction_specs`
+  - 文档明确 pair interaction 按完整有向 coverage 执行，并锁 `scenario_key`
+  - 文档明确 manager smoke、pair smoke、formal demo replay 走 setup-scoped snapshot
+  - 文档明确 capability catalog 字段改为 `required_fact_ids`
+  - docs gate 能拦住上述几条旧口径
+- 结果：
+  - README、tests README 与 formal 交付设计文档已经改成“少量原始输入 + 派生有向产物”的正式口径。
+  - `docs/rules/06_effect_schema_and_extension.md` 已补 `remove_effect single / all` 规则，并写清 `invalid_effect_remove_ambiguous` 触发边界。
+  - `docs/design/project_folder_structure.md` 已把 `tests/gates` 纳入正式目录结构说明。
+  - docs gate 已补新字段、新 bucket、新快照入口与旧口径 absence 检查。
+- 验证：
+  - `python3 tests/gates/repo_consistency_docs_gate.py`

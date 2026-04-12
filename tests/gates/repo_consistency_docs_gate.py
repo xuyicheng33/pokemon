@@ -52,12 +52,17 @@ ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_e
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_manifest.json", "schema formal character manifest wording")
-ctx.require_contains("docs/design/battle_content_schema.md", "characters / matchups / pair_interaction_cases", "schema formal manifest bucket wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "characters / matchups / pair_interaction_specs", "schema formal manifest bucket wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "formal_validators/shared/content_snapshot_formal_character_registry.gd", "schema runtime validator loader wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "当前 snapshot 实际出现的正式角色", "schema scoped formal validator wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "content_validator_script_path", "schema formal character validator path wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "pair_initiator_bench_unit_ids", "schema pair initiator bench input wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "pair_responder_bench_unit_ids", "schema pair responder bench input wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "scenario_key", "schema pair interaction scenario key wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "forward_battle_seed / reverse_battle_seed", "schema pair interaction seed wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "shared_capability_ids", "schema shared capability ids wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_capability_catalog.json", "schema capability catalog wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "required_fact_ids", "schema capability fact id wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "stop_and_specialize_when", "schema capability specialization boundary wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "顶层 `power = 0`", "schema damage-segment top-level power wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "nullify_field_accuracy", "schema field accuracy nullify contract")
@@ -70,16 +75,24 @@ ctx.require_contains("docs/design/battle_content_schema.md", "damage / heal / re
 ctx.require_contains("docs/design/battle_content_schema.md", "retention_mode", "schema stat retention contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "persistent_stat_stages", "schema persistent stat stage contract")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "formal_setup_matchup_id", "formal character setup matchup checklist wording")
+ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "content_snapshot_paths_for_setup_result(battle_setup)", "formal character setup-scoped snapshot checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "content_validator_script_path", "formal character validator registry checklist wording")
+ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "pair_initiator_bench_unit_ids", "formal character pair initiator checklist wording")
+ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "pair_responder_bench_unit_ids", "formal character pair responder checklist wording")
+ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "pair_interaction_specs", "formal character pair interaction spec checklist wording")
+ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "scenario_key", "formal character pair interaction scenario key checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "shared_capability_ids", "formal character shared capability checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "config/formal_character_capability_catalog.json", "formal character capability catalog checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts", "formal character tri-bucket checklist wording")
 ctx.require_contains("docs/design/formal_character_design_template.md", "shared_capability_ids", "formal character shared capability template wording")
 ctx.require_contains("docs/design/formal_character_design_template.md", "docs/design/formal_character_capability_catalog.md", "formal character capability catalog template wording")
+ctx.require_contains("docs/design/formal_character_design_template.md", "pair_interaction_specs", "formal character pair interaction spec template wording")
 ctx.require_contains("docs/design/formal_character_design_template.md", "unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts", "formal character tri-bucket template wording")
 ctx.require_exists("docs/design/formal_character_capability_catalog.md", "formal character capability catalog design doc")
 ctx.require_contains("docs/design/formal_character_capability_catalog.md", "config/formal_character_capability_catalog.json", "formal character capability catalog config doc")
 ctx.require_contains("docs/design/formal_character_capability_catalog.md", "shared_capability_ids", "formal character capability manifest linkage doc")
+ctx.require_contains("docs/design/formal_character_capability_catalog.md", "required_fact_ids", "formal character capability fact id doc")
+ctx.require_contains("docs/design/formal_character_capability_catalog.md", "unit / skill / effect / field / passive / payload", "formal character capability collector dimensions doc")
 ctx.require_contains("docs/design/formal_character_capability_catalog.md", "stop_and_specialize_when", "formal character capability stop-and-specialize doc")
 ctx.require_contains("docs/design/kashimo_hajime_design.md", "kashimo_manager_smoke_suite.gd", "kashimo manager smoke delivery doc")
 ctx.require_contains("docs/design/kashimo_hajime_design.md", "tests/replay_cases/kashimo_cases.md", "kashimo fixed case delivery doc")
@@ -121,6 +134,7 @@ ctx.require_contains("docs/design/passive_and_field.md", "field_apply_log_servic
 ctx.require_contains("docs/design/passive_and_field.md", "field_apply_effect_runner.gd", "field effect runner helper doc")
 ctx.require_contains("docs/design/project_folder_structure.md", "facades/", "project folder facades doc")
 ctx.require_contains("docs/design/project_folder_structure.md", "formal_character_capability_catalog.json", "project folder capability catalog doc")
+ctx.require_contains("docs/design/project_folder_structure.md", "tests/gates", "project folder tests gates doc")
 ctx.require_contains("docs/design/sukuna_design.md", "max_stacks = 3", "sukuna kamado hard cap doc")
 ctx.require_contains("docs/design/sukuna_design.md", "不新增第 4 层", "sukuna kamado overflow ignore doc")
 ctx.require_contains("docs/design/sukuna_design.md", "max_mp", "sukuna matchup bst max_mp contract")
@@ -142,6 +156,8 @@ ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "required_i
 ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "required_incoming_combat_type_ids", "rules incoming action combat type filter contract")
 ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "action_actor", "rules action actor scope contract")
 ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "`apply_field` payload requires `scope=field`", "rules apply_field scope contract")
+ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "single` 只允许", "rules remove_effect single wording")
+ctx.require_contains("docs/rules/06_effect_schema_and_extension.md", "`all` 会按同一 `def_id` 一次清空", "rules remove_effect all wording")
 ctx.require_contains("docs/rules/03_stats_resources_and_damage.md", "incoming_accuracy", "rules incoming accuracy read-path")
 ctx.require_contains("docs/rules/03_stats_resources_and_damage.md", "max_mp", "rules sukuna matchup bst max_mp contract")
 ctx.require_contains("docs/design/effect_engine.md", "nullify_field_accuracy", "effect engine nullify field accuracy read-path")
@@ -162,14 +178,22 @@ ctx.require_contains("docs/records/tasks.md", "## 当前波次：formal contract
 ctx.require_contains("README.md", "content_validator_script_path", "README runtime validator registry doc")
 ctx.require_contains("README.md", "formal_setup_matchup_id", "README formal setup matchup doc")
 ctx.require_contains("README.md", "当前 content snapshot 实际已出现的正式角色", "README scoped formal validator doc")
+ctx.require_contains("README.md", "content_snapshot_paths_for_setup_result(battle_setup)", "README setup-scoped snapshot doc")
 ctx.require_contains("README.md", "BATTLE_SANDBOX_FAILED:", "README sandbox failure gate wording")
 ctx.require_contains("README.md", "与内部日志断引用", "README detached event log wording")
+ctx.require_contains("README.md", "pair_interaction_specs", "README pair interaction spec wording")
+ctx.require_contains("README.md", "required_fact_ids", "README capability fact id wording")
+ctx.require_contains("README.md", "scenario_key", "README pair interaction scenario key wording")
 ctx.require_contains("README.md", "shared_capability_ids", "README shared capability doc")
 ctx.require_contains("README.md", "config/formal_character_capability_catalog.json", "README capability catalog doc")
 ctx.require_contains("README.md", "unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts", "README formal validator tri-bucket wording")
 ctx.require_contains("tests/README.md", "run_all.gd` 会直接注册核心公共 suite", "tests README current run_all wording")
 ctx.require_contains("tests/README.md", "formal_setup_matchup_id", "tests README formal setup matchup doc")
 ctx.require_contains("tests/README.md", "只校验当前快照里实际出现的正式角色", "tests README scoped formal validator wording")
+ctx.require_contains("tests/README.md", "content_snapshot_paths_for_setup_result(battle_setup)", "tests README setup-scoped snapshot doc")
+ctx.require_contains("tests/README.md", "pair_interaction_specs", "tests README pair interaction spec wording")
+ctx.require_contains("tests/README.md", "required_fact_ids", "tests README capability fact id wording")
+ctx.require_contains("tests/README.md", "scenario_key", "tests README pair interaction scenario key wording")
 ctx.require_contains("tests/README.md", "shared_capability_ids", "tests README shared capability doc")
 ctx.require_contains("tests/README.md", "config/formal_character_capability_catalog.json", "tests README capability catalog doc")
 ctx.require_contains("tests/README.md", "unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts", "tests README formal validator tri-bucket wording")
@@ -223,6 +247,33 @@ for rel_path in [
 ]:
     ctx.require_absent(rel_path, "代码侧描述源", "stale code-side formal registry wording")
 ctx.require_absent("docs/design/formal_character_delivery_checklist.md", "sample_setup_method", "retired sample_setup_method wording")
+
+for rel_path in [
+    "README.md",
+    "tests/README.md",
+    "docs/design/formal_character_delivery_checklist.md",
+    "docs/design/battle_content_schema.md",
+]:
+    ctx.require_absent(rel_path, "characters / matchups / pair_interaction_cases", "stale raw pair interaction case bucket wording")
+
+for rel_path in [
+    "README.md",
+    "docs/design/battle_content_schema.md",
+    "docs/design/formal_character_capability_catalog.md",
+]:
+    ctx.require_absent(rel_path, "coverage_needles", "stale capability coverage needle wording")
+
+ctx.require_absent("README.md", "6 个无向 pair case", "stale undirected pair case README wording")
+ctx.require_absent(
+    "docs/design/formal_character_delivery_checklist.md",
+    "`SampleBattleFactory` 正式快照路径读取统一走 `content_snapshot_paths_result()`",
+    "stale full-snapshot formal checklist wording",
+)
+ctx.require_absent(
+    "docs/rules/06_effect_schema_and_extension.md",
+    "只允许按目标 owner 上的精确 `def_id` 移除单个效果实例",
+    "stale remove_effect single-only wording",
+)
 
 stale_candidate_wording = [
     "schema 暂不扩候选技能池字段",

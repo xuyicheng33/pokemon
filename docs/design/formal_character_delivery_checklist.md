@@ -41,7 +41,7 @@
 
 - [ ] `SampleBattleFactory` 增加该角色相关构局入口，避免 suite 内手写拼装
 - [ ] `SampleBattleFactory` 公开 builder 名称保持稳定，内部只允许走统一 helper，不再为单角色保留私有手写构局
-- [ ] `SampleBattleFactory` 正式快照路径读取统一走 `content_snapshot_paths_result()`；正式失败语义不再允许降级成 `null / [] / PackedStringArray()`
+- [ ] `SampleBattleFactory` 正式失败路径统一走结果式接口；manager smoke、pair smoke 与 formal demo replay 默认读取 `content_snapshot_paths_for_setup_result(battle_setup)`，只有全量正式快照 / baseline demo 才走 `content_snapshot_paths_result()`
 - [ ] `config/formal_character_manifest.json` 新增或更新该角色的 `characters[*]` 条目
 - [ ] 若角色复用共享扩展，先对齐 `config/formal_character_capability_catalog.json` 对应 entry；不属于现有 capability 时，先补目录与规则归属，再继续写角色资源
 - [ ] `characters[*]` 继续写在同一个 manifest 条目里，但要按两份消费视图检查：
@@ -50,6 +50,7 @@
 - [ ] `characters[*]` 至少补齐：
   - [ ] `character_id / display_name / unit_definition_id`
   - [ ] `formal_setup_matchup_id`（默认 formal setup 实际要走的 matchup_id；formal runtime 只认 `character_id + formal_setup_matchup_id`）
+  - [ ] `pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids`（formal-vs-formal directed matchup 的唯一角色级输入；必须各自固定为 2 个 bench 单位 ID）
   - [ ] `required_content_paths`
   - [ ] `content_validator_script_path`（按需）
   - [ ] `design_doc / adjustment_doc`
@@ -71,11 +72,13 @@
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
 - [ ] 若登记了 `content_validator_script_path`，确认 delivery/test 视图会自动并入 `tests/suites/extension_validation_contract_suite.gd`
 - [ ] 若登记了 `content_validator_script_path`，同时把至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
-- [ ] `config/formal_character_manifest.json` 新增或更新该角色相关 `matchups / pair_interaction_cases`
+- [ ] `config/formal_character_manifest.json` 新增或更新该角色相关 `matchups / pair_interaction_specs`
 - [ ] 若新增只服务测试或手动 setup 的 matchup（例如 mirror 对局），在对应 `matchups[*]` 上显式标 `test_only: true`
+- [ ] 不再手写 formal-vs-formal 的非 `test_only` directed matchup；这部分只允许由 loader 按 `characters[*] + pair_initiator_bench_unit_ids + pair_responder_bench_unit_ids` 自动派生
 - [ ] 确认该角色的 `surface_smoke_skill_id` 能在所有 formal directed matchup 的首发黑盒 smoke 中稳定施放；pair surface 不再手写登记到 catalog
-- [ ] 若补 interaction case，`pair_interaction_cases[*]` 必须显式补齐 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`，并保证 `character_ids` 顺序匹配 matchup opener 方向、且不引用 `test_only` matchup
-- [ ] 每个非 `test_only` 的 directed formal matchup 都至少补一条对应的 `pair_interaction_case`，不要再额外维护代码侧必备场景名单
+- [ ] 若补 interaction 场景，`pair_interaction_specs[*]` 每个无向正式 pair 只写一条规格，必须显式补齐 `character_ids[2] / scenario_key / forward_battle_seed / reverse_battle_seed`
+- [ ] `tests/support/formal_pair_interaction/scenario_registry.gd` 只登记无向 `scenario_key`；scenario runner 执行时读取的是派生好的 directed case context，不再给正反方向各维护一份场景 ID
+- [ ] 每个无向正式 pair 都至少补一条 `pair_interaction_spec`；loader 会自动派生两条 directed `pair_interaction_case`，shared gate 会同时校验完整有向 coverage、`matchup_id` 和对应 `scenario_key`
 - [ ] 若要给该角色补 sandbox/demo 演示，统一改 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 不再写死角色专属命令流
 
 ## 4. 测试最低面
@@ -110,7 +113,7 @@
 - [ ] 若角色依赖共享 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 等扩展能力，只需要声明 `shared_capability_ids`
 - [ ] 若角色依赖共享 `required_target_effects / incoming_accuracy / power_bonus_source=effect_stack_sum` 等扩展能力，也只需要声明 `shared_capability_ids`
 - [ ] 共享 suite 的维护入口以 `config/formal_character_capability_catalog.json` 为准；catalog 新增 `required_suite_paths` 时，不再要求相关角色 manifest 同步补齐重复条目
-- [ ] 共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`；统一改在 `config/formal_character_manifest.json.matchups / pair_interaction_cases` 收口并由 shared gate 校验覆盖完整性
+- [ ] 共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`；统一改在 `config/formal_character_manifest.json.matchups / pair_interaction_specs` 收口并由 shared gate 校验覆盖完整性
 - [ ] 不允许只靠通用 contract suite 兜角色回归
 - [ ] 至少补一组“该角色 + 另一名正式角色”的黑盒 smoke，避免正式角色配对覆盖只堆在单一对局上
 

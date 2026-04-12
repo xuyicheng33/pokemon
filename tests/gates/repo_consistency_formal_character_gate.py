@@ -13,6 +13,7 @@ from repo_consistency_formal_character_gate_pairs import validate_pair_catalog
 from repo_consistency_formal_character_gate_support import (
     contract_field_list,
     load_delivery_registry_entries,
+    load_pair_catalog,
     validate_required_contract_fields,
 )
 
@@ -35,6 +36,7 @@ DELIVERY_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_delivery_
 DELIVERY_REGISTRY_HELPER_PATH = "tests/support/formal_character_registry.gd"
 DELIVERY_REGISTRY_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_delivery_registry.gd"
 CAPABILITY_FACTS_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_capability_facts.gd"
+PAIR_CATALOG_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_pair_catalog.gd"
 RUNTIME_REGISTRY_HELPER_PATH = "src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd"
 FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH = "src/shared/formal_registry_contracts.gd"
 FORMAL_MANIFEST_SCRIPT_PATH = "src/shared/formal_character_manifest.gd"
@@ -58,10 +60,10 @@ manifest = ctx.load_json_object(MANIFEST_PATH, "formal character manifest")
 formal_registry_contracts = ctx.load_json_object(FORMAL_REGISTRY_CONTRACTS_PATH, "formal registry contracts")
 characters = manifest.get("characters", [])
 matchups = manifest.get("matchups", {})
-pair_interaction_cases = manifest.get("pair_interaction_cases", [])
+pair_interaction_specs = manifest.get("pair_interaction_specs", [])
 character_runtime_contract_bucket = formal_registry_contracts.get("manifest_character_runtime", {})
 character_delivery_contract_bucket = formal_registry_contracts.get("manifest_character_delivery", {})
-pair_case_contract_bucket = formal_registry_contracts.get("pair_interaction_case", {})
+pair_case_contract_bucket = formal_registry_contracts.get("pair_interaction_spec", {})
 character_runtime_required_string_fields = contract_field_list(
     ctx,
     character_runtime_contract_bucket,
@@ -104,25 +106,25 @@ pair_case_required_string_fields = contract_field_list(
     ctx,
     pair_case_contract_bucket,
     "required_string_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_case.required_string_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_spec.required_string_fields",
 )
 pair_case_required_array_fields = contract_field_list(
     ctx,
     pair_case_contract_bucket,
     "required_array_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_case.required_array_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_spec.required_array_fields",
 )
 pair_case_required_positive_int_fields = contract_field_list(
     ctx,
     pair_case_contract_bucket,
     "required_positive_int_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_case.required_positive_int_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_spec.required_positive_int_fields",
 )
 contract_field_list(
     ctx,
     pair_case_contract_bucket,
     "optional_string_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_case.optional_string_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_spec.optional_string_fields",
     required=False,
 )
 
@@ -136,9 +138,11 @@ if not isinstance(matchups, dict):
     matchups = {}
 if "pair_surface_cases" in manifest:
     ctx.failures.append(f"{MANIFEST_PATH} must not define pair_surface_cases; surface coverage is generated from matchups + characters.surface_smoke_skill_id")
-if not isinstance(pair_interaction_cases, list):
-    ctx.failures.append(f"{MANIFEST_PATH} pair_interaction_cases must be an array")
-    pair_interaction_cases = []
+if "pair_interaction_cases" in manifest:
+    ctx.failures.append(f"{MANIFEST_PATH} must not define pair_interaction_cases; use pair_interaction_specs")
+if not isinstance(pair_interaction_specs, list):
+    ctx.failures.append(f"{MANIFEST_PATH} pair_interaction_specs must be an array")
+    pair_interaction_specs = []
 
 delivery_registry = load_delivery_registry_entries(
     ctx,
@@ -150,6 +154,19 @@ delivery_entries_by_character = {
     for entry in delivery_registry
     if isinstance(entry, dict) and str(entry.get("character_id", "")).strip()
 }
+pair_catalog = load_pair_catalog(
+    ctx,
+    export_script_path=PAIR_CATALOG_EXPORT_SCRIPT_PATH,
+    manifest_path=MANIFEST_PATH,
+)
+derived_matchups = pair_catalog.get("matchups", {})
+if not isinstance(derived_matchups, dict):
+    ctx.failures.append(f"{PAIR_CATALOG_EXPORT_SCRIPT_PATH} missing matchups object")
+    derived_matchups = {}
+derived_pair_interaction_cases = pair_catalog.get("pair_interaction_cases", [])
+if not isinstance(derived_pair_interaction_cases, list):
+    ctx.failures.append(f"{PAIR_CATALOG_EXPORT_SCRIPT_PATH} missing pair_interaction_cases array")
+    derived_pair_interaction_cases = []
 
 validate_manifest_cutover(
     ctx,
@@ -191,16 +208,16 @@ validate_capability_catalog(
     export_script_path=CAPABILITY_FACTS_EXPORT_SCRIPT_PATH,
 )
 
-for case_index, case_spec in enumerate(pair_interaction_cases):
+for case_index, case_spec in enumerate(pair_interaction_specs):
     if not isinstance(case_spec, dict):
-        ctx.failures.append(f"{MANIFEST_PATH} pair_interaction_cases[{case_index}] must be object")
+        ctx.failures.append(f"{MANIFEST_PATH} pair_interaction_specs[{case_index}] must be object")
         continue
     validate_required_contract_fields(
         ctx,
         case_spec,
         pair_case_required_string_fields,
         pair_case_required_array_fields,
-        f"{MANIFEST_PATH} pair_interaction_cases[{case_index}]",
+        f"{MANIFEST_PATH} pair_interaction_specs[{case_index}]",
         pair_case_required_positive_int_fields,
     )
 
@@ -209,9 +226,12 @@ validate_pair_catalog(
     runtime_character_ids=character_validation["runtime_character_ids"],
     delivery_registry=delivery_registry,
     character_to_unit=character_validation["character_to_unit"],
-    matchups=matchups,
-    pair_interaction_cases=pair_interaction_cases,
+    raw_matchups=matchups,
+    derived_matchups=derived_matchups,
+    pair_interaction_specs=pair_interaction_specs,
+    pair_interaction_cases=derived_pair_interaction_cases,
     matchup_catalog_path=MANIFEST_PATH,
+    pair_spec_path=f"{MANIFEST_PATH} pair_interaction_specs",
     delivery_registry_path=MANIFEST_PATH,
     scenario_registry_path=PAIR_INTERACTION_SCENARIO_REGISTRY_PATH,
 )

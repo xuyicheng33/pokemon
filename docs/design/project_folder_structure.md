@@ -46,6 +46,7 @@
       battle_core_wiring_specs/
     shared/
   tests/
+    gates/
     suites/
     support/
     fixtures/
@@ -80,6 +81,7 @@
 |`scenes/boot`|应用启动入口|
 |`scenes/sandbox`|战斗骨架调试场景|
 |`tests/suites`|业务回归测试套件；超阈值时保留稳定 wrapper，并把真实断言下沉到同名子目录|
+|`tests/gates`|仓库一致性与架构闸门；当前至少包含 `surface / formal_character / docs` 三类治理入口|
 |`tests/support`|测试 harness 与公共构造器|
 |`tests/fixtures`|回放/样例输入|
 |`tests/helpers`|预留的测试辅助脚本目录|

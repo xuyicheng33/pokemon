@@ -82,7 +82,7 @@ func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary
 			"gojo_alias",
 			"Gojo Alias",
 			"gojo_satoru",
-			"gojo_alias_vs_sukuna_alias",
+			"gojo_alias_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
 			"",
 			"docs/design/gojo_satoru_design.md",
@@ -98,7 +98,7 @@ func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary
 			"sukuna_alias",
 			"Sukuna Alias",
 			"sukuna",
-			"sukuna_alias_vs_gojo_alias",
+			"sukuna_alias_setup",
 			["content/units/sukuna/sukuna.tres"],
 			"",
 			"docs/design/sukuna_design.md",
@@ -111,15 +111,22 @@ func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary
 			["anchor:sukuna.adjust.tests-impacted"]
 		),
 	], {
-		"gojo_alias_vs_sukuna_alias": {
-			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
-			"p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
+		"gojo_alias_vs_sample": {
+			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
+			"p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
 		},
-		"sukuna_alias_vs_gojo_alias": {
-			"p1_units": ["sukuna", "sample_tidekit", "sample_mossaur"],
-			"p2_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"]
+		"sukuna_alias_setup": {
+			"p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
+			"p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
 		}
-	}, []), "  ")
+	}, [
+		_build_pair_interaction_spec(
+			["gojo_alias", "sukuna_alias"],
+			"gojo_sukuna_domain_cleanup",
+			3611,
+			3612
+		)
+	]), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
 		return harness.fail_result("failed to write formal manifest mismatch fixture")
 	var override_factory = harness.build_sample_factory_with_overrides(manifest_path)
@@ -182,7 +189,7 @@ func _test_formal_pair_interaction_catalog_seed_contract(harness) -> Dictionary:
 			"gojo_satoru",
 			"Gojo",
 			"gojo_satoru",
-			"gojo_vs_sukuna",
+			"gojo_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
 			"",
 			"docs/design/gojo_satoru_design.md",
@@ -198,7 +205,7 @@ func _test_formal_pair_interaction_catalog_seed_contract(harness) -> Dictionary:
 			"sukuna",
 			"宿傩",
 			"sukuna",
-			"sukuna_vs_gojo",
+			"sukuna_setup",
 			["content/units/sukuna/sukuna.tres"],
 			"",
 			"docs/design/sukuna_design.md",
@@ -211,17 +218,21 @@ func _test_formal_pair_interaction_catalog_seed_contract(harness) -> Dictionary:
 			["anchor:sukuna.adjust.tests-impacted"]
 		),
 	], {
-		"gojo_vs_sukuna": {
-			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
-			"p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
+		"gojo_vs_sample": {
+			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
+			"p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
+		},
+		"sukuna_setup": {
+			"p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
+			"p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
 		}
 	}, [
-			{
-				"test_name": "formal_pair_gojo_vs_sukuna_interaction_contract",
-				"scenario_id": "gojo_vs_sukuna_domain_cleanup",
-				"character_ids": ["gojo_satoru", "sukuna"],
-				"matchup_id": "gojo_vs_sukuna"
-			}
+			_build_pair_interaction_spec(
+				["gojo_satoru", "sukuna"],
+				"gojo_sukuna_domain_cleanup",
+				2661,
+				0
+			)
 		]), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
 		return harness.fail_result("failed to write formal manifest missing-seed fixture")
@@ -236,13 +247,13 @@ func _test_formal_pair_interaction_catalog_seed_contract(harness) -> Dictionary:
 	return harness.pass_result()
 
 func _test_formal_pair_interaction_catalog_direction_contract(harness) -> Dictionary:
-	var manifest_path := "user://formal_character_manifest_bad_interaction_direction_fixture.json"
+	var manifest_path := "user://formal_character_manifest_derived_interaction_fixture.json"
 	var manifest_payload := JSON.stringify(_build_manifest_payload([
 		_build_manifest_character_entry(
 			"gojo_satoru",
 			"Gojo",
 			"gojo_satoru",
-			"gojo_vs_sukuna",
+			"gojo_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
 			"",
 			"docs/design/gojo_satoru_design.md",
@@ -258,7 +269,7 @@ func _test_formal_pair_interaction_catalog_direction_contract(harness) -> Dictio
 			"sukuna",
 			"宿傩",
 			"sukuna",
-			"sukuna_vs_gojo",
+			"sukuna_setup",
 			["content/units/sukuna/sukuna.tres"],
 			"",
 			"docs/design/sukuna_design.md",
@@ -271,29 +282,41 @@ func _test_formal_pair_interaction_catalog_direction_contract(harness) -> Dictio
 			["anchor:sukuna.adjust.tests-impacted"]
 		),
 	], {
-		"gojo_vs_sukuna": {
-			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
-			"p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
+		"gojo_vs_sample": {
+			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
+			"p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
+		},
+		"sukuna_setup": {
+			"p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
+			"p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
 		}
 	}, [
-			{
-				"test_name": "formal_pair_bad_direction_contract",
-				"scenario_id": "gojo_vs_sukuna_domain_cleanup",
-				"character_ids": ["sukuna", "gojo_satoru"],
-				"matchup_id": "gojo_vs_sukuna",
-				"battle_seed": 4123
-			}
+			_build_pair_interaction_spec(
+				["gojo_satoru", "sukuna"],
+				"gojo_sukuna_domain_cleanup",
+				4123,
+				5123
+			)
 		]), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
-		return harness.fail_result("failed to write bad interaction direction fixture")
+		return harness.fail_result("failed to write derived interaction fixture")
 	var override_factory = harness.build_sample_factory_with_overrides(manifest_path)
 	if override_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed for bad interaction direction fixture")
+		return harness.fail_result("SampleBattleFactory init failed for derived interaction fixture")
 	var interaction_cases_result: Dictionary = override_factory.formal_pair_interaction_cases_result()
-	if bool(interaction_cases_result.get("ok", true)):
-		return harness.fail_result("formal pair interaction catalog should fail fast when character_ids do not match matchup opener direction")
-	if String(interaction_cases_result.get("error_message", "")).find("character_ids") == -1:
-		return harness.fail_result("formal pair interaction bad-direction error should mention character_ids")
+	if not bool(interaction_cases_result.get("ok", false)):
+		return harness.fail_result("formal pair interaction catalog should derive directed cases from pair_interaction_specs: %s" % String(interaction_cases_result.get("error_message", "unknown error")))
+	var interaction_cases: Array = interaction_cases_result.get("data", [])
+	if interaction_cases.size() != 2:
+		return harness.fail_result("formal pair interaction catalog should derive exactly two directed cases from one spec")
+	var first_case: Dictionary = interaction_cases[0]
+	var second_case: Dictionary = interaction_cases[1]
+	if String(first_case.get("matchup_id", "")) != "gojo_vs_sukuna" or String(second_case.get("matchup_id", "")) != "sukuna_vs_gojo":
+		return harness.fail_result("formal pair interaction catalog should derive stable directional matchup ids")
+	if String(first_case.get("scenario_key", "")) != "gojo_sukuna_domain_cleanup" or String(second_case.get("scenario_key", "")) != "gojo_sukuna_domain_cleanup":
+		return harness.fail_result("formal pair interaction catalog should keep one stable scenario_key across both directions")
+	if int(first_case.get("battle_seed", 0)) != 4123 or int(second_case.get("battle_seed", 0)) != 5123:
+		return harness.fail_result("formal pair interaction catalog should preserve forward/reverse battle seeds")
 	return harness.pass_result()
 
 func _test_formal_pair_interaction_catalog_test_only_matchup_contract(harness) -> Dictionary:
@@ -303,7 +326,7 @@ func _test_formal_pair_interaction_catalog_test_only_matchup_contract(harness) -
 			"gojo_satoru",
 			"Gojo",
 			"gojo_satoru",
-			"gojo_vs_sukuna",
+			"gojo_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
 			"",
 			"docs/design/gojo_satoru_design.md",
@@ -319,7 +342,7 @@ func _test_formal_pair_interaction_catalog_test_only_matchup_contract(harness) -
 			"sukuna",
 			"宿傩",
 			"sukuna",
-			"sukuna_vs_gojo",
+			"sukuna_setup",
 			["content/units/sukuna/sukuna.tres"],
 			"",
 			"docs/design/sukuna_design.md",
@@ -332,9 +355,13 @@ func _test_formal_pair_interaction_catalog_test_only_matchup_contract(harness) -
 			["anchor:sukuna.adjust.tests-impacted"]
 		),
 	], {
-		"gojo_vs_sukuna": {
-			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
-			"p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
+		"gojo_vs_sample": {
+			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
+			"p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
+		},
+		"sukuna_setup": {
+			"p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
+			"p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
 		},
 		"gojo_training_vs_sukuna": {
 			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
@@ -342,13 +369,12 @@ func _test_formal_pair_interaction_catalog_test_only_matchup_contract(harness) -
 			"test_only": true
 		}
 	}, [
-			{
-				"test_name": "formal_pair_test_only_interaction_contract",
-				"scenario_id": "gojo_vs_sukuna_domain_cleanup",
-				"character_ids": ["gojo_satoru", "sukuna"],
-				"matchup_id": "gojo_training_vs_sukuna",
-				"battle_seed": 4124
-			}
+			_build_pair_interaction_spec(
+				["gojo_satoru", "sukuna"],
+				"gojo_sukuna_domain_cleanup",
+				4124,
+				5124
+			)
 		]), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
 		return harness.fail_result("failed to write test_only interaction fixture")
@@ -356,10 +382,12 @@ func _test_formal_pair_interaction_catalog_test_only_matchup_contract(harness) -
 	if override_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed for test_only interaction fixture")
 	var interaction_cases_result: Dictionary = override_factory.formal_pair_interaction_cases_result()
-	if bool(interaction_cases_result.get("ok", true)):
-		return harness.fail_result("formal pair interaction catalog should fail fast when pair_interaction_case references test_only matchup")
-	if String(interaction_cases_result.get("error_message", "")).find("test_only") == -1:
-		return harness.fail_result("formal pair interaction test_only error should mention test_only")
+	if not bool(interaction_cases_result.get("ok", false)):
+		return harness.fail_result("formal pair interaction catalog should ignore explicit test_only matchups outside the generated pair matrix: %s" % String(interaction_cases_result.get("error_message", "unknown error")))
+	for raw_case in interaction_cases_result.get("data", []):
+		var case_spec: Dictionary = raw_case
+		if String(case_spec.get("matchup_id", "")) == "gojo_training_vs_sukuna":
+			return harness.fail_result("formal pair interaction catalog must not derive cases against explicit test_only matchup ids")
 	return harness.pass_result()
 
 func _test_formal_pair_surface_delivery_skill_contract(harness) -> Dictionary:
@@ -369,7 +397,7 @@ func _test_formal_pair_surface_delivery_skill_contract(harness) -> Dictionary:
 			"gojo_alias",
 			"Gojo Alias",
 			"gojo_satoru",
-			"gojo_alias_vs_sukuna_alias",
+			"gojo_alias_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
 			"",
 			"docs/design/gojo_satoru_design.md",
@@ -385,7 +413,7 @@ func _test_formal_pair_surface_delivery_skill_contract(harness) -> Dictionary:
 			"sukuna_alias",
 			"Sukuna Alias",
 			"sukuna",
-			"sukuna_alias_vs_gojo_alias",
+			"sukuna_alias_setup",
 			["content/units/sukuna/sukuna.tres"],
 			"",
 			"docs/design/sukuna_design.md",
@@ -398,14 +426,14 @@ func _test_formal_pair_surface_delivery_skill_contract(harness) -> Dictionary:
 			["anchor:sukuna.adjust.tests-impacted"]
 		),
 	], {
-		"gojo_alias_vs_sukuna_alias": {
-			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
-			"p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
-			},
-			"sukuna_alias_vs_gojo_alias": {
-				"p1_units": ["sukuna", "sample_tidekit", "sample_mossaur"],
-				"p2_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"]
-			}
+		"gojo_alias_vs_sample": {
+			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
+			"p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
+		},
+		"sukuna_alias_setup": {
+			"p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
+			"p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
+		}
 	}, []), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
 		return harness.fail_result("failed to write manifest surface-skill fixture")
@@ -425,7 +453,7 @@ func _test_formal_matchup_test_only_flag_contract(harness) -> Dictionary:
 			"gojo_satoru",
 			"Gojo",
 			"gojo_satoru",
-			"gojo_vs_sukuna",
+			"gojo_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
 			"",
 			"docs/design/gojo_satoru_design.md",
@@ -441,7 +469,7 @@ func _test_formal_matchup_test_only_flag_contract(harness) -> Dictionary:
 			"sukuna",
 			"宿傩",
 			"sukuna",
-			"sukuna_vs_gojo",
+			"sukuna_setup",
 			["content/units/sukuna/sukuna.tres"],
 			"",
 			"docs/design/sukuna_design.md",
@@ -455,13 +483,13 @@ func _test_formal_matchup_test_only_flag_contract(harness) -> Dictionary:
 		),
 	]
 	var matchups := {
-		"gojo_vs_sukuna": {
-			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
-			"p2_units": ["sukuna", "sample_tidekit", "sample_mossaur"]
+		"gojo_vs_sample": {
+			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
+			"p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
 		},
-		"sukuna_vs_gojo": {
-			"p1_units": ["sukuna", "sample_tidekit", "sample_mossaur"],
-			"p2_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"]
+		"sukuna_setup": {
+			"p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
+			"p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
 		},
 		"gojo_training_vs_sukuna": {
 			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_pyron"],
@@ -470,7 +498,15 @@ func _test_formal_matchup_test_only_flag_contract(harness) -> Dictionary:
 		}
 	}
 	var manifest_path := "user://formal_character_manifest_test_only_fixture.json"
-	var manifest_payload := JSON.stringify(_build_manifest_payload(characters, matchups, []), "  ")
+	var pair_interaction_specs := [
+		_build_pair_interaction_spec(
+			["gojo_satoru", "sukuna"],
+			"gojo_sukuna_domain_cleanup",
+			4125,
+			5125
+		)
+	]
+	var manifest_payload := JSON.stringify(_build_manifest_payload(characters, matchups, pair_interaction_specs), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
 		return harness.fail_result("failed to write formal manifest test-only fixture")
 	var override_factory = harness.build_sample_factory_with_overrides(manifest_path)
@@ -490,7 +526,7 @@ func _test_formal_matchup_test_only_flag_contract(harness) -> Dictionary:
 	var invalid_matchups = matchups.duplicate(true)
 	invalid_matchups["gojo_training_vs_sukuna"]["test_only"] = "yes"
 	var invalid_manifest_path := "user://formal_character_manifest_invalid_test_only_fixture.json"
-	var invalid_manifest_payload := JSON.stringify(_build_manifest_payload(characters, invalid_matchups, []), "  ")
+	var invalid_manifest_payload := JSON.stringify(_build_manifest_payload(characters, invalid_matchups, pair_interaction_specs), "  ")
 	if not _write_json_fixture(invalid_manifest_path, invalid_manifest_payload):
 		return harness.fail_result("failed to write invalid test_only fixture")
 	var invalid_factory = harness.build_sample_factory_with_overrides(invalid_manifest_path)

@@ -5,7 +5,7 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const DEFAULT_CONTRACT_PATH := "res://config/formal_registry_contracts.json"
 const MANIFEST_CHARACTER_RUNTIME_BUCKET := "manifest_character_runtime"
 const MANIFEST_CHARACTER_DELIVERY_BUCKET := "manifest_character_delivery"
-const PAIR_INTERACTION_CASE_BUCKET := "pair_interaction_case"
+const PAIR_INTERACTION_SPEC_BUCKET := "pair_interaction_spec"
 
 var contract_path_override: String = ""
 
@@ -61,7 +61,7 @@ func load_contracts_result() -> Dictionary:
 	for bucket_name in [
 		MANIFEST_CHARACTER_RUNTIME_BUCKET,
 		MANIFEST_CHARACTER_DELIVERY_BUCKET,
-		PAIR_INTERACTION_CASE_BUCKET,
+		PAIR_INTERACTION_SPEC_BUCKET,
 	]:
 		var bucket = parsed.get(bucket_name, {})
 		if not (bucket is Dictionary):

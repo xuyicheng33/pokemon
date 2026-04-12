@@ -83,8 +83,8 @@ func validate_unordered_interaction_matrix(harness, sample_factory, cases: Array
 			return harness.fail_result("formal pair interaction case cannot target the same character twice")
 		if not known_character_ids.has(left_character_id) or not known_character_ids.has(right_character_id):
 			return harness.fail_result("formal pair interaction case references unknown formal character id")
-		if String(case_spec.get("scenario_id", "")).strip_edges().is_empty():
-			return harness.fail_result("formal pair interaction case missing scenario_id")
+		if String(case_spec.get("scenario_key", "")).strip_edges().is_empty():
+			return harness.fail_result("formal pair interaction case missing scenario_key")
 		if String(case_spec.get("matchup_id", "")).strip_edges().is_empty():
 			return harness.fail_result("formal pair interaction case missing matchup_id")
 		if not _is_positive_whole_number(case_spec.get("battle_seed", null)):

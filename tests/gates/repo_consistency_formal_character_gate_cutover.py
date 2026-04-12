@@ -82,7 +82,7 @@ def validate_manifest_cutover(
         ctx.failures.append("formal pair interaction wrapper must preload tests/suites/formal_character_pair_smoke/interaction_support.gd")
     for stale_needle, label in [
         ("EXPECTED_SCENARIO_IDS", "local scenario list"),
-        ("match scenario_id", "local scenario dispatch"),
+        ("match scenario_", "local scenario dispatch"),
         ("._test_", "cross-suite private _test_* call"),
     ]:
         if stale_needle in pair_interaction_text:

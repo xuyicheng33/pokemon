@@ -134,7 +134,7 @@
 7. `payloads` 列表严格按声明顺序执行；后一个 payload 必须读取前一个 payload 已经写回的最新运行态。
 8. 每个 payload 单独适用模块 02 的目标有效性与模块 04 的生命周期规则；若前序 payload 已让目标进入 `fainted_pending_leave`，后续直接作用该目标的普通 payload 按目标无效处理。
 9. 若 `on_cast` 链上的前序 payload（含默认动作反伤）让施法者 HP 归 0，本次行动链不提前终止；仍按模块 02 的“行动开始后不回滚”语义继续本次剩余步骤，并在行动结束后进入击倒窗口。
-10. 当前基线的 `remove_effect` 只允许按目标 owner 上的精确 `def_id` 移除单个效果实例；若出现文档未允许的歧义匹配，按 `invalid_battle` 处理。
+10. 当前基线的 `remove_effect` 按 `remove_mode` 区分两种正式语义：`single` 只允许按目标 owner 的精确 `def_id` 命中唯一效果实例，命中 0 个或命中歧义时按 `invalid_effect_remove_ambiguous` 处理；`all` 会按同一 `def_id` 一次清空目标 owner 上全部匹配实例，0 个匹配时静默跳过。
 11. `apply_field` payload 允许额外声明 `on_success_effect_ids`；这些 effect 只在 field 真正立住后以 `field_apply_success` 触发执行，field 对拼失败时整组跳过。
 12. `apply_field` 的冲突判定必须读取 `FieldDefinition.field_kind`：只有 `domain vs domain` 进入对拼；`normal vs domain` 不得覆盖在场领域；`domain vs normal` 可直接替换普通场地。
 13. 若当前在场领域由本方创建，则本方 `is_domain_skill=true` 的技能在合法性阶段必须被禁用。

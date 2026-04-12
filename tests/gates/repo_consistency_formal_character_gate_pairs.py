@@ -23,9 +23,12 @@ def validate_pair_catalog(
     runtime_character_ids: list[str],
     delivery_registry: list[dict],
     character_to_unit: dict[str, str],
-    matchups: dict,
+    raw_matchups: dict,
+    derived_matchups: dict,
+    pair_interaction_specs: list,
     pair_interaction_cases: list,
     matchup_catalog_path: str,
+    pair_spec_path: str,
     delivery_registry_path: str,
     scenario_registry_path: str,
 ) -> None:
@@ -41,10 +44,27 @@ def validate_pair_catalog(
         if left != right
     }
     matchup_direction_by_id: dict[str, tuple[str, str]] = {}
-    expected_directional_interaction_cases: set[tuple[str, str, str]] = set()
+    generated_matchup_by_direction: dict[tuple[str, str], str] = {}
     test_only_matchup_ids: set[str] = set()
     actual_surface_pairs: set[str] = set()
-    for matchup_id, raw_matchup in matchups.items():
+    for matchup_id, raw_matchup in raw_matchups.items():
+        if not isinstance(raw_matchup, dict):
+            continue
+        normalized_matchup_id = str(matchup_id)
+        test_only = _matchup_test_only(ctx, matchup_catalog_path, normalized_matchup_id, raw_matchup)
+        p1_units = raw_matchup.get("p1_units", [])
+        p2_units = raw_matchup.get("p2_units", [])
+        if not isinstance(p1_units, list) or not p1_units or not isinstance(p2_units, list) or not p2_units:
+            continue
+        p1_character_id = next((character_id for character_id, unit_id in character_to_unit.items() if unit_id == str(p1_units[0]).strip()), "")
+        p2_character_id = next((character_id for character_id, unit_id in character_to_unit.items() if unit_id == str(p2_units[0]).strip()), "")
+        if not p1_character_id or not p2_character_id or p1_character_id == p2_character_id or test_only:
+            continue
+        ctx.failures.append(
+            f"{matchup_catalog_path} raw matchups must not hand-write non-test_only formal pair matchup: {normalized_matchup_id}"
+        )
+
+    for matchup_id, raw_matchup in derived_matchups.items():
         if not isinstance(raw_matchup, dict):
             continue
         normalized_matchup_id = str(matchup_id)
@@ -64,7 +84,7 @@ def validate_pair_catalog(
             ctx.failures.append(f"{matchup_catalog_path} same-character matchup must declare test_only: {normalized_matchup_id}")
         if test_only or p1_character_id == p2_character_id:
             continue
-        expected_directional_interaction_cases.add((p1_character_id, p2_character_id, normalized_matchup_id))
+        generated_matchup_by_direction[(p1_character_id, p2_character_id)] = normalized_matchup_id
         pair_key = f"{p1_character_id}->{p2_character_id}"
         if pair_key in actual_surface_pairs:
             ctx.failures.append(f"{matchup_catalog_path} duplicated formal directed matchup for generated surface coverage: {pair_key}")
@@ -85,18 +105,47 @@ def validate_pair_catalog(
         for left_index in range(len(runtime_character_ids))
         for right_index in range(left_index + 1, len(runtime_character_ids))
     }
+    expected_directional_interaction_cases: set[tuple[str, str, str, str]] = set()
+    expected_scenario_keys_by_pair: dict[str, str] = {}
+    for spec_index, raw_spec in enumerate(pair_interaction_specs):
+        if not isinstance(raw_spec, dict):
+            ctx.failures.append(f"{pair_spec_path}[{spec_index}] must be object")
+            continue
+        character_ids = raw_spec.get("character_ids", [])
+        if not isinstance(character_ids, list) or len(character_ids) != 2:
+            ctx.failures.append(f"{pair_spec_path}[{spec_index}] must define exactly two character_ids")
+            continue
+        left_character_id = str(character_ids[0]).strip()
+        right_character_id = str(character_ids[1]).strip()
+        if not left_character_id or not right_character_id:
+            continue
+        scenario_key = str(raw_spec.get("scenario_key", "")).strip()
+        pair_key = _unordered_pair_key(left_character_id, right_character_id)
+        if pair_key in expected_scenario_keys_by_pair:
+            ctx.failures.append(f"{pair_spec_path} duplicated unordered pair: {pair_key}")
+            continue
+        expected_scenario_keys_by_pair[pair_key] = scenario_key
+        forward_matchup_id = generated_matchup_by_direction.get((left_character_id, right_character_id), "")
+        reverse_matchup_id = generated_matchup_by_direction.get((right_character_id, left_character_id), "")
+        if not forward_matchup_id or not reverse_matchup_id:
+            continue
+        expected_directional_interaction_cases.add((left_character_id, right_character_id, forward_matchup_id, scenario_key))
+        expected_directional_interaction_cases.add((right_character_id, left_character_id, reverse_matchup_id, scenario_key))
+
     actual_interaction_pairs: set[str] = set()
-    actual_directional_cases: set[tuple[str, str, str]] = set()
+    actual_directional_cases: set[tuple[str, str, str, str]] = set()
     actual_test_names: set[str] = set()
     scenario_registry_text = ctx.read_text(scenario_registry_path)
-    registered_scenario_ids = set(re.findall(r'"([^"]+)": Callable', scenario_registry_text))
-    actual_scenario_ids: set[str] = set()
+    registered_scenario_keys = set(re.findall(r'"([^"]+)": Callable', scenario_registry_text))
+    actual_scenario_keys: set[str] = set()
+    scenario_case_counts: dict[str, int] = {}
+    actual_scenario_keys_by_pair: dict[str, str] = {}
     for case_index, raw_case in enumerate(pair_interaction_cases):
         if not isinstance(raw_case, dict):
             ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] must be object")
             continue
         test_name = str(raw_case.get("test_name", "")).strip()
-        scenario_id = str(raw_case.get("scenario_id", "")).strip()
+        scenario_key = str(raw_case.get("scenario_key", "")).strip()
         matchup_id = str(raw_case.get("matchup_id", "")).strip()
         character_ids = raw_case.get("character_ids", [])
         if not test_name:
@@ -105,15 +154,14 @@ def validate_pair_catalog(
             ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases duplicated test_name: {test_name}")
         else:
             actual_test_names.add(test_name)
-        if not scenario_id:
-            ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] missing scenario_id")
+        if not scenario_key:
+            ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] missing scenario_key")
         else:
-            if scenario_id in actual_scenario_ids:
-                ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases duplicated scenario_id: {scenario_id}")
-            actual_scenario_ids.add(scenario_id)
-            if scenario_id not in registered_scenario_ids:
-                ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] scenario_id not registered in {scenario_registry_path}: {scenario_id}")
-        if matchup_id not in matchups:
+            actual_scenario_keys.add(scenario_key)
+            scenario_case_counts[scenario_key] = scenario_case_counts.get(scenario_key, 0) + 1
+            if scenario_key not in registered_scenario_keys:
+                ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] scenario_key not registered in {scenario_registry_path}: {scenario_key}")
+        if matchup_id not in derived_matchups:
             ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] unknown matchup_id: {matchup_id}")
         if not isinstance(character_ids, list) or len(character_ids) != 2:
             ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] must define exactly two character_ids")
@@ -140,18 +188,36 @@ def validate_pair_catalog(
                 f"{matchup_catalog_path} pair_interaction_cases[{case_index}] character_ids must match matchup opener direction: {matchup_id}"
             )
             continue
-        actual_interaction_pairs.add(_unordered_pair_key(left_character_id, right_character_id))
-        actual_directional_cases.add((left_character_id, right_character_id, matchup_id))
-    missing_registered_scenarios = sorted(registered_scenario_ids - actual_scenario_ids)
+        pair_key = _unordered_pair_key(left_character_id, right_character_id)
+        actual_interaction_pairs.add(pair_key)
+        if pair_key in actual_scenario_keys_by_pair and actual_scenario_keys_by_pair[pair_key] != scenario_key:
+            ctx.failures.append(
+                f"{matchup_catalog_path} pair_interaction_cases[{case_index}] must keep one scenario_key per unordered pair: {pair_key}"
+            )
+            continue
+        actual_scenario_keys_by_pair[pair_key] = scenario_key
+        case_signature = (left_character_id, right_character_id, matchup_id, scenario_key)
+        if case_signature in actual_directional_cases:
+            ctx.failures.append(
+                f"{matchup_catalog_path} pair_interaction_cases duplicated directional case: {left_character_id}->{right_character_id}:{matchup_id}:{scenario_key}"
+            )
+            continue
+        actual_directional_cases.add(case_signature)
+    missing_registered_scenarios = sorted(registered_scenario_keys - actual_scenario_keys)
     if missing_registered_scenarios:
         ctx.failures.append(
             f"{scenario_registry_path} contains unreferenced scenario registrations: {', '.join(missing_registered_scenarios)}"
         )
-    extra_registered_scenarios = sorted(actual_scenario_ids - registered_scenario_ids)
+    extra_registered_scenarios = sorted(actual_scenario_keys - registered_scenario_keys)
     if extra_registered_scenarios:
         ctx.failures.append(
-            f"{matchup_catalog_path} contains unregistered interaction scenario_ids: {', '.join(extra_registered_scenarios)}"
+            f"{matchup_catalog_path} contains unregistered interaction scenario_keys: {', '.join(extra_registered_scenarios)}"
         )
+    for scenario_key, case_count in sorted(scenario_case_counts.items()):
+        if case_count != 2:
+            ctx.failures.append(
+                f"{matchup_catalog_path} pair_interaction_cases must derive exactly two directed cases for scenario_key: {scenario_key}"
+            )
     missing_interaction_pairs = sorted(expected_interaction_pairs - actual_interaction_pairs)
     if missing_interaction_pairs:
         ctx.failures.append(f"{matchup_catalog_path} missing unordered pair_interaction coverage: {', '.join(missing_interaction_pairs)}")
@@ -160,16 +226,16 @@ def validate_pair_catalog(
         ctx.failures.append(f"{matchup_catalog_path} contains non-matrix pair_interaction coverage: {', '.join(extra_interaction_pairs)}")
 
     missing_required_directional_cases = [
-        f"{left}->{right}:{matchup_id}"
-        for left, right, matchup_id in sorted(expected_directional_interaction_cases - actual_directional_cases)
+        f"{left}->{right}:{matchup_id}:{scenario_key}"
+        for left, right, matchup_id, scenario_key in sorted(expected_directional_interaction_cases - actual_directional_cases)
     ]
     if missing_required_directional_cases:
         ctx.failures.append(
             f"{matchup_catalog_path} missing required directional pair_interaction cases: {', '.join(missing_required_directional_cases)}"
         )
     extra_directional_cases = [
-        f"{left}->{right}:{matchup_id}"
-        for left, right, matchup_id in sorted(actual_directional_cases - expected_directional_interaction_cases)
+        f"{left}->{right}:{matchup_id}:{scenario_key}"
+        for left, right, matchup_id, scenario_key in sorted(actual_directional_cases - expected_directional_interaction_cases)
     ]
     if extra_directional_cases:
         ctx.failures.append(

@@ -5,6 +5,8 @@ const FormalCharacterRegistryScript := preload("res://tests/support/formal_chara
 const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
 const ContentSnapshotFormalCharacterValidatorScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_validator.gd")
 const InvalidValidatorFixturePath := "tests/fixtures/formal_validators/invalid_missing_validate_validator.gd"
+const DEFAULT_PAIR_INITIATOR_BENCH_UNIT_IDS := ["sample_mossaur", "sample_pyron"]
+const DEFAULT_PAIR_RESPONDER_BENCH_UNIT_IDS := ["sample_tidekit", "sample_mossaur"]
 
 func _write_json_fixture(path: String, payload: String) -> bool:
 	var file := FileAccess.open(path, FileAccess.WRITE)
@@ -33,6 +35,8 @@ func _build_runtime_registry_entry(character_id: String, unit_definition_id: Str
 		"unit_definition_id": unit_definition_id,
 		"formal_setup_matchup_id": matchup_id,
 		"required_content_paths": required_content_paths,
+		"pair_initiator_bench_unit_ids": DEFAULT_PAIR_INITIATOR_BENCH_UNIT_IDS.duplicate(),
+		"pair_responder_bench_unit_ids": DEFAULT_PAIR_RESPONDER_BENCH_UNIT_IDS.duplicate(),
 	}
 	if not validator_path.is_empty():
 		entry["content_validator_script_path"] = validator_path
@@ -61,6 +65,8 @@ func _build_manifest_character_entry(
 		"unit_definition_id": unit_definition_id,
 		"formal_setup_matchup_id": matchup_id,
 		"required_content_paths": required_content_paths,
+		"pair_initiator_bench_unit_ids": DEFAULT_PAIR_INITIATOR_BENCH_UNIT_IDS.duplicate(),
+		"pair_responder_bench_unit_ids": DEFAULT_PAIR_RESPONDER_BENCH_UNIT_IDS.duplicate(),
 		"design_doc": design_doc,
 		"adjustment_doc": adjustment_doc,
 		"surface_smoke_skill_id": surface_smoke_skill_id,
@@ -75,9 +81,17 @@ func _build_manifest_character_entry(
 		entry["content_validator_script_path"] = validator_path
 	return entry
 
-func _build_manifest_payload(characters: Array, matchups: Dictionary = {}, pair_interaction_cases: Array = []) -> Dictionary:
+func _build_pair_interaction_spec(character_ids: Array, scenario_key: String, forward_battle_seed: int, reverse_battle_seed: int) -> Dictionary:
+	return {
+		"character_ids": character_ids.duplicate(),
+		"scenario_key": scenario_key,
+		"forward_battle_seed": forward_battle_seed,
+		"reverse_battle_seed": reverse_battle_seed,
+	}
+
+func _build_manifest_payload(characters: Array, matchups: Dictionary = {}, pair_interaction_specs: Array = []) -> Dictionary:
 	return {
 		"characters": characters,
 		"matchups": matchups,
-		"pair_interaction_cases": pair_interaction_cases,
+		"pair_interaction_specs": pair_interaction_specs,
 	}

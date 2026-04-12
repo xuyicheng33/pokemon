@@ -9,7 +9,7 @@ const REQUIRED_STRING_FIELDS := ["capability_id", "stop_and_specialize_when"]
 const REQUIRED_ARRAY_FIELDS := [
 	"rule_doc_paths",
 	"required_suite_paths",
-	"coverage_needles",
+	"required_fact_ids",
 ]
 
 var catalog_path_override: String = ""

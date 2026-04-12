@@ -33,23 +33,25 @@
 - `run_all.gd` 会直接注册核心公共 suite，并按正式角色注册表动态追加角色 wrapper；共享子套件仍必须沿 `preload(...)` 子树真实可达。
 - 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback。
 - 正式角色 wrapper 统一登记在 `config/formal_character_manifest.json.characters[*]`，由 `tests/run_all.gd` 自动加载。
-- `config/formal_character_manifest.json` 是 formal 角色元数据的唯一人工真源；顶层固定三桶：`characters / matchups / pair_interaction_cases`。
+- `config/formal_character_manifest.json` 是 formal 角色元数据的唯一人工真源；顶层固定三桶：`characters / matchups / pair_interaction_specs`。
 - `config/formal_character_capability_catalog.json` 是共享能力目录的唯一人工真源；这里只维护共享入口定义、规则归属、必挂 suite 和“该停下来改专用机制”的边界。实际消费者统一从 manifest 的 `shared_capability_ids` 派生。
 - `characters[*]` 当前固定拆成 runtime 视图与 delivery/test 视图：
-  - runtime：`character_id / unit_definition_id / formal_setup_matchup_id / required_content_paths`，以及按需补的 `content_validator_script_path`
+  - runtime：`character_id / unit_definition_id / formal_setup_matchup_id / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids / required_content_paths`，以及按需补的 `content_validator_script_path`
   - delivery/test：`character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / shared_capability_ids / design_needles / adjustment_needles`
 - runtime formal validator 当前统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 `config/formal_character_manifest.json`；loader 只校验 runtime 视图与 validator 路径存在性，真正的 validator 实例化延迟到 `ContentSnapshotFormalCharacterValidator.validate()` 按 present-only 角色执行。测试、文档、suite reachability 与回归锚点也统一读取 manifest 派生视图；delivery/test 字段漂移不得拖死 runtime loader。
 - `ContentSnapshotFormalCharacterValidator` 只校验当前快照里实际出现的正式角色，不会因为缺席角色而误炸。
 - 正式角色 entry validator 当前固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板组织；tests 侧只验证这三个入口仍可实例化并回挂到 wrapper 子树。
 - 正式角色的 `required_suite_paths` 不再手抄共享 capability suite 与 validator suite；这两类会自动并入 delivery/test 视图。角色专属子套件仍由 manifest 显式维护，部分共享但不属于 capability 派生的正式交付 suite 也可以继续显式挂在这里。
-- 只要角色在 `shared_capability_ids` 里声明了共享入口，repo consistency gate 就会同时检查 capability catalog 是否存在该入口、catalog 要求的 `required_suite_paths` 是否已被自动派生、以及角色 `required_content_paths` 导出的语义事实是否真的对上对应使用证据。
+- 只要角色在 `shared_capability_ids` 里声明了共享入口，repo consistency gate 就会同时检查 capability catalog 是否存在该入口、catalog 要求的 `required_suite_paths` 是否已被自动派生、以及角色 `required_content_paths` 导出的语义事实是否真的对上对应的 `required_fact_ids`。
 - 只要角色登记了 `content_validator_script_path`，delivery/test 视图就会自动并入 `tests/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个对应角色的 validator 坏例锚点。
 - 共享能力未先登记进 capability catalog、或登记后没把对应 suite / manifest 消费声明 / 使用证据补齐时，`check_repo_consistency.sh` 会直接失败。
-- `config/formal_character_manifest.json.matchups` 与 `pair_interaction_cases` 继续承载 formal pair 覆盖；directed pair surface smoke 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，`tests/suites/formal_character_pair_smoke_suite.gd` 只负责按生成结果动态注册和执行。
+- `SampleBattleFactory.content_snapshot_paths_for_setup_result(battle_setup)` 是 formal manager smoke、pair smoke 与 formal demo replay 的默认快照入口；`content_snapshot_paths_result()` 只保留给全量正式快照与 baseline demo 这类不做 setup 裁剪的路径。
+- `config/formal_character_manifest.json.matchups` 只显式维护样例/单角色 setup/`test_only` 特例 matchup；非 `test_only` 的 formal-vs-formal directed matchup 由 loader 按角色级 pair bench 输入自动派生，directed pair surface smoke 仍由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成。
 - `matchups[*].test_only` 可选；用于 `obito_mirror` 这类只服务测试/手动 setup 的 matchup。被标成 `test_only` 的 matchup 不会进入 directed surface smoke 矩阵，同角色 mirror matchup 也必须显式打这个标记。
 - `tests/support/formal_pair_interaction/scenario_registry.gd` 当前是 pair interaction scenario runner 的单一真相；catalog 校验和运行分发都只能读这张映射，不再允许双维护场景列表。
-- `pair_interaction_cases[*]` 必须显式填写 `test_name / scenario_id / matchup_id / character_ids[2] / battle_seed`；`character_ids` 顺序必须匹配 `matchup_id` 的 opener 方向，且不得引用 `test_only` matchup；catalog loader 与 shared gate 都会对空值、类型错误和这类不一致直接 fail-fast。
-- shared gate 现在直接按 manifest 里的非 `test_only` directed matchup 推导必备 interaction 覆盖；每个正式方向至少要有一条 `pair_interaction_case`，不再额外维护 Python 里的手写场景常量表。
+- `pair_interaction_specs[*]` 每个无向正式 pair 只写一条规格，固定携带 `character_ids[2] / scenario_key / forward_battle_seed / reverse_battle_seed`；catalog loader 会从它派生两条 directed `pair_interaction_case`，并补齐 `test_name / matchup_id / scenario_key / character_ids[2] / battle_seed`。
+- `tests/support/formal_pair_interaction/scenario_registry.gd` 只注册无向 `scenario_key`；runner 执行时读取的是已派生好的 directed case context，同一个 `scenario_key` 必须稳定生成正反两个方向。
+- shared gate 现在直接按 manifest 派生出的非 `test_only` directed matchup 推导必备 interaction 覆盖；每个正式方向至少要有一条 `pair_interaction_case`，而且必须锁到正确的 `scenario_key`，不再额外维护 Python 里的手写场景常量表。
 - 共享 pair surface / interaction 已不再逐角色手抄进 `required_test_names`；覆盖完整性统一由 shared gate 和 suite matrix contract 校验。
 - `check_suite_reachability.sh` 只把 `run_all.gd` 和注册表里的 wrapper 当作入口；`required_suite_paths` 必须真的能从这些入口沿 `preload(...)` 子树走到，不能靠注册表直接兜底；当 wrapper 超过维护阈值时，真实断言统一下沉到同名子目录，例如 `tests/suites/manager_snapshot_public_contract_suite.gd` + `tests/suites/manager_snapshot_public_contract/*.gd`
 - manager smoke 与 manager public contract 现在不允许再通过 `_debug_session` 之类私有钩子钻进内部 session。

@@ -5,7 +5,7 @@
 使用方式：
 
 1. 先按本模板写角色稿。
-2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、manifest 条目、suite 和记录；正式角色元数据的单一维护入口固定为 `config/formal_character_manifest.json`，其中 `characters[*]` 收口角色条目，`matchups / pair_interaction_cases` 收口 formal 配对事实。
+2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、manifest 条目、suite 和记录；正式角色元数据的单一维护入口固定为 `config/formal_character_manifest.json`，其中 `characters[*]` 收口角色条目，`matchups / pair_interaction_specs` 收口 formal 配对事实；非 `test_only` 的 formal-vs-formal directed matchup 与 interaction case 都由 loader 从这两类原始输入自动派生。
 3. 若角色复用共享机制，先对齐 `config/formal_character_capability_catalog.json`，确认现有入口是否能承接；不满足时先补 capability catalog，再继续扩内容。
 4. 若角色带领域机制，只在本稿末尾追加“领域角色差异附录”，公共规则继续引用 `docs/design/domain_field_template.md`。
 5. 若角色需要 `content_validator_script_path`，entry validator 固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板落地。

@@ -48,7 +48,7 @@ func load_catalog_result() -> Dictionary:
 				ErrorCodesScript.INVALID_BATTLE_SETUP,
 				"SampleBattleFactory matchup catalog[pair_interaction_cases][%d] must be dictionary: %s" % [case_index, resolved_manifest_path]
 			)
-		for required_key in ["test_name", "matchup_id", "scenario_id"]:
+		for required_key in ["test_name", "matchup_id", "scenario_key"]:
 			if String(case_spec.get(required_key, "")).strip_edges().is_empty():
 				return _error_result(
 					ErrorCodesScript.INVALID_BATTLE_SETUP,

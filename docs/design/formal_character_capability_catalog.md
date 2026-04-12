@@ -24,7 +24,7 @@
 - `capability_id`
 - `rule_doc_paths`
 - `required_suite_paths`
-- `coverage_needles`
+- `required_fact_ids`
 - `stop_and_specialize_when`
 
 字段语义：
@@ -32,8 +32,14 @@
 - `capability_id`：共享入口正式 ID；manifest 的 `shared_capability_ids` 只能引用这里已有的值。
 - `rule_doc_paths`：这项能力的规则归属文档；角色稿只写“怎么用”，共享规则本体回到这些文档。
 - `required_suite_paths`：只要角色声明消费该能力，delivery/test 视图就会自动并入这些共享 suite，不再要求角色 manifest 条目重复手抄。
-- `coverage_needles`：repo consistency gate 用来反查角色内容导出的语义事实 ID，确认该角色是否真的在消费这项共享能力；字段名继续沿用旧名，但不再表示纯文本 needle。
+- `required_fact_ids`：repo consistency gate 用来反查角色内容导出的语义事实 ID，确认该角色是否真的在消费这项共享能力；字段名已经和当前语义对齐，不再沿用旧的文本 needle 说法。
 - `stop_and_specialize_when`：扩权止损线；一旦新需求越过这条线，就停止继续给共享入口堆规则，改做专用机制。
+
+当前事实导出固定走 collector 模式：
+
+- `tests/helpers/export_formal_capability_facts.gd` 只负责编排与聚合，不再内嵌所有事实词表。
+- 固定 collector 维度为 `unit / skill / effect / field / passive / payload`。
+- 新增共享 capability 时，优先只改 `config/formal_character_capability_catalog.json`；只有出现全新事实类型时，才额外补一个局部 collector 文件。
 
 ## 4. 角色接入规则
 
@@ -51,7 +57,7 @@ repo consistency gate 当前固定检查：
 - manifest 的 `shared_capability_ids` 必须引用已登记的 `capability_id`
 - capability catalog entry 必须至少有一个 manifest 消费者
 - capability catalog 要求的 `required_suite_paths` 必须能通过 delivery/test 派生结果进入角色套件视图
-- `coverage_needles` 必须能在角色 `required_content_paths` 导出的语义事实里找到实际使用证据
+- `required_fact_ids` 必须能在角色 `required_content_paths` 导出的语义事实里找到实际使用证据
 - 新共享入口未登记、已登记但没人用、或角色在用却没声明，都会直接失败
 
 ## 6. 维护边界

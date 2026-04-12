@@ -3,14 +3,16 @@ class_name FormalCharacterManifest
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ManifestLoaderScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_loader.gd")
+const PairCatalogScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_pair_catalog.gd")
 const ManifestViewsScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_views.gd")
 
 const CHARACTERS_BUCKET := "characters"
 const MATCHUPS_BUCKET := "matchups"
-const PAIR_INTERACTION_CASES_BUCKET := "pair_interaction_cases"
+const PAIR_INTERACTION_SPECS_BUCKET := "pair_interaction_specs"
 
 var manifest_path_override: String = ""
 var _manifest_loader = ManifestLoaderScript.new()
+var _pair_catalog = PairCatalogScript.new()
 var _manifest_views = ManifestViewsScript.new()
 
 func load_manifest_result(manifest_path: String = "") -> Dictionary:
@@ -28,7 +30,7 @@ func load_manifest_result(manifest_path: String = "") -> Dictionary:
 	return _ok_result({
 		CHARACTERS_BUCKET: characters_result.get("data", []).duplicate(true),
 		MATCHUPS_BUCKET: manifest.get(MATCHUPS_BUCKET, {}).duplicate(true),
-		PAIR_INTERACTION_CASES_BUCKET: manifest.get(PAIR_INTERACTION_CASES_BUCKET, []).duplicate(true),
+		PAIR_INTERACTION_SPECS_BUCKET: manifest.get(PAIR_INTERACTION_SPECS_BUCKET, []).duplicate(true),
 	})
 
 func build_character_entries_result(manifest_path: String = "") -> Dictionary:
@@ -65,20 +67,16 @@ func build_delivery_entries_result(manifest_path: String = "") -> Dictionary:
 	return _manifest_views.build_delivery_entries_result(entries_result.get("data", []))
 
 func build_catalog_result(manifest_path: String = "") -> Dictionary:
-	var manifest_result := _manifest_loader.load_manifest_payload_result(manifest_path, manifest_path_override)
+	var manifest_result := load_manifest_result(manifest_path)
 	if not bool(manifest_result.get("ok", false)):
 		return manifest_result
 	var manifest: Dictionary = manifest_result.get("data", {})
-	var pair_cases_result := _manifest_views.validate_pair_interaction_cases_result(
-		manifest.get(PAIR_INTERACTION_CASES_BUCKET, []),
+	return _pair_catalog.build_catalog_result(
+		manifest.get(CHARACTERS_BUCKET, []).duplicate(true),
+		manifest.get(MATCHUPS_BUCKET, {}).duplicate(true),
+		manifest.get(PAIR_INTERACTION_SPECS_BUCKET, []).duplicate(true),
 		_manifest_loader.resolve_manifest_path(manifest_path, manifest_path_override)
 	)
-	if not bool(pair_cases_result.get("ok", false)):
-		return pair_cases_result
-	return _ok_result({
-		"matchups": manifest.get(MATCHUPS_BUCKET, {}).duplicate(true),
-		"pair_interaction_cases": pair_cases_result.get("data", []).duplicate(true),
-	})
 
 func _ok_result(data) -> Dictionary:
 	return {

@@ -378,3 +378,23 @@
   - `architecture_composition_consistency_gate.py` 已经逼近 tests gate 的 350 行预警线，继续堆校验规则只会把治理脚本本身重新变成热点
   - 这类脚本的稳定边界是“入口语义不变、错误输出不变”，不是“所有解析和校验细节都必须继续塞在一个文件里”
   - 先把入口和 helper 边界定死，后续新增 composition 校验时才能按“解析事实”和“消费事实”分层扩展，而不是再回到单文件追加常量和正则
+
+## 0S. 正式角色接入文档必须锁定派生式 formal pair 合同（2026-04-12）
+
+- 正式角色接入的权威文档现在固定按“少量原始输入 + 派生有向产物”描述 formal pair：
+  - manifest 原始 bucket 固定为 `characters / matchups / pair_interaction_specs`
+  - `characters[*]` 的 runtime 输入固定补 `pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids`
+  - 非 `test_only` 的 formal-vs-formal directed matchup 与 directed `pair_interaction_case` 都由 loader 派生，不再作为作者手写输入面
+- pair interaction 的权威口径现在固定为：
+  - manifest 只维护无向 `pair_interaction_specs`
+  - scenario registry 只维护无向 `scenario_key`
+  - shared gate 必须按完整有向 coverage 校验，并同时锁 `matchup_id + scenario_key`
+- formal smoke、pair smoke 与 formal demo replay 的文档入口固定为 setup-scoped snapshot；`content_snapshot_paths_result()` 只保留给全量正式快照与 baseline demo。
+- capability catalog 的权威字段名固定改为 `required_fact_ids`；文档不得再沿用 `coverage_needles` 这种旧语义名。
+- docs gate 现在必须同时承担两类约束：
+  - 要求新口径存在
+  - 要求旧口径消失
+- 这么定的原因：
+  - 这轮实现已经把 formal pair、interaction 场景绑定和 capability 证据导出改成派生链；如果文档还停在旧合同，后续扩角会重新把旧维护面带回来
+  - 这类漂移不会第一时间炸在 battle core 主循环，而是会先在角色接入、回归设计和 checklist 里悄悄复活
+  - 把 docs gate 直接绑到这几条语义上，才能把“README 仍在教旧做法”这种问题前置拦住

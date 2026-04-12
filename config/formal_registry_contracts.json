@@ -6,7 +6,9 @@
       "formal_setup_matchup_id"
     ],
     "required_array_fields": [
-      "required_content_paths"
+      "required_content_paths",
+      "pair_initiator_bench_unit_ids",
+      "pair_responder_bench_unit_ids"
     ],
     "required_positive_int_fields": [],
     "optional_string_fields": [
@@ -32,17 +34,16 @@
     "required_positive_int_fields": [],
     "optional_string_fields": []
   },
-  "pair_interaction_case": {
+  "pair_interaction_spec": {
     "required_string_fields": [
-      "test_name",
-      "scenario_id",
-      "matchup_id"
+      "scenario_key"
     ],
     "required_array_fields": [
       "character_ids"
     ],
     "required_positive_int_fields": [
-      "battle_seed"
+      "forward_battle_seed",
+      "reverse_battle_seed"
     ],
     "optional_string_fields": []
   }

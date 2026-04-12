@@ -80,25 +80,27 @@ def validate_capability_catalog(
             capability.get("required_suite_paths", []),
             f"{capability_catalog_path}[{capability_id}].required_suite_paths",
         )
-        coverage_needles = _normalized_string_list(
+        if "coverage_needles" in capability:
+            ctx.failures.append(f"{capability_catalog_path}[{capability_id}] uses legacy coverage_needles; rename to required_fact_ids")
+        required_fact_ids = _normalized_string_list(
             ctx,
-            capability.get("coverage_needles", []),
-            f"{capability_catalog_path}[{capability_id}].coverage_needles",
+            capability.get("required_fact_ids", []),
+            f"{capability_catalog_path}[{capability_id}].required_fact_ids",
         )
         stop_and_specialize_when = str(capability.get("stop_and_specialize_when", "")).strip()
         if not stop_and_specialize_when:
             ctx.failures.append(f"{capability_catalog_path}[{capability_id}] missing stop_and_specialize_when")
         if len(set(required_suite_paths)) != len(required_suite_paths):
             ctx.failures.append(f"{capability_catalog_path}[{capability_id}].required_suite_paths contains duplicates")
-        if len(set(coverage_needles)) != len(coverage_needles):
-            ctx.failures.append(f"{capability_catalog_path}[{capability_id}].coverage_needles contains duplicates")
+        if len(set(required_fact_ids)) != len(required_fact_ids):
+            ctx.failures.append(f"{capability_catalog_path}[{capability_id}].required_fact_ids contains duplicates")
         for rel_path in rule_doc_paths:
             ctx.require_exists(rel_path, f"{capability_id} rule doc")
         for rel_path in required_suite_paths:
             ctx.require_exists(rel_path, f"{capability_id} required suite")
         capability_entries[capability_id] = {
             "required_suite_paths": required_suite_paths,
-            "coverage_needles": coverage_needles,
+            "required_fact_ids": required_fact_ids,
         }
 
     for capability_id, capability in capability_entries.items():
@@ -110,8 +112,8 @@ def validate_capability_catalog(
         evidence_fact_set = set(facts_by_character.get(character_id, []))
         fact_sources = fact_sources_by_character.get(character_id, {})
         for capability_id, capability in capability_entries.items():
-            coverage_needles = capability["coverage_needles"]
-            matched_needles = [needle for needle in coverage_needles if needle in evidence_fact_set]
+            required_fact_ids = capability["required_fact_ids"]
+            matched_needles = [needle for needle in required_fact_ids if needle in evidence_fact_set]
             declared = capability_id in declared_capabilities_by_character.get(character_id, set())
             if declared and not matched_needles:
                 ctx.failures.append(

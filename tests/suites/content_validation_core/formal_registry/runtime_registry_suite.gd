@@ -186,10 +186,9 @@ func _test_formal_character_runtime_registry_ignores_pair_interaction_catalog_co
 		),
 	], {}, [
 		{
-			"test_name": "formal_pair_gojo_vs_sukuna_interaction_contract",
-			"scenario_id": "gojo_vs_sukuna_domain_cleanup",
-			"matchup_id": "gojo_vs_sukuna",
+			"scenario_key": "gojo_sukuna_domain_cleanup",
 			"character_ids": ["gojo_alias", "sukuna_alias"],
+			"forward_battle_seed": 3201,
 		}
 	]), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
@@ -197,10 +196,10 @@ func _test_formal_character_runtime_registry_ignores_pair_interaction_catalog_co
 	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
 	var error_message := String(load_result.get("error", ""))
 	if not error_message.is_empty():
-		return harness.fail_result("runtime registry should ignore pair_interaction_cases contract drift: %s" % error_message)
+		return harness.fail_result("runtime registry should ignore pair_interaction_specs contract drift: %s" % error_message)
 	var entries: Array = load_result.get("entries", [])
 	if entries.size() != 2:
-		return harness.fail_result("runtime registry should still load runtime entries when pair_interaction_cases drift")
+		return harness.fail_result("runtime registry should still load runtime entries when pair_interaction_specs drift")
 	return harness.pass_result()
 
 func _test_formal_character_runtime_registry_missing_validator_guard_contract(harness) -> Dictionary:

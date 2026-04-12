@@ -9,7 +9,7 @@
       "required_suite_paths": [
         "tests/suites/extension_targeting_accuracy_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "required_target_effects",
         "required_target_same_owner"
       ],
@@ -25,7 +25,7 @@
       "required_suite_paths": [
         "tests/suites/extension_targeting_accuracy_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "incoming_accuracy"
       ],
       "stop_and_specialize_when": "当新角色需要把命中修正拆成多段来源、命中特判或非标准读取时，停止继续扩共享 incoming_accuracy，改做专用命中机制。"
@@ -40,7 +40,7 @@
       "required_suite_paths": [
         "tests/suites/rule_mod_runtime_extension_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "nullify_field_accuracy"
       ],
       "stop_and_specialize_when": "当后续角色不再只是忽略领域附加必中，而是要改命中公式、改冲突裁定或改领域解析链时，停止继续扩这个共享入口，改做专用领域对冲机制。"
@@ -55,7 +55,7 @@
       "required_suite_paths": [
         "tests/suites/power_bonus_runtime_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "effect_stack_sum"
       ],
       "stop_and_specialize_when": "当新角色需要把威力来源扩成异步结算、跨多目标聚合或和其他威力公式混算时，停止继续扩共享 effect_stack_sum，改做专用威力解析器。"
@@ -70,7 +70,7 @@
       "required_suite_paths": [
         "tests/suites/replay_turn_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "once_per_battle"
       ],
       "stop_and_specialize_when": "当新角色需要把整场一次扩成充能重置、阶段重置或跨形态共享次数时，停止继续扩共享 once_per_battle，改做专用消耗记录。"
@@ -85,7 +85,7 @@
       "required_suite_paths": [
         "tests/suites/persistent_stat_stage_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "persistent_stat_stages"
       ],
       "stop_and_specialize_when": "当新角色需要把跨换人保留扩成多层状态包、局部保留或和形态切换联动时，停止继续扩共享 persistent_stat_stages，改做专用持久状态模型。"
@@ -99,7 +99,7 @@
       "required_suite_paths": [
         "tests/suites/heal_extension_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "missing_hp"
       ],
       "stop_and_specialize_when": "当后续角色需要把缺失生命治疗接到多段触发、溢出转盾或目标外转移时，停止继续扩共享 missing_hp 百分比治疗，改做专用治疗入口。"
@@ -114,7 +114,7 @@
       "required_suite_paths": [
         "tests/suites/heal_extension_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "incoming_heal_final_mod"
       ],
       "stop_and_specialize_when": "当后续角色需要把治疗末端修正扩成条件白名单、治疗转伤或按来源分流时，停止继续扩共享 incoming_heal_final_mod，改做专用治疗规则链。"
@@ -129,7 +129,7 @@
       "required_suite_paths": [
         "tests/suites/skill_execute_contract_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "execute_target_hp_ratio_lte",
         "execute_required_total_stacks"
       ],
@@ -145,7 +145,7 @@
       "required_suite_paths": [
         "tests/suites/multihit_skill_runtime_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "damage_segments"
       ],
       "stop_and_specialize_when": "当后续角色需要把多段伤害扩成段间改目标、段间插入额外行动或段间写独立命中判定时，停止继续扩共享 damage_segments，改做专用多段执行器。"
@@ -161,7 +161,7 @@
       "required_suite_paths": [
         "tests/suites/multihit_skill_runtime_suite.gd"
       ],
-      "coverage_needles": [
+      "required_fact_ids": [
         "on_receive_action_damage_segment"
       ],
       "stop_and_specialize_when": "当后续角色需要把段级受击扩成额外插队、按段换目标或按段持久化上下文时，停止继续扩共享 on_receive_action_damage_segment，改做专用段级受击通道。"

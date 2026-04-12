@@ -80,9 +80,47 @@ def baseline_script_path_for_character_id(character_id: str) -> str:
 
 
 def load_delivery_registry_entries(ctx: GateContext, *, export_script_path: str, manifest_path: str) -> list[dict]:
-    if not (ctx.root / export_script_path).exists():
-        ctx.failures.append(f"missing delivery registry export script: {export_script_path}")
+    payload = run_godot_json_export(
+        ctx,
+        export_script_path=export_script_path,
+        manifest_path=manifest_path,
+        failure_label="delivery registry view",
+    )
+    if not isinstance(payload, dict):
         return []
+    entries = payload.get("entries", [])
+    if not isinstance(entries, list):
+        ctx.failures.append(f"{export_script_path} missing entries array")
+        return []
+    normalized_entries: list[dict] = []
+    for entry_index, raw_entry in enumerate(entries):
+        if not isinstance(raw_entry, dict):
+            ctx.failures.append(f"{export_script_path} entries[{entry_index}] must be object")
+            continue
+        normalized_entries.append(raw_entry)
+    return normalized_entries
+
+
+def load_pair_catalog(ctx: GateContext, *, export_script_path: str, manifest_path: str) -> dict:
+    payload = run_godot_json_export(
+        ctx,
+        export_script_path=export_script_path,
+        manifest_path=manifest_path,
+        failure_label="formal pair catalog",
+    )
+    return payload if isinstance(payload, dict) else {}
+
+
+def run_godot_json_export(
+    ctx: GateContext,
+    *,
+    export_script_path: str,
+    manifest_path: str,
+    failure_label: str,
+) -> dict:
+    if not (ctx.root / export_script_path).exists():
+        ctx.failures.append(f"missing export script: {export_script_path}")
+        return {}
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as handle:
         output_path = Path(handle.name)
     try:
@@ -107,31 +145,21 @@ def load_delivery_registry_entries(ctx: GateContext, *, export_script_path: str,
             stdout = result.stdout.strip()
             combined_output = " | ".join(chunk for chunk in [stderr, stdout] if chunk)
             ctx.failures.append(
-                f"{export_script_path} failed to export delivery registry view: {combined_output or f'exit={result.returncode}'}"
+                f"{export_script_path} failed to export {failure_label}: {combined_output or f'exit={result.returncode}'}"
             )
-            return []
+            return {}
         try:
             payload = json.loads(output_path.read_text(encoding="utf-8"))
         except Exception as exc:
             ctx.failures.append(f"{export_script_path} wrote invalid JSON: {exc}")
-            return []
+            return {}
         if not isinstance(payload, dict):
             ctx.failures.append(f"{export_script_path} must export top-level object")
-            return []
-        entries = payload.get("entries", [])
-        if not isinstance(entries, list):
-            ctx.failures.append(f"{export_script_path} missing entries array")
-            return []
-        normalized_entries: list[dict] = []
-        for entry_index, raw_entry in enumerate(entries):
-            if not isinstance(raw_entry, dict):
-                ctx.failures.append(f"{export_script_path} entries[{entry_index}] must be object")
-                continue
-            normalized_entries.append(raw_entry)
-        return normalized_entries
+            return {}
+        return payload
     except FileNotFoundError:
         ctx.failures.append(f"{export_script_path} requires godot in PATH")
-        return []
+        return {}
     finally:
         output_path.unlink(missing_ok=True)
 
