@@ -6,7 +6,6 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const DEFAULT_MANIFEST_PATH := "res://config/formal_character_manifest.json"
 const CHARACTERS_BUCKET := "characters"
 const MATCHUPS_BUCKET := "matchups"
-const PAIR_INTERACTION_SPECS_BUCKET := "pair_interaction_specs"
 
 func load_manifest_payload_result(manifest_path: String, manifest_path_override: String = "") -> Dictionary:
 	var resolved_manifest_path := resolve_manifest_path(manifest_path, manifest_path_override)
@@ -44,16 +43,14 @@ func load_manifest_payload_result(manifest_path: String, manifest_path_override:
 			ErrorCodesScript.INVALID_BATTLE_SETUP,
 			"FormalCharacterManifest no longer accepts pair_interaction_cases: %s" % resolved_manifest_path
 		)
-	var pair_interaction_specs = parsed.get(PAIR_INTERACTION_SPECS_BUCKET, null)
-	if not (pair_interaction_specs is Array):
+	if parsed.has("pair_interaction_specs"):
 		return _error_result(
 			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"FormalCharacterManifest[%s] must be array: %s" % [PAIR_INTERACTION_SPECS_BUCKET, resolved_manifest_path]
+			"FormalCharacterManifest no longer accepts pair_interaction_specs: %s" % resolved_manifest_path
 		)
 	return _ok_result({
 		CHARACTERS_BUCKET: characters.duplicate(true),
 		MATCHUPS_BUCKET: matchups.duplicate(true),
-		PAIR_INTERACTION_SPECS_BUCKET: pair_interaction_specs.duplicate(true),
 	})
 
 func resolve_manifest_path(manifest_path: String, manifest_path_override: String = "") -> String:

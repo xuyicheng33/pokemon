@@ -21,14 +21,13 @@ def validate_pair_catalog(
     ctx,
     *,
     runtime_character_ids: list[str],
+    characters: list[dict],
     delivery_registry: list[dict],
     character_to_unit: dict[str, str],
     raw_matchups: dict,
     derived_matchups: dict,
-    pair_interaction_specs: list,
     pair_interaction_cases: list,
     matchup_catalog_path: str,
-    pair_spec_path: str,
     delivery_registry_path: str,
     scenario_registry_path: str,
 ) -> None:
@@ -107,30 +106,74 @@ def validate_pair_catalog(
     }
     expected_directional_interaction_cases: set[tuple[str, str, str, str]] = set()
     expected_scenario_keys_by_pair: dict[str, str] = {}
-    for spec_index, raw_spec in enumerate(pair_interaction_specs):
-        if not isinstance(raw_spec, dict):
-            ctx.failures.append(f"{pair_spec_path}[{spec_index}] must be object")
+    runtime_index_by_character = {
+        character_id: index for index, character_id in enumerate(runtime_character_ids)
+    }
+    seen_owned_pairs: set[str] = set()
+    for owner_index, raw_entry in enumerate(characters):
+        if not isinstance(raw_entry, dict):
+            ctx.failures.append(f"{matchup_catalog_path} characters[{owner_index}] must be object")
             continue
-        character_ids = raw_spec.get("character_ids", [])
-        if not isinstance(character_ids, list) or len(character_ids) != 2:
-            ctx.failures.append(f"{pair_spec_path}[{spec_index}] must define exactly two character_ids")
+        owner_character_id = str(raw_entry.get("character_id", "")).strip()
+        owned_specs = raw_entry.get("owned_pair_interaction_specs", [])
+        if not isinstance(owned_specs, list):
+            ctx.failures.append(
+                f"{matchup_catalog_path} characters[{owner_character_id or owner_index}].owned_pair_interaction_specs must be an array"
+            )
             continue
-        left_character_id = str(character_ids[0]).strip()
-        right_character_id = str(character_ids[1]).strip()
-        if not left_character_id or not right_character_id:
+        expected_other_character_ids = set(runtime_character_ids[:owner_index])
+        seen_other_character_ids: set[str] = set()
+        for spec_index, raw_spec in enumerate(owned_specs):
+            if not isinstance(raw_spec, dict):
+                ctx.failures.append(
+                    f"{matchup_catalog_path} characters[{owner_character_id}].owned_pair_interaction_specs[{spec_index}] must be object"
+                )
+                continue
+            other_character_id = str(raw_spec.get("other_character_id", "")).strip()
+            if not other_character_id:
+                continue
+            if other_character_id not in runtime_index_by_character:
+                ctx.failures.append(
+                    f"{matchup_catalog_path} characters[{owner_character_id}].owned_pair_interaction_specs[{spec_index}] references unknown other_character_id: {other_character_id}"
+                )
+                continue
+            if runtime_index_by_character[other_character_id] >= owner_index:
+                ctx.failures.append(
+                    f"{matchup_catalog_path} characters[{owner_character_id}].owned_pair_interaction_specs[{spec_index}] must only target earlier manifest characters: {other_character_id}"
+                )
+                continue
+            if other_character_id in seen_other_character_ids:
+                ctx.failures.append(
+                    f"{matchup_catalog_path} characters[{owner_character_id}] duplicated owned pair target: {other_character_id}"
+                )
+                continue
+            seen_other_character_ids.add(other_character_id)
+            scenario_key = str(raw_spec.get("scenario_key", "")).strip()
+            pair_key = _unordered_pair_key(owner_character_id, other_character_id)
+            if pair_key in seen_owned_pairs:
+                ctx.failures.append(f"{matchup_catalog_path} duplicated owned pair declaration: {pair_key}")
+                continue
+            seen_owned_pairs.add(pair_key)
+            if pair_key in expected_scenario_keys_by_pair:
+                ctx.failures.append(f"{matchup_catalog_path} duplicated unordered pair scenario: {pair_key}")
+                continue
+            expected_scenario_keys_by_pair[pair_key] = scenario_key
+            owner_initiator_matchup_id = generated_matchup_by_direction.get((owner_character_id, other_character_id), "")
+            owner_responder_matchup_id = generated_matchup_by_direction.get((other_character_id, owner_character_id), "")
+            if not owner_initiator_matchup_id or not owner_responder_matchup_id:
+                continue
+            expected_directional_interaction_cases.add(
+                (owner_character_id, other_character_id, owner_initiator_matchup_id, scenario_key)
+            )
+            expected_directional_interaction_cases.add(
+                (other_character_id, owner_character_id, owner_responder_matchup_id, scenario_key)
+            )
+        missing_other_character_ids = sorted(expected_other_character_ids - seen_other_character_ids)
+        if missing_other_character_ids:
+            ctx.failures.append(
+                f"{matchup_catalog_path} characters[{owner_character_id}] missing owned_pair_interaction_specs coverage: {', '.join(missing_other_character_ids)}"
+            )
             continue
-        scenario_key = str(raw_spec.get("scenario_key", "")).strip()
-        pair_key = _unordered_pair_key(left_character_id, right_character_id)
-        if pair_key in expected_scenario_keys_by_pair:
-            ctx.failures.append(f"{pair_spec_path} duplicated unordered pair: {pair_key}")
-            continue
-        expected_scenario_keys_by_pair[pair_key] = scenario_key
-        forward_matchup_id = generated_matchup_by_direction.get((left_character_id, right_character_id), "")
-        reverse_matchup_id = generated_matchup_by_direction.get((right_character_id, left_character_id), "")
-        if not forward_matchup_id or not reverse_matchup_id:
-            continue
-        expected_directional_interaction_cases.add((left_character_id, right_character_id, forward_matchup_id, scenario_key))
-        expected_directional_interaction_cases.add((right_character_id, left_character_id, reverse_matchup_id, scenario_key))
 
     actual_interaction_pairs: set[str] = set()
     actual_directional_cases: set[tuple[str, str, str, str]] = set()

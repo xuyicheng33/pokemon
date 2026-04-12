@@ -3,18 +3,19 @@ class_name FormalCharacterManifestViews
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const FormalCharacterCapabilityCatalogScript := preload("res://src/shared/formal_character_capability_catalog.gd")
-const ManifestLoaderScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_loader.gd")
 const FormalRegistryContractsScript := preload("res://src/shared/formal_registry_contracts.gd")
+const RuntimeEntryNormalizerScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_runtime_entry_normalizer.gd")
 
 const CHARACTERS_BUCKET := "characters"
 const VALIDATOR_REQUIRED_SUITE_PATH := "tests/suites/extension_validation_contract_suite.gd"
-const REQUIRED_BENCH_UNIT_COUNT := 2
 
 var _registry_contracts = FormalRegistryContractsScript.new()
+var _runtime_entry_normalizer = RuntimeEntryNormalizerScript.new()
 
 func validate_runtime_characters_result(characters: Array, manifest_path: String) -> Dictionary:
 	var seen_character_ids: Dictionary = {}
 	var seen_unit_definition_ids: Dictionary = {}
+	var seen_pair_tokens: Dictionary = {}
 	var entries: Array = []
 	for entry_index in range(characters.size()):
 		var raw_entry = characters[entry_index]
@@ -45,30 +46,16 @@ func validate_runtime_characters_result(characters: Array, manifest_path: String
 				"FormalCharacterManifest duplicated unit_definition_id: %s" % unit_definition_id
 			)
 		seen_unit_definition_ids[unit_definition_id] = true
-		for raw_rel_path in entry.get("required_content_paths", []):
-			if String(raw_rel_path).strip_edges().is_empty():
-				return _error_result(
-					ErrorCodesScript.INVALID_BATTLE_SETUP,
-					"FormalCharacterManifest[%s] has empty required_content_paths entry" % character_id
-				)
-		for field_name in ["pair_initiator_bench_unit_ids", "pair_responder_bench_unit_ids"]:
-			var normalized_bench_units_result := _normalize_bench_unit_ids_result(
-				entry.get(field_name, null),
-				character_id,
-				field_name
+		var pair_token := String(entry.get("pair_token", "")).strip_edges()
+		if seen_pair_tokens.has(pair_token):
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"FormalCharacterManifest duplicated pair_token: %s" % pair_token
 			)
-			if not bool(normalized_bench_units_result.get("ok", false)):
-				return normalized_bench_units_result
-			entry[field_name] = normalized_bench_units_result.get("data", []).duplicate(true)
-		var validator_path := String(entry.get("content_validator_script_path", "")).strip_edges()
-		if not validator_path.is_empty():
-			var resolved_validator_path := ManifestLoaderScript.normalize_resource_path(validator_path)
-			if not ResourceLoader.exists(resolved_validator_path):
-				return _error_result(
-					ErrorCodesScript.INVALID_BATTLE_SETUP,
-					"FormalCharacterManifest[%s] missing validator: %s" % [character_id, resolved_validator_path]
-				)
-			entry["content_validator_script_path"] = resolved_validator_path
+		seen_pair_tokens[pair_token] = true
+		var normalized_entry_result := _runtime_entry_normalizer.normalize_entry_result(entry, character_id)
+		if not bool(normalized_entry_result.get("ok", false)):
+			return normalized_entry_result
 		entries.append(entry.duplicate(true))
 	return _ok_result(entries)
 
@@ -80,9 +67,12 @@ func build_runtime_entries_result(characters: Array) -> Dictionary:
 			"character_id": String(entry.get("character_id", "")).strip_edges(),
 			"unit_definition_id": String(entry.get("unit_definition_id", "")).strip_edges(),
 			"formal_setup_matchup_id": String(entry.get("formal_setup_matchup_id", "")).strip_edges(),
+			"pair_token": String(entry.get("pair_token", "")).strip_edges(),
+			"baseline_script_path": String(entry.get("baseline_script_path", "")).strip_edges(),
 			"required_content_paths": entry.get("required_content_paths", []).duplicate(true),
 			"pair_initiator_bench_unit_ids": entry.get("pair_initiator_bench_unit_ids", []).duplicate(true),
 			"pair_responder_bench_unit_ids": entry.get("pair_responder_bench_unit_ids", []).duplicate(true),
+			"owned_pair_interaction_specs": entry.get("owned_pair_interaction_specs", []).duplicate(true),
 		}
 		var validator_path := String(entry.get("content_validator_script_path", "")).strip_edges()
 		if not validator_path.is_empty():
@@ -171,30 +161,6 @@ func _append_unique_suite_path(required_suite_paths: Array, seen_suite_paths: Di
 		return
 	seen_suite_paths[suite_path] = true
 	required_suite_paths.append(suite_path)
-
-func _normalize_bench_unit_ids_result(raw_bench_unit_ids, character_id: String, field_name: String) -> Dictionary:
-	if not (raw_bench_unit_ids is Array):
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"FormalCharacterManifest[%s].%s must be array" % [character_id, field_name]
-		)
-	if raw_bench_unit_ids.size() != REQUIRED_BENCH_UNIT_COUNT:
-		return _error_result(
-			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"FormalCharacterManifest[%s].%s must contain exactly %d unit ids" % [character_id, field_name, REQUIRED_BENCH_UNIT_COUNT]
-		)
-	var normalized_bench_unit_ids: Array = []
-	var seen_unit_definition_ids: Dictionary = {}
-	for raw_unit_definition_id in raw_bench_unit_ids:
-		var unit_definition_id := String(raw_unit_definition_id).strip_edges()
-		if unit_definition_id.is_empty() or seen_unit_definition_ids.has(unit_definition_id):
-			return _error_result(
-				ErrorCodesScript.INVALID_BATTLE_SETUP,
-				"FormalCharacterManifest[%s].%s must contain distinct non-empty unit ids" % [character_id, field_name]
-			)
-		seen_unit_definition_ids[unit_definition_id] = true
-		normalized_bench_unit_ids.append(unit_definition_id)
-	return _ok_result(normalized_bench_unit_ids)
 
 func _ok_result(data) -> Dictionary:
 	return {

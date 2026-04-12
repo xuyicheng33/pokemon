@@ -7,6 +7,8 @@ from architecture_composition_consistency_gate_support import (
     CompositionTexts,
     DescriptorFacts,
     build_descriptor_facts,
+    declared_field_names_for_script,
+    dynamic_declared_field_names_for_slot,
     duplicate_names,
     fail,
     load_composition_texts,
@@ -31,8 +33,14 @@ def validate_wiring_specs_entry_points(texts: CompositionTexts) -> None:
         fail("payload contract registry must expose payload_handler_registry wiring facts", ["src/battle_core/content/payload_contract_registry.gd"])
     if "handler_wiring_specs" not in texts.payload_contract_registry_text:
         fail("payload contract registry must expose payload handler wiring facts", ["src/battle_core/content/payload_contract_registry.gd"])
+    if "runtime_service_slots" not in texts.payload_contract_registry_text:
+        fail("payload contract registry must expose runtime service slots", ["src/battle_core/content/payload_contract_registry.gd"])
     if "shared_service_wiring_specs" not in texts.payload_service_specs_text:
         fail("payload service specs helper must expose shared service wiring facts", ["src/composition/battle_core_payload_service_specs.gd"])
+    if "PayloadRuntimeServiceRegistryScript" not in texts.payload_service_specs_text:
+        fail("payload service specs helper must aggregate runtime service registry descriptors", ["src/composition/battle_core_payload_runtime_service_registry.gd"])
+    if "PayloadValidatorRegistryScript" not in texts.content_payload_validator_text:
+        fail("content payload validator must dispatch through payload validator registry", ["src/battle_core/content/payload_validator_registry.gd"])
 
 
 def validate_service_descriptors(texts: CompositionTexts, facts: DescriptorFacts) -> tuple[set[str], set[str]]:
@@ -82,27 +90,62 @@ def validate_payload_seams(texts: CompositionTexts, facts: DescriptorFacts) -> N
             for slot in stale_payload_handler_scripts
         )
         fail("payload handler slot/script coverage drifted apart", details)
-    payload_validator_keys = sorted({
-        validator_key
-        for validator_key in re.findall(r'"validator_key": "([^"]*)"', texts.payload_contract_registry_text)
-        if validator_key
-    })
-    payload_validator_methods = {
-        method_name.removeprefix("_validate_").removesuffix("_payload")
-        for method_name in re.findall(r"func (_validate_[a-z0-9_]+_payload)\(", texts.content_payload_validator_text)
-    }
-    missing_payload_validator_methods = sorted(set(payload_validator_keys) - payload_validator_methods)
-    stale_payload_validator_methods = sorted(payload_validator_methods - set(payload_validator_keys))
-    if missing_payload_validator_methods or stale_payload_validator_methods:
+    payload_validator_key_set = set(facts.payload_validator_keys)
+    payload_validator_registry_key_set = set(facts.payload_validator_registry_keys)
+    missing_payload_validator_registry_keys = sorted(payload_validator_key_set - payload_validator_registry_key_set)
+    stale_payload_validator_registry_keys = sorted(payload_validator_registry_key_set - payload_validator_key_set)
+    payload_validator_registry_script_path_set = set(facts.payload_validator_registry_script_paths)
+    payload_validator_file_path_set = set(facts.payload_validator_file_paths)
+    missing_payload_validator_files = sorted(payload_validator_registry_script_path_set - payload_validator_file_path_set)
+    stale_payload_validator_files = sorted(payload_validator_file_path_set - payload_validator_registry_script_path_set)
+    payload_runtime_service_slot_set = set(facts.payload_runtime_service_slots)
+    payload_runtime_service_registry_slot_set = set(facts.payload_runtime_service_registry_slots)
+    missing_payload_runtime_service_registry_slots = sorted(payload_runtime_service_slot_set - payload_runtime_service_registry_slot_set)
+    stale_payload_runtime_service_registry_slots = sorted(payload_runtime_service_registry_slot_set - payload_runtime_service_slot_set)
+    script_by_slot = dict(facts.script_slots)
+    missing_payload_runtime_service_scripts = sorted(
+        slot
+        for slot in facts.payload_runtime_service_registry_slots
+        if not script_by_slot.get(slot) or not (ROOT / script_by_slot[slot]).exists()
+    )
+    if (
+        missing_payload_validator_registry_keys
+        or stale_payload_validator_registry_keys
+        or missing_payload_validator_files
+        or stale_payload_validator_files
+        or missing_payload_runtime_service_registry_slots
+        or stale_payload_runtime_service_registry_slots
+        or missing_payload_runtime_service_scripts
+    ):
         details = [
-            f"payload validator key missing dispatcher method: {validator_key}"
-            for validator_key in missing_payload_validator_methods
+            f"payload validator key missing validator registry entry: {validator_key}"
+            for validator_key in missing_payload_validator_registry_keys
         ]
         details.extend(
-            f"payload validator dispatcher missing registry key: {validator_key}"
-            for validator_key in stale_payload_validator_methods
+            f"payload validator registry key missing payload contract entry: {validator_key}"
+            for validator_key in stale_payload_validator_registry_keys
         )
-        fail("payload validator dispatch coverage drifted apart", details)
+        details.extend(
+            f"payload validator registry script missing file: {script_path}"
+            for script_path in missing_payload_validator_files
+        )
+        details.extend(
+            f"payload validator file missing registry entry: {script_path}"
+            for script_path in stale_payload_validator_files
+        )
+        details.extend(
+            f"payload runtime service slot missing runtime service registry entry: {slot}"
+            for slot in missing_payload_runtime_service_registry_slots
+        )
+        details.extend(
+            f"payload runtime service registry slot missing payload contract entry: {slot}"
+            for slot in stale_payload_runtime_service_registry_slots
+        )
+        details.extend(
+            f"payload runtime service registry slot missing script file: {slot}"
+            for slot in missing_payload_runtime_service_scripts
+        )
+        fail("payload registry closure drifted apart", details)
 
 
 def validate_wiring_slots(facts: DescriptorFacts, slot_set: set[str]) -> None:
@@ -120,6 +163,50 @@ def validate_wiring_slots(facts: DescriptorFacts, slot_set: set[str]) -> None:
             unknown_wiring_slots.append(f"unknown reset owner: {owner}.{field_name}")
     if unknown_wiring_slots:
         fail("composition wiring specs reference unknown service slots", sorted(unknown_wiring_slots))
+
+
+def validate_declared_owner_fields(facts: DescriptorFacts) -> None:
+    issues: list[str] = []
+    script_by_slot = {
+        slot_name: script_path
+        for slot_name, script_path in facts.script_slots
+        if script_path
+    }
+    declared_fields_cache: dict[str, set[str]] = {}
+
+    def declared_fields_for_slot(slot_name: str) -> set[str]:
+        script_path = script_by_slot.get(slot_name, "")
+        declared_fields = dynamic_declared_field_names_for_slot(slot_name, facts)
+        if not script_path:
+            return declared_fields
+        if script_path not in declared_fields_cache:
+            declared_fields_cache[script_path] = declared_field_names_for_script(script_path)
+        return declared_fields | declared_fields_cache[script_path]
+
+    for owner, dependency, _source in facts.wiring_owner_source_pairs:
+        script_path = script_by_slot.get(owner, "")
+        if not script_path:
+            issues.append(f"wiring owner missing script descriptor: {owner}.{dependency}")
+            continue
+        if not (ROOT / script_path).exists():
+            issues.append(f"wiring owner script is missing: {owner} -> {script_path}")
+            continue
+        if dependency not in declared_fields_for_slot(owner):
+            issues.append(f"wiring dependency is not a declared owner field: {owner}.{dependency} ({script_path})")
+
+    for owner, field_name in facts.reset_owner_pairs:
+        script_path = script_by_slot.get(owner, "")
+        if not script_path:
+            issues.append(f"reset owner missing script descriptor: {owner}.{field_name}")
+            continue
+        if not (ROOT / script_path).exists():
+            issues.append(f"reset owner script is missing: {owner} -> {script_path}")
+            continue
+        if field_name not in declared_fields_for_slot(owner):
+            issues.append(f"reset field is not declared on owner script: {owner}.{field_name} ({script_path})")
+
+    if issues:
+        fail("composition wiring specs must target declared owner fields", sorted(issues))
 
 
 def validate_container_api(texts: CompositionTexts) -> None:
@@ -199,6 +286,7 @@ def run() -> None:
     slot_set, _script_slot_set = validate_service_descriptors(texts, facts)
     validate_payload_seams(texts, facts)
     validate_wiring_slots(facts, slot_set)
+    validate_declared_owner_fields(facts)
     validate_container_api(texts)
     validate_composer_api(texts)
     validate_container_usage(facts, slot_set)

@@ -12,13 +12,20 @@ var _dependency_collector = DependencyCollectorScript.new()
 var _signature_builder = SignatureBuilderScript.new()
 var _signature_static_file_paths := PackedStringArray([
 	"res://config/formal_character_manifest.json",
+	"res://config/formal_registry_contracts.json",
+	"res://src/shared/formal_character_manifest.gd",
+	"res://src/shared/formal_registry_contracts.gd",
 ])
 var _signature_static_dir_paths := PackedStringArray([
 	"res://src/battle_core/content",
 	"res://src/battle_core/content/formal_validators",
+	"res://src/shared/formal_character_manifest",
 ])
 var signature_static_file_paths := PackedStringArray([
 	"res://config/formal_character_manifest.json",
+	"res://config/formal_registry_contracts.json",
+	"res://src/shared/formal_character_manifest.gd",
+	"res://src/shared/formal_registry_contracts.gd",
 ]):
 	set(value):
 		_signature_static_file_paths = value
@@ -29,6 +36,7 @@ var signature_static_file_paths := PackedStringArray([
 var signature_static_dir_paths := PackedStringArray([
 	"res://src/battle_core/content",
 	"res://src/battle_core/content/formal_validators",
+	"res://src/shared/formal_character_manifest",
 ]):
 	set(value):
 		_signature_static_dir_paths = value

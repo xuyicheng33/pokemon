@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from repo_consistency_formal_character_gate_support import (
-    baseline_script_path_for_character_id,
     collect_scope_tree,
     collect_suite_refs,
     scan_legacy_formal_character_id_refs,
@@ -44,12 +43,19 @@ def validate_character_entries(
             baseline_loader_text = ctx.read_text(baseline_loader_path)
             if "FormalCharacterManifestScript" not in baseline_loader_text:
                 ctx.failures.append(f"{baseline_loader_path} must load manifest-backed formal character ids")
+    baseline_loader_text = ctx.read_text(baseline_loader_path)
+    if 'entry.get("baseline_script_path"' not in baseline_loader_text:
+        ctx.failures.append(f"{baseline_loader_path} must read baseline_script_path from manifest-backed runtime entries")
+    if "BASELINE_SCRIPT_ROOT" in baseline_loader_text:
+        ctx.failures.append(f"{baseline_loader_path} must not keep convention-based baseline root guessing")
 
     for entry in characters:
         character_id = str(entry.get("character_id", "")).strip()
         display_name = str(entry.get("display_name", "")).strip()
         unit_definition_id = str(entry.get("unit_definition_id", "")).strip()
         formal_setup_matchup_id = str(entry.get("formal_setup_matchup_id", "")).strip()
+        pair_token = str(entry.get("pair_token", "")).strip()
+        baseline_script_path = str(entry.get("baseline_script_path", "")).strip()
         required_content_paths = entry.get("required_content_paths", [])
         validator_script_path = str(entry.get("content_validator_script_path", "")).strip()
         design_doc = str(entry.get("design_doc", "")).strip()
@@ -78,7 +84,6 @@ def validate_character_entries(
         if not character_id:
             ctx.failures.append("formal manifest character entry missing character_id")
             continue
-        ctx.require_exists(baseline_script_path_for_character_id(character_id), f"{character_id} formal baseline script")
         delivery_entry = delivery_entries_by_character.get(character_id, {})
         if not delivery_entry:
             ctx.failures.append(f"formal delivery view missing character_id: {character_id}")
@@ -94,6 +99,12 @@ def validate_character_entries(
             ctx.failures.append(f"formal manifest duplicated unit_definition_id: {unit_definition_id}")
         seen_units.add(unit_definition_id)
         character_to_unit[character_id] = unit_definition_id
+        if not pair_token:
+            ctx.failures.append(f"formal manifest[{character_id}] missing pair_token")
+        if not baseline_script_path:
+            ctx.failures.append(f"formal manifest[{character_id}] missing baseline_script_path")
+        else:
+            ctx.require_exists(baseline_script_path, f"{character_id} formal baseline script")
 
         if not formal_setup_matchup_id:
             ctx.failures.append(f"formal manifest[{character_id}] missing formal_setup_matchup_id")

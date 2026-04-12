@@ -282,15 +282,15 @@
 
 - 状态：已完成
 - 目标：
-  - 把最近这轮管理修复里还剩的三处真实漂移收平：`pair_interaction_cases` 的运行时 loader 合同、`power bonus` 的分层边界、活跃说明文档口径。
+  - 把最近这轮管理修复里还剩的三处真实漂移收平：pair interaction 派生合同、`power bonus` 的分层边界、活跃说明文档口径。
 - 范围：
   - `SampleBattleFactoryFormalMatchupCatalogLoader`
   - `PowerBonusSourceRegistry / PowerBonusResolver`
   - formal registry/catalog 回归坏例
   - tests README、设计文档、活跃复查记录、任务/决策记录
 - 验收标准：
-  - `pair_interaction_cases[*].character_ids` 在运行时 loader 与 shared gate 都按 matchup opener 方向校验
-  - `pair_interaction_cases[*]` 在运行时 loader 与 shared gate 都禁止引用 `test_only` matchup
+  - 派生后的 directed interaction case 在运行时 loader 与 shared gate 都按 matchup opener 方向校验
+  - 派生后的 directed interaction case 在运行时 loader 与 shared gate 都禁止引用 `test_only` matchup
   - `content` 层不再直接承担 power bonus 的运行时求值
   - capability 证据说明统一改成“从 `required_content_paths` 导出的语义事实”
   - 完整 gate 通过
@@ -625,13 +625,13 @@
 
 ### Pair / Gate 重做
 
-- `config/formal_character_manifest.json` 当前允许同一无序正式角色对登记多条 interaction case。
-- 当前四正式角色已显式补齐 6 组关键 pair 的双向 interaction case，共 12 条 directional case。
+- `config/formal_character_manifest.json` 当前把 pair 身份与 pair interaction 输入都收回到角色条目：`pair_token / baseline_script_path / owned_pair_interaction_specs`。
+- 当前四正式角色已按 manifest 顺序补齐完整 pair coverage；`pair_token = gojo / sukuna / kashimo / obito`，继续保持既有 12 条 directional interaction case 的外部命名稳定。
 - repo consistency gate 当前固定检查：
-  - `scenario_id` 唯一
-  - case 字段完整
-  - 每个无序正式角色对至少 1 条 case
-  - 当前约定的 12 条关键 directional case 都存在
+  - `pair_token` 唯一
+  - `baseline_script_path` 显式存在
+  - `owned_pair_interaction_specs` 只允许后出现角色声明与更早角色的 pair
+  - 每条 owned spec 恰好派生 2 条 directed case
 - `docs/records/tasks.md` / `docs/records/decisions.md` 的措辞漂移不再触发机器 gate 失败。
 
 ### 黑盒 / Support 拆分
@@ -666,8 +666,8 @@
 
 ### Wave 1：硬问题收口与开发边界清理
 
-- `config/formal_character_manifest.json` 已成为 formal 角色元数据的唯一人工维护真源；`characters / matchups / pair_interaction_cases` 三桶全部走统一 loader/domain model。
-- interaction catalog 当前对 `scenario_id / matchup_id / character_ids[2] / battle_seed` 走硬校验；缺字段、空值、类型错误或 `battle_seed <= 0` 直接 fail-fast。
+- `config/formal_character_manifest.json` 已成为 formal 角色元数据的唯一人工维护真源；顶层固定只保留 `characters / matchups`，角色级 pair 输入统一走 `owned_pair_interaction_specs`。
+- interaction catalog 当前对 `scenario_key / matchup_id / character_ids[2] / battle_seed` 走硬校验；缺字段、空值、类型错误或 `battle_seed <= 0` 直接 fail-fast。
 - `BattleSandboxRunner` 不再写死角色专属 demo 命令流；demo profile 的单一真相固定为 `config/demo_replay_catalog.json`。
 - `SampleBattleFactory` 负责根据 demo profile 构建 replay input；demo profile 缺失、非法或 builder 失败时直接失败。
 - `ContentSnapshotCache` 的签名输入已扩大到：
@@ -681,15 +681,15 @@
 
 - `config/formal_character_manifest.json` 已补 `surface_smoke_skill_id` 必填字段。
 - `config/formal_character_manifest.json` 已移除手写 `pair_surface_cases`，当前只保留：
+  - `characters`
   - `matchups`
-  - `pair_interaction_cases`
 - `SampleBattleFactory.formal_pair_surface_cases_result()` 当前只返回运行时生成结果，不再读取手写 surface case。
 - surface gate 当前固定验证：
   - formal roster 的 directed pair surface coverage 完整
   - 缺 `surface_smoke_skill_id` 或缺合法 directed matchup 时直接 fail-fast
 - interaction gate 当前固定验证：
   - 6 组 unordered pair 覆盖完整
-  - `scenario_registry` 与 catalog `scenario_id` 一一对应
+  - `scenario_registry` 与 catalog `scenario_key` 一一对应
 
 ### Wave 3：四角色黑盒补洞与记录可信度修复
 
@@ -721,7 +721,7 @@
 
 只有在以下条件继续保持成立时，才建议进入新角色扩充：
 
-- formal manifest 的 `characters / matchups / pair_interaction_cases` 与 gate 保持一致，不再回退成多真源手抄或兼容口径
+- formal manifest 的 `characters / matchups + characters[*].owned_pair_interaction_specs` 与 gate 保持一致，不再回退成多真源手抄或兼容口径
 - pair surface 继续由 `matchups + surface_smoke_skill_id` 自动生成，不再恢复手写 surface matrix
 - interaction 继续保持显式场景制，且每个 case 都显式带 `battle_seed`
 - sandbox/demo 继续只改 `config/demo_replay_catalog.json`，不再把角色专属脚本塞回 runner
@@ -782,7 +782,7 @@
 
 - 状态：已完成
 - 目标：
-  - 把正式角色接入主线的权威文档口径同步到当前实现，清掉旧的 `pair_interaction_cases / coverage_needles / content_snapshot_paths_result()` 主路径描述，避免后续扩角继续按旧入口施工。
+  - 把正式角色接入主线的权威文档口径同步到当前实现，清掉旧的 pair 输入口径、`coverage_needles` 和 `content_snapshot_paths_result()` 主路径描述，避免后续扩角继续按旧入口施工。
 - 范围：
   - `README.md`
   - `tests/README.md`
@@ -797,7 +797,7 @@
   - `docs/records/decisions.md`
 - 验收标准：
   - 文档明确 `remove_effect` 正式支持 `single / all`
-  - 文档明确 formal pair 输入改为 `pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids + pair_interaction_specs`
+  - 文档明确 formal pair 输入改为 `pair_token / baseline_script_path / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids + owned_pair_interaction_specs`
   - 文档明确 pair interaction 按完整有向 coverage 执行，并锁 `scenario_key`
   - 文档明确 manager smoke、pair smoke、formal demo replay 走 setup-scoped snapshot
   - 文档明确 capability catalog 字段改为 `required_fact_ids`

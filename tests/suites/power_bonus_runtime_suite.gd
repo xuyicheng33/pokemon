@@ -1,23 +1,51 @@
 extends RefCounted
 class_name PowerBonusRuntimeSuite
 
+const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const PowerBonusResolverScript := preload("res://src/battle_core/actions/power_bonus_resolver.gd")
+const PowerBonusSourceRegistryScript := preload("res://src/battle_core/content/power_bonus_source_registry.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
     runner.run_test("power_bonus_registered_source_coverage_contract", failures, Callable(self, "_test_power_bonus_registered_source_coverage_contract").bind(harness))
+    runner.run_test("power_bonus_contract_validator_dispatch_contract", failures, Callable(self, "_test_power_bonus_contract_validator_dispatch_contract").bind(harness))
     runner.run_test("effect_stack_sum_and_remove_all_runtime_contract", failures, Callable(self, "_test_effect_stack_sum_and_remove_all_runtime_contract").bind(harness))
 
 func _test_power_bonus_registered_source_coverage_contract(harness) -> Dictionary:
     var unresolved_sources := PowerBonusResolverScript.unresolved_registered_sources()
-    if unresolved_sources.is_empty():
-        return harness.pass_result()
-    return harness.fail_result(
-        "PowerBonusResolver missing registered source coverage: %s" % ", ".join(unresolved_sources)
-    )
+    if not unresolved_sources.is_empty():
+        return harness.fail_result(
+            "PowerBonusResolver missing registered source coverage: %s" % ", ".join(unresolved_sources)
+        )
+    var unresolved_validator_sources := PowerBonusSourceRegistryScript.unresolved_validator_sources()
+    if not unresolved_validator_sources.is_empty():
+        return harness.fail_result(
+            "PowerBonusSourceRegistry missing validator coverage: %s" % ", ".join(unresolved_validator_sources)
+        )
+    return harness.pass_result()
+
+func _test_power_bonus_contract_validator_dispatch_contract(harness) -> Dictionary:
+    var content_index = BattleContentIndexScript.new()
+    var bad_skill = SkillDefinitionScript.new()
+    bad_skill.id = "power_bonus_dispatch_bad_skill"
+    bad_skill.display_name = "Power Bonus Dispatch Bad Skill"
+    bad_skill.power_bonus_source = PowerBonusSourceRegistryScript.EFFECT_STACK_SUM
+    bad_skill.power_bonus_self_effect_ids = PackedStringArray(["missing_effect"])
+    bad_skill.power_bonus_per_stack = 0
+    var errors: Array = []
+    PowerBonusSourceRegistryScript.validate_skill_contract(errors, bad_skill.id, bad_skill, content_index)
+    var has_missing_effect_error := false
+    var has_per_stack_error := false
+    for error_msg in errors:
+        var msg := str(error_msg)
+        has_missing_effect_error = has_missing_effect_error or msg.find("power_bonus_self_effect_ids missing effect") != -1
+        has_per_stack_error = has_per_stack_error or msg.find("power_bonus_per_stack must be > 0") != -1
+    if not (has_missing_effect_error and has_per_stack_error):
+        return harness.fail_result("PowerBonusSourceRegistry validator dispatch drifted")
+    return harness.pass_result()
 
 func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictionary:
     var core_payload = harness.build_core()

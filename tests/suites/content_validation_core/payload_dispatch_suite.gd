@@ -2,6 +2,7 @@ extends "res://tests/suites/content_validation_core/base.gd"
 
 const ContentPayloadValidatorScript := preload("res://src/battle_core/content/content_payload_validator.gd")
 const PayloadContractRegistryScript := preload("res://src/battle_core/content/payload_contract_registry.gd")
+const PayloadValidatorRegistryScript := preload("res://src/battle_core/content/payload_validator_registry.gd")
 
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test(
@@ -16,6 +17,11 @@ func _test_content_payload_validator_registry_dispatch_contract(harness) -> Dict
 	if not missing_validator_keys.is_empty():
 		return harness.fail_result(
 			"ContentPayloadValidator missing registered dispatchers: %s" % ", ".join(missing_validator_keys)
+		)
+	var stale_validator_keys := payload_validator.stale_registered_validator_keys()
+	if not stale_validator_keys.is_empty():
+		return harness.fail_result(
+			"ContentPayloadValidator has stale validator registry keys: %s" % ", ".join(stale_validator_keys)
 		)
 	var errors: Array = []
 	var content_index = BattleContentIndexScript.new()
@@ -33,7 +39,8 @@ func _test_content_payload_validator_registry_dispatch_contract(harness) -> Dict
 		return harness.fail_result("ContentPayloadValidator dynamic dispatch returned wrong damage validation error")
 	for raw_validator_key in PayloadContractRegistryScript.registered_validator_keys():
 		var validator_key := String(raw_validator_key).strip_edges()
-		var method_name := ContentPayloadValidatorScript.validator_method_name_for_key(validator_key)
-		if method_name.is_empty():
-			return harness.fail_result("ContentPayloadValidator produced empty method name for validator_key: %s" % validator_key)
+		if payload_validator.validator_for_key(validator_key) == null:
+			return harness.fail_result("ContentPayloadValidator failed to resolve validator registry entry: %s" % validator_key)
+		if PayloadValidatorRegistryScript.validator_script_path_for_key(validator_key).is_empty():
+			return harness.fail_result("PayloadValidatorRegistry missing script path for validator_key: %s" % validator_key)
 	return harness.pass_result()

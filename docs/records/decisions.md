@@ -31,10 +31,10 @@
 - `config/formal_registry_contracts.json` 当前固定拆成：
   - `manifest_character_runtime`
   - `manifest_character_delivery`
-  - `pair_interaction_case`
+  - `owned_pair_interaction_spec`
 - `FormalCharacterManifest.load_manifest_result()` 与 runtime loader 现在只强校验 runtime 视图；delivery/test 字段漂移不得再拖死 runtime loader。
 - delivery loader、repo consistency gate 与交付文档继续强校验 delivery/test 视图，保证正式交付面没有降级。
-- `pair_interaction_cases[*]` 的正式合同补记 `test_name` 必填，避免文档继续落后于 catalog loader 与 gate。
+- formal pair 的原始输入固定收回到角色级 runtime 视图，不再额外保留顶层 pair 输入 bucket。
 - 这么定的原因：
   - 扩角前当前最容易反复返工的不是 battle core 主循环，而是 formal 角色交付链
   - runtime 被 `suite_path / design_doc / required_test_names` 这类 delivery 字段绑住，会把“文档漂移”升级成“运行时阻塞”
@@ -232,10 +232,9 @@
 ## 2. formal manifest 单真源继续固定
 
 - 正式角色条目的唯一人工维护配置固定为 `config/formal_character_manifest.json`；共享字段合同继续固定在 `config/formal_registry_contracts.json`。
-- manifest 顶层固定三桶：
+- manifest 顶层固定两桶：
   - `characters`
   - `matchups`
-  - `pair_interaction_cases`
 - `characters[*]` 同时收口 runtime 必需字段、可选 `content_validator_script_path`、测试/文档/suite 元数据与回归锚点。
 - entry validator 固定采用三桶模板：
   - `unit_passive_contracts`
@@ -244,7 +243,7 @@
 - formal validator 继续只校验当前 snapshot 实际出现的正式角色；缺席角色的坏 validator 不得把无关快照一起炸掉。
 - `surface_smoke_skill_id` 固定挂在 `characters[*]`，只服务 directed pair surface smoke 的默认黑盒技能选择。
 - `matchups[*]` 允许可选 `test_only: true` 元数据；这类 matchup 仍可用于手动 setup / 测试夹具，但不再参与 directed pair surface smoke 矩阵，同角色 mirror matchup 也必须显式打标。
-- pair interaction 覆盖当前固定直接由 manifest 里的非 `test_only` directed matchup 推导；shared gate 只要求“每个正式方向至少有一条 interaction case”，不再在 Python 里额外手抄一张 scenario 常量表。
+- pair interaction 覆盖当前固定直接由角色级 `owned_pair_interaction_specs` 推导；shared gate 只要求“每个正式方向至少有一条 interaction case”，不再在 Python 里额外手抄一张 scenario 常量表。
 - 运行时、测试、gate 与文档都只允许从 manifest domain model 派生各自视图；共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`。
 
 ## 3. SampleBattleFactory、sandbox demo 与 cache freshness 统一收口
@@ -253,7 +252,7 @@
 - 运行时 helper 全部统一进 composition 装配；`SampleBattleFactory`、catalog loader、surface case builder、demo catalog 与 replay builder 各自只承载单一职责。
 - `SampleBattleFactory` owner 现在只保留稳定 facade、helper 装配与错误状态投影；manifest/catalog/demo override 广播固定下沉到 `src/composition/sample_battle_factory_override_router.gd`，baseline/formal setup 组装固定下沉到 `src/composition/sample_battle_factory_setup_access.gd`，snapshot 目录扫描固定下沉到 `src/composition/sample_battle_factory_snapshot_dir_collector.gd`。
 - directed pair surface smoke 不再手写 `pair_surface_cases`；统一由 `matchups + characters[*].surface_smoke_skill_id` 自动生成。
-- `pair_interaction_cases[*]` 固定必填 `scenario_id / matchup_id / character_ids[2] / battle_seed`，并继续与 scenario registry 做一一对应校验；`character_ids` 顺序必须匹配 `matchup_id` 的 opener 方向，且不得引用 `test_only` matchup。
+- 派生后的 directed interaction case 固定必填 `scenario_key / matchup_id / character_ids[2] / battle_seed`，并继续与 scenario registry 做一一对应校验；`character_ids` 顺序必须匹配 `matchup_id` 的 opener 方向，且不得引用 `test_only` matchup。
 - demo replay profile 的单一真相固定为 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选 profile、初始化 manager、错误投影，再把 replay input 构建委托给 builder。
 - `ContentSnapshotCache` 继续采用 composer 级共享 cache + 每次 fresh index；当前 freshness 签名固定覆盖：
   - snapshot 路径列表
@@ -382,13 +381,14 @@
 ## 0S. 正式角色接入文档必须锁定派生式 formal pair 合同（2026-04-12）
 
 - 正式角色接入的权威文档现在固定按“少量原始输入 + 派生有向产物”描述 formal pair：
-  - manifest 原始 bucket 固定为 `characters / matchups / pair_interaction_specs`
-  - `characters[*]` 的 runtime 输入固定补 `pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids`
+  - manifest 原始 bucket 固定为 `characters / matchups`
+  - `characters[*]` 的 runtime 输入固定补 `pair_token / baseline_script_path / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids / owned_pair_interaction_specs`
   - 非 `test_only` 的 formal-vs-formal directed matchup 与 directed `pair_interaction_case` 都由 loader 派生，不再作为作者手写输入面
 - pair interaction 的权威口径现在固定为：
-  - manifest 只维护无向 `pair_interaction_specs`
+  - manifest 只允许角色级 `owned_pair_interaction_specs`
   - scenario registry 只维护无向 `scenario_key`
   - shared gate 必须按完整有向 coverage 校验，并同时锁 `matchup_id + scenario_key`
+- `2026-04-12` 起，旧的 pair 合同表述已经被这套 schema 取代；records 不再作为旧口径的补丁层。
 - formal smoke、pair smoke 与 formal demo replay 的文档入口固定为 setup-scoped snapshot；`content_snapshot_paths_result()` 只保留给全量正式快照与 baseline demo。
 - capability catalog 的权威字段名固定改为 `required_fact_ids`；文档不得再沿用 `coverage_needles` 这种旧语义名。
 - docs gate 现在必须同时承担两类约束：

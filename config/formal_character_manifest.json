@@ -5,6 +5,8 @@
       "display_name": "Gojo",
       "unit_definition_id": "gojo_satoru",
       "formal_setup_matchup_id": "gojo_vs_sample",
+      "pair_token": "gojo",
+      "baseline_script_path": "src/shared/formal_character_baselines/gojo_satoru/gojo_satoru_formal_character_baseline.gd",
       "pair_initiator_bench_unit_ids": [
         "sample_mossaur",
         "sample_pyron"
@@ -13,6 +15,7 @@
         "sample_tidekit",
         "sample_mossaur"
       ],
+      "owned_pair_interaction_specs": [],
       "required_content_paths": [
         "content/units/gojo/gojo_satoru.tres",
         "content/skills/gojo/gojo_ao.tres",
@@ -115,6 +118,8 @@
       "display_name": "宿傩",
       "unit_definition_id": "sukuna",
       "formal_setup_matchup_id": "sukuna_setup",
+      "pair_token": "sukuna",
+      "baseline_script_path": "src/shared/formal_character_baselines/sukuna/sukuna_formal_character_baseline.gd",
       "pair_initiator_bench_unit_ids": [
         "sample_mossaur",
         "sample_pyron"
@@ -122,6 +127,14 @@
       "pair_responder_bench_unit_ids": [
         "sample_tidekit",
         "sample_mossaur"
+      ],
+      "owned_pair_interaction_specs": [
+        {
+          "other_character_id": "gojo_satoru",
+          "scenario_key": "gojo_sukuna_domain_cleanup",
+          "owner_as_initiator_battle_seed": 2667,
+          "owner_as_responder_battle_seed": 2661
+        }
       ],
       "required_content_paths": [
         "content/units/sukuna/sukuna.tres",
@@ -217,6 +230,8 @@
       "display_name": "Kashimo",
       "unit_definition_id": "kashimo_hajime",
       "formal_setup_matchup_id": "kashimo_vs_sample",
+      "pair_token": "kashimo",
+      "baseline_script_path": "src/shared/formal_character_baselines/kashimo_hajime/kashimo_hajime_formal_character_baseline.gd",
       "pair_initiator_bench_unit_ids": [
         "sample_mossaur",
         "sample_pyron"
@@ -224,6 +239,20 @@
       "pair_responder_bench_unit_ids": [
         "sample_tidekit",
         "sample_mossaur"
+      ],
+      "owned_pair_interaction_specs": [
+        {
+          "other_character_id": "gojo_satoru",
+          "scenario_key": "gojo_kashimo_kyokyo_nullify_domain_accuracy",
+          "owner_as_initiator_battle_seed": 2668,
+          "owner_as_responder_battle_seed": 2662
+        },
+        {
+          "other_character_id": "sukuna",
+          "scenario_key": "sukuna_kashimo_domain_accuracy_nullified",
+          "owner_as_initiator_battle_seed": 2670,
+          "owner_as_responder_battle_seed": 2664
+        }
       ],
       "required_content_paths": [
         "content/units/kashimo/kashimo_hajime.tres",
@@ -321,6 +350,8 @@
       "display_name": "Obito",
       "unit_definition_id": "obito_juubi_jinchuriki",
       "formal_setup_matchup_id": "obito_vs_sample",
+      "pair_token": "obito",
+      "baseline_script_path": "src/shared/formal_character_baselines/obito_juubi_jinchuriki/obito_juubi_jinchuriki_formal_character_baseline.gd",
       "pair_initiator_bench_unit_ids": [
         "sample_mossaur",
         "sample_pyron"
@@ -328,6 +359,26 @@
       "pair_responder_bench_unit_ids": [
         "sample_tidekit",
         "sample_mossaur"
+      ],
+      "owned_pair_interaction_specs": [
+        {
+          "other_character_id": "gojo_satoru",
+          "scenario_key": "gojo_obito_heal_block_public_contract",
+          "owner_as_initiator_battle_seed": 2669,
+          "owner_as_responder_battle_seed": 2663
+        },
+        {
+          "other_character_id": "sukuna",
+          "scenario_key": "sukuna_obito_field_seal_and_kamado_lifecycle",
+          "owner_as_initiator_battle_seed": 2671,
+          "owner_as_responder_battle_seed": 2665
+        },
+        {
+          "other_character_id": "kashimo_hajime",
+          "scenario_key": "kashimo_obito_yinyang_and_amber_persistence",
+          "owner_as_initiator_battle_seed": 2672,
+          "owner_as_responder_battle_seed": 2666
+        }
       ],
       "required_content_paths": [
         "content/units/obito/obito_juubi_jinchuriki.tres",
@@ -448,43 +499,5 @@
       "p2_units": ["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"],
       "test_only": true
     }
-  },
-  "pair_interaction_specs": [
-    {
-      "character_ids": ["gojo_satoru", "sukuna"],
-      "scenario_key": "gojo_sukuna_domain_cleanup",
-      "forward_battle_seed": 2661,
-      "reverse_battle_seed": 2667
-    },
-    {
-      "character_ids": ["gojo_satoru", "kashimo_hajime"],
-      "scenario_key": "gojo_kashimo_kyokyo_nullify_domain_accuracy",
-      "forward_battle_seed": 2662,
-      "reverse_battle_seed": 2668
-    },
-    {
-      "character_ids": ["gojo_satoru", "obito_juubi_jinchuriki"],
-      "scenario_key": "gojo_obito_heal_block_public_contract",
-      "forward_battle_seed": 2663,
-      "reverse_battle_seed": 2669
-    },
-    {
-      "character_ids": ["sukuna", "kashimo_hajime"],
-      "scenario_key": "sukuna_kashimo_domain_accuracy_nullified",
-      "forward_battle_seed": 2664,
-      "reverse_battle_seed": 2670
-    },
-    {
-      "character_ids": ["sukuna", "obito_juubi_jinchuriki"],
-      "scenario_key": "sukuna_obito_field_seal_and_kamado_lifecycle",
-      "forward_battle_seed": 2665,
-      "reverse_battle_seed": 2671
-    },
-    {
-      "character_ids": ["kashimo_hajime", "obito_juubi_jinchuriki"],
-      "scenario_key": "kashimo_obito_yinyang_and_amber_persistence",
-      "forward_battle_seed": 2666,
-      "reverse_battle_seed": 2672
-    }
-  ]
+  }
 }

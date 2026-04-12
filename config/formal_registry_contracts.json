@@ -3,12 +3,15 @@
     "required_string_fields": [
       "character_id",
       "unit_definition_id",
-      "formal_setup_matchup_id"
+      "formal_setup_matchup_id",
+      "pair_token",
+      "baseline_script_path"
     ],
     "required_array_fields": [
       "required_content_paths",
       "pair_initiator_bench_unit_ids",
-      "pair_responder_bench_unit_ids"
+      "pair_responder_bench_unit_ids",
+      "owned_pair_interaction_specs"
     ],
     "required_positive_int_fields": [],
     "optional_string_fields": [
@@ -34,16 +37,15 @@
     "required_positive_int_fields": [],
     "optional_string_fields": []
   },
-  "pair_interaction_spec": {
+  "owned_pair_interaction_spec": {
     "required_string_fields": [
+      "other_character_id",
       "scenario_key"
     ],
-    "required_array_fields": [
-      "character_ids"
-    ],
+    "required_array_fields": [],
     "required_positive_int_fields": [
-      "forward_battle_seed",
-      "reverse_battle_seed"
+      "owner_as_initiator_battle_seed",
+      "owner_as_responder_battle_seed"
     ],
     "optional_string_fields": []
   }

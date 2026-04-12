@@ -79,7 +79,7 @@ func _test_formal_character_baseline_descriptor_error_contract(harness) -> Dicti
 	)
 	if errors.size() != 2:
 		return harness.fail_result("baseline descriptor errors should surface as structured validation errors, got: %s" % var_to_str(errors))
-	if String(errors[0]).find("missing baseline script") == -1:
+	if String(errors[0]).find("unknown character_id") == -1:
 		return harness.fail_result("missing baseline script error should stay structured, got: %s" % String(errors[0]))
 	if String(errors[1]).find("missing skill descriptor") == -1:
 		return harness.fail_result("missing skill descriptor error should stay structured, got: %s" % String(errors[1]))
@@ -90,13 +90,13 @@ func _test_formal_character_runtime_registry_duplicate_unit_definition_guard_con
 	var manifest_payload := JSON.stringify(_build_manifest_payload([
 		_build_runtime_registry_entry(
 			"gojo_alias",
-			"shared_unit",
+			"gojo_satoru",
 			"gojo_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"]
 		),
 		_build_runtime_registry_entry(
 			"sukuna_alias",
-			"shared_unit",
+			"gojo_satoru",
 			"sukuna_setup",
 			["content/units/sukuna/sukuna.tres"]
 		),
@@ -120,8 +120,20 @@ func _test_formal_character_runtime_registry_required_field_guard_contract(harne
 			"expected_error": "missing formal_setup_matchup_id",
 		},
 		{
+			"missing_key": "pair_token",
+			"expected_error": "missing pair_token",
+		},
+		{
+			"missing_key": "baseline_script_path",
+			"expected_error": "missing baseline_script_path",
+		},
+		{
 			"missing_key": "required_content_paths",
 			"expected_error": "missing required_content_paths",
+		},
+		{
+			"missing_key": "owned_pair_interaction_specs",
+			"expected_error": "missing owned_pair_interaction_specs",
 		},
 	]
 	for raw_case in bad_cases:
@@ -170,8 +182,8 @@ func _test_formal_character_runtime_registry_ignores_delivery_field_contract(har
 	return harness.pass_result()
 
 func _test_formal_character_runtime_registry_ignores_pair_interaction_catalog_contract(harness) -> Dictionary:
-	var manifest_path := "user://formal_character_manifest_runtime_pair_case_fixture.json"
-	var manifest_payload := JSON.stringify(_build_manifest_payload([
+	var manifest_path := "user://formal_character_manifest_runtime_pair_coverage_fixture.json"
+	var characters := [
 		_build_runtime_registry_entry(
 			"gojo_alias",
 			"gojo_satoru",
@@ -184,22 +196,21 @@ func _test_formal_character_runtime_registry_ignores_pair_interaction_catalog_co
 			"sukuna_setup",
 			["content/units/sukuna/sukuna.tres"]
 		),
-	], {}, [
-		{
-			"scenario_key": "gojo_sukuna_domain_cleanup",
-			"character_ids": ["gojo_alias", "sukuna_alias"],
-			"forward_battle_seed": 3201,
-		}
+	]
+	characters[1]["owned_pair_interaction_specs"] = []
+	var manifest_payload := JSON.stringify(_build_manifest_payload([
+		characters[0],
+		characters[1],
 	]), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
-		return harness.fail_result("failed to write runtime/pair-case manifest fixture")
+		return harness.fail_result("failed to write runtime/pair-coverage manifest fixture")
 	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
 	var error_message := String(load_result.get("error", ""))
 	if not error_message.is_empty():
-		return harness.fail_result("runtime registry should ignore pair_interaction_specs contract drift: %s" % error_message)
+		return harness.fail_result("runtime registry should ignore owned pair interaction coverage drift: %s" % error_message)
 	var entries: Array = load_result.get("entries", [])
 	if entries.size() != 2:
-		return harness.fail_result("runtime registry should still load runtime entries when pair_interaction_specs drift")
+		return harness.fail_result("runtime registry should still load runtime entries when owned pair interaction coverage drifts")
 	return harness.pass_result()
 
 func _test_formal_character_runtime_registry_missing_validator_guard_contract(harness) -> Dictionary:

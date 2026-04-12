@@ -240,31 +240,31 @@ tests/run_with_gate.sh
 - 样例接线：`SampleBattleFactory`
 - 正式角色条目的唯一人工维护配置：`config/formal_character_manifest.json`
 - 共享能力唯一维护配置：`config/formal_character_capability_catalog.json`
-- manifest 顶层固定三桶：`characters / matchups / pair_interaction_specs`
+- manifest 顶层固定两桶：`characters / matchups`；pair interaction 的唯一手写输入固定挂在 `characters[*].owned_pair_interaction_specs`
 - `characters[*]` 仍承载完整角色条目，但当前固定拆成两份消费视图：
-  - runtime 视图：`character_id / unit_definition_id / formal_setup_matchup_id / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids / required_content_paths`，以及按需补的 `content_validator_script_path`
+  - runtime 视图：`character_id / unit_definition_id / formal_setup_matchup_id / pair_token / baseline_script_path / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids / owned_pair_interaction_specs / required_content_paths`，以及按需补的 `content_validator_script_path`
   - delivery/test 视图：`character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / shared_capability_ids / design_needles / adjustment_needles`
 - 运行时、测试、gate 与文档都只从 manifest domain model 派生各自视图，不再各自拼 runtime / delivery / matchup 三份事实；runtime loader 不得再被 delivery/test 字段绑死
 - 共享内容校验：若角色有跨资源共享不变量，可在 `config/formal_character_manifest.json.characters[*]` 里登记 `content_validator_script_path`；runtime 统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 manifest 角色条目并动态装配 validator；测试、文档、suite 与回归锚点也统一从这份 manifest 派生
 - 加载期 formal 校验：`ContentSnapshotFormalCharacterValidator` 只会对当前 content snapshot 实际已出现的正式角色执行对应 validator，缺席角色不会误报
 - validator 模板：正式角色 entry validator 固定收口为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶；入口文件只负责 preload 与串联，不再自由追加角色私有逻辑
 - 大型共享 suite 当前统一采用“稳定 wrapper + 子 suite”组织：例如 `tests/suites/multihit_skill_runtime_suite.gd` 只保留入口职责，真实断言下沉到 `tests/suites/multihit_skill_runtime/*.gd`
-- `config/formal_registry_contracts.json` 当前固定拆成 `manifest_character_runtime / manifest_character_delivery / pair_interaction_spec` 三组合同桶
-- `characters[*]` 的 runtime 必填面固定为 `character_id / unit_definition_id / formal_setup_matchup_id / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids / required_content_paths`，以及按需补的 `content_validator_script_path`
+- `config/formal_registry_contracts.json` 当前固定拆成 `manifest_character_runtime / manifest_character_delivery / owned_pair_interaction_spec` 三组合同桶
+- `characters[*]` 的 runtime 必填面固定为 `character_id / unit_definition_id / formal_setup_matchup_id / pair_token / baseline_script_path / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids / owned_pair_interaction_specs / required_content_paths`，以及按需补的 `content_validator_script_path`
 - `characters[*]` 的交付必填面固定为 `character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / shared_capability_ids / design_needles / adjustment_needles`
 - 共享能力目录固定收口到 `config/formal_character_capability_catalog.json`：每个 entry 都必须登记 `capability_id / rule_doc_paths / required_suite_paths / required_fact_ids / stop_and_specialize_when`
 - `shared_capability_ids` 只允许引用 capability catalog 里已登记的正式入口；共享入口的实际消费者统一从 manifest 派生，不再在 catalog 里重复手填 `consumer_character_ids`
-- `required_test_names` 现在只保留角色私有 runtime / validator 坏例锚点；共享 suite 覆盖不再逐角色复制进角色条目，pair surface 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，interaction 统一由 `config/formal_character_manifest.json.pair_interaction_specs` 派生并由 shared gate 收口
+- `required_test_names` 现在只保留角色私有 runtime / validator 坏例锚点；共享 suite 覆盖不再逐角色复制进角色条目，pair surface 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，interaction 统一由 `characters[*].owned_pair_interaction_specs` 派生并由 shared gate 收口
 - sandbox demo 若要给正式角色补固定演示，统一改 `config/demo_replay_catalog.json` profile，不再在 `BattleSandboxRunner` 里写死角色专属命令流
 - validator 坏例：只要角色登记了 `content_validator_script_path`，delivery/test 视图会自动并入 `tests/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个 `formal_<character>_validator_*bad_case_contract` 锚点
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死正式角色面板、技能、关键 effect / field / passive 资源
 - manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 跨角色 smoke：正式角色之间至少补非镜像配对黑盒样例，避免配对覆盖长期偏在单一角色身上
-- `config/formal_character_manifest.json.matchups` 现在只显式维护样例/单角色 setup/`test_only` 特例 matchup；非 `test_only` 的 formal-vs-formal directed matchup 由 loader 按 `characters[*] + pair_initiator_bench_unit_ids + pair_responder_bench_unit_ids` 自动派生，directed pair surface smoke 继续按 `matchups + characters[*].surface_smoke_skill_id` 运行时生成
-- `pair_interaction_specs[*]` 每个无向正式 pair 只写一条规格，固定必填 `character_ids[2] / scenario_key / forward_battle_seed / reverse_battle_seed`；loader 会派生两条 directed `pair_interaction_case`，统一补齐 `test_name / matchup_id / scenario_key / character_ids[2] / battle_seed`
+- `config/formal_character_manifest.json.matchups` 现在只显式维护样例/单角色 setup/`test_only` 特例 matchup；非 `test_only` 的 formal-vs-formal directed matchup 由 loader 按 `characters[*] + pair_token + pair_initiator_bench_unit_ids + pair_responder_bench_unit_ids` 自动派生，directed pair surface smoke 继续按 `matchups + characters[*].surface_smoke_skill_id` 运行时生成；`formal_setup_matchup_id` 只服务默认 formal setup 入口
+- `owned_pair_interaction_specs[*]` 固定挂在角色条目上，字段为 `other_character_id / scenario_key / owner_as_initiator_battle_seed / owner_as_responder_battle_seed`；manifest 第 `i` 个角色只能声明与 `0..i-1` 更早角色的 pair，loader 会按 `pair_token` 派生两条 directed `pair_interaction_case`，统一补齐 `test_name / matchup_id / scenario_key / character_ids[2] / battle_seed`
 - shared gate 继续按完整有向覆盖收口：每个非 `test_only` directed formal matchup 都必须有对应 interaction case，且必须锁到预期 `scenario_key`，不能只靠“同 pair 有 case”蒙混过去
-- 当前四名正式角色的 pair surface 与 deep interaction 都按完整有向矩阵执行；manifest 只维护 6 条无向 `pair_interaction_spec`，运行时派生 12 条 directed interaction case：`Gojo-Sukuna / Gojo-Kashimo / Gojo-Obito / Sukuna-Kashimo / Sukuna-Obito / Kashimo-Obito`
+- 当前四名正式角色的 pair surface 与 deep interaction 都按完整有向矩阵执行；四人的 `pair_token` 固定为 `gojo / sukuna / kashimo / obito`，继续保持既有 `matchup_id / test_name` 不变；新增角色时只允许改新角色自己的 `owned_pair_interaction_specs`
 - 固定案例：必要时补 `tests/replay_cases/*` 与对应 runner / 说明
 - 当前仓库已内置两组固定诊断入口：`tests/helpers/domain_case_runner.gd`（领域）与 `tests/helpers/kashimo_case_runner.gd`（鹿紫云）
 - 若角色依赖共享扩展（如 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、`execute_*`、`damage_segments`、`on_receive_action_damage_segment`），则必须先在 capability catalog 登记；对应共享 suite 会自动并入 delivery/test 视图，不再要求角色条目重复回挂
@@ -286,11 +286,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-11）
+## 10. 当前代码规模（2026-04-12）
 
-- `src/**/*.gd`：`19602` 行
-- `tests/**/*.gd`：`24714` 行
-- GDScript 合计：`44316` 行
+- `src/**/*.gd`：`19926` 行
+- `tests/**/*.gd`：`24822` 行
+- GDScript 合计：`44748` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

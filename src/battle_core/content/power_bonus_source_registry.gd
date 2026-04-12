@@ -1,27 +1,29 @@
 extends RefCounted
 class_name PowerBonusSourceRegistry
 
+const ZERO_POWER_BONUS_RESOLVER_STRATEGY_PATH := "res://src/battle_core/content/power_bonus_resolver_strategy_zero.gd"
+const MP_DIFF_CLAMPED_POWER_BONUS_RESOLVER_STRATEGY_PATH := "res://src/battle_core/content/power_bonus_resolver_strategy_mp_diff_clamped.gd"
+const EFFECT_STACK_SUM_POWER_BONUS_RESOLVER_STRATEGY_PATH := "res://src/battle_core/content/power_bonus_resolver_strategy_effect_stack_sum.gd"
+const EFFECT_STACK_SUM_POWER_BONUS_CONTRACT_VALIDATOR_PATH := "res://src/battle_core/content/power_bonus_contract_validator_effect_stack_sum.gd"
+
 const MP_DIFF_CLAMPED := "mp_diff_clamped"
 const EFFECT_STACK_SUM := "effect_stack_sum"
-const RESOLVER_KIND_ZERO := "zero"
-const RESOLVER_KIND_MP_DIFF_CLAMPED := "mp_diff_clamped"
-const RESOLVER_KIND_EFFECT_STACK_SUM := "effect_stack_sum"
 
 const SOURCE_DESCRIPTORS := [
 	{
 		"source": "",
-		"resolver_kind": RESOLVER_KIND_ZERO,
-		"validator_kind": "",
+		"resolver_script_path": ZERO_POWER_BONUS_RESOLVER_STRATEGY_PATH,
+		"validator_script_path": "",
 	},
 	{
 		"source": MP_DIFF_CLAMPED,
-		"resolver_kind": RESOLVER_KIND_MP_DIFF_CLAMPED,
-		"validator_kind": "",
+		"resolver_script_path": MP_DIFF_CLAMPED_POWER_BONUS_RESOLVER_STRATEGY_PATH,
+		"validator_script_path": "",
 	},
 	{
 		"source": EFFECT_STACK_SUM,
-		"resolver_kind": RESOLVER_KIND_EFFECT_STACK_SUM,
-		"validator_kind": EFFECT_STACK_SUM,
+		"resolver_script_path": EFFECT_STACK_SUM_POWER_BONUS_RESOLVER_STRATEGY_PATH,
+		"validator_script_path": EFFECT_STACK_SUM_POWER_BONUS_CONTRACT_VALIDATOR_PATH,
 	},
 ]
 
@@ -41,33 +43,35 @@ static func descriptor_for_source(source: String) -> Dictionary:
 			return descriptor.duplicate(true)
 	return {}
 
-static func resolver_kind_for_source(source: String) -> String:
-	return String(descriptor_for_source(source).get("resolver_kind", ""))
+static func resolver_script_path_for_source(source: String) -> String:
+	return String(descriptor_for_source(source).get("resolver_script_path", "")).strip_edges()
+
+static func validator_script_path_for_source(source: String) -> String:
+	return String(descriptor_for_source(source).get("validator_script_path", "")).strip_edges()
+
+static func unresolved_validator_sources() -> PackedStringArray:
+	var unresolved := PackedStringArray()
+	for raw_source in registered_sources():
+		var source := String(raw_source)
+		var validator_script_path := validator_script_path_for_source(source)
+		if validator_script_path.is_empty():
+			continue
+		if not ResourceLoader.exists(validator_script_path):
+			unresolved.append(source)
+			continue
+		var validator_script = load(validator_script_path)
+		var validator = validator_script.new()
+		if validator != null and validator.has_method("validate_skill_contract"):
+			continue
+		unresolved.append(source)
+	return unresolved
 
 static func validate_skill_contract(errors: Array, skill_id: String, skill_definition, content_index) -> void:
-	match String(descriptor_for_source(String(skill_definition.power_bonus_source)).get("validator_kind", "")):
-		EFFECT_STACK_SUM:
-			_validate_effect_stack_sum_contract(errors, skill_id, skill_definition, content_index)
-
-static func _validate_effect_stack_sum_contract(errors: Array, skill_id: String, skill_definition, content_index) -> void:
-	var has_any_effect_id := false
-	for effect_id in skill_definition.power_bonus_self_effect_ids:
-		var normalized_effect_id := String(effect_id).strip_edges()
-		if normalized_effect_id.is_empty():
-			errors.append("skill[%s].power_bonus_self_effect_ids must not contain empty entry" % skill_id)
-			continue
-		has_any_effect_id = true
-		if not content_index.effects.has(normalized_effect_id):
-			errors.append("skill[%s].power_bonus_self_effect_ids missing effect: %s" % [skill_id, normalized_effect_id])
-	for effect_id in skill_definition.power_bonus_target_effect_ids:
-		var normalized_effect_id := String(effect_id).strip_edges()
-		if normalized_effect_id.is_empty():
-			errors.append("skill[%s].power_bonus_target_effect_ids must not contain empty entry" % skill_id)
-			continue
-		has_any_effect_id = true
-		if not content_index.effects.has(normalized_effect_id):
-			errors.append("skill[%s].power_bonus_target_effect_ids missing effect: %s" % [skill_id, normalized_effect_id])
-	if not has_any_effect_id:
-		errors.append("skill[%s].effect_stack_sum requires at least one power bonus effect id" % skill_id)
-	if int(skill_definition.power_bonus_per_stack) <= 0:
-		errors.append("skill[%s].power_bonus_per_stack must be > 0 for effect_stack_sum, got %d" % [skill_id, int(skill_definition.power_bonus_per_stack)])
+	var validator_script_path := validator_script_path_for_source(String(skill_definition.power_bonus_source))
+	if validator_script_path.is_empty() or not ResourceLoader.exists(validator_script_path):
+		return
+	var validator_script = load(validator_script_path)
+	var validator = validator_script.new()
+	if validator == null or not validator.has_method("validate_skill_contract"):
+		return
+	validator.validate_skill_contract(errors, skill_id, skill_definition, content_index)

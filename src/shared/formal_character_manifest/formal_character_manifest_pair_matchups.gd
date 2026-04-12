@@ -4,8 +4,6 @@ class_name FormalCharacterManifestPairMatchups
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 const MATCHUP_INFIX := "_vs_"
-const SAMPLE_MATCHUP_SUFFIX := "_vs_sample"
-const SETUP_MATCHUP_SUFFIX := "_setup"
 const REQUIRED_BENCH_UNIT_COUNT := 2
 
 func build_pair_maps_result(characters: Array, manifest_path: String) -> Dictionary:
@@ -28,14 +26,10 @@ func build_pair_maps_result(characters: Array, manifest_path: String) -> Diction
 			return _error_result(
 				"FormalCharacterManifest[characters][%d] missing runtime identity fields: %s" % [entry_index, manifest_path]
 			)
-		var pair_token_result := _pair_token_result(entry)
-		if not bool(pair_token_result.get("ok", false)):
+		var pair_token := String(entry.get("pair_token", "")).strip_edges()
+		if pair_token.is_empty():
 			return _error_result(
-				"FormalCharacterManifest[%s] %s: %s" % [
-					character_id,
-					String(pair_token_result.get("error_message", "pair token error")),
-					manifest_path,
-				]
+				"FormalCharacterManifest[%s] missing pair_token: %s" % [character_id, manifest_path]
 			)
 		var initiator_bench_result := _normalize_bench_units_result(
 			entry.get("pair_initiator_bench_unit_ids", null),
@@ -53,7 +47,6 @@ func build_pair_maps_result(characters: Array, manifest_path: String) -> Diction
 		)
 		if not bool(responder_bench_result.get("ok", false)):
 			return responder_bench_result
-		var pair_token := String(pair_token_result.get("data", "")).strip_edges()
 		if pair_token_by_character.values().has(pair_token):
 			return _error_result("FormalCharacterManifest duplicated pair token: %s (%s)" % [pair_token, manifest_path])
 		runtime_order.append(character_id)
@@ -131,19 +124,6 @@ func generated_matchup_id(pair_maps: Dictionary, left_character_id: String, righ
 		MATCHUP_INFIX,
 		String(pair_maps.get("pair_token_by_character", {}).get(right_character_id, "")).strip_edges(),
 	]
-
-func _pair_token_result(entry: Dictionary) -> Dictionary:
-	var formal_setup_matchup_id := String(entry.get("formal_setup_matchup_id", "")).strip_edges()
-	if formal_setup_matchup_id.is_empty():
-		return _error_result("missing formal_setup_matchup_id for pair token derivation")
-	if formal_setup_matchup_id.ends_with(SAMPLE_MATCHUP_SUFFIX):
-		return _ok_result(formal_setup_matchup_id.left(formal_setup_matchup_id.length() - SAMPLE_MATCHUP_SUFFIX.length()))
-	if formal_setup_matchup_id.ends_with(SETUP_MATCHUP_SUFFIX):
-		return _ok_result(formal_setup_matchup_id.left(formal_setup_matchup_id.length() - SETUP_MATCHUP_SUFFIX.length()))
-	var infix_index := formal_setup_matchup_id.find(MATCHUP_INFIX)
-	if infix_index > 0:
-		return _ok_result(formal_setup_matchup_id.substr(0, infix_index))
-	return _error_result("cannot derive pair token from formal_setup_matchup_id %s" % formal_setup_matchup_id)
 
 func _normalize_bench_units_result(raw_bench_units, field_name: String, character_id: String, manifest_path: String) -> Dictionary:
 	if not (raw_bench_units is Array):

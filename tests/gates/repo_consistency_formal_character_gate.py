@@ -14,6 +14,7 @@ from repo_consistency_formal_character_gate_support import (
     contract_field_list,
     load_delivery_registry_entries,
     load_pair_catalog,
+    validate_entry_validator_structure,
     validate_required_contract_fields,
 )
 
@@ -60,10 +61,9 @@ manifest = ctx.load_json_object(MANIFEST_PATH, "formal character manifest")
 formal_registry_contracts = ctx.load_json_object(FORMAL_REGISTRY_CONTRACTS_PATH, "formal registry contracts")
 characters = manifest.get("characters", [])
 matchups = manifest.get("matchups", {})
-pair_interaction_specs = manifest.get("pair_interaction_specs", [])
 character_runtime_contract_bucket = formal_registry_contracts.get("manifest_character_runtime", {})
 character_delivery_contract_bucket = formal_registry_contracts.get("manifest_character_delivery", {})
-pair_case_contract_bucket = formal_registry_contracts.get("pair_interaction_spec", {})
+owned_pair_spec_contract_bucket = formal_registry_contracts.get("owned_pair_interaction_spec", {})
 character_runtime_required_string_fields = contract_field_list(
     ctx,
     character_runtime_contract_bucket,
@@ -102,29 +102,30 @@ contract_field_list(
     f"{FORMAL_REGISTRY_CONTRACTS_PATH}.manifest_character_delivery.optional_string_fields",
     required=False,
 )
-pair_case_required_string_fields = contract_field_list(
+owned_pair_spec_required_string_fields = contract_field_list(
     ctx,
-    pair_case_contract_bucket,
+    owned_pair_spec_contract_bucket,
     "required_string_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_spec.required_string_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.owned_pair_interaction_spec.required_string_fields",
 )
-pair_case_required_array_fields = contract_field_list(
+owned_pair_spec_required_array_fields = contract_field_list(
     ctx,
-    pair_case_contract_bucket,
+    owned_pair_spec_contract_bucket,
     "required_array_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_spec.required_array_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.owned_pair_interaction_spec.required_array_fields",
+    allow_empty=True,
 )
-pair_case_required_positive_int_fields = contract_field_list(
+owned_pair_spec_required_positive_int_fields = contract_field_list(
     ctx,
-    pair_case_contract_bucket,
+    owned_pair_spec_contract_bucket,
     "required_positive_int_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_spec.required_positive_int_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.owned_pair_interaction_spec.required_positive_int_fields",
 )
 contract_field_list(
     ctx,
-    pair_case_contract_bucket,
+    owned_pair_spec_contract_bucket,
     "optional_string_fields",
-    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.pair_interaction_spec.optional_string_fields",
+    f"{FORMAL_REGISTRY_CONTRACTS_PATH}.owned_pair_interaction_spec.optional_string_fields",
     required=False,
 )
 
@@ -139,10 +140,9 @@ if not isinstance(matchups, dict):
 if "pair_surface_cases" in manifest:
     ctx.failures.append(f"{MANIFEST_PATH} must not define pair_surface_cases; surface coverage is generated from matchups + characters.surface_smoke_skill_id")
 if "pair_interaction_cases" in manifest:
-    ctx.failures.append(f"{MANIFEST_PATH} must not define pair_interaction_cases; use pair_interaction_specs")
-if not isinstance(pair_interaction_specs, list):
-    ctx.failures.append(f"{MANIFEST_PATH} pair_interaction_specs must be an array")
-    pair_interaction_specs = []
+    ctx.failures.append(f"{MANIFEST_PATH} must not define pair_interaction_cases; use characters[*].owned_pair_interaction_specs")
+if "pair_interaction_specs" in manifest:
+    ctx.failures.append(f"{MANIFEST_PATH} must not define pair_interaction_specs; use characters[*].owned_pair_interaction_specs")
 
 delivery_registry = load_delivery_registry_entries(
     ctx,
@@ -200,6 +200,19 @@ character_validation = validate_character_entries(
     shared_suite_roots=SHARED_SUITE_ROOTS,
 )
 
+for entry in characters:
+    if not isinstance(entry, dict):
+        continue
+    character_id = str(entry.get("character_id", "")).strip()
+    validator_script_path = str(entry.get("content_validator_script_path", "")).strip()
+    if not validator_script_path:
+        continue
+    validate_entry_validator_structure(
+        ctx,
+        character_id=character_id,
+        validator_script_path=validator_script_path,
+    )
+
 validate_capability_catalog(
     ctx,
     capability_catalog_path=CAPABILITY_CATALOG_PATH,
@@ -208,30 +221,35 @@ validate_capability_catalog(
     export_script_path=CAPABILITY_FACTS_EXPORT_SCRIPT_PATH,
 )
 
-for case_index, case_spec in enumerate(pair_interaction_specs):
-    if not isinstance(case_spec, dict):
-        ctx.failures.append(f"{MANIFEST_PATH} pair_interaction_specs[{case_index}] must be object")
+for owner_index, raw_entry in enumerate(characters):
+    if not isinstance(raw_entry, dict):
         continue
-    validate_required_contract_fields(
-        ctx,
-        case_spec,
-        pair_case_required_string_fields,
-        pair_case_required_array_fields,
-        f"{MANIFEST_PATH} pair_interaction_specs[{case_index}]",
-        pair_case_required_positive_int_fields,
-    )
+    owner_character_id = str(raw_entry.get("character_id", "")).strip() or str(owner_index)
+    owned_specs = raw_entry.get("owned_pair_interaction_specs", [])
+    if not isinstance(owned_specs, list):
+        continue
+    for spec_index, raw_spec in enumerate(owned_specs):
+        if not isinstance(raw_spec, dict):
+            continue
+        validate_required_contract_fields(
+            ctx,
+            raw_spec,
+            owned_pair_spec_required_string_fields,
+            owned_pair_spec_required_array_fields,
+            f"{MANIFEST_PATH} characters[{owner_character_id}].owned_pair_interaction_specs[{spec_index}]",
+            owned_pair_spec_required_positive_int_fields,
+        )
 
 validate_pair_catalog(
     ctx,
     runtime_character_ids=character_validation["runtime_character_ids"],
+    characters=characters,
     delivery_registry=delivery_registry,
     character_to_unit=character_validation["character_to_unit"],
     raw_matchups=matchups,
     derived_matchups=derived_matchups,
-    pair_interaction_specs=pair_interaction_specs,
     pair_interaction_cases=derived_pair_interaction_cases,
     matchup_catalog_path=MANIFEST_PATH,
-    pair_spec_path=f"{MANIFEST_PATH} pair_interaction_specs",
     delivery_registry_path=MANIFEST_PATH,
     scenario_registry_path=PAIR_INTERACTION_SCENARIO_REGISTRY_PATH,
 )

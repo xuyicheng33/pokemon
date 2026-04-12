@@ -5,7 +5,7 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const DEFAULT_CONTRACT_PATH := "res://config/formal_registry_contracts.json"
 const MANIFEST_CHARACTER_RUNTIME_BUCKET := "manifest_character_runtime"
 const MANIFEST_CHARACTER_DELIVERY_BUCKET := "manifest_character_delivery"
-const PAIR_INTERACTION_SPEC_BUCKET := "pair_interaction_spec"
+const OWNED_PAIR_INTERACTION_SPEC_BUCKET := "owned_pair_interaction_spec"
 
 var contract_path_override: String = ""
 
@@ -13,7 +13,7 @@ func required_string_fields_result(bucket_name: String) -> Dictionary:
 	return _field_list_result(bucket_name, "required_string_fields")
 
 func required_array_fields_result(bucket_name: String) -> Dictionary:
-	return _field_list_result(bucket_name, "required_array_fields")
+	return _field_list_result(bucket_name, "required_array_fields", true, true)
 
 func required_positive_int_fields_result(bucket_name: String) -> Dictionary:
 	return _field_list_result(bucket_name, "required_positive_int_fields", true, true)
@@ -61,13 +61,19 @@ func load_contracts_result() -> Dictionary:
 	for bucket_name in [
 		MANIFEST_CHARACTER_RUNTIME_BUCKET,
 		MANIFEST_CHARACTER_DELIVERY_BUCKET,
-		PAIR_INTERACTION_SPEC_BUCKET,
+		OWNED_PAIR_INTERACTION_SPEC_BUCKET,
 	]:
 		var bucket = parsed.get(bucket_name, {})
 		if not (bucket is Dictionary):
 			return _error_result("FormalRegistryContracts missing dictionary bucket %s: %s" % [bucket_name, resolved_contract_path])
 		for field_key in ["required_string_fields", "required_array_fields"]:
-			var field_list_result := _read_field_list_result(bucket, field_key, "%s.%s" % [bucket_name, field_key], true)
+			var field_list_result := _read_field_list_result(
+				bucket,
+				field_key,
+				"%s.%s" % [bucket_name, field_key],
+				true,
+				field_key == "required_array_fields"
+			)
 			if not bool(field_list_result.get("ok", false)):
 				return field_list_result
 		var positive_int_fields_result := _read_field_list_result(

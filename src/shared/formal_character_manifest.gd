@@ -8,7 +8,6 @@ const ManifestViewsScript := preload("res://src/shared/formal_character_manifest
 
 const CHARACTERS_BUCKET := "characters"
 const MATCHUPS_BUCKET := "matchups"
-const PAIR_INTERACTION_SPECS_BUCKET := "pair_interaction_specs"
 
 var manifest_path_override: String = ""
 var _manifest_loader = ManifestLoaderScript.new()
@@ -30,7 +29,6 @@ func load_manifest_result(manifest_path: String = "") -> Dictionary:
 	return _ok_result({
 		CHARACTERS_BUCKET: characters_result.get("data", []).duplicate(true),
 		MATCHUPS_BUCKET: manifest.get(MATCHUPS_BUCKET, {}).duplicate(true),
-		PAIR_INTERACTION_SPECS_BUCKET: manifest.get(PAIR_INTERACTION_SPECS_BUCKET, []).duplicate(true),
 	})
 
 func build_character_entries_result(manifest_path: String = "") -> Dictionary:
@@ -74,7 +72,6 @@ func build_catalog_result(manifest_path: String = "") -> Dictionary:
 	return _pair_catalog.build_catalog_result(
 		manifest.get(CHARACTERS_BUCKET, []).duplicate(true),
 		manifest.get(MATCHUPS_BUCKET, {}).duplicate(true),
-		manifest.get(PAIR_INTERACTION_SPECS_BUCKET, []).duplicate(true),
 		_manifest_loader.resolve_manifest_path(manifest_path, manifest_path_override)
 	)
 

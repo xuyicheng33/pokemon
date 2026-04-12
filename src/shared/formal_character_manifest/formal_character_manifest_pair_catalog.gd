@@ -7,7 +7,7 @@ const PairMatchupsScript := preload("res://src/shared/formal_character_manifest/
 var _pair_interactions = PairInteractionsScript.new()
 var _pair_matchups = PairMatchupsScript.new()
 
-func build_catalog_result(characters: Array, raw_matchups, pair_interaction_specs: Array, manifest_path: String) -> Dictionary:
+func build_catalog_result(characters: Array, raw_matchups, manifest_path: String) -> Dictionary:
 	var pair_maps_result := _pair_matchups.build_pair_maps_result(characters, manifest_path)
 	if not bool(pair_maps_result.get("ok", false)):
 		return pair_maps_result
@@ -24,7 +24,7 @@ func build_catalog_result(characters: Array, raw_matchups, pair_interaction_spec
 		return merged_matchups_result
 	var merged_matchups: Dictionary = merged_matchups_result.get("data", {})
 	var interaction_cases_result := _pair_interactions.derive_pair_interaction_cases_result(
-		pair_interaction_specs,
+		characters,
 		pair_maps,
 		merged_matchups,
 		manifest_path

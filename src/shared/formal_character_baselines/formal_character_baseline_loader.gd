@@ -2,7 +2,6 @@ extends RefCounted
 class_name FormalCharacterBaselineLoader
 
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
-const BASELINE_SCRIPT_ROOT := "res://src/shared/formal_character_baselines"
 
 static func character_ids() -> PackedStringArray:
 	var resolved_ids := PackedStringArray()
@@ -24,11 +23,14 @@ static func character_entries_result() -> Dictionary:
 	return _ok_result(entries_result.get("data", []))
 
 static func baseline_result(character_id: String, context: String = "") -> Dictionary:
-	var script_path_result := _baseline_script_path_result(character_id)
-	if not bool(script_path_result.get("ok", false)):
-		return script_path_result
 	var normalized_id := character_id.strip_edges()
-	var script_path := String(script_path_result.get("data", ""))
+	var entry_result := _find_character_entry_result(normalized_id)
+	if not bool(entry_result.get("ok", false)):
+		return entry_result
+	var entry: Dictionary = entry_result.get("data", {})
+	var script_path := String(entry.get("baseline_script_path", "")).strip_edges()
+	if script_path.is_empty():
+		return _error_result("FormalCharacterBaselines[%s] missing baseline_script_path%s" % [normalized_id, _context_suffix(context)])
 	if not ResourceLoader.exists(script_path):
 		return _error_result(
 			"FormalCharacterBaselines[%s] missing baseline script%s: %s" % [
@@ -57,11 +59,20 @@ static func baseline_result(character_id: String, context: String = "") -> Dicti
 		)
 	return _ok_result(baseline)
 
-static func _baseline_script_path_result(character_id: String) -> Dictionary:
+static func _find_character_entry_result(character_id: String) -> Dictionary:
 	var normalized_id := character_id.strip_edges()
 	if normalized_id.is_empty():
 		return _error_result("FormalCharacterBaselines lookup character_id must not be empty")
-	return _ok_result("%s/%s/%s_formal_character_baseline.gd" % [BASELINE_SCRIPT_ROOT, normalized_id, normalized_id])
+	var entries_result := character_entries_result()
+	if not bool(entries_result.get("ok", false)):
+		return entries_result
+	for raw_entry in entries_result.get("data", []):
+		if not (raw_entry is Dictionary):
+			continue
+		var entry: Dictionary = raw_entry
+		if String(entry.get("character_id", "")).strip_edges() == normalized_id:
+			return _ok_result(entry.duplicate(true))
+	return _error_result("FormalCharacterBaselines unknown character_id: %s" % normalized_id)
 
 static func _context_suffix(context: String) -> String:
 	return "" if context.strip_edges().is_empty() else " during %s" % context.strip_edges()

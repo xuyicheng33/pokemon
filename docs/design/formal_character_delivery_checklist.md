@@ -72,13 +72,15 @@
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
 - [ ] 若登记了 `content_validator_script_path`，确认 delivery/test 视图会自动并入 `tests/suites/extension_validation_contract_suite.gd`
 - [ ] 若登记了 `content_validator_script_path`，同时把至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
-- [ ] `config/formal_character_manifest.json` 新增或更新该角色相关 `matchups / pair_interaction_specs`
+- [ ] `config/formal_character_manifest.json` 新增或更新该角色条目的 `pair_token / baseline_script_path / owned_pair_interaction_specs`，以及需要的 `matchups`
 - [ ] 若新增只服务测试或手动 setup 的 matchup（例如 mirror 对局），在对应 `matchups[*]` 上显式标 `test_only: true`
-- [ ] 不再手写 formal-vs-formal 的非 `test_only` directed matchup；这部分只允许由 loader 按 `characters[*] + pair_initiator_bench_unit_ids + pair_responder_bench_unit_ids` 自动派生
+- [ ] 不再手写 formal-vs-formal 的非 `test_only` directed matchup；这部分只允许由 loader 按 `characters[*] + pair_token + pair_initiator_bench_unit_ids + pair_responder_bench_unit_ids` 自动派生
 - [ ] 确认该角色的 `surface_smoke_skill_id` 能在所有 formal directed matchup 的首发黑盒 smoke 中稳定施放；pair surface 不再手写登记到 catalog
-- [ ] 若补 interaction 场景，`pair_interaction_specs[*]` 每个无向正式 pair 只写一条规格，必须显式补齐 `character_ids[2] / scenario_key / forward_battle_seed / reverse_battle_seed`
+- [ ] `pair_token` 必须唯一、非空，并保持既有外部 `matchup_id / test_name` 稳定
+- [ ] `baseline_script_path` 必须显式指向 formal baseline 脚本；baseline loader 只允许从 manifest 读取，不再按命名约定猜路径
+- [ ] 若补 interaction 场景，只允许改该角色自己的 `owned_pair_interaction_specs[*]`；字段固定为 `other_character_id / scenario_key / owner_as_initiator_battle_seed / owner_as_responder_battle_seed`
 - [ ] `tests/support/formal_pair_interaction/scenario_registry.gd` 只登记无向 `scenario_key`；scenario runner 执行时读取的是派生好的 directed case context，不再给正反方向各维护一份场景 ID
-- [ ] 每个无向正式 pair 都至少补一条 `pair_interaction_spec`；loader 会自动派生两条 directed `pair_interaction_case`，shared gate 会同时校验完整有向 coverage、`matchup_id` 和对应 `scenario_key`
+- [ ] manifest 第 0 个角色必须留空 `owned_pair_interaction_specs`；第 `i` 个角色必须补齐与 `0..i-1` 所有更早角色的 pair spec，且每个无向 pair 只能声明一次
 - [ ] 若要给该角色补 sandbox/demo 演示，统一改 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 不再写死角色专属命令流
 
 ## 4. 测试最低面
@@ -113,7 +115,7 @@
 - [ ] 若角色依赖共享 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 等扩展能力，只需要声明 `shared_capability_ids`
 - [ ] 若角色依赖共享 `required_target_effects / incoming_accuracy / power_bonus_source=effect_stack_sum` 等扩展能力，也只需要声明 `shared_capability_ids`
 - [ ] 共享 suite 的维护入口以 `config/formal_character_capability_catalog.json` 为准；catalog 新增 `required_suite_paths` 时，不再要求相关角色 manifest 同步补齐重复条目
-- [ ] 共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`；统一改在 `config/formal_character_manifest.json.matchups / pair_interaction_specs` 收口并由 shared gate 校验覆盖完整性
+- [ ] 共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`；统一改在 `config/formal_character_manifest.json.matchups / characters[*].owned_pair_interaction_specs` 收口并由 shared gate 校验覆盖完整性
 - [ ] 不允许只靠通用 contract suite 兜角色回归
 - [ ] 至少补一组“该角色 + 另一名正式角色”的黑盒 smoke，避免正式角色配对覆盖只堆在单一对局上
 

@@ -52,14 +52,17 @@ ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_self_e
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_target_effect_ids", "schema power bonus target effect ids contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "power_bonus_per_stack", "schema power bonus per stack contract")
 ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_manifest.json", "schema formal character manifest wording")
-ctx.require_contains("docs/design/battle_content_schema.md", "characters / matchups / pair_interaction_specs", "schema formal manifest bucket wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "characters / matchups", "schema formal manifest bucket wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "formal_validators/shared/content_snapshot_formal_character_registry.gd", "schema runtime validator loader wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "当前 snapshot 实际出现的正式角色", "schema scoped formal validator wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "content_validator_script_path", "schema formal character validator path wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "pair_token", "schema pair token wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "baseline_script_path", "schema baseline script path wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "owned_pair_interaction_specs", "schema owned pair interaction wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "pair_initiator_bench_unit_ids", "schema pair initiator bench input wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "pair_responder_bench_unit_ids", "schema pair responder bench input wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "scenario_key", "schema pair interaction scenario key wording")
-ctx.require_contains("docs/design/battle_content_schema.md", "forward_battle_seed / reverse_battle_seed", "schema pair interaction seed wording")
+ctx.require_contains("docs/design/battle_content_schema.md", "owner_as_initiator_battle_seed / owner_as_responder_battle_seed", "schema pair interaction seed wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "shared_capability_ids", "schema shared capability ids wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_capability_catalog.json", "schema capability catalog wording")
 ctx.require_contains("docs/design/battle_content_schema.md", "required_fact_ids", "schema capability fact id wording")
@@ -77,16 +80,18 @@ ctx.require_contains("docs/design/battle_content_schema.md", "persistent_stat_st
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "formal_setup_matchup_id", "formal character setup matchup checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "content_snapshot_paths_for_setup_result(battle_setup)", "formal character setup-scoped snapshot checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "content_validator_script_path", "formal character validator registry checklist wording")
+ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "pair_token", "formal character pair token checklist wording")
+ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "baseline_script_path", "formal character baseline path checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "pair_initiator_bench_unit_ids", "formal character pair initiator checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "pair_responder_bench_unit_ids", "formal character pair responder checklist wording")
-ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "pair_interaction_specs", "formal character pair interaction spec checklist wording")
+ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "owned_pair_interaction_specs", "formal character pair interaction spec checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "scenario_key", "formal character pair interaction scenario key checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "shared_capability_ids", "formal character shared capability checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "config/formal_character_capability_catalog.json", "formal character capability catalog checklist wording")
 ctx.require_contains("docs/design/formal_character_delivery_checklist.md", "unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts", "formal character tri-bucket checklist wording")
 ctx.require_contains("docs/design/formal_character_design_template.md", "shared_capability_ids", "formal character shared capability template wording")
 ctx.require_contains("docs/design/formal_character_design_template.md", "docs/design/formal_character_capability_catalog.md", "formal character capability catalog template wording")
-ctx.require_contains("docs/design/formal_character_design_template.md", "pair_interaction_specs", "formal character pair interaction spec template wording")
+ctx.require_contains("docs/design/formal_character_design_template.md", "owned_pair_interaction_specs", "formal character pair interaction spec template wording")
 ctx.require_contains("docs/design/formal_character_design_template.md", "unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts", "formal character tri-bucket template wording")
 ctx.require_exists("docs/design/formal_character_capability_catalog.md", "formal character capability catalog design doc")
 ctx.require_contains("docs/design/formal_character_capability_catalog.md", "config/formal_character_capability_catalog.json", "formal character capability catalog config doc")
@@ -174,6 +179,13 @@ ctx.require_exists("docs/records/archive/decisions_pre_2026-04-05_repair_wave.md
 ctx.require_exists("docs/records/archive/tasks_pre_2026-04-05_repair_wave.md", "tasks repair-wave archive")
 ctx.require_exists("docs/records/review_2026-04-04_foundation_stabilization_audit.md", "foundation stabilization review record")
 ctx.require_contains("docs/records/review_2026-04-10_four_character_architecture_audit.md", "历史审查，不再作为现行依据。", "four-character architecture review history marker")
+ctx.require_contains("docs/records/decisions.md", "2026-04-12", "decisions schema cutover date marker")
+ctx.require_contains("docs/records/decisions.md", "pair_token", "decisions pair token wording")
+ctx.require_contains("docs/records/decisions.md", "baseline_script_path", "decisions baseline path wording")
+ctx.require_contains("docs/records/decisions.md", "owned_pair_interaction_specs", "decisions owned pair interaction wording")
+ctx.require_contains("docs/records/tasks.md", "pair_token", "tasks pair token wording")
+ctx.require_contains("docs/records/tasks.md", "baseline_script_path", "tasks baseline path wording")
+ctx.require_contains("docs/records/tasks.md", "owned_pair_interaction_specs", "tasks owned pair interaction wording")
 ctx.require_contains("docs/records/tasks.md", "## 当前波次：formal contract 扩角前硬收口（2026-04-10）\n\n- 状态：已完成", "formal contract hard-closeout completion status")
 ctx.require_contains("README.md", "content_validator_script_path", "README runtime validator registry doc")
 ctx.require_contains("README.md", "formal_setup_matchup_id", "README formal setup matchup doc")
@@ -181,7 +193,9 @@ ctx.require_contains("README.md", "当前 content snapshot 实际已出现的正
 ctx.require_contains("README.md", "content_snapshot_paths_for_setup_result(battle_setup)", "README setup-scoped snapshot doc")
 ctx.require_contains("README.md", "BATTLE_SANDBOX_FAILED:", "README sandbox failure gate wording")
 ctx.require_contains("README.md", "与内部日志断引用", "README detached event log wording")
-ctx.require_contains("README.md", "pair_interaction_specs", "README pair interaction spec wording")
+ctx.require_contains("README.md", "pair_token", "README pair token wording")
+ctx.require_contains("README.md", "baseline_script_path", "README baseline path wording")
+ctx.require_contains("README.md", "owned_pair_interaction_specs", "README pair interaction spec wording")
 ctx.require_contains("README.md", "required_fact_ids", "README capability fact id wording")
 ctx.require_contains("README.md", "scenario_key", "README pair interaction scenario key wording")
 ctx.require_contains("README.md", "shared_capability_ids", "README shared capability doc")
@@ -191,7 +205,9 @@ ctx.require_contains("tests/README.md", "run_all.gd` 会直接注册核心公共
 ctx.require_contains("tests/README.md", "formal_setup_matchup_id", "tests README formal setup matchup doc")
 ctx.require_contains("tests/README.md", "只校验当前快照里实际出现的正式角色", "tests README scoped formal validator wording")
 ctx.require_contains("tests/README.md", "content_snapshot_paths_for_setup_result(battle_setup)", "tests README setup-scoped snapshot doc")
-ctx.require_contains("tests/README.md", "pair_interaction_specs", "tests README pair interaction spec wording")
+ctx.require_contains("tests/README.md", "pair_token", "tests README pair token wording")
+ctx.require_contains("tests/README.md", "baseline_script_path", "tests README baseline path wording")
+ctx.require_contains("tests/README.md", "owned_pair_interaction_specs", "tests README pair interaction spec wording")
 ctx.require_contains("tests/README.md", "required_fact_ids", "tests README capability fact id wording")
 ctx.require_contains("tests/README.md", "scenario_key", "tests README pair interaction scenario key wording")
 ctx.require_contains("tests/README.md", "shared_capability_ids", "tests README shared capability doc")
@@ -255,6 +271,19 @@ for rel_path in [
     "docs/design/battle_content_schema.md",
 ]:
     ctx.require_absent(rel_path, "characters / matchups / pair_interaction_cases", "stale raw pair interaction case bucket wording")
+
+for rel_path in [
+    "README.md",
+    "tests/README.md",
+    "docs/design/formal_character_delivery_checklist.md",
+    "docs/design/battle_content_schema.md",
+    "docs/design/formal_character_design_template.md",
+    "docs/records/decisions.md",
+    "docs/records/tasks.md",
+]:
+    ctx.require_absent(rel_path, "`pair_interaction_specs`", "stale top-level pair interaction spec wording")
+    ctx.require_absent(rel_path, "`pair_interaction_cases`", "stale pair interaction case wording")
+    ctx.require_absent(rel_path, "`scenario_id`", "stale scenario id wording")
 
 for rel_path in [
     "README.md",

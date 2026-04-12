@@ -11,6 +11,7 @@ SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_service_specs.gd"
 WIRING_SPECS_DIR = ROOT / "src/composition/battle_core_wiring_specs"
 PAYLOAD_CONTRACT_REGISTRY_PATH = ROOT / "src/battle_core/content/payload_contract_registry.gd"
 PAYLOAD_SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_payload_service_specs.gd"
+PAYLOAD_RUNTIME_SERVICE_REGISTRY_PATH = ROOT / "src/composition/battle_core_payload_runtime_service_registry.gd"
 PAYLOAD_HANDLER_DIR = ROOT / "src/battle_core/effects/payload_handlers"
 
 def fail(message: str, details: list[str] | None = None) -> None:
@@ -51,6 +52,10 @@ def parse_payload_service_slots(payload_registry_text: str, payload_service_spec
     return parse_payload_shared_service_slots(payload_service_specs_text) | scan_payload_handler_script_slots()
 
 
+def parse_payload_runtime_service_slots(payload_runtime_service_registry_text: str) -> set[str]:
+    return set(re.findall(r'"slot": "([^"]+)"', payload_runtime_service_registry_text))
+
+
 def parse_wiring_edges(text: str) -> list[tuple[str, str]]:
     return re.findall(r'\{"owner": "([^"]+)", "dependency": "[^"]+", "source": "([^"]+)"\}', text)
 
@@ -81,7 +86,7 @@ def parse_payload_handler_dependency_edges(text: str) -> list[tuple[str, str]]:
     return edges
 
 
-def parse_payload_shared_service_dependency_edges(text: str) -> list[tuple[str, str]]:
+def parse_payload_runtime_service_dependency_edges(text: str) -> list[tuple[str, str]]:
     edges: list[tuple[str, str]] = []
     current_slot: str | None = None
     in_dependencies = False
@@ -184,6 +189,7 @@ def main() -> None:
     service_specs_text = SERVICE_SPECS_PATH.read_text(encoding="utf-8")
     payload_registry_text = PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8")
     payload_service_specs_text = PAYLOAD_SERVICE_SPECS_PATH.read_text(encoding="utf-8")
+    payload_runtime_service_registry_text = PAYLOAD_RUNTIME_SERVICE_REGISTRY_PATH.read_text(encoding="utf-8")
     payload_handler_slots = set(re.findall(r'"handler_slot": "([^"]+)"', payload_registry_text))
     payload_handler_script_slots = scan_payload_handler_script_slots()
     missing_payload_handler_scripts = sorted(payload_handler_slots - payload_handler_script_slots)
@@ -199,7 +205,11 @@ def main() -> None:
             for slot in stale_payload_handler_scripts
         )
         fail("payload handler slot/script coverage drifted apart", details)
-    service_slots = parse_service_slots(service_specs_text) | parse_payload_service_slots(payload_registry_text, payload_service_specs_text)
+    service_slots = (
+        parse_service_slots(service_specs_text)
+        | parse_payload_service_slots(payload_registry_text, payload_service_specs_text)
+        | parse_payload_runtime_service_slots(payload_runtime_service_registry_text)
+    )
     wiring_spec_paths = sorted(WIRING_SPECS_DIR.glob("*.gd"))
     if not wiring_spec_paths:
         fail("failed to find split wiring spec files", [str(WIRING_SPECS_DIR.relative_to(ROOT))])
@@ -208,7 +218,7 @@ def main() -> None:
         edges.extend(parse_wiring_edges(path.read_text(encoding="utf-8")))
     edges.extend(parse_payload_registry_edges(payload_registry_text))
     edges.extend(parse_payload_handler_dependency_edges(payload_registry_text))
-    edges.extend(parse_payload_shared_service_dependency_edges(payload_service_specs_text))
+    edges.extend(parse_payload_runtime_service_dependency_edges(payload_runtime_service_registry_text))
     if not service_slots:
         fail("failed to parse service slots for runtime wiring graph gate")
     if not edges:
