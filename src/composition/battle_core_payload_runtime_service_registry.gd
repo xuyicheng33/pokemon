@@ -64,14 +64,14 @@ static func descriptor_for_slot(slot_name: String) -> Dictionary:
 	return {}
 
 static func wiring_specs() -> Array:
-	var wiring_specs: Array = []
+	var runtime_wiring_specs: Array = []
 	for descriptor in RUNTIME_SERVICE_DESCRIPTORS:
 		var owner := String(descriptor.get("slot", ""))
 		for raw_dependency_spec in Array(descriptor.get("dependencies", [])):
 			var dependency_spec := Dictionary(raw_dependency_spec)
-			wiring_specs.append({
+			runtime_wiring_specs.append({
 				"owner": owner,
 				"dependency": String(dependency_spec.get("dependency", "")),
 				"source": String(dependency_spec.get("source", "")),
 			})
-	return wiring_specs
+	return runtime_wiring_specs

@@ -11,8 +11,10 @@ var _support = ManualBattleSceneSupportScript.new()
 func register_tests(runner, failures: Array[String], harness) -> void:
 	runner.run_test("manual_scene_fixed_session_bootstrap", failures, Callable(self, "_test_manual_scene_fixed_session_bootstrap").bind(harness))
 	runner.run_test("manual_scene_initial_public_snapshot_renderable", failures, Callable(self, "_test_manual_scene_initial_public_snapshot_renderable").bind(harness))
+	runner.run_test("manual_scene_hud_node_graph_smoke", failures, Callable(self, "_test_manual_scene_hud_node_graph_smoke").bind(harness))
 	runner.run_test("manual_scene_hotseat_round_trip_and_event_log_cursor", failures, Callable(self, "_test_manual_scene_hotseat_round_trip_and_event_log_cursor").bind(harness))
 	runner.run_test("manual_scene_switch_wait_and_surrender_to_battle_result", failures, Callable(self, "_test_manual_scene_switch_wait_and_surrender_to_battle_result").bind(harness))
+	runner.run_test("manual_scene_auto_battle_reaches_battle_result", failures, Callable(self, "_test_manual_scene_auto_battle_reaches_battle_result").bind(harness))
 
 func _test_manual_scene_fixed_session_bootstrap(harness) -> Dictionary:
 	var context_result = _support.build_manual_scene_context(harness, 9101)
@@ -40,6 +42,35 @@ func _test_manual_scene_initial_public_snapshot_renderable(harness) -> Dictionar
 		return _fail_with_context_close(harness, context, "view_model should keep battle_result key for UI rendering")
 	if String(context.get("current_side_to_select", "")) != "P1":
 		return _fail_with_context_close(harness, context, "manual scene should stop on P1 selection after bootstrap")
+	return _pass_with_context_close(harness, context)
+
+func _test_manual_scene_hud_node_graph_smoke(harness) -> Dictionary:
+	var context_result = _support.build_manual_scene_context(harness, 9105)
+	if not bool(context_result.get("ok", false)):
+		return harness.fail_result(str(context_result.get("error", "manual scene context bootstrap failed")))
+	var context: Dictionary = context_result
+	var controller = context.get("controller", null)
+	if controller == null:
+		return _fail_with_context_close(harness, context, "manual scene HUD smoke should expose controller")
+	var status_label = controller.get_node_or_null("RootMargin/MainColumn/HeaderPanel/HeaderContent/StatusLabel")
+	if status_label == null:
+		return _fail_with_context_close(harness, context, "manual scene HUD missing StatusLabel")
+	var action_header_label = controller.get_node_or_null("RootMargin/MainColumn/ActionPanel/ActionContent/ActionHeaderLabel")
+	if action_header_label == null:
+		return _fail_with_context_close(harness, context, "manual scene HUD missing ActionHeaderLabel")
+	var primary_buttons = controller.get_node_or_null("RootMargin/MainColumn/ActionPanel/ActionContent/PrimaryButtons")
+	var utility_buttons = controller.get_node_or_null("RootMargin/MainColumn/ActionPanel/ActionContent/UtilityButtons")
+	if primary_buttons == null or utility_buttons == null:
+		return _fail_with_context_close(harness, context, "manual scene HUD missing action button containers")
+	var view_model: Dictionary = _support.build_view_model(context)
+	var status_text := String(controller._format_status_text(view_model))
+	var action_header_text := String(controller._format_action_header(view_model))
+	if status_text.find("manual hotseat") == -1:
+		return _fail_with_context_close(harness, context, "manual scene status formatter should include manual hotseat mode")
+	if action_header_text.find("当前待选边: P1") == -1:
+		return _fail_with_context_close(harness, context, "manual scene action header formatter should point to P1 on first selection")
+	if primary_buttons.get_child_count() != 0 or utility_buttons.get_child_count() != 0:
+		return _fail_with_context_close(harness, context, "detached manual scene should not mutate button containers before UI render")
 	return _pass_with_context_close(harness, context)
 
 func _test_manual_scene_hotseat_round_trip_and_event_log_cursor(harness) -> Dictionary:
@@ -167,6 +198,32 @@ func _test_manual_scene_switch_wait_and_surrender_to_battle_result(harness) -> D
 			break
 	if not surrender_logged:
 		return _fail_with_context_close(harness, context, "event log delta should include surrender battle_end event")
+	return _pass_with_context_close(harness, context)
+
+func _test_manual_scene_auto_battle_reaches_battle_result(harness) -> Dictionary:
+	var context_result = _support.build_manual_scene_context(harness, 9106)
+	if not bool(context_result.get("ok", false)):
+		return harness.fail_result(str(context_result.get("error", "manual scene context bootstrap failed")))
+	var context: Dictionary = context_result
+	var auto_result = _support.run_to_battle_end(context, 64)
+	if not bool(auto_result.get("ok", false)):
+		return _fail_with_context_close(harness, context, str(auto_result.get("error", "manual scene auto battle failed")))
+	var battle_result = auto_result.get("battle_result", null)
+	if typeof(battle_result) != TYPE_DICTIONARY:
+		return _fail_with_context_close(harness, context, "auto battle should finish with battle_result dictionary")
+	if not bool(battle_result.get("finished", false)):
+		return _fail_with_context_close(harness, context, "auto battle should mark battle_result.finished=true")
+	var result_type := String(battle_result.get("result_type", ""))
+	var reason := String(battle_result.get("reason", ""))
+	if result_type.is_empty() or reason.is_empty():
+		return _fail_with_context_close(harness, context, "auto battle should produce non-empty result_type and reason")
+	var winner_side_id = battle_result.get("winner_side_id", null)
+	if result_type == "win" and winner_side_id == null:
+		return _fail_with_context_close(harness, context, "win result should expose winner_side_id")
+	if (result_type == "draw" or result_type == "no_winner") and winner_side_id != null:
+		return _fail_with_context_close(harness, context, "draw/no_winner result should not expose winner_side_id")
+	if int(auto_result.get("event_log_cursor", 0)) <= 0:
+		return _fail_with_context_close(harness, context, "auto battle should advance event_log_cursor")
 	return _pass_with_context_close(harness, context)
 
 func _pick_action_for_round_trip(legal_actions) -> Dictionary:

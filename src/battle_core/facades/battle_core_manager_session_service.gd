@@ -70,9 +70,9 @@ func run_turn_result(session_id: String, commands: Array) -> Dictionary:
     var runtime_error = BattleCoreManagerContractHelperScript.validate_session_runtime_result(session)
     if runtime_error != null:
         return runtime_error
-    var run_turn_result = session.run_turn_result(normalized_commands)
-    if not bool(run_turn_result.get("ok", false)):
-        return run_turn_result
+    var session_run_turn_result = session.run_turn_result(normalized_commands)
+    if not bool(session_run_turn_result.get("ok", false)):
+        return session_run_turn_result
     runtime_error = BattleCoreManagerContractHelperScript.validate_session_runtime_result(session)
     if runtime_error != null:
         return runtime_error

@@ -90,7 +90,7 @@ func _extract_rule_mod_by_kind(effect_definition, mod_kind: String) -> Variant:
 			return payload
 	return null
 
-func _expect_persistent_stat_mod(validator, errors: Array, label: String, stat_payloads: Array, stat_name: String, stage_delta: int) -> void:
+func _expect_persistent_stat_mod(_validator, errors: Array, label: String, stat_payloads: Array, stat_name: String, stage_delta: int) -> void:
 	for payload in stat_payloads:
 		if String(payload.stat_name) != stat_name:
 			continue

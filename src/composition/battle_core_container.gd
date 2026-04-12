@@ -7,8 +7,8 @@ var _dispose_service_slots: PackedStringArray = PackedStringArray()
 var _dispose_wiring_specs: Array = []
 var _dispose_reset_specs: Array = []
 
-func set_service(slot_name: String, service) -> void:
-	_services[slot_name] = service
+func set_service(slot_name: String, service_instance) -> void:
+	_services[slot_name] = service_instance
 
 func service(slot_name: String) -> Variant:
 	return _services.get(slot_name, null)

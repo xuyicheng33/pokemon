@@ -51,8 +51,8 @@ func _load_catalog_result() -> Dictionary:
 			ErrorCodesScript.INVALID_REPLAY_INPUT,
 			"SampleBattleFactory demo replay catalog missing dictionary profiles: %s" % resolved_catalog_path
 		)
-	var default_profile_id := String(parsed.get("default_profile_id", "")).strip_edges()
-	if default_profile_id.is_empty() or not profiles.has(default_profile_id):
+	var resolved_default_profile_id := String(parsed.get("default_profile_id", "")).strip_edges()
+	if resolved_default_profile_id.is_empty() or not profiles.has(resolved_default_profile_id):
 		return _error_result(
 			ErrorCodesScript.INVALID_REPLAY_INPUT,
 			"SampleBattleFactory demo replay catalog missing valid default_profile_id: %s" % resolved_catalog_path

@@ -57,7 +57,9 @@ static func validate_replay_input(replay_input) -> Variant:
 		replay_input,
 		"ReplayRunner.run_replay_with_context"
 	)
-	return null if replay_input_error.is_empty() else error(ErrorCodesScript.INVALID_REPLAY_INPUT, replay_input_error)
+	if replay_input_error.is_empty():
+		return null
+	return error(ErrorCodesScript.INVALID_REPLAY_INPUT, replay_input_error)
 
 static func get_session_result(sessions: Dictionary, session_id: String) -> Dictionary:
 	if session_id.is_empty():
@@ -119,11 +121,15 @@ static func service_error(service, fallback_code: String, fallback_message: Stri
 
 static func _validate_battle_setup(battle_setup, error_code: String, operation_label: String) -> Variant:
 	var battle_setup_error := BattleInputContractHelperScript.validate_battle_setup_error(battle_setup, operation_label)
-	return null if battle_setup_error.is_empty() else error(error_code, battle_setup_error)
+	if battle_setup_error.is_empty():
+		return null
+	return error(error_code, battle_setup_error)
 
 static func _validate_content_snapshot_paths(content_snapshot_paths, error_code: String, operation_label: String) -> Variant:
 	var content_paths_error := BattleInputContractHelperScript.validate_content_snapshot_paths_error(
 		content_snapshot_paths,
 		operation_label
 	)
-	return null if content_paths_error.is_empty() else error(error_code, content_paths_error)
+	if content_paths_error.is_empty():
+		return null
+	return error(error_code, content_paths_error)

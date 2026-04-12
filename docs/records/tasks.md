@@ -10,6 +10,39 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前优化：手动热座场景收尾与整局验证（2026-04-13）
+
+- 状态：已完成
+- 目标：
+  - 把 `BattleSandbox` 的手动热座入口再补一层可视化 smoke 和整局跑完验证，同时顺手清掉当前 Godot debug 启动时最显眼的一批 warning。
+- 范围：
+  - `src/adapters/battle_sandbox_controller.gd`
+  - `src/composition/battle_core_container.gd`
+  - `src/battle_core/facades/battle_core_manager_contract_helper.gd`
+  - `src/battle_core/facades/battle_core_manager_session_service.gd`
+  - `src/composition/battle_core_payload_runtime_service_registry.gd`
+  - `src/battle_core/turn/turn_selection_resolver.gd`
+  - `src/composition/sample_battle_factory_demo_catalog.gd`
+  - `src/battle_core/content/formal_validators/kashimo/content_snapshot_formal_kashimo_ultimate_domain_contracts.gd`
+  - `tests/support/manual_battle_scene_support.gd`
+  - `tests/suites/manual_battle_scene_suite.gd`
+  - `tests/helpers/manual_battle_full_run.gd`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - 手动热座场景的 HUD 节点结构与首屏状态文案可稳定检查
+  - 手动热座支持固定策略自动跑到 `battle_result`
+  - 本轮确认到的 Godot debug 启动 warning 不再继续由同名局部变量 / 参数和三元表达式类型不兼容触发
+  - 完整 `tests/run_with_gate.sh` 继续通过
+- 结果：
+  - `ManualBattleSceneSupport` 已新增 `run_to_battle_end()`，用于固定策略整局跑完
+  - `manual_battle_scene_suite` 已补 `manual_scene_hud_node_graph_smoke` 与 `manual_scene_auto_battle_reaches_battle_result`
+  - 新增 `tests/helpers/manual_battle_full_run.gd`，可直接 headless 跑完一局并输出最终 `battle_result`
+  - 本轮 Godot debug 输出里已确认的局部命名 shadowing 和三元表达式类型 warning 已清掉对应触发点
+- 验证：
+  - `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前实现：手动热座战斗场景 v1（2026-04-13）
 
 - 状态：已完成

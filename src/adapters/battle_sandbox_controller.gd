@@ -322,7 +322,7 @@ func _render_ui() -> void:
     _action_header_label.text = _format_action_header(view_model)
     _render_action_buttons(view_model)
 
-func _render_action_buttons(view_model: Dictionary) -> void:
+func _render_action_buttons(current_view_model: Dictionary) -> void:
     _clear_container_children(_primary_buttons)
     _clear_container_children(_switch_buttons)
     _clear_container_children(_utility_buttons)
@@ -335,11 +335,11 @@ func _render_action_buttons(view_model: Dictionary) -> void:
     if _has_battle_result():
         _add_info_button(_primary_buttons, "对局已结束，可点击下方重开")
         return
-    var side_id := str(view_model.get("current_side_to_select", "")).strip_edges()
+    var side_id := str(current_view_model.get("current_side_to_select", "")).strip_edges()
     if side_id.is_empty():
         _add_info_button(_primary_buttons, "等待下一步状态同步")
         return
-    var legal_actions: Dictionary = view_model.get("legal_actions_by_side", {}).get(side_id, {})
+    var legal_actions: Dictionary = current_view_model.get("legal_actions_by_side", {}).get(side_id, {})
     if legal_actions.is_empty():
         _add_info_button(_primary_buttons, "当前边缺少合法动作")
         return
@@ -379,12 +379,12 @@ func _render_action_buttons(view_model: Dictionary) -> void:
 func _on_restart_pressed() -> void:
     _bootstrap_scene()
 
-func _format_status_text(view_model: Dictionary) -> String:
+func _format_status_text(current_view_model: Dictionary) -> String:
     var mode_text := "demo=%s" % demo_profile if is_demo_mode else "manual hotseat"
-    var field_id := str(view_model.get("field_id", "")).strip_edges()
-    var current_side := str(view_model.get("current_side_to_select", "")).strip_edges()
+    var field_id := str(current_view_model.get("field_id", "")).strip_edges()
+    var current_side := str(current_view_model.get("current_side_to_select", "")).strip_edges()
     var result_text := ""
-    var battle_result = view_model.get("battle_result", null)
+    var battle_result = current_view_model.get("battle_result", null)
     if battle_result is Dictionary and bool(battle_result.get("finished", false)):
         result_text = " | result=%s/%s" % [
             str(battle_result.get("result_type", "")),
@@ -392,15 +392,15 @@ func _format_status_text(view_model: Dictionary) -> String:
         ]
     return "mode=%s | turn=%d | phase=%s | field=%s | current=%s%s" % [
         mode_text,
-        int(view_model.get("turn_index", 0)),
-        str(view_model.get("phase", "")),
+        int(current_view_model.get("turn_index", 0)),
+        str(current_view_model.get("phase", "")),
         field_id if not field_id.is_empty() else "-",
         current_side if not current_side.is_empty() else "-",
         result_text,
     ]
 
-func _format_side_text(view_model: Dictionary, side_id: String) -> String:
-    var side_model := _find_side_model(view_model.get("sides", []), side_id)
+func _format_side_text(current_view_model: Dictionary, side_id: String) -> String:
+    var side_model := _find_side_model(current_view_model.get("sides", []), side_id)
     if side_model.is_empty():
         return "%s\nmissing side snapshot" % side_id
     var lines := [
@@ -484,17 +484,17 @@ func _format_pending_text(pending_summaries: Array) -> String:
         entries.append(entry)
     return "待提交指令: %s" % " | ".join(entries)
 
-func _format_action_header(view_model: Dictionary) -> String:
+func _format_action_header(current_view_model: Dictionary) -> String:
     if _startup_failed:
         return "场景初始化失败"
     if is_demo_mode:
         return "旧回放入口：demo=%s" % demo_profile
     if _has_battle_result():
         return "结算态"
-    var side_id := str(view_model.get("current_side_to_select", "")).strip_edges()
+    var side_id := str(current_view_model.get("current_side_to_select", "")).strip_edges()
     if side_id.is_empty():
         return "等待下一步"
-    var legal_actions: Dictionary = view_model.get("legal_actions_by_side", {}).get(side_id, {})
+    var legal_actions: Dictionary = current_view_model.get("legal_actions_by_side", {}).get(side_id, {})
     var actor_public_id := str(legal_actions.get("actor_public_id", "")).strip_edges()
     return "当前待选边: %s | actor=%s" % [side_id, actor_public_id if not actor_public_id.is_empty() else "-"]
 

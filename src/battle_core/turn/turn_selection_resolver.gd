@@ -53,11 +53,11 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
             return {"locked_commands": [], "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
         var legal_action_set = legal_action_service.get_legal_actions(battle_state, side_state.side_id, content_index)
         if legal_action_set == null:
-            var error_state: Dictionary = legal_action_service.error_state() if legal_action_service != null and legal_action_service.has_method("error_state") else {}
+            var service_error_state: Dictionary = legal_action_service.error_state() if legal_action_service != null and legal_action_service.has_method("error_state") else {}
             return _fail_invalid_result(
                 battle_state,
-                String(error_state.get("code", ErrorCodesScript.INVALID_STATE_CORRUPTION)),
-                String(error_state.get("message", "TurnSelectionResolver failed to build legal_action_set"))
+                String(service_error_state.get("code", ErrorCodesScript.INVALID_STATE_CORRUPTION)),
+                String(service_error_state.get("message", "TurnSelectionResolver failed to build legal_action_set"))
             )
         var provided_command = commands_by_side.get(side_state.side_id, null)
         var resolved_command = null
@@ -136,9 +136,9 @@ func _fail_invalid_result(battle_state, invalid_code: String, message: String) -
     }
 
 func _service_invalid_result(battle_state, service, fallback_code: String, fallback_message: String) -> Dictionary:
-    var error_state: Dictionary = service.error_state() if service != null and service.has_method("error_state") else {}
-    var invalid_code := String(error_state.get("code", fallback_code))
-    var invalid_message := String(error_state.get("message", fallback_message))
+    var service_error_state: Dictionary = service.error_state() if service != null and service.has_method("error_state") else {}
+    var invalid_code := String(service_error_state.get("code", fallback_code))
+    var invalid_message := String(service_error_state.get("message", fallback_message))
     if invalid_message.is_empty():
         invalid_message = fallback_message
     return _fail_invalid_result(battle_state, invalid_code, invalid_message)
