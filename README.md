@@ -104,8 +104,9 @@ tests/
 godot --path .
 ```
 
-默认会进入 `BattleSandbox` 并运行 Kashimo 演示回放；如需保留旧样例演示，可追加命令行参数 `demo=legacy`。
-演示 profile 的单一真相在 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选择 profile、初始化 manager，并把 replay input 构建委托给 `SampleBattleFactory`。
+默认会进入 `BattleSandbox` 的手动热座场景，固定对局为 `gojo_vs_sample`，启动后停在 `P1` 选指界面。
+如需复查旧自动回放，可追加命令行参数 `-- demo=<profile>`，例如 `godot --path . -- demo=legacy`。
+demo profile 的单一真相仍在 `config/demo_replay_catalog.json`；`BattleSandboxController` 只在检测到 `demo=<profile>` 时解析 profile、初始化 manager，并把 replay input 构建委托给 `SampleBattleFactory`。
 
 ### 5.2 运行完整闸门（推荐）
 
@@ -212,7 +213,7 @@ tests/run_with_gate.sh
 - `SampleBattleFactory.content_snapshot_paths_for_setup_result(battle_setup)` 会在上述样例顶层资源基础上，只补当前 `battle_setup` 里实际出现的正式角色 `required_content_paths`；manager smoke、pair smoke 与 formal demo replay 统一走这条 setup-scoped 入口，baseline demo 仍走顶层样例快照入口，避免继续把所有正式角色内容一锅端进每个对局
 - `SampleBattleFactory` 的正式失败路径当前统一走结果式接口；仍保留少量便捷 helper（如 `default_demo_profile_id()`、`build_side_spec()`、`collect_tres_paths_recursive()`）直接返回值或空数组，但不再承担正式失败语义
 - `SampleBattleFactory` 内部当前固定拆成稳定 owner + 子职责 helper：`sample_battle_factory_override_router.gd` 负责 manifest/catalog/demo override 广播，`sample_battle_factory_setup_access.gd` 负责 baseline/formal matchup setup 与 sample setup 组装，`sample_battle_factory_snapshot_dir_collector.gd` 负责顶层/递归 `.tres` 扫描；外部公开方法名与 envelope 语义不变
-- `SampleBattleFactory` 的 demo replay profile 当前固定收口到 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责解析 `demo=<profile>`、初始化 manager，并委托 `SampleBattleFactory.build_demo_replay_input_for_profile_result()` 生成 replay input，缺 profile、坏 profile 或 builder 失败一律 fail-fast
+- `SampleBattleFactory` 的 demo replay profile 当前固定收口到 `config/demo_replay_catalog.json`；`BattleSandboxController` 只在 `demo=<profile>` 分支解析 profile、初始化 manager，并委托 `SampleBattleFactory.build_demo_replay_input_for_profile_result()` 生成 replay input，缺 profile、坏 profile 或 builder 失败一律 fail-fast
 - `ContentSnapshotCache` 的签名当前固定包含稳定排序后的 snapshot 路径列表、这些顶层资源递归外部依赖到的 `.tres/.res` 文件指纹、`config/formal_character_manifest.json`，以及 `src/battle_core/content/**/*.gd` 与 `src/battle_core/content/formal_validators/**/*.gd`；因此即使只改了共享 payload、formal validator 或 manifest 角色元数据，也必须重新 miss，而不是继续复用旧 cache entry
 - 若多个正式资源要共享同一份 payload，可把辅助 Resource 放到 `content/shared/`，再由顶层内容资源显式外部引用；`content/shared/` 本身不参与顶层 snapshot 注册
 
@@ -255,7 +256,7 @@ tests/run_with_gate.sh
 - 共享能力目录固定收口到 `config/formal_character_capability_catalog.json`：每个 entry 都必须登记 `capability_id / rule_doc_paths / required_suite_paths / required_fact_ids / stop_and_specialize_when`
 - `shared_capability_ids` 只允许引用 capability catalog 里已登记的正式入口；共享入口的实际消费者统一从 manifest 派生，不再在 catalog 里重复手填 `consumer_character_ids`
 - `required_test_names` 现在只保留角色私有 runtime / validator 坏例锚点；共享 suite 覆盖不再逐角色复制进角色条目，pair surface 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，interaction 统一由 `characters[*].owned_pair_interaction_specs` 派生并由 shared gate 收口
-- sandbox demo 若要给正式角色补固定演示，统一改 `config/demo_replay_catalog.json` profile，不再在 `BattleSandboxRunner` 里写死角色专属命令流
+- sandbox demo 若要给正式角色补固定演示，统一改 `config/demo_replay_catalog.json` profile，不再在 `BattleSandboxController` 里写死角色专属命令流
 - validator 坏例：只要角色登记了 `content_validator_script_path`，delivery/test 视图会自动并入 `tests/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个 `formal_<character>_validator_*bad_case_contract` 锚点
 - 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
 - 资源快照：`tests/suites/<character>_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死正式角色面板、技能、关键 effect / field / passive 资源
@@ -286,11 +287,11 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-12）
+## 10. 当前代码规模（2026-04-13）
 
-- `src/**/*.gd`：`19926` 行
-- `tests/**/*.gd`：`24822` 行
-- GDScript 合计：`44748` 行
+- `src/**/*.gd`：`20726` 行
+- `tests/**/*.gd`：`25166` 行
+- GDScript 合计：`45892` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

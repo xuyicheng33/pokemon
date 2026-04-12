@@ -253,7 +253,7 @@
 - `SampleBattleFactory` owner 现在只保留稳定 facade、helper 装配与错误状态投影；manifest/catalog/demo override 广播固定下沉到 `src/composition/sample_battle_factory_override_router.gd`，baseline/formal setup 组装固定下沉到 `src/composition/sample_battle_factory_setup_access.gd`，snapshot 目录扫描固定下沉到 `src/composition/sample_battle_factory_snapshot_dir_collector.gd`。
 - directed pair surface smoke 不再手写 `pair_surface_cases`；统一由 `matchups + characters[*].surface_smoke_skill_id` 自动生成。
 - 派生后的 directed interaction case 固定必填 `scenario_key / matchup_id / character_ids[2] / battle_seed`，并继续与 scenario registry 做一一对应校验；`character_ids` 顺序必须匹配 `matchup_id` 的 opener 方向，且不得引用 `test_only` matchup。
-- demo replay profile 的单一真相固定为 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选 profile、初始化 manager、错误投影，再把 replay input 构建委托给 builder。
+- demo replay profile 的单一真相固定为 `config/demo_replay_catalog.json`；`BattleSandboxController` 只在 `demo=<profile>` 分支负责选 profile、初始化 manager、错误投影，再把 replay input 构建委托给 builder。
 - `ContentSnapshotCache` 继续采用 composer 级共享 cache + 每次 fresh index；当前 freshness 签名固定覆盖：
   - snapshot 路径列表
   - 顶层资源递归 `.tres/.res` 外部依赖
@@ -264,7 +264,7 @@
 ## 4. battle 输入合同与 power bonus 边界继续收口（2026-04-11）
 
 - `battle_setup.sides[*].side_id`、`content_snapshot_paths` 与 replay `command_stream` 的共享输入合同，当前统一由 `src/battle_core/contracts/battle_input_contract_helper.gd` 维护。
-- `BattleCoreManagerContractHelper`、`ReplayRunnerInputHelper`、`BattleSandboxRunner` 与 `BattleSetupValidator` 只允许复用这份共享 helper，不再各自重复写 side_id 遍历和 replay 输入形状校验。
+- `BattleCoreManagerContractHelper`、`ReplayRunnerInputHelper`、`BattleSandboxController` 与 `BattleSetupValidator` 只允许复用这份共享 helper，不再各自重复写 side_id 遍历和 replay 输入形状校验。
 - 这么定的原因：
   - `fff2e62` 虽然补齐了输入防线，但 battle setup / replay 输入合同当时仍分散在多个入口，后续一旦再改 setup 规则，维护面会重新散开。
   - 这类校验属于共享输入 contract，不该继续同时长在 facade、logging、composition 和 content 各自的局部 helper 里。

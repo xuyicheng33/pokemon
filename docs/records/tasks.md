@@ -10,6 +10,40 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前实现：手动热座战斗场景 v1（2026-04-13）
+
+- 状态：已完成
+- 目标：
+  - 把 `BattleSandbox` 默认入口从自动 demo 回放切到可手动打完一局的双边热座场景，固定先做 `gojo_vs_sample`，并继续只走现有 `BattleCoreManager` 会话流。
+- 范围：
+  - `scenes/sandbox/BattleSandbox.tscn`
+  - `src/adapters/battle_sandbox_controller.gd`
+  - `src/adapters/player_selection_adapter.gd`
+  - `src/adapters/battle_ui_view_model_builder.gd`
+  - `tests/suites/manual_battle_scene_suite.gd`
+  - `tests/support/manual_battle_scene_support.gd`
+  - `tests/run_all.gd`
+  - `README.md`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - 默认启动 `BattleSandbox` 时固定创建 `gojo_vs_sample` 会话，并停在人工选指界面，不再自动推进 demo
+  - `demo=<profile>` 仍可触发旧自动回放路径
+  - 热座流程固定为 `P1 -> P2 -> run_turn`
+  - view model 至少稳定暴露回合/阶段/field、双方 active/bench/全队、当前待选边、待提交指令摘要和最近日志
+  - 新增 `manual_battle_scene_suite`，覆盖固定 session 启动、初始快照可渲染、一回合热座、switch、wait/surrender、event_log_cursor 递增和最终 `battle_result`
+  - 完整 `tests/run_with_gate.sh` 通过
+- 结果：
+  - `BattleSandbox` 已切到新的 `BattleSandboxController`，根节点改为调试可玩的 `Control` HUD，默认直接进入固定 `gojo_vs_sample` 手动热座
+  - 场景控制器当前公开 `bootstrap_manual_mode()`、`submit_selected_action()`、`restart_manual_session()`、`build_view_model()`、`get_state_snapshot()`，内部维护 `session_id / public_snapshot / event_log_cursor / legal_actions_by_side / pending_commands / current_side_to_select / recent_event_lines`
+  - `PlayerSelectionAdapter` 已扩成完整命令输入适配器；`BattleUIViewModelBuilder` 已能把 `public_snapshot + controller context` 变成稳定可渲染结构
+  - `BattleSandbox` 现在只有显式传 `demo=<profile>` 时才会走旧自动回放；默认 headless 启动会安静等待玩家输入，不会因为“没人选指”报 `BATTLE_SANDBOX_FAILED`
+  - `manual_battle_scene_suite` 已改为直接驱动真实场景控制器，覆盖固定 session 启动、热座回合推进、switch、wait/surrender、event log 游标与结算态
+- 验证：
+  - `godot --headless --path . --quit-after 2`
+  - `godot --headless --path . --quit-after 2 -- demo=legacy`
+  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前优化：payload validator 分发继续收口（2026-04-11）
 
 - 状态：已完成
