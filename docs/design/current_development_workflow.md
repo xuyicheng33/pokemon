@@ -50,14 +50,16 @@ headless 复查入口固定为：
 - `tests/run_with_gate.sh` 是唯一总入口。
 - `gdUnit4 + test/` 是唯一 Godot 业务测试树。
 - `tests/run_gdunit.sh` 只作为 `gdUnit4` CLI 快跑入口，不替代总 gate。
+- 当前阶段回归基线文档固定为 `docs/design/current_stage_regression_baseline.md`。
 
 推荐顺序：
 
 1. 快速改单点：`TEST_PATH=res://test/suites/<suite>.gd bash tests/run_gdunit.sh`
-2. 复查 BattleSandbox：运行 `manual_battle_full_run.gd` 的三条主路径
-3. 阶段收口：`bash tests/run_with_gate.sh`
+2. 复查 launch-config 与推荐排序：`TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
+3. 复查 BattleSandbox：运行 `bash tests/check_sandbox_smoke_matrix.sh`
+4. 阶段收口：`bash tests/run_with_gate.sh`
 
-当前总 gate 内部顺序以 `tests/run_with_gate.sh` 为准；新增日常 smoke 或 contract 时，先写到 `docs/design/`，再进 gate，再接到总入口。
+当前总 gate 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix`。新增日常 smoke 或 contract 时，先写到 `docs/design/`，再进 gate，再接到总入口。
 
 ## 5. 文档更新顺序与记录要求
 

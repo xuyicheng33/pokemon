@@ -101,6 +101,7 @@ godot --path .
 ```
 
 日常研发的推荐顺序、允许改动边界和文档更新顺序，统一看 `docs/design/current_development_workflow.md`。
+当前推荐复查命令和最小可玩性检查，统一看 `docs/design/current_stage_regression_baseline.md`。
 
 默认会进入 `BattleSandbox` 的单人研发试玩 sandbox，固定 launch config 为 `mode=manual_matchup`、`matchup_id=gojo_vs_sample`、`battle_seed=9101`、`p1_control_mode=manual`、`p2_control_mode=policy`，启动后停在 `P1` 选指界面。
 HUD 当前支持按当前配置重开：`matchup` 下拉、`battle_seed` 输入、`P1 control mode`、`P2 control mode` 和重启按钮。控制模式只支持 `manual | policy`；预设对局列表来自 `SampleBattleFactory.available_matchups_result()`，UI 默认只显示非 `test_only` matchup，并按 `gojo_vs_sample -> kashimo_vs_sample -> sukuna_setup -> sample_default -> 其余可见 matchup` 的推荐顺序展示。状态区固定补出当前配置摘要、当前轮到谁操作与 policy 状态、已提交指令摘要、稳定 `battle_summary` 和按回合分隔的最近日志；`manual/manual` 与 `policy/policy` 继续保留为显式模式。
@@ -144,6 +145,7 @@ tests/run_with_gate.sh
 
 闸门通过条件：
 
+- `tests/run_with_gate.sh` 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix`
 - 业务断言全部通过（`tests/run_gdunit.sh` -> `gdUnit4`，默认扫描 `res://test`）
 - 产出可消费测试报告（`JUnit XML + HTML`，默认落在 `reports/gdunit`）
 - headless 主流程启动 smoke 通过（`godot --headless --path . --quit-after 20`），且不得出现 `BATTLE_SANDBOX_FAILED:` 应用层失败标记
@@ -154,6 +156,7 @@ tests/run_with_gate.sh
   - 当前额外包含 composition `SERVICE_DESCRIPTORS / container API / wiring_specs` 一致性检查，以及 runtime wiring DAG 检查
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
   - 当前会聚合 `tests/gates/repo_consistency_surface_gate.py`、`tests/gates/repo_consistency_formal_character_gate.py`、`tests/gates/repo_consistency_docs_gate.py`
+- sandbox smoke matrix 通过（`tests/check_sandbox_smoke_matrix.sh`，固定覆盖默认 `manual/policy`、`kashimo_vs_sample + manual/policy`、`gojo_vs_sample + policy/policy`）
 
 ## 6. 对外核心接口（Manager）
 
@@ -319,9 +322,9 @@ tests/run_with_gate.sh
 ## 10. 当前代码规模（2026-04-13）
 
 - `src/**/*.gd`：`21436` 行
-- `test/**/*.gd`：`21463` 行
+- `test/**/*.gd`：`21520` 行
 - `tests/**/*.gd`：`4355` 行
-- GDScript 合计：`47254` 行
+- GDScript 合计：`47311` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

@@ -3,14 +3,16 @@
 本目录承载当前静态门禁、诊断脚本、共享辅助资源，以及 `gdUnit4` 的命令行入口。
 
 当前日常研发顺序、Sandbox 试玩路径和文档更新要求，统一见 `docs/design/current_development_workflow.md`。
+当前推荐复查命令和最小可玩性检查，统一见 `docs/design/current_stage_regression_baseline.md`。
 
 - `test/suites/`: Godot 业务回归 suite 唯一目录；`gdUnit4` 会直接发现 `test/` 下的业务 suite
 - `test/support/`: `gdUnit4` suite 公共基类与少量桥接资源
 - `tests/support/`: 共享 harness、构局 helper、固定案例 support；供 `gdUnit4` suite、导出脚本与诊断 runner 复用
 - `tests/run_gdunit.sh`: `gdUnit4` CLI 入口；默认跑 `res://test`，并输出 `JUnit XML` 与 `HTML` 报告
-- `tests/run_with_gate.sh`: 唯一总入口；串起 `gdUnit4`、boot smoke、架构 gate、repo consistency gate
+- `tests/run_with_gate.sh`: 唯一总入口；按固定顺序串起 `gdUnit4`、boot smoke、suite reachability、架构 gate、repo consistency gate、sandbox smoke matrix
 - `tests/check_suite_reachability.sh`: suite 可达性闸门；确保 manifest 里的 `required_suite_paths` 都落在 `test/` 下，且 gdUnit 树里不再出现 `register_tests()`
 - `tests/check_architecture_constraints.sh`: 分层与大文件架构闸门
+- `tests/check_sandbox_smoke_matrix.sh`: `BattleSandbox` 研发主路径 smoke matrix；固定覆盖默认 `manual/policy`、`kashimo_vs_sample + manual/policy`、`gojo_vs_sample + policy/policy`
 - `tests/gates/architecture_wiring_graph_gate.py`: runtime wiring 图 DAG 闸门；要求当前属性注入图无闭环
 - `tests/check_repo_consistency.sh`: README / 文档 / 关键回归一致性闸门总入口
 - `tests/gates/`: 仓库一致性细分 gate；当前按 `surface / formal_character / docs` 三类拆开维护
@@ -25,7 +27,9 @@
 - `tests/run_with_gate.sh` 是唯一总入口；本地快跑 `gdUnit4` 时直接使用 `tests/run_gdunit.sh`
 - `tests/run_gdunit.sh` 默认以 `res://test` 为入口，支持 `TEST_PATH` 过滤单 suite / 单目录，报告落在 `REPORT_DIR`；CI 与本地都统一消费 `JUnit XML` 与 `HTML`
 - `BattleSandbox` 的场景回归当前固定看 `TEST_PATH=res://test/suites/manual_battle_scene_suite.gd bash tests/run_gdunit.sh`
+- `BattleSandbox` 的 launch-config 与推荐排序 contract 当前固定看 `TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
 - `BattleSandbox` 的整局 headless 复查看 `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+- `BattleSandbox` 的研发主路径 smoke matrix 固定看 `bash tests/check_sandbox_smoke_matrix.sh`
 - `manual_battle_full_run.gd` 当前支持 `MATCHUP_ID / BATTLE_SEED / P1_MODE / P2_MODE`；默认主路径是 `gojo_vs_sample + 9101 + manual/policy`，三种模式统一输出同一套 `battle_summary` JSON，便于直接对比
 - 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback
 - `config/formal_character_manifest.json` 是 formal 角色元数据的唯一人工真源；顶层固定两桶：`characters / matchups`，pair interaction 的唯一手写输入固定挂在 `characters[*].owned_pair_interaction_specs`

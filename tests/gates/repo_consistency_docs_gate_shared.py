@@ -31,3 +31,4 @@ INCOMING_FILTER_TRIGGERS = [
 ]
 
 CURRENT_WORKFLOW_DOC = "docs/design/current_development_workflow.md"
+CURRENT_REGRESSION_BASELINE_DOC = "docs/design/current_stage_regression_baseline.md"

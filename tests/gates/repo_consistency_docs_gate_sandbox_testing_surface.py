@@ -1,30 +1,44 @@
 from __future__ import annotations
 
 from repo_consistency_common import GateContext
-from repo_consistency_docs_gate_shared import CURRENT_WORKFLOW_DOC
+from repo_consistency_docs_gate_shared import CURRENT_REGRESSION_BASELINE_DOC, CURRENT_WORKFLOW_DOC
 
 
 def run(ctx: GateContext) -> None:
     ctx.require_exists(CURRENT_WORKFLOW_DOC, "current development workflow design doc")
+    ctx.require_exists(CURRENT_REGRESSION_BASELINE_DOC, "current stage regression baseline design doc")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "代码分层与允许改动边界", "workflow code boundary section")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "Sandbox 日常试玩路径", "workflow sandbox section")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "测试入口与推荐跑法", "workflow test section")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "文档更新顺序与记录要求", "workflow documentation update section")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "BattleSandbox", "workflow sandbox main entry wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "tests/run_with_gate.sh", "workflow unique total gate wording")
+    ctx.require_contains(CURRENT_WORKFLOW_DOC, "gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix", "workflow fixed total gate order wording")
+    ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/design/current_stage_regression_baseline.md", "workflow regression baseline doc wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "gdUnit4 + test/", "workflow gdunit test tree wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/records/tasks.md", "workflow tasks record wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/records/decisions.md", "workflow decisions record wording")
     ctx.require_contains("README.md", "docs/design/current_development_workflow.md", "README workflow entry doc")
+    ctx.require_contains("README.md", "docs/design/current_stage_regression_baseline.md", "README regression baseline doc")
+    ctx.require_contains("README.md", "tests/check_sandbox_smoke_matrix.sh", "README sandbox smoke matrix doc")
     ctx.require_contains("README.md", "BATTLE_SANDBOX_FAILED:", "README sandbox failure gate wording")
     ctx.require_contains("README.md", "与内部日志断引用", "README detached event log wording")
     ctx.require_contains("README.md", "BattleSandbox", "README sandbox main entry wording")
     ctx.require_contains("README.md", "tests/run_with_gate.sh", "README unique total gate wording")
     ctx.require_contains("README.md", "`gdUnit4`", "README gdunit wording")
     ctx.require_contains("tests/README.md", "docs/design/current_development_workflow.md", "tests README workflow entry doc")
+    ctx.require_contains("tests/README.md", "docs/design/current_stage_regression_baseline.md", "tests README regression baseline doc")
+    ctx.require_contains("tests/README.md", "tests/check_sandbox_smoke_matrix.sh", "tests README sandbox smoke matrix doc")
+    ctx.require_contains("tests/README.md", "battle_sandbox_launch_config_contract_suite.gd", "tests README launch config contract suite doc")
     ctx.require_contains("tests/README.md", "`gdUnit4` 会直接发现 `test/` 下的业务 suite", "tests README gdUnit discovery wording")
     ctx.require_contains("tests/README.md", "tests/run_with_gate.sh", "tests README unique total gate wording")
     ctx.require_contains("tests/README.md", "BattleSandbox", "tests README sandbox wording")
+    ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "tests/run_with_gate.sh", "regression baseline total gate command")
+    ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "tests/check_sandbox_smoke_matrix.sh", "regression baseline smoke matrix command")
+    ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "manual_battle_full_run.gd", "regression baseline headless helper command")
+    ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "可启动", "regression baseline playability launch check")
+    ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "能跑完一局", "regression baseline playability finish check")
+    ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "统一终局摘要", "regression baseline summary wording")
     ctx.require_contains("docs/design/project_folder_structure.md", "`docs/design/`|工程结构、测试矩阵、Sandbox 使用方式与治理规则", "project folder design governance wording")
     ctx.require_contains("docs/design/project_folder_structure.md", "`docs/rules/`|规则权威文档", "project folder rules authority wording")
     ctx.require_contains("docs/design/project_folder_structure.md", "`docs/records/`|活跃任务、活跃决策、阶段审查与归档索引", "project folder records governance wording")

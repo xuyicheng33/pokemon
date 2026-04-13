@@ -48,6 +48,43 @@
   - `MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
   - `P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 
+## 当前阶段：验证体系硬化（2026-04-13）
+
+- 状态：已完成
+- 目标：
+  - 把 `BattleSandbox` 的默认启动 contract、推荐排序 contract、docs-gate 聚合完整性和三条主路径 smoke 一起接进唯一总 gate。
+- 范围：
+  - `test/suites/battle_sandbox_launch_config_contract_suite.gd`
+  - `tests/check_sandbox_smoke_matrix.sh`
+  - `tests/run_with_gate.sh`
+  - `tests/gates/repo_consistency_docs_gate.py`
+  - `tests/gates/repo_consistency_docs_gate_module_self_check.py`
+  - `tests/gates/repo_consistency_docs_gate_sandbox_testing_surface.py`
+  - `tests/gates/repo_consistency_docs_gate_shared.py`
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/current_development_workflow.md`
+  - `docs/design/current_stage_regression_baseline.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `tests/run_with_gate.sh` 继续通过，且内部顺序固定为 `gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix`
+  - 新增 `battle_sandbox_launch_config_contract_suite.gd`，锁住默认 launch config、归一化和推荐排序
+  - 新增 `tests/check_sandbox_smoke_matrix.sh`，固定覆盖默认 `manual/policy`、`kashimo_vs_sample + manual/policy`、`gojo_vs_sample + policy/policy`
+  - docs gate 聚合入口新增模块自检，防止 docs 子模块漏接
+  - 新增“当前阶段回归基线”文档，只保留推荐复查命令、主 smoke matchup 和最小可玩性检查
+- 结果：
+  - `battle_sandbox_launch_config_contract_suite.gd` 已落地，默认 launch config、归一化 contract 与推荐排序都已单独锁住
+  - `tests/check_sandbox_smoke_matrix.sh` 已接入三条研发主路径，并直接校验统一 `battle_summary` JSON 的稳定字段
+  - `tests/run_with_gate.sh` 已固定到 `gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix`
+  - docs gate 聚合入口已新增 `repo_consistency_docs_gate_module_self_check.py`，用 preflight 方式自检子模块接线完整性
+  - `docs/design/current_stage_regression_baseline.md` 已成为当前推荐复查命令、主 smoke matchup 和最小可玩性检查的单一设计落点
+- 验证：
+  - `TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_sandbox_smoke_matrix.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前阶段：外围重构与热点文件拆分（2026-04-13）
 
 - 状态：已完成

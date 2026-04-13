@@ -88,6 +88,34 @@
   - 历史 wrapper 只剩测试 support 在用，迁移窗口已经足够小，适合直接收口到正式入口而不是继续拖一轮
   - 先把外围入口收干净，后面改默认试玩路径、battle summary 结构和 smoke matrix 时，才能在稳定接口上继续推进
 
+## 0W. BattleSandbox 验证矩阵与总 gate 顺序固定收口（2026-04-13）
+
+- `gdUnit4 + test/` 继续是唯一业务测试树，不恢复旧 runner，也不新增平行入口。
+- `tests/run_with_gate.sh` 的内部顺序固定为：
+  - `gdUnit4`
+  - `boot smoke`
+  - `suite reachability`
+  - `architecture constraints`
+  - `repo consistency`
+  - `sandbox smoke matrix`
+- `test/suites/battle_sandbox_launch_config_contract_suite.gd` 当前固定承接：
+  - 默认 launch config contract
+  - `normalize_config()` 归一化 contract
+  - 推荐 matchup 顺序与 `test_only` 过滤 contract
+- `tests/check_sandbox_smoke_matrix.sh` 当前固定覆盖三条研发主路径：
+  - 默认 `gojo_vs_sample + manual/policy`
+  - `kashimo_vs_sample + manual/policy`
+  - `gojo_vs_sample + policy/policy`
+- `tests/gates/repo_consistency_docs_gate_module_self_check.py` 当前固定作为 docs gate 聚合入口的 preflight，自检所有 docs 子模块都仍在 aggregate entry 里显式接入。
+- `docs/design/current_stage_regression_baseline.md` 当前固定只记录：
+  - 当前推荐复查命令
+  - 当前主 smoke matchup
+  - 最小可玩性检查
+- 这么定的原因：
+  - 现在研发主路径已经集中在 `BattleSandbox` 周边，再靠口头记忆 smoke 命令和 gate 顺序，成本只会继续堆到人脑
+  - launch config 默认值、推荐排序和 docs gate 聚合入口都属于容易被无意改坏的边界，必须给它们单独的 contract 或 self-check
+  - 统一把主路径 smoke 和阶段回归基线挂回唯一总入口，后面继续扩内容时才不需要重新发明验证流程
+
 ## 0V. 文档治理基线与研发工作流固定收口（2026-04-13）
 
 - `docs/rules/` 只承载规则权威；`docs/design/` 只承载工程结构、测试矩阵、Sandbox 使用方式、研发工作流和治理规则；`docs/records/` 只承载活跃任务、活跃决策、阶段审查与归档索引。

@@ -36,7 +36,8 @@ ctx.require_contains("tests/run_gdunit.sh", 'TEST_PATH="${TEST_PATH:-res://test}
 ctx.require_contains("tests/run_with_gate.sh", "bash tests/run_gdunit.sh", "gdUnit gate wiring")
 ctx.require_contains("tests/run_with_gate.sh", "check_suite_reachability.sh", "suite reachability gate wiring")
 ctx.require_contains("tests/run_with_gate.sh", "check_repo_consistency.sh", "repo consistency gate wiring")
-ctx.require_contains("tests/run_with_gate.sh", 'echo "GATE PASSED: gdUnit assertions', "gdUnit gate success wording")
+ctx.require_contains("tests/run_with_gate.sh", "check_sandbox_smoke_matrix.sh", "sandbox smoke matrix gate wiring")
+ctx.require_contains("tests/run_with_gate.sh", 'echo "GATE PASSED: gdUnit', "gdUnit gate success wording")
 ctx.require_contains("tests/support/formal_character_registry.gd", 'const REGISTRY_PATH := "res://config/formal_character_manifest.json"', "formal character manifest path")
 ctx.require_absent("tests/support/formal_character_registry.gd", "build_suite_instances(", "legacy suite instance expansion")
 
