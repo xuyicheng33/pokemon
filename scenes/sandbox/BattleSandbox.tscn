@@ -37,7 +37,7 @@ theme_override_constants/separation = 6
 [node name="TitleLabel" type="Label" parent="RootMargin/MainColumn/HeaderPanel/HeaderContent"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "Battle Sandbox v1"
+text = "Battle Sandbox"
 
 [node name="StatusLabel" type="Label" parent="RootMargin/MainColumn/HeaderPanel/HeaderContent"]
 layout_mode = 2
@@ -48,6 +48,10 @@ visible = false
 layout_mode = 2
 modulate = Color(1, 0.4, 0.4, 1)
 text = ""
+
+[node name="BattleSummaryLabel" type="Label" parent="RootMargin/MainColumn/HeaderPanel/HeaderContent"]
+layout_mode = 2
+text = "对局摘要: -"
 
 [node name="BodyRow" type="HBoxContainer" parent="RootMargin/MainColumn"]
 layout_mode = 2
@@ -118,6 +122,58 @@ layout_mode = 2
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="ConfigPanel" type="PanelContainer" parent="RootMargin/MainColumn/ActionPanel/ActionContent"]
+layout_mode = 2
+
+[node name="ConfigContent" type="VBoxContainer" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="ConfigTitleLabel" type="Label" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent"]
+layout_mode = 2
+text = "Sandbox 启动配置"
+
+[node name="ConfigGrid" type="GridContainer" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent"]
+layout_mode = 2
+columns = 8
+
+[node name="MatchupKeyLabel" type="Label" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent/ConfigGrid"]
+layout_mode = 2
+text = "matchup"
+
+[node name="MatchupSelect" type="OptionButton" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent/ConfigGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BattleSeedKeyLabel" type="Label" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent/ConfigGrid"]
+layout_mode = 2
+text = "seed"
+
+[node name="BattleSeedInput" type="LineEdit" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent/ConfigGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "9101"
+
+[node name="P1ModeKeyLabel" type="Label" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent/ConfigGrid"]
+layout_mode = 2
+text = "P1"
+
+[node name="P1ModeSelect" type="OptionButton" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent/ConfigGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="P2ModeKeyLabel" type="Label" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent/ConfigGrid"]
+layout_mode = 2
+text = "P2"
+
+[node name="P2ModeSelect" type="OptionButton" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent/ConfigGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ConfigStatusLabel" type="Label" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ConfigPanel/ConfigContent"]
+layout_mode = 2
+text = "当前配置: -"
+
 [node name="ActionHeaderLabel" type="Label" parent="RootMargin/MainColumn/ActionPanel/ActionContent"]
 layout_mode = 2
 text = "等待场景初始化"
@@ -149,4 +205,4 @@ theme_override_constants/separation = 8
 
 [node name="RestartButton" type="Button" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons"]
 layout_mode = 2
-text = "重开场景"
+text = "按当前配置重开"

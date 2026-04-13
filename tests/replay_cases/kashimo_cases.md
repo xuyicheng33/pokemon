@@ -20,4 +20,5 @@ CASE=all godot --headless --path . --script tests/helpers/kashimo_case_runner.gd
 - `amber_switch_retention`：幻兽琥珀的强化、自伤暂停与奥义封锁跨换人保留
 - `kyokyo_vs_domain`：Gojo 真实开出 `无限空处` 后，弥虚葛笼能把 `gojo_ao` 的领域必中打回原始命中
 
-这些案例是固定诊断入口，不替代 `tests/suites/*` 的正式断言。
+这些案例是固定诊断入口，不替代 `test/suites/*` 下的 `gdUnit4` 正式断言。
+`BattleSandbox` 的手动/策略试玩回归也不走这里，当前固定看 `manual_battle_scene_suite` 和 `tests/helpers/manual_battle_full_run.gd`。

@@ -99,11 +99,28 @@ tests/
 godot --path .
 ```
 
-默认会进入 `BattleSandbox` 的手动热座场景，固定对局为 `gojo_vs_sample`，启动后停在 `P1` 选指界面。
-如需复查旧自动回放，可追加命令行参数 `-- demo=<profile>`，例如 `godot --path . -- demo=legacy`。
-demo profile 的单一真相仍在 `config/demo_replay_catalog.json`；`BattleSandboxController` 只在检测到 `demo=<profile>` 时解析 profile、初始化 manager，并把 replay input 构建委托给 `SampleBattleFactory`。
+默认会进入 `BattleSandbox` 的手动热座 sandbox，固定 launch config 为 `mode=manual_matchup`、`matchup_id=gojo_vs_sample`、`battle_seed=9101`、`p1_control_mode=manual`、`p2_control_mode=manual`，启动后停在 `P1` 选指界面。
+HUD 当前支持按当前配置重开：`matchup` 下拉、`battle_seed` 输入、`P1 control mode`、`P2 control mode` 和重启按钮。控制模式只支持 `manual | policy`；预设对局列表来自 `SampleBattleFactory.available_matchups_result()`，UI 默认只显示非 `test_only` matchup，顺序固定为 baseline 在前、formal 在后。
+如需复查旧自动回放，可追加命令行参数 `-- demo=<profile>`，例如 `godot --path . -- demo=legacy`。demo profile 的单一真相仍在 `config/demo_replay_catalog.json`；`BattleSandboxController` 只在检测到 `demo=<profile>` 时解析 profile、初始化 manager，并把 replay input 构建委托给 `SampleBattleFactory`。这条路径继续是 CLI/debug 入口，不混进当前 HUD 的主流程。
 
-### 5.2 运行完整闸门（推荐）
+### 5.2 Sandbox 主验证入口
+
+```bash
+godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+```
+
+`tests/helpers/manual_battle_full_run.gd` 是当前 `BattleSandbox` 的主复查入口；省略环境变量时，默认沿用 sandbox 基线 `gojo_vs_sample + 9101 + manual/manual`。脚本当前支持：
+
+- `MATCHUP_ID`
+- `BATTLE_SEED`
+- `P1_MODE`
+- `P2_MODE`
+
+输出会固定带 `battle_result`、`battle_summary`、`turn_index`、`event_log_cursor`、`matchup_id` 和双方控制模式，便于 headless 复查 `manual/manual`、`manual/policy`、`policy/policy` 三条主路径。
+
+### 5.3 运行完整闸门（推荐）
 
 ```bash
 tests/run_with_gate.sh
@@ -285,10 +302,10 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-13）
 
-- `src/**/*.gd`：`20732` 行
-- `test/**/*.gd`：`21341` 行
-- `tests/**/*.gd`：`4335` 行
-- GDScript 合计：`46408` 行
+- `src/**/*.gd`：`21210` 行
+- `test/**/*.gd`：`21435` 行
+- `tests/**/*.gd`：`4314` 行
+- GDScript 合计：`46959` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

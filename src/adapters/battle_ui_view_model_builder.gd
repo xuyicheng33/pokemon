@@ -32,6 +32,10 @@ func build_view_model(public_snapshot: Dictionary, context: Dictionary = {}) -> 
     )
     var pending_commands := _build_pending_commands_summary(context.get("pending_commands", {}))
     var legal_actions_by_side := _build_legal_actions_summary_by_side(context.get("legal_actions_by_side", {}))
+    var launch_config = context.get("launch_config", {})
+    var side_control_modes = context.get("side_control_modes", {})
+    var available_matchups = context.get("available_matchups", [])
+    var battle_summary = context.get("battle_summary", {})
     return {
         "battle_id": str(public_snapshot.get("battle_id", "")).strip_edges(),
         "turn_index": int(public_snapshot.get("turn_index", 0)),
@@ -47,6 +51,10 @@ func build_view_model(public_snapshot: Dictionary, context: Dictionary = {}) -> 
         "legal_actions_by_side": legal_actions_by_side,
         "recent_event_lines": _to_string_array(context.get("recent_event_lines", [])),
         "error_message": str(context.get("error_message", "")).strip_edges(),
+        "launch_config": launch_config.duplicate(true) if launch_config is Dictionary else {},
+        "side_control_modes": side_control_modes.duplicate(true) if side_control_modes is Dictionary else {},
+        "available_matchups": available_matchups.duplicate(true) if available_matchups is Array else [],
+        "battle_summary": battle_summary.duplicate(true) if battle_summary is Dictionary else {},
     }
 
 func _build_pending_commands_summary(raw_pending_commands: Dictionary) -> Array:

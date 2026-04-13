@@ -26,6 +26,40 @@
   - 当前四角色必须保留 6 组关键 pair 的双向 directional case
 - Kashimo / Sukuna 的 manager 黑盒当前视为正式交付面的一部分；后续角色扩充不得再跳过 manager 级黑盒。
 
+## 0U. BattleSandbox 的 launch config、preset matchup 与 sandbox-local policy 固定留在适配层（2026-04-13）
+
+- `BattleSandbox` 当前交互入口固定为 `BattleSandboxController`；默认启动行为继续保持 `gojo_vs_sample + 9101 + manual/manual`，不因为单人试玩增强而改默认开局体验。
+- sandbox 启动配置当前固定为一个 `Dictionary`，字段只认：
+  - `mode`
+  - `matchup_id`
+  - `battle_seed`
+  - `p1_control_mode`
+  - `p2_control_mode`
+  - `demo_profile_id`
+- `BattleSandboxController` 当前固定补出：
+  - `bootstrap_with_config(config)`
+  - `restart_session_with_config(config)`
+  - 旧的 `bootstrap_manual_mode()` 与 `restart_manual_session()` 只保留为薄包装，避免现有测试和脚本立刻断掉
+- preset matchup 列表的公开入口固定为 `SampleBattleFactory.available_matchups_result()`：
+  - facade 返回 baseline 在前、formal 在后的 descriptor 列表
+  - UI 默认只展示 `test_only = false` 的 matchup
+  - 列表标签直接用 `matchup_id`，不额外引入展示文案 schema
+- `policy` 当前明确是 sandbox-local 的 adapter 策略口，不属于 `battle_core` contract：
+  - 策略只允许读取 `legal_actions + public_snapshot + controller context`
+  - controller 自动推进仍必须走公开 facade 的 `get_legal_actions -> selected_action -> build_command -> run_turn`
+  - 策略不得直接碰 manager 内部 session/container，也不恢复历史共享 AI 子系统
+- `get_state_snapshot()` 与 `build_view_model()` 当前固定补出：
+  - `launch_config`
+  - `side_control_modes`
+  - `available_matchups`
+  - `battle_summary`
+- `battle_summary` 当前只服务 sandbox 终局摘要，至少包含：
+  - `winner_side_id`
+  - `reason`
+  - `turn_index`
+  - `event_log_cursor`
+- `demo=<profile>` 继续是 CLI/debug 路径；sandbox HUD 主流程只服务 `manual_matchup` 的配置化试玩，不把 demo replay 混进同一启动面。
+
 ## 0A. manifest 运行时视图与交付视图正式拆开（2026-04-07）
 
 - `config/formal_registry_contracts.json` 当前固定拆成：

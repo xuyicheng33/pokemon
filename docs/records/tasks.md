@@ -10,6 +10,49 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前实现：BattleSandbox V1 收口 + V2 单人试玩增强（2026-04-13）
+
+- 状态：已完成
+- 目标：
+  - 把 `BattleSandbox` 的手动热座基线收成稳定 launch-config 入口，并补齐单人高频试玩所需的配置化重开、sandbox-local policy 与终局摘要。
+- 范围：
+  - `scenes/sandbox/BattleSandbox.tscn`
+  - `src/adapters/battle_sandbox_controller.gd`
+  - `src/adapters/battle_sandbox_launch_config.gd`
+  - `src/adapters/battle_sandbox_policy_port.gd`
+  - `src/adapters/battle_sandbox_first_legal_policy.gd`
+  - `src/adapters/battle_ui_view_model_builder.gd`
+  - `src/composition/sample_battle_factory.gd`
+  - `src/composition/sample_battle_factory_matchup_catalog.gd`
+  - `test/suites/manual_battle_scene_suite.gd`
+  - `tests/support/manual_battle_scene_support.gd`
+  - `tests/helpers/manual_battle_full_run.gd`
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/architecture_overview.md`
+  - `docs/design/formal_character_delivery_checklist.md`
+  - `tests/replay_cases/*.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - 默认启动行为继续保持 `gojo_vs_sample + seed=9101 + manual/manual`
+  - `BattleSandboxController` 固定补出 `bootstrap_with_config(config)` 与 `restart_session_with_config(config)`，旧入口只保留薄包装
+  - `SampleBattleFactory.available_matchups_result()` 能提供 baseline 在前、formal 在后的 preset matchup facade，UI 默认只展示非 `test_only`
+  - `manual/policy` 与 `policy/policy` 都能稳定打到终局，并补出 `battle_summary`
+  - README、design、tasks、replay case 的现行口径不再把 `run_all.gd` 或 `BattleSandboxRunner` 当活入口
+- 结果：
+  - `BattleSandbox` 现在固定走 launch config 驱动，默认基线不变，但 HUD 已支持 `matchup / battle_seed / P1 mode / P2 mode` 配置化重开
+  - sandbox-local policy 已通过独立 port 接入 `adapters` 层，默认策略顺序固定为 `forced_command_type > 第一个 ultimate > 第一个 skill > 第一个 switch > wait`
+  - `get_state_snapshot()` 与 `build_view_model()` 已固定补出 `launch_config / side_control_modes / available_matchups / battle_summary`
+  - `manual_battle_full_run.gd` 已扩成参数化 headless 入口，支持 `MATCHUP_ID / BATTLE_SEED / P1_MODE / P2_MODE`
+  - README、tests README、architecture overview、formal delivery checklist 与 replay case 已同步到当前 sandbox 入口和验证口径
+- 验证：
+  - `TEST_PATH=res://test/suites/manual_battle_scene_suite.gd bash tests/run_gdunit.sh`
+  - `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+  - `MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+  - `P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前实施：gdUnit4 全面切换（2026-04-13）
 
 - 状态：已完成
@@ -73,7 +116,7 @@
   - 本轮 Godot debug 输出里已确认的局部命名 shadowing 和三元表达式类型 warning 已清掉对应触发点
 - 验证：
   - `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `TEST_PATH=res://test/suites/manual_battle_scene_suite.gd bash tests/run_gdunit.sh`
   - `bash tests/run_with_gate.sh`
 
 ## 当前实现：手动热座战斗场景 v1（2026-04-13）
@@ -88,7 +131,7 @@
   - `src/adapters/battle_ui_view_model_builder.gd`
   - `test/suites/manual_battle_scene_suite.gd`
   - `tests/support/manual_battle_scene_support.gd`
-  - `tests/run_all.gd`
+  - `tests/run_gdunit.sh`
   - `README.md`
   - `docs/records/tasks.md`
 - 验收标准：
@@ -107,7 +150,7 @@
 - 验证：
   - `godot --headless --path . --quit-after 2`
   - `godot --headless --path . --quit-after 2 -- demo=legacy`
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `TEST_PATH=res://test/suites/manual_battle_scene_suite.gd bash tests/run_gdunit.sh`
   - `bash tests/run_with_gate.sh`
 
 ## 当前优化：payload validator 分发继续收口（2026-04-11）
@@ -135,7 +178,7 @@
   - content validation core 已新增 `content_payload_validator_registry_dispatch_contract`，覆盖 dispatcher 覆盖率与动态分发主路径
 - 验证：
   - `bash tests/check_architecture_constraints.sh`
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `TEST_PATH=res://test/suites/content_validation_core_suite.gd bash tests/run_gdunit.sh`
   - `bash tests/run_with_gate.sh`
 
 ## 当前修补：Kashimo 设计稿角色数量口径纠正（2026-04-11）
@@ -249,7 +292,7 @@
   - `runtime_registry_suite` 已补 baseline 错误描述符回归，覆盖“缺 baseline 脚本”和“缺 skill descriptor”两条路径
   - architecture 设计文档已补齐 `BattleCorePayloadServiceSpecs` 与 `payload_service_descriptors()` 的当前装配语义
 - 验证：
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_gdunit.sh`
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/run_with_gate.sh`
@@ -350,7 +393,7 @@
   - formal pair interaction 现在会校验 `test_name` 非空且唯一；repo consistency gate 也同步补了重复名检查
   - `PowerBonusResolver` 已新增注册表覆盖回归，后续新增 source 若未补 resolver，会被 suite 直接拦下
 - 验证：
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_gdunit.sh`
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/run_with_gate.sh`
 
@@ -448,7 +491,7 @@
   - manager create/replay 与 setup 校验已补回归
   - 设计文档和任务记录已同步到当前口径
 - 验证：
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_gdunit.sh`
   - `bash tests/run_with_gate.sh`
 
 ## 临时复查：最近提交与扩展治理方向审查（2026-04-10）
@@ -534,7 +577,7 @@
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/check_suite_reachability.sh`
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_gdunit.sh`
 - 第 2 阶段验收结果：
   - manifest + capability catalog 已成为角色接入模板骨架，已明显减少额外中心补丁点
   - 新共享入口未登记、已登记但 suite/消费者/证据未对齐时，会被 repo consistency gate 直接拦下
@@ -543,7 +586,7 @@
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/check_suite_reachability.sh`
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_gdunit.sh`
   - `git diff --check`
 - 第 3 阶段验收结果：
   - wiring spec 不再继续堆在单文件里，接线层热点已按子域拆开
@@ -552,7 +595,7 @@
 - 第 3 阶段验证：
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_suite_reachability.sh`
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_gdunit.sh`
   - `git diff --check`
 - 第 4 阶段验收结果：
   - architecture / delivery / capability catalog / composition 相关设计文档、记录与 gate 已对齐
@@ -768,7 +811,7 @@
 
 - `config/formal_character_manifest.json` 已成为 formal 角色元数据的唯一人工维护真源；顶层固定只保留 `characters / matchups`，角色级 pair 输入统一走 `owned_pair_interaction_specs`。
 - interaction catalog 当前对 `scenario_key / matchup_id / character_ids[2] / battle_seed` 走硬校验；缺字段、空值、类型错误或 `battle_seed <= 0` 直接 fail-fast。
-- `BattleSandboxRunner` 不再写死角色专属 demo 命令流；demo profile 的单一真相固定为 `config/demo_replay_catalog.json`。
+- `BattleSandboxController` 不再写死角色专属 demo 命令流；demo profile 的单一真相固定为 `config/demo_replay_catalog.json`。
 - `SampleBattleFactory` 负责根据 demo profile 构建 replay input；demo profile 缺失、非法或 builder 失败时直接失败。
 - `ContentSnapshotCache` 的签名输入已扩大到：
   - snapshot 路径列表
@@ -809,7 +852,7 @@
 ## 当前验证基线
 
 - 已通过：
-  - `godot --headless --path . --script tests/run_all.gd`
+  - `bash tests/run_gdunit.sh`
   - `tests/run_with_gate.sh`
 - 本轮完成标准：
   - `tests/run_with_gate.sh`
@@ -824,7 +867,7 @@
 - formal manifest 的 `characters / matchups + characters[*].owned_pair_interaction_specs` 与 gate 保持一致，不再回退成多真源手抄或兼容口径
 - pair surface 继续由 `matchups + surface_smoke_skill_id` 自动生成，不再恢复手写 surface matrix
 - interaction 继续保持显式场景制，且每个 case 都显式带 `battle_seed`
-- sandbox/demo 继续只改 `config/demo_replay_catalog.json`，不再把角色专属脚本塞回 runner
+- sandbox/demo 继续只改 `config/demo_replay_catalog.json`，不再把角色专属脚本塞回 `BattleSandboxController`
 - content schema、formal validator、manifest 任一变化后，cache freshness 仍会触发 miss
 - 新角色接入继续按 `设计稿 + 调整记录 + 内容资源 + SampleFactory 接线 + 角色 suite` 的完整交付面推进
 
@@ -853,8 +896,8 @@
 ### 验证
 
 - `bash tests/check_architecture_constraints.sh`
-- `godot --headless --path . --script tests/run_all.gd --filter power_bonus_runtime_suite`
-- `godot --headless --path . --script tests/run_all.gd --filter payload_execution_contract_suite`
+- `TEST_PATH=res://test/suites/power_bonus_runtime_suite.gd bash tests/run_gdunit.sh`
+- `TEST_PATH=res://test/suites/payload_execution_contract_suite.gd bash tests/run_gdunit.sh`
 - `bash tests/run_with_gate.sh`
 
 ## 当前任务：拆分 composition consistency gate 热点（2026-04-12）

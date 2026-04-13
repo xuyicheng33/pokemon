@@ -23,4 +23,5 @@ CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd
 - `field_clash` / `field_blocked` 是否写出
 - 同回合同步开领域时，对手领域动作是否被误取消
 
-这些案例是固定诊断入口，不替代 `tests/suites/*` 的正式断言。
+这些案例是固定诊断入口，不替代 `test/suites/*` 下的 `gdUnit4` 正式断言。
+`BattleSandbox` 的 `manual|policy` 试玩回归也不走这里，当前固定看 `manual_battle_scene_suite` 和 `tests/helpers/manual_battle_full_run.gd`。

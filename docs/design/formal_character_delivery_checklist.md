@@ -81,7 +81,8 @@
 - [ ] 若补 interaction 场景，只允许改该角色自己的 `owned_pair_interaction_specs[*]`；字段固定为 `other_character_id / scenario_key / owner_as_initiator_battle_seed / owner_as_responder_battle_seed`
 - [ ] `tests/support/formal_pair_interaction/scenario_registry.gd` 只登记无向 `scenario_key`；scenario runner 执行时读取的是派生好的 directed case context，不再给正反方向各维护一份场景 ID
 - [ ] manifest 第 0 个角色必须留空 `owned_pair_interaction_specs`；第 `i` 个角色必须补齐与 `0..i-1` 所有更早角色的 pair spec，且每个无向 pair 只能声明一次
-- [ ] 若要给该角色补 sandbox/demo 演示，统一改 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 不再写死角色专属命令流
+- [ ] 若要给该角色补 sandbox/demo 演示，统一改 `config/demo_replay_catalog.json`；`BattleSandboxController` 不再写死角色专属命令流
+- [ ] 若希望该角色对局出现在 `BattleSandbox` 的预设列表里，只能走现有 baseline catalog / formal manifest 的 matchup，并保持 `test_only = false`
 
 ## 4. 测试最低面
 

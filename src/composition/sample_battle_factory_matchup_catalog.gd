@@ -23,6 +23,9 @@ func build_setup_result(setup_builder, matchup_id: String, side_regular_skill_ov
 	var matchups: Dictionary = catalog_result.get("data", {}).get("matchups", {})
 	return _contracts.build_setup_result(setup_builder, matchups, matchup_id, side_regular_skill_overrides)
 
+func load_matchups_result() -> Dictionary:
+	return _load_catalog_result()
+
 func formal_pair_surface_cases_result(runtime_entries: Array, delivery_entries: Array) -> Dictionary:
 	var catalog_result := _load_catalog_result()
 	if not bool(catalog_result.get("ok", false)):

@@ -60,8 +60,9 @@
 
 ## 4. 数据流
 
-1. `BattleSandboxRunner` 或测试入口请求 `BattleCoreComposer` 创建核心依赖图。
-   - sandbox demo profile 的单一真相固定在 `config/demo_replay_catalog.json`；`BattleSandboxRunner` 只负责选择 profile，并把 replay input 构建委托给 `SampleBattleFactory`。
+1. `BattleSandboxController` 或测试入口请求 `BattleCoreComposer` 创建核心依赖图。
+   - `BattleSandboxController` 会先归一化 launch config、加载 `SampleBattleFactory.available_matchups_result()` 提供的 preset matchup facade，再按 `manual_matchup | demo_replay` 分支启动。
+   - sandbox demo profile 的单一真相固定在 `config/demo_replay_catalog.json`；controller 只在 `demo=<profile>` 分支负责选择 profile，并把 replay input 构建委托给 `SampleBattleFactory`。
 2. `BattleCoreManagerContainerService` 与位于 `battle_core/logging/` 下的 `ReplayRunner` 都会先通过 `ContentSnapshotCache` 取得“已加载且已校验”的资源数组，再为本次 session / replay 深复制资源并构造 fresh `BattleContentIndex`。
 3. `BattleInitializer` 作为初始化编排 owner，驱动 `BattleInitializerStateBuilder` 生成 fresh `BattleState`，再交给 `BattleInitializerPhaseService` 完成 `battle_header / on_enter / battle_init / 首回合预回蓝`。
 4. `TurnLoopController` 驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`。
@@ -70,6 +71,11 @@
 7. `ActionExecutor` 执行行动，调用 `TargetResolver`、`math`、`effects` 与 `lifecycle`。
 8. `BattleLogger` 与 `LogEventBuilder` 为每个步骤写 `LogEvent`。
 9. `ReplayRunner` 虽然物理目录放在 `battle_core/logging/`，但当前职责是 replay orchestration owner：进入主循环前先按 `turn_index` 预分组 `command_stream`，再重建流程并产出 `ReplayOutput`。
+10. 若 `BattleSandboxController` 把某侧控制模式设为 `policy`，自动推进也只留在 `adapters` 层：
+   - controller 读取当前 side 的 `legal_actions`
+   - sandbox-local policy 只消费 `legal_actions + public_snapshot + controller context`
+   - controller 再走现有 `build_command -> run_turn` 主路径，直到切回手动 side 或战斗结束
+   - 这条链路不修改 `battle_core` contract，也不直接碰 manager 内部 session/container
 
 ## 5. 依赖纪律
 
@@ -91,8 +97,9 @@
   - 只负责进入 `BattleSandbox.tscn`。
 - `scenes/sandbox/BattleSandbox.tscn`
   - 作为战斗骨架试跑入口。
-  - 挂载 `BattleSandboxRunner`。
-  - 只负责解析 demo profile、初始化 manager、触发 replay；角色专属 demo 命令流与 setup 不再写死在 runner 内。
+  - 挂载 `BattleSandboxController`。
+  - 默认进入可交互 HUD，支持 `matchup / battle_seed / P1 control mode / P2 control mode` 的配置化重开。
+  - `policy` 只存在于 `src/adapters/` 的 sandbox 策略口；自动侧仍通过公开 facade 的 `get_legal_actions / build_command / run_turn` 推进，不把旧 AI 子系统塞回 `battle_core`。
 - `src/composition/battle_core_composer.gd`
   - 负责创建 RNG、ID、commands、turn、effects、logging 等服务对象。
   - 负责维护 composer 级共享 `content_snapshot_cache`，供同一 manager 下的多 session / replay 复用。
