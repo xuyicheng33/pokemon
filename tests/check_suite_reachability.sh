@@ -10,36 +10,13 @@ require_command python3 "suite reachability gate"
 python3 - <<'PY'
 from pathlib import Path
 import json
-import re
 import sys
 
 root = Path(".")
-suite_ref_patterns = [
-    re.compile(r'preload\("res://(tests/suites/[^"]+\.gd)"\)'),
-    re.compile(r'extends "res://(tests/suites/[^"]+\.gd)"'),
-]
-
-
-def read_text(rel_path: str) -> str:
-    return (root / rel_path).read_text(encoding="utf-8")
-
-
-def collect_suite_refs(text: str) -> list[str]:
-    refs: list[str] = []
-    for pattern in suite_ref_patterns:
-        refs.extend(pattern.findall(text))
-    return refs
-
-
-reachable: set[str] = set()
-pending: list[str] = []
 required_suite_paths: set[str] = set()
 
-run_all_text = read_text("tests/run_all.gd")
-pending.extend(collect_suite_refs(run_all_text))
-
 try:
-    manifest_payload = json.loads(read_text("config/formal_character_manifest.json"))
+    manifest_payload = json.loads((root / "config/formal_character_manifest.json").read_text(encoding="utf-8"))
 except Exception as exc:  # pragma: no cover - gate error path
     print(f"SUITE_REACHABILITY_FAILED: invalid manifest json: {exc}", file=sys.stderr)
     sys.exit(1)
@@ -58,44 +35,39 @@ for entry in characters:
         continue
     suite_path = str(entry.get("suite_path", ""))
     if suite_path:
-        pending.append(suite_path)
+        required_suite_paths.add(suite_path)
     for rel_path in entry.get("required_suite_paths", []):
         if isinstance(rel_path, str) and rel_path:
             required_suite_paths.add(rel_path)
-
-while pending:
-    suite_path = pending.pop()
-    if suite_path in reachable:
-        continue
-    if not (root / suite_path).exists():
-        print(f"SUITE_REACHABILITY_FAILED: missing suite path {suite_path}", file=sys.stderr)
-        sys.exit(1)
-    reachable.add(suite_path)
-    for child_suite in collect_suite_refs(read_text(suite_path)):
-        pending.append(child_suite)
 
 for rel_path in sorted(required_suite_paths):
     if not (root / rel_path).exists():
         print(f"SUITE_REACHABILITY_FAILED: missing required_suite_path {rel_path}", file=sys.stderr)
         sys.exit(1)
-    if rel_path not in reachable:
-        print(
-            "SUITE_REACHABILITY_FAILED: required_suite_path is not reachable from run_all or registry wrapper: %s"
-            % rel_path,
-            file=sys.stderr,
-        )
-        sys.exit(1)
 
 all_suite_paths = {
     str(path.relative_to(root))
-    for path in (root / "tests/suites").rglob("*.gd")
+    for path in (root / "test").rglob("*.gd")
+    if path.name != "gdunit_suite_bridge.gd"
 }
-unreachable = sorted(all_suite_paths - reachable)
-if unreachable:
-    print("SUITE_REACHABILITY_FAILED: suite files are unreachable from run_all/registry:", file=sys.stderr)
-    for rel_path in unreachable:
+
+legacy_style = []
+for rel_path in sorted(all_suite_paths):
+    text = (root / rel_path).read_text(encoding="utf-8")
+    if "register_tests(" in text:
+        legacy_style.append(rel_path)
+if legacy_style:
+    print("SUITE_REACHABILITY_FAILED: gdUnit suite tree still contains legacy register_tests protocol:", file=sys.stderr)
+    for rel_path in legacy_style:
         print(f"  - {rel_path}", file=sys.stderr)
     sys.exit(1)
 
-print("SUITE_REACHABILITY_PASSED: every tests/suites/**/*.gd file is reachable from run_all/registry")
+missing_required = sorted(required_suite_paths - all_suite_paths)
+if missing_required:
+    print("SUITE_REACHABILITY_FAILED: manifest required suite paths are missing from gdUnit tree:", file=sys.stderr)
+    for rel_path in missing_required:
+        print(f"  - {rel_path}", file=sys.stderr)
+    sys.exit(1)
+
+print("SUITE_REACHABILITY_PASSED: manifest suite paths exist under test/ and no gdUnit suite keeps register_tests")
 PY

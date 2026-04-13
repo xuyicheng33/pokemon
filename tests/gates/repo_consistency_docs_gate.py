@@ -201,7 +201,7 @@ ctx.require_contains("README.md", "scenario_key", "README pair interaction scena
 ctx.require_contains("README.md", "shared_capability_ids", "README shared capability doc")
 ctx.require_contains("README.md", "config/formal_character_capability_catalog.json", "README capability catalog doc")
 ctx.require_contains("README.md", "unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts", "README formal validator tri-bucket wording")
-ctx.require_contains("tests/README.md", "run_all.gd` 会直接注册核心公共 suite", "tests README current run_all wording")
+ctx.require_contains("tests/README.md", "`gdUnit4` 会直接发现 `test/` 下的业务 suite", "tests README gdUnit discovery wording")
 ctx.require_contains("tests/README.md", "formal_setup_matchup_id", "tests README formal setup matchup doc")
 ctx.require_contains("tests/README.md", "只校验当前快照里实际出现的正式角色", "tests README scoped formal validator wording")
 ctx.require_contains("tests/README.md", "content_snapshot_paths_for_setup_result(battle_setup)", "tests README setup-scoped snapshot doc")

@@ -169,7 +169,7 @@
 - formal 角色 capability 证据当前统一由 `tests/helpers/export_formal_capability_facts.gd` 导出；`coverage_needles` 字段名继续保留，但语义已固定为 fact id，不再表示文本 needle。
 - delivery/test 视图当前固定自动并入两类派生 suite：
   - `shared_capability_ids` 对应 capability catalog 的 `required_suite_paths`
-  - 非空 `content_validator_script_path` 对应的 `tests/suites/extension_validation_contract_suite.gd`
+  - 非空 `content_validator_script_path` 对应的 `test/suites/extension_validation_contract_suite.gd`
 - 共享能力目录的设计文档固定为 `docs/design/formal_character_capability_catalog.md`；接入清单、角色模板、README 与 tests README 都必须引用同一套口径。
 - 这么定的原因：
   - 角色接入链现在最容易继续返工的，不是角色条目有没有写进去，而是共享机制到底是不是“还能继续复用的正式入口”
@@ -286,7 +286,7 @@
 - effect dedupe key 必须包含 effect_instance_id；合法重复只能通过显式扩展位区分，不能靠污染 effect/source identity 逃过共享防抖。
 - field_break / field_expire 链上创建的 successor field 必须保留。
 - Runtime wiring 图重新收口为严格 DAG；任何新增 helper / facade / service 都不得回到隐式环依赖。
-- suite 可达性闸门继续作为回归可信度底线；wrapper 可以稳定，断言本体可以拆分，但 `tests/run_all.gd` 可达链不能断。
+- suite 可达性闸门继续作为回归可信度底线；业务 suite 统一落在 `test/`，manifest `required_suite_paths` 必须指向 gdUnit 树中的真实文件，且不得回潮到 `register_tests`。
 
 ## 5. 扩第 5 个正式角色前的冻结条件
 
@@ -352,7 +352,7 @@
 - `tests/gates/architecture_composition_consistency_gate.py` 当前固定直接校验：
   - registry 里的每个非空 `validator_key` 都存在对应 `_validate_<validator_key>_payload`
   - `ContentPayloadValidator` 里的 payload dispatcher 方法也都必须能在 registry 找到对应 key
-- `tests/suites/content_validation_core/payload_dispatch_suite.gd` 当前固定补 content validation 回归，覆盖：
+- `test/suites/content_validation_core/payload_dispatch_suite.gd` 当前固定补 content validation 回归，覆盖：
   - registry 已登记 validator key 没有漏 dispatcher
   - 动态派发仍能真正命中已登记 payload 的校验逻辑
 - 这么定的原因：
@@ -398,3 +398,21 @@
   - 这轮实现已经把 formal pair、interaction 场景绑定和 capability 证据导出改成派生链；如果文档还停在旧合同，后续扩角会重新把旧维护面带回来
   - 这类漂移不会第一时间炸在 battle core 主循环，而是会先在角色接入、回归设计和 checklist 里悄悄复活
   - 把 docs gate 直接绑到这几条语义上，才能把“README 仍在教旧做法”这种问题前置拦住
+
+## 0T. Godot 业务测试唯一切到 gdUnit4（2026-04-13）
+
+- `test/` 现在是唯一 Godot 业务测试目录；`tests/run_all.gd` 与整个 `tests/suites/` 旧树正式下线。
+- `tests/run_with_gate.sh` 继续作为唯一总入口，但业务断言部分固定改为调用 `tests/run_gdunit.sh`。
+- `tests/run_gdunit.sh` 固定承担三件事：
+  - 本地/CI 统一的 `gdUnit4` CLI 入口
+  - `TEST_PATH` 单 suite / 单目录过滤
+  - `JUnit XML + HTML` 报告输出
+- suite reachability 与 repo consistency gate 的正式判断口径固定改成：
+  - 业务 suite 必须落在 `test/`
+  - 回归锚点必须是 `func test_*()`
+  - 不允许继续回潮到 `register_tests`
+- `BattleSandbox` 的手动热座基线现在以 `gdUnit4` 场景 suite 为准，主验证路径必须走真实节点与真实输入。
+- 这么定的原因：
+  - 本地、CI、报告产物与场景自动化如果继续双轨，后面每扩一个角色都会多维护一套旧协议
+  - `gdUnit4` 已经覆盖单 suite 过滤、SceneRunner、JUnit/HTML 报告，这时继续保留手工聚合入口只会制造漂移
+  - 先把“唯一入口、唯一报告、唯一 suite 目录”收死，后面的测试扩展才不会再回到旧框架

@@ -27,9 +27,9 @@ LEGACY_REGISTRY_PATH = "config/formal_character_registry.json"
 LEGACY_RUNTIME_REGISTRY_PATH = "config/formal_character_runtime_registry.json"
 LEGACY_DELIVERY_REGISTRY_PATH = "config/formal_character_delivery_registry.json"
 LEGACY_MATCHUP_CATALOG_PATH = "config/formal_matchup_catalog.json"
-VALIDATOR_BAD_CASE_SUITE_PATH = "tests/suites/extension_validation_contract_suite.gd"
-PAIR_INTERACTION_SUITE_PATH = "tests/suites/formal_character_pair_smoke/interaction_suite.gd"
-PAIR_INTERACTION_SUPPORT_PATH = "tests/suites/formal_character_pair_smoke/interaction_support.gd"
+VALIDATOR_BAD_CASE_SUITE_PATH = "test/suites/extension_validation_contract_suite.gd"
+PAIR_INTERACTION_SUITE_PATH = "test/suites/formal_character_pair_smoke/interaction_suite.gd"
+PAIR_INTERACTION_SUPPORT_PATH = "test/suites/formal_character_pair_smoke/interaction_support.gd"
 PAIR_INTERACTION_SCENARIO_REGISTRY_PATH = "tests/support/formal_pair_interaction/scenario_registry.gd"
 FORMAL_ACCESS_SCRIPT_PATH = "src/composition/sample_battle_factory_formal_access.gd"
 RUNTIME_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_runtime_registry_loader.gd"
@@ -43,18 +43,18 @@ FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH = "src/shared/formal_registry_contracts.gd
 FORMAL_MANIFEST_SCRIPT_PATH = "src/shared/formal_character_manifest.gd"
 FORMAL_BASELINES_PATH = "src/shared/formal_character_baselines.gd"
 SHARED_SUITE_ROOTS = [
-    "tests/suites/formal_character_pair_smoke_suite.gd",
-    "tests/suites/ultimate_points_contract_suite.gd",
-    "tests/suites/domain_clash_resolution_suite.gd",
-    "tests/suites/domain_clash_guard_suite.gd",
-    "tests/suites/field_lifecycle_contract_suite.gd",
-    "tests/suites/ultimate_field_suite.gd",
-    "tests/suites/heal_extension_suite.gd",
-    "tests/suites/skill_execute_contract_suite.gd",
-    "tests/suites/multihit_skill_runtime_suite.gd",
-    "tests/suites/persistent_stat_stage_suite.gd",
-    "tests/suites/combat_type_definition_suite.gd",
-    "tests/suites/combat_type_runtime_suite.gd",
+    "test/suites/formal_character_pair_smoke_suite.gd",
+    "test/suites/ultimate_points_contract_suite.gd",
+    "test/suites/domain_clash_resolution_suite.gd",
+    "test/suites/domain_clash_guard_suite.gd",
+    "test/suites/field_lifecycle_contract_suite.gd",
+    "test/suites/ultimate_field_suite.gd",
+    "test/suites/heal_extension_suite.gd",
+    "test/suites/skill_execute_contract_suite.gd",
+    "test/suites/multihit_skill_runtime_suite.gd",
+    "test/suites/persistent_stat_stage_suite.gd",
+    "test/suites/combat_type_definition_suite.gd",
+    "test/suites/combat_type_runtime_suite.gd",
 ]
 
 manifest = ctx.load_json_object(MANIFEST_PATH, "formal character manifest")

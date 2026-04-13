@@ -17,6 +17,7 @@ func run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
 func run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
 	return _cases.run_non_skill_formula_case(harness, core, sample_factory)
 
+@warning_ignore("shadowed_global_identifier")
 func build_initialized_battle(core, content_index, battle_setup, seed: int):
 	return _cases.build_initialized_battle(core, content_index, battle_setup, seed)
 
@@ -41,6 +42,7 @@ func _run_formula_skill_case(harness, core, sample_factory) -> Dictionary:
 func _run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
 	return run_non_skill_formula_case(harness, core, sample_factory)
 
+@warning_ignore("shadowed_global_identifier")
 func _build_initialized_battle(core, content_index, battle_setup, seed: int):
 	return build_initialized_battle(core, content_index, battle_setup, seed)
 

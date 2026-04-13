@@ -10,6 +10,7 @@ var _yinyang_support = YinyangSupportScript.new()
 func run_qiudao_jiaotu_heal_block_contract(harness) -> Dictionary:
 	return _heal_block_support.run_qiudao_jiaotu_heal_block_contract(harness)
 
+@warning_ignore("shadowed_global_identifier")
 func run_qiudao_jiaotu_heal_block_contract_for_matchup(
 	harness,
 	matchup_id: String,
@@ -28,12 +29,14 @@ func run_qiudao_jiaotu_heal_block_contract_for_matchup(
 func run_qiudao_jiaotu_switch_persist_contract(harness) -> Dictionary:
 	return _heal_block_support.run_qiudao_jiaotu_switch_persist_contract(harness)
 
+@warning_ignore("shadowed_global_identifier")
 func run_qiudao_jiaotu_switch_persist_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
 	return _heal_block_support.run_qiudao_jiaotu_switch_persist_contract_for_matchup(harness, matchup_id, seed)
 
 func run_qiudao_jiaotu_expire_sync_contract(harness) -> Dictionary:
 	return _heal_block_support.run_qiudao_jiaotu_expire_sync_contract(harness)
 
+@warning_ignore("shadowed_global_identifier")
 func run_qiudao_jiaotu_expire_sync_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
 	return _heal_block_support.run_qiudao_jiaotu_expire_sync_contract_for_matchup(harness, matchup_id, seed)
 

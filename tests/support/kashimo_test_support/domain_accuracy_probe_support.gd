@@ -3,6 +3,7 @@ class_name KashimoDomainAccuracyProbeSupport
 
 var _seed_cache: Dictionary = {}
 
+@warning_ignore("shadowed_global_identifier")
 func run_domain_accuracy_case_for_matchup(
 	support,
 	harness,
@@ -59,7 +60,7 @@ func run_domain_accuracy_case_for_matchup(
 		"ok": true,
 		"damage": hp_before - protected_unit.current_hp,
 		"nullify_active": support.has_rule_mod(protected_unit, "nullify_field_accuracy"),
-		"field_id": String(battle_state.field_state.field_def_id) if battle_state.field_state != null else null,
+		"field_id": String(battle_state.field_state.field_def_id) if battle_state.field_state != null else "",
 		"log_size": core.service("battle_logger").event_log.size(),
 	}
 
@@ -78,6 +79,7 @@ func find_domain_accuracy_probe_seed_for_matchup(
 	var cache_key := "%s|%s|%d|%d" % [matchup_id, attack_skill_id, seed_start, search_window]
 	if _seed_cache.has(cache_key):
 		return {"ok": true, "seed": int(_seed_cache[cache_key])}
+	@warning_ignore("shadowed_global_identifier")
 	for seed in range(seed_start, seed_start + search_window):
 		var protected_result := run_domain_accuracy_case_for_matchup(
 			support,

@@ -24,6 +24,16 @@ class GateContext:
                 return
         self.failures.append(f"{', '.join(rel_paths)} missing {label}: {needle}")
 
+    def require_regex(self, rel_path: str, pattern: str, label: str) -> None:
+        if re.search(pattern, self.read_text(rel_path), re.M) is None:
+            self.failures.append(f"{rel_path} missing {label}: /{pattern}/")
+
+    def require_regex_any(self, rel_paths: list[str], pattern: str, label: str) -> None:
+        for rel_path in rel_paths:
+            if re.search(pattern, self.read_text(rel_path), re.M) is not None:
+                return
+        self.failures.append(f"{', '.join(rel_paths)} missing {label}: /{pattern}/")
+
     def require_anchor(self, rel_path: str, anchor_id: str, label: str) -> None:
         normalized_anchor_id = anchor_id.removeprefix("anchor:")
         anchor_token = f"anchor:{normalized_anchor_id}"
@@ -37,6 +47,10 @@ class GateContext:
     def require_exists(self, rel_path: str, label: str) -> None:
         if not (self.root / rel_path).exists():
             self.failures.append(f"missing {label}: {rel_path}")
+
+    def require_not_exists(self, rel_path: str, label: str) -> None:
+        if (self.root / rel_path).exists():
+            self.failures.append(f"stale {label} must be removed: {rel_path}")
 
     def gd_line_count(self, top_level_dir: str) -> int:
         total = 0

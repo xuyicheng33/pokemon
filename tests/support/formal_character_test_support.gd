@@ -76,6 +76,7 @@ func _unwrap_setup_result(result: Dictionary):
 	])
 	return result.get("data", null)
 
+@warning_ignore("shadowed_global_identifier")
 func build_battle_state(core, content_index, battle_setup, seed: int):
 	return _domain_support.build_battle_state(core, content_index, battle_setup, seed)
 

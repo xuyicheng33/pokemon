@@ -149,6 +149,7 @@ func run_non_skill_formula_damage_kind_case(core, sample_factory) -> Dictionary:
 		"type_effectiveness": effect_damage_event.type_effectiveness,
 	}
 
+@warning_ignore("shadowed_global_identifier")
 func build_initialized_battle(core, content_index, battle_setup, seed: int):
 	core.service("rng_service").reset(seed)
 	core.service("id_factory").reset()

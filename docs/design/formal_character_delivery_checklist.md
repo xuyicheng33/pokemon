@@ -70,7 +70,7 @@
 - [ ] formal validator 优先复用共享模板 helper；角色 validator 只保留角色差异校验，不再复制 unit / skill / effect / field 的通用断言文案
 - [ ] formal validator 入口固定收口为三桶：`unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts`
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
-- [ ] 若登记了 `content_validator_script_path`，确认 delivery/test 视图会自动并入 `tests/suites/extension_validation_contract_suite.gd`
+- [ ] 若登记了 `content_validator_script_path`，确认 delivery/test 视图会自动并入 `test/suites/extension_validation_contract_suite.gd`
 - [ ] 若登记了 `content_validator_script_path`，同时把至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
 - [ ] `config/formal_character_manifest.json` 新增或更新该角色条目的 `pair_token / baseline_script_path / owned_pair_interaction_specs`，以及需要的 `matchups`
 - [ ] 若新增只服务测试或手动 setup 的 matchup（例如 mirror 对局），在对应 `matchups[*]` 上显式标 `test_only: true`
@@ -89,7 +89,7 @@
 
 ### A. Snapshot suite
 
-- [ ] `tests/suites/<character>_snapshot_suite.gd`（优先复用共享 formal baseline，避免 validator / snapshot 双边手抄）
+- [ ] `test/suites/<character>_snapshot_suite.gd`（优先复用共享 formal baseline，避免 validator / snapshot 双边手抄）
 - [ ] 优先复用共享 snapshot helper / formal character test support，不再为单角色复制 `_build_content_index()` 与 `_run_checks()` 模板
 - [ ] 锁 `UnitDefinition` 字面量
 - [ ] 锁技能资源字面量
@@ -97,14 +97,14 @@
 
 ### B. Runtime suite
 
-- [ ] `tests/suites/<character>_suite.gd` 作为 wrapper
+- [ ] `test/suites/<character>_suite.gd` 作为 wrapper
 - [ ] 至少 1 个角色独有 runtime 子 suite
-- [ ] 若共享或角色 wrapper 超过维护阈值，保持原 wrapper 文件名与测试名不变，并把断言本体下沉到 `tests/suites/<wrapper_name_without_.gd>/`
+- [ ] 若共享或角色 wrapper 超过维护阈值，保持原 wrapper 文件名与测试名不变，并把断言本体下沉到 `test/suites/<wrapper_name_without_.gd>/`
 - [ ] 锁角色主玩法路径，而不是只测通用 contract
 
 ### C. Manager smoke suite
 
-- [ ] `tests/suites/<character>_manager_smoke_suite.gd`
+- [ ] `test/suites/<character>_manager_smoke_suite.gd`
 - [ ] 优先复用共享 manager smoke helper，统一 `build_manager -> create_session -> close_session` 黑盒样板
 - [ ] 覆盖 `create_session -> get_legal_actions -> build_command -> run_turn -> get_public_snapshot / get_event_log_snapshot`
 - [ ] 断言公开快照与事件日志不泄漏 runtime private id

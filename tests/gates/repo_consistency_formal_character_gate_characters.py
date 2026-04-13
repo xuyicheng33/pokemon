@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import re
+
 from repo_consistency_formal_character_gate_support import (
     collect_scope_tree,
-    collect_suite_refs,
     scan_legacy_formal_character_id_refs,
     validate_required_contract_fields,
     validator_test_prefix,
 )
+
+
+def _gdunit_test_pattern(test_name: str) -> str:
+    return rf"func\s+test_{re.escape(test_name)}\s*\("
 
 
 def validate_character_entries(
@@ -28,8 +33,6 @@ def validate_character_entries(
     runtime_character_ids: list[str] = []
     seen_characters: set[str] = set()
     seen_units: set[str] = set()
-    reachable_suite_paths: set[str] = set()
-    pending_suite_paths: list[str] = collect_suite_refs(ctx.read_text("tests/run_all.gd"))
     shared_suite_scope_paths = collect_scope_tree(ctx, shared_suite_roots)
     delivery_required_suite_paths_by_character: dict[str, list[str]] = {}
     baseline_registry_text = ctx.read_text(baseline_registry_path)
@@ -165,8 +168,9 @@ def validate_character_entries(
             ctx.failures.append(f"formal manifest[{character_id}] missing suite_path")
             suite_scope_paths: list[str] = []
         else:
+            if not delivery_suite_path.startswith("test/"):
+                ctx.failures.append(f"formal delivery view[{character_id}] suite_path must point into test/: {delivery_suite_path}")
             ctx.require_exists(delivery_suite_path, f"{character_id} suite")
-            pending_suite_paths.append(delivery_suite_path)
             suite_scope_paths = [delivery_suite_path]
 
         if not isinstance(delivery_required_suite_paths, list):
@@ -179,6 +183,8 @@ def validate_character_entries(
         ]
         for rel_path in delivery_required_suite_paths_by_character[character_id]:
             rel_path = str(rel_path)
+            if not rel_path.startswith("test/"):
+                ctx.failures.append(f"formal delivery view[{character_id}] required_suite_path must point into test/: {rel_path}")
             ctx.require_exists(rel_path, f"{character_id} required suite")
             suite_scope_paths.append(rel_path)
 
@@ -198,8 +204,9 @@ def validate_character_entries(
 
         scoped_suite_paths = collect_scope_tree(ctx, suite_scope_paths)
         for test_name in delivery_required_test_names if isinstance(delivery_required_test_names, list) else []:
-            ctx.require_contains_any(scoped_suite_paths, f'runner.run_test("{str(test_name)}"', f"{character_id} regression anchor")
-            if any(f'runner.run_test("{str(test_name)}"' in ctx.read_text(shared_path) for shared_path in shared_suite_scope_paths):
+            test_pattern = _gdunit_test_pattern(str(test_name))
+            ctx.require_regex_any(scoped_suite_paths, test_pattern, f"{character_id} regression anchor")
+            if any(re.search(test_pattern, ctx.read_text(shared_path), re.M) is not None for shared_path in shared_suite_scope_paths):
                 ctx.failures.append(
                     f"formal manifest[{character_id}] must not duplicate shared regression anchor in required_test_names: {test_name}"
                 )
@@ -216,25 +223,6 @@ def validate_character_entries(
             ):
                 ctx.failures.append(
                     f"formal delivery view[{character_id}] validator-backed character must include formal_{validator_prefix}_validator_*bad_case_contract regression anchors"
-                )
-
-    while pending_suite_paths:
-        suite_path = pending_suite_paths.pop()
-        if suite_path in reachable_suite_paths:
-            continue
-        if not (ctx.root / suite_path).exists():
-            continue
-        reachable_suite_paths.add(suite_path)
-        for child_suite in collect_suite_refs(ctx.read_text(suite_path)):
-            pending_suite_paths.append(child_suite)
-
-    for entry in characters:
-        character_id = str(entry.get("character_id", "")).strip()
-        for rel_path in delivery_required_suite_paths_by_character.get(character_id, []):
-            rel_path = str(rel_path)
-            if rel_path and rel_path not in reachable_suite_paths:
-                ctx.failures.append(
-                    f"formal delivery view[{character_id}] required_suite_path is not reachable from tests/run_all.gd wrapper tree: {rel_path}"
                 )
 
     ctx.failures.extend(scan_legacy_formal_character_id_refs(ctx))

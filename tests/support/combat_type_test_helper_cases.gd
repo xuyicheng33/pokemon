@@ -189,6 +189,7 @@ func run_non_skill_formula_case(harness, core, sample_factory) -> Dictionary:
 		return {"error": "non-skill formula damage should not invalidate initialization"}
 	return {"type_effectiveness": effect_damage_event.type_effectiveness}
 
+@warning_ignore("shadowed_global_identifier")
 func build_initialized_battle(core, content_index, battle_setup, seed: int):
 	core.service("rng_service").reset(seed)
 	core.service("id_factory").reset()

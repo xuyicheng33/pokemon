@@ -12,12 +12,12 @@ APP_FAILURE_PATTERN='BATTLE_SANDBOX_FAILED:'
 
 cd "$ROOT_DIR"
 
-require_command godot "running tests/run_all.gd"
+require_command godot "running gdUnit4 suites"
 require_command rg "scanning engine error logs"
 require_command python3 "running static gate scripts"
 
 status=0
-godot --headless --path . --script tests/run_all.gd >"$LOG_FILE" 2>&1 || status=$?
+bash tests/run_gdunit.sh >"$LOG_FILE" 2>&1 || status=$?
 
 cat "$LOG_FILE"
 
@@ -34,7 +34,7 @@ if rg -q "$ENGINE_WARNING_PATTERN" "$LOG_FILE"; then
 fi
 
 if [[ $status -ne 0 ]]; then
-  echo "TEST_GATE_FAILED: run_all exited with status $status" >&2
+  echo "TEST_GATE_FAILED: gdUnit run exited with status $status" >&2
   exit "$status"
 fi
 
@@ -70,4 +70,4 @@ bash tests/check_suite_reachability.sh
 bash tests/check_architecture_constraints.sh
 bash tests/check_repo_consistency.sh
 
-echo "GATE PASSED: assertions, boot smoke, engine warnings/errors, suite reachability, and static contracts are clean"
+echo "GATE PASSED: gdUnit assertions, boot smoke, engine warnings/errors, suite reachability, and static contracts are clean"

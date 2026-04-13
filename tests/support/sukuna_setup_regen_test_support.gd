@@ -3,6 +3,7 @@ class_name SukunaSetupRegenTestSupport
 
 const PowerBonusResolverScript := preload("res://src/battle_core/actions/power_bonus_resolver.gd")
 
+@warning_ignore("shadowed_global_identifier")
 func run_sukuna_hatsu_damage_case(harness, seed: int, actor_mp_before_cast: int, target_mp_before_cast: int) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):

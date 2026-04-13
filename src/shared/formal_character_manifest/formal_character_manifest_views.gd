@@ -7,7 +7,7 @@ const FormalRegistryContractsScript := preload("res://src/shared/formal_registry
 const RuntimeEntryNormalizerScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_runtime_entry_normalizer.gd")
 
 const CHARACTERS_BUCKET := "characters"
-const VALIDATOR_REQUIRED_SUITE_PATH := "tests/suites/extension_validation_contract_suite.gd"
+const VALIDATOR_REQUIRED_SUITE_PATH := "test/suites/extension_validation_contract_suite.gd"
 
 var _registry_contracts = FormalRegistryContractsScript.new()
 var _runtime_entry_normalizer = RuntimeEntryNormalizerScript.new()

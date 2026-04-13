@@ -241,7 +241,8 @@ def scan_legacy_formal_character_id_refs(ctx: GateContext) -> list[str]:
     scan_specs = [
         (ctx.root / "src" / "shared", "*.gd"),
         (ctx.root / "src" / "battle_core" / "content" / "formal_validators", "*.gd"),
-        (ctx.root / "tests" / "suites", "*.gd"),
+        (ctx.root / "test" / "suites", "*.gd"),
+        (ctx.root / "test" / "support", "*.gd"),
         (ctx.root / "tests" / "support", "*.gd"),
         (ctx.root / "tests" / "gates", "*.py"),
     ]
@@ -267,7 +268,7 @@ def collect_gd_refs(text: str, prefix: str) -> list[str]:
 
 
 def collect_suite_refs(text: str) -> list[str]:
-    return collect_gd_refs(text, "tests/suites")
+    return collect_gd_refs(text, "test/suites")
 
 def collect_scope_tree(ctx: GateContext, start_paths: list[str]) -> list[str]:
     discovered: set[str] = set()
@@ -298,7 +299,7 @@ def scan_legacy_sample_factory_calls(ctx: GateContext) -> list[str]:
         r"\bsample_factory\.build_passive_item_demo_replay_input\(",
     ]
     failures: list[str] = []
-    for top_level_dir in ["src", "tests"]:
+    for top_level_dir in ["src", "test", "tests"]:
         for path in sorted((ctx.root / top_level_dir).rglob("*.gd")):
             rel_path = str(path.relative_to(ctx.root))
             text = path.read_text(encoding="utf-8")
@@ -311,6 +312,7 @@ def scan_legacy_registry_refs(ctx: GateContext, legacy_registry_path: str) -> li
     failures: list[str] = []
     scan_specs = [
         ("src", "*.gd"),
+        ("test", "*.gd"),
         ("tests", "*.gd"),
         ("tests", "*.sh"),
     ]
@@ -340,7 +342,7 @@ def collect_support_scope_tree(ctx: GateContext, start_paths: list[str]) -> list
 def scan_pair_interaction_support_regressions(ctx: GateContext) -> list[str]:
     failures: list[str] = []
     support_scope_paths = collect_support_scope_tree(ctx, [
-        "tests/suites/formal_character_pair_smoke/interaction_support.gd",
+        "test/suites/formal_character_pair_smoke/interaction_support.gd",
         "tests/support/formal_pair_interaction_test_support.gd",
     ])
     sample_only_tokens = [

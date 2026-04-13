@@ -9,6 +9,7 @@ var _support = GojoTestSupportScript.new()
 func run_failed_clash_does_not_revive_action_lock_contract(harness) -> Dictionary:
 	return run_failed_clash_does_not_revive_action_lock_contract_for_matchup(harness, "gojo_vs_sukuna", 1216)
 
+@warning_ignore("shadowed_global_identifier")
 func run_failed_clash_does_not_revive_action_lock_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
 	var state_payload = _support.build_gojo_matchup_state(harness, matchup_id, seed)
 	if state_payload.has("error"):
@@ -59,6 +60,7 @@ func run_failed_clash_does_not_revive_action_lock_contract_for_matchup(harness, 
 func run_expire_removes_field_buff_contract(harness) -> Dictionary:
 	return run_expire_removes_field_buff_contract_for_matchup(harness, "gojo_vs_sukuna", 1218)
 
+@warning_ignore("shadowed_global_identifier")
 func run_expire_removes_field_buff_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
 	var state_payload = _support.build_gojo_matchup_state(harness, matchup_id, seed)
 	if state_payload.has("error"):
@@ -103,6 +105,7 @@ func run_expire_removes_field_buff_contract_for_matchup(harness, matchup_id: Str
 func run_break_removes_field_buff_contract(harness) -> Dictionary:
 	return run_break_removes_field_buff_contract_for_matchup(harness, "gojo_vs_sukuna", 1219)
 
+@warning_ignore("shadowed_global_identifier")
 func run_break_removes_field_buff_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
 	var state_payload = _support.build_gojo_matchup_state(harness, matchup_id, seed)
 	if state_payload.has("error"):

@@ -80,9 +80,10 @@
 |`src/shared`|不依赖 `battle_core` 的共享工具、常量，以及 formal manifest / capability catalog / registry contracts 这类跨子域治理入口|
 |`scenes/boot`|应用启动入口|
 |`scenes/sandbox`|战斗骨架调试场景|
-|`tests/suites`|业务回归测试套件；超阈值时保留稳定 wrapper，并把真实断言下沉到同名子目录|
+|`test/suites`|`gdUnit4` 业务回归测试套件；超阈值时保留稳定 wrapper，并把真实断言下沉到同名子目录|
 |`tests/gates`|仓库一致性与架构闸门；当前至少包含 `surface / formal_character / docs` 三类治理入口|
-|`tests/support`|测试 harness 与公共构造器|
+|`test/support`|`gdUnit4` suite 公共基类与轻量桥接资源|
+|`tests/support`|测试 harness、公共构造器与固定案例 support|
 |`tests/fixtures`|回放/样例输入|
 |`tests/helpers`|预留的测试辅助脚本目录|
 |`tests/replay_cases`|预留的 deterministic 回放用例说明目录|

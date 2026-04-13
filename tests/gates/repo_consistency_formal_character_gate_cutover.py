@@ -79,7 +79,7 @@ def validate_manifest_cutover(
 
     pair_interaction_text = ctx.read_text(pair_interaction_suite_path)
     if f'preload("res://{pair_interaction_support_path}")' not in pair_interaction_text:
-        ctx.failures.append("formal pair interaction wrapper must preload tests/suites/formal_character_pair_smoke/interaction_support.gd")
+        ctx.failures.append("formal pair interaction wrapper must preload test/suites/formal_character_pair_smoke/interaction_support.gd")
     for stale_needle, label in [
         ("EXPECTED_SCENARIO_IDS", "local scenario list"),
         ("match scenario_", "local scenario dispatch"),
@@ -89,7 +89,7 @@ def validate_manifest_cutover(
             ctx.failures.append(f"{pair_interaction_suite_path} must not keep stale {label}")
 
     pair_interaction_support_text = ctx.read_text(pair_interaction_support_path)
-    if 'preload("res://tests/suites/' in pair_interaction_support_text:
+    if 'preload("res://test/suites/' in pair_interaction_support_text:
         ctx.failures.append(f"{pair_interaction_support_path} must not preload suite files directly")
     if "._test_" in pair_interaction_support_text:
         ctx.failures.append(f"{pair_interaction_support_path} must not call suite private _test_* helpers")

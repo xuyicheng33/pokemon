@@ -5,6 +5,7 @@ const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.g
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const UnitBstHelperScript := preload("res://src/shared/unit_bst_helper.gd")
 
+@warning_ignore("shadowed_global_identifier")
 func build_battle_state(core, content_index, battle_setup, seed: int):
     core.service("rng_service").reset(seed)
     core.service("id_factory").reset()

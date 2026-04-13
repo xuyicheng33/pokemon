@@ -23,8 +23,8 @@
   - 旧做法只能保证“当前活着这条 runtime state 里别再开第二次”，但挡不住未来出现复活、重建状态或特殊回放装配时把它误放宽成“活着时一次”
   - 琥珀的强化、自伤、奥义封锁仍然保留在角色资源里；“整场一次”则收回共享合法性 contract，更适合作为后续扩角复用模板
 - 影响测试：
-  - `tests/suites/kashimo_amber_suite.gd`
-  - `tests/suites/kashimo_runtime_suite.gd`
+  - `test/suites/kashimo_amber_suite.gd`
+  - `test/suites/kashimo_runtime_suite.gd`
 - 是否改变玩家口径：
   - 否
   - 玩家感知仍然是“整场只能开一次”
@@ -48,17 +48,17 @@
   <!-- anchor:kashimo.adjust.amber-switch-persist -->
   - `persists_on_switch=true` 的持续效果在“同回合重上场”时，继续暂停普通 `turn_start / turn_end` 触发；下一整回合再恢复
   <!-- anchor:kashimo.adjust.amber-same-turn-reentry -->
-  - 鹿紫云正式接入 `formal_character_manifest.json`，`tests/run_all.gd` 删掉临时手动接线，统一走 formal registry
+  - 鹿紫云正式接入 `formal_character_manifest.json`，旧的手工聚合入口已下线，正式改为 `gdUnit4 + manifest` 统一发现与 formal registry 派生
 - 为什么改：
   - Phase 1 的临时禁奥义只适合做主循环隔离交付，不能作为正式角色交付形态留在主线里
   - `effect_stack_sum`、`persistent_stat_stages` 和同回合重上场暂停语义已经变成共享能力，必须落到正式文档与正式回归面，而不是继续留在临时测试口径里
   - formal 角色元数据现在统一收口到 `formal_character_manifest.json` 单真源，鹿紫云不能再靠 `run_all` 的临时直连维持
 - 影响测试：
-  - `tests/suites/kashimo_suite.gd`
-  - `tests/suites/kashimo_amber_suite.gd`
-  - `tests/suites/persistent_stat_stage_suite.gd`
-  - `tests/suites/combat_type_suite.gd`
-  - `tests/run_all.gd`
+  - `test/suites/kashimo_suite.gd`
+  - `test/suites/kashimo_amber_suite.gd`
+  - `test/suites/persistent_stat_stage_suite.gd`
+  - `test/suites/combat_type_suite.gd`
+  - `tests/run_gdunit.sh`
 - 是否改变玩家口径：
   - 否
   - 这轮主要是把已经冻结的角色语义正式接回实现，并把“同回合重上场时琥珀自伤继续暂停”写成共享生命周期规则

@@ -1,6 +1,8 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+/reports/
+*.uid
 
 # Python gate cache
 __pycache__/

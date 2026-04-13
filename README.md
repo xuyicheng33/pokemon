@@ -57,21 +57,16 @@ src/
   composition/          # 依赖装配与 wiring specs 聚合
   adapters/             # UI/输入适配
   shared/               # 通用常量与工具
+test/
+  suites/               # gdUnit4 业务回归 suite（唯一 Godot 业务测试目录）
+  support/              # gdUnit4 suite 公共基类与少量桥接资源
 tests/
-  suites/               # 回归测试套件
-    lifecycle_core_suite.gd
-    forced_replace_suite.gd
-    gojo_suite.gd
-    sukuna_suite.gd
-    ultimate_field_suite.gd
-    adapter_contract_suite.gd
-    trigger_validation_suite.gd
-  support/              # 测试 harness 与公共构造器
+  support/              # 共享 harness、构局 helper 与固定案例 support
   fixtures/             # 预留样例输入与内容快照
   helpers/              # 测试辅助与批量探针脚本
   gates/                # README/文档/注册表一致性细分 gate
   replay_cases/         # 固定 deterministic 回放 / 复查案例
-  run_all.gd            # 测试入口
+  run_gdunit.sh         # gdUnit4 CLI 入口（支持单 suite/单目录过滤与报告输出）
   run_with_gate.sh      # 测试闸门（断言 + 引擎错误 + 架构 + 仓库一致性）
   check_repo_consistency.sh # README/文档/关键回归一致性闸门聚合入口
 ```
@@ -116,7 +111,8 @@ tests/run_with_gate.sh
 
 闸门通过条件：
 
-- 业务断言全部通过（`tests/run_all.gd`）
+- 业务断言全部通过（`tests/run_gdunit.sh` -> `gdUnit4`，默认扫描 `res://test`）
+- 产出可消费测试报告（`JUnit XML + HTML`，默认落在 `reports/gdunit`）
 - headless 主流程启动 smoke 通过（`godot --headless --path . --quit-after 20`），且不得出现 `BATTLE_SANDBOX_FAILED:` 应用层失败标记
 - 无引擎级 warning（`WARNING:`）
 - suite 可达性检查通过（`tests/check_suite_reachability.sh`）
@@ -249,7 +245,7 @@ tests/run_with_gate.sh
 - 共享内容校验：若角色有跨资源共享不变量，可在 `config/formal_character_manifest.json.characters[*]` 里登记 `content_validator_script_path`；runtime 统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 manifest 角色条目并动态装配 validator；测试、文档、suite 与回归锚点也统一从这份 manifest 派生
 - 加载期 formal 校验：`ContentSnapshotFormalCharacterValidator` 只会对当前 content snapshot 实际已出现的正式角色执行对应 validator，缺席角色不会误报
 - validator 模板：正式角色 entry validator 固定收口为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶；入口文件只负责 preload 与串联，不再自由追加角色私有逻辑
-- 大型共享 suite 当前统一采用“稳定 wrapper + 子 suite”组织：例如 `tests/suites/multihit_skill_runtime_suite.gd` 只保留入口职责，真实断言下沉到 `tests/suites/multihit_skill_runtime/*.gd`
+- 大型共享 suite 当前统一采用“稳定 wrapper + 子 suite”组织：例如 `test/suites/multihit_skill_runtime_suite.gd` 只保留入口职责，真实断言下沉到 `test/suites/multihit_skill_runtime/*.gd`
 - `config/formal_registry_contracts.json` 当前固定拆成 `manifest_character_runtime / manifest_character_delivery / owned_pair_interaction_spec` 三组合同桶
 - `characters[*]` 的 runtime 必填面固定为 `character_id / unit_definition_id / formal_setup_matchup_id / pair_token / baseline_script_path / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids / owned_pair_interaction_specs / required_content_paths`，以及按需补的 `content_validator_script_path`
 - `characters[*]` 的交付必填面固定为 `character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / shared_capability_ids / design_needles / adjustment_needles`
@@ -257,10 +253,10 @@ tests/run_with_gate.sh
 - `shared_capability_ids` 只允许引用 capability catalog 里已登记的正式入口；共享入口的实际消费者统一从 manifest 派生，不再在 catalog 里重复手填 `consumer_character_ids`
 - `required_test_names` 现在只保留角色私有 runtime / validator 坏例锚点；共享 suite 覆盖不再逐角色复制进角色条目，pair surface 统一由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成，interaction 统一由 `characters[*].owned_pair_interaction_specs` 派生并由 shared gate 收口
 - sandbox demo 若要给正式角色补固定演示，统一改 `config/demo_replay_catalog.json` profile，不再在 `BattleSandboxController` 里写死角色专属命令流
-- validator 坏例：只要角色登记了 `content_validator_script_path`，delivery/test 视图会自动并入 `tests/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个 `formal_<character>_validator_*bad_case_contract` 锚点
-- 专项回归：`tests/suites/<character>_suite.gd`，并通过注册表接入 `tests/run_all.gd` 与一致性门禁
-- 资源快照：`tests/suites/<character>_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死正式角色面板、技能、关键 effect / field / passive 资源
-- manager smoke：`tests/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
+- validator 坏例：只要角色登记了 `content_validator_script_path`，delivery/test 视图会自动并入 `test/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个 `formal_<character>_validator_*bad_case_contract` 锚点
+- 专项回归：`test/suites/<character>_suite.gd` 作为角色域入口，由 `gdUnit4` 原生发现执行，并由 manifest + repo consistency gate 锁住 suite / test 锚点
+- 资源快照：`test/suites/<character>_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死正式角色面板、技能、关键 effect / field / passive 资源
+- manager smoke：`test/suites/<character>_manager_smoke_suite.gd`，固定覆盖公开 facade 主路径
 - 跨角色 smoke：正式角色之间至少补非镜像配对黑盒样例，避免配对覆盖长期偏在单一角色身上
 - `config/formal_character_manifest.json.matchups` 现在只显式维护样例/单角色 setup/`test_only` 特例 matchup；非 `test_only` 的 formal-vs-formal directed matchup 由 loader 按 `characters[*] + pair_token + pair_initiator_bench_unit_ids + pair_responder_bench_unit_ids` 自动派生，directed pair surface smoke 继续按 `matchups + characters[*].surface_smoke_skill_id` 运行时生成；`formal_setup_matchup_id` 只服务默认 formal setup 入口
 - `owned_pair_interaction_specs[*]` 固定挂在角色条目上，字段为 `other_character_id / scenario_key / owner_as_initiator_battle_seed / owner_as_responder_battle_seed`；manifest 第 `i` 个角色只能声明与 `0..i-1` 更早角色的 pair，loader 会按 `pair_token` 派生两条 directed `pair_interaction_case`，统一补齐 `test_name / matchup_id / scenario_key / character_ids[2] / battle_seed`
@@ -290,8 +286,9 @@ tests/run_with_gate.sh
 ## 10. 当前代码规模（2026-04-13）
 
 - `src/**/*.gd`：`20732` 行
-- `tests/**/*.gd`：`25367` 行
-- GDScript 合计：`46099` 行
+- `test/**/*.gd`：`21341` 行
+- `tests/**/*.gd`：`4335` 行
+- GDScript 合计：`46408` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

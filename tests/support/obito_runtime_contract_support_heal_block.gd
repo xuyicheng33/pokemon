@@ -14,6 +14,7 @@ func run_qiudao_jiaotu_heal_block_contract(harness) -> Dictionary:
 		{0: PackedStringArray(["gojo_ao", "gojo_aka", "gojo_reverse_ritual"])}
 	)
 
+@warning_ignore("shadowed_global_identifier")
 func run_qiudao_jiaotu_heal_block_contract_for_matchup(
 	harness,
 	matchup_id: String,
@@ -68,6 +69,7 @@ func run_qiudao_jiaotu_heal_block_contract_for_matchup(
 func run_qiudao_jiaotu_switch_persist_contract(harness) -> Dictionary:
 	return run_qiudao_jiaotu_switch_persist_contract_for_matchup(harness, "obito_vs_gojo", 1512)
 
+@warning_ignore("shadowed_global_identifier")
 func run_qiudao_jiaotu_switch_persist_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
@@ -146,6 +148,7 @@ func run_qiudao_jiaotu_switch_persist_contract_for_matchup(harness, matchup_id: 
 func run_qiudao_jiaotu_expire_sync_contract(harness) -> Dictionary:
 	return run_qiudao_jiaotu_expire_sync_contract_for_matchup(harness, "obito_vs_gojo", 1513)
 
+@warning_ignore("shadowed_global_identifier")
 func run_qiudao_jiaotu_expire_sync_contract_for_matchup(harness, matchup_id: String, seed: int) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):

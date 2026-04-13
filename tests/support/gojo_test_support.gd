@@ -5,12 +5,15 @@ const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/eff
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 
+@warning_ignore("shadowed_global_identifier")
 func build_gojo_vs_sample_state(harness, seed: int) -> Dictionary:
 	return build_gojo_battle_state(harness, seed, false, true)
 
+@warning_ignore("shadowed_global_identifier")
 func build_gojo_vs_sukuna_state(harness, seed: int) -> Dictionary:
 	return build_gojo_battle_state(harness, seed, true, true)
 
+@warning_ignore("shadowed_global_identifier")
 func build_gojo_matchup_state(harness, matchup_id: String, seed: int, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
@@ -33,9 +36,11 @@ func build_gojo_matchup_state(harness, matchup_id: String, seed: int, side_regul
 		"sample_factory": sample_factory,
 	}
 
+@warning_ignore("shadowed_global_identifier")
 func build_sample_vs_gojo_state(harness, seed: int, use_sukuna: bool) -> Dictionary:
 	return build_gojo_battle_state(harness, seed, use_sukuna, false)
 
+@warning_ignore("shadowed_global_identifier")
 func build_gojo_battle_state(harness, seed: int, use_sukuna: bool, gojo_on_p1: bool) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):

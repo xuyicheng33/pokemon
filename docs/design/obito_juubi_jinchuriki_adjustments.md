@@ -19,9 +19,9 @@
   - 旧口径虽然已经接入 `on_receive_action_damage_segment`，但没有把“哪些段伤害能触发”彻底收回共享过滤 contract，后续扩角会继续留下语义歧义
   - 禁疗标记和 heal block rule mod 若不锁成同窗失效，公开快照与真实治疗行为会发生肉眼可见的漂移
 - 影响测试：
-  - `tests/suites/obito_runtime_yinyang_suite.gd`
-  - `tests/suites/obito_runtime_passive_and_seal_suite.gd`
-  - `tests/suites/multihit_skill_runtime_suite.gd`
+  - `test/suites/obito_runtime_yinyang_suite.gd`
+  - `test/suites/obito_runtime_passive_and_seal_suite.gd`
+  - `test/suites/multihit_skill_runtime_suite.gd`
 
 ## 2026-04-05
 

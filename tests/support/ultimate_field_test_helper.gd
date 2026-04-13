@@ -11,12 +11,15 @@ const GojoTestSupportScript := preload("res://tests/support/gojo_test_support.gd
 
 var _support = GojoTestSupportScript.new()
 
+@warning_ignore("shadowed_global_identifier")
 func build_gojo_vs_sample_state(harness, seed: int) -> Dictionary:
 	return _support.build_gojo_vs_sample_state(harness, seed)
 
+@warning_ignore("shadowed_global_identifier")
 func build_gojo_vs_sukuna_state(harness, seed: int) -> Dictionary:
 	return _support.build_gojo_battle_state(harness, seed, true, true)
 
+@warning_ignore("shadowed_global_identifier")
 func build_sukuna_vs_sample_state(harness, seed: int) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
@@ -141,6 +144,7 @@ func register_self_break_field_test_content(content_index) -> void:
 	skill.effects_on_cast_ids = PackedStringArray([apply_effect.id])
 	content_index.register_resource(skill)
 
+@warning_ignore("shadowed_global_identifier")
 func run_tied_domain_clash(harness, seed: int) -> Dictionary:
 	var state_payload = build_gojo_vs_sukuna_state(harness, seed)
 	if state_payload.has("error"):

@@ -32,6 +32,7 @@ func build_kashimo_vs_sukuna_setup_result(sample_factory, p1_regular_skill_overr
 func build_kashimo_vs_sukuna_setup(sample_factory, p1_regular_skill_overrides: Dictionary = {}, p2_regular_skill_overrides: Dictionary = {}):
 	return _unwrap_setup_result(build_kashimo_vs_sukuna_setup_result(sample_factory, p1_regular_skill_overrides, p2_regular_skill_overrides))
 
+@warning_ignore("shadowed_global_identifier")
 func run_gojo_domain_accuracy_case(harness, sample_factory, use_kyokyo: bool, seed: int) -> Dictionary:
 	return run_domain_accuracy_case_for_matchup(
 		harness,
@@ -44,6 +45,7 @@ func run_gojo_domain_accuracy_case(harness, sample_factory, use_kyokyo: bool, se
 		"gojo_unlimited_void_field"
 	)
 
+@warning_ignore("shadowed_global_identifier")
 func run_domain_accuracy_case_for_matchup(
 	harness,
 	sample_factory,
@@ -68,6 +70,7 @@ func run_domain_accuracy_case_for_matchup(
 		config
 	)
 
+@warning_ignore("shadowed_global_identifier")
 func run_sukuna_domain_accuracy_case(harness, sample_factory, use_kyokyo: bool, seed: int) -> Dictionary:
 	return run_domain_accuracy_case_for_matchup(
 		harness,

@@ -93,12 +93,12 @@ func build_loaded_content_index(sample_factory):
 func build_loaded_content_index_for_setup(sample_factory, battle_setup):
     return _sample_helper.build_loaded_content_index_for_setup(sample_factory, battle_setup)
 
-func build_initialized_battle(core, content_index, sample_factory, seed: int, battle_setup = null):
-    core.service("rng_service").reset(seed)
+func build_initialized_battle(core, content_index, sample_factory, battle_seed: int, battle_setup = null):
+    core.service("rng_service").reset(battle_seed)
     core.service("id_factory").reset()
     var battle_state = BattleStateScript.new()
     battle_state.battle_id = core.service("id_factory").next_id("battle")
-    battle_state.seed = seed
+    battle_state.seed = battle_seed
     battle_state.rng_stream_index = core.service("rng_service").get_stream_index()
     core.service("battle_initializer").initialize_battle(
         battle_state,

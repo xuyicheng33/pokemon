@@ -25,9 +25,9 @@
   - 需要把 Gojo 与全局新规则统一到同一套奥义点/field contract
 - 影响测试：
   <!-- anchor:gojo.adjust.tests-impacted -->
-  - `tests/suites/gojo_suite.gd`
-  - `tests/suites/ultimate_field_suite.gd`
-  - `tests/suites/replay_turn_suite.gd`
+  - `test/suites/gojo_suite.gd`
+  - `test/suites/ultimate_field_suite.gd`
+  - `test/suites/replay_turn_suite.gd`
 - 是否改变玩家口径：
   - 是
   - 当前玩家口径从“无量空处命中后锁人、并自带增幅”改为“无量空处领域成功立住后才锁人，增幅也只跟着领域存在”
@@ -44,7 +44,7 @@
 - 为什么改：
   - 旧后摇同时增加实现复杂度和解释成本，而且和宿傩已经收口后的领域语义不一致
 - 影响测试：
-  - `tests/suites/gojo_suite.gd`
+  - `test/suites/gojo_suite.gd`
 - 是否改变玩家口径：
   - 是
   - 无量空处结束后不再额外给五条悟自己加负面状态

@@ -10,6 +10,39 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前实施：gdUnit4 全面切换（2026-04-13）
+
+- 状态：已完成
+- 目标：
+  - 把 Godot 业务测试唯一切到 `gdUnit4`，下线旧的 `run_all.gd + register_tests` 入口，并让 `BattleSandbox` 的手动热座场景验证固定回到 gdUnit 门禁里。
+- 范围：
+  - `addons/gdUnit4`
+  - `project.godot`
+  - `test/**/*.gd`
+  - `tests/run_gdunit.sh`
+  - `tests/run_with_gate.sh`
+  - `tests/check_suite_reachability.sh`
+  - `tests/gates/*.py`
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/project_folder_structure.md`
+  - `docs/design/log_and_replay_contract.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `test/` 成为唯一 Godot 业务测试目录，`tests/run_all.gd` 与 `tests/suites/` 下线
+  - `tests/run_with_gate.sh` 继续作为唯一总入口，并改为调用 `gdUnit4` CLI
+  - `BattleSandbox` 手动热座场景 suite 继续纳入总门禁
+  - 本地总门禁稳定通过，并产出 `JUnit XML + HTML` 报告
+- 结果：
+  - `gdUnit4` 已正式 vendor 到仓库，并在 `project.godot` 里启用插件
+  - `tests/run_gdunit.sh` 已成为统一 CLI 入口，支持 `TEST_PATH` / `REPORT_DIR`
+  - `test/` 下的 suite 已作为正式业务测试树接管执行，旧 `tests/run_all.gd` 与 `tests/suites/` 已删除
+  - `repo consistency`、`suite reachability`、README 与测试文档都已切到 `gdUnit4 + test/ + func test_*()` 新口径
+  - `BattleSandbox` 的 gdUnit 场景验证继续保留在全量门禁内，并随总门禁一起复核通过
+- 验证：
+  - `bash tests/run_with_gate.sh`
+
 ## 当前优化：手动热座场景收尾与整局验证（2026-04-13）
 
 - 状态：已完成
@@ -25,7 +58,7 @@
   - `src/composition/sample_battle_factory_demo_catalog.gd`
   - `src/battle_core/content/formal_validators/kashimo/content_snapshot_formal_kashimo_ultimate_domain_contracts.gd`
   - `tests/support/manual_battle_scene_support.gd`
-  - `tests/suites/manual_battle_scene_suite.gd`
+  - `test/suites/manual_battle_scene_suite.gd`
   - `tests/helpers/manual_battle_full_run.gd`
   - `docs/records/tasks.md`
 - 验收标准：
@@ -53,7 +86,7 @@
   - `src/adapters/battle_sandbox_controller.gd`
   - `src/adapters/player_selection_adapter.gd`
   - `src/adapters/battle_ui_view_model_builder.gd`
-  - `tests/suites/manual_battle_scene_suite.gd`
+  - `test/suites/manual_battle_scene_suite.gd`
   - `tests/support/manual_battle_scene_support.gd`
   - `tests/run_all.gd`
   - `README.md`
@@ -86,8 +119,8 @@
   - `src/battle_core/content/payload_contract_registry.gd`
   - `src/battle_core/content/content_payload_validator.gd`
   - `tests/gates/architecture_composition_consistency_gate.py`
-  - `tests/suites/content_validation_core_suite.gd`
-  - `tests/suites/content_validation_core/payload_dispatch_suite.gd`
+  - `test/suites/content_validation_core_suite.gd`
+  - `test/suites/content_validation_core/payload_dispatch_suite.gd`
   - `docs/records/tasks.md`
   - `docs/records/decisions.md`
 - 验收标准：
