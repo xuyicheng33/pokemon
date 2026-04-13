@@ -10,7 +10,8 @@ func test_manual_scene_initial_hud_stops_on_p1() -> void:
 	assert_bool(bool(controller.get_node("RootMargin/MainColumn/ActionPanel/ActionContent/PrimaryButtons").get_child_count() > 0)).is_true()
 	var status_label: Label = controller.get_node("RootMargin/MainColumn/HeaderPanel/HeaderContent/StatusLabel")
 	var action_header_label: Label = controller.get_node("RootMargin/MainColumn/ActionPanel/ActionContent/ActionHeaderLabel")
-	assert_str(status_label.text).contains("manual hotseat")
+	assert_str(status_label.text).contains("config=manual/policy")
+	assert_str(status_label.text).contains("policy=standby(P2)")
 	assert_str(action_header_label.text).contains("当前待选边: P1")
 
 func test_manual_scene_default_launch_config_contract() -> void:
@@ -24,12 +25,21 @@ func test_manual_scene_default_launch_config_contract() -> void:
 	assert_str(String(launch_config.get("matchup_id", ""))).is_equal("gojo_vs_sample")
 	assert_int(int(launch_config.get("battle_seed", 0))).is_equal(9101)
 	assert_str(String(side_control_modes.get("P1", ""))).is_equal("manual")
-	assert_str(String(side_control_modes.get("P2", ""))).is_equal("manual")
+	assert_str(String(side_control_modes.get("P2", ""))).is_equal("policy")
 	assert_bool(not _find_available_matchup(available_matchups, "gojo_vs_sample").is_empty()).is_true()
 
 func test_manual_scene_hotseat_round_trip_via_real_clicks() -> void:
 	var runner := await _create_runner()
 	var controller := runner.scene()
+	var restart_result: Dictionary = controller.restart_session_with_config({
+		"matchup_id": "gojo_vs_sample",
+		"battle_seed": 9201,
+		"p1_control_mode": "manual",
+		"p2_control_mode": "manual",
+	})
+	assert_bool(bool(restart_result.get("ok", false))).is_true()
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
 	var state_before: Dictionary = controller.get_state_snapshot()
 	var turn_before := int(state_before.get("public_snapshot", {}).get("turn_index", 0))
 	var cursor_before := int(state_before.get("event_log_cursor", 0))
@@ -80,6 +90,15 @@ func test_manual_scene_policy_p2_auto_advances_turn_after_one_click() -> void:
 func test_manual_scene_switch_wait_and_surrender_via_real_clicks() -> void:
 	var runner := await _create_runner()
 	var controller := runner.scene()
+	var restart_result: Dictionary = controller.restart_session_with_config({
+		"matchup_id": "gojo_vs_sample",
+		"battle_seed": 9204,
+		"p1_control_mode": "manual",
+		"p2_control_mode": "manual",
+	})
+	assert_bool(bool(restart_result.get("ok", false))).is_true()
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
 	var initial_snapshot: Dictionary = controller.get_state_snapshot().get("public_snapshot", {})
 	var initial_active := _find_active_public_id(initial_snapshot, "P1")
 	var switch_button := _find_clickable_action_button(controller, PackedStringArray(["换人:"]))
@@ -141,8 +160,13 @@ func test_manual_scene_auto_battle_reaches_battle_result_via_real_clicks() -> vo
 	assert_bool(bool(final_result.get("finished", false))).is_true()
 	assert_int(int(final_state.get("event_log_cursor", 0))).is_greater(0)
 	assert_str(String(final_result.get("result_type", ""))).is_not_empty()
+	assert_str(String(battle_summary.get("matchup_id", ""))).is_equal("gojo_vs_sample")
+	assert_int(int(battle_summary.get("battle_seed", 0))).is_equal(9101)
+	assert_str(String(battle_summary.get("p1_control_mode", ""))).is_equal("manual")
+	assert_str(String(battle_summary.get("p2_control_mode", ""))).is_equal("policy")
 	assert_str(String(battle_summary.get("reason", ""))).is_not_empty()
 	assert_int(int(battle_summary.get("event_log_cursor", 0))).is_greater(0)
+	assert_int(int(battle_summary.get("command_steps", 0))).is_greater(0)
 
 func test_manual_scene_policy_vs_policy_reaches_battle_result_and_summary() -> void:
 	var runner := await _create_runner()
@@ -166,10 +190,14 @@ func test_manual_scene_policy_vs_policy_reaches_battle_result_and_summary() -> v
 	var final_result = final_state.get("public_snapshot", {}).get("battle_result", {})
 	var battle_summary: Dictionary = final_state.get("battle_summary", {})
 	assert_bool(bool(final_result.get("finished", false))).is_true()
-	assert_bool(not battle_summary.is_empty()).is_true()
+	assert_str(String(battle_summary.get("matchup_id", ""))).is_equal("gojo_vs_sample")
+	assert_int(int(battle_summary.get("battle_seed", 0))).is_equal(9303)
+	assert_str(String(battle_summary.get("p1_control_mode", ""))).is_equal("policy")
+	assert_str(String(battle_summary.get("p2_control_mode", ""))).is_equal("policy")
 	assert_str(String(battle_summary.get("reason", ""))).is_not_empty()
 	assert_int(int(battle_summary.get("turn_index", 0))).is_greater(0)
 	assert_int(int(battle_summary.get("event_log_cursor", 0))).is_greater(0)
+	assert_int(int(battle_summary.get("command_steps", 0))).is_greater(0)
 
 func _create_runner() -> GdUnitSceneRunner:
 	var runner := scene_runner(BATTLE_SANDBOX_SCENE_PATH)

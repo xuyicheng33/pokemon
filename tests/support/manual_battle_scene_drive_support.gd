@@ -56,13 +56,14 @@ func run_to_battle_end(context_support, context: Dictionary, max_turns: int = 64
 		context_support.sync_context_from_controller(context)
 		command_steps += 1
 	var battle_result = context.get("public_snapshot", {}).get("battle_result", null)
+	var battle_summary: Dictionary = context.get("battle_summary", {}).duplicate(true)
 	return {
 		"ok": true,
 		"battle_result": battle_result.duplicate(true) if battle_result is Dictionary else battle_result,
 		"turn_index": current_turn_index(context),
 		"event_log_cursor": int(context.get("event_log_cursor", 0)),
-		"command_steps": command_steps,
-		"battle_summary": context.get("battle_summary", {}).duplicate(true),
+		"command_steps": int(battle_summary.get("command_steps", command_steps)),
+		"battle_summary": battle_summary,
 	}
 
 func build_view_model(context: Dictionary) -> Dictionary:

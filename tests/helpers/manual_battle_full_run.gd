@@ -36,15 +36,19 @@ func _init() -> void:
 		push_error(str(close_result.get("error", "manual battle close_context failed")))
 		quit(1)
 		return
-	print(JSON.stringify({
-		"battle_seed": battle_seed,
-		"matchup_id": str(context.get("launch_config", {}).get("matchup_id", "")),
-		"p1_control_mode": str(context.get("side_control_modes", {}).get("P1", "")),
-		"p2_control_mode": str(context.get("side_control_modes", {}).get("P2", "")),
-		"battle_result": run_result.get("battle_result", null),
-		"battle_summary": run_result.get("battle_summary", {}),
-		"turn_index": int(run_result.get("turn_index", 0)),
-		"event_log_cursor": int(run_result.get("event_log_cursor", 0)),
-		"command_steps": int(run_result.get("command_steps", 0)),
-	}))
+	var battle_summary: Dictionary = run_result.get("battle_summary", {}).duplicate(true)
+	if battle_summary.is_empty():
+		battle_summary = {
+			"matchup_id": str(context.get("launch_config", {}).get("matchup_id", "")),
+			"battle_seed": battle_seed,
+			"p1_control_mode": str(context.get("side_control_modes", {}).get("P1", "")),
+			"p2_control_mode": str(context.get("side_control_modes", {}).get("P2", "")),
+			"winner_side_id": "",
+			"reason": "",
+			"result_type": "",
+			"turn_index": int(run_result.get("turn_index", 0)),
+			"event_log_cursor": int(run_result.get("event_log_cursor", 0)),
+			"command_steps": int(run_result.get("command_steps", 0)),
+		}
+	print(JSON.stringify(battle_summary))
 	quit(0)

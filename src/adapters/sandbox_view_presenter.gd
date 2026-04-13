@@ -28,7 +28,7 @@ func render(controller, current_view_model: Dictionary) -> void:
 	_set_rich_text(controller._p1_summary, _format_side_text(current_view_model, "P1", controller.side_control_modes))
 	_set_rich_text(controller._p2_summary, _format_side_text(current_view_model, "P2", controller.side_control_modes))
 	_set_rich_text(controller._event_log_text, "\n".join(current_view_model.get("recent_event_lines", [])))
-	controller._pending_label.text = _format_pending_text(current_view_model.get("pending_commands", []))
+	controller._pending_label.text = _format_pending_text(current_view_model.get("pending_commands", []), controller.battle_summary)
 	controller._action_header_label.text = _format_action_header(controller, current_view_model)
 	_render_action_buttons(controller, current_view_model)
 
@@ -102,21 +102,31 @@ func _render_action_buttons(controller, current_view_model: Dictionary) -> void:
 		_add_info_button(controller._primary_buttons, "当前边没有可渲染动作")
 
 func _format_status_text(controller, current_view_model: Dictionary) -> String:
-	var mode_text = "demo=%s" % controller.demo_profile if controller.is_demo_mode else "manual hotseat"
 	var field_id = str(current_view_model.get("field_id", "")).strip_edges()
 	var current_side = str(current_view_model.get("current_side_to_select", "")).strip_edges()
+	var current_control_mode = "-"
+	if not current_side.is_empty():
+		current_control_mode = _control_mode_for_side(controller.side_control_modes, current_side)
+	var policy_status = _format_policy_status(controller.side_control_modes, current_side, _has_battle_result(controller.public_snapshot))
+	var config_text = "demo=%s" % controller.demo_profile if controller.is_demo_mode else "%s/%s" % [
+		_control_mode_for_side(controller.side_control_modes, "P1"),
+		_control_mode_for_side(controller.side_control_modes, "P2"),
+	]
 	var result_text = ""
-	if not controller.battle_summary.is_empty():
+	if not str(controller.battle_summary.get("result_type", "")).strip_edges().is_empty() \
+	or not str(controller.battle_summary.get("reason", "")).strip_edges().is_empty():
 		result_text = " | result=%s/%s" % [
 			str(controller.battle_summary.get("result_type", "")),
 			str(controller.battle_summary.get("reason", "")),
 		]
-	return "mode=%s | turn=%d | phase=%s | field=%s | current=%s%s" % [
-		mode_text,
+	return "config=%s | turn=%d | phase=%s | field=%s | current=%s(%s) | policy=%s%s" % [
+		config_text,
 		int(current_view_model.get("turn_index", 0)),
 		str(current_view_model.get("phase", "")),
 		field_id if not field_id.is_empty() else "-",
 		current_side if not current_side.is_empty() else "-",
+		current_control_mode,
+		policy_status,
 		result_text,
 	]
 
@@ -128,12 +138,17 @@ func _format_config_status_text(controller) -> String:
 func _format_battle_summary_text(battle_summary: Dictionary) -> String:
 	if battle_summary.is_empty():
 		return "对局摘要: -"
-	return "对局摘要: winner=%s | reason=%s | result=%s | turn=%d | events=%d" % [
-		str(battle_summary.get("winner_side_id", "-")),
-		str(battle_summary.get("reason", "")),
-		str(battle_summary.get("result_type", "")),
+	return "对局摘要: matchup=%s | seed=%d | P1=%s | P2=%s | winner=%s | reason=%s | result=%s | turn=%d | events=%d | commands=%d" % [
+		_value_or_dash(str(battle_summary.get("matchup_id", "")).strip_edges()),
+		int(battle_summary.get("battle_seed", 0)),
+		_value_or_dash(str(battle_summary.get("p1_control_mode", "")).strip_edges()),
+		_value_or_dash(str(battle_summary.get("p2_control_mode", "")).strip_edges()),
+		_value_or_dash(str(battle_summary.get("winner_side_id", "")).strip_edges()),
+		_value_or_dash(str(battle_summary.get("reason", "")).strip_edges()),
+		_value_or_dash(str(battle_summary.get("result_type", "")).strip_edges()),
 		int(battle_summary.get("turn_index", 0)),
 		int(battle_summary.get("event_log_cursor", 0)),
+		int(battle_summary.get("command_steps", 0)),
 	]
 
 func _format_side_text(current_view_model: Dictionary, side_id: String, side_control_modes: Dictionary) -> String:
@@ -201,9 +216,12 @@ func _format_effects(effects: Array) -> String:
 		])
 	return ", ".join(entries) if not entries.is_empty() else "-"
 
-func _format_pending_text(pending_summaries: Array) -> String:
+func _format_pending_text(pending_summaries: Array, battle_summary: Dictionary) -> String:
+	var command_steps := int(battle_summary.get("command_steps", 0))
 	if pending_summaries.is_empty():
-		return "待提交指令: -"
+		if command_steps <= 0:
+			return "已提交指令: -"
+		return "已提交指令: - | commands=%d" % command_steps
 	var entries: Array = []
 	for pending_summary in pending_summaries:
 		if not (pending_summary is Dictionary):
@@ -219,7 +237,7 @@ func _format_pending_text(pending_summaries: Array) -> String:
 		if not target_public_id.is_empty():
 			entry += " target=%s" % target_public_id
 		entries.append(entry)
-	return "待提交指令: %s" % " | ".join(entries)
+	return "已提交指令: %s | commands=%d" % [" | ".join(entries), command_steps]
 
 func _format_action_header(controller, current_view_model: Dictionary) -> String:
 	if controller._startup_failed:
@@ -227,16 +245,20 @@ func _format_action_header(controller, current_view_model: Dictionary) -> String
 	if controller.is_demo_mode:
 		return "旧回放入口：demo=%s" % controller.demo_profile
 	if _has_battle_result(controller.public_snapshot):
-		return "结算态"
+		return "结算态 | winner=%s | reason=%s" % [
+			_value_or_dash(str(controller.battle_summary.get("winner_side_id", "")).strip_edges()),
+			_value_or_dash(str(controller.battle_summary.get("reason", "")).strip_edges()),
+		]
 	var side_id = str(current_view_model.get("current_side_to_select", "")).strip_edges()
 	if side_id.is_empty():
 		return "等待下一步"
 	var legal_actions: Dictionary = current_view_model.get("legal_actions_by_side", {}).get(side_id, {})
 	var actor_public_id = str(legal_actions.get("actor_public_id", "")).strip_edges()
-	return "当前待选边: %s | actor=%s | control=%s" % [
+	return "当前待选边: %s | actor=%s | control=%s | policy=%s" % [
 		side_id,
 		actor_public_id if not actor_public_id.is_empty() else "-",
 		_control_mode_for_side(controller.side_control_modes, side_id),
+		_format_policy_status(controller.side_control_modes, side_id, false),
 	]
 
 func _sync_launch_controls(controller) -> void:
@@ -330,3 +352,19 @@ func _is_policy_side(side_control_modes: Dictionary, side_id: String) -> bool:
 func _has_battle_result(public_snapshot: Dictionary) -> bool:
 	var battle_result = public_snapshot.get("battle_result", null)
 	return battle_result is Dictionary and bool(battle_result.get("finished", false))
+
+func _format_policy_status(side_control_modes: Dictionary, current_side: String, battle_finished: bool) -> String:
+	var policy_sides: Array = []
+	for side_id in BattleSandboxLaunchConfigScript.SIDE_IDS:
+		if _is_policy_side(side_control_modes, side_id):
+			policy_sides.append(side_id)
+	if policy_sides.is_empty():
+		return "disabled"
+	if battle_finished:
+		return "stopped(%s)" % ",".join(policy_sides)
+	if not current_side.is_empty() and _is_policy_side(side_control_modes, current_side):
+		return "advancing(%s)" % current_side
+	return "standby(%s)" % ",".join(policy_sides)
+
+func _value_or_dash(value: String) -> String:
+	return value if not value.is_empty() else "-"

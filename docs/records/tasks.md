@@ -9,6 +9,44 @@
 - `docs/records/archive/tasks_pre_v0.6.3.md`
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
+带日期的已完成阶段只记录当时口径；当前默认入口、验证路径与治理要求以后面的最新阶段条目和 `docs/design/current_development_workflow.md` 为准。
+
+## 当前阶段：BattleSandbox 研发试玩打磨（2026-04-13）
+
+- 状态：已完成
+- 目标：
+  - 把 `BattleSandbox` 的默认研发试玩路径收口到更适合单人复查的 `manual/policy`，并把 HUD / headless 输出统一到稳定摘要结构。
+- 范围：
+  - `src/adapters/battle_sandbox_launch_config.gd`
+  - `src/adapters/battle_sandbox_controller.gd`
+  - `src/adapters/sandbox_session_coordinator.gd`
+  - `src/adapters/sandbox_event_log_buffer.gd`
+  - `src/adapters/sandbox_view_presenter.gd`
+  - `tests/support/manual_battle_scene_drive_support.gd`
+  - `tests/helpers/manual_battle_full_run.gd`
+  - `test/suites/manual_battle_scene_suite.gd`
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/current_development_workflow.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - 默认启动行为调整为 `gojo_vs_sample + 9101 + manual/policy`
+  - 可见 preset matchup 固定按 `gojo_vs_sample / kashimo_vs_sample / sukuna_setup / sample_default / 其余可见项` 推荐排序
+  - HUD 固定补出配置摘要、当前待选边与 policy 状态、已提交指令摘要、稳定 `battle_summary` 和按回合分隔的最近日志
+  - `battle_summary` 至少稳定包含 `matchup_id / battle_seed / p1_control_mode / p2_control_mode / winner_side_id / reason / result_type / turn_index / event_log_cursor / command_steps`
+  - `manual/manual`、`manual/policy`、`policy/policy` 三条主路径都能跑到终局，并输出同一套摘要结构
+- 结果：
+  - `BattleSandboxLaunchConfig` 默认已改成 `manual/policy`，可见 matchup 列表已在 adapter 层固定推荐顺序
+  - `BattleSandboxController + SandboxSessionCoordinator` 现在统一累计 `command_steps`，并把它并入 `get_state_snapshot()` 与 `battle_summary`
+  - `SandboxEventLogBuffer` 已把最近日志改成按回合分隔的可读窗口，并为未终局/终局统一维护同一份摘要 shape
+  - `SandboxViewPresenter` 已把 HUD 状态收口到配置摘要、当前待选边、policy 状态、已提交指令摘要和稳定终局摘要文案
+  - `manual_battle_full_run.gd` 已改成直接输出统一 `battle_summary` JSON；`manual_battle_scene_suite` 也已同步到新的默认路径和摘要 contract
+- 验证：
+  - `TEST_PATH=res://test/suites/manual_battle_scene_suite.gd bash tests/run_gdunit.sh`
+  - `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+  - `MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+  - `P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 
 ## 当前阶段：外围重构与热点文件拆分（2026-04-13）
 
@@ -79,7 +117,7 @@
   - `bash tests/run_gdunit.sh`
   - `bash tests/run_with_gate.sh`
 
-## 当前实现：BattleSandbox V1 收口 + V2 单人试玩增强（2026-04-13）
+## 历史阶段：BattleSandbox V1 收口 + V2 单人试玩增强（2026-04-13，当时口径）
 
 - 状态：已完成
 - 目标：
@@ -104,13 +142,13 @@
   - `docs/records/tasks.md`
   - `docs/records/decisions.md`
 - 验收标准：
-  - 默认启动行为继续保持 `gojo_vs_sample + seed=9101 + manual/manual`
+  - （当时口径）默认启动行为继续保持 `gojo_vs_sample + seed=9101 + manual/manual`
   - `BattleSandboxController` 固定补出 `bootstrap_with_config(config)`、`restart_session_with_config(config)`、`submit_action(selected_action)`、`fetch_legal_actions_for_side(side_id)`、`get_state_snapshot()` 与 `build_view_model()`
-  - `SampleBattleFactory.available_matchups_result()` 能提供 baseline 在前、formal 在后的 preset matchup facade，UI 默认只展示非 `test_only`
+  - （当时口径）`SampleBattleFactory.available_matchups_result()` 能提供 baseline 在前、formal 在后的 preset matchup facade，UI 默认只展示非 `test_only`
   - `manual/policy` 与 `policy/policy` 都能稳定打到终局，并补出 `battle_summary`
   - README、design、tasks、replay case 的现行口径不再把 `run_all.gd` 或 `BattleSandboxRunner` 当活入口
 - 结果：
-  - `BattleSandbox` 现在固定走 launch config 驱动，默认基线不变，但 HUD 已支持 `matchup / battle_seed / P1 mode / P2 mode` 配置化重开
+  - `BattleSandbox` 当时已固定走 launch config 驱动，默认基线保持 `manual/manual`，并补出 `matchup / battle_seed / P1 mode / P2 mode` 配置化重开
   - sandbox-local policy 已通过独立 port 接入 `adapters` 层，默认策略顺序固定为 `forced_command_type > 第一个 ultimate > 第一个 skill > 第一个 switch > wait`
   - `get_state_snapshot()` 与 `build_view_model()` 已固定补出 `launch_config / side_control_modes / available_matchups / battle_summary`
   - `manual_battle_full_run.gd` 已扩成参数化 headless 入口，支持 `MATCHUP_ID / BATTLE_SEED / P1_MODE / P2_MODE`
@@ -943,7 +981,7 @@
 ## 最小可玩性检查
 
 - 可启动：`godot --headless --path . --quit-after 20`
-- 可操作：sandbox 默认 demo 能启动并完整跑完
+- 可操作：sandbox 默认 `manual/policy` 能启动、可操作、可跑完整局，并输出统一摘要
 - 无致命错误：不得出现 `BATTLE_SANDBOX_FAILED:`、`SCRIPT ERROR:`、`Compile Error:`、`Parse Error:`
 
 ## 当前任务：payload / power bonus seam 再收口（2026-04-11）

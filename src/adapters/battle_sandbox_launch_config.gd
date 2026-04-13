@@ -8,6 +8,12 @@ const CONTROL_MODE_POLICY := "policy"
 const DEFAULT_MATCHUP_ID := "gojo_vs_sample"
 const DEFAULT_BATTLE_SEED := 9101
 const SIDE_IDS := ["P1", "P2"]
+const RECOMMENDED_MATCHUP_IDS := [
+	"gojo_vs_sample",
+	"kashimo_vs_sample",
+	"sukuna_setup",
+	"sample_default",
+]
 
 func default_config() -> Dictionary:
 	return {
@@ -15,7 +21,7 @@ func default_config() -> Dictionary:
 		"matchup_id": DEFAULT_MATCHUP_ID,
 		"battle_seed": DEFAULT_BATTLE_SEED,
 		"p1_control_mode": CONTROL_MODE_MANUAL,
-		"p2_control_mode": CONTROL_MODE_MANUAL,
+		"p2_control_mode": CONTROL_MODE_POLICY,
 		"demo_profile_id": "",
 	}
 
@@ -79,14 +85,26 @@ func normalize_config(raw_config: Dictionary, available_matchups: Array = []) ->
 	return normalized
 
 func visible_matchup_descriptors(available_matchups: Array) -> Array:
+	var visible_by_id: Dictionary = {}
+	var remaining_visible: Array = []
 	var visible: Array = []
 	for raw_descriptor in available_matchups:
 		if not (raw_descriptor is Dictionary):
 			continue
-		var descriptor: Dictionary = raw_descriptor
+		var descriptor: Dictionary = raw_descriptor.duplicate(true)
 		if bool(descriptor.get("test_only", false)):
 			continue
-		visible.append(descriptor.duplicate(true))
+		var matchup_id := str(descriptor.get("matchup_id", "")).strip_edges()
+		if matchup_id.is_empty():
+			continue
+		if RECOMMENDED_MATCHUP_IDS.has(matchup_id):
+			visible_by_id[matchup_id] = descriptor
+			continue
+		remaining_visible.append(descriptor)
+	for matchup_id in RECOMMENDED_MATCHUP_IDS:
+		if visible_by_id.has(matchup_id):
+			visible.append(visible_by_id.get(matchup_id))
+	visible.append_array(remaining_visible)
 	return visible
 
 func side_control_modes(config: Dictionary) -> Dictionary:

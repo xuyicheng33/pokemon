@@ -28,7 +28,7 @@
 
 ## 0U. BattleSandbox 的 launch config、preset matchup 与 sandbox-local policy 固定留在适配层（2026-04-13）
 
-- `BattleSandbox` 当前交互入口固定为 `BattleSandboxController`；默认启动行为继续保持 `gojo_vs_sample + 9101 + manual/manual`，不因为单人试玩增强而改默认开局体验。
+- `BattleSandbox` 当前交互入口固定为 `BattleSandboxController`；默认研发试玩路径固定为 `gojo_vs_sample + 9101 + manual/policy`，因为当前目标已经从“双边热座打通”转到“单人日常复查更顺手”。
 - sandbox 启动配置当前固定为一个 `Dictionary`，字段只认：
   - `mode`
   - `matchup_id`
@@ -44,10 +44,11 @@
   - `get_state_snapshot()`
   - `build_view_model()`
   - 历史薄包装 `bootstrap_manual_mode()`、`restart_manual_session()`、`submit_selected_action()` 已从正式调用面移除，不再保留
-- preset matchup 列表的公开入口固定为 `SampleBattleFactory.available_matchups_result()`：
-  - facade 返回 baseline 在前、formal 在后的 descriptor 列表
-  - UI 默认只展示 `test_only = false` 的 matchup
-  - 列表标签直接用 `matchup_id`，不额外引入展示文案 schema
+- preset matchup 列表的原始公开入口继续固定为 `SampleBattleFactory.available_matchups_result()`，但 HUD 可见列表与推荐顺序固定由 `BattleSandboxLaunchConfig.visible_matchup_descriptors()` 派生：
+  - UI 只展示 `test_only = false` 的 matchup
+  - 推荐前序固定为 `gojo_vs_sample / kashimo_vs_sample / sukuna_setup / sample_default`
+  - 其余可见 matchup 保持原 descriptor 内容，顺序排在推荐项之后
+  - 列表标签继续直接使用 `matchup_id`，不额外引入展示文案 schema
 - `policy` 当前明确是 sandbox-local 的 adapter 策略口，不属于 `battle_core` contract：
   - 策略只允许读取 `legal_actions + public_snapshot + controller context`
   - controller 自动推进仍必须走公开 facade 的 `get_legal_actions -> selected_action -> build_command -> run_turn`
@@ -57,11 +58,18 @@
   - `side_control_modes`
   - `available_matchups`
   - `battle_summary`
-- `battle_summary` 当前只服务 sandbox 终局摘要，至少包含：
+- `battle_summary` 当前固定为 sandbox 主摘要结构，未终局时也保持同一 shape，至少包含：
+  - `matchup_id`
+  - `battle_seed`
+  - `p1_control_mode`
+  - `p2_control_mode`
   - `winner_side_id`
   - `reason`
+  - `result_type`
   - `turn_index`
   - `event_log_cursor`
+  - `command_steps`
+- `tests/helpers/manual_battle_full_run.gd` 当前直接输出这套统一 `battle_summary` JSON，三条主试玩路径都用同一份字段结构复查。
 - `demo=<profile>` 继续是 CLI/debug 路径；sandbox HUD 主流程只服务 `manual_matchup` 的配置化试玩，不把 demo replay 混进同一启动面。
 
 ## 0T. BattleSandbox 外围入口固定收口到薄 orchestrator + 协作者分工（2026-04-13）

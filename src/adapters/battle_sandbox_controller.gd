@@ -63,6 +63,7 @@ var launch_config: Dictionary = {}
 var side_control_modes: Dictionary = {}
 var available_matchups: Array = []
 var battle_summary: Dictionary = {}
+var command_steps: int = 0
 
 var demo_profile: String = ""
 var is_demo_mode: bool = false
@@ -125,6 +126,7 @@ func get_state_snapshot() -> Dictionary:
 		"side_control_modes": side_control_modes.duplicate(true),
 		"available_matchups": available_matchups.duplicate(true),
 		"battle_summary": battle_summary.duplicate(true),
+		"command_steps": command_steps,
 	}
 
 func fetch_legal_actions_for_side(side_id: String) -> Dictionary:
@@ -172,4 +174,5 @@ func _build_view_context() -> Dictionary:
 		"side_control_modes": side_control_modes,
 		"available_matchups": available_matchups,
 		"battle_summary": battle_summary,
+		"command_steps": command_steps,
 	}

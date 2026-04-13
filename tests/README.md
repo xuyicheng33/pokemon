@@ -26,7 +26,7 @@
 - `tests/run_gdunit.sh` 默认以 `res://test` 为入口，支持 `TEST_PATH` 过滤单 suite / 单目录，报告落在 `REPORT_DIR`；CI 与本地都统一消费 `JUnit XML` 与 `HTML`
 - `BattleSandbox` 的场景回归当前固定看 `TEST_PATH=res://test/suites/manual_battle_scene_suite.gd bash tests/run_gdunit.sh`
 - `BattleSandbox` 的整局 headless 复查看 `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
-- `manual_battle_full_run.gd` 当前支持 `MATCHUP_ID / BATTLE_SEED / P1_MODE / P2_MODE`；主用途是快速复查 `manual/manual`、`manual/policy` 与 `policy/policy`
+- `manual_battle_full_run.gd` 当前支持 `MATCHUP_ID / BATTLE_SEED / P1_MODE / P2_MODE`；默认主路径是 `gojo_vs_sample + 9101 + manual/policy`，三种模式统一输出同一套 `battle_summary` JSON，便于直接对比
 - 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback
 - `config/formal_character_manifest.json` 是 formal 角色元数据的唯一人工真源；顶层固定两桶：`characters / matchups`，pair interaction 的唯一手写输入固定挂在 `characters[*].owned_pair_interaction_specs`
 - `config/formal_character_capability_catalog.json` 是共享能力目录的唯一人工真源；这里只维护共享入口定义、规则归属、必挂 suite 和“该停下来改专用机制”的边界。实际消费者统一从 manifest 的 `shared_capability_ids` 派生

@@ -98,6 +98,7 @@ func reset_state(controller) -> void:
 	controller.available_matchups.clear()
 	controller.demo_profile = ""
 	controller.is_demo_mode = false
+	controller.command_steps = 0
 	controller._event_log_buffer.reset()
 
 func close_session_if_needed(controller) -> void:
@@ -150,7 +151,11 @@ func _run_demo_replay(controller, profile_id: String) -> String:
 	var event_log: Array = []
 	if replay_output != null:
 		event_log = replay_output.event_log
-	controller._event_log_buffer.apply_replay_events(controller.public_snapshot, event_log)
+	controller._event_log_buffer.apply_replay_events(
+		controller.public_snapshot,
+		event_log,
+		_build_summary_context(controller)
+	)
 	controller.current_side_to_select = ""
 	controller.pending_commands.clear()
 	controller.legal_actions_by_side.clear()
@@ -209,7 +214,8 @@ func _refresh_session_snapshot_and_logs(controller, from_index: int) -> String:
 	controller._event_log_buffer.apply_event_log_snapshot(
 		controller.public_snapshot,
 		from_index,
-		event_log_unwrap.get("data", {})
+		event_log_unwrap.get("data", {}),
+		_build_summary_context(controller)
 	)
 	return ""
 
@@ -246,6 +252,7 @@ func _submit_action_core(
 	if not bool(command_unwrap.get("ok", false)):
 		fail_runtime(controller, str(command_unwrap.get("error", "Battle sandbox failed to build command")))
 		return command_unwrap
+	controller.command_steps += 1
 	controller.pending_commands[side_id] = command_unwrap.get("data", null)
 	if side_id == SIDE_ORDER[0]:
 		controller.current_side_to_select = SIDE_ORDER[1]
@@ -263,6 +270,7 @@ func _submit_action_core(
 				"side_id": side_id,
 				"pending_commands": controller.pending_commands.size(),
 				"current_side_to_select": controller.current_side_to_select,
+				"command_steps": controller.command_steps,
 			},
 		}
 	return _run_pending_turn(controller, policy_driver, allow_policy_progression)
@@ -307,7 +315,17 @@ func _run_pending_turn(controller, policy_driver, allow_policy_progression: bool
 			"public_snapshot": controller.public_snapshot.duplicate(true),
 			"current_side_to_select": controller.current_side_to_select,
 			"battle_summary": controller._event_log_buffer.battle_summary.duplicate(true),
+			"command_steps": controller.command_steps,
 		}
+	}
+
+func _build_summary_context(controller) -> Dictionary:
+	return {
+		"matchup_id": str(controller.launch_config.get("matchup_id", BattleSandboxLaunchConfigScript.DEFAULT_MATCHUP_ID)).strip_edges(),
+		"battle_seed": int(controller.launch_config.get("battle_seed", BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)),
+		"p1_control_mode": str(controller.side_control_modes.get("P1", BattleSandboxLaunchConfigScript.CONTROL_MODE_MANUAL)).strip_edges(),
+		"p2_control_mode": str(controller.side_control_modes.get("P2", BattleSandboxLaunchConfigScript.CONTROL_MODE_MANUAL)).strip_edges(),
+		"command_steps": int(controller.command_steps),
 	}
 
 func _unwrap_sample_factory_result(controller, result: Dictionary, label: String):

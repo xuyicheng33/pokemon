@@ -32,14 +32,16 @@
 
 1. `godot --path .`
 2. 默认进入 `scenes/sandbox/BattleSandbox.tscn`
-3. 当前 launch config 基线为 `gojo_vs_sample + 9101 + manual/manual`
-4. HUD 上只通过 `matchup / battle_seed / P1 mode / P2 mode` 重开，不走历史 wrapper 或旧 runner
+3. 当前 launch config 基线为 `gojo_vs_sample + 9101 + manual/policy`
+4. HUD 上只通过 `matchup / battle_seed / P1 mode / P2 mode` 重开，不走历史 wrapper 或旧 runner；`manual/manual` 与 `policy/policy` 只作为显式模式保留
 
 headless 复查入口固定为：
 
 - `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 - `MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 - `P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+
+`manual_battle_full_run.gd` 当前统一输出稳定的 `battle_summary` JSON，固定字段至少包含 `matchup_id / battle_seed / p1_control_mode / p2_control_mode / winner_side_id / reason / result_type / turn_index / event_log_cursor / command_steps`。
 
 若只是复查旧 demo replay，继续显式走 `demo=<profile>` CLI 路径；这条线不再算当前 HUD 的主流程。
 
