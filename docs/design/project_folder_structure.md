@@ -5,7 +5,7 @@
 ## 1. 目录结构
 
 ```text
-/
+/ 
   config/
   content/
     battle_formats/
@@ -45,9 +45,11 @@
     composition/
       battle_core_wiring_specs/
     shared/
+  test/
+    suites/
+    support/
   tests/
     gates/
-    suites/
     support/
     fixtures/
     helpers/
@@ -65,9 +67,9 @@
 |`content/samples`|最小样例资源与样例对局资源|
 |`content/shared`|供正式角色跨资源复用的共享 payload / helper Resource，不直接作为顶层 snapshot 注册项|
 |`content/combat_types`|战斗属性定义资源|
-|`docs/design/`|工程实现方案文档|
+|`docs/design/`|工程结构、测试矩阵、Sandbox 使用方式与治理规则|
 |`docs/rules/`|规则权威文档|
-|`docs/records/`|任务与决策记录|
+|`docs/records/`|活跃任务、活跃决策、阶段审查与归档索引|
 |`src/battle_core/runtime`|运行态对象|
 |`src/battle_core/content`|内容 `Resource` 类型|
 |`src/battle_core/content/formal_validators`|formal validator 目录；`shared/` 放共享模板与 registry loader，角色子目录放正式角色 validator|
@@ -88,6 +90,10 @@
 |`tests/helpers`|预留的测试辅助脚本目录|
 |`tests/replay_cases`|预留的 deterministic 回放用例说明目录|
 |`assets/`|美术、音频、UI 静态资源|
+
+补充治理入口：
+
+- `docs/design/current_development_workflow.md`：当前研发工作流、Sandbox 日常路径、测试入口与文档更新顺序。
 
 ## 3. 命名规范
 

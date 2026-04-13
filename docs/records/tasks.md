@@ -10,6 +10,40 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前阶段：文档治理收口（2026-04-13）
+
+- 状态：已完成
+- 目标：
+  - 固定 `docs/rules / docs/design / docs/records` 的职责边界，补一份当前研发工作流设计文档，并把 docs gate / formal support 热点拆回可持续维护的结构。
+- 范围：
+  - `docs/design/current_development_workflow.md`
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/project_folder_structure.md`
+  - `docs/rules/README.md`
+  - `tests/gates/repo_consistency_docs_gate.py`
+  - `tests/gates/repo_consistency_docs_gate_*.py`
+  - `tests/gates/repo_consistency_formal_character_gate_support.py`
+  - `tests/gates/repo_consistency_formal_character_*_support.py`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `docs/rules/` 只保留规则权威；`docs/design/` 明确承接工程结构、测试矩阵、Sandbox 用法和治理规则；`docs/records/` 明确承接活跃记录与归档索引
+  - 新增一份固定格式的当前研发工作流文档，写清代码分层边界、Sandbox 日常路径、测试入口与文档更新顺序
+  - `repo_consistency_docs_gate.py` 收回到薄聚合入口，docs gate 按 `runtime/contracts`、`content/formal delivery`、`sandbox/testing surface`、`records/archive wording` 四块拆开
+  - `repo_consistency_formal_character_gate_support.py` 收回到薄 facade，manifest 读取、suite/needle 校验、pair/capability 派生辅助分别拆开
+  - README、tests README、design 文档与 records 口径统一到 `BattleSandbox`、`tests/run_with_gate.sh`、`gdUnit4 + test/`
+- 结果：
+  - `docs/design/current_development_workflow.md` 已成为当前研发路径的单一设计入口，统一收口代码边界、Sandbox 日常复查、测试入口和文档更新顺序
+  - `README.md`、`tests/README.md`、`docs/design/project_folder_structure.md` 与 `docs/rules/README.md` 已同步到新的文档治理基线，并显式引用 workflow 文档
+  - docs gate 已拆成 `runtime_contracts / content_formal_delivery / sandbox_testing_surface / records_archive_wording` 四块，顶层只负责聚合
+  - formal character gate support 已拆成 `manifest_io / suite_needle / pair_capability` 三块，原 support 文件只保留薄转发
+- 验证：
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/run_gdunit.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前实现：BattleSandbox V1 收口 + V2 单人试玩增强（2026-04-13）
 
 - 状态：已完成

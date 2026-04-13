@@ -2,6 +2,8 @@
 
 本目录承载当前静态门禁、诊断脚本、共享辅助资源，以及 `gdUnit4` 的命令行入口。
 
+当前日常研发顺序、Sandbox 试玩路径和文档更新要求，统一见 `docs/design/current_development_workflow.md`。
+
 - `test/suites/`: Godot 业务回归 suite 唯一目录；`gdUnit4` 会直接发现 `test/` 下的业务 suite
 - `test/support/`: `gdUnit4` suite 公共基类与少量桥接资源
 - `tests/support/`: 共享 harness、构局 helper、固定案例 support；供 `gdUnit4` suite、导出脚本与诊断 runner 复用

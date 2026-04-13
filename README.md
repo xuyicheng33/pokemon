@@ -26,6 +26,7 @@
 - 全局基线：`docs/rules/00_rule_baseline.md`
 - 模块规则：`docs/rules/01~06_*.md`
 - 工程设计：`docs/design/*.md`
+- 当前研发工作流：`docs/design/current_development_workflow.md`
 
 过程记录 `docs/records/tasks.md`、`docs/records/decisions.md` 只记录任务与决策背景，不作为现行规则权威入口。
 
@@ -98,6 +99,8 @@ tests/
 ```bash
 godot --path .
 ```
+
+日常研发的推荐顺序、允许改动边界和文档更新顺序，统一看 `docs/design/current_development_workflow.md`。
 
 默认会进入 `BattleSandbox` 的手动热座 sandbox，固定 launch config 为 `mode=manual_matchup`、`matchup_id=gojo_vs_sample`、`battle_seed=9101`、`p1_control_mode=manual`、`p2_control_mode=manual`，启动后停在 `P1` 选指界面。
 HUD 当前支持按当前配置重开：`matchup` 下拉、`battle_seed` 输入、`P1 control mode`、`P2 control mode` 和重启按钮。控制模式只支持 `manual | policy`；预设对局列表来自 `SampleBattleFactory.available_matchups_result()`，UI 默认只显示非 `test_only` matchup，顺序固定为 baseline 在前、formal 在后。

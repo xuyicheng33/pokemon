@@ -60,6 +60,29 @@
   - `event_log_cursor`
 - `demo=<profile>` 继续是 CLI/debug 路径；sandbox HUD 主流程只服务 `manual_matchup` 的配置化试玩，不把 demo replay 混进同一启动面。
 
+## 0V. 文档治理基线与研发工作流固定收口（2026-04-13）
+
+- `docs/rules/` 只承载规则权威；`docs/design/` 只承载工程结构、测试矩阵、Sandbox 使用方式、研发工作流和治理规则；`docs/records/` 只承载活跃任务、活跃决策、阶段审查与归档索引。
+- `docs/design/current_development_workflow.md` 现在是当前研发入口的设计单一真相，固定包含：
+  - 代码分层与允许改动边界
+  - Sandbox 日常试玩路径
+  - 测试入口与推荐跑法
+  - 文档更新顺序与记录要求
+- `BattleSandbox` 继续作为当前主试玩入口；`tests/run_with_gate.sh` 继续作为唯一总入口；`gdUnit4 + test/` 继续作为唯一业务测试树。
+- `tests/gates/repo_consistency_docs_gate.py` 固定收回到薄聚合入口；具体检查固定拆到：
+  - `repo_consistency_docs_gate_runtime_contracts.py`
+  - `repo_consistency_docs_gate_content_formal_delivery.py`
+  - `repo_consistency_docs_gate_sandbox_testing_surface.py`
+  - `repo_consistency_docs_gate_records_archive_wording.py`
+- `tests/gates/repo_consistency_formal_character_gate_support.py` 固定收回到薄 facade；具体辅助固定拆到：
+  - `repo_consistency_formal_character_manifest_io_support.py`
+  - `repo_consistency_formal_character_suite_needle_support.py`
+  - `repo_consistency_formal_character_pair_capability_support.py`
+- 这么定的原因：
+  - 当前热点已经不只是实现 owner，文档 gate 和 formal support 也开始逼近治理阈值；如果继续把规则和校验堆在单文件里，下一轮扩展会先从治理脚本而不是 battle core 爆炸
+  - 当前仓库已经形成 `BattleSandbox + run_with_gate + gdUnit4 + test/` 的真实研发主线，再把入口说明分散在 README、tests README 和 records 里各说一遍，只会放大漂移
+  - 先把文档职责和开发工作流固定住，后面再改 Sandbox 默认路径、验证矩阵或外围接口时，才有稳定的落点顺序
+
 ## 0A. manifest 运行时视图与交付视图正式拆开（2026-04-07）
 
 - `config/formal_registry_contracts.json` 当前固定拆成：
