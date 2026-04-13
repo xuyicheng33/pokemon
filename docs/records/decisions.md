@@ -39,7 +39,11 @@
 - `BattleSandboxController` 当前固定补出：
   - `bootstrap_with_config(config)`
   - `restart_session_with_config(config)`
-  - 旧的 `bootstrap_manual_mode()` 与 `restart_manual_session()` 只保留为薄包装，避免现有测试和脚本立刻断掉
+  - `submit_action(selected_action)`
+  - `fetch_legal_actions_for_side(side_id)`
+  - `get_state_snapshot()`
+  - `build_view_model()`
+  - 历史薄包装 `bootstrap_manual_mode()`、`restart_manual_session()`、`submit_selected_action()` 已从正式调用面移除，不再保留
 - preset matchup 列表的公开入口固定为 `SampleBattleFactory.available_matchups_result()`：
   - facade 返回 baseline 在前、formal 在后的 descriptor 列表
   - UI 默认只展示 `test_only = false` 的 matchup
@@ -59,6 +63,22 @@
   - `turn_index`
   - `event_log_cursor`
 - `demo=<profile>` 继续是 CLI/debug 路径；sandbox HUD 主流程只服务 `manual_matchup` 的配置化试玩，不把 demo replay 混进同一启动面。
+
+## 0T. BattleSandbox 外围入口固定收口到薄 orchestrator + 协作者分工（2026-04-13）
+
+- `BattleSandboxController` 当前只保留场景生命周期入口、UI 事件转发与状态刷新总编排；具体 owner 固定下沉为：
+  - `SandboxSessionCoordinator`：compose manager、create/restart/close session、刷新 snapshot/log/legal actions
+  - `SandboxPolicyDriver`：`manual/policy/policy` 自动推进与停止条件
+  - `SandboxViewPresenter`：view model、状态文案、按钮状态、终局摘要
+  - `SandboxEventLogBuffer`：事件增量、最近日志窗口与摘要缓存
+- `BattleSandboxLaunchConfig` 继续是 launch config 的唯一真相；默认值、模式归一化、可见 matchup 过滤与配置摘要都只从这里派生。
+- `ManualBattleSceneSupport` 继续是测试与脚本侧唯一推荐驱动层，但内部固定拆成：
+  - `ManualBattleSceneContextSupport`：上下文构建/销毁与 controller state 同步
+  - `ManualBattleSceneDriveSupport`：自动推进、回合驱动与 view model 断言辅助
+- 这么定的原因：
+  - 旧 controller 已经把会话、policy、UI 和日志揉在一个入口里，继续扩只会把研发成本堆回热点文件，而不是堆回清晰边界
+  - 历史 wrapper 只剩测试 support 在用，迁移窗口已经足够小，适合直接收口到正式入口而不是继续拖一轮
+  - 先把外围入口收干净，后面改默认试玩路径、battle summary 结构和 smoke matrix 时，才能在稳定接口上继续推进
 
 ## 0V. 文档治理基线与研发工作流固定收口（2026-04-13）
 

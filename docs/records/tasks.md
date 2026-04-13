@@ -10,6 +10,41 @@
 
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 
+## 当前阶段：外围重构与热点文件拆分（2026-04-13）
+
+- 状态：已完成
+- 目标：
+  - 把 `BattleSandboxController` 收成薄 orchestrator，拆出 session / policy / view / event log 四个协作者，并把测试 support 调用面统一迁到 6 个正式入口。
+- 范围：
+  - `src/adapters/battle_sandbox_controller.gd`
+  - `src/adapters/sandbox_session_coordinator.gd`
+  - `src/adapters/sandbox_policy_driver.gd`
+  - `src/adapters/sandbox_view_presenter.gd`
+  - `src/adapters/sandbox_event_log_buffer.gd`
+  - `tests/support/manual_battle_scene_support.gd`
+  - `tests/support/manual_battle_scene_context_support.gd`
+  - `tests/support/manual_battle_scene_drive_support.gd`
+  - `tests/helpers/manual_battle_full_run.gd`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `BattleSandboxController` 只保留场景生命周期入口、UI 事件转发和状态刷新总编排
+  - `SandboxSessionCoordinator / SandboxPolicyDriver / SandboxViewPresenter / SandboxEventLogBuffer` 四个协作者已落地，旧职责不再堆回 controller
+  - 历史 wrapper `bootstrap_manual_mode()`、`restart_manual_session()`、`submit_selected_action()` 已删除
+  - `ManualBattleSceneSupport` 已拆成 facade + context/drive 两块，测试与 helper 统一走正式入口
+  - `manual_battle_scene_suite` 与 headless helper 三条主路径全部通过
+- 结果：
+  - `battle_sandbox_controller.gd` 已降到薄 orchestrator，主要逻辑固定委托给四个 sandbox 协作者
+  - `SandboxSessionCoordinator` 已收口 session 生命周期、snapshot/log/legal actions 刷新和 command 提交流程
+  - `SandboxPolicyDriver` 已独立收口 policy 自动推进与停止条件；`SandboxViewPresenter` 已接管 view model 和 HUD 渲染；`SandboxEventLogBuffer` 已接管事件增量与最近日志缓存
+  - `ManualBattleSceneSupport` 已改成 facade，内部拆为 `ManualBattleSceneContextSupport + ManualBattleSceneDriveSupport`
+  - `tests/helpers/manual_battle_full_run.gd` 继续复用 `ManualBattleSceneSupport`，但底层已经只依赖正式入口 `submit_action`
+- 验证：
+  - `TEST_PATH=res://test/suites/manual_battle_scene_suite.gd bash tests/run_gdunit.sh`
+  - `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+  - `MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+  - `P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+
 ## 当前阶段：文档治理收口（2026-04-13）
 
 - 状态：已完成
@@ -70,7 +105,7 @@
   - `docs/records/decisions.md`
 - 验收标准：
   - 默认启动行为继续保持 `gojo_vs_sample + seed=9101 + manual/manual`
-  - `BattleSandboxController` 固定补出 `bootstrap_with_config(config)` 与 `restart_session_with_config(config)`，旧入口只保留薄包装
+  - `BattleSandboxController` 固定补出 `bootstrap_with_config(config)`、`restart_session_with_config(config)`、`submit_action(selected_action)`、`fetch_legal_actions_for_side(side_id)`、`get_state_snapshot()` 与 `build_view_model()`
   - `SampleBattleFactory.available_matchups_result()` 能提供 baseline 在前、formal 在后的 preset matchup facade，UI 默认只展示非 `test_only`
   - `manual/policy` 与 `policy/policy` 都能稳定打到终局，并补出 `battle_summary`
   - README、design、tasks、replay case 的现行口径不再把 `run_all.gd` 或 `BattleSandboxRunner` 当活入口
@@ -177,7 +212,7 @@
   - 完整 `tests/run_with_gate.sh` 通过
 - 结果：
   - `BattleSandbox` 已切到新的 `BattleSandboxController`，根节点改为调试可玩的 `Control` HUD，默认直接进入固定 `gojo_vs_sample` 手动热座
-  - 场景控制器当前公开 `bootstrap_manual_mode()`、`submit_selected_action()`、`restart_manual_session()`、`build_view_model()`、`get_state_snapshot()`，内部维护 `session_id / public_snapshot / event_log_cursor / legal_actions_by_side / pending_commands / current_side_to_select / recent_event_lines`
+  - 场景控制器当前公开 `bootstrap_with_config()`、`restart_session_with_config()`、`submit_action()`、`fetch_legal_actions_for_side()`、`build_view_model()`、`get_state_snapshot()`，内部继续维护 `session_id / public_snapshot / event_log_cursor / legal_actions_by_side / pending_commands / current_side_to_select / recent_event_lines`
   - `PlayerSelectionAdapter` 已扩成完整命令输入适配器；`BattleUIViewModelBuilder` 已能把 `public_snapshot + controller context` 变成稳定可渲染结构
   - `BattleSandbox` 现在只有显式传 `demo=<profile>` 时才会走旧自动回放；默认 headless 启动会安静等待玩家输入，不会因为“没人选指”报 `BATTLE_SANDBOX_FAILED`
   - `manual_battle_scene_suite` 已改为直接驱动真实场景控制器，覆盖固定 session 启动、热座回合推进、switch、wait/surrender、event log 游标与结算态
