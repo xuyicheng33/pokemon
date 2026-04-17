@@ -11,6 +11,40 @@
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只记录当时口径；当前默认入口、验证路径与治理要求以后面的最新阶段条目和 `docs/design/current_development_workflow.md` 为准。
 
+## 当前阶段：README surface 合同修复与 demo replay 回归补齐（2026-04-18）
+
+- 状态：已完成
+- 目标：
+  - 把 4 月 18 日整理提交带出的 README surface 漂移修回主线，并把 `demo replay` 从“保留入口但无人回归”补成固定 smoke 覆盖。
+- 范围：
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/current_stage_regression_baseline.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+  - `src/composition/sample_battle_factory.gd`
+  - `src/adapters/sandbox_session_coordinator.gd`
+  - `tests/check_sandbox_smoke_matrix.sh`
+  - `tests/helpers/demo_replay_full_run.gd`
+- 验收标准：
+  - `bash tests/check_repo_consistency.sh` 与 `bash tests/run_with_gate.sh` 不再因为 README 表面合同失败
+  - README 继续显式写明 `content_snapshot_paths_result()` 的基础覆盖面，并同步最新 GDScript 行数
+  - `demo=<profile>` 的 `battle_summary` 使用真实 profile 的 `matchup_id / battle_seed`
+  - `tests/check_sandbox_smoke_matrix.sh` 固定覆盖 `legacy` 与 `kashimo` 两个 demo profile
+  - 活跃任务与决策记录补回这轮 4 月 18 日的整理与修复落点
+- 结果：
+  - README 已补回 `content_snapshot_paths_result()` 覆盖说明，并同步到当前代码规模统计
+  - `SampleBattleFactory` 已开放 `demo_profile_result()`；`SandboxSessionCoordinator` 在 demo replay 路径上已改为按 profile 真值生成摘要上下文
+  - 新增 `tests/helpers/demo_replay_full_run.gd`，固定输出 demo profile 对应的 `battle_summary` JSON
+  - `tests/check_sandbox_smoke_matrix.sh` 已补进 `legacy demo` 与 `kashimo demo` 两条 smoke
+  - `tests/README.md`、阶段回归基线与活跃记录已同步到新的 demo replay 验证面
+- 验证：
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_sandbox_smoke_matrix.sh`
+  - `DEMO_PROFILE=legacy godot --headless --path . --script tests/helpers/demo_replay_full_run.gd`
+  - `DEMO_PROFILE=kashimo godot --headless --path . --script tests/helpers/demo_replay_full_run.gd`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前阶段：BattleSandbox 研发试玩打磨（2026-04-13）
 
 - 状态：已完成

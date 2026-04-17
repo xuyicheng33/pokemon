@@ -14,7 +14,9 @@
 - 默认主路径：`gojo_vs_sample + 9101 + manual/policy`
 - 变体一：`kashimo_vs_sample + manual/policy`
 - 变体二：`gojo_vs_sample + policy/policy`
+- demo 变体：`legacy`、`kashimo`
 - headless 统一入口：`godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+- demo replay 入口：`DEMO_PROFILE=legacy godot --headless --path . --script tests/helpers/demo_replay_full_run.gd`
 
 ## 3. 最小可玩性检查
 

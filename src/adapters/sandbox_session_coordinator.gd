@@ -140,6 +140,13 @@ func _load_available_matchups(controller) -> String:
 	return ""
 
 func _run_demo_replay(controller, profile_id: String) -> String:
+	var profile_result: Dictionary = controller.sample_factory.demo_profile_result(profile_id)
+	if not bool(profile_result.get("ok", false)):
+		return "Battle sandbox failed to resolve demo profile %s: %s" % [
+			profile_id,
+			str(profile_result.get("error_message", "unknown error")),
+		]
+	var profile: Dictionary = profile_result.get("data", {})
 	var replay_result: Dictionary = controller.sample_factory.build_demo_replay_input_for_profile_result(controller.manager, profile_id)
 	var replay_unwrap_result: Dictionary = _envelope.unwrap_sample_factory_result(replay_result, "%s demo replay input" % profile_id)
 	if not bool(replay_unwrap_result.get("ok", false)):
@@ -157,7 +164,10 @@ func _run_demo_replay(controller, profile_id: String) -> String:
 	controller._event_log_buffer.apply_replay_events(
 		controller.public_snapshot,
 		event_log,
-		_envelope.build_summary_context(controller.launch_config, controller.side_control_modes, controller.command_steps)
+		_envelope.build_summary_context({
+			"matchup_id": str(profile.get("matchup_id", BattleSandboxLaunchConfigScript.DEFAULT_MATCHUP_ID)).strip_edges(),
+			"battle_seed": int(profile.get("battle_seed", BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)),
+		}, controller.side_control_modes, controller.command_steps)
 	)
 	controller.current_side_to_select = ""
 	controller.pending_commands.clear()

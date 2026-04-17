@@ -77,6 +77,9 @@ func default_demo_profile_id() -> String:
 func default_demo_profile_id_result() -> Dictionary:
 	return _record_result(_demo_catalog.default_profile_id_result())
 
+func demo_profile_result(profile_id: String) -> Dictionary:
+	return _record_result(_demo_catalog.profile_result(profile_id))
+
 func error_state() -> Dictionary:
 	return {
 		"code": last_error_code,

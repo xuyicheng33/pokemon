@@ -23,8 +23,23 @@
 - pair interaction 覆盖模型固定改为：
   - 每个无序正式角色对至少 1 条 interaction case
   - 允许同 pair 多 case
-  - 当前四角色必须保留 6 组关键 pair 的双向 directional case
+- 当前四角色必须保留 6 组关键 pair 的双向 directional case
 - Kashimo / Sukuna 的 manager 黑盒当前视为正式交付面的一部分；后续角色扩充不得再跳过 manager 级黑盒。
+
+## 0R. README surface 合同与 demo replay smoke 固定补回主线（2026-04-18）
+
+- README 当前继续承担 surface gate 的一部分合同，不只是可读说明：
+  - 代码规模统计必须和 gate 实际统计同步
+  - `content_snapshot_paths_result()` 的基础覆盖面说明必须继续保留
+- 这么定的原因：
+  - 4 月 18 日 README 瘦身已经证明，这两块一旦被删或写旧，会直接把 `repo consistency` 与总 gate 打断
+  - 既然 gate 还把它们当合同，就不能把它们当“可有可无的背景字”
+- `demo=<profile>` 当前继续是 CLI/debug 入口，但既然入口仍保留，就必须有最小自动回归：
+  - `tests/check_sandbox_smoke_matrix.sh` 固定补跑 `legacy` 与 `kashimo` 两个 demo profile
+  - demo replay 摘要上下文固定取 profile 真值，不再回退到 launch config 默认的 `matchup_id / battle_seed`
+- 这么定的原因：
+  - demo replay 这轮仍在拆 helper；如果没有固定 smoke，后续再次整理时很容易只保住 `manual_matchup` 主路径
+  - demo 路径的 `battle_summary` 如果继续拿默认 launch config，会让 CLI/debug 复查看到错误局面元数据，摘要就失去意义
 
 ## 0U. BattleSandbox 的 launch config、preset matchup 与 sandbox-local policy 固定留在适配层（2026-04-13）
 
