@@ -5,10 +5,12 @@ const BattleCoreComposerScript := preload("res://src/composition/battle_core_com
 const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_factory.gd")
 const PlayerSelectionAdapterScript := preload("res://src/adapters/player_selection_adapter.gd")
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
+const EnvelopeHelperScript := preload("res://src/adapters/sandbox_session_coordinator_envelope_helper.gd")
 const SIDE_ORDER := ["P1", "P2"]
 
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 var _selection_adapter = PlayerSelectionAdapterScript.new()
+var _envelope = EnvelopeHelperScript.new()
 
 func bootstrap_scene(controller, requested_config: Dictionary, policy_driver) -> Dictionary:
 	controller._startup_failed = false
@@ -64,7 +66,7 @@ func submit_action(
 func refresh_legal_actions_for_side(controller, side_id: String) -> Dictionary:
 	if side_id.is_empty():
 		return {"ok": true, "data": null}
-	var legal_actions_unwrap := _unwrap_ok(
+	var legal_actions_unwrap := _envelope.unwrap_ok(
 		controller.manager.get_legal_actions(controller.session_id, side_id),
 		"get_legal_actions(%s)" % side_id
 	)
@@ -139,10 +141,11 @@ func _load_available_matchups(controller) -> String:
 
 func _run_demo_replay(controller, profile_id: String) -> String:
 	var replay_result: Dictionary = controller.sample_factory.build_demo_replay_input_for_profile_result(controller.manager, profile_id)
-	var replay_input = _unwrap_sample_factory_result(controller, replay_result, "%s demo replay input" % profile_id)
-	if replay_input == null:
-		return controller.error_message
-	var replay_unwrap: Dictionary = _unwrap_ok(controller.manager.run_replay(replay_input), "run_replay(%s)" % profile_id)
+	var replay_unwrap_result: Dictionary = _envelope.unwrap_sample_factory_result(replay_result, "%s demo replay input" % profile_id)
+	if not bool(replay_unwrap_result.get("ok", false)):
+		return str(replay_unwrap_result.get("error", "Battle sandbox replay input failed"))
+	var replay_input = replay_unwrap_result.get("data", null)
+	var replay_unwrap: Dictionary = _envelope.unwrap_ok(controller.manager.run_replay(replay_input), "run_replay(%s)" % profile_id)
 	if not bool(replay_unwrap.get("ok", false)):
 		return str(replay_unwrap.get("error", "Battle sandbox replay failed"))
 	var replay_payload: Dictionary = replay_unwrap.get("data", {})
@@ -154,7 +157,7 @@ func _run_demo_replay(controller, profile_id: String) -> String:
 	controller._event_log_buffer.apply_replay_events(
 		controller.public_snapshot,
 		event_log,
-		_build_summary_context(controller)
+		_envelope.build_summary_context(controller.launch_config, controller.side_control_modes, controller.command_steps)
 	)
 	controller.current_side_to_select = ""
 	controller.pending_commands.clear()
@@ -175,7 +178,7 @@ func _create_session_for_launch_config(controller) -> String:
 	var snapshot_paths_result: Dictionary = controller.sample_factory.content_snapshot_paths_for_setup_result(controller.battle_setup)
 	if not bool(snapshot_paths_result.get("ok", false)):
 		return "Battle sandbox failed to resolve setup snapshot paths: %s" % str(snapshot_paths_result.get("error_message", "unknown error"))
-	var create_unwrap: Dictionary = _unwrap_ok(
+	var create_unwrap: Dictionary = _envelope.unwrap_ok(
 		controller.manager.create_session({
 			"battle_seed": int(controller.launch_config.get("battle_seed", BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)),
 			"content_snapshot_paths": snapshot_paths_result.get("data", PackedStringArray()),
@@ -198,14 +201,14 @@ func _create_session_for_launch_config(controller) -> String:
 	return ""
 
 func _refresh_session_snapshot_and_logs(controller, from_index: int) -> String:
-	var snapshot_unwrap: Dictionary = _unwrap_ok(
+	var snapshot_unwrap: Dictionary = _envelope.unwrap_ok(
 		controller.manager.get_public_snapshot(controller.session_id),
 		"get_public_snapshot(%s)" % controller.session_id
 	)
 	if not bool(snapshot_unwrap.get("ok", false)):
 		return str(snapshot_unwrap.get("error", "Battle sandbox failed to refresh public_snapshot"))
 	controller.public_snapshot = snapshot_unwrap.get("data", {})
-	var event_log_unwrap: Dictionary = _unwrap_ok(
+	var event_log_unwrap: Dictionary = _envelope.unwrap_ok(
 		controller.manager.get_event_log_snapshot(controller.session_id, from_index),
 		"get_event_log_snapshot(%s)" % controller.session_id
 	)
@@ -215,7 +218,7 @@ func _refresh_session_snapshot_and_logs(controller, from_index: int) -> String:
 		controller.public_snapshot,
 		from_index,
 		event_log_unwrap.get("data", {}),
-		_build_summary_context(controller)
+		_envelope.build_summary_context(controller.launch_config, controller.side_control_modes, controller.command_steps)
 	)
 	return ""
 
@@ -236,7 +239,7 @@ func _submit_action_core(
 	if side_id.is_empty():
 		return _error_result("no side is waiting for selection")
 	var legal_actions = controller.legal_actions_by_side.get(side_id, null)
-	var actor_public_id = str(_read_property(legal_actions, "actor_public_id", "")).strip_edges()
+	var actor_public_id = str(_envelope.read_property(legal_actions, "actor_public_id", "")).strip_edges()
 	if actor_public_id.is_empty():
 		return _error_result("missing actor_public_id for side %s" % side_id)
 	var action_payload: Dictionary = selected_action.duplicate(true)
@@ -245,7 +248,7 @@ func _submit_action_core(
 	action_payload["turn_index"] = int(controller.public_snapshot.get("turn_index", 1))
 	action_payload["command_source"] = command_source
 	var command_payload: Dictionary = _selection_adapter.build_player_payload(action_payload)
-	var command_unwrap: Dictionary = _unwrap_ok(
+	var command_unwrap: Dictionary = _envelope.unwrap_ok(
 		controller.manager.build_command(command_payload),
 		"build_command(%s)" % side_id
 	)
@@ -282,7 +285,7 @@ func _run_pending_turn(controller, policy_driver, allow_policy_progression: bool
 			return _error_result("missing pending command for side %s" % side_id)
 		commands.append(controller.pending_commands.get(side_id, null))
 	var from_index: int = controller._event_log_buffer.event_log_cursor
-	var run_turn_unwrap: Dictionary = _unwrap_ok(
+	var run_turn_unwrap: Dictionary = _envelope.unwrap_ok(
 		controller.manager.run_turn(controller.session_id, commands),
 		"run_turn(%s)" % controller.session_id
 	)
@@ -319,52 +322,5 @@ func _run_pending_turn(controller, policy_driver, allow_policy_progression: bool
 		}
 	}
 
-func _build_summary_context(controller) -> Dictionary:
-	return {
-		"matchup_id": str(controller.launch_config.get("matchup_id", BattleSandboxLaunchConfigScript.DEFAULT_MATCHUP_ID)).strip_edges(),
-		"battle_seed": int(controller.launch_config.get("battle_seed", BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)),
-		"p1_control_mode": str(controller.side_control_modes.get("P1", BattleSandboxLaunchConfigScript.CONTROL_MODE_MANUAL)).strip_edges(),
-		"p2_control_mode": str(controller.side_control_modes.get("P2", BattleSandboxLaunchConfigScript.CONTROL_MODE_MANUAL)).strip_edges(),
-		"command_steps": int(controller.command_steps),
-	}
-
-func _unwrap_sample_factory_result(controller, result: Dictionary, label: String):
-	if bool(result.get("ok", false)):
-		return result.get("data", null)
-	controller.error_message = "Battle sandbox failed to build %s: %s" % [
-		label,
-		str(result.get("error_message", "unknown error")),
-	]
-	return null
-
-func _unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:
-	if envelope == null:
-		return _error_result("%s returned null envelope" % label)
-	var required_keys := ["ok", "data", "error_code", "error_message"]
-	for key in required_keys:
-		if not envelope.has(key):
-			return _error_result("%s missing envelope key: %s" % [label, key])
-	if bool(envelope.get("ok", false)):
-		if envelope.get("error_code", null) != null or envelope.get("error_message", null) != null:
-			return _error_result("%s success envelope should not expose error payload" % label)
-		return {"ok": true, "data": envelope.get("data", null)}
-	return _error_result("%s failed: %s (%s)" % [
-		label,
-		str(envelope.get("error_message", "")),
-		str(envelope.get("error_code", "")),
-	])
-
-func _read_property(value, property_name: String, default_value = null):
-	if value == null or property_name.is_empty():
-		return default_value
-	if value is Dictionary:
-		return value.get(property_name, default_value)
-	if typeof(value) != TYPE_OBJECT:
-		return default_value
-	for property_info in value.get_property_list():
-		if str(property_info.get("name", "")) == property_name:
-			return value.get(property_name)
-	return default_value
-
 func _error_result(message: String) -> Dictionary:
-	return {"ok": false, "error": message}
+	return _envelope.error_result(message)
