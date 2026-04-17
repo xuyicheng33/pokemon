@@ -16,5 +16,12 @@ jobs:
           version: "4.6.1"
           use-dotnet: "false"
           include-templates: "false"
+      - name: Cache Godot Import
+        uses: actions/cache@v4
+        with:
+          path: .godot/imported
+          key: godot-import-${{ runner.os }}-${{ hashFiles('content/**/*.tres', 'project.godot') }}
+          restore-keys: |
+            godot-import-${{ runner.os }}-
       - name: Run Test Gate
         run: bash tests/run_with_gate.sh
