@@ -228,6 +228,7 @@ tests/run_with_gate.sh
 - `RuleModPayload` 支持 `dynamic_value_formula` 运行时求值
 - `UnitDefinition` 包含 MP、奥义点、候选技能池完整字段
 - `SampleBattleFactory` 拆为 owner + setup/override/snapshot helper，统一走结果式接口
+- `SampleBattleFactory.content_snapshot_paths_result()` 固定覆盖 `content/battle_formats / combat_types / units / skills / passive_items / effects / fields / passive_skills / samples`
 - 共享 payload 放 `content/shared/`，不参与顶层 snapshot 注册
 
 完整 Schema 细节见：`docs/design/battle_content_schema.md`。
@@ -270,12 +271,12 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-13）
+## 10. 当前代码规模（2026-04-18）
 
-- `src/**/*.gd`：`21436` 行
-- `test/**/*.gd`：`21520` 行
+- `src/**/*.gd`：`21455` 行
+- `test/**/*.gd`：`21526` 行
 - `tests/**/*.gd`：`4355` 行
-- GDScript 合计：`47311` 行
+- GDScript 合计：`47336` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 
