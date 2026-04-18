@@ -9,7 +9,6 @@ const DamagePayloadScript := preload("res://src/battle_core/content/damage_paylo
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
-
 func validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	mutate.call(content_index)

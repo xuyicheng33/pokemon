@@ -4,7 +4,9 @@ class_name ReplayRunnerOutputHelper
 const ReplayOutputScript := preload("res://src/battle_core/contracts/replay_output.gd")
 const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
-const EventTypesScript := preload("res://src/shared/event_types.gd")
+const ReplayRunnerOutputValidatorScript := preload("res://src/battle_core/logging/replay_runner_output_validator.gd")
+
+var _validator = ReplayRunnerOutputValidatorScript.new()
 
 func build_replay_output(event_log: Array, battle_state, logger_error_state: Dictionary = {}, turn_timeline: Array = []):
 	return build_replay_output_result(event_log, battle_state, logger_error_state, turn_timeline).get("replay_output", null)
@@ -56,21 +58,21 @@ func build_replay_output_result(
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay did not complete"
 		)
-	if not _validate_log_schema_v3(replay_output.event_log):
+	if not _validator.validate_log_schema_v3(replay_output.event_log):
 		replay_output.succeeded = false
 		return _error_result(
 			replay_output,
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay log schema validation failed"
 		)
-	if not _validate_battle_result(battle_state.battle_result):
+	if not _validator.validate_battle_result(battle_state.battle_result):
 		replay_output.succeeded = false
 		return _error_result(
 			replay_output,
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay returned invalid battle_result"
 		)
-	if not _validate_turn_timeline(replay_output.turn_timeline, replay_output.event_log):
+	if not _validator.validate_turn_timeline(replay_output.turn_timeline, replay_output.event_log):
 		replay_output.succeeded = false
 		return _error_result(
 			replay_output,
@@ -109,115 +111,6 @@ func _compute_state_hash(battle_state) -> String:
 	hashing_context.start(HashingContext.HASH_SHA256)
 	hashing_context.update(json_text.to_utf8_buffer())
 	return hashing_context.finish().hex_encode()
-
-func _validate_log_schema_v3(event_log: Array) -> bool:
-	var battle_header_count: int = 0
-	for log_event in event_log:
-		if log_event == null:
-			return false
-		if int(log_event.log_schema_version) != 3:
-			return false
-		if String(log_event.chain_origin).is_empty():
-			return false
-		if String(log_event.chain_origin) != "action":
-			if String(log_event.command_type).is_empty():
-				return false
-			if not String(log_event.command_type).begins_with("system:"):
-				return false
-			if String(log_event.command_source) != "system":
-				return false
-		if String(log_event.event_type).is_empty():
-			return false
-		if String(log_event.event_chain_id).is_empty():
-			return false
-		if int(log_event.event_step_id) <= 0:
-			return false
-		if String(log_event.event_type) == EventTypesScript.SYSTEM_BATTLE_HEADER:
-			battle_header_count += 1
-			if String(log_event.command_type) != EventTypesScript.SYSTEM_BATTLE_HEADER:
-				return false
-			if not _validate_header_snapshot(log_event.header_snapshot):
-				return false
-		if String(log_event.event_type).begins_with("effect:"):
-			if log_event.trigger_name == null:
-				return false
-			if log_event.cause_event_id == null or String(log_event.cause_event_id).is_empty():
-				return false
-			if String(log_event.cause_event_id) == "%s:%d" % [log_event.event_chain_id, log_event.event_step_id]:
-				return false
-	return battle_header_count == 1
-
-func _validate_header_snapshot(header_snapshot) -> bool:
-	if typeof(header_snapshot) != TYPE_DICTIONARY:
-		return false
-	var required_fields: Array[String] = [
-		"visibility_mode",
-		"prebattle_public_teams",
-		"initial_active_public_ids_by_side",
-		"initial_field",
-	]
-	for field_name in required_fields:
-		if not header_snapshot.has(field_name):
-			return false
-	return not _contains_private_instance_id_key(header_snapshot)
-
-func _contains_private_instance_id_key(value) -> bool:
-	if typeof(value) == TYPE_DICTIONARY:
-		for key in value.keys():
-			var key_text := String(key)
-			if key_text == "unit_instance_id" or key_text.ends_with("_instance_id"):
-				return true
-			if _contains_private_instance_id_key(value[key]):
-				return true
-	elif typeof(value) == TYPE_ARRAY:
-		for element in value:
-			if _contains_private_instance_id_key(element):
-				return true
-	return false
-
-func _validate_battle_result(battle_result) -> bool:
-	if battle_result == null:
-		return false
-	if not battle_result.finished:
-		return false
-	if String(battle_result.result_type).is_empty():
-		return false
-	if String(battle_result.reason).is_empty():
-		return false
-	if battle_result.result_type == "win":
-		return battle_result.winner_side_id != null
-	if battle_result.result_type == "draw" or battle_result.result_type == "no_winner":
-		return battle_result.winner_side_id == null
-	return false
-
-func _validate_turn_timeline(turn_timeline: Array, event_log: Array) -> bool:
-	if turn_timeline.is_empty():
-		return false
-	var expected_from: int = 0
-	for frame_index in range(turn_timeline.size()):
-		var raw_frame = turn_timeline[frame_index]
-		if not (raw_frame is Dictionary):
-			return false
-		var frame: Dictionary = raw_frame
-		if not (frame.get("public_snapshot", null) is Dictionary):
-			return false
-		var event_from := int(frame.get("event_from", -1))
-		var event_to := int(frame.get("event_to", -1))
-		if event_from < 0 or event_to < event_from or event_to > event_log.size():
-			return false
-		if frame_index == 0:
-			if int(frame.get("turn_index", -1)) != 0:
-				return false
-			if event_from != 0 or event_to != 0:
-				return false
-		elif int(frame.get("turn_index", 0)) <= 0:
-			return false
-		if event_from != expected_from:
-			return false
-		expected_from = event_to
-		if typeof(frame.get("battle_finished", null)) != TYPE_BOOL:
-			return false
-	return expected_from == event_log.size()
 
 func _error_result(replay_output, error_code: String, error_message: String) -> Dictionary:
 	if replay_output != null:
