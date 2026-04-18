@@ -10,6 +10,7 @@ require_command python3 "architecture size gates"
 
 python3 tests/gates/architecture_composition_consistency_gate.py
 python3 tests/gates/architecture_wiring_graph_gate.py
+python3 tests/gates/architecture_gdscript_style_gate.py
 
 if rg -n "res://src/battle_core/runtime/" src/adapters src/composition scenes >/tmp/runtime_imports.out 2>/dev/null; then
   echo "ARCH_GATE_FAILED: outer layers must not import battle_core/runtime/*" >&2
@@ -149,18 +150,33 @@ if warning_review:
     for rel, line_count in warning_review:
         print(f"  - {rel} ({line_count} lines)")
 
-for path in (root / "tests").rglob("*.gd"):
-    rel = str(path.relative_to(root))
-    line_count = len(path.read_text(encoding="utf-8").splitlines())
-    if rel.startswith("tests/support/"):
-        if 220 <= line_count <= 250:
-            print(f"ARCH_GATE_WARNING: tests support file approaching 250-line split threshold: {rel} ({line_count} lines)")
-        if line_count > 250:
-            print(f"ARCH_GATE_FAILED: tests support file exceeds 250 lines and must be split: {rel} ({line_count})", file=sys.stderr)
+test_roots = [root / "test", root / "tests"]
+shared_support_patterns = (
+    "test/support/",
+    "tests/support/",
+)
+
+def is_shared_support(rel: str) -> bool:
+    if rel.startswith(shared_support_patterns):
+        return True
+    filename = Path(rel).name
+    return filename.startswith("shared") or filename.endswith("_shared.gd")
+
+for test_root in test_roots:
+    if not test_root.exists():
+        continue
+    for path in test_root.rglob("*.gd"):
+        rel = str(path.relative_to(root))
+        line_count = len(path.read_text(encoding="utf-8").splitlines())
+        if is_shared_support(rel):
+            if 220 <= line_count <= 250:
+                print(f"ARCH_GATE_WARNING: tests support file approaching 250-line split threshold: {rel} ({line_count} lines)")
+            if line_count > 250:
+                print(f"ARCH_GATE_FAILED: tests support file exceeds 250 lines and must be split: {rel} ({line_count})", file=sys.stderr)
+                sys.exit(1)
+        if line_count > 600:
+            print(f"ARCH_GATE_FAILED: test file exceeds 600 lines: {rel} ({line_count})", file=sys.stderr)
             sys.exit(1)
-    if line_count > 600:
-        print(f"ARCH_GATE_FAILED: test file exceeds 600 lines: {rel} ({line_count})", file=sys.stderr)
-        sys.exit(1)
 
 for path in sorted((root / "tests/gates").glob("*.py")):
     rel = str(path.relative_to(root))

@@ -22,10 +22,14 @@
 - 哪些产物是生成物：
   - `config/formal_character_manifest.json`
   - `config/formal_character_capability_catalog.json`
+- 哪些文件必须纳入版本管理：
+  - 所有有效 `.gd.uid`
 - 哪些 gate 主要校验结构：
   - `repo_consistency_formal_character_gate.py`
   - `architecture_composition_consistency_gate.py`
   - `architecture_wiring_graph_gate.py`
+  - `repo_consistency_uid_gate.py`
+  - `architecture_gdscript_style_gate.py`
 - 哪些 gate 不再负责措辞镜像：
   - docs gate 不再要求 `README / tests README / design` 三处重复维护同一 formal 字段正文
 
@@ -80,6 +84,7 @@ headless 复查入口固定为：
 3. 复查 BattleSandbox boot：运行 `bash tests/check_boot_smoke.sh`
 4. 复查 BattleSandbox 主路径：运行 `bash tests/check_sandbox_smoke_matrix.sh`
 5. 阶段收口：`bash tests/run_with_gate.sh`
+6. 需要清本地旧报告或 scratch 目录时：运行 `bash tests/cleanup_local_artifacts.sh`
 
 当前总 gate 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix`。新增日常 smoke 或 contract 时，先写到 `docs/design/`，再进 gate，再接到总入口。
 
@@ -99,6 +104,14 @@ CI 当前固定拆成 3 个并行 job：
 - `replay`：replay input / summary / determinism / 浏览回归
 
 继续沿用“顶层 wrapper + 子目录断言本体”的组织方式；对外稳定引用的顶层 wrapper 文件名不改。
+
+本地产物与仓库卫生固定约束：
+
+- `tests/run_gdunit.sh` 的默认 HTML/JUnit 输出目录继续只认 `reports/gdunit`
+- `reports/gdunit_compose`、`reports/gdunit_gojo_smoke`、`reports/gdunit_manual`、`reports/gdunit_smoke` 视为废弃本地产物，不再作为任何现行入口
+- `tmp/`、`.tmp/` 只允许作为本地临时目录存在，不保留到仓库
+- `.gd.uid` 不再忽略；有效 `.gd.uid` 必须随同对应 `.gd` 一起提交，孤儿 `.gd.uid` 必须删除
+- GDScript 前导缩进固定只允许 tab，不接受 space-only 或 tab/space 混用
 
 ## 5. formal 产物同步入口
 

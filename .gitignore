@@ -2,7 +2,6 @@
 .godot/
 /android/
 /reports/
-*.uid
 
 # Python gate cache
 __pycache__/

@@ -112,6 +112,7 @@ Composition 补充约束：
 - `src/composition/*.gd` 同样纳入 > `250` 行复核范围（组合根虽然不在 `battle_core` 子目录，但属于核心装配边界）。
 - orchestrator / coordinator > `350` 行：默认拆分。
 - 单测试文件 > `600` 行：默认按子域拆分。
+- `test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd` 视为 support helper，落在 `220..250` 行时输出预警，> `250` 行必须拆分。
 
 若超阈值仍不拆，必须同时满足：
 
@@ -166,4 +167,6 @@ Composition 补充约束：
 - `src/adapters` 与 `scenes` 不得 import `battle_core` 内部服务实现；允许范围固定为 `facades/*`、`contracts/*` 与 `commands/command_types.gd`。
 - `src/adapters` 与 `scenes` 若 import `battle_core/commands/*`，只允许 `commands/command_types.gd`，其他命令实现一律禁止。
 - 大文件闸门必须覆盖 `src/battle_core` 与 `src/composition`；当前策略不保留 allowlist，出现超阈值文件就应直接拆分并重新过 gate。
+- GDScript 前导缩进固定只允许 tab；`src/`、`test/`、`tests/`、`scenes/` 下禁止 space-only 与 tab/space 混用缩进。
+- 测试体量闸门必须同时覆盖 `test/` 与 `tests/`，不能只扫其中一棵目录。
 - runtime wiring 图必须额外经过 `tests/gates/architecture_wiring_graph_gate.py` 校验，并保持严格无环。

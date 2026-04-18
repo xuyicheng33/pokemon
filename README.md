@@ -70,6 +70,7 @@ tests/
   run_gdunit.sh         # gdUnit4 CLI 入口（支持单 suite/单目录过滤与报告输出）
   run_with_gate.sh      # 测试闸门（断言 + 引擎错误 + 架构 + 仓库一致性）
   check_repo_consistency.sh # README/文档/关键回归一致性闸门聚合入口
+  cleanup_local_artifacts.sh # 清理废弃本地报告目录与 scratch 目录
 ```
 
 ## 4. 架构分层（核心）
@@ -165,6 +166,7 @@ tests/run_with_gate.sh
   - `bash tests/check_boot_smoke.sh`
 - 业务断言全部通过（`tests/run_gdunit.sh` -> `gdUnit4`，默认扫描 `res://test`）
 - 产出可消费测试报告（`JUnit XML + HTML`，默认落在 `reports/gdunit`）
+- 废弃本地产物可通过 `bash tests/cleanup_local_artifacts.sh` 清理；当前只认 `reports/gdunit` 为有效报告目录
 - headless 主流程启动 smoke 通过（`bash tests/check_boot_smoke.sh`），且不得出现 `BATTLE_SANDBOX_FAILED:` 应用层失败标记
 - 无引擎级 warning（`WARNING:`）
 - suite 可达性检查通过（`tests/check_suite_reachability.sh`）

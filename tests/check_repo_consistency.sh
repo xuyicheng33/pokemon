@@ -7,8 +7,10 @@ cd "$ROOT_DIR"
 
 require_command python3 "repository consistency gate"
 require_command godot "exporting formal delivery registry view for repository consistency gate"
+require_command git "repository consistency uid tracking gate"
 
 for gate_path in \
+  tests/gates/repo_consistency_uid_gate.py \
   tests/gates/repo_consistency_surface_gate.py \
   tests/gates/repo_consistency_formal_character_gate.py \
   tests/gates/repo_consistency_docs_gate.py
@@ -16,4 +18,4 @@ do
   python3 "$gate_path"
 done
 
-echo "REPO_CONSISTENCY_PASSED: surface wiring, formal registry, and contract docs are aligned"
+echo "REPO_CONSISTENCY_PASSED: uid tracking, surface wiring, formal registry, and contract docs are aligned"

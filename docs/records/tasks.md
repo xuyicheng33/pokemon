@@ -36,6 +36,39 @@
   - 已强力合并 `SampleBattleFactory` 内部 helper、清理旧路径针脚、抽出 CI Godot setup composite action，并拆分厚 suite
   - 已通过 `bash tests/check_architecture_constraints.sh`、`bash tests/check_repo_consistency.sh`、`bash tests/check_sandbox_smoke_matrix.sh`、`bash tests/run_with_gate.sh`
 
+## 当前阶段：全量质量收口与仓库卫生修复（2026-04-19）
+
+- 状态：进行中
+- 目标：
+  - 一次性收掉 2026-04-19 审阅确认的问题，补齐 `.gd.uid`、缩进、结果式、battle core 结构脏点、测试体量盲区和本地仓库噪声的统一规则与实现。
+- 范围：
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+  - `docs/records/review_2026-04-19_quality_sweep_disposition.md`
+  - `.gitignore`
+  - `docs/design/current_development_workflow.md`
+  - `docs/design/battle_core_architecture_constraints.md`
+  - `README.md`
+  - `tests/README.md`
+  - `tests/check_architecture_constraints.sh`
+  - `tests/check_repo_consistency.sh`
+  - `tests/gates/*` 中本轮新增或调整的 gate
+  - `tests/cleanup_local_artifacts.sh`
+  - battle core / adapters / composition / shared formal manifest / sample factory / sandbox 相关源码
+  - `test/` 与 `tests/` 中本轮拆分或更新的 suite / helper
+- 验收标准：
+  - 有效 `.gd.uid` 全部纳入版本管理，孤儿 `.gd.uid` 清零，repo consistency gate 会直接拦截回退
+  - `src/`、`test/`、`tests/`、`scenes/` 的 GDScript 前导缩进统一为 tab，style gate 会直接拦截 space-only 与 mixed
+  - 外层结果式统一到 `ok / data / error_code / error_message`
+  - `BattleState` 查询逻辑不再保留假缓存
+  - `COMPOSE_DEPS` 只保留外部注入依赖，battle core 结构性脏点完成收口
+  - warning 档 owner 和超厚 shared helper 完成拆分，离开当前预警线
+  - 本地清理入口、开发流程文档与审查处置记录同步补齐
+  - `bash tests/check_architecture_constraints.sh`、`bash tests/check_repo_consistency.sh`、`bash tests/run_with_gate.sh` 通过
+- 当前基线：
+  - `2026-04-19` 已确认 `bash tests/check_architecture_constraints.sh` 通过，当前预警仍包含 `turn_loop_controller`、`turn_start_phase_service`、`replay_runner_output_helper` 和两份 `tests/support/*` helper
+  - `2026-04-19` 已确认 `bash tests/check_repo_consistency.sh` 通过，当前 `.gd.uid` 尚未纳入版本管理，工作区内仍存在 13 个孤儿 `.gd.uid`
+
 ## 当前阶段：原型减负与工程收口（2026-04-18）
 
 - 状态：已完成

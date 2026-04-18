@@ -16,6 +16,7 @@
 - `tests/check_architecture_constraints.sh`：分层与大文件架构闸门
 - `tests/check_repo_consistency.sh`：仓库一致性闸门总入口
 - `tests/check_sandbox_smoke_matrix.sh`：`BattleSandbox` 研发主路径 smoke matrix
+- `tests/cleanup_local_artifacts.sh`：清理废弃本地报告目录与 scratch 目录；保留 `reports/gdunit`
 
 ## 2. 目录职责
 
@@ -39,6 +40,7 @@
 - `replay`：replay input / summary / determinism / 浏览回归
 
 继续沿用“顶层 wrapper + 子目录断言本体”的组织方式；被 gate、manifest 或文档引用的顶层 wrapper 文件名不改。
+GDScript 前导缩进固定只允许 tab；`test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd` 当前统一纳入 support helper 体量门禁。
 
 ## 4. formal 单源约定
 
@@ -63,5 +65,7 @@ formal 交付细节统一看：
 - BattleSandbox headless 整局复查：`godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 - demo replay headless 复查：`DEMO_PROFILE=legacy godot --headless --path . --script tests/helpers/demo_replay_full_run.gd`
 - 阶段总验收：`bash tests/run_with_gate.sh`
+- 清理本地废弃报告与 scratch：`bash tests/cleanup_local_artifacts.sh`
 
 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback。
+.gd.uid 当前也纳入仓库治理：有效 `.gd.uid` 必须随同对应 `.gd` 提交，孤儿 `.gd.uid` 会被 repo consistency gate 直接拦下。
