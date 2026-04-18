@@ -1,6 +1,81 @@
 extends RefCounted
 class_name BattleInitializer
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "id_factory",
+		"source": "id_factory",
+		"nested": true,
+	},
+	{
+		"field": "rng_service",
+		"source": "rng_service",
+		"nested": true,
+	},
+	{
+		"field": "faint_resolver",
+		"source": "faint_resolver",
+		"nested": true,
+	},
+	{
+		"field": "trigger_batch_runner",
+		"source": "trigger_batch_runner",
+		"nested": true,
+	},
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+	{
+		"field": "combat_type_service",
+		"source": "combat_type_service",
+		"nested": true,
+	},
+	{
+		"field": "mp_service",
+		"source": "mp_service",
+		"nested": true,
+	},
+	{
+		"field": "rule_mod_service",
+		"source": "rule_mod_service",
+		"nested": true,
+	},
+	{
+		"field": "battle_result_service",
+		"source": "battle_result_service",
+		"nested": true,
+	},
+	{
+		"field": "field_lifecycle_service",
+		"source": "turn_field_lifecycle_service",
+		"nested": true,
+	},
+	{
+		"field": "public_id_allocator",
+		"source": "",
+		"nested": false,
+	},
+	{
+		"field": "_state_builder",
+		"source": "",
+		"nested": false,
+	},
+	{
+		"field": "_phase_service",
+		"source": "",
+		"nested": false,
+	},
+]
+
 const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
@@ -30,6 +105,9 @@ var _phase_service = BattleInitializerPhaseServiceScript.new()
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
+func resolve_missing_dependency() -> String:
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 func error_state() -> Dictionary:
     return {
         "code": last_error_code,
@@ -39,7 +117,7 @@ func error_state() -> Dictionary:
 func initialize_battle(battle_state, content_index, battle_setup) -> bool:
     last_error_code = null
     last_error_message = ""
-    var missing_dependency := _resolve_local_missing_dependency()
+    var missing_dependency := resolve_missing_dependency()
     if not missing_dependency.is_empty():
         return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer missing dependency: %s" % missing_dependency)
     _sync_phase_service()
@@ -146,37 +224,6 @@ func _sync_phase_service() -> void:
     _phase_service.rule_mod_service = rule_mod_service
     _phase_service.battle_result_service = battle_result_service
     _phase_service.field_lifecycle_service = field_lifecycle_service
-
-func _resolve_local_missing_dependency() -> String:
-    if id_factory == null:
-        return "id_factory"
-    if rng_service == null:
-        return "rng_service"
-    if faint_resolver == null:
-        return "faint_resolver"
-    if trigger_batch_runner == null:
-        return "trigger_batch_runner"
-    if battle_logger == null:
-        return "battle_logger"
-    if log_event_builder == null:
-        return "log_event_builder"
-    if combat_type_service == null:
-        return "combat_type_service"
-    if mp_service == null:
-        return "mp_service"
-    if rule_mod_service == null:
-        return "rule_mod_service"
-    if battle_result_service == null:
-        return "battle_result_service"
-    if field_lifecycle_service == null:
-        return "field_lifecycle_service"
-    if public_id_allocator == null:
-        return "public_id_allocator"
-    if _state_builder == null:
-        return "state_builder"
-    if _phase_service == null:
-        return "phase_service"
-    return ""
 
 func _fail(error_code: String, message: String) -> bool:
     last_error_code = error_code

@@ -1,6 +1,16 @@
 extends RefCounted
 class_name FaintKillerAttributionService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "trigger_dispatcher",
+		"source": "trigger_dispatcher",
+		"nested": true,
+	},
+]
+
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
@@ -9,9 +19,8 @@ const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 var trigger_dispatcher
 
 func resolve_missing_dependency() -> String:
-    if trigger_dispatcher == null:
-        return "trigger_dispatcher"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func record_fatal_damage(
     battle_state,

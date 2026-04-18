@@ -1,6 +1,49 @@
 extends RefCounted
 class_name TurnLoopController
 
+const COMPOSE_DEPS := [
+	{
+		"field": "action_queue_builder",
+		"source": "action_queue_builder",
+		"nested": true,
+	},
+	{
+		"field": "action_executor",
+		"source": "action_executor",
+		"nested": true,
+	},
+	{
+		"field": "faint_resolver",
+		"source": "faint_resolver",
+		"nested": true,
+	},
+	{
+		"field": "turn_resolution_service",
+		"source": "turn_resolution_service",
+		"nested": true,
+	},
+	{
+		"field": "battle_result_service",
+		"source": "battle_result_service",
+		"nested": true,
+	},
+	{
+		"field": "runtime_guard_service",
+		"source": "runtime_guard_service",
+		"nested": true,
+	},
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+]
+
 const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -180,13 +223,7 @@ func _validate_runtime_or_terminate(battle_state, content_index = null) -> bool:
     return true
 
 func _validate_dependencies_or_terminate(battle_state) -> bool:
-    var missing_dependency: String = str(runtime_guard_service.resolve_missing_dependency({
-        "action_queue_builder": action_queue_builder,
-        "action_executor": action_executor,
-        "faint_resolver": faint_resolver,
-        "turn_resolution_service": turn_resolution_service,
-        "battle_result_service": battle_result_service,
-    }))
+    var missing_dependency: String = "runtime_guard_service" if runtime_guard_service == null else str(runtime_guard_service.resolve_missing_dependency(self))
     if missing_dependency.is_empty():
         return false
     if battle_result_service != null:

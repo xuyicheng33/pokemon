@@ -1,6 +1,21 @@
 extends RefCounted
 class_name ActionLogService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+]
+
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
@@ -9,11 +24,8 @@ var battle_logger
 var log_event_builder
 
 func resolve_missing_dependency() -> String:
-    if battle_logger == null:
-        return "battle_logger"
-    if log_event_builder == null:
-        return "log_event_builder"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func log_action_cancelled_pre_start(queued_action, battle_state, command) -> void:
     battle_logger.append_event(log_event_builder.build_event(

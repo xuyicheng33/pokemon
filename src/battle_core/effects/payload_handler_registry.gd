@@ -1,20 +1,63 @@
 extends RefCounted
 class_name PayloadHandlerRegistry
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "payload_damage_handler",
+		"source": "payload_damage_handler",
+		"nested": true,
+	},
+	{
+		"field": "payload_heal_handler",
+		"source": "payload_heal_handler",
+		"nested": true,
+	},
+	{
+		"field": "payload_resource_mod_handler",
+		"source": "payload_resource_mod_handler",
+		"nested": true,
+	},
+	{
+		"field": "payload_stat_mod_handler",
+		"source": "payload_stat_mod_handler",
+		"nested": true,
+	},
+	{
+		"field": "payload_apply_field_handler",
+		"source": "payload_apply_field_handler",
+		"nested": true,
+	},
+	{
+		"field": "payload_apply_effect_handler",
+		"source": "payload_apply_effect_handler",
+		"nested": true,
+	},
+	{
+		"field": "payload_remove_effect_handler",
+		"source": "payload_remove_effect_handler",
+		"nested": true,
+	},
+	{
+		"field": "payload_rule_mod_handler",
+		"source": "payload_rule_mod_handler",
+		"nested": true,
+	},
+	{
+		"field": "payload_forced_replace_handler",
+		"source": "payload_forced_replace_handler",
+		"nested": true,
+	},
+]
+
 const PayloadContractRegistryScript := preload("res://src/battle_core/content/payload_contract_registry.gd")
 
 var _handlers: Dictionary = {}
 
 func resolve_missing_dependency() -> String:
-	for slot_name in registered_handler_slots():
-		var handler = handler_by_slot(String(slot_name))
-		if handler == null:
-			return slot_name
-		if handler.has_method("resolve_missing_dependency"):
-			var missing_dependency := str(handler.resolve_missing_dependency())
-			if not missing_dependency.is_empty():
-				return "%s.%s" % [slot_name, missing_dependency]
-	return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func handler_for(payload) -> Variant:
 	if payload == null:

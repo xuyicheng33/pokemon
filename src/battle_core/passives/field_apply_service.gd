@@ -1,6 +1,31 @@
 extends RefCounted
 class_name FieldApplyService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "field_service",
+		"source": "field_service",
+		"nested": true,
+	},
+	{
+		"field": "domain_clash_orchestrator",
+		"source": "domain_clash_orchestrator",
+		"nested": true,
+	},
+	{
+		"field": "field_apply_log_service",
+		"source": "field_apply_log_service",
+		"nested": true,
+	},
+	{
+		"field": "field_apply_effect_runner",
+		"source": "field_apply_effect_runner",
+		"nested": true,
+	},
+]
+
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var field_service
@@ -9,28 +34,8 @@ var field_apply_log_service
 var field_apply_effect_runner
 
 func resolve_missing_dependency() -> String:
-	if field_service == null:
-		return "field_service"
-	if field_service.has_method("resolve_missing_dependency"):
-		var field_missing := str(field_service.resolve_missing_dependency())
-		if not field_missing.is_empty():
-			return "field_service.%s" % field_missing
-	if domain_clash_orchestrator == null:
-		return "domain_clash_orchestrator"
-	var clash_missing := str(domain_clash_orchestrator.resolve_missing_dependency())
-	if not clash_missing.is_empty():
-		return "domain_clash_orchestrator.%s" % clash_missing
-	if field_apply_log_service == null:
-		return "field_apply_log_service"
-	var log_missing := str(field_apply_log_service.resolve_missing_dependency())
-	if not log_missing.is_empty():
-		return "field_apply_log_service.%s" % log_missing
-	if field_apply_effect_runner == null:
-		return "field_apply_effect_runner"
-	var effect_missing := str(field_apply_effect_runner.resolve_missing_dependency())
-	if not effect_missing.is_empty():
-		return "field_apply_effect_runner.%s" % effect_missing
-	return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func apply_field(
 	effect_definition,

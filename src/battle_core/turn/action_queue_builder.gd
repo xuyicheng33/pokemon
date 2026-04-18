@@ -1,6 +1,31 @@
 extends RefCounted
 class_name ActionQueueBuilder
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "id_factory",
+		"source": "id_factory",
+		"nested": true,
+	},
+	{
+		"field": "rng_service",
+		"source": "rng_service",
+		"nested": true,
+	},
+	{
+		"field": "stat_calculator",
+		"source": "stat_calculator",
+		"nested": true,
+	},
+	{
+		"field": "domain_clash_orchestrator",
+		"source": "domain_clash_orchestrator",
+		"nested": true,
+	},
+]
+
 const QueuedActionScript := preload("res://src/battle_core/contracts/queued_action.gd")
 const TargetSnapshotScript := preload("res://src/battle_core/contracts/target_snapshot.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
@@ -17,18 +42,8 @@ func invalid_battle_code() -> Variant:
     return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-    if id_factory == null:
-        return "id_factory"
-    if rng_service == null:
-        return "rng_service"
-    if stat_calculator == null:
-        return "stat_calculator"
-    if domain_clash_orchestrator == null:
-        return "domain_clash_orchestrator"
-    var domain_missing := str(domain_clash_orchestrator.resolve_missing_dependency())
-    if not domain_missing.is_empty():
-        return "domain_clash_orchestrator.%s" % domain_missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func build_queue(commands: Array, battle_state, content_index) -> Array:
     last_invalid_battle_code = null

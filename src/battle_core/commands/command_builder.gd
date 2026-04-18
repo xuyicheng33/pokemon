@@ -1,6 +1,16 @@
 extends RefCounted
 class_name CommandBuilder
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "id_factory",
+		"source": "id_factory",
+		"nested": true,
+	},
+]
+
 const CommandScript := preload("res://src/battle_core/contracts/command.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
@@ -15,9 +25,8 @@ func error_state() -> Dictionary:
     }
 
 func resolve_missing_dependency() -> String:
-    if id_factory == null:
-        return "id_factory"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func build_command(input_payload: Dictionary) -> Variant:
     last_error_code = null

@@ -1,6 +1,51 @@
 extends RefCounted
 class_name ActionCastDirectDamagePipeline
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "power_bonus_resolver",
+		"source": "power_bonus_resolver",
+		"nested": true,
+	},
+	{
+		"field": "damage_service",
+		"source": "damage_service",
+		"nested": true,
+	},
+	{
+		"field": "combat_type_service",
+		"source": "combat_type_service",
+		"nested": true,
+	},
+	{
+		"field": "stat_calculator",
+		"source": "stat_calculator",
+		"nested": true,
+	},
+	{
+		"field": "rule_mod_service",
+		"source": "rule_mod_service",
+		"nested": true,
+	},
+	{
+		"field": "faint_killer_attribution_service",
+		"source": "faint_killer_attribution_service",
+		"nested": true,
+	},
+	{
+		"field": "action_log_service",
+		"source": "action_log_service",
+		"nested": true,
+	},
+	{
+		"field": "trigger_batch_runner",
+		"source": "trigger_batch_runner",
+		"nested": true,
+	},
+]
+
 const ActionCastExecuteContractHelperScript := preload("res://src/battle_core/actions/action_cast_execute_contract_helper.gd")
 const ActionDamageSegmentResolutionServiceScript := preload("res://src/battle_core/actions/action_damage_segment_resolution_service.gd")
 const ActionDamageLogServiceScript := preload("res://src/battle_core/actions/action_damage_log_service.gd")
@@ -20,23 +65,8 @@ var _damage_log_service = ActionDamageLogServiceScript.new()
 var _segment_trigger_context_service = ActionDamageSegmentTriggerContextServiceScript.new()
 
 func resolve_missing_dependency() -> String:
-	if damage_service == null:
-		return "damage_service"
-	if combat_type_service == null:
-		return "combat_type_service"
-	if stat_calculator == null:
-		return "stat_calculator"
-	if rule_mod_service == null:
-		return "rule_mod_service"
-	if faint_killer_attribution_service == null:
-		return "faint_killer_attribution_service"
-	if action_log_service == null:
-		return "action_log_service"
-	if power_bonus_resolver == null:
-		return "power_bonus_resolver"
-	if trigger_batch_runner == null:
-		return "trigger_batch_runner"
-	return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, content_index, cause_event_id: String, source_kind_order_active_skill: int) -> Dictionary:
 	if target == null:

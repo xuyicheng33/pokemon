@@ -1,6 +1,31 @@
 extends RefCounted
 class_name BattleResultService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "id_factory",
+		"source": "id_factory",
+		"nested": true,
+	},
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+	{
+		"field": "turn_limit_scoring_service",
+		"source": "turn_limit_scoring_service",
+		"nested": true,
+	},
+]
+
 const ChainBuilderScript := preload("res://src/battle_core/turn/battle_result_service_chain_builder.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const OutcomeResolverScript := preload("res://src/battle_core/turn/battle_result_service_outcome_resolver.gd")
@@ -14,15 +39,8 @@ var _chain_builder = ChainBuilderScript.new()
 var _outcome_resolver = OutcomeResolverScript.new()
 
 func resolve_missing_dependency() -> String:
-    if id_factory == null:
-        return "id_factory"
-    if battle_logger == null:
-        return "battle_logger"
-    if log_event_builder == null:
-        return "log_event_builder"
-    if turn_limit_scoring_service == null:
-        return "turn_limit_scoring_service"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func build_system_chain(command_type: String) -> Variant:
     return _chain_builder.build_system_chain(id_factory, command_type)

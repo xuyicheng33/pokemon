@@ -1,6 +1,46 @@
 extends RefCounted
 class_name TriggerBatchRunner
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "passive_skill_service",
+		"source": "passive_skill_service",
+		"nested": true,
+	},
+	{
+		"field": "passive_item_service",
+		"source": "passive_item_service",
+		"nested": true,
+	},
+	{
+		"field": "field_service",
+		"source": "field_service",
+		"nested": true,
+	},
+	{
+		"field": "effect_instance_dispatcher",
+		"source": "effect_instance_dispatcher",
+		"nested": true,
+	},
+	{
+		"field": "effect_queue_service",
+		"source": "effect_queue_service",
+		"nested": true,
+	},
+	{
+		"field": "payload_executor",
+		"source": "payload_executor",
+		"nested": true,
+	},
+	{
+		"field": "rng_service",
+		"source": "rng_service",
+		"nested": true,
+	},
+]
+
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var passive_skill_service
@@ -118,26 +158,4 @@ func _read_invalid_battle_code(source_service) -> Variant:
     return source_service.invalid_battle_code()
 
 func resolve_missing_dependency() -> String:
-    if passive_skill_service == null:
-        return "passive_skill_service"
-    if passive_item_service == null:
-        return "passive_item_service"
-    if field_service == null:
-        return "field_service"
-    if field_service.has_method("resolve_missing_dependency"):
-        var field_missing := str(field_service.resolve_missing_dependency())
-        if not field_missing.is_empty():
-            return "field_service.%s" % field_missing
-    if effect_instance_dispatcher == null:
-        return "effect_instance_dispatcher"
-    if effect_queue_service == null:
-        return "effect_queue_service"
-    if payload_executor == null:
-        return "payload_executor"
-    if payload_executor.has_method("resolve_missing_dependency"):
-        var payload_missing := str(payload_executor.resolve_missing_dependency())
-        if not payload_missing.is_empty():
-            return "payload_executor.%s" % payload_missing
-    if rng_service == null:
-        return "rng_service"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

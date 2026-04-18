@@ -1,25 +1,29 @@
 extends RefCounted
 class_name FaintLeaveReplacementService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "leave_service",
+		"source": "leave_service",
+		"nested": true,
+	},
+	{
+		"field": "replacement_service",
+		"source": "replacement_service",
+		"nested": true,
+	},
+]
+
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 var leave_service
 var replacement_service
 
 func resolve_missing_dependency() -> String:
-    if leave_service == null:
-        return "leave_service"
-    if leave_service.has_method("resolve_missing_dependency"):
-        var leave_missing := str(leave_service.resolve_missing_dependency())
-        if not leave_missing.is_empty():
-            return "leave_service.%s" % leave_missing
-    if replacement_service == null:
-        return "replacement_service"
-    if replacement_service.has_method("resolve_missing_dependency"):
-        var replacement_missing := str(replacement_service.resolve_missing_dependency())
-        if not replacement_missing.is_empty():
-            return "replacement_service.%s" % replacement_missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func collect_pending_fainted_units(battle_state) -> Array:
     var fainted_units: Array = []

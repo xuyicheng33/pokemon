@@ -14,4 +14,4 @@ except GateFailure as exc:
         print(f"  - {detail}", file=sys.stderr)
     sys.exit(1)
 
-print("ARCH_GATE_PASSED: composition descriptors, container API, and wiring specs are aligned")
+print("ARCH_GATE_PASSED: composition descriptors, container API, and compose metadata are aligned")

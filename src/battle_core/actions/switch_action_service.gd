@@ -1,6 +1,26 @@
 extends RefCounted
 class_name SwitchActionService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "action_cast_service",
+		"source": "action_cast_service",
+		"nested": true,
+	},
+	{
+		"field": "action_log_service",
+		"source": "action_log_service",
+		"nested": true,
+	},
+	{
+		"field": "replacement_service",
+		"source": "replacement_service",
+		"nested": true,
+	},
+]
+
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ActionResultScript := preload("res://src/battle_core/contracts/action_result.gd")
 
@@ -9,25 +29,8 @@ var action_log_service
 var replacement_service
 
 func resolve_missing_dependency() -> String:
-    if action_cast_service == null:
-        return "action_cast_service"
-    if action_cast_service.has_method("resolve_missing_dependency"):
-        var cast_missing := str(action_cast_service.resolve_missing_dependency())
-        if not cast_missing.is_empty():
-            return "action_cast_service.%s" % cast_missing
-    if action_log_service == null:
-        return "action_log_service"
-    if action_log_service.has_method("resolve_missing_dependency"):
-        var log_missing := str(action_log_service.resolve_missing_dependency())
-        if not log_missing.is_empty():
-            return "action_log_service.%s" % log_missing
-    if replacement_service == null:
-        return "replacement_service"
-    if replacement_service.has_method("resolve_missing_dependency"):
-        var replacement_missing := str(replacement_service.resolve_missing_dependency())
-        if not replacement_missing.is_empty():
-            return "replacement_service.%s" % replacement_missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func execute_switch_action(queued_action, battle_state, content_index) -> Variant:
     var result = ActionResultScript.new()

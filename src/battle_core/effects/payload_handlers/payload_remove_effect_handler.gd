@@ -1,6 +1,36 @@
 extends RefCounted
 class_name PayloadRemoveEffectHandler
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+	{
+		"field": "effect_instance_service",
+		"source": "effect_instance_service",
+		"nested": true,
+	},
+	{
+		"field": "target_helper",
+		"source": "payload_unit_target_helper",
+		"nested": true,
+	},
+	{
+		"field": "effect_event_helper",
+		"source": "payload_effect_event_helper",
+		"nested": true,
+	},
+]
+
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -17,17 +47,8 @@ func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-	if battle_logger == null:
-		return "battle_logger"
-	if log_event_builder == null:
-		return "log_event_builder"
-	if effect_instance_service == null:
-		return "effect_instance_service"
-	if target_helper == null:
-		return "target_helper"
-	if effect_event_helper == null:
-		return "effect_event_helper"
-	return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func execute(payload, effect_definition, effect_event, battle_state, _content_index, _execute_trigger_batch: Callable = Callable()) -> void:
 	last_invalid_battle_code = null

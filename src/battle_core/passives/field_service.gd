@@ -1,6 +1,16 @@
 extends RefCounted
 class_name FieldService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "trigger_dispatcher",
+		"source": "trigger_dispatcher",
+		"nested": true,
+	},
+]
+
 const SOURCE_KIND_ORDER_FIELD := 1
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
@@ -17,9 +27,8 @@ func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-	if trigger_dispatcher == null:
-		return "trigger_dispatcher"
-	return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func collect_trigger_events(trigger_name: String, battle_state, content_index, chain_context) -> Array:
 	last_invalid_battle_code = null

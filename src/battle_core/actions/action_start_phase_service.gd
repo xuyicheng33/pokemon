@@ -1,23 +1,29 @@
 extends RefCounted
 class_name ActionStartPhaseService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "action_cast_service",
+		"source": "action_cast_service",
+		"nested": true,
+	},
+	{
+		"field": "action_log_service",
+		"source": "action_log_service",
+		"nested": true,
+	},
+]
+
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
 var action_cast_service
 var action_log_service
 
 func resolve_missing_dependency() -> String:
-    if action_cast_service == null:
-        return "action_cast_service"
-    var cast_missing := str(action_cast_service.resolve_missing_dependency())
-    if not cast_missing.is_empty():
-        return "action_cast_service.%s" % cast_missing
-    if action_log_service == null:
-        return "action_log_service"
-    var log_missing := str(action_log_service.resolve_missing_dependency())
-    if not log_missing.is_empty():
-        return "action_log_service.%s" % log_missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func apply_action_start_phase(queued_action, battle_state, actor, command, skill_definition) -> Dictionary:
     actor.action_window_passed = true

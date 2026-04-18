@@ -1,6 +1,61 @@
 extends RefCounted
 class_name TurnResolutionService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "selection_resolver",
+		"source": "turn_selection_resolver",
+		"nested": true,
+	},
+	{
+		"field": "field_lifecycle_service",
+		"source": "turn_field_lifecycle_service",
+		"nested": true,
+	},
+	{
+		"field": "mp_service",
+		"source": "mp_service",
+		"nested": true,
+	},
+	{
+		"field": "trigger_batch_runner",
+		"source": "trigger_batch_runner",
+		"nested": true,
+	},
+	{
+		"field": "effect_instance_dispatcher",
+		"source": "effect_instance_dispatcher",
+		"nested": true,
+	},
+	{
+		"field": "rule_mod_service",
+		"source": "rule_mod_service",
+		"nested": true,
+	},
+	{
+		"field": "faint_resolver",
+		"source": "faint_resolver",
+		"nested": true,
+	},
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+	{
+		"field": "battle_result_service",
+		"source": "battle_result_service",
+		"nested": true,
+	},
+]
+
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
 
@@ -16,36 +71,8 @@ var log_event_builder
 var battle_result_service
 
 func resolve_missing_dependency() -> String:
-    if selection_resolver == null:
-        return "selection_resolver"
-    var selection_missing := str(selection_resolver.resolve_missing_dependency())
-    if not selection_missing.is_empty():
-        return "selection_resolver.%s" % selection_missing
-    if field_lifecycle_service == null:
-        return "field_lifecycle_service"
-    var lifecycle_missing := str(field_lifecycle_service.resolve_missing_dependency())
-    if not lifecycle_missing.is_empty():
-        return "field_lifecycle_service.%s" % lifecycle_missing
-    if mp_service == null:
-        return "mp_service"
-    if trigger_batch_runner == null:
-        return "trigger_batch_runner"
-    var trigger_batch_missing := str(trigger_batch_runner.resolve_missing_dependency())
-    if not trigger_batch_missing.is_empty():
-        return "trigger_batch_runner.%s" % trigger_batch_missing
-    if effect_instance_dispatcher == null:
-        return "effect_instance_dispatcher"
-    if rule_mod_service == null:
-        return "rule_mod_service"
-    if faint_resolver == null:
-        return "faint_resolver"
-    if battle_logger == null:
-        return "battle_logger"
-    if log_event_builder == null:
-        return "log_event_builder"
-    if battle_result_service == null:
-        return "battle_result_service"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func reset_turn_state(battle_state) -> void:
     selection_resolver.reset_turn_state(battle_state)

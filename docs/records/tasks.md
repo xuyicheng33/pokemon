@@ -11,6 +11,41 @@
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只记录当时口径；当前默认入口、验证路径与治理要求以后面的最新阶段条目和 `docs/design/current_development_workflow.md` 为准。
 
+## 当前阶段：composition 依赖声明收口（2026-04-18）
+
+- 状态：已完成
+- 目标：
+  - 把 battle core 的服务依赖、reset 字段与缺依赖检查统一收口到各 script 自声明，删除 split wiring specs 目录这份重复真相。
+- 范围：
+  - `src/composition/*`
+  - `src/battle_core/**/*` 中参与 compose 的 service / payload handler / payload runtime service
+  - `tests/gates/architecture_composition_consistency_gate*.py`
+  - `tests/gates/architecture_wiring_graph_gate.py`
+  - `docs/design/battle_core_architecture_constraints.md`
+  - `docs/design/architecture_overview.md`
+  - `docs/design/project_folder_structure.md`
+  - `README.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `COMPOSE_DEPS / COMPOSE_RESET_FIELDS` 成为 compose 依赖与 reset 的唯一运行时声明
+  - `BattleCoreComposer`、runtime 缺依赖检查与两条 architecture gate 都直接读取这份声明
+  - `src/composition/battle_core_wiring_specs.gd` 与 `src/composition/battle_core_wiring_specs/` 目录删除
+  - `BattleCoreManager.resolve_missing_dependency()` 对外行为不变
+  - `python3 tests/gates/architecture_composition_consistency_gate.py`
+  - `python3 tests/gates/architecture_wiring_graph_gate.py`
+  - `bash tests/check_architecture_constraints.sh` 全部通过
+- 结果：
+  - 已新增 `src/composition/service_dependency_contract_helper.gd`，统一提供 compose 依赖读取、递归缺依赖检查与 reset spec 导出
+  - 已把 battle core 参与 compose 的 service / payload handler / payload runtime service 切到 `COMPOSE_DEPS`，`RuleModValueResolver` 也已补 `COMPOSE_RESET_FIELDS`
+  - `BattleCoreComposer`、`RuntimeGuardService` 与 `TurnLoopController` 的缺依赖路径已改为直接复用 helper，不再继续手抄 wiring 递归链
+  - 两条 architecture gate 已改成直接解析 script 自声明；payload handler -> runtime service 这条边也已纳入 DAG 校验
+  - legacy wiring spec 聚合文件与 split 目录已从 `src/composition/` 删除
+- 验证：
+  - `python3 tests/gates/architecture_composition_consistency_gate.py`
+  - `python3 tests/gates/architecture_wiring_graph_gate.py`
+  - `bash tests/check_architecture_constraints.sh`
+
 ## 当前阶段：README surface 合同修复与 demo replay 回归补齐（2026-04-18）
 
 - 状态：已完成

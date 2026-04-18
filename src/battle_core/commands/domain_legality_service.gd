@@ -1,6 +1,16 @@
 extends RefCounted
 class_name DomainLegalityService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "domain_clash_orchestrator",
+		"source": "domain_clash_orchestrator",
+		"nested": true,
+	},
+]
+
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -12,12 +22,8 @@ func invalid_battle_code() -> Variant:
     return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-    if domain_clash_orchestrator == null:
-        return "domain_clash_orchestrator"
-    var missing := str(domain_clash_orchestrator.resolve_missing_dependency())
-    if not missing.is_empty():
-        return "domain_clash_orchestrator.%s" % missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func is_domain_command(command, content_index) -> bool:
     last_invalid_battle_code = null

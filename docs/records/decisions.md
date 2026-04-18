@@ -350,6 +350,23 @@
   - payload 与 power bonus 都已经出现“名单、校验、运行时分支各写一份”的漂移风险；继续扩角色时，这类共享入口会先比玩法规则更快失控
   - 先把共享注册事实收成单点后，新增同类扩展时改动就能优先落在注册表和专属实现，而不是继续在 validator、registry、wiring 和测试里同步抄名单
 
+## 0O. compose 依赖与 reset 元数据固定改为 script 自声明（2026-04-18）
+
+- `src/composition/service_dependency_contract_helper.gd` 当前固定成为 compose 元数据唯一读取入口；统一负责：
+  - 读取 script 自声明的 `COMPOSE_DEPS`
+  - 递归缺依赖检查
+  - 导出 container dispose 所需的 reset spec
+  - 导出 runtime compose dependency edges 给 architecture gate
+- 参与 compose 的 battle core service / payload handler / payload runtime service 当前固定在各自脚本里显式声明：
+  - `const COMPOSE_DEPS := [{ "field": "...", "source": "...", "nested": true|false }]`
+  - `const COMPOSE_RESET_FIELDS := [{ "field": "...", "value": ... }]`
+- `BattleCoreComposer`、`RuntimeGuardService`、`TurnLoopController` 与两条 architecture gate 当前固定直接读这份声明；不再继续维护 split wiring spec 目录或 `BattleCoreWiringSpecs` 聚合入口。
+- `src/composition/battle_core_wiring_specs.gd` 与 `src/composition/battle_core_wiring_specs/` 当前固定删除；payload handler -> runtime service 这条边也改为从 handler 自声明进入 DAG 校验，不再靠 gate 自己额外猜。
+- 这么定的原因：
+  - 运行时装配、缺依赖检查、container dispose 与 architecture gate 之前分别维护不同版本的依赖图，继续扩 service 时最容易先漂的是 wiring 真相，不是 battle rule 本身
+  - 把依赖声明压回 service 自己以后，新增或重命名依赖字段时，只需要同步 owner script 与 service slot 映射，不再四处补 wiring 表
+  - payload handler 到 runtime service 的 compose 边过去在 gate 里有盲区；改成脚本自声明后，运行时与 gate 终于读取的是同一份依赖图
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

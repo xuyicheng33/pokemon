@@ -1,15 +1,21 @@
 extends RefCounted
 class_name ActionSkillEffectService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "action_cast_service",
+		"source": "action_cast_service",
+		"nested": true,
+	},
+]
+
 var action_cast_service
 
 func resolve_missing_dependency() -> String:
-    if action_cast_service == null:
-        return "action_cast_service"
-    var cast_missing := str(action_cast_service.resolve_missing_dependency())
-    if not cast_missing.is_empty():
-        return "action_cast_service.%s" % cast_missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func dispatch_trigger(trigger_name: String, skill_definition, queued_action, actor, battle_state, content_index, result) -> void:
     action_cast_service.dispatch_skill_effects(

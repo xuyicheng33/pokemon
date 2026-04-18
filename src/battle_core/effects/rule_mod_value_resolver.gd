@@ -1,6 +1,13 @@
 extends RefCounted
 class_name RuleModValueResolver
 
+const COMPOSE_RESET_FIELDS := [
+	{
+		"field": "last_error_code",
+		"value": null,
+	},
+]
+
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const UnitBstHelperScript := preload("res://src/shared/unit_bst_helper.gd")

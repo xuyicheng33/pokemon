@@ -1,6 +1,26 @@
 extends RefCounted
 class_name LegalActionService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "rule_mod_service",
+		"source": "rule_mod_service",
+		"nested": true,
+	},
+	{
+		"field": "domain_legality_service",
+		"source": "domain_legality_service",
+		"nested": true,
+	},
+	{
+		"field": "_rule_gate",
+		"source": "",
+		"nested": false,
+	},
+]
+
 const LegalActionSetScript := preload("res://src/battle_core/contracts/legal_action_set.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const CastOptionCollectorScript := preload("res://src/battle_core/commands/legal_action_service_cast_option_collector.gd")
@@ -27,8 +47,8 @@ func error_state() -> Dictionary:
     }
 
 func resolve_missing_dependency() -> String:
-    _sync_rule_gate_dependencies()
-    return _rule_gate.resolve_missing_dependency()
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func get_legal_actions(battle_state, side_id: String, content_index) -> Variant:
     _reset_error_state()

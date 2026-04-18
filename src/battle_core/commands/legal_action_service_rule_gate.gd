@@ -1,17 +1,29 @@
 extends RefCounted
 class_name LegalActionServiceRuleGate
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "rule_mod_service",
+		"source": "rule_mod_service",
+		"nested": true,
+	},
+	{
+		"field": "domain_legality_service",
+		"source": "domain_legality_service",
+		"nested": true,
+	},
+]
+
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var rule_mod_service
 var domain_legality_service
 
 func resolve_missing_dependency() -> String:
-    if rule_mod_service == null:
-        return "rule_mod_service"
-    if domain_legality_service == null:
-        return "domain_legality_service"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func side_domain_recast_blocked_result(battle_state, side_id: String, content_index) -> Dictionary:
     if domain_legality_service == null:

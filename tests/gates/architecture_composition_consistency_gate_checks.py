@@ -16,31 +16,28 @@ from architecture_composition_consistency_gate_support import (
 
 
 def validate_wiring_specs_entry_points(texts: CompositionTexts) -> None:
-    required_wiring_specs_helpers = [
-        "static func wiring_specs() -> Array:",
-        "static func reset_specs() -> Array:",
+    required_helper_entry_points = [
+        "static func resolve_missing_dependency(",
+        "static func dependency_edges(",
+        "static func compose_reset_specs(",
+        "static func compose_deps(",
+        "static func compose_reset_fields(",
     ]
-    missing_wiring_specs_helpers = [
-        helper for helper in required_wiring_specs_helpers if helper not in texts.wiring_specs_text
+    missing_helper_entry_points = [
+        helper for helper in required_helper_entry_points if helper not in texts.helper_text
     ]
-    if missing_wiring_specs_helpers:
-        fail("battle_core_wiring_specs must expose aggregated helpers", missing_wiring_specs_helpers)
-    if "src/composition/battle_core_wiring_specs/" not in texts.wiring_specs_text:
-        fail("battle_core_wiring_specs must preload child spec files from the split directory", ["src/composition/battle_core_wiring_specs"])
-    if "EffectsCoreWiringSpecsScript.wiring_specs()" not in texts.wiring_specs_text:
-        fail("battle_core_wiring_specs must build effects-core wiring through the helper", ["EffectsCoreWiringSpecsScript.wiring_specs()"])
-    if "registry_wiring_specs" not in texts.payload_contract_registry_text:
-        fail("payload contract registry must expose payload_handler_registry wiring facts", ["src/battle_core/content/payload_contract_registry.gd"])
-    if "handler_wiring_specs" not in texts.payload_contract_registry_text:
-        fail("payload contract registry must expose payload handler wiring facts", ["src/battle_core/content/payload_contract_registry.gd"])
+    if missing_helper_entry_points:
+        fail("service dependency helper must expose compose contract helpers", missing_helper_entry_points)
     if "runtime_service_slots" not in texts.payload_contract_registry_text:
         fail("payload contract registry must expose runtime service slots", ["src/battle_core/content/payload_contract_registry.gd"])
-    if "shared_service_wiring_specs" not in texts.payload_service_specs_text:
-        fail("payload service specs helper must expose shared service wiring facts", ["src/composition/battle_core_payload_service_specs.gd"])
     if "PayloadRuntimeServiceRegistryScript" not in texts.payload_service_specs_text:
         fail("payload service specs helper must aggregate runtime service registry descriptors", ["src/composition/battle_core_payload_runtime_service_registry.gd"])
     if "PayloadValidatorRegistryScript" not in texts.content_payload_validator_text:
         fail("content payload validator must dispatch through payload validator registry", ["src/battle_core/content/payload_validator_registry.gd"])
+    if (ROOT / "src/composition/battle_core_wiring_specs.gd").exists():
+        fail("battle_core_wiring_specs.gd must be deleted after compose metadata migration", ["src/composition/battle_core_wiring_specs.gd"])
+    if (ROOT / "src/composition/battle_core_wiring_specs").exists():
+        fail("split battle_core_wiring_specs directory must be deleted after compose metadata migration", ["src/composition/battle_core_wiring_specs"])
 
 
 def validate_service_descriptors(texts: CompositionTexts, facts: DescriptorFacts) -> tuple[set[str], set[str]]:
@@ -149,20 +146,20 @@ def validate_payload_seams(texts: CompositionTexts, facts: DescriptorFacts) -> N
 
 
 def validate_wiring_slots(facts: DescriptorFacts, slot_set: set[str]) -> None:
-    duplicate_wiring_keys = duplicate_names([f"{owner}.{dependency}" for owner, dependency, _source in facts.wiring_owner_source_pairs])
+    duplicate_wiring_keys = duplicate_names([f"{owner}.{dependency}" for owner, dependency, _source in facts.compose_owner_source_pairs])
     if duplicate_wiring_keys:
-        fail("duplicate wiring owner/dependency pairs found", duplicate_wiring_keys)
+        fail("duplicate compose owner/dependency pairs found", duplicate_wiring_keys)
     unknown_wiring_slots: list[str] = []
-    for owner, dependency, source in facts.wiring_owner_source_pairs:
+    for owner, dependency, source in facts.compose_owner_source_pairs:
         if owner not in slot_set:
-            unknown_wiring_slots.append(f"unknown wiring owner: {owner}.{dependency}")
-        if source not in slot_set:
-            unknown_wiring_slots.append(f"unknown wiring source: {owner}.{dependency} -> {source}")
+            unknown_wiring_slots.append(f"unknown compose owner: {owner}.{dependency}")
+        if source and source not in slot_set:
+            unknown_wiring_slots.append(f"unknown compose source: {owner}.{dependency} -> {source}")
     for owner, field_name in facts.reset_owner_pairs:
         if owner not in slot_set:
-            unknown_wiring_slots.append(f"unknown reset owner: {owner}.{field_name}")
+            unknown_wiring_slots.append(f"unknown compose reset owner: {owner}.{field_name}")
     if unknown_wiring_slots:
-        fail("composition wiring specs reference unknown service slots", sorted(unknown_wiring_slots))
+        fail("compose metadata references unknown service slots", sorted(unknown_wiring_slots))
 
 
 def validate_declared_owner_fields(facts: DescriptorFacts) -> None:
@@ -183,16 +180,16 @@ def validate_declared_owner_fields(facts: DescriptorFacts) -> None:
             declared_fields_cache[script_path] = declared_field_names_for_script(script_path)
         return declared_fields | declared_fields_cache[script_path]
 
-    for owner, dependency, _source in facts.wiring_owner_source_pairs:
+    for owner, dependency, _source in facts.compose_owner_source_pairs:
         script_path = script_by_slot.get(owner, "")
         if not script_path:
-            issues.append(f"wiring owner missing script descriptor: {owner}.{dependency}")
+            issues.append(f"compose owner missing script descriptor: {owner}.{dependency}")
             continue
         if not (ROOT / script_path).exists():
-            issues.append(f"wiring owner script is missing: {owner} -> {script_path}")
+            issues.append(f"compose owner script is missing: {owner} -> {script_path}")
             continue
         if dependency not in declared_fields_for_slot(owner):
-            issues.append(f"wiring dependency is not a declared owner field: {owner}.{dependency} ({script_path})")
+            issues.append(f"compose dependency is not a declared owner field: {owner}.{dependency} ({script_path})")
 
     for owner, field_name in facts.reset_owner_pairs:
         script_path = script_by_slot.get(owner, "")
@@ -206,7 +203,7 @@ def validate_declared_owner_fields(facts: DescriptorFacts) -> None:
             issues.append(f"reset field is not declared on owner script: {owner}.{field_name} ({script_path})")
 
     if issues:
-        fail("composition wiring specs must target declared owner fields", sorted(issues))
+        fail("compose metadata must target declared owner fields", sorted(issues))
 
 
 def validate_container_api(texts: CompositionTexts) -> None:
@@ -240,8 +237,9 @@ def validate_composer_api(texts: CompositionTexts) -> None:
         "_owner_declares_dependency(": "composer must validate dependency fields before wiring dynamic specs",
         "ServiceSpecsScript.service_slots()": "composer must iterate ServiceSpecsScript.service_slots()",
         "ServiceSpecsScript.script_by_slot(": "composer must resolve scripts via ServiceSpecsScript.script_by_slot()",
-        "WiringSpecsScript.wiring_specs()": "composer must resolve wiring specs via WiringSpecsScript.wiring_specs()",
-        "WiringSpecsScript.reset_specs()": "composer must resolve reset specs via WiringSpecsScript.reset_specs()",
+        "ServiceDependencyContractHelperScript.dependency_edges(": "composer must resolve dependency edges via service dependency helper",
+        "ServiceDependencyContractHelperScript.compose_reset_specs(": "composer must resolve reset specs via service dependency helper",
+        "ServiceDependencyContractHelperScript.resolve_missing_dependency(": "composer must validate compose dependencies via service dependency helper",
     }
     for snippet, issue in expected_snippets.items():
         if snippet not in texts.composer_text:
@@ -249,6 +247,7 @@ def validate_composer_api(texts: CompositionTexts) -> None:
     for forbidden_snippet, issue in {
         "container.get(": "composer must not use container.get",
         "container.set(": "composer must not use container.set",
+        "WiringSpecsScript": "composer must not reference legacy wiring specs",
     }.items():
         if forbidden_snippet in texts.composer_text:
             composer_issues.append(issue)

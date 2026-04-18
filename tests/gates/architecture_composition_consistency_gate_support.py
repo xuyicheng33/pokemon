@@ -9,8 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_service_specs.gd"
-WIRING_SPECS_PATH = ROOT / "src/composition/battle_core_wiring_specs.gd"
-WIRING_SPECS_DIR = ROOT / "src/composition/battle_core_wiring_specs"
+SERVICE_DEPENDENCY_HELPER_PATH = ROOT / "src/composition/service_dependency_contract_helper.gd"
 CONTAINER_PATH = ROOT / "src/composition/battle_core_container.gd"
 COMPOSER_PATH = ROOT / "src/composition/battle_core_composer.gd"
 PAYLOAD_CONTRACT_REGISTRY_PATH = ROOT / "src/battle_core/content/payload_contract_registry.gd"
@@ -32,8 +31,7 @@ class GateFailure(RuntimeError):
 @dataclass(frozen=True)
 class CompositionTexts:
     service_specs_text: str
-    wiring_specs_text: str
-    wiring_child_texts: list[str]
+    helper_text: str
     container_text: str
     composer_text: str
     payload_contract_registry_text: str
@@ -55,7 +53,7 @@ class DescriptorFacts:
     payload_validator_file_paths: list[str]
     payload_runtime_service_slots: list[str]
     payload_runtime_service_registry_slots: list[str]
-    wiring_owner_source_pairs: list[tuple[str, str, str]]
+    compose_owner_source_pairs: list[tuple[str, str, str]]
     reset_owner_pairs: list[tuple[str, str]]
     slot_pattern: str
 
@@ -76,80 +74,6 @@ def duplicate_names(names: list[str]) -> list[str]:
     return sorted(name for name, count in counter.items() if count > 1)
 
 
-def parse_payload_handler_dependency_edges(text: str) -> list[tuple[str, str, str]]:
-    edges: list[tuple[str, str, str]] = []
-    current_handler_slot: str | None = None
-    in_handler_dependencies = False
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        slot_match = re.search(r'"handler_slot": "([^"]+)"', line)
-        if slot_match is not None:
-            current_handler_slot = slot_match.group(1)
-        if '"handler_dependencies": []' in line:
-            in_handler_dependencies = False
-            continue
-        if '"handler_dependencies": [' in line:
-            in_handler_dependencies = True
-            continue
-        if not in_handler_dependencies:
-            continue
-        dependency_match = re.search(r'\{"dependency": "([^"]+)", "source": "([^"]+)"\}', line)
-        if dependency_match is not None and current_handler_slot is not None:
-            edges.append((current_handler_slot, dependency_match.group(1), dependency_match.group(2)))
-        if line == "]," or line == "]":
-            in_handler_dependencies = False
-    return edges
-
-
-def parse_payload_shared_service_slots(payload_service_specs_text: str) -> list[str]:
-    block = extract_named_block(
-        payload_service_specs_text,
-        r"const SHARED_SERVICE_DESCRIPTORS := \[(.*?)\]\n\nstatic func service_descriptors",
-        "SHARED_SERVICE_DESCRIPTORS",
-    )
-    return re.findall(r'"slot": "([^"]+)"', block)
-
-
-def parse_payload_shared_service_descriptors(text: str) -> list[tuple[str, str]]:
-    preload_constants = parse_preload_constants(text)
-    block = extract_named_block(
-        text,
-        r"const SHARED_SERVICE_DESCRIPTORS := \[(.*?)\]\n\nstatic func service_descriptors",
-        "SHARED_SERVICE_DESCRIPTORS",
-    )
-    descriptors: list[tuple[str, str]] = []
-    for slot_name, constant_name in re.findall(
-        r'\{\s*"slot": "([^"]+)",\s*"script": ([A-Za-z_][A-Za-z0-9_]*)\s*\}',
-        block,
-        re.S,
-    ):
-        script_path = preload_constants.get(constant_name, "")
-        descriptors.append((slot_name, script_path.replace("res://", "") if script_path else ""))
-    return descriptors
-
-
-def parse_payload_runtime_service_dependency_edges(text: str) -> list[tuple[str, str, str]]:
-    edges: list[tuple[str, str, str]] = []
-    current_slot: str | None = None
-    in_dependencies = False
-    for raw_line in text.splitlines():
-        line = raw_line.strip()
-        slot_match = re.search(r'"slot": "([^"]+)"', line)
-        if slot_match is not None:
-            current_slot = slot_match.group(1)
-        if '"dependencies": [' in line:
-            in_dependencies = True
-            continue
-        if not in_dependencies:
-            continue
-        dependency_match = re.search(r'\{"dependency": "([^"]+)", "source": "([^"]+)"\}', line)
-        if dependency_match is not None and current_slot is not None:
-            edges.append((current_slot, dependency_match.group(1), dependency_match.group(2)))
-        if line == "]," or line == "]":
-            in_dependencies = False
-    return edges
-
-
 def scan_payload_handler_script_slots() -> list[str]:
     if not PAYLOAD_HANDLER_DIR.exists():
         fail("payload handler directory is missing", [str(PAYLOAD_HANDLER_DIR.relative_to(ROOT))])
@@ -168,6 +92,24 @@ def scan_payload_validator_script_paths() -> list[str]:
 
 def parse_preload_constants(text: str) -> dict[str, str]:
     return dict(re.findall(r'const ([A-Za-z_][A-Za-z0-9_]*) := preload\("([^"]+)"\)', text))
+
+
+def parse_payload_shared_service_descriptors(text: str) -> list[tuple[str, str]]:
+    preload_constants = parse_preload_constants(text)
+    block = extract_named_block(
+        text,
+        r"const SHARED_SERVICE_DESCRIPTORS := \[(.*?)\]\n\nstatic func service_descriptors",
+        "SHARED_SERVICE_DESCRIPTORS",
+    )
+    descriptors: list[tuple[str, str]] = []
+    for slot_name, constant_name in re.findall(
+        r'\{\s*"slot": "([^"]+)",\s*"script": ([A-Za-z_][A-Za-z0-9_]*)\s*\}',
+        block,
+        re.S,
+    ):
+        script_path = preload_constants.get(constant_name, "")
+        descriptors.append((slot_name, script_path.replace("res://", "") if script_path else ""))
+    return descriptors
 
 
 def parse_payload_validator_descriptors(text: str) -> tuple[list[str], list[str]]:
@@ -238,14 +180,80 @@ def dynamic_declared_field_names_for_slot(slot_name: str, facts: DescriptorFacts
     return set()
 
 
+def parse_literal(raw_value: str):
+    value = raw_value.strip().rstrip(",")
+    if value == "true":
+        return True
+    if value == "false":
+        return False
+    if value == "null":
+        return None
+    if value.startswith('"') and value.endswith('"'):
+        return value[1:-1]
+    if re.fullmatch(r"-?\d+", value):
+        return int(value)
+    if re.fullmatch(r"-?\d+\.\d+", value):
+        return float(value)
+    return value
+
+
+def parse_const_dict_list(text: str, const_name: str) -> list[dict[str, object]]:
+    match = re.search(rf"const {const_name} := \[(.*?)\]\n", text, re.S)
+    if match is None:
+        return []
+    items: list[dict[str, object]] = []
+    current: dict[str, object] | None = None
+    for raw_line in match.group(1).splitlines():
+        line = raw_line.strip()
+        if not line:
+            continue
+        if line == "{":
+            current = {}
+            continue
+        if line in {"}", "},"}:
+            if current is not None:
+                items.append(current)
+            current = None
+            continue
+        if current is None:
+            continue
+        field_match = re.match(r'"([^"]+)":\s*(.+?)(?:,)?$', line)
+        if field_match is None:
+            continue
+        current[field_match.group(1)] = parse_literal(field_match.group(2))
+    return items
+
+
+def parse_compose_dependency_specs(script_rel_path: str) -> list[tuple[str, str]]:
+    script_path = ROOT / script_rel_path
+    if not script_path.exists():
+        return []
+    specs: list[tuple[str, str]] = []
+    for dependency_spec in parse_const_dict_list(script_path.read_text(encoding="utf-8"), "COMPOSE_DEPS"):
+        field_name = str(dependency_spec.get("field", "")).strip()
+        if not field_name:
+            continue
+        source_name = str(dependency_spec.get("source", field_name)).strip()
+        specs.append((field_name, source_name))
+    return specs
+
+
+def parse_compose_reset_specs(script_rel_path: str) -> list[str]:
+    script_path = ROOT / script_rel_path
+    if not script_path.exists():
+        return []
+    fields: list[str] = []
+    for reset_spec in parse_const_dict_list(script_path.read_text(encoding="utf-8"), "COMPOSE_RESET_FIELDS"):
+        field_name = str(reset_spec.get("field", "")).strip()
+        if field_name:
+            fields.append(field_name)
+    return fields
+
+
 def load_composition_texts() -> CompositionTexts:
-    wiring_child_texts = [path.read_text(encoding="utf-8") for path in sorted(WIRING_SPECS_DIR.glob("*.gd"))]
-    if not wiring_child_texts:
-        fail("battle_core_wiring_specs must aggregate child spec files", [str(WIRING_SPECS_DIR.relative_to(ROOT))])
     return CompositionTexts(
         service_specs_text=SERVICE_SPECS_PATH.read_text(encoding="utf-8"),
-        wiring_specs_text=WIRING_SPECS_PATH.read_text(encoding="utf-8"),
-        wiring_child_texts=wiring_child_texts,
+        helper_text=SERVICE_DEPENDENCY_HELPER_PATH.read_text(encoding="utf-8"),
         container_text=CONTAINER_PATH.read_text(encoding="utf-8"),
         composer_text=COMPOSER_PATH.read_text(encoding="utf-8"),
         payload_contract_registry_text=PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8"),
@@ -290,21 +298,13 @@ def build_descriptor_facts(texts: CompositionTexts) -> DescriptorFacts:
         for raw_block in re.findall(r'"runtime_service_slots": \[([^\]]*)\]', texts.payload_contract_registry_text)
         for runtime_service_slot in re.findall(r'"([^"]+)"', raw_block)
     })
-    wiring_owner_source_pairs: list[tuple[str, str, str]] = []
-    for child_text in texts.wiring_child_texts:
-        wiring_owner_source_pairs.extend(
-            re.findall(r'\{"owner": "([^"]+)", "dependency": "([^"]+)", "source": "([^"]+)"\}', child_text)
-        )
-    wiring_owner_source_pairs.extend(
-        ("payload_handler_registry", handler_slot, handler_slot)
-        for handler_slot in payload_handler_slots
-    )
-    wiring_owner_source_pairs.extend(parse_payload_handler_dependency_edges(texts.payload_contract_registry_text))
-    wiring_owner_source_pairs.extend(parse_payload_runtime_service_dependency_edges(texts.payload_runtime_service_registry_text))
-    reset_owner_pairs = re.findall(
-        r'\{"owner": "([^"]+)", "field": "([^"]+)", "value":',
-        texts.wiring_specs_text,
-    )
+    compose_owner_source_pairs: list[tuple[str, str, str]] = []
+    reset_owner_pairs: list[tuple[str, str]] = []
+    for slot_name, script_path in script_slots:
+        for dependency_name, source_name in parse_compose_dependency_specs(script_path):
+            compose_owner_source_pairs.append((slot_name, dependency_name, source_name))
+        for reset_field_name in parse_compose_reset_specs(script_path):
+            reset_owner_pairs.append((slot_name, reset_field_name))
     return DescriptorFacts(
         service_slots=service_slots,
         script_slots=script_slots,
@@ -316,7 +316,7 @@ def build_descriptor_facts(texts: CompositionTexts) -> DescriptorFacts:
         payload_validator_file_paths=scan_payload_validator_script_paths(),
         payload_runtime_service_slots=payload_runtime_service_slots,
         payload_runtime_service_registry_slots=[slot for slot, _script in payload_runtime_service_descriptors],
-        wiring_owner_source_pairs=wiring_owner_source_pairs,
+        compose_owner_source_pairs=compose_owner_source_pairs,
         reset_owner_pairs=reset_owner_pairs,
-        slot_pattern="|".join(re.escape(slot) for slot in service_slots),
+        slot_pattern="|".join(sorted(re.escape(slot_name) for slot_name in service_slots if slot_name)),
     )

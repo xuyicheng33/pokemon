@@ -37,7 +37,10 @@ Composition 补充约束：
 - `BattleCoreServiceSpecs` 只允许维护一份 `SERVICE_DESCRIPTORS` 单一描述源，不再分裂维护 `SERVICE_SLOTS / SCRIPT_BY_SLOT` 双清单。
 - payload 相关 service descriptor 不再手抄回 `BattleCoreServiceSpecs`；它们固定由 `src/composition/battle_core_payload_service_specs.gd` 派生，再通过 `service_slots() / script_by_slot()` 并入统一服务视图。
 - payload handler script 固定按命名约定解析为 `src/battle_core/effects/payload_handlers/<handler_slot>.gd`；`PayloadContractRegistry` 里的 `handler_slot` 与该目录下的实际 handler script 文件必须保持一一对应，缺文件或残留文件都必须由 composition consistency gate 与 wiring DAG gate 直接失败。
-- `BattleCoreWiringSpecs` 只允许保留聚合职责；真实 wiring spec 固定拆在 `src/composition/battle_core_wiring_specs/*.gd`，并由 `wiring_specs() / reset_specs()` 向 composer 暴露统一入口。
+- 组合依赖与 reset 真相固定下沉到各 script 自身：
+  - `const COMPOSE_DEPS := [{ "field": "...", "source": "...", "nested": true|false }]`
+  - `const COMPOSE_RESET_FIELDS := [{ "field": "...", "value": ... }]`
+- `BattleCoreComposer`、runtime 缺依赖检查与两条 architecture gate 统一通过 `src/composition/service_dependency_contract_helper.gd` 读取这份声明；不再维护 split wiring spec 目录或聚合入口。
 - `BattleCoreContainer` 只允许暴露：
   - `set_service`
   - `service`
@@ -46,7 +49,7 @@ Composition 补充约束：
   - `configure_dispose_specs`
   - `dispose`
 - 仓库内对 battle core 容器的服务读取统一使用 `core.service("slot")`；不再依赖 `core.<service>` 显式 slot 属性面。
-- composition consistency gate 与 wiring DAG gate 必须直接覆盖 split wiring 目录，不能只盯聚合入口文件名。
+- composition consistency gate 与 wiring DAG gate 必须直接覆盖 script 自声明的 `COMPOSE_DEPS / COMPOSE_RESET_FIELDS`，不能退回到手抄 wiring 表或只扫聚合入口。
 
 ## 3. Rule Mod 约束
 

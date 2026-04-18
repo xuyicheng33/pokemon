@@ -1,6 +1,26 @@
 extends RefCounted
 class_name LeaveService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+	{
+		"field": "lifecycle_retention_policy",
+		"source": "lifecycle_retention_policy",
+		"nested": true,
+	},
+]
+
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -14,13 +34,8 @@ func invalid_battle_code() -> Variant:
     return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-    if battle_logger == null:
-        return "battle_logger"
-    if log_event_builder == null:
-        return "log_event_builder"
-    if lifecycle_retention_policy == null:
-        return "lifecycle_retention_policy"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func leave_unit(battle_state, unit_state, reason: String, content_index) -> void:
     last_invalid_battle_code = null

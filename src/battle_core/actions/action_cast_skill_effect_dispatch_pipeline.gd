@@ -1,6 +1,36 @@
 extends RefCounted
 class_name ActionCastSkillEffectDispatchPipeline
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "trigger_dispatcher",
+		"source": "trigger_dispatcher",
+		"nested": true,
+	},
+	{
+		"field": "effect_queue_service",
+		"source": "effect_queue_service",
+		"nested": true,
+	},
+	{
+		"field": "payload_executor",
+		"source": "payload_executor",
+		"nested": true,
+	},
+	{
+		"field": "rng_service",
+		"source": "rng_service",
+		"nested": true,
+	},
+	{
+		"field": "trigger_batch_runner",
+		"source": "trigger_batch_runner",
+		"nested": true,
+	},
+]
+
 var trigger_dispatcher
 var effect_queue_service
 var payload_executor
@@ -8,17 +38,8 @@ var rng_service
 var trigger_batch_runner
 
 func resolve_missing_dependency() -> String:
-    if trigger_dispatcher == null:
-        return "trigger_dispatcher"
-    if effect_queue_service == null:
-        return "effect_queue_service"
-    if payload_executor == null:
-        return "payload_executor"
-    if rng_service == null:
-        return "rng_service"
-    if trigger_batch_runner == null:
-        return "trigger_batch_runner"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String, queued_action, actor, battle_state, content_index, result, source_kind_order_active_skill: int) -> void:
     if effect_ids.is_empty():

@@ -1,6 +1,41 @@
 extends RefCounted
 class_name ReplayRunner
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "battle_initializer",
+		"source": "battle_initializer",
+		"nested": true,
+	},
+	{
+		"field": "turn_loop_controller",
+		"source": "turn_loop_controller",
+		"nested": true,
+	},
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "id_factory",
+		"source": "id_factory",
+		"nested": true,
+	},
+	{
+		"field": "rng_service",
+		"source": "rng_service",
+		"nested": true,
+	},
+	{
+		"field": "content_snapshot_cache",
+		"source": "content_snapshot_cache",
+		"nested": true,
+	},
+]
+
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ReplayRunnerInputHelperScript := preload("res://src/battle_core/logging/replay_runner_input_helper.gd")
 const ReplayRunnerExecutionContextBuilderScript := preload("res://src/battle_core/logging/replay_runner_execution_context_builder.gd")
@@ -19,19 +54,8 @@ var _context_builder = ReplayRunnerExecutionContextBuilderScript.new()
 var _output_helper = ReplayRunnerOutputHelperScript.new()
 
 func resolve_missing_dependency() -> String:
-	if battle_initializer == null:
-		return "battle_initializer"
-	if turn_loop_controller == null:
-		return "turn_loop_controller"
-	if battle_logger == null:
-		return "battle_logger"
-	if id_factory == null:
-		return "id_factory"
-	if rng_service == null:
-		return "rng_service"
-	if content_snapshot_cache == null:
-		return "content_snapshot_cache"
-	return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func error_state() -> Dictionary:
 	return {

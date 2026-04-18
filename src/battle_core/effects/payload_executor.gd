@@ -1,6 +1,21 @@
 extends RefCounted
 class_name PayloadExecutor
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "effect_precondition_service",
+		"source": "effect_precondition_service",
+		"nested": true,
+	},
+	{
+		"field": "payload_handler_registry",
+		"source": "payload_handler_registry",
+		"nested": true,
+	},
+]
+
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var effect_precondition_service
@@ -12,17 +27,8 @@ func invalid_battle_code() -> Variant:
     return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-    if effect_precondition_service == null:
-        return "effect_precondition_service"
-    var precondition_missing := _resolve_handler_missing(effect_precondition_service)
-    if not precondition_missing.is_empty():
-        return "effect_precondition_service.%s" % precondition_missing
-    if payload_handler_registry == null:
-        return "payload_handler_registry"
-    var registry_missing := _resolve_handler_missing(payload_handler_registry)
-    if not registry_missing.is_empty():
-        return "payload_handler_registry.%s" % registry_missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func execute_effect_event(
     effect_event,

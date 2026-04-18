@@ -1,6 +1,36 @@
 extends RefCounted
 class_name ReplacementService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+	{
+		"field": "replacement_selector",
+		"source": "replacement_selector",
+		"nested": true,
+	},
+	{
+		"field": "leave_service",
+		"source": "leave_service",
+		"nested": true,
+	},
+	{
+		"field": "field_service",
+		"source": "field_service",
+		"nested": true,
+	},
+]
+
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
@@ -18,25 +48,8 @@ var _selection_helper = ReplacementSelectionHelperScript.new()
 var _entry_helper = ReplacementEntryHelperScript.new()
 
 func resolve_missing_dependency() -> String:
-	if battle_logger == null:
-		return "battle_logger"
-	if log_event_builder == null:
-		return "log_event_builder"
-	if replacement_selector == null:
-		return "replacement_selector"
-	if leave_service == null:
-		return "leave_service"
-	if leave_service.has_method("resolve_missing_dependency"):
-		var leave_missing := str(leave_service.resolve_missing_dependency())
-		if not leave_missing.is_empty():
-			return "leave_service.%s" % leave_missing
-	if field_service == null:
-		return "field_service"
-	if field_service.has_method("resolve_missing_dependency"):
-		var field_missing := str(field_service.resolve_missing_dependency())
-		if not field_missing.is_empty():
-			return "field_service.%s" % field_missing
-	return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func resolve_replacement(battle_state, side_state, reason: String) -> Dictionary:
 	var legal_bench_ids := _selection_helper.collect_legal_bench_ids(battle_state, side_state)

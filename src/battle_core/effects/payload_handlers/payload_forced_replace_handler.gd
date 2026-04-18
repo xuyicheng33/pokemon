@@ -1,6 +1,21 @@
 extends RefCounted
 class_name PayloadForcedReplaceHandler
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "replacement_service",
+		"source": "replacement_service",
+		"nested": true,
+	},
+	{
+		"field": "target_helper",
+		"source": "payload_unit_target_helper",
+		"nested": true,
+	},
+]
+
 const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
@@ -13,11 +28,8 @@ func invalid_battle_code() -> Variant:
     return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-    if replacement_service == null:
-        return "replacement_service"
-    if target_helper == null:
-        return "target_helper"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func execute(payload, _effect_definition, effect_event, battle_state, content_index, execute_trigger_batch: Callable = Callable()) -> void:
     last_invalid_battle_code = null

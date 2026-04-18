@@ -1,6 +1,21 @@
 extends RefCounted
 class_name FieldApplyConflictService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "rng_service",
+		"source": "rng_service",
+		"nested": true,
+	},
+	{
+		"field": "context_resolver",
+		"source": "field_apply_context_resolver",
+		"nested": true,
+	},
+]
+
 const ClashResultScript := preload("res://src/battle_core/contracts/clash_result.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -13,11 +28,8 @@ func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-	if rng_service == null:
-		return "rng_service"
-	if context_resolver == null:
-		return "context_resolver"
-	return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func resolve_field_kind(field_definition) -> String:
 	last_invalid_battle_code = null

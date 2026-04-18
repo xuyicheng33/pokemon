@@ -1,6 +1,56 @@
 extends RefCounted
 class_name BattleInitializerPhaseService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "id_factory",
+		"source": "id_factory",
+		"nested": true,
+	},
+	{
+		"field": "faint_resolver",
+		"source": "faint_resolver",
+		"nested": true,
+	},
+	{
+		"field": "trigger_batch_runner",
+		"source": "trigger_batch_runner",
+		"nested": true,
+	},
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+	{
+		"field": "mp_service",
+		"source": "mp_service",
+		"nested": true,
+	},
+	{
+		"field": "rule_mod_service",
+		"source": "rule_mod_service",
+		"nested": true,
+	},
+	{
+		"field": "battle_result_service",
+		"source": "battle_result_service",
+		"nested": true,
+	},
+	{
+		"field": "field_lifecycle_service",
+		"source": "turn_field_lifecycle_service",
+		"nested": true,
+	},
+]
+
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
@@ -21,37 +71,8 @@ var battle_result_service
 var field_lifecycle_service
 
 func resolve_missing_dependency() -> String:
-    if id_factory == null:
-        return "id_factory"
-    if faint_resolver == null:
-        return "faint_resolver"
-    var faint_missing := _resolve_nested_missing_dependency(faint_resolver)
-    if not faint_missing.is_empty():
-        return "faint_resolver.%s" % faint_missing
-    if trigger_batch_runner == null:
-        return "trigger_batch_runner"
-    var trigger_batch_missing := _resolve_nested_missing_dependency(trigger_batch_runner)
-    if not trigger_batch_missing.is_empty():
-        return "trigger_batch_runner.%s" % trigger_batch_missing
-    if battle_logger == null:
-        return "battle_logger"
-    if log_event_builder == null:
-        return "log_event_builder"
-    if mp_service == null:
-        return "mp_service"
-    if rule_mod_service == null:
-        return "rule_mod_service"
-    if battle_result_service == null:
-        return "battle_result_service"
-    var battle_result_missing := _resolve_nested_missing_dependency(battle_result_service)
-    if not battle_result_missing.is_empty():
-        return "battle_result_service.%s" % battle_result_missing
-    if field_lifecycle_service == null:
-        return "field_lifecycle_service"
-    var field_lifecycle_missing := _resolve_nested_missing_dependency(field_lifecycle_service)
-    if not field_lifecycle_missing.is_empty():
-        return "field_lifecycle_service.%s" % field_lifecycle_missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func append_battle_header_event(battle_state, content_index) -> void:
     battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_HEADER, "battle_init")

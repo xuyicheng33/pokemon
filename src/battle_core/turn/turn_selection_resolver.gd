@@ -1,6 +1,26 @@
 extends RefCounted
 class_name TurnSelectionResolver
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "legal_action_service",
+		"source": "legal_action_service",
+		"nested": true,
+	},
+	{
+		"field": "command_builder",
+		"source": "command_builder",
+		"nested": true,
+	},
+	{
+		"field": "command_validator",
+		"source": "command_validator",
+		"nested": true,
+	},
+]
+
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const SelectionStateScript := preload("res://src/battle_core/contracts/selection_state.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -18,13 +38,8 @@ func error_state() -> Dictionary:
     }
 
 func resolve_missing_dependency() -> String:
-    if legal_action_service == null:
-        return "legal_action_service"
-    if command_builder == null:
-        return "command_builder"
-    if command_validator == null:
-        return "command_validator"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func reset_turn_state(battle_state) -> void:
     for side_state in battle_state.sides:

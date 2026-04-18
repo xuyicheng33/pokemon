@@ -1,6 +1,16 @@
 extends RefCounted
 class_name RuleModService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "id_factory",
+		"source": "id_factory",
+		"nested": true,
+	},
+]
+
 const RuleModReadServiceScript := preload("res://src/battle_core/effects/rule_mod_read_service.gd")
 const RuleModWriteServiceScript := preload("res://src/battle_core/effects/rule_mod_write_service.gd")
 
@@ -9,6 +19,9 @@ var last_error_code: Variant = null
 var last_apply_skipped: bool = false
 var _read_service = RuleModReadServiceScript.new()
 var _write_service = RuleModWriteServiceScript.new()
+
+func resolve_missing_dependency() -> String:
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 func error_state() -> Dictionary:
     var read_error_state: Dictionary = _read_service.error_state()

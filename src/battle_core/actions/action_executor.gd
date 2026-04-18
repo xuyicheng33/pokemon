@@ -1,6 +1,46 @@
 extends RefCounted
 class_name ActionExecutor
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "action_chain_context_builder",
+		"source": "action_chain_context_builder",
+		"nested": true,
+	},
+	{
+		"field": "action_start_phase_service",
+		"source": "action_start_phase_service",
+		"nested": true,
+	},
+	{
+		"field": "action_skill_effect_service",
+		"source": "action_skill_effect_service",
+		"nested": true,
+	},
+	{
+		"field": "action_execution_resolution_service",
+		"source": "action_execution_resolution_service",
+		"nested": true,
+	},
+	{
+		"field": "switch_action_service",
+		"source": "switch_action_service",
+		"nested": true,
+	},
+	{
+		"field": "action_log_service",
+		"source": "action_log_service",
+		"nested": true,
+	},
+	{
+		"field": "action_domain_guard",
+		"source": "action_domain_guard",
+		"nested": true,
+	},
+]
+
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const ActionResultScript := preload("res://src/battle_core/contracts/action_result.gd")
@@ -15,39 +55,8 @@ var action_log_service
 var action_domain_guard
 
 func resolve_missing_dependency() -> String:
-    if action_chain_context_builder == null:
-        return "action_chain_context_builder"
-    if action_start_phase_service == null:
-        return "action_start_phase_service"
-    var start_missing := str(action_start_phase_service.resolve_missing_dependency())
-    if not start_missing.is_empty():
-        return "action_start_phase_service.%s" % start_missing
-    if action_skill_effect_service == null:
-        return "action_skill_effect_service"
-    var effect_missing := str(action_skill_effect_service.resolve_missing_dependency())
-    if not effect_missing.is_empty():
-        return "action_skill_effect_service.%s" % effect_missing
-    if action_execution_resolution_service == null:
-        return "action_execution_resolution_service"
-    var resolution_missing := str(action_execution_resolution_service.resolve_missing_dependency())
-    if not resolution_missing.is_empty():
-        return "action_execution_resolution_service.%s" % resolution_missing
-    if switch_action_service == null:
-        return "switch_action_service"
-    var switch_missing := str(switch_action_service.resolve_missing_dependency())
-    if not switch_missing.is_empty():
-        return "switch_action_service.%s" % switch_missing
-    if action_log_service == null:
-        return "action_log_service"
-    var log_missing := str(action_log_service.resolve_missing_dependency())
-    if not log_missing.is_empty():
-        return "action_log_service.%s" % log_missing
-    if action_domain_guard == null:
-        return "action_domain_guard"
-    var domain_missing := str(action_domain_guard.resolve_missing_dependency())
-    if not domain_missing.is_empty():
-        return "action_domain_guard.%s" % domain_missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func execute_action(queued_action, battle_state, content_index) -> Variant:
     var result = ActionResultScript.new()

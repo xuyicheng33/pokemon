@@ -1,6 +1,16 @@
 extends RefCounted
 class_name PayloadResourceModHandler
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "payload_resource_runtime_service",
+		"source": "payload_resource_runtime_service",
+		"nested": true,
+	},
+]
+
 const ResourceModPayloadScript := preload("res://src/battle_core/content/resource_mod_payload.gd")
 
 var last_invalid_battle_code: Variant = null
@@ -10,13 +20,8 @@ func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-	if payload_resource_runtime_service == null:
-		return "payload_resource_runtime_service"
-	if payload_resource_runtime_service.has_method("resolve_missing_dependency"):
-		var missing_dependency := str(payload_resource_runtime_service.resolve_missing_dependency())
-		if not missing_dependency.is_empty():
-			return "payload_resource_runtime_service.%s" % missing_dependency
-	return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func execute(payload, effect_definition, effect_event, battle_state, _content_index, _execute_trigger_batch: Callable = Callable()) -> void:
 	last_invalid_battle_code = null

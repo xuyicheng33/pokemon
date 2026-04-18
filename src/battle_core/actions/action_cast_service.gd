@@ -1,6 +1,46 @@
 extends RefCounted
 class_name ActionCastService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "mp_service",
+		"source": "mp_service",
+		"nested": true,
+	},
+	{
+		"field": "action_hit_resolution_service",
+		"source": "action_hit_resolution_service",
+		"nested": true,
+	},
+	{
+		"field": "target_resolver",
+		"source": "target_resolver",
+		"nested": true,
+	},
+	{
+		"field": "trigger_batch_runner",
+		"source": "trigger_batch_runner",
+		"nested": true,
+	},
+	{
+		"field": "action_log_service",
+		"source": "action_log_service",
+		"nested": true,
+	},
+	{
+		"field": "action_cast_direct_damage_pipeline",
+		"source": "action_cast_direct_damage_pipeline",
+		"nested": true,
+	},
+	{
+		"field": "action_cast_skill_effect_dispatch_pipeline",
+		"source": "action_cast_skill_effect_dispatch_pipeline",
+		"nested": true,
+	},
+]
+
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ActionCastDamageSegmentHelperScript := preload("res://src/battle_core/actions/action_cast_damage_segment_helper.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
@@ -16,30 +56,8 @@ var action_cast_direct_damage_pipeline
 var action_cast_skill_effect_dispatch_pipeline
 
 func resolve_missing_dependency() -> String:
-    if mp_service == null:
-        return "mp_service"
-    if action_hit_resolution_service == null:
-        return "action_hit_resolution_service"
-    var hit_missing := str(action_hit_resolution_service.resolve_missing_dependency())
-    if not hit_missing.is_empty():
-        return "action_hit_resolution_service.%s" % hit_missing
-    if target_resolver == null:
-        return "target_resolver"
-    if trigger_batch_runner == null:
-        return "trigger_batch_runner"
-    if action_log_service == null:
-        return "action_log_service"
-    if action_cast_direct_damage_pipeline == null:
-        return "action_cast_direct_damage_pipeline"
-    var direct_pipeline_missing := str(action_cast_direct_damage_pipeline.resolve_missing_dependency())
-    if not direct_pipeline_missing.is_empty():
-        return "action_cast_direct_damage_pipeline.%s" % direct_pipeline_missing
-    if action_cast_skill_effect_dispatch_pipeline == null:
-        return "action_cast_skill_effect_dispatch_pipeline"
-    var dispatch_pipeline_missing := str(action_cast_skill_effect_dispatch_pipeline.resolve_missing_dependency())
-    if not dispatch_pipeline_missing.is_empty():
-        return "action_cast_skill_effect_dispatch_pipeline.%s" % dispatch_pipeline_missing
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func resolve_mp_cost(command, skill_definition) -> int:
     if command.command_type == CommandTypesScript.SKILL or command.command_type == CommandTypesScript.ULTIMATE:

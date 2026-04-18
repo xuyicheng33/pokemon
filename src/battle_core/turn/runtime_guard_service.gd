@@ -1,33 +1,13 @@
 extends RefCounted
 class_name RuntimeGuardService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
 const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
-func resolve_missing_dependency(controller_deps: Dictionary) -> String:
-	var required: PackedStringArray = PackedStringArray([
-		"action_queue_builder",
-		"action_executor",
-		"faint_resolver",
-		"turn_resolution_service",
-		"battle_result_service",
-	])
-	for dependency_name in required:
-		var dependency = controller_deps.get(dependency_name, null)
-		if dependency == null:
-			return dependency_name
-		var nested_missing := _resolve_object_missing_dependency(dependency)
-		if not nested_missing.is_empty():
-			return "%s.%s" % [dependency_name, nested_missing]
-	return ""
-
-func _resolve_object_missing_dependency(dependency) -> String:
-	if dependency == null:
-		return "missing"
-	if dependency.has_method("resolve_missing_dependency"):
-		return str(dependency.resolve_missing_dependency())
-	return ""
+func resolve_missing_dependency(service_owner) -> String:
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(service_owner)
 
 func validate_runtime_state(battle_state, content_index = null) -> Variant:
 	if battle_state.chain_context == null:

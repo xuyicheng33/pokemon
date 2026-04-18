@@ -55,7 +55,7 @@ src/
   battle_core/          # 核心引擎
     content/formal_validators/  # 正式角色 formal validator（shared + per-character）
     effects/payload_handlers/   # payload handler 与 payload 子 runtime service
-  composition/          # 依赖装配与 wiring specs 聚合
+  composition/          # 依赖装配与 compose metadata helper
   adapters/             # UI/输入适配
   shared/               # 通用常量与工具
 test/

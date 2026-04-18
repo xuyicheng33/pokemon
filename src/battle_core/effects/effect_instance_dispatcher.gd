@@ -1,12 +1,25 @@
 extends RefCounted
 class_name EffectInstanceDispatcher
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "id_factory",
+		"source": "id_factory",
+		"nested": true,
+	},
+]
+
 const EffectEventScript := preload("res://src/battle_core/contracts/effect_event.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var id_factory
 var last_invalid_battle_code: Variant = null
+
+func resolve_missing_dependency() -> String:
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 func invalid_battle_code() -> Variant:
     return last_invalid_battle_code

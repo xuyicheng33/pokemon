@@ -1,6 +1,56 @@
 extends RefCounted
 class_name PayloadDamageRuntimeService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+	{
+		"field": "damage_service",
+		"source": "damage_service",
+		"nested": true,
+	},
+	{
+		"field": "combat_type_service",
+		"source": "combat_type_service",
+		"nested": true,
+	},
+	{
+		"field": "stat_calculator",
+		"source": "stat_calculator",
+		"nested": true,
+	},
+	{
+		"field": "rule_mod_service",
+		"source": "rule_mod_service",
+		"nested": true,
+	},
+	{
+		"field": "faint_killer_attribution_service",
+		"source": "faint_killer_attribution_service",
+		"nested": true,
+	},
+	{
+		"field": "target_helper",
+		"source": "payload_unit_target_helper",
+		"nested": true,
+	},
+	{
+		"field": "effect_event_helper",
+		"source": "payload_effect_event_helper",
+		"nested": true,
+	},
+]
+
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
@@ -21,25 +71,8 @@ func invalid_battle_code() -> Variant:
     return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-    if battle_logger == null:
-        return "battle_logger"
-    if log_event_builder == null:
-        return "log_event_builder"
-    if damage_service == null:
-        return "damage_service"
-    if combat_type_service == null:
-        return "combat_type_service"
-    if stat_calculator == null:
-        return "stat_calculator"
-    if rule_mod_service == null:
-        return "rule_mod_service"
-    if faint_killer_attribution_service == null:
-        return "faint_killer_attribution_service"
-    if target_helper == null:
-        return "target_helper"
-    if effect_event_helper == null:
-        return "effect_event_helper"
-    return ""
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
     last_invalid_battle_code = null

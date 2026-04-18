@@ -1,6 +1,36 @@
 extends RefCounted
 class_name TurnFieldLifecycleService
 
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{
+		"field": "field_service",
+		"source": "field_service",
+		"nested": true,
+	},
+	{
+		"field": "trigger_batch_runner",
+		"source": "trigger_batch_runner",
+		"nested": true,
+	},
+	{
+		"field": "battle_logger",
+		"source": "battle_logger",
+		"nested": true,
+	},
+	{
+		"field": "log_event_builder",
+		"source": "log_event_builder",
+		"nested": true,
+	},
+	{
+		"field": "battle_result_service",
+		"source": "battle_result_service",
+		"nested": true,
+	},
+]
+
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -13,17 +43,8 @@ var log_event_builder
 var battle_result_service
 
 func resolve_missing_dependency() -> String:
-    if field_service == null:
-        return "field_service"
-    if trigger_batch_runner == null:
-        return "trigger_batch_runner"
-    if battle_logger == null:
-        return "battle_logger"
-    if log_event_builder == null:
-        return "log_event_builder"
-    if battle_result_service == null:
-        return "battle_result_service"
-    return ""
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
 
 func collect_active_unit_ids(battle_state) -> Array:
     var owner_ids: Array = []

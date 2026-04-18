@@ -6,7 +6,7 @@ const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_c
 const BattleCoreManagerContainerServiceScript := preload("res://src/battle_core/facades/battle_core_manager_container_service.gd")
 const EventLogPublicSnapshotBuilderScript := preload("res://src/battle_core/facades/event_log_public_snapshot_builder.gd")
 const ServiceSpecsScript := preload("res://src/composition/battle_core_service_specs.gd")
-const WiringSpecsScript := preload("res://src/composition/battle_core_wiring_specs.gd")
+const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 class ContainerFactoryPort:
@@ -45,15 +45,16 @@ func shared_content_snapshot_cache() -> Variant:
 func compose() -> Variant:
     last_error_code = null
     last_error_message = ""
-    var wiring_specs := WiringSpecsScript.wiring_specs()
-    var reset_specs := WiringSpecsScript.reset_specs()
+    var service_slots := _resolve_service_slots()
+    var wiring_specs := ServiceDependencyContractHelperScript.dependency_edges(service_slots)
+    var reset_specs := ServiceDependencyContractHelperScript.compose_reset_specs(service_slots)
     var container = BattleCoreContainerScript.new()
     if not _instantiate_services(container):
         return null
     if not _wire_dependencies(container, wiring_specs):
         return null
-    container.configure_dispose_specs(_resolve_service_slots(), wiring_specs, reset_specs)
-    if not _validate_container_dependencies(container, wiring_specs):
+    container.configure_dispose_specs(service_slots, wiring_specs, reset_specs)
+    if not _validate_container_dependencies(container, service_slots, wiring_specs):
         container.dispose()
         return null
     return container
@@ -130,7 +131,7 @@ func _wire_dependencies(container, wiring_specs: Array) -> bool:
         owner.set(dependency_name, dependency)
     return true
 
-func _validate_container_dependencies(container, wiring_specs: Array) -> bool:
+func _validate_container_dependencies(container, service_slots: PackedStringArray, wiring_specs: Array) -> bool:
     for wiring_spec in wiring_specs:
         var owner_name := str(wiring_spec["owner"])
         var dependency_name := str(wiring_spec["dependency"])
@@ -141,16 +142,13 @@ func _validate_container_dependencies(container, wiring_specs: Array) -> bool:
             return _fail("%s missing declared dependency slot: %s" % [owner_name, dependency_name])
         if owner.get(dependency_name) == null:
             return _fail("%s missing dependency: %s" % [owner_name, dependency_name])
-    for slot_name in ServiceSpecsScript.service_slots():
+    for slot_name in service_slots:
         var service = container.service(slot_name)
         if service == null:
             return _fail("Composer missing service: %s" % str(slot_name))
-        if slot_name == "runtime_guard_service":
-            continue
-        if service.has_method("resolve_missing_dependency"):
-            var missing_dependency := str(service.resolve_missing_dependency())
-            if not missing_dependency.is_empty():
-                return _fail("%s missing dependency: %s" % [slot_name, missing_dependency])
+        var missing_dependency := ServiceDependencyContractHelperScript.resolve_missing_dependency(service)
+        if not missing_dependency.is_empty():
+            return _fail("%s missing dependency: %s" % [slot_name, missing_dependency])
     return true
 
 func _resolve_service_slots() -> PackedStringArray:
