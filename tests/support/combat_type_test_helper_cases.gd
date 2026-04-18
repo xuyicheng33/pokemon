@@ -197,7 +197,8 @@ func build_initialized_battle(core, content_index, battle_setup, seed: int):
 	battle_state.battle_id = core.service("id_factory").next_id("battle")
 	battle_state.seed = seed
 	battle_state.rng_stream_index = core.service("rng_service").get_stream_index()
-	core.service("battle_initializer").initialize_battle(battle_state, content_index, battle_setup)
+	if core.service("battle_initializer").initialize_battle(battle_state, content_index, battle_setup):
+		battle_state.rebuild_indexes()
 	return battle_state
 
 func find_actor_damage_event(event_log: Array, actor_public_id: String):

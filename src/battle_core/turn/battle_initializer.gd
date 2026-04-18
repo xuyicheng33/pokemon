@@ -175,7 +175,8 @@ func _build_side_states(battle_state, battle_setup, format_config, content_index
                 state_builder_error.get("code", ErrorCodesScript.INVALID_BATTLE_SETUP),
                 String(state_builder_error.get("message", "BattleInitializerStateBuilder failed"))
             )
-        battle_state.sides.append(side_state)
+        battle_state.append_side(side_state)
+    battle_state.rebuild_indexes()
     return true
 
 func _sync_setup_validator() -> void:

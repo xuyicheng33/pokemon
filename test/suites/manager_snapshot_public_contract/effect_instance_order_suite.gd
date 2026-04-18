@@ -31,7 +31,7 @@ func _test_public_snapshot_effect_instance_order_contract() -> Dictionary:
 	]
 	side_state.team_units.append(unit_state)
 	side_state.active_slots["active_0"] = unit_state.unit_instance_id
-	battle_state.sides.append(side_state)
+	battle_state.append_side(side_state)
 	var builder = PublicSnapshotBuilderScript.new()
 	var public_snapshot: Dictionary = builder.build_public_snapshot(battle_state)
 	var unit_snapshot := _helper.find_unit_snapshot(public_snapshot, "P1", "P1-A")

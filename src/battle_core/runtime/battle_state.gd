@@ -30,12 +30,19 @@ var last_matchup_signature: String = ""
 var pre_applied_turn_start_regen_turn_index: int = 0
 var runtime_fault_code: String = ""
 var runtime_fault_message: String = ""
+var _side_by_id: Dictionary = {}
+var _unit_by_id: Dictionary = {}
+var _unit_by_public_id: Dictionary = {}
 
 func get_side(side_id: String) -> Variant:
-    for side_state in sides:
-        if side_state.side_id == side_id:
-            return side_state
-    return null
+    var cached_side = _side_by_id.get(side_id, null)
+    var live_side = _find_side_by_id(side_id)
+    if cached_side != null and cached_side == live_side:
+        return cached_side
+    if cached_side == null and live_side == null:
+        return null
+    rebuild_indexes()
+    return _side_by_id.get(side_id, null)
 
 func get_opponent_side(side_id: String) -> Variant:
     for side_state in sides:
@@ -50,17 +57,35 @@ func get_side_for_unit(unit_instance_id: String) -> Variant:
     return null
 
 func get_unit(unit_instance_id: String) -> Variant:
-    var side_state = get_side_for_unit(unit_instance_id)
-    if side_state == null:
+    var cached_unit = _unit_by_id.get(unit_instance_id, null)
+    var live_unit = _find_unit_by_id(unit_instance_id)
+    if cached_unit != null and cached_unit == live_unit:
+        return cached_unit
+    if cached_unit == null and live_unit == null:
         return null
-    return side_state.find_unit(unit_instance_id)
+    rebuild_indexes()
+    return _unit_by_id.get(unit_instance_id, null)
 
 func get_unit_by_public_id(public_id: String) -> Variant:
+    var cached_unit = _unit_by_public_id.get(public_id, null)
+    var live_unit = _find_unit_by_public_id(public_id)
+    if cached_unit != null and cached_unit == live_unit:
+        return cached_unit
+    if cached_unit == null and live_unit == null:
+        return null
+    rebuild_indexes()
+    return _unit_by_public_id.get(public_id, null)
+
+func append_side(side_state) -> void:
+    sides.append(side_state)
+    _index_side(side_state)
+
+func rebuild_indexes() -> void:
+    _side_by_id.clear()
+    _unit_by_id.clear()
+    _unit_by_public_id.clear()
     for side_state in sides:
-        for unit_state in side_state.team_units:
-            if unit_state.public_id == public_id:
-                return unit_state
-    return null
+        _index_side(side_state)
 
 func get_active_unit(side_id: String, slot_id: String = ContentSchemaScript.ACTIVE_SLOT_PRIMARY) -> Variant:
     var side_state = get_side(side_id)
@@ -103,3 +128,39 @@ func to_stable_dict() -> Dictionary:
         "battle_result": battle_result.to_stable_dict() if battle_result != null else null,
         "rng_stream_index": rng_stream_index,
     }
+
+func _find_side_by_id(side_id: String) -> Variant:
+    for side_state in sides:
+        if side_state.side_id == side_id:
+            return side_state
+    return null
+
+func _find_unit_by_id(unit_instance_id: String) -> Variant:
+    for side_state in sides:
+        for unit_state in side_state.team_units:
+            if unit_state.unit_instance_id == unit_instance_id:
+                return unit_state
+    return null
+
+func _find_unit_by_public_id(public_id: String) -> Variant:
+    for side_state in sides:
+        for unit_state in side_state.team_units:
+            if unit_state.public_id == public_id:
+                return unit_state
+    return null
+
+func _index_side(side_state) -> void:
+    if side_state == null:
+        return
+    if not _side_by_id.has(side_state.side_id):
+        _side_by_id[side_state.side_id] = side_state
+    for unit_state in side_state.team_units:
+        _index_unit(unit_state)
+
+func _index_unit(unit_state) -> void:
+    if unit_state == null:
+        return
+    if not _unit_by_id.has(unit_state.unit_instance_id):
+        _unit_by_id[unit_state.unit_instance_id] = unit_state
+    if not _unit_by_public_id.has(unit_state.public_id):
+        _unit_by_public_id[unit_state.public_id] = unit_state

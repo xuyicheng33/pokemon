@@ -75,6 +75,7 @@ func validate_and_prepare_battle_state(battle_state, content_index, battle_setup
 	battle_state.turn_index = 1
 	battle_state.battle_result = BattleResultScript.new()
 	battle_state.sides.clear()
+	battle_state.rebuild_indexes()
 	battle_state.fatal_damage_records_by_target.clear()
 	battle_state.field_rule_mod_instances.clear()
 	battle_state.last_matchup_signature = ""
