@@ -2,6 +2,7 @@ extends RefCounted
 class_name ManualBattleSceneDriveSupport
 
 const BattleSandboxFirstLegalPolicyScript := preload("res://src/adapters/battle_sandbox_first_legal_policy.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 var _policy_port = BattleSandboxFirstLegalPolicyScript.new()
 
@@ -12,14 +13,17 @@ func run_hotseat_turn(context_support, context: Dictionary, p1_selected_action: 
 	var cursor_before = int(context.get("event_log_cursor", 0))
 	var p1_result = controller.submit_action(p1_selected_action)
 	if not bool(p1_result.get("ok", false)):
-		return _fail(str(p1_result.get("error", "controller submit_action(P1) failed")))
+		return _fail(str(p1_result.get("error_message", "controller submit_action(P1) failed")))
 	context_support.sync_context_from_controller(context)
 	var p2_result = controller.submit_action(p2_selected_action)
 	if not bool(p2_result.get("ok", false)):
-		return _fail(str(p2_result.get("error", "controller submit_action(P2) failed")))
+		return _fail(str(p2_result.get("error_message", "controller submit_action(P2) failed")))
 	context_support.sync_context_from_controller(context)
 	return {
 		"ok": true,
+		"data": null,
+		"error_code": null,
+		"error_message": null,
 		"public_snapshot": context.get("public_snapshot", {}),
 		"event_delta": context.get("last_event_delta", []),
 		"event_log_cursor_before": cursor_before,
@@ -49,16 +53,19 @@ func run_to_battle_end(context_support, context: Dictionary, max_turns: int = 64
 			}
 		)
 		if not bool(auto_action_result.get("ok", false)):
-			return _fail(str(auto_action_result.get("error", "auto battle failed to pick action")))
+			return _fail(str(auto_action_result.get("error_message", "auto battle failed to pick action")))
 		var submit_result = controller.submit_action(auto_action_result.get("data", {}))
 		if not bool(submit_result.get("ok", false)):
-			return _fail(str(submit_result.get("error", "controller submit_action(auto) failed")))
+			return _fail(str(submit_result.get("error_message", "controller submit_action(auto) failed")))
 		context_support.sync_context_from_controller(context)
 		command_steps += 1
 	var battle_result = context.get("public_snapshot", {}).get("battle_result", null)
 	var battle_summary: Dictionary = context.get("battle_summary", {}).duplicate(true)
 	return {
 		"ok": true,
+		"data": null,
+		"error_code": null,
+		"error_message": null,
 		"battle_result": battle_result.duplicate(true) if battle_result is Dictionary else battle_result,
 		"turn_index": current_turn_index(context),
 		"event_log_cursor": int(context.get("event_log_cursor", 0)),
@@ -103,22 +110,26 @@ func _current_side_legal_actions_result(context_support, context: Dictionary) ->
 		return _fail("manual scene is not waiting for side selection")
 	var legal_actions = context.get("legal_actions_by_side", {}).get(side_id, null)
 	if legal_actions != null:
-		return {"ok": true, "side_id": side_id, "data": legal_actions}
+		var legal_actions_result := ResultEnvelopeHelperScript.ok(legal_actions)
+		legal_actions_result["side_id"] = side_id
+		return legal_actions_result
 	var controller = context.get("controller", null)
 	if controller == null or not controller.has_method("fetch_legal_actions_for_side"):
 		return _fail("controller cannot refresh legal actions for side %s" % side_id)
 	var refresh_result = controller.fetch_legal_actions_for_side(side_id)
 	if not bool(refresh_result.get("ok", false)):
-		return _fail(str(refresh_result.get("error", "fetch_legal_actions_for_side(%s) failed" % side_id)))
+		return _fail(str(refresh_result.get("error_message", "fetch_legal_actions_for_side(%s) failed" % side_id)))
 	context_support.sync_context_from_controller(context)
 	legal_actions = context.get("legal_actions_by_side", {}).get(side_id, null)
 	if legal_actions == null:
 		return _fail("controller did not keep legal actions for side %s after refresh" % side_id)
-	return {"ok": true, "side_id": side_id, "data": legal_actions}
+	var refresh_result_envelope := ResultEnvelopeHelperScript.ok(legal_actions)
+	refresh_result_envelope["side_id"] = side_id
+	return refresh_result_envelope
 
 func _battle_finished(context: Dictionary) -> bool:
 	var battle_result = context.get("public_snapshot", {}).get("battle_result", null)
 	return battle_result is Dictionary and bool(battle_result.get("finished", false))
 
 func _fail(message: String) -> Dictionary:
-	return {"ok": false, "error": message}
+	return ResultEnvelopeHelperScript.error(null, message)

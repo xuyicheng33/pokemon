@@ -31,9 +31,9 @@
   - `matchup_id`
   - `character_ids`
 - `battle_seed` 现在主要靠：
-  - `src/composition/sample_battle_factory_matchup_catalog_loader.gd`
+  - `src/composition/sample_battle_factory_matchup_catalog.gd`
   - `tests/gates/repo_consistency_formal_character_gate_pairs.py`
- 这两处额外校验来保证，而不是回到共享合同单真相。
+这两处额外校验来保证，而不是回到共享合同单真相。
 - 当前 runtime 入口仍然安全，因为 `SampleBattleFactoryFormalMatchupCatalog` 会走 loader；但“formal 共享字段定义只保留一份真相”的目标在这里还没有完全落齐。
 
 ### 3. 角色接入治理已收口，但机制扩展实现仍然偏中心化

@@ -1,6 +1,6 @@
 extends SceneTree
 
-const DeliveryRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_delivery_registry_loader.gd")
+const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -16,14 +16,14 @@ func _init() -> void:
 	var manifest_path := ""
 	if args.size() >= 2:
 		manifest_path = String(args[1]).strip_edges()
-	var loader = DeliveryRegistryLoaderScript.new()
-	if loader == null:
-		printerr("EXPORT_FORMAL_DELIVERY_REGISTRY_FAILED: missing delivery registry loader")
+	var formal_access = FormalAccessScript.new()
+	if formal_access == null:
+		printerr("EXPORT_FORMAL_DELIVERY_REGISTRY_FAILED: missing formal access")
 		quit(1)
 		return
 	if not manifest_path.is_empty():
-		loader.registry_path_override = manifest_path
-	var entries_result: Dictionary = loader.load_entries_result()
+		formal_access.registry_path_override = manifest_path
+	var entries_result: Dictionary = formal_access.load_delivery_entries_result()
 	if not bool(entries_result.get("ok", false)):
 		printerr(
 			"EXPORT_FORMAL_DELIVERY_REGISTRY_FAILED: %s" % String(entries_result.get("error_message", "unknown error"))

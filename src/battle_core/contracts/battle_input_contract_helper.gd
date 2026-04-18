@@ -1,6 +1,8 @@
 extends RefCounted
 class_name BattleInputContractHelper
 
+const PropertyAccessHelperScript := preload("res://src/shared/property_access_helper.gd")
+
 static func validate_battle_setup_error(battle_setup, operation_label: String) -> String:
     if battle_setup == null:
         return "%s requires battle_setup" % operation_label
@@ -118,24 +120,7 @@ static func _collect_side_issues(sides: Array) -> Array[Dictionary]:
     return issues
 
 static func _has_property(value, property_name: String) -> bool:
-    if value == null or property_name.is_empty():
-        return false
-    if typeof(value) == TYPE_DICTIONARY:
-        return value.has(property_name)
-    if typeof(value) != TYPE_OBJECT:
-        return false
-    for property_info in value.get_property_list():
-        if String(property_info.get("name", "")) == property_name:
-            return true
-    return false
+    return PropertyAccessHelperScript.has_property(value, property_name)
 
 static func _read_property(value, property_name: String, default_value = null):
-    if value == null or property_name.is_empty():
-        return default_value
-    if typeof(value) == TYPE_DICTIONARY:
-        return value.get(property_name, default_value)
-    if typeof(value) != TYPE_OBJECT:
-        return default_value
-    if not _has_property(value, property_name):
-        return default_value
-    return value.get(property_name)
+    return PropertyAccessHelperScript.read_property(value, property_name, default_value)

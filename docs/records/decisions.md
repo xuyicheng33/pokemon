@@ -124,6 +124,18 @@
 - `pair_token` 继续作为 formal pair 身份字段；`baseline_script_path` 继续作为 formal baseline 注册字段；`owned_pair_interaction_specs` 继续是唯一手写 pair interaction 输入。
 - manifest 不再恢复顶层 pair bucket；pair 覆盖与 directed case 继续从 manifest 角色条目派生。
 
+## 0Z. BattleSandbox 边界、initializer child ports 与 SampleBattleFactory 收口规则（2026-04-18）
+
+- `BattleSandboxController` 继续保留主入口方法与场景生命周期职责，但不再作为外部可写状态袋：
+  - 运行态必须下沉到显式 session state
+  - UI 节点引用必须下沉到独立 view refs
+  - 测试与 support 层不得再直接读写 `manager / session_id / sample_factory / error_message`
+- `BattleInitializer` 的 `_setup_validator / _phase_service / _state_builder` 继续只做 owner 私有 helper，不升级成 composer service slot；但共享依赖必须通过显式 ports 配置，不再散写 `_sync_*` 赋值。
+- `SampleBattleFactory` 本轮允许强力合并内部 helper，以减少文件数和跳转成本；前提是：
+  - 公开 facade 方法与 override 入口保持稳定
+  - 任何 owner 文件都不能突破现有 architecture gate 的行数限制
+  - tests、gates、docs 里引用到的 helper 路径必须同轮完成迁移，不留下旧路径针脚
+
 ## 1. Archive 读取顺序
 
 - 查当前仍生效的结构与交付规则：先看本文件，再看 `docs/design/`

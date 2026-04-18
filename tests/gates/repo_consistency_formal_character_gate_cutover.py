@@ -41,12 +41,12 @@ def validate_manifest_cutover(
         ctx.failures.append(f"{runtime_registry_loader_path} must preload {formal_manifest_script_path}")
     if "build_runtime_entries_result" not in runtime_registry_loader_text:
         ctx.failures.append(f"{runtime_registry_loader_path} must derive runtime entries from manifest")
+    if "build_delivery_entries_result" not in runtime_registry_loader_text:
+        ctx.failures.append(f"{runtime_registry_loader_path} must derive delivery entries from manifest")
 
     delivery_registry_loader_text = ctx.read_text(delivery_registry_loader_path)
-    if f'preload("res://{formal_manifest_script_path}")' not in delivery_registry_loader_text:
-        ctx.failures.append(f"{delivery_registry_loader_path} must preload {formal_manifest_script_path}")
-    if "build_delivery_entries_result" not in delivery_registry_loader_text:
-        ctx.failures.append(f"{delivery_registry_loader_path} must derive delivery entries from manifest")
+    if "load_delivery_entries_result" not in delivery_registry_loader_text:
+        ctx.failures.append(f"{delivery_registry_loader_path} must expose delivery registry access through formal access")
 
     delivery_registry_helper_text = ctx.read_text(delivery_registry_helper_path)
     if f'const REGISTRY_PATH := "res://{manifest_path}"' not in delivery_registry_helper_text:

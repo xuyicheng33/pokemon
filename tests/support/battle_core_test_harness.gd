@@ -34,6 +34,9 @@ func build_manager() -> Dictionary:
 func dispose_core_pool() -> void:
     _pool_helper.dispose_core_pool()
 
+func dispose_sample_factories() -> void:
+    _sample_helper.dispose_sample_factories()
+
 func build_sample_factory():
     return _sample_helper.build_sample_factory()
 

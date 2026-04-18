@@ -3,6 +3,7 @@ class_name ManualBattleSceneContextSupport
 
 const BATTLE_SANDBOX_SCENE_PATH := "res://scenes/sandbox/BattleSandbox.tscn"
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 
@@ -17,11 +18,17 @@ func build_manual_scene_context(battle_seed: int, launch_config: Dictionary = {}
 	normalized_config["battle_seed"] = battle_seed
 	var bootstrap_result = controller.bootstrap_with_config(normalized_config)
 	if not bool(bootstrap_result.get("ok", false)):
-		var message = str(bootstrap_result.get("error", controller.error_message if controller != null else "manual scene bootstrap failed"))
+		var message = str(bootstrap_result.get("error_message", "manual scene bootstrap failed"))
 		_free_controller(controller)
 		return fail(message)
 	var context = {
 		"ok": true,
+		"data": {
+			"controller": controller,
+			"scene_root": controller,
+		},
+		"error_code": null,
+		"error_message": null,
 		"controller": controller,
 		"scene_root": controller,
 	}
@@ -31,16 +38,8 @@ func build_manual_scene_context(battle_seed: int, launch_config: Dictionary = {}
 func close_context(context: Dictionary) -> Dictionary:
 	var controller = context.get("controller", null)
 	if controller == null:
-		return {"ok": true}
-	var close_result = {"ok": true}
-	var manager = controller.manager
-	var session_id = str(controller.session_id).strip_edges()
-	if manager != null and not session_id.is_empty():
-		close_result = _unwrap_close_result(manager.close_session(session_id))
-	if manager != null and manager.has_method("dispose"):
-		manager.dispose()
-	controller.session_id = ""
-	controller.manager = null
+		return ResultEnvelopeHelperScript.ok(null)
+	var close_result = _unwrap_close_result(controller.close_runtime())
 	_free_controller(controller)
 	return close_result
 
@@ -49,7 +48,7 @@ func get_legal_actions(context: Dictionary, side_id: String) -> Dictionary:
 	var legal_actions = legal_actions_by_side.get(side_id, null)
 	if legal_actions == null:
 		return fail("controller has not loaded legal actions for side %s" % side_id)
-	return {"ok": true, "data": legal_actions}
+	return ResultEnvelopeHelperScript.ok(legal_actions)
 
 func instantiate_controller_result() -> Dictionary:
 	var packed_scene = load(BATTLE_SANDBOX_SCENE_PATH)
@@ -62,11 +61,11 @@ func instantiate_controller_result() -> Dictionary:
 		return fail("%s instantiate returned null" % BATTLE_SANDBOX_SCENE_PATH)
 	if not (controller is Node):
 		return fail("%s root must be Node" % BATTLE_SANDBOX_SCENE_PATH)
-	for method_name in ["bootstrap_with_config", "submit_action", "build_view_model", "get_state_snapshot"]:
+	for method_name in ["bootstrap_with_config", "submit_action", "build_view_model", "get_state_snapshot", "close_runtime"]:
 		if not controller.has_method(method_name):
 			_free_controller(controller)
 			return fail("%s missing controller method %s" % [BATTLE_SANDBOX_SCENE_PATH, method_name])
-	return {"ok": true, "data": controller}
+	return ResultEnvelopeHelperScript.ok(controller)
 
 func sync_context_from_controller(context: Dictionary) -> void:
 	var controller = context.get("controller", null)
@@ -75,10 +74,9 @@ func sync_context_from_controller(context: Dictionary) -> void:
 	var state_snapshot: Dictionary = controller.get_state_snapshot()
 	for key in state_snapshot.keys():
 		context[key] = state_snapshot[key]
-	context["manager"] = controller.manager
 
 func fail(message: String) -> Dictionary:
-	return {"ok": false, "error": message}
+	return ResultEnvelopeHelperScript.error(null, message)
 
 func _free_controller(controller) -> void:
 	if controller != null and is_instance_valid(controller):
@@ -88,5 +86,5 @@ func _unwrap_close_result(close_envelope: Dictionary) -> Dictionary:
 	if close_envelope == null:
 		return fail("close_session returned null envelope")
 	if bool(close_envelope.get("ok", false)):
-		return {"ok": true}
+		return ResultEnvelopeHelperScript.ok(null)
 	return fail(str(close_envelope.get("error_message", "close_session failed")))

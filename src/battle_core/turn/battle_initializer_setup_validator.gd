@@ -25,9 +25,9 @@ const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const BattleResultScript := preload("res://src/battle_core/contracts/battle_result.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var rng_service
-var battle_logger
-var combat_type_service
+var rng_service: RefCounted = null
+var battle_logger: RefCounted = null
+var combat_type_service: RefCounted = null
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
@@ -39,6 +39,16 @@ func error_state() -> Dictionary:
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
+func configure_ports(ports: BattleInitializerPorts) -> void:
+	if ports == null:
+		rng_service = null
+		battle_logger = null
+		combat_type_service = null
+		return
+	rng_service = ports.rng_service
+	battle_logger = ports.battle_logger
+	combat_type_service = ports.combat_type_service
 
 func validate_and_prepare_battle_state(battle_state, content_index, battle_setup) -> Variant:
 	last_error_code = null

@@ -2,6 +2,7 @@ extends RefCounted
 class_name ServiceDependencyContractHelper
 
 const ServiceSpecsScript := preload("res://src/composition/battle_core_service_specs.gd")
+const PropertyAccessHelperScript := preload("res://src/shared/property_access_helper.gd")
 
 const COMPOSE_DEPS_CONST := "COMPOSE_DEPS"
 const COMPOSE_RESET_FIELDS_CONST := "COMPOSE_RESET_FIELDS"
@@ -142,16 +143,7 @@ static func _script_for_target(target):
 	return target.get_script()
 
 static func _read_property(value, property_name: String, default_value = null):
-	if value == null or property_name.is_empty():
-		return default_value
-	if typeof(value) == TYPE_DICTIONARY:
-		return value.get(property_name, default_value)
-	if typeof(value) != TYPE_OBJECT:
-		return default_value
-	for property_info in value.get_property_list():
-		if String(property_info.get("name", "")) == property_name:
-			return value.get(property_name)
-	return default_value
+	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
 
 static func _visit_key(value) -> String:
 	if value == null:

@@ -2,6 +2,7 @@ extends RefCounted
 class_name SandboxSessionCoordinatorEnvelopeHelper
 
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
+const PropertyAccessHelperScript := preload("res://src/shared/property_access_helper.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 func build_summary_context(launch_config: Dictionary, side_control_modes: Dictionary, command_steps: int) -> Dictionary:
@@ -23,16 +24,7 @@ func unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.unwrap_ok(envelope, label)
 
 func read_property(value, property_name: String, default_value = null):
-	if value == null or property_name.is_empty():
-		return default_value
-	if value is Dictionary:
-		return value.get(property_name, default_value)
-	if typeof(value) != TYPE_OBJECT:
-		return default_value
-	for property_info in value.get_property_list():
-		if str(property_info.get("name", "")) == property_name:
-			return value.get(property_name)
-	return default_value
+	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
 
 func error_result(message: String) -> Dictionary:
-	return {"ok": false, "error": message}
+	return ResultEnvelopeHelperScript.error(null, message)

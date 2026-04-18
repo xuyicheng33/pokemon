@@ -23,8 +23,8 @@
 - 状态：本轮已改完
 - 处置：
   - `SampleBattleFactory` 继续保持现有公开方法集
-  - 可用 matchup 聚合下沉到 `sample_battle_factory_available_matchups_service.gd`
-  - content snapshot path 逻辑拆成 `sample_battle_factory_base_snapshot_paths_service.gd` 与 `sample_battle_factory_formal_snapshot_paths_service.gd`
+  - baseline matchup、可用 matchup 聚合与 override 广播收回到 `sample_battle_factory_baseline_matchup_catalog.gd`
+  - content snapshot path 改成 `sample_battle_factory_content_paths_helper.gd` 统一编排，底层目录扫描固定落在 `sample_battle_factory_base_snapshot_paths_service.gd`
 - 验证：
   - `TEST_PATH=res://test/suites/sample_battle_factory_contract_suite.gd bash tests/run_gdunit.sh`
 

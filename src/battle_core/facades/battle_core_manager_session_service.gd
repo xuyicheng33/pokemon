@@ -6,8 +6,8 @@ const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var sessions: Dictionary = {}
-var public_snapshot_builder = null
-var event_log_public_snapshot_builder = null
+var public_snapshot_builder: RefCounted = null
+var event_log_public_snapshot_builder: RefCounted = null
 
 func configure_session_ports(
     next_sessions: Dictionary,

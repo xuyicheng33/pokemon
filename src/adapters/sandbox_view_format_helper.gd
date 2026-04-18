@@ -5,17 +5,17 @@ const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sand
 
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 
-func format_status_text(controller, current_view_model: Dictionary) -> String:
+func format_status_text(state: SandboxSessionState, current_view_model: Dictionary) -> String:
 	if bool(current_view_model.get("replay_mode", false)):
 		var replay_result_text := ""
-		if not str(controller.battle_summary.get("result_type", "")).strip_edges().is_empty() \
-		or not str(controller.battle_summary.get("reason", "")).strip_edges().is_empty():
+		if not str(state.battle_summary.get("result_type", "")).strip_edges().is_empty() \
+		or not str(state.battle_summary.get("reason", "")).strip_edges().is_empty():
 			replay_result_text = " | result=%s/%s" % [
-				str(controller.battle_summary.get("result_type", "")),
-				str(controller.battle_summary.get("reason", "")),
+				str(state.battle_summary.get("result_type", "")),
+				str(state.battle_summary.get("reason", "")),
 			]
 		return "config=demo=%s | %s | phase=%s | field=%s | mode=read_only%s" % [
-			controller.demo_profile,
+			state.demo_profile,
 			format_replay_turn_label(current_view_model),
 			str(current_view_model.get("phase", "")),
 			value_or_dash(str(current_view_model.get("field_id", "")).strip_edges()),
@@ -25,18 +25,18 @@ func format_status_text(controller, current_view_model: Dictionary) -> String:
 	var current_side = str(current_view_model.get("current_side_to_select", "")).strip_edges()
 	var current_control_mode = "-"
 	if not current_side.is_empty():
-		current_control_mode = control_mode_for_side(controller.side_control_modes, current_side)
-	var policy_status = format_policy_status(controller.side_control_modes, current_side, has_battle_result(controller.public_snapshot))
-	var config_text = "demo=%s" % controller.demo_profile if controller.is_demo_mode else "%s/%s" % [
-		control_mode_for_side(controller.side_control_modes, "P1"),
-		control_mode_for_side(controller.side_control_modes, "P2"),
+		current_control_mode = control_mode_for_side(state.side_control_modes, current_side)
+	var policy_status = format_policy_status(state.side_control_modes, current_side, has_battle_result(state.public_snapshot))
+	var config_text = "demo=%s" % state.demo_profile if state.is_demo_mode else "%s/%s" % [
+		control_mode_for_side(state.side_control_modes, "P1"),
+		control_mode_for_side(state.side_control_modes, "P2"),
 	]
 	var result_text = ""
-	if not str(controller.battle_summary.get("result_type", "")).strip_edges().is_empty() \
-	or not str(controller.battle_summary.get("reason", "")).strip_edges().is_empty():
+	if not str(state.battle_summary.get("result_type", "")).strip_edges().is_empty() \
+	or not str(state.battle_summary.get("reason", "")).strip_edges().is_empty():
 		result_text = " | result=%s/%s" % [
-			str(controller.battle_summary.get("result_type", "")),
-			str(controller.battle_summary.get("reason", "")),
+			str(state.battle_summary.get("result_type", "")),
+			str(state.battle_summary.get("reason", "")),
 		]
 	return "config=%s | turn=%d | phase=%s | field=%s | current=%s(%s) | policy=%s%s" % [
 		config_text,
@@ -49,10 +49,10 @@ func format_status_text(controller, current_view_model: Dictionary) -> String:
 		result_text,
 	]
 
-func format_config_status_text(controller) -> String:
-	if controller.is_demo_mode:
-		return "当前配置：demo=%s（回放浏览态，只读浏览，启动控件已禁用）" % controller.demo_profile
-	return "当前配置：%s" % _launch_config_helper.build_config_summary(controller.launch_config)
+func format_config_status_text(state: SandboxSessionState) -> String:
+	if state.is_demo_mode:
+		return "当前配置：demo=%s（回放浏览态，只读浏览，启动控件已禁用）" % state.demo_profile
+	return "当前配置：%s" % _launch_config_helper.build_config_summary(state.launch_config)
 
 func format_battle_summary_text(battle_summary: Dictionary) -> String:
 	if battle_summary.is_empty():
@@ -166,15 +166,15 @@ func format_pending_text(current_view_model: Dictionary, battle_summary: Diction
 		entries.append(entry)
 	return "已提交指令: %s | commands=%d" % [" | ".join(entries), command_steps]
 
-func format_action_header(controller, current_view_model: Dictionary) -> String:
-	if controller._startup_failed:
+func format_action_header(state: SandboxSessionState, current_view_model: Dictionary) -> String:
+	if state.startup_failed:
 		return "场景初始化失败"
-	if controller.is_demo_mode:
+	if state.is_demo_mode:
 		return "回放浏览态 | %s" % format_replay_turn_label(current_view_model)
-	if has_battle_result(controller.public_snapshot):
+	if has_battle_result(state.public_snapshot):
 		return "结算态 | winner=%s | reason=%s" % [
-			value_or_dash(str(controller.battle_summary.get("winner_side_id", "")).strip_edges()),
-			value_or_dash(str(controller.battle_summary.get("reason", "")).strip_edges()),
+			value_or_dash(str(state.battle_summary.get("winner_side_id", "")).strip_edges()),
+			value_or_dash(str(state.battle_summary.get("reason", "")).strip_edges()),
 		]
 	var side_id = str(current_view_model.get("current_side_to_select", "")).strip_edges()
 	if side_id.is_empty():
@@ -184,8 +184,8 @@ func format_action_header(controller, current_view_model: Dictionary) -> String:
 	return "当前待选边: %s | actor=%s | control=%s | policy=%s" % [
 		side_id,
 		actor_public_id if not actor_public_id.is_empty() else "-",
-		control_mode_for_side(controller.side_control_modes, side_id),
-		format_policy_status(controller.side_control_modes, side_id, false),
+		control_mode_for_side(state.side_control_modes, side_id),
+		format_policy_status(state.side_control_modes, side_id, false),
 	]
 
 func format_policy_status(side_control_modes: Dictionary, current_side: String, battle_finished: bool) -> String:
@@ -220,8 +220,8 @@ func has_battle_result(public_snapshot: Dictionary) -> bool:
 func value_or_dash(value: String) -> String:
 	return value if not value.is_empty() else "-"
 
-func format_event_header_text(controller, current_view_model: Dictionary) -> String:
-	if not controller.is_demo_mode:
+func format_event_header_text(state: SandboxSessionState, current_view_model: Dictionary) -> String:
+	if not state.is_demo_mode:
 		return "Recent Events"
 	var replay_frame: Dictionary = current_view_model.get("replay_current_frame", {})
 	return "Replay Events | turn=%d | events=%d..%d" % [

@@ -6,6 +6,11 @@ const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 var _sample_factory = SampleBattleFactoryScript.new()
 
+func after() -> void:
+	if _sample_factory != null and _sample_factory.has_method("dispose"):
+		_sample_factory.dispose()
+	_sample_factory = null
+
 func test_launch_config_default_config_contract() -> void:
 	var launch_config: Dictionary = _launch_config_helper.default_config()
 	assert_str(String(launch_config.get("mode", ""))).is_equal(BattleSandboxLaunchConfigScript.MODE_MANUAL_MATCHUP)

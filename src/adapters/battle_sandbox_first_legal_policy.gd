@@ -2,6 +2,7 @@ extends "res://src/adapters/battle_sandbox_policy_port.gd"
 class_name BattleSandboxFirstLegalPolicy
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const PropertyAccessHelperScript := preload("res://src/shared/property_access_helper.gd")
 
 func select_action_result(legal_actions, _public_snapshot: Dictionary = {}, _controller_context: Dictionary = {}) -> Dictionary:
 	if legal_actions == null:
@@ -41,16 +42,7 @@ func select_action_result(legal_actions, _public_snapshot: Dictionary = {}, _con
 	return _fail("policy found no legal action to submit")
 
 func _read_property(value, property_name: String, default_value = null):
-	if value == null or property_name.is_empty():
-		return default_value
-	if value is Dictionary:
-		return value.get(property_name, default_value)
-	if typeof(value) != TYPE_OBJECT:
-		return default_value
-	for property_info in value.get_property_list():
-		if str(property_info.get("name", "")) == property_name:
-			return value.get(property_name)
-	return default_value
+	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
 
 func _to_string_array(raw_value) -> Array:
 	var result: Array = []

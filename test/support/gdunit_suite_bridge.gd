@@ -5,6 +5,7 @@ const BattleCoreTestHarnessScript := preload("res://tests/support/battle_core_te
 var _harness = BattleCoreTestHarnessScript.new()
 
 func after_test() -> void:
+	_harness.dispose_sample_factories()
 	_harness.dispose_core_pool()
 
 func _assert_legacy_result(result: Dictionary) -> void:

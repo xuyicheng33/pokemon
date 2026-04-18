@@ -2,9 +2,14 @@ extends RefCounted
 class_name SampleBattleFactoryBaselineMatchupCatalog
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const DEFAULT_CATALOG_PATH := "res://config/sample_matchup_catalog.json"
 
 var catalog_path_override: String = ""
+var snapshot_access: SampleBattleFactoryContentPathsHelper = null
+var demo_catalog: SampleBattleFactoryDemoCatalog = null
+var formal_access: SampleBattleFactoryFormalAccess = null
+var formal_matchup_catalog: SampleBattleFactoryFormalMatchupCatalog = null
 
 func has_matchup(matchup_id: String) -> bool:
 	var catalog_result := _load_catalog_result()
@@ -12,7 +17,7 @@ func has_matchup(matchup_id: String) -> bool:
 		return false
 	return catalog_result.get("data", {}).get("matchups", {}).has(matchup_id)
 
-func build_setup_result(setup_builder, matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
+func build_setup_result(setup_access, matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	var catalog_result := _load_catalog_result()
 	if not bool(catalog_result.get("ok", false)):
 		return catalog_result
@@ -22,7 +27,7 @@ func build_setup_result(setup_builder, matchup_id: String, side_regular_skill_ov
 			ErrorCodesScript.INVALID_BATTLE_SETUP,
 			"SampleBattleFactory unknown baseline matchup_id: %s" % matchup_id
 		)
-	var battle_setup = setup_builder.build_matchup_setup(
+	var battle_setup = setup_access.build_matchup_setup(
 		PackedStringArray(spec.get("p1_units", [])),
 		PackedStringArray(spec.get("p2_units", [])),
 		side_regular_skill_overrides
@@ -32,7 +37,7 @@ func build_setup_result(setup_builder, matchup_id: String, side_regular_skill_ov
 			ErrorCodesScript.INVALID_COMPOSITION,
 			"SampleBattleFactory failed to build baseline matchup setup: %s" % matchup_id
 		)
-	return _ok_result(battle_setup)
+	return ResultEnvelopeHelperScript.ok(battle_setup)
 
 func baseline_unit_definition_ids_result() -> Dictionary:
 	var catalog_result := _load_catalog_result()
@@ -50,10 +55,63 @@ func baseline_unit_definition_ids_result() -> Dictionary:
 					continue
 				seen[unit_definition_id] = true
 				unit_definition_ids.append(unit_definition_id)
-	return _ok_result(unit_definition_ids)
+	return ResultEnvelopeHelperScript.ok(unit_definition_ids)
 
 func load_matchups_result() -> Dictionary:
 	return _load_catalog_result()
+
+func available_matchups_result() -> Dictionary:
+	var descriptors: Array = []
+	var baseline_result: Dictionary = load_matchups_result()
+	if not bool(baseline_result.get("ok", false)):
+		return baseline_result
+	_append_available_matchup_descriptors(
+		descriptors,
+		baseline_result.get("data", {}).get("matchups", {}),
+		"baseline"
+	)
+	var formal_result: Dictionary = formal_matchup_catalog.load_matchups_result()
+	if not bool(formal_result.get("ok", false)):
+		return formal_result
+	_append_available_matchup_descriptors(
+		descriptors,
+		formal_result.get("data", {}).get("matchups", {}),
+		"formal"
+	)
+	return ResultEnvelopeHelperScript.ok(descriptors)
+
+func configure_registry_path_override(path: String) -> void:
+	_broadcast_shared_registry_override(path)
+
+func configure_baseline_matchup_catalog_path_override(path: String) -> void:
+	catalog_path_override = path
+	refresh_baseline_unit_definition_ids()
+
+func configure_matchup_catalog_path_override(path: String) -> void:
+	if formal_matchup_catalog == null:
+		return
+	formal_matchup_catalog.catalog_path_override = path
+	_broadcast_shared_registry_override(path)
+
+func configure_delivery_registry_path_override(path: String) -> void:
+	if formal_matchup_catalog != null:
+		formal_matchup_catalog.catalog_path_override = path
+	_broadcast_shared_registry_override(path)
+
+func configure_formal_manifest_path_override(path: String) -> void:
+	if formal_matchup_catalog != null:
+		formal_matchup_catalog.catalog_path_override = path
+	_broadcast_shared_registry_override(path)
+
+func configure_demo_catalog_path_override(path: String) -> void:
+	if demo_catalog != null:
+		demo_catalog.catalog_path_override = path
+
+func refresh_baseline_unit_definition_ids() -> void:
+	if snapshot_access == null:
+		return
+	var baseline_units_result: Dictionary = baseline_unit_definition_ids_result()
+	snapshot_access.baseline_unit_definition_ids = baseline_units_result.get("data", PackedStringArray()) if bool(baseline_units_result.get("ok", false)) else PackedStringArray()
 
 func _load_catalog_result() -> Dictionary:
 	var resolved_catalog_path := _resolve_catalog_path()
@@ -93,11 +151,11 @@ func _load_catalog_result() -> Dictionary:
 			for raw_unit_id in units:
 				if String(raw_unit_id).strip_edges().is_empty():
 					return _error_result(
-						ErrorCodesScript.INVALID_BATTLE_SETUP,
-						"SampleBattleFactory baseline matchup catalog[%s].%s contains empty unit_definition_id: %s" % [matchup_id, side_key, resolved_catalog_path]
+					ErrorCodesScript.INVALID_BATTLE_SETUP,
+					"SampleBattleFactory baseline matchup catalog[%s].%s contains empty unit_definition_id: %s" % [matchup_id, side_key, resolved_catalog_path]
 					)
 	parsed["pair_interaction_cases"] = []
-	return _ok_result(parsed)
+	return ResultEnvelopeHelperScript.ok(parsed)
 
 func _resolve_catalog_path() -> String:
 	var trimmed_path := String(catalog_path_override).strip_edges()
@@ -105,18 +163,29 @@ func _resolve_catalog_path() -> String:
 		return DEFAULT_CATALOG_PATH
 	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
 
-func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+func _append_available_matchup_descriptors(descriptors: Array, raw_matchups, source: String) -> void:
+	if not (raw_matchups is Dictionary):
+		return
+	for raw_matchup_id in raw_matchups.keys():
+		var matchup_id := str(raw_matchup_id).strip_edges()
+		var matchup_spec = raw_matchups.get(raw_matchup_id, {})
+		if matchup_id.is_empty() or not (matchup_spec is Dictionary):
+			continue
+		descriptors.append({
+			"matchup_id": matchup_id,
+			"source": source,
+			"p1_units": Array(matchup_spec.get("p1_units", [])).duplicate(true),
+			"p2_units": Array(matchup_spec.get("p2_units", [])).duplicate(true),
+			"test_only": bool(matchup_spec.get("test_only", false)),
+		})
+
+func _broadcast_shared_registry_override(path: String) -> void:
+	if snapshot_access != null:
+		snapshot_access.registry_path_override = path
+	if formal_access != null:
+		formal_access.registry_path_override = path
+	if formal_matchup_catalog != null:
+		formal_matchup_catalog.runtime_registry_path_override = path
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(error_code, error_message)

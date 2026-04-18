@@ -4,11 +4,20 @@ class_name BattleCoreTestHarnessSampleHelper
 const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_factory.gd")
 const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
 
+var _active_sample_factories: Array = []
+
 func build_sample_factory():
 	var sample_factory = SampleBattleFactoryScript.new()
 	if sample_factory == null:
 		return null
+	_active_sample_factories.append(sample_factory)
 	return sample_factory
+
+func dispose_sample_factories() -> void:
+	for sample_factory in _active_sample_factories:
+		if sample_factory != null and sample_factory.has_method("dispose"):
+			sample_factory.dispose()
+	_active_sample_factories.clear()
 
 func build_sample_factory_with_overrides(
 	registry_path_override: String = "",

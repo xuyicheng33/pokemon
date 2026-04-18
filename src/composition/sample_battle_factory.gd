@@ -1,76 +1,90 @@
 extends RefCounted
 class_name SampleBattleFactory
 
-const AvailableMatchupsServiceScript := preload("res://src/composition/sample_battle_factory_available_matchups_service.gd")
 const BaselineMatchupCatalogScript := preload("res://src/composition/sample_battle_factory_baseline_matchup_catalog.gd")
 const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
 const DemoInputBuilderScript := preload("res://src/composition/sample_battle_factory_demo_input_builder.gd")
-const DeliveryRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_delivery_registry_loader.gd")
 const DemoCatalogScript := preload("res://src/composition/sample_battle_factory_demo_catalog.gd")
 const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
 const MatchupCatalogScript := preload("res://src/composition/sample_battle_factory_matchup_catalog.gd")
-const OverrideRouterScript := preload("res://src/composition/sample_battle_factory_override_router.gd")
-const ReplayBuilderScript := preload("res://src/composition/sample_battle_factory_replay_builder.gd")
-const RuntimeRegistryLoaderScript := preload("res://src/composition/sample_battle_factory_runtime_registry_loader.gd")
 const SetupAccessScript := preload("res://src/composition/sample_battle_factory_setup_access.gd")
-const SetupBuilderScript := preload("res://src/composition/sample_battle_factory_setup_builder.gd")
 
-var _available_matchups_service = AvailableMatchupsServiceScript.new()
-var _baseline_matchup_catalog = BaselineMatchupCatalogScript.new()
-var _content_paths_helper = ContentPathsHelperScript.new()
-var _demo_input_builder = DemoInputBuilderScript.new()
-var _delivery_registry_loader = DeliveryRegistryLoaderScript.new()
-var _demo_catalog = DemoCatalogScript.new()
-var _formal_access = FormalAccessScript.new()
-var _formal_matchup_catalog = MatchupCatalogScript.new()
-var _override_router = OverrideRouterScript.new()
-var _replay_builder = ReplayBuilderScript.new()
-var _runtime_registry_loader = RuntimeRegistryLoaderScript.new()
-var _setup_access = SetupAccessScript.new()
-var _setup_builder = SetupBuilderScript.new()
+var _catalog_access: SampleBattleFactoryBaselineMatchupCatalog = BaselineMatchupCatalogScript.new()
+var _snapshot_access: SampleBattleFactoryContentPathsHelper = ContentPathsHelperScript.new()
+var _demo_input_builder: SampleBattleFactoryDemoInputBuilder = DemoInputBuilderScript.new()
+var _demo_catalog: SampleBattleFactoryDemoCatalog = DemoCatalogScript.new()
+var _formal_access: SampleBattleFactoryFormalAccess = FormalAccessScript.new()
+var _formal_matchup_catalog: SampleBattleFactoryFormalMatchupCatalog = MatchupCatalogScript.new()
+var _setup_access: SampleBattleFactorySetupAccess = SetupAccessScript.new()
 var last_error_code: Variant = null
 var last_error_message: String = ""
+var _disposed: bool = false
 
 func _init() -> void:
-	_available_matchups_service.baseline_matchup_catalog = _baseline_matchup_catalog
-	_available_matchups_service.formal_matchup_catalog = _formal_matchup_catalog
-	_demo_input_builder.baseline_matchup_catalog = _baseline_matchup_catalog
-	_demo_input_builder.content_paths_helper = _content_paths_helper
-	_demo_input_builder.demo_catalog = _demo_catalog
-	_demo_input_builder.replay_builder = _replay_builder
-	_demo_input_builder.setup_access = _setup_access
-	_formal_access.delivery_registry_loader = _delivery_registry_loader
-	_formal_access.formal_matchup_catalog = _formal_matchup_catalog
-	_formal_access.runtime_registry_loader = _runtime_registry_loader
-	_formal_access.setup_builder = _setup_builder
-	_override_router.baseline_matchup_catalog = _baseline_matchup_catalog
-	_override_router.content_paths_helper = _content_paths_helper
-	_override_router.demo_catalog = _demo_catalog
-	_override_router.delivery_registry_loader = _delivery_registry_loader
-	_override_router.formal_matchup_catalog = _formal_matchup_catalog
-	_override_router.runtime_registry_loader = _runtime_registry_loader
-	_setup_access.baseline_matchup_catalog = _baseline_matchup_catalog
+	_setup_access.baseline_matchup_catalog = _catalog_access
 	_setup_access.formal_matchup_catalog = _formal_matchup_catalog
-	_setup_access.setup_builder = _setup_builder
-	_override_router.refresh_baseline_unit_definition_ids()
+	_snapshot_access.formal_access = _formal_access
+	_demo_input_builder.baseline_matchup_catalog = _catalog_access
+	_demo_input_builder.content_paths_helper = _snapshot_access
+	_demo_input_builder.demo_catalog = _demo_catalog
+	_demo_input_builder.setup_access = _setup_access
+	_formal_access.formal_matchup_catalog = _formal_matchup_catalog
+	_formal_access.setup_access = _setup_access
+	_catalog_access.snapshot_access = _snapshot_access
+	_catalog_access.demo_catalog = _demo_catalog
+	_catalog_access.formal_access = _formal_access
+	_catalog_access.formal_matchup_catalog = _formal_matchup_catalog
+	_catalog_access.refresh_baseline_unit_definition_ids()
+
+func dispose() -> void:
+	if _disposed:
+		return
+	_disposed = true
+	if _setup_access != null:
+		_setup_access.baseline_matchup_catalog = null
+		_setup_access.formal_matchup_catalog = null
+	if _snapshot_access != null:
+		_snapshot_access.formal_access = null
+	if _demo_input_builder != null:
+		_demo_input_builder.baseline_matchup_catalog = null
+		_demo_input_builder.content_paths_helper = null
+		_demo_input_builder.demo_catalog = null
+		_demo_input_builder.setup_access = null
+	if _formal_access != null:
+		_formal_access.formal_matchup_catalog = null
+		_formal_access.setup_access = null
+	if _catalog_access != null:
+		_catalog_access.snapshot_access = null
+		_catalog_access.demo_catalog = null
+		_catalog_access.formal_access = null
+		_catalog_access.formal_matchup_catalog = null
+	_catalog_access = null
+	_snapshot_access = null
+	_demo_input_builder = null
+	_demo_catalog = null
+	_formal_access = null
+	_formal_matchup_catalog = null
+	_setup_access = null
+	last_error_code = null
+	last_error_message = ""
 
 func configure_registry_path_override(path: String) -> void:
-	_override_router.configure_registry_path_override(path)
+	_catalog_access.configure_registry_path_override(path)
 
 func configure_baseline_matchup_catalog_path_override(path: String) -> void:
-	_override_router.configure_baseline_matchup_catalog_path_override(path)
+	_catalog_access.configure_baseline_matchup_catalog_path_override(path)
 
 func configure_matchup_catalog_path_override(path: String) -> void:
-	_override_router.configure_matchup_catalog_path_override(path)
+	_catalog_access.configure_matchup_catalog_path_override(path)
 
 func configure_delivery_registry_path_override(path: String) -> void:
-	_override_router.configure_delivery_registry_path_override(path)
+	_catalog_access.configure_delivery_registry_path_override(path)
 
 func configure_formal_manifest_path_override(path: String) -> void:
-	_override_router.configure_formal_manifest_path_override(path)
+	_catalog_access.configure_formal_manifest_path_override(path)
 
 func configure_demo_catalog_path_override(path: String) -> void:
-	_override_router.configure_demo_catalog_path_override(path)
+	_catalog_access.configure_demo_catalog_path_override(path)
 
 func default_demo_profile_id() -> String:
 	var result := default_demo_profile_id_result()
@@ -101,22 +115,22 @@ func build_setup_from_side_specs_result(p1_side_spec: Dictionary, p2_side_spec: 
 	return _record_result(_setup_access.build_setup_from_side_specs_result(p1_side_spec, p2_side_spec))
 
 func content_snapshot_paths_result() -> Dictionary:
-	return _record_result(_content_paths_helper.build_snapshot_paths(ContentPathsHelperScript.BASE_CONTENT_SNAPSHOT_DIRS))
+	return _record_result(_snapshot_access.build_snapshot_paths(ContentPathsHelperScript.BASE_CONTENT_SNAPSHOT_DIRS))
 
 func content_snapshot_paths_for_setup_result(battle_setup) -> Dictionary:
-	return _record_result(_content_paths_helper.build_snapshot_paths_for_setup(ContentPathsHelperScript.BASE_CONTENT_SNAPSHOT_DIRS, battle_setup))
+	return _record_result(_snapshot_access.build_snapshot_paths_for_setup(ContentPathsHelperScript.BASE_CONTENT_SNAPSHOT_DIRS, battle_setup))
 
 func collect_tres_paths_result(dir_path: String) -> Dictionary:
-	return _record_result(_content_paths_helper.collect_tres_paths_result(dir_path))
+	return _record_result(_snapshot_access.collect_tres_paths_result(dir_path))
 
 func collect_tres_paths_recursive_result(dir_path: String) -> Dictionary:
-	return _record_result(_content_paths_helper.collect_tres_paths_recursive_result(dir_path))
+	return _record_result(_snapshot_access.collect_tres_paths_recursive_result(dir_path))
 
 func build_setup_by_matchup_id_result(matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	return _record_result(_setup_access.build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides))
 
 func available_matchups_result() -> Dictionary:
-	return _record_result(_available_matchups_service.available_matchups_result())
+	return _record_result(_catalog_access.available_matchups_result())
 
 func build_matchup_setup_result(
 	p1_unit_definition_ids: PackedStringArray,

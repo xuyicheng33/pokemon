@@ -81,4 +81,4 @@ func test_demo_replay_scene_blocks_manual_actions_contract() -> void:
 	assert_object(_find_clickable_action_button(controller, PackedStringArray(["技能:", "奥义:", "等待", "投降", "换人:"]))).is_null()
 	var submit_result: Dictionary = controller.submit_action({"command_type": "wait"})
 	assert_bool(bool(submit_result.get("ok", true))).is_false()
-	assert_str(String(submit_result.get("error", ""))).contains("demo mode does not accept manual actions")
+	assert_str(String(submit_result.get("error_message", ""))).contains("demo mode does not accept manual actions")

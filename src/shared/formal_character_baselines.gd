@@ -3,6 +3,7 @@ class_name FormalCharacterBaselines
 
 const BaselineLoaderScript := preload("res://src/shared/formal_character_baselines/formal_character_baseline_loader.gd")
 const ERROR_MESSAGE_KEY := "__formal_baseline_error_message"
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 static func character_ids() -> PackedStringArray:
 	return BaselineLoaderScript.character_ids()
@@ -178,7 +179,7 @@ static func _error_descriptor(error_message: String) -> Dictionary:
 	return {ERROR_MESSAGE_KEY: error_message.strip_edges()}
 
 static func _ok_result(data) -> Dictionary:
-	return {"ok": true, "data": data, "error_message": ""}
+	return ResultEnvelopeHelperScript.ok(data)
 
 static func _error_result(error_message: String) -> Dictionary:
-	return {"ok": false, "data": null, "error_message": error_message.strip_edges()}
+	return ResultEnvelopeHelperScript.error(null, error_message.strip_edges())

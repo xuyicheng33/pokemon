@@ -22,18 +22,18 @@ func _init() -> void:
 		launch_config["p2_control_mode"] = p2_mode
 	var context_result = _support.build_manual_scene_context(null, battle_seed, launch_config)
 	if not bool(context_result.get("ok", false)):
-		push_error(str(context_result.get("error", "manual battle bootstrap failed")))
+		push_error(str(context_result.get("error_message", "manual battle bootstrap failed")))
 		quit(1)
 		return
 	var context: Dictionary = context_result
 	var run_result = _support.run_to_battle_end(context, 64)
 	var close_result = _support.close_context(context)
 	if not bool(run_result.get("ok", false)):
-		push_error(str(run_result.get("error", "manual battle full run failed")))
+		push_error(str(run_result.get("error_message", "manual battle full run failed")))
 		quit(1)
 		return
 	if not bool(close_result.get("ok", false)):
-		push_error(str(close_result.get("error", "manual battle close_context failed")))
+		push_error(str(close_result.get("error_message", "manual battle close_context failed")))
 		quit(1)
 		return
 	var battle_summary: Dictionary = run_result.get("battle_summary", {}).duplicate(true)

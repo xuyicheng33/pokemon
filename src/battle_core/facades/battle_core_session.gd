@@ -3,9 +3,9 @@ extends RefCounted
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var session_id: String = ""
-var _container = null
-var _battle_state = null
-var _content_index = null
+var _container: RefCounted = null
+var _battle_state: BattleState = null
+var _content_index: BattleContentIndex = null
 
 func configure_runtime(container, battle_state, content_index) -> void:
     _container = container

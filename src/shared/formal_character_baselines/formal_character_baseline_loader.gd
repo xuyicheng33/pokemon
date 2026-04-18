@@ -2,6 +2,7 @@ extends RefCounted
 class_name FormalCharacterBaselineLoader
 
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 static func character_ids() -> PackedStringArray:
 	var resolved_ids := PackedStringArray()
@@ -78,7 +79,7 @@ static func _context_suffix(context: String) -> String:
 	return "" if context.strip_edges().is_empty() else " during %s" % context.strip_edges()
 
 static func _ok_result(data) -> Dictionary:
-	return {"ok": true, "data": data, "error_message": ""}
+	return ResultEnvelopeHelperScript.ok(data)
 
 static func _error_result(error_message: String) -> Dictionary:
-	return {"ok": false, "data": null, "error_message": error_message.strip_edges()}
+	return ResultEnvelopeHelperScript.error(null, error_message.strip_edges())

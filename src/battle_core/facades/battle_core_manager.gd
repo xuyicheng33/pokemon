@@ -5,15 +5,15 @@ const BattleCoreManagerContractHelperScript := preload("res://src/battle_core/fa
 const BattleCoreManagerSessionServiceScript := preload("res://src/battle_core/facades/battle_core_manager_session_service.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var _container_factory: Callable = Callable()
-var _command_builder = null
-var _command_id_factory = null
-var _public_snapshot_builder = null
-var _container_factory_owner = null
+var _command_builder: RefCounted = null
+var _command_id_factory: RefCounted = null
+var _public_snapshot_builder: RefCounted = null
+var _container_factory_owner: RefCounted = null
 var _sessions: Dictionary = {}
 var _session_seq: int = 0
-var _event_log_public_snapshot_builder = null
-var _container_service = null
-var _session_service = BattleCoreManagerSessionServiceScript.new()
+var _event_log_public_snapshot_builder: RefCounted = null
+var _container_service: RefCounted = null
+var _session_service: BattleCoreManagerSessionService = BattleCoreManagerSessionServiceScript.new()
 var _disposed: bool = false
 
 func create_session(init_payload: Dictionary) -> Dictionary:

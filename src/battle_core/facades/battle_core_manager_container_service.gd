@@ -7,8 +7,8 @@ const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.g
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var container_factory: Callable = Callable()
-var public_snapshot_builder = null
-var container_factory_owner = null
+var public_snapshot_builder: RefCounted = null
+var container_factory_owner: RefCounted = null
 
 func create_session_result(session_id: String, init_payload: Dictionary) -> Dictionary:
     var compose_result = _compose_container_result()

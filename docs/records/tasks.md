@@ -12,6 +12,30 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 当前阶段：BattleSandbox 边界收口与 SampleBattleFactory 减负（2026-04-18）
+
+- 状态：已完成
+- 目标：
+  - 收口 BattleSandbox 可变状态外泄、统一共享属性读取和结果式边界、把 `BattleInitializer` 子 helper wiring 改成显式 ports，并明显降低 `SampleBattleFactory` 的文件碎片度。
+- 范围：
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+  - `docs/records/review_2026-04-18_battlesandbox_factory_cleanup_wave.md`
+  - `src/shared/property_access_helper.gd`
+  - `src/shared/result_envelope_helper.gd`
+  - BattleSandbox / SampleBattleFactory / BattleInitializer 相关源码与对应 suite、support、gate、CI 配置
+- 验收标准：
+  - `BattleSandboxController` 不再暴露可写运行态和 UI 裸引用；测试支持层改走 controller 明确入口
+  - 共享属性读取统一收口到 `PropertyAccessHelper`
+  - adapter / composition / shared 外层失败结果统一包含 `ok/data/error_code/error_message`
+  - `BattleInitializer` 子 helper 继续私有，但必须通过显式 ports 配置依赖
+  - `SampleBattleFactory` 在不改公开 API 的前提下明显减少 helper 文件数，且不触发 architecture gate 行数上限
+  - `bash tests/check_architecture_constraints.sh`、`bash tests/check_repo_consistency.sh`、`bash tests/check_sandbox_smoke_matrix.sh`、`bash tests/run_with_gate.sh` 通过
+- 完成结果：
+  - 已补齐 `SandboxSessionState` / `SandboxViewRefs`、`PropertyAccessHelper`、`BattleInitializerPorts`，并把 BattleSandbox、共享结果式和 initializer child ports 全部收口到新边界
+  - 已强力合并 `SampleBattleFactory` 内部 helper、清理旧路径针脚、抽出 CI Godot setup composite action，并拆分厚 suite
+  - 已通过 `bash tests/check_architecture_constraints.sh`、`bash tests/check_repo_consistency.sh`、`bash tests/check_sandbox_smoke_matrix.sh`、`bash tests/run_with_gate.sh`
+
 ## 当前阶段：原型减负与工程收口（2026-04-18）
 
 - 状态：已完成

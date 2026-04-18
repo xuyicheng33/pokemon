@@ -65,5 +65,5 @@ func _active_definition_id(state_snapshot: Dictionary, side_id: String) -> Strin
 	return ""
 
 func _default_demo_profile_id(controller) -> String:
-	var default_profile_result: Dictionary = controller.sample_factory.default_demo_profile_id_result()
+	var default_profile_result: Dictionary = controller.default_demo_profile_id_result()
 	return String(default_profile_result.get("data", "")).strip_edges()

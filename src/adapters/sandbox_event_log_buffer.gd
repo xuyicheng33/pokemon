@@ -1,6 +1,8 @@
 extends RefCounted
 class_name SandboxEventLogBuffer
 
+const PropertyAccessHelperScript := preload("res://src/shared/property_access_helper.gd")
+
 const MAX_EVENT_LINES := 24
 
 var event_log_cursor: int = 0
@@ -109,13 +111,4 @@ func _update_battle_summary(public_snapshot: Dictionary, summary_context: Dictio
 		battle_summary["result_type"] = str(battle_result.get("result_type", "")).strip_edges()
 
 func _read_property(value, property_name: String, default_value = null):
-	if value == null or property_name.is_empty():
-		return default_value
-	if value is Dictionary:
-		return value.get(property_name, default_value)
-	if typeof(value) != TYPE_OBJECT:
-		return default_value
-	for property_info in value.get_property_list():
-		if str(property_info.get("name", "")) == property_name:
-			return value.get(property_name)
-	return default_value
+	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
