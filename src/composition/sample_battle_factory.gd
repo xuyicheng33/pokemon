@@ -1,6 +1,7 @@
 extends RefCounted
 class_name SampleBattleFactory
 
+const AvailableMatchupsServiceScript := preload("res://src/composition/sample_battle_factory_available_matchups_service.gd")
 const BaselineMatchupCatalogScript := preload("res://src/composition/sample_battle_factory_baseline_matchup_catalog.gd")
 const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
 const DemoInputBuilderScript := preload("res://src/composition/sample_battle_factory_demo_input_builder.gd")
@@ -14,6 +15,7 @@ const RuntimeRegistryLoaderScript := preload("res://src/composition/sample_battl
 const SetupAccessScript := preload("res://src/composition/sample_battle_factory_setup_access.gd")
 const SetupBuilderScript := preload("res://src/composition/sample_battle_factory_setup_builder.gd")
 
+var _available_matchups_service = AvailableMatchupsServiceScript.new()
 var _baseline_matchup_catalog = BaselineMatchupCatalogScript.new()
 var _content_paths_helper = ContentPathsHelperScript.new()
 var _demo_input_builder = DemoInputBuilderScript.new()
@@ -30,6 +32,8 @@ var last_error_code: Variant = null
 var last_error_message: String = ""
 
 func _init() -> void:
+	_available_matchups_service.baseline_matchup_catalog = _baseline_matchup_catalog
+	_available_matchups_service.formal_matchup_catalog = _formal_matchup_catalog
 	_demo_input_builder.baseline_matchup_catalog = _baseline_matchup_catalog
 	_demo_input_builder.content_paths_helper = _content_paths_helper
 	_demo_input_builder.demo_catalog = _demo_catalog
@@ -112,29 +116,7 @@ func build_setup_by_matchup_id_result(matchup_id: String, side_regular_skill_ove
 	return _record_result(_setup_access.build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides))
 
 func available_matchups_result() -> Dictionary:
-	var descriptors: Array = []
-	var baseline_result: Dictionary = _baseline_matchup_catalog.load_matchups_result()
-	if not bool(baseline_result.get("ok", false)):
-		return _record_result(baseline_result)
-	_append_available_matchup_descriptors(
-		descriptors,
-		baseline_result.get("data", {}).get("matchups", {}),
-		"baseline"
-	)
-	var formal_result: Dictionary = _formal_matchup_catalog.load_matchups_result()
-	if not bool(formal_result.get("ok", false)):
-		return _record_result(formal_result)
-	_append_available_matchup_descriptors(
-		descriptors,
-		formal_result.get("data", {}).get("matchups", {}),
-		"formal"
-	)
-	return _record_result({
-		"ok": true,
-		"data": descriptors,
-		"error_code": null,
-		"error_message": null,
-	})
+	return _record_result(_available_matchups_service.available_matchups_result())
 
 func build_matchup_setup_result(
 	p1_unit_definition_ids: PackedStringArray,
@@ -193,19 +175,3 @@ func _record_result(result: Dictionary) -> Dictionary:
 	var error_message = result.get("error_message", "")
 	last_error_message = "" if error_message == null else str(error_message)
 	return result
-
-func _append_available_matchup_descriptors(descriptors: Array, raw_matchups, source: String) -> void:
-	if not (raw_matchups is Dictionary):
-		return
-	for raw_matchup_id in raw_matchups.keys():
-		var matchup_id := str(raw_matchup_id).strip_edges()
-		var matchup_spec = raw_matchups.get(raw_matchup_id, {})
-		if matchup_id.is_empty() or not (matchup_spec is Dictionary):
-			continue
-		descriptors.append({
-			"matchup_id": matchup_id,
-			"source": source,
-			"p1_units": Array(matchup_spec.get("p1_units", [])).duplicate(true),
-			"p2_units": Array(matchup_spec.get("p2_units", [])).duplicate(true),
-			"test_only": bool(matchup_spec.get("test_only", false)),
-		})

@@ -11,6 +11,61 @@
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只记录当时口径；当前默认入口、验证路径与治理要求以后面的最新阶段条目和 `docs/design/current_development_workflow.md` 为准。
 
+## 当前阶段：SampleBattleFactory facade 继续瘦身（2026-04-18）
+
+- 状态：已完成
+- 目标：
+  - 保持 `SampleBattleFactory` 公开方法集不变，把可用 matchup 聚合和 content snapshot path 厚逻辑继续下沉到独立 service。
+- 范围：
+  - `src/composition/sample_battle_factory.gd`
+  - `src/composition/sample_battle_factory_available_matchups_service.gd`
+  - `src/composition/sample_battle_factory_base_snapshot_paths_service.gd`
+  - `src/composition/sample_battle_factory_formal_snapshot_paths_service.gd`
+  - `src/composition/sample_battle_factory_content_paths_helper.gd`
+  - `test/suites/sample_battle_factory_contract_suite.gd`
+  - `docs/records/tasks.md`
+- 验收标准：
+  - `SampleBattleFactory.available_matchups_result()` 只保留 facade 转发，不再内联 baseline/formal descriptor 拼装
+  - base content dirs 收集与 formal registry snapshot 追加分拆到独立 owner，`content_snapshot_paths_result()` 与 `content_snapshot_paths_for_setup_result()` 对外行为不变
+  - 旧 `sample_battle_factory_content_paths_helper.gd` 如继续保留，只承担薄转发职责
+  - sample factory 合同测试补上 facade 聚合、formal catalog 失败传递、baseline-only setup snapshot 忽略 formal runtime registry 失败
+- 结果：
+  - 已新增 `SampleBattleFactoryAvailableMatchupsService`，baseline/formal matchup descriptor 聚合从 factory 本体移出
+  - 已新增 `SampleBattleFactoryBaseSnapshotPathsService` 与 `SampleBattleFactoryFormalSnapshotPathsService`，把基础目录扫描、formal registry 追加和 setup-scoped 过滤拆开
+  - `sample_battle_factory_content_paths_helper.gd` 已改成兼容旧注入面的薄转发层，供 demo builder 与 override router 继续复用
+  - sample factory 合同测试已补 facade 成功面、formal catalog 失败面和 baseline-only setup snapshot 合同
+- 验证：
+  - `TEST_PATH=res://test/suites/sample_battle_factory_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
+
+## 当前阶段：BattleState 索引缓存与构造路径预热（2026-04-18）
+
+- 状态：已完成
+- 目标：
+  - 在不改 `battle_state.sides` 结构的前提下，为 `BattleState` 增加 side/unit 索引缓存，并让直接改数组后的查询结果仍保持正确。
+- 范围：
+  - `src/battle_core/runtime/battle_state.gd`
+  - `src/battle_core/turn/battle_initializer.gd`
+  - `src/battle_core/turn/battle_initializer_setup_validator.gd`
+  - `src/battle_core/logging/replay_runner_execution_context_builder.gd`
+  - 常用 runtime test harness / support 的初始化入口
+  - 直接相关测试与 `docs/records/tasks.md`
+- 验收标准：
+  - `BattleState` 新增 `_side_by_id / _unit_by_id / _unit_by_public_id / append_side() / rebuild_indexes()`
+  - `get_side / get_unit / get_unit_by_public_id` 改为 cache-first，并在缓存失配时按当前数组重建索引
+  - 初始化、回放和常用 support 的建局路径在 `sides` 建好后显式 `rebuild_indexes()`
+  - 增加直接覆盖“手改 `sides` / `team_units` 后仍不会返回旧对象”的测试
+- 结果：
+  - `BattleState` 已补 side/unit/public_id 三张索引表，`append_side()` 会增量入索引，`rebuild_indexes()` 会按当前数组全量重建
+  - 三个查询入口现在都会先走缓存，再用当前数组校验缓存是否仍指向线性遍历下的真实命中；失配时立即 `rebuild_indexes()`
+  - `BattleInitializer` 已切到 `append_side()`，并在 side 构建完成后显式 `rebuild_indexes()`；setup validator 清空 `sides` 时也会同步清空索引
+  - replay builder 和常用 support 的 `build_initialized_battle()` 路径已补显式 `rebuild_indexes()` 预热
+  - 已新增 battle_state 索引缓存回归测试，并把一个手工拼装 side 的 public snapshot 测试切到 `append_side()`
+- 验证：
+  - `TEST_PATH=res://test/suites/battle_state_index_cache_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manager_snapshot_public_contract/effect_instance_order_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/replay_determinism_suite.gd bash tests/run_gdunit.sh`
+
 ## 当前阶段：composition 依赖声明收口（2026-04-18）
 
 - 状态：已完成

@@ -20,6 +20,15 @@ func test_sample_factory_legacy_demo_ignores_formal_runtime_registry_failure() -
 func test_sample_factory_baseline_flow_ignores_formal_matchup_catalog_failure() -> void:
 	_assert_legacy_result(_test_baseline_flow_ignores_formal_matchup_catalog_failure(_harness))
 
+func test_sample_factory_available_matchups_surface_contract() -> void:
+	_assert_legacy_result(_test_available_matchups_surface_contract(_harness))
+
+func test_sample_factory_available_matchups_surfaces_formal_catalog_failure() -> void:
+	_assert_legacy_result(_test_available_matchups_surfaces_formal_catalog_failure(_harness))
+
+func test_sample_factory_baseline_setup_snapshot_ignores_formal_runtime_registry_failure() -> void:
+	_assert_legacy_result(_test_baseline_setup_snapshot_ignores_formal_runtime_registry_failure(_harness))
+
 func test_sample_factory_setup_snapshot_invalid_battle_setup_contract() -> void:
 	_assert_legacy_result(_test_setup_snapshot_invalid_battle_setup_contract(_harness))
 
@@ -85,6 +94,72 @@ func _test_baseline_flow_ignores_formal_matchup_catalog_failure(harness) -> Dict
 	)
 	if not bool(failure.get("ok", false)):
 		return harness.fail_result(str(failure.get("error", "formal manifest failure contract drifted")))
+	return harness.pass_result()
+
+func _test_available_matchups_surface_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var available_result: Dictionary = sample_factory.available_matchups_result()
+	if not bool(available_result.get("ok", false)):
+		return harness.fail_result("available_matchups_result should succeed: %s" % String(available_result.get("error_message", "unknown error")))
+	var descriptors = available_result.get("data", [])
+	if not (descriptors is Array) or descriptors.is_empty():
+		return harness.fail_result("available_matchups_result should return a non-empty descriptor array")
+	var saw_baseline := false
+	var saw_formal := false
+	for raw_descriptor in descriptors:
+		if not (raw_descriptor is Dictionary):
+			return harness.fail_result("available_matchups_result should only return dictionary descriptors")
+		var descriptor: Dictionary = raw_descriptor
+		if String(descriptor.get("matchup_id", "")).strip_edges().is_empty():
+			return harness.fail_result("available_matchups_result descriptor missing matchup_id")
+		if typeof(descriptor.get("p1_units", null)) != TYPE_ARRAY or typeof(descriptor.get("p2_units", null)) != TYPE_ARRAY:
+			return harness.fail_result("available_matchups_result descriptor should keep p1_units/p2_units arrays")
+		if not descriptor.has("test_only"):
+			return harness.fail_result("available_matchups_result descriptor should keep test_only field")
+		match String(descriptor.get("source", "")):
+			"baseline":
+				saw_baseline = true
+			"formal":
+				saw_formal = true
+			_:
+				return harness.fail_result("available_matchups_result descriptor source drifted: %s" % String(descriptor.get("source", "")))
+	if not saw_baseline or not saw_formal:
+		return harness.fail_result("available_matchups_result should aggregate both baseline and formal descriptors")
+	return harness.pass_result()
+
+func _test_available_matchups_surfaces_formal_catalog_failure(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory_with_overrides("", MISSING_FORMAL_MATCHUP_CATALOG_PATH)
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var failure = _helper.expect_failure_code(
+		sample_factory.available_matchups_result(),
+		"available_matchups_result()",
+		ErrorCodesScript.INVALID_BATTLE_SETUP
+	)
+	if not bool(failure.get("ok", false)):
+		return harness.fail_result(str(failure.get("error", "available_matchups formal catalog failure contract drifted")))
+	return harness.pass_result()
+
+func _test_baseline_setup_snapshot_ignores_formal_runtime_registry_failure(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory_with_overrides(MISSING_RUNTIME_REGISTRY_PATH)
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var sample_setup_result: Dictionary = sample_factory.build_sample_setup_result()
+	if not bool(sample_setup_result.get("ok", false)):
+		return harness.fail_result("baseline sample setup should build before setup-scoped snapshot verification")
+	var snapshot_result: Dictionary = sample_factory.content_snapshot_paths_for_setup_result(sample_setup_result.get("data", null))
+	if not bool(snapshot_result.get("ok", false)):
+		return harness.fail_result("baseline-only setup snapshot paths should not depend on formal runtime registry: %s" % String(snapshot_result.get("error_message", "unknown error")))
+	var full_snapshot_failure = _helper.expect_failure_code(
+		sample_factory.content_snapshot_paths_result(),
+		"content_snapshot_paths_result()",
+		ErrorCodesScript.INVALID_CONTENT_SNAPSHOT,
+		"formal character runtime registry"
+	)
+	if not bool(full_snapshot_failure.get("ok", false)):
+		return harness.fail_result(str(full_snapshot_failure.get("error", "content snapshot formal registry failure contract drifted")))
 	return harness.pass_result()
 
 func _test_setup_snapshot_invalid_battle_setup_contract(harness) -> Dictionary:
