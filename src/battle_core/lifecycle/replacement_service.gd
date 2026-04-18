@@ -1,8 +1,6 @@
 extends RefCounted
 class_name ReplacementService
-
 const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
-
 const COMPOSE_DEPS := [
 	{
 		"field": "battle_logger",
@@ -30,31 +28,27 @@ const COMPOSE_DEPS := [
 		"nested": true,
 	},
 ]
-
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ReplacementSelectionHelperScript := preload("res://src/battle_core/lifecycle/replacement_selection_helper.gd")
 const ReplacementEntryHelperScript := preload("res://src/battle_core/lifecycle/replacement_entry_helper.gd")
-
 var battle_logger
 var log_event_builder
 var replacement_selector
 var leave_service
 var field_service
-
 var _selection_helper = ReplacementSelectionHelperScript.new()
 var _entry_helper = ReplacementEntryHelperScript.new()
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
-
 func resolve_replacement(battle_state, side_state, reason: String) -> Dictionary:
 	var legal_bench_ids := _selection_helper.collect_legal_bench_ids(battle_state, side_state)
 	if legal_bench_ids.is_empty():
-		return {"entered_unit": null, "invalid_code": null}
+		return _resolve_result(null, null)
 	var selected_unit_id: String = _selection_helper.select_replacement_unit_id(
 		battle_state,
 		side_state,
@@ -63,7 +57,7 @@ func resolve_replacement(battle_state, side_state, reason: String) -> Dictionary
 		replacement_selector
 	)
 	if selected_unit_id.is_empty():
-		return {"entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_REPLACEMENT_SELECTION}
+		return _resolve_result(null, ErrorCodesScript.INVALID_REPLACEMENT_SELECTION)
 	var entered_unit = _entry_helper.enter_replacement(
 		battle_state,
 		side_state,
@@ -73,8 +67,8 @@ func resolve_replacement(battle_state, side_state, reason: String) -> Dictionary
 		log_event_builder
 	)
 	if entered_unit == null:
-		return {"entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_REPLACEMENT_SELECTION}
-	return {"entered_unit": entered_unit, "invalid_code": null}
+		return _resolve_result(null, ErrorCodesScript.INVALID_REPLACEMENT_SELECTION)
+	return _resolve_result(entered_unit, null)
 
 func execute_replacement_lifecycle(
 	battle_state,
@@ -86,16 +80,16 @@ func execute_replacement_lifecycle(
 ) -> Dictionary:
 	var target_unit = battle_state.get_unit(target_unit_id)
 	if target_unit == null or target_unit.current_hp <= 0 or target_unit.leave_state != LeaveStatesScript.ACTIVE:
-		return {"replaced": false, "entered_unit": null, "invalid_code": null}
+		return _replacement_result(false, null, null)
 	var side_state = battle_state.get_side_for_unit(target_unit_id)
 	if side_state == null:
-		return {"replaced": false, "entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
+		return _replacement_result(false, null, ErrorCodesScript.INVALID_STATE_CORRUPTION)
 	var active_slot_id: String = _selection_helper.find_active_slot_id(side_state, target_unit_id)
 	if active_slot_id.is_empty():
-		return {"replaced": false, "entered_unit": null, "invalid_code": null}
+		return _replacement_result(false, null, null)
 	var selected_unit = battle_state.get_unit(selected_unit_id)
 	if selected_unit == null or selected_unit.current_hp <= 0 or not side_state.has_bench_unit(selected_unit_id):
-		return {"replaced": false, "entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_REPLACEMENT_SELECTION}
+		return _replacement_result(false, null, ErrorCodesScript.INVALID_REPLACEMENT_SELECTION)
 	var on_switch_invalid_code = _execute_lifecycle_trigger_batch(
 		"on_switch",
 		battle_state,
@@ -104,7 +98,7 @@ func execute_replacement_lifecycle(
 		execute_trigger_batch
 	)
 	if on_switch_invalid_code != null:
-		return {"replaced": false, "entered_unit": null, "invalid_code": on_switch_invalid_code}
+		return _replacement_result(false, null, on_switch_invalid_code)
 	var on_exit_invalid_code = _execute_lifecycle_trigger_batch(
 		"on_exit",
 		battle_state,
@@ -113,11 +107,11 @@ func execute_replacement_lifecycle(
 		execute_trigger_batch
 	)
 	if on_exit_invalid_code != null:
-		return {"replaced": false, "entered_unit": null, "invalid_code": on_exit_invalid_code}
+		return _replacement_result(false, null, on_exit_invalid_code)
 	side_state.bench_order.append(target_unit.unit_instance_id)
 	leave_service.leave_unit(battle_state, target_unit, leave_reason, content_index)
 	if leave_service.invalid_battle_code() != null:
-		return {"replaced": false, "entered_unit": null, "invalid_code": leave_service.invalid_battle_code()}
+		return _replacement_result(false, null, leave_service.invalid_battle_code())
 	var field_break_invalid_code = field_service.break_field_if_creator_inactive(
 		battle_state,
 		content_index,
@@ -125,7 +119,7 @@ func execute_replacement_lifecycle(
 		execute_trigger_batch
 	)
 	if field_break_invalid_code != null:
-		return {"replaced": false, "entered_unit": null, "invalid_code": field_break_invalid_code}
+		return _replacement_result(false, null, field_break_invalid_code)
 	var entered_unit = _entry_helper.enter_replacement(
 		battle_state,
 		side_state,
@@ -135,7 +129,7 @@ func execute_replacement_lifecycle(
 		log_event_builder
 	)
 	if entered_unit == null:
-		return {"replaced": false, "entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_REPLACEMENT_SELECTION}
+		return _replacement_result(false, null, ErrorCodesScript.INVALID_REPLACEMENT_SELECTION)
 	var on_enter_invalid_code = _execute_lifecycle_trigger_batch(
 		"on_enter",
 		battle_state,
@@ -144,8 +138,8 @@ func execute_replacement_lifecycle(
 		execute_trigger_batch
 	)
 	if on_enter_invalid_code != null:
-		return {"replaced": false, "entered_unit": entered_unit, "invalid_code": on_enter_invalid_code}
-	return {"replaced": true, "entered_unit": entered_unit, "invalid_code": null}
+		return _replacement_result(false, entered_unit, on_enter_invalid_code)
+	return _replacement_result(true, entered_unit, null)
 
 func execute_forced_replace(
 	battle_state,
@@ -156,16 +150,16 @@ func execute_forced_replace(
 ) -> Dictionary:
 	var target_unit = battle_state.get_unit(target_unit_id)
 	if target_unit == null or target_unit.current_hp <= 0 or target_unit.leave_state != LeaveStatesScript.ACTIVE:
-		return {"replaced": false, "entered_unit": null, "invalid_code": null}
+		return _replacement_result(false, null, null)
 	var side_state = battle_state.get_side_for_unit(target_unit_id)
 	if side_state == null:
-		return {"replaced": false, "entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
+		return _replacement_result(false, null, ErrorCodesScript.INVALID_STATE_CORRUPTION)
 	var active_slot_id: String = _selection_helper.find_active_slot_id(side_state, target_unit_id)
 	if active_slot_id.is_empty():
-		return {"replaced": false, "entered_unit": null, "invalid_code": null}
+		return _replacement_result(false, null, null)
 	var legal_bench_ids := _selection_helper.collect_legal_bench_ids(battle_state, side_state)
 	if legal_bench_ids.is_empty():
-		return {"replaced": false, "entered_unit": null, "invalid_code": null}
+		return _replacement_result(false, null, null)
 	var selected_unit_id: String = _selection_helper.select_replacement_unit_id(
 		battle_state,
 		side_state,
@@ -174,10 +168,10 @@ func execute_forced_replace(
 		replacement_selector
 	)
 	if selected_unit_id.is_empty():
-		return {"replaced": false, "entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_REPLACEMENT_SELECTION}
+		return _replacement_result(false, null, ErrorCodesScript.INVALID_REPLACEMENT_SELECTION)
 	var selected_unit = battle_state.get_unit(selected_unit_id)
 	if selected_unit == null or selected_unit.current_hp <= 0 or not side_state.has_bench_unit(selected_unit_id):
-		return {"replaced": false, "entered_unit": null, "invalid_code": ErrorCodesScript.INVALID_REPLACEMENT_SELECTION}
+		return _replacement_result(false, null, ErrorCodesScript.INVALID_REPLACEMENT_SELECTION)
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.STATE_SWITCH,
 		battle_state,
@@ -215,3 +209,9 @@ func _execute_lifecycle_trigger_batch(
 		owner_unit_ids,
 		battle_state.chain_context
 	)
+
+func _resolve_result(entered_unit, invalid_code) -> Dictionary:
+	return {"entered_unit": entered_unit, "invalid_code": invalid_code}
+
+func _replacement_result(replaced: bool, entered_unit, invalid_code) -> Dictionary:
+	return {"replaced": replaced, "entered_unit": entered_unit, "invalid_code": invalid_code}

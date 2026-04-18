@@ -30,137 +30,93 @@ var last_matchup_signature: String = ""
 var pre_applied_turn_start_regen_turn_index: int = 0
 var runtime_fault_code: String = ""
 var runtime_fault_message: String = ""
-var _side_by_id: Dictionary = {}
-var _unit_by_id: Dictionary = {}
-var _unit_by_public_id: Dictionary = {}
 
 func get_side(side_id: String) -> Variant:
-    var cached_side = _side_by_id.get(side_id, null)
-    var live_side = _find_side_by_id(side_id)
-    if cached_side != null and cached_side == live_side:
-        return cached_side
-    if cached_side == null and live_side == null:
-        return null
-    rebuild_indexes()
-    return _side_by_id.get(side_id, null)
+	return _find_side_by_id(side_id)
 
 func get_opponent_side(side_id: String) -> Variant:
-    for side_state in sides:
-        if side_state.side_id != side_id:
-            return side_state
-    return null
+	for side_state in sides:
+		if side_state.side_id != side_id:
+			return side_state
+	return null
 
 func get_side_for_unit(unit_instance_id: String) -> Variant:
-    for side_state in sides:
-        if side_state.find_unit(unit_instance_id) != null:
-            return side_state
-    return null
+	for side_state in sides:
+		if side_state.find_unit(unit_instance_id) != null:
+			return side_state
+	return null
 
 func get_unit(unit_instance_id: String) -> Variant:
-    var cached_unit = _unit_by_id.get(unit_instance_id, null)
-    var live_unit = _find_unit_by_id(unit_instance_id)
-    if cached_unit != null and cached_unit == live_unit:
-        return cached_unit
-    if cached_unit == null and live_unit == null:
-        return null
-    rebuild_indexes()
-    return _unit_by_id.get(unit_instance_id, null)
+	return _find_unit_by_id(unit_instance_id)
 
 func get_unit_by_public_id(public_id: String) -> Variant:
-    var cached_unit = _unit_by_public_id.get(public_id, null)
-    var live_unit = _find_unit_by_public_id(public_id)
-    if cached_unit != null and cached_unit == live_unit:
-        return cached_unit
-    if cached_unit == null and live_unit == null:
-        return null
-    rebuild_indexes()
-    return _unit_by_public_id.get(public_id, null)
+	return _find_unit_by_public_id(public_id)
 
 func append_side(side_state) -> void:
-    sides.append(side_state)
-    _index_side(side_state)
+	sides.append(side_state)
 
 func rebuild_indexes() -> void:
-    _side_by_id.clear()
-    _unit_by_id.clear()
-    _unit_by_public_id.clear()
-    for side_state in sides:
-        _index_side(side_state)
+	# Compatibility hook: BattleState now resolves lookups directly from live sides/team_units.
+	return
 
 func get_active_unit(side_id: String, slot_id: String = ContentSchemaScript.ACTIVE_SLOT_PRIMARY) -> Variant:
-    var side_state = get_side(side_id)
-    if side_state == null:
-        return null
-    return side_state.get_active_unit(slot_id)
+	var side_state = get_side(side_id)
+	if side_state == null:
+		return null
+	return side_state.get_active_unit(slot_id)
 
 func to_stable_dict() -> Dictionary:
-    var side_dicts: Array = []
-    var sorted_sides = sides.duplicate()
-    sorted_sides.sort_custom(func(a, b): return a.side_id < b.side_id)
-    for side_state in sorted_sides:
-        side_dicts.append(side_state.to_stable_dict())
-    var field_rule_mod_dicts: Array = []
-    var sorted_field_rule_mods = field_rule_mod_instances.duplicate()
-    sorted_field_rule_mods.sort_custom(func(a, b): return a.instance_id < b.instance_id)
-    for rule_mod_instance in sorted_field_rule_mods:
-        field_rule_mod_dicts.append(rule_mod_instance.to_stable_dict())
-    return {
-        "battle_id": battle_id,
-        "seed": seed,
-        "rng_profile": rng_profile,
-        "format_id": format_id,
-        "visibility_mode": visibility_mode,
-        "max_turn": max_turn,
-        "max_chain_depth": max_chain_depth,
-        "battle_level": battle_level,
-        "selection_deadline_ms": selection_deadline_ms,
-        "default_recoil_ratio": default_recoil_ratio,
-        "domain_clash_tie_threshold": domain_clash_tie_threshold,
-        "turn_index": turn_index,
-        "phase": phase,
-        "sides": side_dicts,
-        "field_state": field_state.to_stable_dict() if field_state != null else null,
-        "field_rule_mod_instances": field_rule_mod_dicts,
-        "last_matchup_signature": last_matchup_signature,
-        "pre_applied_turn_start_regen_turn_index": pre_applied_turn_start_regen_turn_index,
-        "runtime_fault_code": runtime_fault_code,
-        "runtime_fault_message": runtime_fault_message,
-        "battle_result": battle_result.to_stable_dict() if battle_result != null else null,
-        "rng_stream_index": rng_stream_index,
-    }
+	var side_dicts: Array = []
+	var sorted_sides = sides.duplicate()
+	sorted_sides.sort_custom(func(a, b): return a.side_id < b.side_id)
+	for side_state in sorted_sides:
+		side_dicts.append(side_state.to_stable_dict())
+	var field_rule_mod_dicts: Array = []
+	var sorted_field_rule_mods = field_rule_mod_instances.duplicate()
+	sorted_field_rule_mods.sort_custom(func(a, b): return a.instance_id < b.instance_id)
+	for rule_mod_instance in sorted_field_rule_mods:
+		field_rule_mod_dicts.append(rule_mod_instance.to_stable_dict())
+	return {
+		"battle_id": battle_id,
+		"seed": seed,
+		"rng_profile": rng_profile,
+		"format_id": format_id,
+		"visibility_mode": visibility_mode,
+		"max_turn": max_turn,
+		"max_chain_depth": max_chain_depth,
+		"battle_level": battle_level,
+		"selection_deadline_ms": selection_deadline_ms,
+		"default_recoil_ratio": default_recoil_ratio,
+		"domain_clash_tie_threshold": domain_clash_tie_threshold,
+		"turn_index": turn_index,
+		"phase": phase,
+		"sides": side_dicts,
+		"field_state": field_state.to_stable_dict() if field_state != null else null,
+		"field_rule_mod_instances": field_rule_mod_dicts,
+		"last_matchup_signature": last_matchup_signature,
+		"pre_applied_turn_start_regen_turn_index": pre_applied_turn_start_regen_turn_index,
+		"runtime_fault_code": runtime_fault_code,
+		"runtime_fault_message": runtime_fault_message,
+		"battle_result": battle_result.to_stable_dict() if battle_result != null else null,
+		"rng_stream_index": rng_stream_index,
+	}
 
 func _find_side_by_id(side_id: String) -> Variant:
-    for side_state in sides:
-        if side_state.side_id == side_id:
-            return side_state
-    return null
+	for side_state in sides:
+		if side_state.side_id == side_id:
+			return side_state
+	return null
 
 func _find_unit_by_id(unit_instance_id: String) -> Variant:
-    for side_state in sides:
-        for unit_state in side_state.team_units:
-            if unit_state.unit_instance_id == unit_instance_id:
-                return unit_state
-    return null
+	for side_state in sides:
+		for unit_state in side_state.team_units:
+			if unit_state.unit_instance_id == unit_instance_id:
+				return unit_state
+	return null
 
 func _find_unit_by_public_id(public_id: String) -> Variant:
-    for side_state in sides:
-        for unit_state in side_state.team_units:
-            if unit_state.public_id == public_id:
-                return unit_state
-    return null
-
-func _index_side(side_state) -> void:
-    if side_state == null:
-        return
-    if not _side_by_id.has(side_state.side_id):
-        _side_by_id[side_state.side_id] = side_state
-    for unit_state in side_state.team_units:
-        _index_unit(unit_state)
-
-func _index_unit(unit_state) -> void:
-    if unit_state == null:
-        return
-    if not _unit_by_id.has(unit_state.unit_instance_id):
-        _unit_by_id[unit_state.unit_instance_id] = unit_state
-    if not _unit_by_public_id.has(unit_state.public_id):
-        _unit_by_public_id[unit_state.public_id] = unit_state
+	for side_state in sides:
+		for unit_state in side_state.team_units:
+			if unit_state.public_id == public_id:
+				return unit_state
+	return null
