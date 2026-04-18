@@ -66,6 +66,34 @@
   - `TEST_PATH=res://test/suites/manager_snapshot_public_contract/effect_instance_order_suite.gd bash tests/run_gdunit.sh`
   - `TEST_PATH=res://test/suites/replay_determinism_suite.gd bash tests/run_gdunit.sh`
 
+## 当前阶段：SandboxSessionCoordinator 退回 facade（2026-04-18）
+
+- 状态：已完成
+- 目标：
+  - 保持 `BattleSandboxController` 与 `SandboxSessionCoordinator` 的公开交互方式不变，把 sandbox 会话热点拆成 `bootstrap / demo / command` 三个 owner。
+- 范围：
+  - `src/adapters/sandbox_session_coordinator.gd`
+  - `src/adapters/sandbox_session_bootstrap_service.gd`
+  - `src/adapters/sandbox_session_demo_service.gd`
+  - `src/adapters/sandbox_session_command_service.gd`
+  - `test/suites/manual_battle_scene_suite.gd`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `SandboxSessionCoordinator` 只保留 facade 转发、错误收口与 helper 注入，不再继续内联启动、demo replay 和 turn command 厚逻辑
+  - `sandbox_session_bootstrap_service.gd` 负责 reset / dispose / compose / available matchups / launch config / create session
+  - `sandbox_session_demo_service.gd` 负责 demo profile 解析、replay 输入构建、执行 replay 与回放日志写回
+  - `sandbox_session_command_service.gd` 负责 legal actions、build command、pending commands、run turn、snapshot/log refresh 与 policy progression
+  - BattleSandbox 手动场景和 sandbox smoke matrix 都继续通过
+- 结果：
+  - 已新增 `SandboxSessionBootstrapService`、`SandboxSessionDemoService`、`SandboxSessionCommandService` 三个 owner，分别承接启动、demo 与命令执行子域
+  - `SandboxSessionCoordinator` 已回到薄 facade，只保留稳定方法面和对 controller 的错误收口
+  - sandbox-local policy 推进现在固定走 command owner，但 `BattleSandboxController` 对外仍只依赖原有 coordinator 方法集
+  - manual scene 与 demo replay 的 battle summary、event log 刷新和 command step 行为保持原合同
+- 验证：
+  - `TEST_PATH=res://test/suites/manual_battle_scene_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_sandbox_smoke_matrix.sh`
+
 ## 当前阶段：composition 依赖声明收口（2026-04-18）
 
 - 状态：已完成

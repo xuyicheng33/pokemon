@@ -388,6 +388,42 @@
 - `BattleInitializer` 当前固定只保留顺序调度、错误传递与依赖同步；`battle_initializer_setup_validator.gd` 负责 `BattleSetup` / format / combat chart / base runtime field 准备，`battle_initializer_phase_service.gd` 继续只负责初始化阶段系统链。
 - 这么定的原因：
   - `turn_resolution_service` 已经同时承载命令锁定、回合头尾系统链、effect/rule mod 扣减、field 生命周期与 persistent owner 收集，再继续加功能只会把 turn 子域重新拉回单热点
+
+## 0X. SandboxSessionCoordinator 固定退回 facade，sandbox 会话拆成 bootstrap / demo / command 三个 owner（2026-04-18）
+
+- `SandboxSessionCoordinator` 当前固定只保留稳定 facade 职责：
+  - `bootstrap_scene`
+  - `fetch_legal_actions_for_side`
+  - `submit_action`
+  - `refresh_legal_actions_for_side`
+  - `has_battle_result`
+  - `fail_runtime`
+  - `reset_state`
+  - `close_session_if_needed`
+  - `dispose_manager`
+- `src/adapters/sandbox_session_bootstrap_service.gd` 当前固定负责：
+  - reset / dispose
+  - compose manager 与 sample factory
+  - available matchups 装载
+  - launch config 归一化
+  - manual matchup 的 session 创建与初始 legal actions 预热
+- `src/adapters/sandbox_session_demo_service.gd` 当前固定负责：
+  - demo profile 解析
+  - replay 输入构建
+  - `run_replay()` 执行
+  - replay event log 与 battle summary 写回
+- `src/adapters/sandbox_session_command_service.gd` 当前固定负责：
+  - `get_legal_actions`
+  - `build_command`
+  - pending commands 与 `run_turn()`
+  - public snapshot / event log 刷新
+  - sandbox-local policy progression
+  - runtime fail 收口
+- `BattleSandboxController` 的公开交互方式与 view 层调用口径当前固定不变；controller 不知道内部三个 owner 的存在。
+- 这么定的原因：
+  - `SandboxSessionCoordinator` 之前同时承担启动、demo replay、session 创建、命令提交、回合推进、snapshot 刷新与 policy 推进，已经越过“继续堆逻辑还能看得懂”的阈值
+  - sandbox 适配层需要保留稳定试玩面，但内部职责已经自然分裂成三个子域；继续把它们塞回一个类里，只会让后续 demo、policy 或手动场景回归彼此互相污染
+  - 把 owner 边界写进正式决策后，后续新增 sandbox 行为就能直接落到对应子域，不会再回潮到 coordinator 本体
   - `BattleInitializer` 的 setup 校验与 init 阶段编排不是同一类职责；继续放在一个 owner 里，只会把后续 format / snapshot /建局回归都绑在同一个文件上
   - 拆成 phase owner 后，测试破坏点也更清楚：命令锁定走 `turn_selection_resolver`，turn-start/turn-end 各自只对自己的阶段 contract 负责
 
