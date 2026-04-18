@@ -38,7 +38,7 @@
 
 ## 当前阶段：全量质量收口与仓库卫生修复（2026-04-19）
 
-- 状态：进行中
+- 状态：已完成
 - 目标：
   - 一次性收掉 2026-04-19 审阅确认的问题，补齐 `.gd.uid`、缩进、结果式、battle core 结构脏点、测试体量盲区和本地仓库噪声的统一规则与实现。
 - 范围：
@@ -65,9 +65,19 @@
   - warning 档 owner 和超厚 shared helper 完成拆分，离开当前预警线
   - 本地清理入口、开发流程文档与审查处置记录同步补齐
   - `bash tests/check_architecture_constraints.sh`、`bash tests/check_repo_consistency.sh`、`bash tests/run_with_gate.sh` 通过
-- 当前基线：
-  - `2026-04-19` 已确认 `bash tests/check_architecture_constraints.sh` 通过，当前预警仍包含 `turn_loop_controller`、`turn_start_phase_service`、`replay_runner_output_helper` 和两份 `tests/support/*` helper
-  - `2026-04-19` 已确认 `bash tests/check_repo_consistency.sh` 通过，当前 `.gd.uid` 尚未纳入版本管理，工作区内仍存在 13 个孤儿 `.gd.uid`
+- 完成结果：
+  - `.gd.uid` 已全部按新仓库策略纳入版本管理，孤儿 `.gd.uid` 清零，repo consistency / uid gate 会直接拦截回退
+  - `src/`、`test/`、`tests/`、`scenes/` 的 GDScript 前导缩进已统一为 tab，style gate 已升为必过门禁
+  - 外层结果式已统一到 `ok / data / error_code / error_message`，BattleSandbox policy / adapters / facade helper / formal manifest / sample factory 全部走共享 helper
+  - `ErrorStateHelper` 已落地并接管重复的 `last_error_* + error_state()` 样板；`BattleState` 假缓存已取消；`BattleCoreManagerContainerService` 与 `BattleInitializer.COMPOSE_DEPS` 已按本轮决议收口
+  - warning 档 owner 与 shared/support helper 已完成拆分并离开预警线，包括 `sandbox_view_format_helper`、`turn_start_phase_service`、`replay_runner_output_helper`、`turn_loop_controller`、`catalog_factory_shared`、`replay_guard_shared`、`formal_character_pair_smoke/shared.gd`、`formal_character_manager_smoke_helper.gd`
+  - 额外补抓并处理了两处漏项：`extension_validation_contract` 共享 suite 命名误伤 gate，已改为正式 suite 路径；`tests/support/combat_type_test_helper_cases.gd` 与相关 smoke command helper 已拆薄
+  - 本地仓库卫生入口、开发流程文档、README 代码规模统计、任务记录与审查处置记录已同步更新
+- 验证记录：
+  - `2026-04-19` 已通过 targeted suite：`battle_state_index_cache_suite.gd`、`session_guard_suite.gd`、`replay_guard_summary_suite.gd`、`replay_guard_failure_suite.gd`、`replay_guard_input_suite.gd`
+  - `2026-04-19` 已通过 targeted suite：`catalog_factory_setup_suite.gd`、`catalog_factory_delivery_alignment_suite.gd`、`catalog_factory_surface_suite.gd`、`extension_validation_contract/extension_validation_contract_suite.gd`、`formal_character_pair_smoke/surface_suite.gd`、`formal_character_pair_smoke/interaction_suite.gd`
+  - `2026-04-19` 已通过 targeted suite：`gojo_manager_smoke_suite.gd`、`manual_battle_scene/manual_flow_suite.gd`、`manual_battle_scene/demo_replay_suite.gd`
+  - `2026-04-19` 已通过门禁：`bash tests/check_gdunit_gate.sh`、`bash tests/check_boot_smoke.sh`、`bash tests/check_suite_reachability.sh`、`bash tests/check_architecture_constraints.sh`、`bash tests/check_repo_consistency.sh`、`bash tests/check_sandbox_smoke_matrix.sh`、`bash tests/run_with_gate.sh`
 
 ## 当前阶段：原型减负与工程收口（2026-04-18）
 

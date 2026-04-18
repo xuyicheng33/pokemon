@@ -85,6 +85,7 @@
 - 处置：
   - warning 档 owner 主动拆分
   - `catalog_factory_shared`、`replay_guard_shared` 按主题拆成更薄的 shared helper
+  - `formal_character_pair_smoke/shared.gd`、`formal_character_manager_smoke_helper.gd`、`combat_type_test_helper_cases.gd` 也同步压出 warning 带
 
 ## 12. 本地报告、空目录与仓库噪声
 
@@ -94,3 +95,10 @@
   - 当前只认 `reports/gdunit`
   - 删除 `assets/.gitkeep`
   - `tmp / .tmp` 退回纯本地 scratch
+
+## 13. 本轮门禁额外补抓的漏项
+
+- 状态：本轮已改完
+- 处置：
+  - `test/suites/extension_validation_contract/shared_extensions_suite.gd` 实际是 suite，不是 shared helper；已改名为 `extension_validation_contract_suite.gd`，避免被 support helper 体量门禁误伤
+  - 根级 `test/suites/extension_validation_contract_suite.gd` 的 preload 已同步改到新路径，gdUnit 全量扫描可正常发现并执行该 suite
