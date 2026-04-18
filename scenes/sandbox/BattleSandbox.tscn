@@ -206,3 +206,20 @@ theme_override_constants/separation = 8
 [node name="RestartButton" type="Button" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons"]
 layout_mode = 2
 text = "按当前配置重开"
+
+[node name="ReplayControls" type="HBoxContainer" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ReplayPrevButton" type="Button" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons/ReplayControls"]
+layout_mode = 2
+text = "上一回合"
+
+[node name="ReplayTurnLabel" type="Label" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons/ReplayControls"]
+layout_mode = 2
+text = "回合 -"
+
+[node name="ReplayNextButton" type="Button" parent="RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons/ReplayControls"]
+layout_mode = 2
+text = "下一回合"

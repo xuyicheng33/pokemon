@@ -7,7 +7,27 @@
 - `docs/rules/` 只承载当前生效的规则权威。
 - `docs/design/` 只承载工程结构、测试矩阵、Sandbox 使用方式、开发工作流和治理规则。
 - `docs/records/` 只承载活跃任务、活跃决策、阶段审查记录和归档索引。
+- `README.md` 与 `tests/README.md` 只承担入口与操作说明，不再镜像 formal 字段清单或长段 contract 正文。
 - 若 `docs/records/` 的历史说法与 `docs/rules/`、`docs/design/` 冲突，以后两者为准；记录文件不再补写“现行真相正文”。
+
+当前文档真相固定为：
+
+- 哪些文档是规范源：
+  - `docs/rules/`：玩法规则、字段语义、流程口径
+  - `docs/design/`：结构、接线、测试矩阵、Sandbox 与交付工作流
+  - `docs/records/`：阶段任务、长期决定、审查处置与 archive 索引
+- 哪些文档只是入口说明：
+  - `README.md`
+  - `tests/README.md`
+- 哪些产物是生成物：
+  - `config/formal_character_manifest.json`
+  - `config/formal_character_capability_catalog.json`
+- 哪些 gate 主要校验结构：
+  - `repo_consistency_formal_character_gate.py`
+  - `architecture_composition_consistency_gate.py`
+  - `architecture_wiring_graph_gate.py`
+- 哪些 gate 不再负责措辞镜像：
+  - docs gate 不再要求 `README / tests README / design` 三处重复维护同一 formal 字段正文
 
 ## 2. 代码分层与允许改动边界
 
@@ -43,25 +63,64 @@ headless 复查入口固定为：
 
 `manual_battle_full_run.gd` 当前统一输出稳定的 `battle_summary` JSON，固定字段至少包含 `matchup_id / battle_seed / p1_control_mode / p2_control_mode / winner_side_id / reason / result_type / turn_index / event_log_cursor / command_steps`。
 
-若只是复查旧 demo replay，继续显式走 `demo=<profile>` CLI 路径；这条线不再算当前 HUD 的主流程。
+若要复查 demo replay，继续显式走 `demo=<profile>` CLI 路径；`BattleSandbox` 会进入只读回放浏览态，固定展示 `turn_timeline`，并只允许用“上一回合 / 下一回合”浏览 frame。
 
 ## 4. 测试入口与推荐跑法
 
 - `tests/run_with_gate.sh` 是唯一总入口。
 - `gdUnit4 + test/` 是唯一 Godot 业务测试树。
 - `tests/run_gdunit.sh` 只作为 `gdUnit4` CLI 快跑入口，不替代总 gate。
+- `tests/check_gdunit_gate.sh` 与 `tests/check_boot_smoke.sh` 是总 gate / CI 共享的子入口。
 - 当前阶段回归基线文档固定为 `docs/design/current_stage_regression_baseline.md`。
 
 推荐顺序：
 
 1. 快速改单点：`TEST_PATH=res://test/suites/<suite>.gd bash tests/run_gdunit.sh`
 2. 复查 launch-config 与推荐排序：`TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
-3. 复查 BattleSandbox：运行 `bash tests/check_sandbox_smoke_matrix.sh`
-4. 阶段收口：`bash tests/run_with_gate.sh`
+3. 复查 BattleSandbox boot：运行 `bash tests/check_boot_smoke.sh`
+4. 复查 BattleSandbox 主路径：运行 `bash tests/check_sandbox_smoke_matrix.sh`
+5. 阶段收口：`bash tests/run_with_gate.sh`
 
 当前总 gate 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix`。新增日常 smoke 或 contract 时，先写到 `docs/design/`，再进 gate，再接到总入口。
 
-## 5. 文档更新顺序与记录要求
+CI 当前固定拆成 3 个并行 job：
+
+- `gdunit`
+- `repo_and_arch_gates`
+- `boot_and_sandbox_smoke`
+
+测试分类口径固定为：
+
+- `sandbox`：BattleSandbox 场景、launch-config、试玩主路径
+- `characters/<role>`：角色私有 runtime / snapshot / smoke
+- `engine_core`：回合、行动、生命周期、内容快照与核心合同
+- `extensions`：payload、rule_mod、targeting、shared extension
+- `manager_contract`：manager facade、公开快照、事件日志、session guard
+- `replay`：replay input / summary / determinism / 浏览回归
+
+继续沿用“顶层 wrapper + 子目录断言本体”的组织方式；对外稳定引用的顶层 wrapper 文件名不改。
+
+## 5. formal 产物同步入口
+
+formal 单源继续固定为 `config/formal_character_sources/`。
+人工改动 source descriptor 后，只允许通过下面这条入口同步生成产物：
+
+```bash
+bash tests/sync_formal_registry.sh
+```
+
+同步结果固定回写：
+
+- `config/formal_character_manifest.json`
+- `config/formal_character_capability_catalog.json`
+
+日常要求：
+
+- 不手改这两份生成产物
+- source 改了就先同步，再跑 formal gate
+- gate 报 source / 产物漂移时，先重新执行同步入口
+
+## 6. 文档更新顺序与记录要求
 
 涉及规则、结构、测试或入口变动时，统一按这个顺序更新：
 

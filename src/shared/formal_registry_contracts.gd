@@ -2,6 +2,7 @@ extends RefCounted
 class_name FormalRegistryContracts
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const DEFAULT_CONTRACT_PATH := "res://config/formal_registry_contracts.json"
 const MANIFEST_CHARACTER_RUNTIME_BUCKET := "manifest_character_runtime"
 const MANIFEST_CHARACTER_DELIVERY_BUCKET := "manifest_character_delivery"
@@ -48,7 +49,7 @@ func validate_required_fields_result(bucket_name: String, entry: Dictionary, err
 		if not bool(positive_int_result.get("ok", false)):
 			return positive_int_result
 		entry[field_name] = int(positive_int_result.get("data", 0))
-	return _ok_result(true)
+	return ResultEnvelopeHelperScript.ok(true)
 
 func load_contracts_result() -> Dictionary:
 	var resolved_contract_path := _resolve_resource_path(contract_path_override, DEFAULT_CONTRACT_PATH)
@@ -88,7 +89,7 @@ func load_contracts_result() -> Dictionary:
 		var optional_fields_result := _read_field_list_result(bucket, "optional_string_fields", "%s.optional_string_fields" % bucket_name, false)
 		if not bool(optional_fields_result.get("ok", false)):
 			return optional_fields_result
-	return _ok_result(parsed.duplicate(true))
+	return ResultEnvelopeHelperScript.ok(parsed.duplicate(true))
 
 func normalize_resource_path(raw_path: String) -> String:
 	var trimmed_path := String(raw_path).strip_edges()
@@ -106,7 +107,7 @@ func _field_list_result(bucket_name: String, field_key: String, required: bool =
 
 func _read_field_list_result(bucket: Dictionary, field_key: String, label: String, required: bool, allow_empty: bool = false) -> Dictionary:
 	if not bucket.has(field_key):
-		return _ok_result(PackedStringArray()) if not required else _error_result("FormalRegistryContracts missing %s" % label)
+		return ResultEnvelopeHelperScript.ok(PackedStringArray()) if not required else _error_result("FormalRegistryContracts missing %s" % label)
 	var raw_fields = bucket.get(field_key, [])
 	if not (raw_fields is Array):
 		return _error_result("FormalRegistryContracts %s must be array" % label)
@@ -118,18 +119,18 @@ func _read_field_list_result(bucket: Dictionary, field_key: String, label: Strin
 		fields.append(field_name)
 	if required and not allow_empty and fields.is_empty():
 		return _error_result("FormalRegistryContracts %s must not be empty" % label)
-	return _ok_result(fields)
+	return ResultEnvelopeHelperScript.ok(fields)
 
 func _parse_positive_int_result(value, error_message: String) -> Dictionary:
 	if typeof(value) == TYPE_INT:
 		if int(value) > 0:
-			return _ok_result(int(value))
+			return ResultEnvelopeHelperScript.ok(int(value))
 		return _error_result(error_message)
 	if typeof(value) == TYPE_FLOAT:
 		var float_value := float(value)
 		var int_value := int(float_value)
 		if float_value == float(int_value) and int_value > 0:
-			return _ok_result(int_value)
+			return ResultEnvelopeHelperScript.ok(int_value)
 	return _error_result(error_message)
 
 func _resolve_resource_path(raw_path: String, default_path: String = "") -> String:
@@ -138,18 +139,5 @@ func _resolve_resource_path(raw_path: String, default_path: String = "") -> Stri
 		return default_path
 	return normalized_path
 
-func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
-
 func _error_result(error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": ErrorCodesScript.INVALID_BATTLE_SETUP,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_BATTLE_SETUP, error_message)

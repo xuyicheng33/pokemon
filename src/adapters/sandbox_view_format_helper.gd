@@ -6,6 +6,21 @@ const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sand
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 
 func format_status_text(controller, current_view_model: Dictionary) -> String:
+	if bool(current_view_model.get("replay_mode", false)):
+		var replay_result_text := ""
+		if not str(controller.battle_summary.get("result_type", "")).strip_edges().is_empty() \
+		or not str(controller.battle_summary.get("reason", "")).strip_edges().is_empty():
+			replay_result_text = " | result=%s/%s" % [
+				str(controller.battle_summary.get("result_type", "")),
+				str(controller.battle_summary.get("reason", "")),
+			]
+		return "config=demo=%s | %s | phase=%s | field=%s | mode=read_only%s" % [
+			controller.demo_profile,
+			format_replay_turn_label(current_view_model),
+			str(current_view_model.get("phase", "")),
+			value_or_dash(str(current_view_model.get("field_id", "")).strip_edges()),
+			replay_result_text,
+		]
 	var field_id = str(current_view_model.get("field_id", "")).strip_edges()
 	var current_side = str(current_view_model.get("current_side_to_select", "")).strip_edges()
 	var current_control_mode = "-"
@@ -36,7 +51,7 @@ func format_status_text(controller, current_view_model: Dictionary) -> String:
 
 func format_config_status_text(controller) -> String:
 	if controller.is_demo_mode:
-		return "当前配置：demo=%s（CLI 调试入口，启动控件已禁用）" % controller.demo_profile
+		return "当前配置：demo=%s（回放浏览态，只读浏览，启动控件已禁用）" % controller.demo_profile
 	return "当前配置：%s" % _launch_config_helper.build_config_summary(controller.launch_config)
 
 func format_battle_summary_text(battle_summary: Dictionary) -> String:
@@ -120,7 +135,15 @@ func format_effects(effects: Array) -> String:
 		])
 	return ", ".join(entries) if not entries.is_empty() else "-"
 
-func format_pending_text(pending_summaries: Array, battle_summary: Dictionary) -> String:
+func format_pending_text(current_view_model: Dictionary, battle_summary: Dictionary) -> String:
+	if bool(current_view_model.get("replay_mode", false)):
+		var replay_frame: Dictionary = current_view_model.get("replay_current_frame", {})
+		return "只读回放: events=%d..%d | battle_finished=%s" % [
+			int(replay_frame.get("event_from", 0)),
+			int(replay_frame.get("event_to", 0)),
+			"yes" if bool(replay_frame.get("battle_finished", false)) else "no",
+		]
+	var pending_summaries: Array = current_view_model.get("pending_commands", [])
 	var command_steps := int(battle_summary.get("command_steps", 0))
 	if pending_summaries.is_empty():
 		if command_steps <= 0:
@@ -147,7 +170,7 @@ func format_action_header(controller, current_view_model: Dictionary) -> String:
 	if controller._startup_failed:
 		return "场景初始化失败"
 	if controller.is_demo_mode:
-		return "旧回放入口：demo=%s" % controller.demo_profile
+		return "回放浏览态 | %s" % format_replay_turn_label(current_view_model)
 	if has_battle_result(controller.public_snapshot):
 		return "结算态 | winner=%s | reason=%s" % [
 			value_or_dash(str(controller.battle_summary.get("winner_side_id", "")).strip_edges()),
@@ -196,3 +219,27 @@ func has_battle_result(public_snapshot: Dictionary) -> bool:
 
 func value_or_dash(value: String) -> String:
 	return value if not value.is_empty() else "-"
+
+func format_event_header_text(controller, current_view_model: Dictionary) -> String:
+	if not controller.is_demo_mode:
+		return "Recent Events"
+	var replay_frame: Dictionary = current_view_model.get("replay_current_frame", {})
+	return "Replay Events | turn=%d | events=%d..%d" % [
+		int(replay_frame.get("turn_index", 0)),
+		int(replay_frame.get("event_from", 0)),
+		int(replay_frame.get("event_to", 0)),
+	]
+
+func format_replay_turn_label(current_view_model: Dictionary) -> String:
+	var replay_frame_count := int(current_view_model.get("replay_frame_count", 0))
+	if replay_frame_count <= 0:
+		return "回合 - | frame 0/0 | events 0..0"
+	var replay_frame_index := int(current_view_model.get("replay_frame_index", 0))
+	var replay_frame: Dictionary = current_view_model.get("replay_current_frame", {})
+	return "回合 %d | frame %d/%d | events %d..%d" % [
+		int(replay_frame.get("turn_index", 0)),
+		replay_frame_index + 1,
+		replay_frame_count,
+		int(replay_frame.get("event_from", 0)),
+		int(replay_frame.get("event_to", 0)),
+	]

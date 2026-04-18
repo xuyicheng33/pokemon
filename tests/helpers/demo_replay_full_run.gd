@@ -21,6 +21,24 @@ func _init() -> void:
 		quit(1)
 		return
 	var context: Dictionary = context_result
+	var controller = context.get("controller", null)
+	if controller == null or not controller.has_method("set_replay_frame"):
+		push_error("demo replay controller missing set_replay_frame")
+		var close_error = _context_support.close_context(context)
+		if not bool(close_error.get("ok", false)):
+			push_error(str(close_error.get("error", "demo replay close_context failed")))
+		quit(1)
+		return
+	var replay_turn_timeline: Array = context.get("replay_turn_timeline", [])
+	if replay_turn_timeline.is_empty():
+		push_error("demo replay turn_timeline is empty")
+		var close_error = _context_support.close_context(context)
+		if not bool(close_error.get("ok", false)):
+			push_error(str(close_error.get("error", "demo replay close_context failed")))
+		quit(1)
+		return
+	controller.set_replay_frame(replay_turn_timeline.size() - 1)
+	_context_support.sync_context_from_controller(context)
 	var battle_summary: Dictionary = context.get("battle_summary", {}).duplicate(true)
 	if battle_summary.is_empty():
 		push_error("demo replay battle_summary is empty")

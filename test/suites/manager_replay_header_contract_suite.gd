@@ -15,6 +15,9 @@ func test_log_v3_header_contract() -> void:
 
 func test_header_snapshot_private_id_guard() -> void:
 	_assert_legacy_result(_test_header_snapshot_private_id_guard(_harness))
+
+func test_replay_turn_timeline_matches_public_snapshot_contract() -> void:
+	_assert_legacy_result(_test_replay_turn_timeline_matches_public_snapshot_contract(_harness))
 func _test_replay_snapshot_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
 	if manager_payload.has("error"):
@@ -112,6 +115,33 @@ func _test_header_snapshot_private_id_guard(harness) -> Dictionary:
 			return harness.fail_result("header_snapshot missing required field: %s" % field_name)
 	if _helper.contains_private_instance_id_key(header_snapshot):
 		return harness.fail_result("header_snapshot should not contain private instance IDs")
+	return harness.pass_result()
+
+func _test_replay_turn_timeline_matches_public_snapshot_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var replay_unwrap = _unwrap_ok(manager.run_replay(harness.build_demo_replay_input(sample_factory, manager)), "run_replay")
+	if not bool(replay_unwrap.get("ok", false)):
+		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
+	var replay_payload: Dictionary = replay_unwrap.get("data", {})
+	var replay_output = replay_payload.get("replay_output", null)
+	if replay_output == null:
+		return harness.fail_result("run_replay should return replay_output")
+	if not (replay_output.turn_timeline is Array) or replay_output.turn_timeline.is_empty():
+		return harness.fail_result("run_replay should expose non-empty turn_timeline")
+	var initial_frame: Dictionary = replay_output.turn_timeline[0]
+	if int(initial_frame.get("turn_index", -1)) != 0:
+		return harness.fail_result("turn_timeline initial frame turn_index should be 0")
+	var final_frame: Dictionary = replay_output.turn_timeline[replay_output.turn_timeline.size() - 1]
+	var final_snapshot: Dictionary = final_frame.get("public_snapshot", {})
+	var replay_snapshot: Dictionary = replay_payload.get("public_snapshot", {})
+	if final_snapshot != replay_snapshot:
+		return harness.fail_result("turn_timeline final public_snapshot should match manager replay public_snapshot")
 	return harness.pass_result()
 
 func _unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:

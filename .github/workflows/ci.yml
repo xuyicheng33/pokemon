@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  test:
+  gdunit:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,5 +23,53 @@ jobs:
           key: godot-import-${{ runner.os }}-${{ hashFiles('content/**/*.tres', 'project.godot') }}
           restore-keys: |
             godot-import-${{ runner.os }}-
-      - name: Run Test Gate
-        run: bash tests/run_with_gate.sh
+      - name: Run gdUnit Gate
+        run: bash tests/check_gdunit_gate.sh
+
+  repo_and_arch_gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          version: "4.6.1"
+          use-dotnet: "false"
+          include-templates: "false"
+      - name: Cache Godot Import
+        uses: actions/cache@v4
+        with:
+          path: .godot/imported
+          key: godot-import-${{ runner.os }}-${{ hashFiles('content/**/*.tres', 'project.godot') }}
+          restore-keys: |
+            godot-import-${{ runner.os }}-
+      - name: Run Suite Reachability
+        run: bash tests/check_suite_reachability.sh
+      - name: Run Architecture Gates
+        run: bash tests/check_architecture_constraints.sh
+      - name: Run Repo Consistency
+        run: bash tests/check_repo_consistency.sh
+
+  boot_and_sandbox_smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          version: "4.6.1"
+          use-dotnet: "false"
+          include-templates: "false"
+      - name: Cache Godot Import
+        uses: actions/cache@v4
+        with:
+          path: .godot/imported
+          key: godot-import-${{ runner.os }}-${{ hashFiles('content/**/*.tres', 'project.godot') }}
+          restore-keys: |
+            godot-import-${{ runner.os }}-
+      - name: Run Boot Smoke
+        run: bash tests/check_boot_smoke.sh
+      - name: Run Sandbox Smoke Matrix
+        run: bash tests/check_sandbox_smoke_matrix.sh

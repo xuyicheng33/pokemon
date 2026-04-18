@@ -2,6 +2,7 @@ extends RefCounted
 class_name FormalCharacterManifest
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const ManifestLoaderScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_loader.gd")
 const PairCatalogScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_pair_catalog.gd")
 const ManifestViewsScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_views.gd")
@@ -26,7 +27,7 @@ func load_manifest_result(manifest_path: String = "") -> Dictionary:
 	)
 	if not bool(characters_result.get("ok", false)):
 		return characters_result
-	return _ok_result({
+	return ResultEnvelopeHelperScript.ok({
 		CHARACTERS_BUCKET: characters_result.get("data", []).duplicate(true),
 		MATCHUPS_BUCKET: manifest.get(MATCHUPS_BUCKET, {}).duplicate(true),
 	})
@@ -35,7 +36,7 @@ func build_character_entries_result(manifest_path: String = "") -> Dictionary:
 	var manifest_result := load_manifest_result(manifest_path)
 	if not bool(manifest_result.get("ok", false)):
 		return manifest_result
-	return _ok_result(manifest_result.get("data", {}).get(CHARACTERS_BUCKET, []).duplicate(true))
+	return ResultEnvelopeHelperScript.ok(manifest_result.get("data", {}).get(CHARACTERS_BUCKET, []).duplicate(true))
 
 func find_character_entry_result(character_id: String, manifest_path: String = "") -> Dictionary:
 	var entries_result := build_character_entries_result(manifest_path)
@@ -46,7 +47,7 @@ func find_character_entry_result(character_id: String, manifest_path: String = "
 			continue
 		var entry: Dictionary = raw_entry
 		if String(entry.get("character_id", "")).strip_edges() == character_id:
-			return _ok_result(entry.duplicate(true))
+			return ResultEnvelopeHelperScript.ok(entry.duplicate(true))
 	return _error_result(
 		ErrorCodesScript.INVALID_BATTLE_SETUP,
 		"FormalCharacterManifest unknown character_id: %s" % character_id
@@ -75,18 +76,5 @@ func build_catalog_result(manifest_path: String = "") -> Dictionary:
 		_manifest_loader.resolve_manifest_path(manifest_path, manifest_path_override)
 	)
 
-func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
-
 func _error_result(error_code: String, error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(error_code, error_message)

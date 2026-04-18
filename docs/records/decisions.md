@@ -24,7 +24,8 @@
 
 ## 0R. README surface 合同与 demo replay smoke 固定补回主线（2026-04-18）
 
-- README 当前继续承担 surface gate 的一部分合同，尤其是代码规模统计与 `content_snapshot_paths_result()` 的基础覆盖面说明。
+- README / `tests/README.md` 当前只继续承担入口与操作说明，不再镜像 formal 字段清单或长段 contract 正文。
+- README 当前继续承担 surface gate 的一部分合同，尤其是代码规模统计与研发入口说明。
 - `demo=<profile>` 继续是 CLI/debug 入口，但必须固定自动回归：
   - `tests/check_sandbox_smoke_matrix.sh` 补跑 `legacy` 与 `kashimo` 两个 demo profile
   - demo replay 摘要上下文固定取 profile 真值，不再回退到 launch config 默认的 `matchup_id / battle_seed`
@@ -41,6 +42,8 @@
   - source descriptors 可导出
   - 导出结果与 committed manifest/catalog 完全一致
   - 同一轮里不允许 source 与产物漂移
+- 人工同步 committed artifacts 的唯一入口固定为：
+  - `bash tests/sync_formal_registry.sh`
 
 ## 0Q. 正式角色 manager smoke/blackbox 与 formal registry 厚 suite 固定模板化（2026-04-18）
 
@@ -62,6 +65,11 @@
   - `COMPOSE_DEPS`
   - `COMPOSE_RESET_FIELDS`
 - `BattleCoreComposer`、runtime 缺依赖检查与两条 architecture gate 统一通过 `service_dependency_contract_helper.gd` 读取这份声明，不再恢复 split wiring specs。
+- composition 当前固定只分三层：
+  - 核心稳定 service slot
+  - payload/runtime slot
+  - owner 私有 helper 实例
+- 单 owner、无独立生命周期、无跨模块复用的 helper，默认只留在 owner 内部，不再继续晋升为 composer service slot。
 - 回合编排继续固定为：
   - `turn_selection_resolver.gd`
   - `turn_start_phase_service.gd`
@@ -69,6 +77,26 @@
   - `turn_field_lifecycle_service.gd`
 - `BattleInitializer` 继续只保留顺序调度；setup 校验、side/unit 构造与初始化阶段子流程分别下沉到独立 owner。
 - `SandboxSessionCoordinator` 继续只保留 facade；sandbox 会话热点固定拆成 `bootstrap / demo / command` 三个 owner。
+
+## 0T. 外层结果式、回放时间线与 Sandbox 回放浏览固定收口（2026-04-18）
+
+- `BattleCoreManager` 的外部 envelope 继续固定为：
+  - `ok`
+  - `data`
+  - `error_code`
+  - `error_message`
+- 共享结果式构造与 unwrap 当前统一只认：
+  - `src/shared/result_envelope_helper.gd`
+- 这轮触及的 adapter / composition / shared formal 访问代码，不再直接散写 `ok/data/error_*` 字典。
+- `battle_core/contracts/*` 与 runtime 类契约继续保留；只有序列化边界、gate/export 边界和 manager facade 外层结果式继续使用 `Dictionary`。
+- `ReplayOutput` 当前正式新增 `turn_timeline`：
+  - 初始化完成后固定记录 `turn_index = 0` 的初始 frame
+  - 每个完整 turn 结束后固定追加一个 frame
+  - final `public_snapshot` 继续与 timeline 最终 frame 对齐
+- `BattleSandbox` 的 `MODE_DEMO_REPLAY` 当前固定进入只读回放浏览态，不再只展示最终局面：
+  - 允许浏览上一回合 / 下一回合
+  - 固定显示当前 frame 的公开快照与事件片段
+  - replay 模式下禁止手动 action 和 policy 推进
 
 ## 0U. BattleSandbox 当前主线入口与验证矩阵固定保留（2026-04-13）
 
@@ -81,6 +109,11 @@
   - `repo consistency`
   - `sandbox smoke matrix`
 - `BattleSandbox`、`run_with_gate` 与 `gdUnit4 + test/` 继续构成当前仓库的主研发主线。
+- CI 当前固定拆成 3 个并行 job，并与本地总入口共用同一批子脚本：
+  - `gdunit`
+  - `repo_and_arch_gates`
+  - `boot_and_sandbox_smoke`
+- `tests/check_gdunit_gate.sh` 与 `tests/check_boot_smoke.sh` 当前固定作为本地与 CI 共用的子入口，不允许出现 CI / 本地分叉脚本。
 
 ## 0Y. formal pair 输入与派生 contract 继续冻结（2026-04-12）
 

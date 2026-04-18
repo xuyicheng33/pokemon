@@ -2,18 +2,25 @@ extends RefCounted
 class_name ReplayRunnerOutputHelper
 
 const ReplayOutputScript := preload("res://src/battle_core/contracts/replay_output.gd")
+const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
-func build_replay_output(event_log: Array, battle_state, logger_error_state: Dictionary = {}):
-	return build_replay_output_result(event_log, battle_state, logger_error_state).get("replay_output", null)
+func build_replay_output(event_log: Array, battle_state, logger_error_state: Dictionary = {}, turn_timeline: Array = []):
+	return build_replay_output_result(event_log, battle_state, logger_error_state, turn_timeline).get("replay_output", null)
 
 func compute_state_hash(battle_state) -> String:
 	return _compute_state_hash(battle_state)
 
-func build_replay_output_result(event_log: Array, battle_state, logger_error_state: Dictionary = {}) -> Dictionary:
+func build_replay_output_result(
+	event_log: Array,
+	battle_state,
+	logger_error_state: Dictionary = {},
+	turn_timeline: Array = []
+) -> Dictionary:
 	var replay_output = ReplayOutputScript.new()
 	replay_output.event_log = event_log
+	replay_output.turn_timeline = turn_timeline.duplicate(true) if turn_timeline is Array else []
 	replay_output.final_state_hash = ""
 	replay_output.battle_result = battle_state.battle_result if battle_state != null else null
 	replay_output.final_battle_state = battle_state
@@ -63,6 +70,13 @@ func build_replay_output_result(event_log: Array, battle_state, logger_error_sta
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay returned invalid battle_result"
 		)
+	if not _validate_turn_timeline(replay_output.turn_timeline, replay_output.event_log):
+		replay_output.succeeded = false
+		return _error_result(
+			replay_output,
+			ErrorCodesScript.INVALID_STATE_CORRUPTION,
+			"ReplayRunner replay turn_timeline validation failed"
+		)
 	replay_output.final_state_hash = compute_state_hash(battle_state)
 	replay_output.succeeded = true
 	replay_output.failure_code = ""
@@ -73,6 +87,21 @@ func build_replay_output_result(event_log: Array, battle_state, logger_error_sta
 		"error_code": null,
 		"error_message": "",
 	}
+
+func build_turn_frame(
+	turn_index: int,
+	public_snapshot: Dictionary,
+	event_from: int,
+	event_to: int,
+	battle_finished: bool
+) -> Dictionary:
+	return DeepCopyHelperScript.copy_value({
+		"turn_index": turn_index,
+		"public_snapshot": public_snapshot if public_snapshot is Dictionary else {},
+		"event_from": event_from,
+		"event_to": event_to,
+		"battle_finished": battle_finished,
+	})
 
 func _compute_state_hash(battle_state) -> String:
 	var json_text := JSON.stringify(battle_state.to_stable_dict())
@@ -160,6 +189,35 @@ func _validate_battle_result(battle_result) -> bool:
 	if battle_result.result_type == "draw" or battle_result.result_type == "no_winner":
 		return battle_result.winner_side_id == null
 	return false
+
+func _validate_turn_timeline(turn_timeline: Array, event_log: Array) -> bool:
+	if turn_timeline.is_empty():
+		return false
+	var expected_from: int = 0
+	for frame_index in range(turn_timeline.size()):
+		var raw_frame = turn_timeline[frame_index]
+		if not (raw_frame is Dictionary):
+			return false
+		var frame: Dictionary = raw_frame
+		if not (frame.get("public_snapshot", null) is Dictionary):
+			return false
+		var event_from := int(frame.get("event_from", -1))
+		var event_to := int(frame.get("event_to", -1))
+		if event_from < 0 or event_to < event_from or event_to > event_log.size():
+			return false
+		if frame_index == 0:
+			if int(frame.get("turn_index", -1)) != 0:
+				return false
+			if event_from != 0 or event_to != 0:
+				return false
+		elif int(frame.get("turn_index", 0)) <= 0:
+			return false
+		if event_from != expected_from:
+			return false
+		expected_from = event_to
+		if typeof(frame.get("battle_finished", null)) != TYPE_BOOL:
+			return false
+	return expected_from == event_log.size()
 
 func _error_result(replay_output, error_code: String, error_message: String) -> Dictionary:
 	if replay_output != null:

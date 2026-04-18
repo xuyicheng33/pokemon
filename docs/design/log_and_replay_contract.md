@@ -97,10 +97,26 @@
 |字段|说明|
 |---|---|
 |`event_log`|完整日志快照|
+|`turn_timeline`|按回合浏览用的公开快照时间线|
 |`final_state_hash`|`BattleState.to_stable_dict()` 的 SHA-256|
 |`succeeded`|完整执行成功 + 日志 V3 校验通过 + 终局结果有效|
 |`battle_result`|终局结果对象|
 |`final_battle_state`|最终运行态对象（仅核心内部可见）|
+
+`turn_timeline` 当前固定为只读浏览数据，不作为 replay 执行输入。每个 frame 至少包含：
+
+- `turn_index`
+- `public_snapshot`
+- `event_from`
+- `event_to`
+- `battle_finished`
+
+并且固定补一帧初始 frame：
+
+- `turn_index = 0`
+- `event_from = 0`
+- `event_to = 0`
+- `public_snapshot = 初始化完成后的公开快照`
 
 ### 3.3 `BattleCoreManager.run_replay` 对外返回
 
@@ -109,6 +125,7 @@
 - 返回 manager envelope：`{ ok, data, error_code, error_message }`。
 - 成功时 `data = { replay_output, public_snapshot }`。
 - 其中 `replay_output` 来自 `ReplayOutput.clone_without_runtime_state()`，`final_battle_state` 必须为 `null`。
+- `replay_output.turn_timeline` 保留为公开可浏览数据；BattleSandbox demo replay 只读浏览态直接消费这份时间线。
 - `public_snapshot` 由回放结束后的最终运行态即时构建，但运行态对象本身不得越过 manager 边界。
 - 失败时 `data = null`，并返回明确的 `error_code / error_message`。
 
@@ -122,6 +139,7 @@
 - 回放运行必须持续到战斗结束或回合上限触发（不允许半局成功返回）。
 - 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`，且 `cause_event_id` 不得等于当前日志事件自身 ID）。
 - `run_replay` 使用临时容器隔离执行，不读写活跃会话池；回放完成后释放临时容器。
+- 按回合浏览时间线固定在“初始化完成后 + 每个完整 turn 结束后”记录 frame，不做按事件逐帧快照。
 - 相同 `content_snapshot_paths` 的重复 session / replay 可以命中 `ContentSnapshotCache`；但 cache 里只允许共享“已校验资源数组”，不允许跨会话共享可变 `BattleContentIndex` 或运行态对象。
 - cache freshness 当前不只看 snapshot 路径本身；只要递归依赖的共享 payload、`config/formal_character_sources/**/*.json`、`config/formal_character_manifest.json`、`src/battle_core/content/**/*.gd` 或 `src/battle_core/content/formal_validators/**/*.gd` 发生变化，都必须重新 miss。
 

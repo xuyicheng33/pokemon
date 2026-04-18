@@ -88,6 +88,7 @@
 |`tests/fixtures`|回放/样例输入|
 |`tests/helpers`|预留的测试辅助脚本目录|
 |`tests/replay_cases`|预留的 deterministic 回放用例说明目录|
+|`tests/sync_formal_registry.sh`|formal source descriptor -> committed manifest/catalog 的唯一人工同步入口|
 |`assets/`|美术、音频、UI 静态资源|
 
 补充治理入口：

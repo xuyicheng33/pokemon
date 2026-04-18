@@ -36,6 +36,7 @@ func build_view_model(public_snapshot: Dictionary, context: Dictionary = {}) -> 
     var side_control_modes = context.get("side_control_modes", {})
     var available_matchups = context.get("available_matchups", [])
     var battle_summary = context.get("battle_summary", {})
+    var replay_current_frame = context.get("replay_current_frame", {})
     return {
         "battle_id": str(public_snapshot.get("battle_id", "")).strip_edges(),
         "turn_index": int(public_snapshot.get("turn_index", 0)),
@@ -55,6 +56,10 @@ func build_view_model(public_snapshot: Dictionary, context: Dictionary = {}) -> 
         "side_control_modes": side_control_modes.duplicate(true) if side_control_modes is Dictionary else {},
         "available_matchups": available_matchups.duplicate(true) if available_matchups is Array else [],
         "battle_summary": battle_summary.duplicate(true) if battle_summary is Dictionary else {},
+        "replay_mode": bool(context.get("replay_mode", false)),
+        "replay_frame_index": int(context.get("replay_frame_index", 0)),
+        "replay_frame_count": int(context.get("replay_frame_count", 0)),
+        "replay_current_frame": replay_current_frame.duplicate(true) if replay_current_frame is Dictionary else {},
     }
 
 func _build_pending_commands_summary(raw_pending_commands: Dictionary) -> Array:

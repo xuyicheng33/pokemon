@@ -38,6 +38,10 @@ func reset_state(controller) -> void:
 	controller.demo_profile = ""
 	controller.is_demo_mode = false
 	controller.command_steps = 0
+	controller.replay_event_log.clear()
+	controller.replay_turn_timeline.clear()
+	controller.replay_summary_context.clear()
+	controller.replay_frame_index = 0
 	controller._event_log_buffer.reset()
 
 func close_session_if_needed(controller) -> void:

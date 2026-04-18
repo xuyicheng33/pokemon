@@ -18,9 +18,28 @@ func reset() -> void:
 
 func apply_replay_events(public_snapshot: Dictionary, event_log: Array, summary_context: Dictionary = {}) -> void:
 	recent_event_lines.clear()
+	_last_rendered_turn_index = 0
 	last_event_delta = event_log.duplicate(true)
 	_append_event_lines(event_log)
 	event_log_cursor = event_log.size()
+	_update_battle_summary(public_snapshot, summary_context)
+
+func apply_replay_frame(
+	public_snapshot: Dictionary,
+	frame: Dictionary,
+	event_log: Array,
+	summary_context: Dictionary = {}
+) -> void:
+	recent_event_lines.clear()
+	_last_rendered_turn_index = 0
+	var event_from := clampi(int(frame.get("event_from", 0)), 0, event_log.size())
+	var event_to := clampi(int(frame.get("event_to", 0)), event_from, event_log.size())
+	last_event_delta = event_log.slice(event_from, event_to).duplicate(true)
+	if last_event_delta.is_empty():
+		recent_event_lines.append("• 当前 frame 无事件")
+	else:
+		_append_event_lines(last_event_delta)
+	event_log_cursor = event_to
 	_update_battle_summary(public_snapshot, summary_context)
 
 func apply_event_log_snapshot(
@@ -80,7 +99,7 @@ func _update_battle_summary(public_snapshot: Dictionary, summary_context: Dictio
 		"winner_side_id": "",
 		"reason": "",
 		"result_type": "",
-		"turn_index": int(public_snapshot.get("turn_index", 0)),
+		"turn_index": int(summary_context.get("turn_index_override", public_snapshot.get("turn_index", 0))),
 		"event_log_cursor": event_log_cursor,
 		"command_steps": int(summary_context.get("command_steps", 0)),
 	}

@@ -23,19 +23,14 @@ func run_demo_replay(controller, profile_id: String) -> String:
 	if not bool(replay_unwrap.get("ok", false)):
 		return str(replay_unwrap.get("error", "Battle sandbox replay failed"))
 	var replay_payload: Dictionary = replay_unwrap.get("data", {})
-	controller.public_snapshot = replay_payload.get("public_snapshot", {})
 	var replay_output = replay_payload.get("replay_output", null)
-	var event_log: Array = []
-	if replay_output != null:
-		event_log = replay_output.event_log
-	controller._event_log_buffer.apply_replay_events(
-		controller.public_snapshot,
-		event_log,
-		envelope.build_summary_context({
-			"matchup_id": str(profile.get("matchup_id", BattleSandboxLaunchConfigScript.DEFAULT_MATCHUP_ID)).strip_edges(),
-			"battle_seed": int(profile.get("battle_seed", BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)),
-		}, controller.side_control_modes, controller.command_steps)
-	)
+	var summary_context := envelope.build_summary_context({
+		"matchup_id": str(profile.get("matchup_id", BattleSandboxLaunchConfigScript.DEFAULT_MATCHUP_ID)).strip_edges(),
+		"battle_seed": int(profile.get("battle_seed", BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)),
+	}, controller.side_control_modes, controller.command_steps)
+	var replay_browser_error: String = controller.configure_replay_browser(replay_output, summary_context)
+	if not replay_browser_error.is_empty():
+		return replay_browser_error
 	controller.current_side_to_select = ""
 	controller.pending_commands.clear()
 	controller.legal_actions_by_side.clear()

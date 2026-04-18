@@ -2,6 +2,7 @@ extends RefCounted
 class_name FormalCharacterCapabilityCatalog
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 const DEFAULT_CATALOG_PATH := "res://config/formal_character_capability_catalog.json"
 const CAPABILITIES_BUCKET := "capabilities"
@@ -52,7 +53,7 @@ func load_entries_result(catalog_path: String = "") -> Dictionary:
 			return _error_result("FormalCharacterCapabilityCatalog duplicated capability_id: %s" % capability_id)
 		seen_capability_ids[capability_id] = true
 		entries.append(entry.duplicate(true))
-	return _ok_result(entries)
+	return ResultEnvelopeHelperScript.ok(entries)
 
 func find_entry_result(capability_id: String, catalog_path: String = "") -> Dictionary:
 	var entries_result := load_entries_result(catalog_path)
@@ -61,7 +62,7 @@ func find_entry_result(capability_id: String, catalog_path: String = "") -> Dict
 	for raw_entry in entries_result.get("data", []):
 		var entry: Dictionary = raw_entry
 		if String(entry.get("capability_id", "")).strip_edges() == capability_id:
-			return _ok_result(entry.duplicate(true))
+			return ResultEnvelopeHelperScript.ok(entry.duplicate(true))
 	return _error_result("FormalCharacterCapabilityCatalog unknown capability_id: %s" % capability_id)
 
 func capability_ids_result(catalog_path: String = "") -> Dictionary:
@@ -72,7 +73,7 @@ func capability_ids_result(catalog_path: String = "") -> Dictionary:
 	for raw_entry in entries_result.get("data", []):
 		var entry: Dictionary = raw_entry
 		capability_ids.append(String(entry.get("capability_id", "")).strip_edges())
-	return _ok_result(capability_ids)
+	return ResultEnvelopeHelperScript.ok(capability_ids)
 
 func _resolve_catalog_path(catalog_path: String) -> String:
 	var normalized_path := _normalize_resource_path(catalog_path)
@@ -86,18 +87,5 @@ func _normalize_resource_path(raw_path: String) -> String:
 		return ""
 	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
 
-func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
-
 func _error_result(error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": ErrorCodesScript.INVALID_BATTLE_SETUP,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_BATTLE_SETUP, error_message)

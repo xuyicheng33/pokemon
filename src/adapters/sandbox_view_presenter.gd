@@ -27,11 +27,13 @@ func render(controller, current_view_model: Dictionary) -> void:
 	controller._error_label.visible = not controller.error_message.is_empty()
 	controller._battle_summary_label.text = _fmt.format_battle_summary_text(controller.battle_summary)
 	controller._config_status_label.text = _fmt.format_config_status_text(controller)
+	controller._event_header_label.text = _fmt.format_event_header_text(controller, current_view_model)
 	_set_rich_text(controller._p1_summary, _fmt.format_side_text(current_view_model, "P1", controller.side_control_modes))
 	_set_rich_text(controller._p2_summary, _fmt.format_side_text(current_view_model, "P2", controller.side_control_modes))
 	_set_rich_text(controller._event_log_text, "\n".join(current_view_model.get("recent_event_lines", [])))
-	controller._pending_label.text = _fmt.format_pending_text(current_view_model.get("pending_commands", []), controller.battle_summary)
+	controller._pending_label.text = _fmt.format_pending_text(current_view_model, controller.battle_summary)
 	controller._action_header_label.text = _fmt.format_action_header(controller, current_view_model)
+	_render_replay_controls(controller, current_view_model)
 	_render_action_buttons(controller, current_view_model)
 
 func build_launch_config_from_controls(controller) -> Dictionary:
@@ -52,7 +54,7 @@ func _render_action_buttons(controller, current_view_model: Dictionary) -> void:
 	if controller._startup_failed:
 		return
 	if controller.is_demo_mode:
-		_add_info_button(controller._primary_buttons, "Demo 回放模式：%s" % controller.demo_profile)
+		_add_info_button(controller._primary_buttons, "只读回放：使用上一回合/下一回合浏览")
 		return
 	if _fmt.has_battle_result(controller.public_snapshot):
 		_add_info_button(controller._primary_buttons, "对局已结束，可按当前配置重开")
@@ -115,6 +117,18 @@ func _sync_launch_controls(controller) -> void:
 	controller._p1_mode_select.disabled = controls_disabled
 	controller._p2_mode_select.disabled = controls_disabled
 	controller._restart_button.disabled = controller._startup_failed or (controls_disabled and not controller.is_demo_mode)
+
+func _render_replay_controls(controller, current_view_model: Dictionary) -> void:
+	var replay_mode := bool(current_view_model.get("replay_mode", false))
+	controller._replay_controls.visible = replay_mode
+	if not replay_mode:
+		controller._replay_turn_label.text = ""
+		return
+	var replay_frame_index := int(current_view_model.get("replay_frame_index", 0))
+	var replay_frame_count := int(current_view_model.get("replay_frame_count", 0))
+	controller._replay_turn_label.text = _fmt.format_replay_turn_label(current_view_model)
+	controller._replay_prev_button.disabled = replay_frame_count <= 1 or replay_frame_index <= 0
+	controller._replay_next_button.disabled = replay_frame_count <= 1 or replay_frame_index >= replay_frame_count - 1
 
 func _populate_matchup_select(controller) -> void:
 	var visible_matchups: Array = _launch_config_helper.visible_matchup_descriptors(controller.available_matchups)
@@ -179,4 +193,3 @@ func _clear_container_children(container: Node) -> void:
 func _set_rich_text(widget: RichTextLabel, text: String) -> void:
 	widget.clear()
 	widget.append_text(text if not text.is_empty() else "-")
-

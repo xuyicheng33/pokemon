@@ -16,6 +16,8 @@ const SandboxViewPresenterScript := preload("res://src/adapters/sandbox_view_pre
 @warning_ignore("unused_private_class_variable")
 @onready var _p1_summary: RichTextLabel = $RootMargin/MainColumn/BodyRow/P1Panel/P1Content/P1Summary
 @warning_ignore("unused_private_class_variable")
+@onready var _event_header_label: Label = $RootMargin/MainColumn/BodyRow/EventPanel/EventContent/EventHeaderLabel
+@warning_ignore("unused_private_class_variable")
 @onready var _event_log_text: RichTextLabel = $RootMargin/MainColumn/BodyRow/EventPanel/EventContent/EventLogText
 @warning_ignore("unused_private_class_variable")
 @onready var _p2_summary: RichTextLabel = $RootMargin/MainColumn/BodyRow/P2Panel/P2Content/P2Summary
@@ -43,6 +45,14 @@ const SandboxViewPresenterScript := preload("res://src/adapters/sandbox_view_pre
 @onready var _utility_buttons: HBoxContainer = $RootMargin/MainColumn/ActionPanel/ActionContent/UtilityButtons
 @warning_ignore("unused_private_class_variable")
 @onready var _restart_button: Button = $RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons/RestartButton
+@warning_ignore("unused_private_class_variable")
+@onready var _replay_controls: HBoxContainer = $RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons/ReplayControls
+@warning_ignore("unused_private_class_variable")
+@onready var _replay_prev_button: Button = $RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons/ReplayControls/ReplayPrevButton
+@warning_ignore("unused_private_class_variable")
+@onready var _replay_turn_label: Label = $RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons/ReplayControls/ReplayTurnLabel
+@warning_ignore("unused_private_class_variable")
+@onready var _replay_next_button: Button = $RootMargin/MainColumn/ActionPanel/ActionContent/ControlButtons/ReplayControls/ReplayNextButton
 
 var composer = null
 var manager = null
@@ -64,6 +74,10 @@ var side_control_modes: Dictionary = {}
 var available_matchups: Array = []
 var battle_summary: Dictionary = {}
 var command_steps: int = 0
+var replay_event_log: Array = []
+var replay_turn_timeline: Array = []
+var replay_summary_context: Dictionary = {}
+var replay_frame_index: int = 0
 
 var demo_profile: String = ""
 var is_demo_mode: bool = false
@@ -78,6 +92,8 @@ var _startup_failed: bool = false
 
 func _ready() -> void:
 	_restart_button.pressed.connect(_on_restart_pressed)
+	_replay_prev_button.pressed.connect(_on_replay_prev_pressed)
+	_replay_next_button.pressed.connect(_on_replay_next_pressed)
 	_view_presenter.configure_static_controls(self)
 	bootstrap_from_environment()
 
@@ -106,6 +122,31 @@ func restart_session_with_config(config: Dictionary) -> Dictionary:
 		return {"ok": true, "data": get_state_snapshot()}
 	return restart_result
 
+func configure_replay_browser(replay_output, summary_context: Dictionary) -> String:
+	if replay_output == null:
+		return "Battle sandbox replay returned null replay_output"
+	if not (replay_output.turn_timeline is Array) or replay_output.turn_timeline.is_empty():
+		return "Battle sandbox replay missing turn_timeline"
+	replay_summary_context = summary_context.duplicate(true)
+	replay_event_log = replay_output.event_log.duplicate(true)
+	replay_turn_timeline = replay_output.turn_timeline.duplicate(true)
+	replay_frame_index = 0
+	_apply_replay_frame()
+	return ""
+
+func current_replay_frame() -> Dictionary:
+	if replay_turn_timeline.is_empty():
+		return {}
+	var clamped_index := clampi(replay_frame_index, 0, replay_turn_timeline.size() - 1)
+	var frame = replay_turn_timeline[clamped_index]
+	return frame.duplicate(true) if frame is Dictionary else {}
+
+func set_replay_frame(next_index: int) -> void:
+	if replay_turn_timeline.is_empty():
+		return
+	replay_frame_index = clampi(next_index, 0, replay_turn_timeline.size() - 1)
+	_apply_replay_frame()
+
 func get_state_snapshot() -> Dictionary:
 	_sync_event_log_state()
 	return {
@@ -127,6 +168,9 @@ func get_state_snapshot() -> Dictionary:
 		"available_matchups": available_matchups.duplicate(true),
 		"battle_summary": battle_summary.duplicate(true),
 		"command_steps": command_steps,
+		"replay_frame_index": replay_frame_index,
+		"replay_turn_timeline": replay_turn_timeline.duplicate(true),
+		"replay_current_frame": current_replay_frame(),
 	}
 
 func fetch_legal_actions_for_side(side_id: String) -> Dictionary:
@@ -157,6 +201,38 @@ func _on_restart_pressed() -> void:
 		return
 	restart_session_with_config(_view_presenter.build_launch_config_from_controls(self))
 
+func _on_replay_prev_pressed() -> void:
+	if not is_demo_mode:
+		return
+	set_replay_frame(replay_frame_index - 1)
+	_render_ui()
+
+func _on_replay_next_pressed() -> void:
+	if not is_demo_mode:
+		return
+	set_replay_frame(replay_frame_index + 1)
+	_render_ui()
+
+func _apply_replay_frame() -> void:
+	if replay_turn_timeline.is_empty():
+		return
+	var frame := current_replay_frame()
+	public_snapshot = frame.get("public_snapshot", {}).duplicate(true)
+	_event_log_buffer.apply_replay_frame(
+		public_snapshot,
+		frame,
+		replay_event_log,
+		_build_replay_summary_context(frame)
+	)
+	current_side_to_select = ""
+	pending_commands.clear()
+	legal_actions_by_side.clear()
+
+func _build_replay_summary_context(frame: Dictionary) -> Dictionary:
+	var summary_context: Dictionary = replay_summary_context.duplicate(true)
+	summary_context["turn_index_override"] = int(frame.get("turn_index", 0))
+	return summary_context
+
 func _sync_event_log_state() -> void:
 	event_log_cursor = _event_log_buffer.event_log_cursor
 	recent_event_lines = _event_log_buffer.recent_event_lines.duplicate()
@@ -175,4 +251,8 @@ func _build_view_context() -> Dictionary:
 		"available_matchups": available_matchups,
 		"battle_summary": battle_summary,
 		"command_steps": command_steps,
+		"replay_mode": is_demo_mode,
+		"replay_frame_index": replay_frame_index,
+		"replay_frame_count": replay_turn_timeline.size(),
+		"replay_current_frame": current_replay_frame(),
 	}

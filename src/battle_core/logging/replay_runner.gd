@@ -34,6 +34,11 @@ const COMPOSE_DEPS := [
 		"source": "content_snapshot_cache",
 		"nested": true,
 	},
+	{
+		"field": "public_snapshot_builder",
+		"source": "public_snapshot_builder",
+		"nested": true,
+	},
 ]
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -47,6 +52,7 @@ var battle_logger
 var id_factory
 var rng_service
 var content_snapshot_cache
+var public_snapshot_builder
 var last_error_code: Variant = null
 var last_error_message: String = ""
 var _input_helper = ReplayRunnerInputHelperScript.new()
@@ -93,11 +99,38 @@ func run_replay_with_context(replay_input) -> Dictionary:
 	var battle_state = context_result.get("battle_state", null)
 	var max_turn_index: int = int(context_result.get("max_turn_index", 0))
 	var commands_by_turn: Dictionary = _input_helper.group_commands_by_turn(replay_input.command_stream)
+	var turn_timeline: Array = [
+		_output_helper.build_turn_frame(
+			0,
+			public_snapshot_builder.build_public_snapshot(battle_state, content_index),
+			0,
+			0,
+			false
+		)
+	]
+	var event_from: int = 0
 	while not battle_state.battle_result.finished and battle_state.turn_index <= max_turn_index:
+		var completed_turn_index: int = battle_state.turn_index
 		var turn_commands: Array = commands_by_turn.get(battle_state.turn_index, [])
 		turn_loop_controller.run_turn(battle_state, content_index, turn_commands)
+		var event_to: int = battle_logger.snapshot().size()
+		turn_timeline.append(
+			_output_helper.build_turn_frame(
+				completed_turn_index,
+				public_snapshot_builder.build_public_snapshot(battle_state, content_index),
+				event_from,
+				event_to,
+				bool(battle_state.battle_result.finished)
+			)
+		)
+		event_from = event_to
 	var logger_error_state: Dictionary = battle_logger.error_state() if battle_logger != null and battle_logger.has_method("error_state") else {}
-	var output_result := _output_helper.build_replay_output_result(battle_logger.snapshot(), battle_state, logger_error_state)
+	var output_result := _output_helper.build_replay_output_result(
+		battle_logger.snapshot(),
+		battle_state,
+		logger_error_state,
+		turn_timeline
+	)
 	var replay_output = output_result.get("replay_output", null)
 	if not bool(output_result.get("ok", false)):
 		last_error_code = output_result.get("error_code", ErrorCodesScript.INVALID_STATE_CORRUPTION)

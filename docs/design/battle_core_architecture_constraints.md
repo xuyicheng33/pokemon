@@ -35,6 +35,11 @@
 Composition 补充约束：
 
 - `BattleCoreServiceSpecs` 只允许维护一份 `SERVICE_DESCRIPTORS` 单一描述源，不再分裂维护 `SERVICE_SLOTS / SCRIPT_BY_SLOT` 双清单。
+- composition 当前固定只允许三层构成：
+  - 核心稳定 service slot
+  - payload / runtime slot
+  - owner 私有 helper 实例
+- 单 owner、无独立生命周期、无跨模块复用的 helper，不得继续晋升为 composer service；这类 helper 默认内聚在 owner 内部，由 owner 自己构造和调度。
 - payload 相关 service descriptor 不再手抄回 `BattleCoreServiceSpecs`；它们固定由 `src/composition/battle_core_payload_service_specs.gd` 派生，再通过 `service_slots() / script_by_slot()` 并入统一服务视图。
 - payload handler script 固定按命名约定解析为 `src/battle_core/effects/payload_handlers/<handler_slot>.gd`；`PayloadContractRegistry` 里的 `handler_slot` 与该目录下的实际 handler script 文件必须保持一一对应，缺文件或残留文件都必须由 composition consistency gate 与 wiring DAG gate 直接失败。
 - 组合依赖与 reset 真相固定下沉到各 script 自身：

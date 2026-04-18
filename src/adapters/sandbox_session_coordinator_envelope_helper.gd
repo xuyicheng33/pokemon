@@ -2,6 +2,7 @@ extends RefCounted
 class_name SandboxSessionCoordinatorEnvelopeHelper
 
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 func build_summary_context(launch_config: Dictionary, side_control_modes: Dictionary, command_steps: int) -> Dictionary:
 	return {
@@ -13,29 +14,13 @@ func build_summary_context(launch_config: Dictionary, side_control_modes: Dictio
 	}
 
 func unwrap_sample_factory_result(result: Dictionary, label: String) -> Dictionary:
-	if bool(result.get("ok", false)):
-		return {"ok": true, "data": result.get("data", null)}
-	return {"ok": false, "error": "Battle sandbox failed to build %s: %s" % [
-		label,
-		str(result.get("error_message", "unknown error")),
-	]}
+	return ResultEnvelopeHelperScript.unwrap_ok(
+		result,
+		"Battle sandbox failed to build %s" % label
+	)
 
 func unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:
-	if envelope == null:
-		return error_result("%s returned null envelope" % label)
-	var required_keys := ["ok", "data", "error_code", "error_message"]
-	for key in required_keys:
-		if not envelope.has(key):
-			return error_result("%s missing envelope key: %s" % [label, key])
-	if bool(envelope.get("ok", false)):
-		if envelope.get("error_code", null) != null or envelope.get("error_message", null) != null:
-			return error_result("%s success envelope should not expose error payload" % label)
-		return {"ok": true, "data": envelope.get("data", null)}
-	return error_result("%s failed: %s (%s)" % [
-		label,
-		str(envelope.get("error_message", "")),
-		str(envelope.get("error_code", "")),
-	])
+	return ResultEnvelopeHelperScript.unwrap_ok(envelope, label)
 
 func read_property(value, property_name: String, default_value = null):
 	if value == null or property_name.is_empty():

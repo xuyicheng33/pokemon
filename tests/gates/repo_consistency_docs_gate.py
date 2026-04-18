@@ -21,4 +21,4 @@ run_content_formal_delivery(ctx)
 run_sandbox_testing_surface(ctx)
 run_records_archive_wording(ctx)
 
-ctx.finish("design/rules/decisions wording and stale phrasing are aligned")
+ctx.finish("doc sources, workflow entrypoints, and active records are aligned")

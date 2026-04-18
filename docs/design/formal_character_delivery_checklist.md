@@ -44,7 +44,7 @@
 - [ ] `SampleBattleFactory` 正式失败路径统一走结果式接口；manager smoke、pair smoke 与 formal demo replay 默认读取 `content_snapshot_paths_for_setup_result(battle_setup)`，只有全量正式快照 / baseline demo 才走 `content_snapshot_paths_result()`
 - [ ] 更新 `config/formal_character_sources/<character>.json` 对应角色 source descriptor
 - [ ] 若角色复用共享扩展、补新 matchup 或新增共享能力，同时更新 `config/formal_character_sources/00_shared_registry.json`
-- [ ] 重新生成并提交 `config/formal_character_manifest.json` 与 `config/formal_character_capability_catalog.json`
+- [ ] 通过唯一同步入口重新生成并提交产物：`bash tests/sync_formal_registry.sh`
 - [ ] `characters[*]` 继续写在同一个 manifest 条目里，但要按两份消费视图检查：
   - [ ] runtime 视图：只服务 runtime loader / validator / setup
   - [ ] delivery/test 视图：只服务 suite / gate / 文档锚点 / 交付检查

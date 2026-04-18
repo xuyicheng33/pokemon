@@ -12,6 +12,56 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 当前阶段：原型减负与工程收口（2026-04-18）
+
+- 状态：已完成
+- 目标：
+  - 在不放松 formal 单源、gate 和 `composer + slot` 稳定结构的前提下，收口人工维护面、统一边界结果式、补齐 BattleSandbox 回放浏览，并把 CI 改成并行执行。
+- 范围：
+  - `README.md`
+  - `tests/README.md`
+  - `docs/design/current_development_workflow.md`
+  - `docs/design/current_stage_regression_baseline.md`
+  - `docs/design/formal_character_delivery_checklist.md`
+  - `docs/design/log_and_replay_contract.md`
+  - `docs/design/project_folder_structure.md`
+  - `docs/design/battle_core_architecture_constraints.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+  - `tests/gates/repo_consistency_docs_gate*.py`
+  - `tests/sync_formal_registry.sh`
+  - `tests/check_gdunit_gate.sh`
+  - `tests/check_boot_smoke.sh`
+  - `tests/run_with_gate.sh`
+  - `.github/workflows/ci.yml`
+  - BattleSandbox / replay / result envelope 相关源码与对应 suite
+- 验收标准：
+  - formal 继续只认 `config/formal_character_sources/` 为人工真相，`manifest/catalog` 只能通过唯一同步入口回写
+  - README 与 `tests/README.md` 退回入口说明，docs gate 只拦结构、来源、流程和活跃记录漂移
+  - 外层触达路径改走共享 result envelope helper，`BattleCoreManager` 公共 envelope 不变
+  - replay 输出新增 `turn_timeline`，BattleSandbox demo replay 可按回合只读浏览
+  - suite 继续拆分但顶层 wrapper 路径保持稳定
+  - 本地 `bash tests/run_with_gate.sh` 仍是唯一总入口，CI 改成 3 个并行 job 并与本地共用同一批子脚本
+- 结果：
+  - formal 单源、同步入口、交付 checklist 和 workflow 已统一；`tests/sync_formal_registry.sh` 成为 committed artifacts 的唯一人工同步入口
+  - README / `tests/README.md` 已去掉 formal 字段镜像和大段 contract wording，docs gate 已收口为结构与流程校验
+  - `src/shared/result_envelope_helper.gd` 已落地，sandbox bootstrap/replay、formal registry 读取、manager/sample factory 边界结果式已统一
+  - `ReplayOutput.turn_timeline`、`ReplayRunner` frame 记录和 BattleSandbox 回放浏览态已落地；demo replay 现在支持按回合切换公开快照与事件片段，且 replay 模式禁止提交 action
+  - `manual_battle_scene_suite.gd` 已继续下沉为 wrapper + 子目录结构，公共路径保持不变
+  - CI 已拆成 `gdunit / repo_and_arch_gates / boot_and_sandbox_smoke` 三个并行 job；本地总入口继续复用共享子脚本
+- 验证：
+  - `python3 tests/gates/repo_consistency_docs_gate.py`
+  - `python3 tests/gates/repo_consistency_surface_gate.py`
+  - `python3 tests/gates/repo_consistency_formal_character_gate.py`
+  - `bash tests/check_boot_smoke.sh`
+  - `bash tests/check_sandbox_smoke_matrix.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `TEST_PATH=res://test/suites/replay_determinism_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manager_replay_header_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manual_battle_scene/manual_flow_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manual_battle_scene/demo_replay_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前阶段：记录归档、审查处置与最终收口（2026-04-18）
 
 - 状态：已完成

@@ -4,6 +4,7 @@ class_name SampleBattleFactoryReplayBuilder
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 func build_demo_replay_input_result(command_port, snapshot_paths_result: Dictionary, battle_setup) -> Dictionary:
 	return build_replay_input_result(command_port, snapshot_paths_result, battle_setup, 17, [])
@@ -65,7 +66,7 @@ func build_replay_input_result(
 		if not bool(command_result.get("ok", false)):
 			return command_result
 		replay_input.command_stream.append(command_result.get("data", null))
-	return _ok_result(replay_input)
+	return ResultEnvelopeHelperScript.ok(replay_input)
 
 func _resolve_command_data_result(command_result) -> Dictionary:
 	if typeof(command_result) == TYPE_DICTIONARY and command_result.has("ok") and command_result.has("data"):
@@ -80,26 +81,13 @@ func _resolve_command_data_result(command_result) -> Dictionary:
 				ErrorCodesScript.INVALID_COMMAND_PAYLOAD,
 				"SampleBattleFactory replay command builder returned null command"
 			)
-		return _ok_result(command_data)
+		return ResultEnvelopeHelperScript.ok(command_data)
 	if command_result == null:
 		return _error_result(
 			ErrorCodesScript.INVALID_COMMAND_PAYLOAD,
 			"SampleBattleFactory replay builder received null command"
 		)
-	return _ok_result(command_result)
-
-func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(command_result)
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(error_code, error_message)

@@ -4,10 +4,12 @@
 
 ## 1. 推荐复查命令
 
-1. `TEST_PATH=res://test/suites/manual_battle_scene_suite.gd bash tests/run_gdunit.sh`
-2. `TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
-3. `bash tests/check_sandbox_smoke_matrix.sh`
-4. `bash tests/run_with_gate.sh`
+1. `TEST_PATH=res://test/suites/manual_battle_scene/manual_flow_suite.gd bash tests/run_gdunit.sh`
+2. `TEST_PATH=res://test/suites/manual_battle_scene/demo_replay_suite.gd bash tests/run_gdunit.sh`
+3. `TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
+4. `bash tests/check_boot_smoke.sh`
+5. `bash tests/check_sandbox_smoke_matrix.sh`
+6. `bash tests/run_with_gate.sh`
 
 ## 2. 当前主 smoke matchup
 
@@ -20,7 +22,7 @@
 
 ## 3. 最小可玩性检查
 
-- 可启动：`BattleSandbox` 能进入主流程，`bash tests/run_with_gate.sh` 与 `godot --headless --path . --quit-after 20` 不报阻断错误
+- 可启动：`BattleSandbox` 能进入主流程，`bash tests/run_with_gate.sh` 与 `bash tests/check_boot_smoke.sh` 不报阻断错误
 - 可操作：默认 `manual/policy` 路径能完成至少一轮人工选指与 policy 自动推进
 - 能跑完一局：三条主 smoke 路径都能稳定打到终局
 - 无阻断报错：不得出现 `BATTLE_SANDBOX_FAILED:`、`SCRIPT ERROR:`、`Compile Error:`、`Parse Error:`

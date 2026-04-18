@@ -103,7 +103,7 @@ godot --path .
 
 默认会进入 `BattleSandbox` 的单人研发试玩 sandbox，固定 launch config 为 `mode=manual_matchup`、`matchup_id=gojo_vs_sample`、`battle_seed=9101`、`p1_control_mode=manual`、`p2_control_mode=policy`，启动后停在 `P1` 选指界面。
 HUD 当前支持按当前配置重开：`matchup` 下拉、`battle_seed` 输入、`P1 control mode`、`P2 control mode` 和重启按钮。控制模式只支持 `manual | policy`；预设对局列表来自 `SampleBattleFactory.available_matchups_result()`，UI 默认只显示非 `test_only` matchup，并按 `gojo_vs_sample -> kashimo_vs_sample -> sukuna_setup -> sample_default -> 其余可见 matchup` 的推荐顺序展示。状态区固定补出当前配置摘要、当前轮到谁操作与 policy 状态、已提交指令摘要、稳定 `battle_summary` 和按回合分隔的最近日志；`manual/manual` 与 `policy/policy` 继续保留为显式模式。
-如需复查旧自动回放，可追加命令行参数 `-- demo=<profile>`，例如 `godot --path . -- demo=legacy`。demo profile 的单一真相仍在 `config/demo_replay_catalog.json`；`BattleSandboxController` 只在检测到 `demo=<profile>` 时解析 profile、初始化 manager，并把 replay input 构建委托给 `SampleBattleFactory`。这条路径继续是 CLI/debug 入口，不混进当前 HUD 的主流程；当前 smoke matrix 也会固定复查 `legacy` 与 `kashimo` 两个 demo profile。
+如需复查旧自动回放，可追加命令行参数 `-- demo=<profile>`，例如 `godot --path . -- demo=legacy`。demo profile 的单一真相仍在 `config/demo_replay_catalog.json`；`BattleSandboxController` 在检测到 `demo=<profile>` 时会进入只读回放浏览态，固定消费 `ReplayOutput.turn_timeline`，并通过“上一回合 / 下一回合”浏览 frame，不再允许提交 action。当前 smoke matrix 继续固定复查 `legacy` 与 `kashimo` 两个 demo profile。
 
 ### 5.2 Sandbox 主验证入口
 
@@ -135,7 +135,23 @@ P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/m
 
 这样可以直接对比 `manual/manual`、`manual/policy`、`policy/policy` 三条主路径。
 
-### 5.3 运行完整闸门（推荐）
+### 5.3 formal 产物同步
+
+formal 角色的唯一人工维护入口是 `config/formal_character_sources/`。
+source descriptor 变更后，统一通过下面这条命令同步生成产物：
+
+```bash
+bash tests/sync_formal_registry.sh
+```
+
+它会回写：
+
+- `config/formal_character_manifest.json`
+- `config/formal_character_capability_catalog.json`
+
+这两份文件继续提交到仓库，但不再手工维护。
+
+### 5.4 运行完整闸门（推荐）
 
 ```bash
 tests/run_with_gate.sh
@@ -144,9 +160,12 @@ tests/run_with_gate.sh
 闸门通过条件：
 
 - `tests/run_with_gate.sh` 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix`
+- 本地与 CI 共用子入口：
+  - `bash tests/check_gdunit_gate.sh`
+  - `bash tests/check_boot_smoke.sh`
 - 业务断言全部通过（`tests/run_gdunit.sh` -> `gdUnit4`，默认扫描 `res://test`）
 - 产出可消费测试报告（`JUnit XML + HTML`，默认落在 `reports/gdunit`）
-- headless 主流程启动 smoke 通过（`godot --headless --path . --quit-after 20`），且不得出现 `BATTLE_SANDBOX_FAILED:` 应用层失败标记
+- headless 主流程启动 smoke 通过（`bash tests/check_boot_smoke.sh`），且不得出现 `BATTLE_SANDBOX_FAILED:` 应用层失败标记
 - 无引擎级 warning（`WARNING:`）
 - suite 可达性检查通过（`tests/check_suite_reachability.sh`）
 - 无引擎级错误（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
@@ -246,23 +265,28 @@ tests/run_with_gate.sh
 
 ### 8.2 角色接入工作流
 
-正式角色接入固定走统一资产流程，核心配置入口：
+正式角色接入继续只认一条主线：
 
-- 唯一人工维护入口：`config/formal_character_sources/`（`00_shared_registry.json` 管共享 `matchups/capabilities`，每个角色一份 source descriptor）
-- `config/formal_character_manifest.json` 与 `config/formal_character_capability_catalog.json` 是从 source descriptors 导出的提交产物
-- committed manifest 角色条目继续拆为 runtime 视图与 delivery/test 视图，运行时/测试/gate 均从生成后的 manifest 派生
-- runtime 视图关键字段固定包含 `formal_setup_matchup_id / pair_token / baseline_script_path / owned_pair_interaction_specs`，并继续使用 `content_snapshot_paths_for_setup_result(battle_setup)` 做 setup-scoped snapshot 裁剪
-- `owned_pair_interaction_specs[*]` 固定声明 `scenario_key`，共享能力继续通过 `shared_capability_ids` 回挂到 capability catalog 的 `required_fact_ids`
-- 内容校验：每个正式角色都必须登记 `content_validator_script_path`，runtime 继续按 manifest 动态装配 validator
-- formal validator 只校验当前 content snapshot 实际已出现的正式角色，角色 entry validator 模板固定为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts`
-- pair interaction 由 `owned_pair_interaction_specs` 声明，loader 自动派生有向 interaction case
-- 角色 suite：`test/suites/<character>_suite.gd`（域回归）、`<character>_snapshot_suite.gd`（资源快照）、`<character>_manager_smoke_suite.gd`（facade 主路径）
+- 唯一人工真相：`config/formal_character_sources/`
+- 唯一人工同步入口：`bash tests/sync_formal_registry.sh`
+- committed 生成产物：`config/formal_character_manifest.json`、`config/formal_character_capability_catalog.json`
+- runtime / tests / gate 都只消费生成后的 manifest / capability catalog
 
-接入清单：`docs/design/formal_character_delivery_checklist.md`
-设计模板：`docs/design/formal_character_design_template.md`
-共享能力说明：`docs/design/formal_character_capability_catalog.md`
+角色 source descriptor 继续固定承载正式交付合同，包括：
 
-当前 Gojo、Sukuna、Kashimo 与 Obito 都满足这套交付面，后续新角色默认沿用。
+- `content_validator_script_path`
+- `pair_token`
+- `baseline_script_path`
+- `owned_pair_interaction_specs`
+- `shared_capability_ids`
+
+详细接入动作不再在 README 展开，统一看：
+
+- 接入清单：`docs/design/formal_character_delivery_checklist.md`
+- 设计模板：`docs/design/formal_character_design_template.md`
+- 共享能力说明：`docs/design/formal_character_capability_catalog.md`
+
+当前 Gojo、Sukuna、Kashimo 与 Obito 都继续沿用这套单源交付面。
 
 ## 9. 日志与回放契约
 
@@ -276,10 +300,10 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-18）
 
-- `src/**/*.gd`：`22719` 行
-- `test/**/*.gd`：`21496` 行
-- `tests/**/*.gd`：`4892` 行
-- GDScript 合计：`49107` 行
+- `src/**/*.gd`：`22944` 行
+- `test/**/*.gd`：`21669` 行
+- `tests/**/*.gd`：`4910` 行
+- GDScript 合计：`49523` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

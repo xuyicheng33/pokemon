@@ -2,6 +2,7 @@ extends RefCounted
 class_name SampleBattleFactorySetupAccess
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 var baseline_matchup_catalog
 var formal_matchup_catalog
@@ -21,7 +22,7 @@ func build_setup_from_side_specs_result(p1_side_spec: Dictionary, p2_side_spec: 
 			ErrorCodesScript.INVALID_COMPOSITION,
 			"SampleBattleFactory failed to build setup from side specs"
 		)
-	return _ok_result(battle_setup)
+	return ResultEnvelopeHelperScript.ok(battle_setup)
 
 func build_setup_by_matchup_id_result(matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	if baseline_matchup_catalog.has_matchup(matchup_id):
@@ -47,7 +48,7 @@ func build_matchup_setup_result(
 			ErrorCodesScript.INVALID_COMPOSITION,
 			"SampleBattleFactory failed to build matchup setup"
 		)
-	return _ok_result(battle_setup)
+	return ResultEnvelopeHelperScript.ok(battle_setup)
 
 func build_sample_setup_result(side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
 	return baseline_matchup_catalog.build_setup_result(
@@ -56,18 +57,5 @@ func build_sample_setup_result(side_regular_skill_overrides: Dictionary = {}) ->
 		side_regular_skill_overrides
 	)
 
-func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
-
 func _error_result(error_code: String, error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(error_code, error_message)

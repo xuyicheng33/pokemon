@@ -106,7 +106,11 @@ func run_replay_result(replay_input) -> Dictionary:
         )
         temp_container.dispose()
         return invalid_replay_result
-    var public_snapshot = public_snapshot_builder.build_public_snapshot(internal_replay_output.final_battle_state, replay_result["content_index"])
+    var public_snapshot = _resolve_final_replay_public_snapshot(
+        internal_replay_output,
+        final_battle_state,
+        content_index
+    )
     var replay_output = internal_replay_output.clone_without_runtime_state()
     temp_container.dispose()
     return BattleCoreManagerContractHelperScript.ok({"replay_output": replay_output, "public_snapshot": public_snapshot})
@@ -130,6 +134,15 @@ func _describe_replay_failure(replay_output) -> String:
     if (result_type == "draw" or result_type == "no_winner") and battle_result.winner_side_id != null:
         return "BattleCoreManager replay returned invalid battle_result"
     return "BattleCoreManager replay log schema validation failed"
+
+func _resolve_final_replay_public_snapshot(internal_replay_output, final_battle_state, content_index) -> Dictionary:
+    if internal_replay_output != null:
+        var turn_timeline = internal_replay_output.turn_timeline
+        if turn_timeline is Array and not turn_timeline.is_empty():
+            var last_frame = turn_timeline[turn_timeline.size() - 1]
+            if last_frame is Dictionary and last_frame.get("public_snapshot", null) is Dictionary:
+                return last_frame.get("public_snapshot", {}).duplicate(true)
+    return public_snapshot_builder.build_public_snapshot(final_battle_state, content_index)
 
 func _compose_container_result() -> Dictionary:
     if not container_factory.is_valid():
