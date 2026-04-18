@@ -88,7 +88,7 @@ func _test_missing_core_dependency_hard_fail(harness) -> Dictionary:
 		return harness.fail_result("SampleBattleFactory init failed")
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 223)
-	core.service("turn_resolution_service").effect_instance_dispatcher = null
+	core.service("turn_selection_resolver").legal_action_service = null
 
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [])
 	if not battle_state.battle_result.finished:

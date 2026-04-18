@@ -71,7 +71,7 @@ func invalid_battle_code() -> Variant:
     return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:

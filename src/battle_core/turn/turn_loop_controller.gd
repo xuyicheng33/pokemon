@@ -18,8 +18,23 @@ const COMPOSE_DEPS := [
 		"nested": true,
 	},
 	{
-		"field": "turn_resolution_service",
-		"source": "turn_resolution_service",
+		"field": "turn_selection_resolver",
+		"source": "turn_selection_resolver",
+		"nested": true,
+	},
+	{
+		"field": "turn_start_phase_service",
+		"source": "turn_start_phase_service",
+		"nested": true,
+	},
+	{
+		"field": "turn_end_phase_service",
+		"source": "turn_end_phase_service",
+		"nested": true,
+	},
+	{
+		"field": "turn_field_lifecycle_service",
+		"source": "turn_field_lifecycle_service",
 		"nested": true,
 	},
 	{
@@ -51,7 +66,10 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var action_queue_builder
 var action_executor
 var faint_resolver
-var turn_resolution_service
+var turn_selection_resolver
+var turn_start_phase_service
+var turn_end_phase_service
+var turn_field_lifecycle_service
 var battle_result_service
 var runtime_guard_service
 var battle_logger
@@ -62,7 +80,7 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
         return
     if _validate_dependencies_or_terminate(battle_state):
         return
-    turn_resolution_service.reset_turn_state(battle_state)
+    turn_selection_resolver.reset_turn_state(battle_state)
     if _validate_runtime_or_terminate(battle_state, content_index):
         return
     if _run_turn_start_phase(battle_state, content_index):
@@ -97,30 +115,13 @@ func _run_turn_start_phase(battle_state, content_index) -> bool:
     var turn_start_event_id: String = log_event_builder.resolve_event_id(turn_start_event)
     var skip_turn_start_regen: bool = battle_state.pre_applied_turn_start_regen_turn_index == battle_state.turn_index
     if not skip_turn_start_regen:
-        turn_resolution_service.apply_turn_start_regen(battle_state, turn_start_event_id)
+        turn_start_phase_service.apply_turn_start_regen(battle_state, turn_start_event_id)
     battle_state.pre_applied_turn_start_regen_turn_index = 0
-    if turn_resolution_service.execute_system_trigger_batch("turn_start", battle_state, content_index):
-        return true
-    if turn_resolution_service.break_field_if_creator_inactive(battle_state, content_index):
-        return true
-    if turn_resolution_service.execute_matchup_changed_if_needed(battle_state, content_index):
-        return true
-    if turn_resolution_service.decrement_effect_instances_and_log(
-        battle_state,
-        content_index,
-        "turn_start",
-        turn_resolution_service.collect_effect_decrement_owner_ids(battle_state),
-        turn_start_event_id
-    ):
-        return true
-    turn_resolution_service.decrement_rule_mods_and_log(battle_state, "turn_start", turn_start_event_id)
-    if battle_result_service.resolve_standard_victory(battle_state):
-        return true
-    return false
+    return turn_start_phase_service.execute_phase(battle_state, content_index, turn_start_event_id)
 
 func _build_action_queue_result(battle_state, content_index, commands: Array) -> Dictionary:
     battle_state.phase = BattlePhasesScript.SELECTION
-    var resolve_result = turn_resolution_service.resolve_commands_for_turn(battle_state, content_index, commands)
+    var resolve_result = turn_selection_resolver.resolve_commands_for_turn(battle_state, content_index, commands)
     if resolve_result["invalid_code"] != null:
         battle_result_service.terminate_invalid_battle(battle_state, str(resolve_result["invalid_code"]))
         return {"ok": false}
@@ -149,9 +150,9 @@ func _execute_action_queue(battle_state, content_index, action_queue: Array) -> 
         if faint_invalid_code != null:
             battle_result_service.terminate_invalid_battle(battle_state, str(faint_invalid_code))
             return true
-        if turn_resolution_service.break_field_if_creator_inactive(battle_state, content_index):
+        if turn_field_lifecycle_service.break_field_if_creator_inactive(battle_state, content_index):
             return true
-        if turn_resolution_service.execute_matchup_changed_if_needed(battle_state, content_index):
+        if turn_field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index):
             return true
         if battle_result_service.resolve_standard_victory(battle_state):
             return true
@@ -172,34 +173,17 @@ func _run_turn_end_phase(battle_state, content_index) -> bool:
     )
     battle_logger.append_event(turn_end_event)
     var turn_end_event_id: String = log_event_builder.resolve_event_id(turn_end_event)
-    if turn_resolution_service.execute_system_trigger_batch("turn_end", battle_state, content_index):
-        return true
-    var field_tick_result = turn_resolution_service.apply_turn_end_field_tick(battle_state, content_index, turn_end_event_id)
-    if bool(field_tick_result.get("terminated", false)):
-        return true
-    var field_change = field_tick_result.get("field_change", null)
-    if turn_resolution_service.decrement_effect_instances_and_log(
+    var turn_end_result: Dictionary = turn_end_phase_service.execute_phase(
         battle_state,
         content_index,
-        "turn_end",
-        turn_resolution_service.collect_effect_decrement_owner_ids(battle_state),
-        turn_end_event_id
-    ):
-        return true
-    turn_resolution_service.decrement_rule_mods_and_log(battle_state, "turn_end", turn_end_event_id)
-    if turn_end_event != null:
-        turn_end_event.field_change = field_change
-    var turn_end_faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
-    if turn_end_faint_invalid_code != null:
-        battle_result_service.terminate_invalid_battle(battle_state, str(turn_end_faint_invalid_code))
-        return true
-    if turn_resolution_service.break_field_if_creator_inactive(battle_state, content_index):
-        return true
-    if turn_resolution_service.execute_matchup_changed_if_needed(battle_state, content_index):
+        turn_end_event_id,
+        turn_end_event
+    )
+    if bool(turn_end_result.get("terminated", false)):
         return true
     if _validate_runtime_or_terminate(battle_state, content_index):
         return true
-    turn_resolution_service.clear_turn_end_state(battle_state)
+    turn_selection_resolver.clear_turn_end_state(battle_state)
     return false
 
 func _finish_turn_progression(battle_state) -> void:

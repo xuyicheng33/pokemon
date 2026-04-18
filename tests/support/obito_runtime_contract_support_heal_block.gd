@@ -99,7 +99,7 @@ func run_qiudao_jiaotu_switch_persist_contract_for_matchup(harness, matchup_id: 
 	if _support.count_rule_mod_instances(gojo, "incoming_heal_final_mod") != 1:
 		return harness.fail_result("turn 1 should seed incoming_heal_final_mod before testing switch persistence")
 	var switch_command = _support.build_manual_switch_command(core, 2, gojo_side_id, String(gojo.public_id), "%s-B" % gojo_side_id)
-	var resolve_result: Dictionary = core.service("turn_resolution_service").resolve_commands_for_turn(
+	var resolve_result: Dictionary = core.service("turn_selection_resolver").resolve_commands_for_turn(
 		battle_state,
 		content_index,
 		[switch_command]

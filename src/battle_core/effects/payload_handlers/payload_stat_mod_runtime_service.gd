@@ -36,7 +36,7 @@ var target_helper
 var effect_event_helper
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func apply_stat_mod_payload(payload, effect_definition, effect_event, battle_state) -> void:

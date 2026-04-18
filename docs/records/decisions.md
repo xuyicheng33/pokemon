@@ -367,6 +367,30 @@
   - 把依赖声明压回 service 自己以后，新增或重命名依赖字段时，只需要同步 owner script 与 service slot 映射，不再四处补 wiring 表
   - payload handler 到 runtime service 的 compose 边过去在 gate 里有盲区；改成脚本自声明后，运行时与 gate 终于读取的是同一份依赖图
 
+## 0P. turn / init 编排固定拆成 phase owner + setup validator（2026-04-18）
+
+- `TurnLoopController` 当前固定只保留阶段切换、系统链日志与主循环收尾；它直接依赖：
+  - `turn_selection_resolver`
+  - `turn_start_phase_service`
+  - `turn_end_phase_service`
+  - `turn_field_lifecycle_service`
+- `turn_start_phase_service.gd` 当前固定负责：
+  - `turn_start` MP 回复
+  - `turn_start` system trigger batch
+  - persistent effect / rule mod 的 `decrement_on=turn_start`
+  - 该阶段内的 field break / matchup changed / faint / victory 终止检查
+- `turn_end_phase_service.gd` 当前固定负责：
+  - `turn_end` system trigger batch
+  - field tick / field expire follow-up
+  - persistent effect / rule mod 的 `decrement_on=turn_end`
+  - 该阶段内的 faint / field break / matchup changed / victory 终止检查
+- `turn_resolution_service.gd` 与对应 service slot 当前固定删除，不再保留“继续往里堆逻辑”的中间聚合层。
+- `BattleInitializer` 当前固定只保留顺序调度、错误传递与依赖同步；`battle_initializer_setup_validator.gd` 负责 `BattleSetup` / format / combat chart / base runtime field 准备，`battle_initializer_phase_service.gd` 继续只负责初始化阶段系统链。
+- 这么定的原因：
+  - `turn_resolution_service` 已经同时承载命令锁定、回合头尾系统链、effect/rule mod 扣减、field 生命周期与 persistent owner 收集，再继续加功能只会把 turn 子域重新拉回单热点
+  - `BattleInitializer` 的 setup 校验与 init 阶段编排不是同一类职责；继续放在一个 owner 里，只会把后续 format / snapshot /建局回归都绑在同一个文件上
+  - 拆成 phase owner 后，测试破坏点也更清楚：命令锁定走 `turn_selection_resolver`，turn-start/turn-end 各自只对自己的阶段 contract 负责
+
 ## 1. 文档与活跃记录职责继续分层
 
 - `docs/rules/` 是当前规则权威。

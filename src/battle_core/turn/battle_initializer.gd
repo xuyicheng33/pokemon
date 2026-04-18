@@ -70,6 +70,11 @@ const COMPOSE_DEPS := [
 		"nested": false,
 	},
 	{
+		"field": "_setup_validator",
+		"source": "",
+		"nested": false,
+	},
+	{
 		"field": "_phase_service",
 		"source": "",
 		"nested": false,
@@ -77,11 +82,9 @@ const COMPOSE_DEPS := [
 ]
 
 const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
-const EventTypesScript := preload("res://src/shared/event_types.gd")
-const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
-const BattleResultScript := preload("res://src/battle_core/contracts/battle_result.gd")
 const PublicIdAllocatorScript := preload("res://src/battle_core/turn/public_id_allocator.gd")
 const BattleInitializerStateBuilderScript := preload("res://src/battle_core/turn/battle_initializer_state_builder.gd")
+const BattleInitializerSetupValidatorScript := preload("res://src/battle_core/turn/battle_initializer_setup_validator.gd")
 const BattleInitializerPhaseServiceScript := preload("res://src/battle_core/turn/battle_initializer_phase_service.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const INIT_PHASE_CONTINUE := 0
@@ -101,12 +104,13 @@ var battle_result_service
 var field_lifecycle_service
 var public_id_allocator = PublicIdAllocatorScript.new()
 var _state_builder = BattleInitializerStateBuilderScript.new()
+var _setup_validator = BattleInitializerSetupValidatorScript.new()
 var _phase_service = BattleInitializerPhaseServiceScript.new()
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 func error_state() -> Dictionary:
     return {
@@ -120,13 +124,21 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
     var missing_dependency := resolve_missing_dependency()
     if not missing_dependency.is_empty():
         return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer missing dependency: %s" % missing_dependency)
+    _sync_setup_validator()
+    missing_dependency = _setup_validator.resolve_missing_dependency()
+    if not missing_dependency.is_empty():
+        return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer missing dependency: %s" % missing_dependency)
     _sync_phase_service()
     missing_dependency = _phase_service.resolve_missing_dependency()
     if not missing_dependency.is_empty():
         return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer missing dependency: %s" % missing_dependency)
-    var format_config = _prepare_battle_state(battle_state, content_index, battle_setup)
+    var format_config = _setup_validator.validate_and_prepare_battle_state(battle_state, content_index, battle_setup)
     if format_config == null:
-        return false
+        var validator_error: Dictionary = _setup_validator.error_state()
+        return _fail(
+            validator_error.get("code", ErrorCodesScript.INVALID_BATTLE_SETUP),
+            String(validator_error.get("message", "BattleInitializerSetupValidator failed"))
+        )
     if not _build_side_states(battle_state, battle_setup, format_config, content_index):
         return false
     _phase_service.append_battle_header_event(battle_state, content_index)
@@ -154,54 +166,6 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
     battle_state.phase = BattlePhasesScript.SELECTION
     return true
 
-func _prepare_battle_state(battle_state, content_index, battle_setup) -> Variant:
-    if battle_setup == null:
-        _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup is required")
-        return null
-    if combat_type_service == null:
-        _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires combat_type_service")
-        return null
-    if public_id_allocator == null:
-        _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires public_id_allocator")
-        return null
-    if battle_result_service == null:
-        _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires battle_result_service")
-        return null
-    var format_config = content_index.battle_formats.get(battle_setup.format_id)
-    if format_config == null:
-        _fail(ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, "Missing battle format: %s" % battle_setup.format_id)
-        return null
-    combat_type_service.build_chart(format_config.combat_type_chart)
-    if battle_setup.sides.size() != 2:
-        _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Current baseline requires exactly 2 sides")
-        return null
-    var setup_errors: Array = content_index.validate_setup(battle_setup)
-    if not setup_errors.is_empty():
-        _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup validation failed:\n%s" % "\n".join(setup_errors))
-        return null
-    battle_logger.reset()
-    battle_state.format_id = battle_setup.format_id
-    battle_state.visibility_mode = String(format_config.visibility_mode).strip_edges()
-    if battle_state.visibility_mode.is_empty():
-        _fail(ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, "Battle format visibility_mode must not be empty: %s" % battle_setup.format_id)
-        return null
-    battle_state.max_turn = format_config.max_turn
-    battle_state.max_chain_depth = max(1, int(format_config.max_chain_depth))
-    battle_state.battle_level = format_config.level
-    battle_state.selection_deadline_ms = format_config.selection_deadline_ms
-    battle_state.default_recoil_ratio = float(format_config.default_recoil_ratio)
-    battle_state.domain_clash_tie_threshold = float(format_config.domain_clash_tie_threshold)
-    battle_state.rng_profile = rng_service.get_profile()
-    battle_state.phase = BattlePhasesScript.BATTLE_INIT
-    battle_state.turn_index = 1
-    battle_state.battle_result = BattleResultScript.new()
-    battle_state.sides.clear()
-    battle_state.fatal_damage_records_by_target.clear()
-    battle_state.field_rule_mod_instances.clear()
-    battle_state.last_matchup_signature = ""
-    battle_state.pre_applied_turn_start_regen_turn_index = 0
-    return format_config
-
 func _build_side_states(battle_state, battle_setup, format_config, content_index) -> bool:
     for side_setup in battle_setup.sides:
         var side_state = _state_builder.build_side_state(side_setup, format_config, content_index, id_factory, public_id_allocator)
@@ -213,6 +177,11 @@ func _build_side_states(battle_state, battle_setup, format_config, content_index
             )
         battle_state.sides.append(side_state)
     return true
+
+func _sync_setup_validator() -> void:
+    _setup_validator.rng_service = rng_service
+    _setup_validator.battle_logger = battle_logger
+    _setup_validator.combat_type_service = combat_type_service
 
 func _sync_phase_service() -> void:
     _phase_service.id_factory = id_factory

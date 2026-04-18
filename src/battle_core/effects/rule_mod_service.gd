@@ -21,7 +21,7 @@ var _read_service = RuleModReadServiceScript.new()
 var _write_service = RuleModWriteServiceScript.new()
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 func error_state() -> Dictionary:
     var read_error_state: Dictionary = _read_service.error_state()

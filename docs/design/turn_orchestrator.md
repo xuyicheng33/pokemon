@@ -8,14 +8,16 @@
 |---|---|
 |`battle_initializer.gd`|初始化总编排：建局、首发入场、`battle_init` 批次与首回合前预回蓝|
 |`battle_initializer_state_builder.gd`|把 `BattleSetup` 展开成 side / unit 运行态，并写入本场实际常规技能装配|
+|`battle_initializer_setup_validator.gd`|校验 `BattleSetup` / format / content index，并写入建局基础运行态字段|
 |`battle_initializer_phase_service.gd`|承接初始化阶段的 battle header、`on_enter`、`battle_init` 与首回合预回蓝子流程|
 |`public_id_allocator.gd`|在建局阶段分配公开 `public_id`，保证外层输入 / 输出 ID 稳定|
 |`turn_loop_controller.gd`|驱动 `turn_start -> selection -> queue_lock -> execution -> turn_end -> victory_check`|
 |`turn_selection_resolver.gd`|锁定本回合指令，处理 `wait / resource_forced_default / surrender` 分流|
+|`turn_start_phase_service.gd`|处理 `turn_start` 的 MP 回复、系统批次、persistent effect 扣减与前半段胜负/终止检查|
+|`turn_end_phase_service.gd`|处理 `turn_end` 的 field tick、effect/rule_mod 扣减、expire 批次与后半段胜负/终止检查|
 |`turn_field_lifecycle_service.gd`|处理 field 自然到期、提前打断与 `on_matchup_changed` 对位变化钩子|
 |`turn_limit_scoring_service.gd`|封装 turn limit 计分、比较与平局决策辅助|
 |`action_queue_builder.gd`|按统一排序链生成 `QueuedAction`|
-|`turn_resolution_service.gd`|统一回合节点触发、MP 回复、effect/rule_mod 扣减与链终止处理|
 |`battle_result_service.gd`|终局稳定 owner：invalid/runtime fault 落盘、初始化阶段 invalid/startup victory 入口与 helper 转发|
 |`battle_result_service_chain_builder.gd`|构造 `system` / `battle_end` chain context，并保留 action-origin 终局链复用规则|
 |`battle_result_service_outcome_resolver.gd`|承接初始化胜利、标准胜利、投降与 turn limit 的结果判定和 battle end 落盘|
@@ -44,7 +46,7 @@
 - `on_enter` 与 `battle_init` 不能混排到同一排序池。
 - 任一批次命中 `invalid_battle_*`，立即终止并写 `system:invalid_battle`。
 - 建局时必须先完成 `SideSetup.regular_skill_loadout_overrides` 校验，再把默认装配或覆盖结果写入 `UnitState.regular_skill_ids`；后续合法性、快照与指令执行都只认这份运行态镜像。
-- `BattleInitializer` 只做编排 owner；side / unit 运行态构造、初始化阶段子流程与 `public_id` 分配分别下沉到 `battle_initializer_state_builder.gd`、`battle_initializer_phase_service.gd` 与 `public_id_allocator.gd`。
+- `BattleInitializer` 只做顺序编排、错误传递与依赖同步；setup 校验、side / unit 运行态构造、初始化阶段子流程与 `public_id` 分配分别下沉到 `battle_initializer_setup_validator.gd`、`battle_initializer_state_builder.gd`、`battle_initializer_phase_service.gd` 与 `public_id_allocator.gd`。
 - manager 对外 `create_session()` 返回的就是第 10 步完成后的公开快照；初始 `event_log` 不追补这次预回蓝事件。
 - 初始化阶段的 `invalid_battle` 与 startup victory 统一由 `BattleResultService` 落盘，避免多 owner 漂移。
 - `BattleResultService` 内部当前固定拆成 owner + `battle_result_service_chain_builder.gd` + `battle_result_service_outcome_resolver.gd`；owner 只保留 invalid/runtime fault 落盘与稳定入口，不再把 chain 构造、胜负/投降/turn limit 判定继续堆成一个混合型大文件。
@@ -66,6 +68,7 @@
 
 - `turn_start / turn_end` 触发批次只收集“当前 active + 当前 field”。
 - bench 单位不参与回合节点触发。
+- `TurnLoopController` 当前只保留阶段切换与系统日志编排；命令锁定固定下沉到 `turn_selection_resolver.gd`，`turn_start / turn_end` 的系统链推进分别固定下沉到 `turn_start_phase_service.gd` 与 `turn_end_phase_service.gd`。
 
 ### 3.3 终止语义
 

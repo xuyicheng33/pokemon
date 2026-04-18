@@ -18,7 +18,7 @@ var id_factory
 var last_invalid_battle_code: Variant = null
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+    return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 func invalid_battle_code() -> Variant:
     return last_invalid_battle_code

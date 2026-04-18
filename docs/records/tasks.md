@@ -46,6 +46,39 @@
   - `python3 tests/gates/architecture_wiring_graph_gate.py`
   - `bash tests/check_architecture_constraints.sh`
 
+## 当前阶段：turn / init 编排 owner 拆分（2026-04-18）
+
+- 状态：已完成
+- 目标：
+  - 拆掉 `turn_resolution_service` 这个回合热点，并把 `BattleInitializer` 的 setup 校验从 owner 本体里继续下沉。
+- 范围：
+  - `src/battle_core/turn/*`
+  - `src/composition/battle_core_service_specs.gd`
+  - `test/suites/action_guard_invalid_runtime_suite.gd`
+  - `tests/support/obito_runtime_contract_support_heal_block.gd`
+  - `docs/design/turn_orchestrator.md`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `turn_resolution_service.gd` 删除
+  - `TurnLoopController` 直接依赖 `turn_selection_resolver / turn_start_phase_service / turn_end_phase_service / turn_field_lifecycle_service`
+  - `BattleInitializer` 只保留顺序调度、错误传递与依赖同步；setup 校验下沉到独立 owner
+  - turn/init 主回归继续通过，至少覆盖 invalid runtime、初始化链路、domain clash、forced replace、field lifecycle
+- 结果：
+  - 已新增 `turn_start_phase_service.gd`、`turn_end_phase_service.gd` 与 `battle_initializer_setup_validator.gd`
+  - `TurnLoopController` 已从旧 `turn_resolution_service` 切到四个单责 owner；命令锁定、turn_start、turn_end 与 field lifecycle 的职责边界已拆开
+  - `BattleInitializer` 已把 format / setup / base runtime field 准备下沉到 `battle_initializer_setup_validator.gd`
+  - `turn_resolution_service.gd` 与对应 service slot 已删除
+  - 测试/support 对旧 `turn_resolution_service` 的直接引用已切到 `turn_selection_resolver` 或新的缺依赖破坏点
+- 验证：
+  - `TEST_PATH=res://test/suites/action_guard_invalid_runtime_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/init_matchup_lifecycle_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/domain_clash_guard_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/forced_replace_lifecycle_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/forced_replace_field_break_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/field_lifecycle_contract_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_architecture_constraints.sh`
+
 ## 当前阶段：README surface 合同修复与 demo replay 回归补齐（2026-04-18）
 
 - 状态：已完成
