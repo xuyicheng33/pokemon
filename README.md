@@ -248,12 +248,12 @@ tests/run_with_gate.sh
 
 正式角色接入固定走统一资产流程，核心配置入口：
 
-- 角色条目唯一来源：`config/formal_character_manifest.json`（`characters / matchups` 两桶）
-- 共享能力目录：`config/formal_character_capability_catalog.json`
-- manifest 角色条目拆为 runtime 视图与 delivery/test 视图，运行时/测试/gate 均从 manifest 派生
+- 唯一人工维护入口：`config/formal_character_sources/`（`00_shared_registry.json` 管共享 `matchups/capabilities`，每个角色一份 source descriptor）
+- `config/formal_character_manifest.json` 与 `config/formal_character_capability_catalog.json` 是从 source descriptors 导出的提交产物
+- committed manifest 角色条目继续拆为 runtime 视图与 delivery/test 视图，运行时/测试/gate 均从生成后的 manifest 派生
 - runtime 视图关键字段固定包含 `formal_setup_matchup_id / pair_token / baseline_script_path / owned_pair_interaction_specs`，并继续使用 `content_snapshot_paths_for_setup_result(battle_setup)` 做 setup-scoped snapshot 裁剪
 - `owned_pair_interaction_specs[*]` 固定声明 `scenario_key`，共享能力继续通过 `shared_capability_ids` 回挂到 capability catalog 的 `required_fact_ids`
-- 内容校验：按需登记 `content_validator_script_path`，runtime 动态装配 validator
+- 内容校验：每个正式角色都必须登记 `content_validator_script_path`，runtime 继续按 manifest 动态装配 validator
 - formal validator 只校验当前 content snapshot 实际已出现的正式角色，角色 entry validator 模板固定为 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts`
 - pair interaction 由 `owned_pair_interaction_specs` 声明，loader 自动派生有向 interaction case
 - 角色 suite：`test/suites/<character>_suite.gd`（域回归）、`<character>_snapshot_suite.gd`（资源快照）、`<character>_manager_smoke_suite.gd`（facade 主路径）
@@ -276,10 +276,10 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-18）
 
-- `src/**/*.gd`：`21468` 行
-- `test/**/*.gd`：`21526` 行
-- `tests/**/*.gd`：`4394` 行
-- GDScript 合计：`47388` 行
+- `src/**/*.gd`：`22719` 行
+- `test/**/*.gd`：`21496` 行
+- `tests/**/*.gd`：`4892` 行
+- GDScript 合计：`49107` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

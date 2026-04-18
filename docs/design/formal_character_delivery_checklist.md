@@ -35,15 +35,16 @@
 
 - [ ] `UnitDefinition` 写清 `skill_ids / candidate_skill_ids / ultimate_skill_id / passive_skill_id`
 - [ ] 关键 effect / field / passive 资源与设计稿名称一致
-- [ ] 若角色存在跨资源共享不变量，评估是否需要 `content_validator_script_path`
+- [ ] 正式角色必须提供 `content_validator_script_path`；若存在跨资源共享不变量，在角色 validator 里显式锁死
 
 ## 3. 接线与正式交付面
 
 - [ ] `SampleBattleFactory` 增加该角色相关构局入口，避免 suite 内手写拼装
 - [ ] `SampleBattleFactory` 公开 builder 名称保持稳定，内部只允许走统一 helper，不再为单角色保留私有手写构局
 - [ ] `SampleBattleFactory` 正式失败路径统一走结果式接口；manager smoke、pair smoke 与 formal demo replay 默认读取 `content_snapshot_paths_for_setup_result(battle_setup)`，只有全量正式快照 / baseline demo 才走 `content_snapshot_paths_result()`
-- [ ] `config/formal_character_manifest.json` 新增或更新该角色的 `characters[*]` 条目
-- [ ] 若角色复用共享扩展，先对齐 `config/formal_character_capability_catalog.json` 对应 entry；不属于现有 capability 时，先补目录与规则归属，再继续写角色资源
+- [ ] 更新 `config/formal_character_sources/<character>.json` 对应角色 source descriptor
+- [ ] 若角色复用共享扩展、补新 matchup 或新增共享能力，同时更新 `config/formal_character_sources/00_shared_registry.json`
+- [ ] 重新生成并提交 `config/formal_character_manifest.json` 与 `config/formal_character_capability_catalog.json`
 - [ ] `characters[*]` 继续写在同一个 manifest 条目里，但要按两份消费视图检查：
   - [ ] runtime 视图：只服务 runtime loader / validator / setup
   - [ ] delivery/test 视图：只服务 suite / gate / 文档锚点 / 交付检查
@@ -52,7 +53,7 @@
   - [ ] `formal_setup_matchup_id`（默认 formal setup 实际要走的 matchup_id；formal runtime 只认 `character_id + formal_setup_matchup_id`）
   - [ ] `pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids`（formal-vs-formal directed matchup 的唯一角色级输入；必须各自固定为 2 个 bench 单位 ID）
   - [ ] `required_content_paths`
-  - [ ] `content_validator_script_path`（按需）
+  - [ ] `content_validator_script_path`
   - [ ] `design_doc / adjustment_doc`
   - [ ] `surface_smoke_skill_id`（该正式角色用于自动生成 directed pair surface smoke 的默认黑盒技能）
   - [ ] `suite_path`
@@ -64,15 +65,14 @@
 - [ ] `required_test_names`（只保留角色私有 runtime / validator 坏例锚点；共享 pair surface / interaction 由 catalog + shared gate 统一兜）
 - [ ] `shared_capability_ids` 只声明角色实际消费的共享入口；共享 consumers 统一从 manifest 派生，catalog 里的 `required_suite_paths` 会自动并入 delivery/test 视图
 - [ ] `design_needles / adjustment_needles`（显式 anchor id；要指向“该角色如何消费共享机制”的私有语义锚点，不能直接把共享机制名本身当交付锚点）
-- [ ] 若角色存在加载期必须锁死的跨资源不变量，再补 `content_validator_script_path`
-- [ ] 若补了 `content_validator_script_path`，只登记在 `config/formal_character_manifest.json.characters[*]` 对应角色条目里；runtime loader 会直接读取 manifest 角色条目并动态装配 validator
+- [ ] `content_validator_script_path` 固定登记在角色 source descriptor 中；runtime loader 继续从生成后的 manifest 角色条目动态装配 validator
 - [ ] formal validator 统一放在 `src/battle_core/content/formal_validators/`：`shared/` 放模板与 loader，角色子目录放对应 validator
 - [ ] formal validator 优先复用共享模板 helper；角色 validator 只保留角色差异校验，不再复制 unit / skill / effect / field 的通用断言文案
 - [ ] formal validator 入口固定收口为三桶：`unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts`
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
-- [ ] 若登记了 `content_validator_script_path`，确认 delivery/test 视图会自动并入 `test/suites/extension_validation_contract_suite.gd`
-- [ ] 若登记了 `content_validator_script_path`，同时把至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
-- [ ] `config/formal_character_manifest.json` 新增或更新该角色条目的 `pair_token / baseline_script_path / owned_pair_interaction_specs`，以及需要的 `matchups`
+- [ ] 确认 delivery/test 视图会自动并入 `test/suites/extension_validation_contract_suite.gd`
+- [ ] 至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
+- [ ] 角色 source descriptor 补齐 `pair_token / baseline_script_path / owned_pair_interaction_specs`；共享 `matchups` 改在 `00_shared_registry.json`
 - [ ] 若新增只服务测试或手动 setup 的 matchup（例如 mirror 对局），在对应 `matchups[*]` 上显式标 `test_only: true`
 - [ ] 不再手写 formal-vs-formal 的非 `test_only` directed matchup；这部分只允许由 loader 按 `characters[*] + pair_token + pair_initiator_bench_unit_ids + pair_responder_bench_unit_ids` 自动派生
 - [ ] 确认该角色的 `surface_smoke_skill_id` 能在所有 formal directed matchup 的首发黑盒 smoke 中稳定施放；pair surface 不再手写登记到 catalog
@@ -115,7 +115,7 @@
 - [ ] 若共享领域 / 奥义点 / 合法性 suite 属于正式交付面，可以继续显式挂到 `required_suite_paths`
 - [ ] 若角色依赖共享 `missing_hp heal / incoming_heal_final_mod / execute_* / damage_segments / on_receive_action_damage_segment` 等扩展能力，只需要声明 `shared_capability_ids`
 - [ ] 若角色依赖共享 `required_target_effects / incoming_accuracy / power_bonus_source=effect_stack_sum` 等扩展能力，也只需要声明 `shared_capability_ids`
-- [ ] 共享 suite 的维护入口以 `config/formal_character_capability_catalog.json` 为准；catalog 新增 `required_suite_paths` 时，不再要求相关角色 manifest 同步补齐重复条目
+- [ ] 共享 suite 的维护入口以 `config/formal_character_sources/00_shared_registry.json` 里的 `capabilities` 为准；生成后的 capability catalog 只作为 committed 产物，不再手工维护
 - [ ] 共享 pair surface / interaction 不再逐角色手抄进 `required_test_names`；统一改在 `config/formal_character_manifest.json.matchups / characters[*].owned_pair_interaction_specs` 收口并由 shared gate 校验覆盖完整性
 - [ ] 不允许只靠通用 contract suite 兜角色回归
 - [ ] 至少补一组“该角色 + 另一名正式角色”的黑盒 smoke，避免正式角色配对覆盖只堆在单一对局上

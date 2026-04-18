@@ -50,11 +50,11 @@ func _test_kashimo_manager_amber_public_contract(harness) -> Dictionary:
 	return _smoke_helper.run_named_case(harness, _case_specs, "test_kashimo_manager_amber_public_contract")
 
 
-func _build_kashimo_manager_smoke_setup(_harness, sample_factory, _case_spec: Dictionary):
+func _build_kashimo_manager_smoke_setup(_suite_harness, sample_factory, _case_spec: Dictionary):
 	return _support.build_kashimo_setup(sample_factory)
 
 
-func _build_kashimo_manager_amber_setup(_harness, sample_factory, _case_spec: Dictionary):
+func _build_kashimo_manager_amber_setup(_suite_harness, sample_factory, _case_spec: Dictionary):
 	var battle_setup = _support.build_kashimo_setup(sample_factory)
 	battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_mossaur", "sample_pyron", "sample_tidekit"])
 	battle_setup.sides[1].starting_index = 0

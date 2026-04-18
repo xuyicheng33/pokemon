@@ -5,10 +5,10 @@
 使用方式：
 
 1. 先按本模板写角色稿。
-2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、manifest 条目、suite 和记录；正式角色元数据的单一维护入口固定为 `config/formal_character_manifest.json`，其中 `characters[*]` 收口角色条目，`matchups` 收口显式 setup / `test_only` 对局，`characters[*].owned_pair_interaction_specs` 收口 pair interaction 输入；非 `test_only` 的 formal-vs-formal directed matchup 与 interaction case 都由 loader 从这些原始输入自动派生。
-3. 若角色复用共享机制，先对齐 `config/formal_character_capability_catalog.json`，确认现有入口是否能承接；不满足时先补 capability catalog，再继续扩内容。
+2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、source descriptor、suite 和记录；正式角色元数据的唯一人工维护入口固定为 `config/formal_character_sources/`，其中角色 source 收口角色条目与 `owned_pair_interaction_specs`，`00_shared_registry.json` 收口显式 setup / `test_only` 对局与共享 capability，非 `test_only` 的 formal-vs-formal directed matchup 与 interaction case 都由 loader 从这些原始输入自动派生。
+3. 若角色复用共享机制，先对齐 `config/formal_character_sources/00_shared_registry.json` 里的 `capabilities`，确认现有入口是否能承接；不满足时先补共享能力描述，再继续扩内容。
 4. 若角色带领域机制，只在本稿末尾追加“领域角色差异附录”，公共规则继续引用 `docs/design/domain_field_template.md`。
-5. 若角色需要 `content_validator_script_path`，entry validator 固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板落地。
+5. 正式角色必须提供 `content_validator_script_path`，entry validator 固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板落地。
 
 ## 固定范围
 
@@ -108,10 +108,10 @@
 
 - 每个常规技能 / 奥义都要写出资源字段和玩法语义
 - 若某技能依赖共享能力，只写“本角色怎么用”，不重复写完整 schema / 读写路径 / 全局排序链
-- 若角色复用了共享能力，交付阶段只需要把该能力登记到 `config/formal_character_manifest.json.characters[*].shared_capability_ids`；共享 suite 与消费者信息统一从 manifest + capability catalog 派生
+- 若角色复用了共享能力，交付阶段只需要把该能力登记到角色 source descriptor 的 `shared_capability_ids`；共享 suite 与消费者信息统一从生成后的 manifest + capability catalog 派生
 - 若角色依赖 `missing_hp` 百分比治疗、`incoming_heal_final_mod`、技能级 `execute_*`、`damage_segments` 或 `on_receive_action_damage_segment`，只写“本角色怎么用”，不在角色稿里重复讲共享 runtime 细节、排序链或 schema 全表
 - 关键 effect / field / passive 资源必须显式列出，不允许把核心语义藏在“见资源文件”
-- 若有“必须满足的跨资源不变量”，要在角色稿里写清，并在 checklist 阶段决定是否需要 `content_validator_script_path`；若需要，直接登记进 `config/formal_character_manifest.json.characters[*]`，runtime 会统一从这份 manifest 装配
+- 若有“必须满足的跨资源不变量”，要在角色稿里写清，并在 checklist 阶段落到 `content_validator_script_path`；该字段固定登记在角色 source descriptor 中，runtime 会统一从生成后的 manifest 装配
 - 若必须引用共享字段名，控制在“资源绑定 + 验收点”这个最小范围，不再在角色稿里展开共享 contract 的完整矩阵
 
 推荐骨架：

@@ -35,10 +35,10 @@
 - `manual_battle_full_run.gd` 当前支持 `MATCHUP_ID / BATTLE_SEED / P1_MODE / P2_MODE`；默认主路径是 `gojo_vs_sample + 9101 + manual/policy`，三种模式统一输出同一套 `battle_summary` JSON，便于直接对比
 - `demo_replay_full_run.gd` 当前要求 `DEMO_PROFILE`，并固定输出真实 demo profile 对应的 `battle_summary` JSON
 - 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback
-- `config/formal_character_manifest.json` 是 formal 角色元数据的唯一人工真源；顶层固定两桶：`characters / matchups`，pair interaction 的唯一手写输入固定挂在 `characters[*].owned_pair_interaction_specs`
-- `config/formal_character_capability_catalog.json` 是共享能力目录的唯一人工真源；这里只维护共享入口定义、规则归属、必挂 suite 和“该停下来改专用机制”的边界。实际消费者统一从 manifest 的 `shared_capability_ids` 派生
+- `config/formal_character_sources/` 是 formal 角色元数据的唯一人工真源；`00_shared_registry.json` 维护共享 `matchups/capabilities`，每个角色各自维护一份 source descriptor
+- `config/formal_character_manifest.json` 与 `config/formal_character_capability_catalog.json` 是从 source descriptors 导出的 committed artifacts；runtime、tests 与 gate 都继续消费这两份生成视图
 - `characters[*]` 当前固定拆成 runtime 视图与 delivery/test 视图：
-  - runtime：`character_id / unit_definition_id / formal_setup_matchup_id / pair_token / baseline_script_path / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids / owned_pair_interaction_specs / required_content_paths`，以及按需补的 `content_validator_script_path`
+  - runtime：`character_id / unit_definition_id / formal_setup_matchup_id / pair_token / baseline_script_path / pair_initiator_bench_unit_ids / pair_responder_bench_unit_ids / owned_pair_interaction_specs / required_content_paths / content_validator_script_path`
   - delivery/test：`character_id / display_name / design_doc / adjustment_doc / surface_smoke_skill_id / suite_path / required_suite_paths / required_test_names / shared_capability_ids / design_needles / adjustment_needles`
 - runtime formal validator 当前统一由 `src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd` 读取 `config/formal_character_manifest.json`；loader 只校验 runtime 视图与 validator 路径存在性，真正的 validator 实例化延迟到 `ContentSnapshotFormalCharacterValidator.validate()` 按 present-only 角色执行
 - `ContentSnapshotFormalCharacterValidator` 只校验当前快照里实际出现的正式角色，不会因为缺席角色而误炸
@@ -46,7 +46,7 @@
 - `required_suite_paths` 现在只要求显式落在 `test/` 下；gdUnit 直接发现 suite，不再依赖手工聚合入口或 wrapper preload reachability
 - `required_test_names` 继续作为 repo consistency gate 的回归锚点；每个名字都必须在 `suite_path + required_suite_paths` 对应的 gdUnit suite 树里找到 `func test_<name>()`
 - 只要角色在 `shared_capability_ids` 里声明了共享入口，repo consistency gate 就会同时检查 capability catalog 是否存在该入口、catalog 要求的 `required_suite_paths` 是否已被自动派生、以及角色 `required_content_paths` 导出的语义事实是否真的对上对应的 `required_fact_ids`
-- 只要角色登记了 `content_validator_script_path`，delivery/test 视图就会自动并入 `test/suites/extension_validation_contract_suite.gd`；`required_test_names` 里仍必须挂至少一个对应角色的 validator 坏例锚点
+- 每个正式角色都必须登记 `content_validator_script_path`；delivery/test 视图会自动并入 `test/suites/extension_validation_contract_suite.gd`，`required_test_names` 里也必须挂至少一个对应角色的 validator 坏例锚点
 - `SampleBattleFactory.content_snapshot_paths_for_setup_result(battle_setup)` 是 formal manager smoke、pair smoke 与 formal demo replay 的默认快照入口；`content_snapshot_paths_result()` 只保留给全量正式快照与 baseline demo 这类不做 setup 裁剪的路径
 - `config/formal_character_manifest.json.matchups` 只显式维护样例/单角色 setup/`test_only` 特例 matchup；非 `test_only` 的 formal-vs-formal directed matchup 由 loader 按 `pair_token + pair_initiator_bench_unit_ids + pair_responder_bench_unit_ids` 自动派生，`formal_setup_matchup_id` 只服务默认 formal setup 入口，directed pair surface smoke 仍由 `matchups + characters[*].surface_smoke_skill_id` 运行时生成
 - `tests/support/formal_pair_interaction/scenario_registry.gd` 当前是 pair interaction scenario runner 的单一真相；catalog 校验和运行分发都只能读这张映射，不再允许双维护场景列表

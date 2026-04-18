@@ -123,7 +123,7 @@
 - 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`，且 `cause_event_id` 不得等于当前日志事件自身 ID）。
 - `run_replay` 使用临时容器隔离执行，不读写活跃会话池；回放完成后释放临时容器。
 - 相同 `content_snapshot_paths` 的重复 session / replay 可以命中 `ContentSnapshotCache`；但 cache 里只允许共享“已校验资源数组”，不允许跨会话共享可变 `BattleContentIndex` 或运行态对象。
-- cache freshness 当前不只看 snapshot 路径本身；只要递归依赖的共享 payload、`config/formal_character_manifest.json`、`src/battle_core/content/**/*.gd` 或 `src/battle_core/content/formal_validators/**/*.gd` 发生变化，都必须重新 miss。
+- cache freshness 当前不只看 snapshot 路径本身；只要递归依赖的共享 payload、`config/formal_character_sources/**/*.json`、`config/formal_character_manifest.json`、`src/battle_core/content/**/*.gd` 或 `src/battle_core/content/formal_validators/**/*.gd` 发生变化，都必须重新 miss。
 
 ## 4. Manager 初始化公开契约
 

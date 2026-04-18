@@ -47,7 +47,7 @@ func _test_obito_manager_public_contract(harness) -> Dictionary:
 func _build_obito_manager_smoke_setup(harness, sample_factory, _case_spec: Dictionary):
 	return harness.build_setup_by_matchup_id(sample_factory, "obito_vs_sample")
 
-func _build_obito_manager_public_setup(_harness, sample_factory, _case_spec: Dictionary):
+func _build_obito_manager_public_setup(_suite_harness, sample_factory, _case_spec: Dictionary):
 	return _support.build_obito_mirror_setup(sample_factory)
 
 func _run_obito_manager_smoke_case(state: Dictionary) -> Dictionary:
