@@ -33,18 +33,14 @@ class InvalidRuntimeContainerService:
 
 	func create_session_result(session_id: String, _init_payload: Dictionary) -> Dictionary:
 		return {
-			"session": invalid_session,
-			"response": {
-				"ok": true,
-				"data": {
-					"session_id": session_id,
-					"public_snapshot": {"should_not_escape": true},
-					"prebattle_public_teams": [],
-				},
-				"error_code": null,
-				"error_message": null,
-				},
-			}
+			"ok": true,
+			"data": {
+				"session": invalid_session,
+				"session_id": session_id,
+			},
+			"error_code": null,
+			"error_message": null,
+		}
 
 class RecordingPublicSnapshotBuilder:
 	extends RefCounted

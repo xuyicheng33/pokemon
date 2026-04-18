@@ -7,9 +7,9 @@ var result_type: String = ""
 var reason: String = ""
 
 func to_stable_dict() -> Dictionary:
-    return {
-        "finished": finished,
-        "winner_side_id": winner_side_id,
-        "result_type": result_type,
-        "reason": reason,
-    }
+	return {
+		"finished": finished,
+		"winner_side_id": winner_side_id,
+		"result_type": result_type,
+		"reason": reason,
+	}

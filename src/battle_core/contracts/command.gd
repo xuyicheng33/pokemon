@@ -14,16 +14,16 @@ var target_public_id: String = ""
 var target_slot: String = ""
 
 func to_stable_dict() -> Dictionary:
-    return {
-        "command_id": command_id,
-        "turn_index": turn_index,
-        "command_type": command_type,
-        "command_source": command_source,
-        "side_id": side_id,
-        "actor_id": actor_id,
-        "actor_public_id": actor_public_id,
-        "skill_id": skill_id,
-        "target_unit_id": target_unit_id,
-        "target_public_id": target_public_id,
-        "target_slot": target_slot,
-    }
+	return {
+		"command_id": command_id,
+		"turn_index": turn_index,
+		"command_type": command_type,
+		"command_source": command_source,
+		"side_id": side_id,
+		"actor_id": actor_id,
+		"actor_public_id": actor_public_id,
+		"skill_id": skill_id,
+		"target_unit_id": target_unit_id,
+		"target_public_id": target_public_id,
+		"target_slot": target_slot,
+	}

@@ -14,9 +14,9 @@ const ManagerContractTestHelperScript := preload("res://tests/support/manager_co
 var _helper = ManagerContractTestHelperScript.new()
 
 func _build_public_effect_instance(instance_id: String, definition_id: String, remaining: int, persists_on_switch: bool):
-    var effect_instance = EffectInstanceScript.new()
-    effect_instance.instance_id = instance_id
-    effect_instance.def_id = definition_id
-    effect_instance.remaining = remaining
-    effect_instance.persists_on_switch = persists_on_switch
-    return effect_instance
+	var effect_instance = EffectInstanceScript.new()
+	effect_instance.instance_id = instance_id
+	effect_instance.def_id = definition_id
+	effect_instance.remaining = remaining
+	effect_instance.persists_on_switch = persists_on_switch
+	return effect_instance

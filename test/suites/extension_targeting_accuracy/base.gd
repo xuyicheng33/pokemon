@@ -12,7 +12,7 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 func _has_event(event_log: Array, predicate: Callable) -> bool:
-    for log_event in event_log:
-        if predicate.call(log_event):
-            return true
-    return false
+	for log_event in event_log:
+		if predicate.call(log_event):
+			return true
+	return false

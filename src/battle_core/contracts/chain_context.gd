@@ -23,25 +23,25 @@ var effect_dedupe_keys: Dictionary = {}
 var defer_field_apply_success: bool = false
 
 func copy_shallow() -> Variant:
-    var clone = self.get_script().new()
-    clone.event_chain_id = event_chain_id
-    clone.root_action_id = root_action_id
-    clone.chain_origin = chain_origin
-    clone.step_counter = step_counter
-    clone.action_queue_index = action_queue_index
-    clone.actor_id = actor_id
-    clone.command_type = command_type
-    clone.command_source = command_source
-    clone.skill_id = skill_id
-    clone.select_timeout = select_timeout
-    clone.select_deadline_ms = select_deadline_ms
-    clone.target_unit_id = target_unit_id
-    clone.target_slot = target_slot
-    clone.action_actor_id = action_actor_id
-    clone.action_combat_type_id = action_combat_type_id
-    clone.action_segment_index = action_segment_index
-    clone.action_segment_total = action_segment_total
-    clone.chain_depth = chain_depth
-    clone.effect_dedupe_keys = effect_dedupe_keys.duplicate()
-    clone.defer_field_apply_success = defer_field_apply_success
-    return clone
+	var clone = self.get_script().new()
+	clone.event_chain_id = event_chain_id
+	clone.root_action_id = root_action_id
+	clone.chain_origin = chain_origin
+	clone.step_counter = step_counter
+	clone.action_queue_index = action_queue_index
+	clone.actor_id = actor_id
+	clone.command_type = command_type
+	clone.command_source = command_source
+	clone.skill_id = skill_id
+	clone.select_timeout = select_timeout
+	clone.select_deadline_ms = select_deadline_ms
+	clone.target_unit_id = target_unit_id
+	clone.target_slot = target_slot
+	clone.action_actor_id = action_actor_id
+	clone.action_combat_type_id = action_combat_type_id
+	clone.action_segment_index = action_segment_index
+	clone.action_segment_total = action_segment_total
+	clone.chain_depth = chain_depth
+	clone.effect_dedupe_keys = effect_dedupe_keys.duplicate()
+	clone.defer_field_apply_success = defer_field_apply_success
+	return clone
