@@ -1,31 +1,5 @@
 extends "res://test/suites/content_validation_core/formal_registry/shared.gd"
 
-
-
-func test_formal_character_shared_fire_burst_validation() -> void:
-	_assert_legacy_result(_test_formal_character_shared_fire_burst_validation(_harness))
-
-func test_formal_character_setup_registry_runtime_contract() -> void:
-	_assert_legacy_result(_test_formal_character_setup_registry_runtime_contract(_harness))
-
-func test_formal_character_registry_id_mismatch_contract() -> void:
-	_assert_legacy_result(_test_formal_character_registry_id_mismatch_contract(_harness))
-
-func test_formal_pair_interaction_catalog_seed_contract() -> void:
-	_assert_legacy_result(_test_formal_pair_interaction_catalog_seed_contract(_harness))
-
-func test_formal_pair_interaction_catalog_direction_contract() -> void:
-	_assert_legacy_result(_test_formal_pair_interaction_catalog_direction_contract(_harness))
-
-func test_formal_pair_interaction_catalog_test_only_matchup_contract() -> void:
-	_assert_legacy_result(_test_formal_pair_interaction_catalog_test_only_matchup_contract(_harness))
-
-func test_formal_pair_surface_delivery_skill_contract() -> void:
-	_assert_legacy_result(_test_formal_pair_surface_delivery_skill_contract(_harness))
-
-func test_formal_matchup_test_only_flag_contract() -> void:
-	_assert_legacy_result(_test_formal_matchup_test_only_flag_contract(_harness))
-
 func _test_formal_character_shared_fire_burst_validation(harness) -> Dictionary:
 	var shared_path := "res://content/shared/effects/sukuna_shared_fire_burst_damage.tres"
 	var sample_factory = harness.build_sample_factory()
@@ -575,4 +549,3 @@ func _test_formal_matchup_test_only_flag_contract(harness) -> Dictionary:
 	if String(invalid_surface_cases_result.get("error_message", "")).find("test_only") == -1:
 		return harness.fail_result("invalid test_only error should mention test_only")
 	return harness.pass_result()
-

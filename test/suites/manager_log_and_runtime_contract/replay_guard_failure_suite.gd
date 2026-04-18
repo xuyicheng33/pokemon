@@ -1,0 +1,13 @@
+extends "res://test/suites/manager_log_and_runtime_contract/replay_guard_shared.gd"
+
+func test_turn_selection_resolver_legal_action_service_failure_contract() -> void:
+	_assert_legacy_result(_test_turn_selection_resolver_legal_action_service_failure_contract(_harness))
+
+func test_turn_selection_resolver_failure_is_atomic_contract() -> void:
+	_assert_legacy_result(_test_turn_selection_resolver_failure_is_atomic_contract(_harness))
+
+func test_turn_selection_resolver_command_builder_failure_contract() -> void:
+	_assert_legacy_result(_test_turn_selection_resolver_command_builder_failure_contract(_harness))
+
+func test_legal_action_service_rule_mod_failure_contract() -> void:
+	_assert_legacy_result(_test_legal_action_service_rule_mod_failure_contract(_harness))

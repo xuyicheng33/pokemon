@@ -11,6 +11,65 @@
 当前生效规则以 `docs/rules/` 为准；工程落点与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只记录当时口径；当前默认入口、验证路径与治理要求以后面的最新阶段条目和 `docs/design/current_development_workflow.md` 为准。
 
+## 当前阶段：formal 角色交付面减负与验证模板化（2026-04-18）
+
+- 状态：已完成
+- 目标：
+  - 把 formal 角色交付面收口到 `formal_character_sources` 单源，并把 manager smoke/blackbox 与超厚 suite 改成更薄的模板化结构。
+- 范围：
+  - `config/formal_character_sources/*`
+  - `config/formal_character_manifest.json`
+  - `config/formal_character_capability_catalog.json`
+  - `config/formal_registry_contracts.json`
+  - `tests/helpers/export_formal_registry_views.gd`
+  - `tests/gates/repo_consistency_formal_character_gate*.py`
+  - `tests/support/formal_character_manager_smoke_helper.gd`
+  - 四个正式角色的 `manager smoke/blackbox` suite
+  - `test/suites/content_validation_core/formal_registry/*`
+  - `test/suites/manager_log_and_runtime_contract/*`
+  - `docs/records/tasks.md`
+  - `docs/records/decisions.md`
+- 验收标准：
+  - `config/formal_character_sources/` 成为 formal 角色 registry 的唯一人工维护入口，`manifest` 与 `capability catalog` 改成稳定生成产物
+  - `content_validator_script_path` 成为 formal 角色硬约束，gate 与 runtime/delivery fixture 都对齐新合同
+  - 四个正式角色的 `manager smoke/blackbox` 改成 case spec + shared runner，现有公开断言语义不变
+  - `catalog_factory_suite.gd` 与 `replay_guard_suite.gd` 拆成单域 suite + shared support，聚合入口同步更新
+  - formal registry、validator 坏例、pair smoke、suite reachability 与 manager smoke/blackbox 回归继续通过
+- 结果：
+  - 已新增 `config/formal_character_sources/00_shared_registry.json` 与四个角色 source descriptor，`tests/helpers/export_formal_registry_views.gd` 会从 `content_roots` 稳定导出 `manifest/capability_catalog`
+  - `tests/gates/repo_consistency_formal_character_gate.py` 已接通 source -> generated views -> committed artifacts 的严格对比，`config/formal_registry_contracts.json` 也已把 `content_validator_script_path` 提升为 runtime 必填字段
+  - `tests/support/formal_character_manager_smoke_helper.gd` 已补 `run_named_case/run_case/run_turn_sequence_result` 等公共 runner，Gojo / Sukuna / Kashimo / Obito 的 `manager smoke/blackbox` 已收口到 case spec 驱动
+  - `catalog_factory_suite.gd` 已拆成 `setup / delivery_alignment / surface` 三个 suite，`replay_guard_suite.gd` 已拆成 `input / summary / failure` 三个 suite；旧文件改成 shared support 或删除
+  - formal registry 的 shared fixture 已改成默认注入合法 validator 路径，避免“想测别的字段”时先被新 validator 硬约束截胡
+- 验证：
+  - `TEST_PATH=res://test/suites/gojo_manager_smoke_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/gojo_manager_blackbox_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/kashimo_manager_smoke_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/kashimo_manager_blackbox_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/sukuna_manager_smoke_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/sukuna_manager_blackbox_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/obito_manager_smoke_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/obito_manager_blackbox_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/runtime_registry_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/delivery_registry_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/capability_catalog_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/scoped_validator_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/catalog_factory_setup_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/catalog_factory_delivery_alignment_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/catalog_factory_surface_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/replay_guard_input_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/replay_guard_summary_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/replay_guard_failure_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/formal_character_pair_smoke/surface_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/formal_character_pair_smoke/interaction_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/extension_validation_contract/gojo_bad_cases_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/extension_validation_contract/sukuna_bad_cases_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/extension_validation_contract/kashimo_bad_cases_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/extension_validation_contract/obito_bad_cases_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `python3 tests/gates/repo_consistency_formal_character_gate.py`
+  - `godot --headless --script tests/helpers/export_formal_registry_views.gd -- <tmp> config/formal_character_sources` 连续两次输出一致
+
 ## 当前阶段：SampleBattleFactory facade 继续瘦身（2026-04-18）
 
 - 状态：已完成

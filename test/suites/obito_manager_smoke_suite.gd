@@ -1,6 +1,5 @@
 extends "res://test/support/gdunit_suite_bridge.gd"
 
-const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const FormalCharacterManagerSmokeHelperScript := preload("res://tests/support/formal_character_manager_smoke_helper.gd")
 const ObitoTestSupportScript := preload("res://tests/support/obito_test_support.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
@@ -8,35 +7,54 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 var _smoke_helper = null
 var _helper = null
 var _support = ObitoTestSupportScript.new()
+var _case_specs: Array = []
 
-
-func _ensure_helpers() -> void:
-	if _smoke_helper != null and _helper != null:
-		return
-	_smoke_helper = FormalCharacterManagerSmokeHelperScript.new()
-	_helper = _smoke_helper.contracts()
-
+func _ensure_suite_state() -> void:
+	if _smoke_helper == null or _helper == null:
+		_smoke_helper = FormalCharacterManagerSmokeHelperScript.new()
+		_helper = _smoke_helper.contracts()
+	if _case_specs.is_empty():
+		_case_specs = [
+			{
+				"test_name": "test_obito_manager_smoke_contract",
+				"battle_seed": 1550,
+				"build_battle_setup": Callable(self, "_build_obito_manager_smoke_setup"),
+				"run_case": Callable(self, "_run_obito_manager_smoke_case"),
+			},
+			{
+				"test_name": "test_obito_manager_public_contract",
+				"battle_seed": 1551,
+				"build_battle_setup": Callable(self, "_build_obito_manager_public_setup"),
+				"run_case": Callable(self, "_run_obito_manager_public_case"),
+			},
+		]
 
 func before_test() -> void:
-	_ensure_helpers()
-
+	_ensure_suite_state()
 
 func test_obito_manager_smoke_contract() -> void:
 	_assert_legacy_result(_test_obito_manager_smoke_contract(_harness))
 
 func test_obito_manager_public_contract() -> void:
 	_assert_legacy_result(_test_obito_manager_public_contract(_harness))
+
 func _test_obito_manager_smoke_contract(harness) -> Dictionary:
-	var context: Dictionary = _smoke_helper.build_context(harness)
-	if context.has("error"):
-		return harness.fail_result(str(context["error"]))
-	var manager = context["manager"]
-	var sample_factory = context["sample_factory"]
-	var init_unwrap = _smoke_helper.create_session(manager, sample_factory, 1550, harness.build_setup_by_matchup_id(sample_factory, "obito_vs_sample"))
-	if not bool(init_unwrap.get("ok", false)):
-		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
-	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
-	var legal_actions_unwrap = _helper.unwrap_ok(manager.get_legal_actions(session_id, "P1"), "get_legal_actions")
+	return _smoke_helper.run_named_case(harness, _case_specs, "test_obito_manager_smoke_contract")
+
+func _test_obito_manager_public_contract(harness) -> Dictionary:
+	return _smoke_helper.run_named_case(harness, _case_specs, "test_obito_manager_public_contract")
+
+func _build_obito_manager_smoke_setup(harness, sample_factory, _case_spec: Dictionary):
+	return harness.build_setup_by_matchup_id(sample_factory, "obito_vs_sample")
+
+func _build_obito_manager_public_setup(_harness, sample_factory, _case_spec: Dictionary):
+	return _support.build_obito_mirror_setup(sample_factory)
+
+func _run_obito_manager_smoke_case(state: Dictionary) -> Dictionary:
+	var harness = state["harness"]
+	var manager = state["manager"]
+	var session_id := String(state["session_id"])
+	var legal_actions_unwrap = _smoke_helper.get_legal_actions_result(manager, session_id, "P1", "get_legal_actions")
 	if not bool(legal_actions_unwrap.get("ok", false)):
 		return harness.fail_result(str(legal_actions_unwrap.get("error", "manager get_legal_actions failed")))
 	var legal_actions = legal_actions_unwrap.get("data", null)
@@ -46,32 +64,17 @@ func _test_obito_manager_smoke_contract(harness) -> Dictionary:
 		return harness.fail_result("obito manager smoke legal actions should include obito_qiudao_jiaotu")
 	if not legal_actions.legal_ultimate_ids.is_empty():
 		return harness.fail_result("obito manager smoke turn 1 should not expose ultimate before points are charged")
-	var obito_command = _helper.unwrap_ok(manager.build_command({
+	var run_turn = _smoke_helper.run_turn_result(manager, session_id, {
 		"turn_index": 1,
-		"command_type": CommandTypesScript.SKILL,
-		"command_source": "manual",
-		"side_id": "P1",
-		"actor_public_id": "P1-A",
-		"skill_id": "obito_qiudao_jiaotu",
-	}), "build_command(obito_qiudao_jiaotu)")
-	if not bool(obito_command.get("ok", false)):
-		return harness.fail_result(str(obito_command.get("error", "manager build_command failed")))
-	var wait_command = _helper.unwrap_ok(manager.build_command({
-		"turn_index": 1,
-		"command_type": CommandTypesScript.WAIT,
-		"command_source": "manual",
-		"side_id": "P2",
-		"actor_public_id": "P2-A",
-	}), "build_command(wait)")
-	if not bool(wait_command.get("ok", false)):
-		return harness.fail_result(str(wait_command.get("error", "manager build_command failed")))
-	var run_turn_unwrap = _helper.unwrap_ok(manager.run_turn(session_id, [
-		obito_command.get("data", null),
-		wait_command.get("data", null),
-	]), "run_turn")
-	if not bool(run_turn_unwrap.get("ok", false)):
-		return harness.fail_result(str(run_turn_unwrap.get("error", "manager run_turn failed")))
-	var public_snapshot_unwrap = _helper.unwrap_ok(manager.get_public_snapshot(session_id), "get_public_snapshot")
+		"label": "run_turn",
+		"p1_action": "obito_qiudao_jiaotu",
+		"p2_action": "wait",
+		"p1_label": "build_command(obito_qiudao_jiaotu)",
+		"p2_label": "build_command(wait)",
+	})
+	if not bool(run_turn.get("ok", false)):
+		return harness.fail_result(str(run_turn.get("error", "manager run_turn failed")))
+	var public_snapshot_unwrap = _smoke_helper.get_public_snapshot_result(manager, session_id, "get_public_snapshot")
 	if not bool(public_snapshot_unwrap.get("ok", false)):
 		return harness.fail_result(str(public_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
 	var public_snapshot: Dictionary = public_snapshot_unwrap.get("data", {})
@@ -83,7 +86,7 @@ func _test_obito_manager_smoke_contract(harness) -> Dictionary:
 		return harness.fail_result("obito manager smoke missing target public snapshot")
 	if not _helper.unit_snapshot_has_effect(target_snapshot, "obito_qiudao_jiaotu_heal_block_mark"):
 		return harness.fail_result("obito manager smoke should expose heal block mark on P2-A")
-	var event_log_unwrap = _helper.unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot")
+	var event_log_unwrap = _smoke_helper.get_event_log_result(manager, session_id, "get_event_log_snapshot")
 	if not bool(event_log_unwrap.get("ok", false)):
 		return harness.fail_result(str(event_log_unwrap.get("error", "manager get_event_log_snapshot failed")))
 	var events: Array = event_log_unwrap.get("data", {}).get("events", [])
@@ -91,95 +94,52 @@ func _test_obito_manager_smoke_contract(harness) -> Dictionary:
 		return harness.fail_result("obito manager smoke event log must stay public-safe")
 	if not _helper.event_log_has_public_action_cast(events, "P1-A", "obito_juubi_jinchuriki"):
 		return harness.fail_result("obito manager smoke event log should expose obito public action cast")
-	var close_unwrap = _smoke_helper.close_session(manager, session_id)
-	if not bool(close_unwrap.get("ok", false)):
-		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
-func _test_obito_manager_public_contract(harness) -> Dictionary:
-	var context: Dictionary = _smoke_helper.build_context(harness)
-	if context.has("error"):
-		return harness.fail_result(str(context["error"]))
-	var manager = context["manager"]
-	var sample_factory = context["sample_factory"]
-	var init_unwrap = _smoke_helper.create_session(manager, sample_factory, 1551, _support.build_obito_mirror_setup(sample_factory))
-	if not bool(init_unwrap.get("ok", false)):
-		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
-	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
-	var charge_skill_ids := {
-		1: "obito_qiudao_jiaotu",
-		2: "obito_qiudao_jiaotu",
-		3: "obito_qiudao_jiaotu",
-	}
+func _run_obito_manager_public_case(state: Dictionary) -> Dictionary:
+	var harness = state["harness"]
+	var manager = state["manager"]
+	var session_id := String(state["session_id"])
+	var charge_turns: Array = []
 	for turn_index in [1, 2, 3]:
-		var skill_command = _helper.unwrap_ok(manager.build_command({
+		charge_turns.append({
 			"turn_index": turn_index,
-			"command_type": CommandTypesScript.SKILL,
-			"command_source": "manual",
-			"side_id": "P1",
-			"actor_public_id": "P1-A",
-			"skill_id": String(charge_skill_ids.get(turn_index, "")),
-		}), "build_command(charge_obito_%d)" % turn_index)
-		if not bool(skill_command.get("ok", false)):
-			return harness.fail_result(str(skill_command.get("error", "manager build_command failed")))
-		var wait_command = _helper.unwrap_ok(manager.build_command({
-			"turn_index": turn_index,
-			"command_type": CommandTypesScript.SKILL,
-			"command_source": "manual",
-			"side_id": "P2",
-			"actor_public_id": "P2-A",
-			"skill_id": "obito_yinyang_dun",
-		}), "build_command(defend_obito_%d)" % turn_index)
-		if not bool(wait_command.get("ok", false)):
-			return harness.fail_result(str(wait_command.get("error", "manager build_command failed")))
-		var run_turn_unwrap = _helper.unwrap_ok(manager.run_turn(session_id, [
-			skill_command.get("data", null),
-			wait_command.get("data", null),
-		]), "run_turn charge_obito")
-		if not bool(run_turn_unwrap.get("ok", false)):
-			return harness.fail_result(str(run_turn_unwrap.get("error", "manager run_turn failed")))
-	var legal_actions_unwrap = _helper.unwrap_ok(manager.get_legal_actions(session_id, "P1"), "get_legal_actions")
+			"label": "run_turn charge_obito",
+			"p1_action": "obito_qiudao_jiaotu",
+			"p2_action": "obito_yinyang_dun",
+			"p1_label": "build_command(charge_obito_%d)" % turn_index,
+			"p2_label": "build_command(defend_obito_%d)" % turn_index,
+		})
+	var charge_result = _smoke_helper.run_turn_sequence_result(manager, session_id, charge_turns)
+	if not bool(charge_result.get("ok", false)):
+		return harness.fail_result(str(charge_result.get("error", "manager run_turn failed")))
+	var legal_actions_unwrap = _smoke_helper.get_legal_actions_result(manager, session_id, "P1", "get_legal_actions")
 	if not bool(legal_actions_unwrap.get("ok", false)):
 		return harness.fail_result(str(legal_actions_unwrap.get("error", "manager get_legal_actions failed")))
 	var legal_actions = legal_actions_unwrap.get("data", null)
 	if not legal_actions.legal_ultimate_ids.has("obito_shiwei_weishouyu"):
 		return harness.fail_result("obito manager public path should expose ultimate after 3 regular casts")
-	var pre_ultimate_log_unwrap = _helper.unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot(pre_ultimate)")
+	var pre_ultimate_log_unwrap = _smoke_helper.get_event_log_result(manager, session_id, "get_event_log_snapshot(pre_ultimate)")
 	if not bool(pre_ultimate_log_unwrap.get("ok", false)):
 		return harness.fail_result(str(pre_ultimate_log_unwrap.get("error", "manager get_event_log_snapshot failed")))
 	var pre_ultimate_total_size := int(pre_ultimate_log_unwrap.get("data", {}).get("total_size", 0))
-	var ultimate_command = _helper.unwrap_ok(manager.build_command({
+	var ultimate_turn = _smoke_helper.run_turn_result(manager, session_id, {
 		"turn_index": 4,
-		"command_type": CommandTypesScript.ULTIMATE,
-		"command_source": "manual",
-		"side_id": "P1",
-		"actor_public_id": "P1-A",
-		"skill_id": "obito_shiwei_weishouyu",
-	}), "build_command(obito_shiwei_weishouyu)")
-	if not bool(ultimate_command.get("ok", false)):
-		return harness.fail_result(str(ultimate_command.get("error", "manager build_command failed")))
-	var wait_turn_4 = _helper.unwrap_ok(manager.build_command({
-		"turn_index": 4,
-		"command_type": CommandTypesScript.WAIT,
-		"command_source": "manual",
-		"side_id": "P2",
-		"actor_public_id": "P2-A",
-	}), "build_command(wait turn4)")
-	if not bool(wait_turn_4.get("ok", false)):
-		return harness.fail_result(str(wait_turn_4.get("error", "manager build_command failed")))
-	var ultimate_turn_unwrap = _helper.unwrap_ok(manager.run_turn(session_id, [
-		ultimate_command.get("data", null),
-		wait_turn_4.get("data", null),
-	]), "run_turn obito ultimate")
-	if not bool(ultimate_turn_unwrap.get("ok", false)):
-		return harness.fail_result(str(ultimate_turn_unwrap.get("error", "manager run_turn failed")))
-	var public_snapshot_unwrap = _helper.unwrap_ok(manager.get_public_snapshot(session_id), "get_public_snapshot")
+		"label": "run_turn obito ultimate",
+		"p1_action": {"action_kind": "ultimate", "skill_id": "obito_shiwei_weishouyu"},
+		"p2_action": "wait",
+		"p1_label": "build_command(obito_shiwei_weishouyu)",
+		"p2_label": "build_command(wait turn4)",
+	})
+	if not bool(ultimate_turn.get("ok", false)):
+		return harness.fail_result(str(ultimate_turn.get("error", "manager run_turn failed")))
+	var public_snapshot_unwrap = _smoke_helper.get_public_snapshot_result(manager, session_id, "get_public_snapshot")
 	if not bool(public_snapshot_unwrap.get("ok", false)):
 		return harness.fail_result(str(public_snapshot_unwrap.get("error", "manager get_public_snapshot failed")))
 	var public_snapshot: Dictionary = public_snapshot_unwrap.get("data", {})
 	if _helper.validate_snapshot_shape(public_snapshot) != "":
 		return harness.fail_result("obito manager public path should keep snapshot shape stable")
-	var event_log_unwrap = _helper.unwrap_ok(manager.get_event_log_snapshot(session_id, pre_ultimate_total_size), "get_event_log_snapshot")
+	var event_log_unwrap = _smoke_helper.get_event_log_result(manager, session_id, "get_event_log_snapshot", pre_ultimate_total_size)
 	if not bool(event_log_unwrap.get("ok", false)):
 		return harness.fail_result(str(event_log_unwrap.get("error", "manager get_event_log_snapshot failed")))
 	var events: Array = event_log_unwrap.get("data", {}).get("events", [])
@@ -194,7 +154,4 @@ func _test_obito_manager_public_contract(harness) -> Dictionary:
 		damage_events.append(event_snapshot)
 	if damage_events.size() != 10:
 		return harness.fail_result("obito manager public path should expose 10 public damage events for ultimate, got %d" % damage_events.size())
-	var close_unwrap = _smoke_helper.close_session(manager, session_id)
-	if not bool(close_unwrap.get("ok", false)):
-		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()

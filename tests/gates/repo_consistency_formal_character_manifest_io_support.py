@@ -56,7 +56,7 @@ def load_delivery_registry_entries(ctx: GateContext, *, export_script_path: str,
     payload = run_godot_json_export(
         ctx,
         export_script_path=export_script_path,
-        manifest_path=manifest_path,
+        input_path=manifest_path,
         failure_label="delivery registry view",
     )
     if not isinstance(payload, dict):
@@ -78,17 +78,74 @@ def load_pair_catalog(ctx: GateContext, *, export_script_path: str, manifest_pat
     payload = run_godot_json_export(
         ctx,
         export_script_path=export_script_path,
-        manifest_path=manifest_path,
+        input_path=manifest_path,
         failure_label="formal pair catalog",
     )
     return payload if isinstance(payload, dict) else {}
+
+
+def load_generated_registry_views(ctx: GateContext, *, export_script_path: str, source_dir: str) -> dict:
+    payload = run_godot_json_export(
+        ctx,
+        export_script_path=export_script_path,
+        input_path=source_dir,
+        failure_label="generated formal registry views",
+    )
+    if not isinstance(payload, dict):
+        return {}
+    manifest = payload.get("manifest", {})
+    capability_catalog = payload.get("capability_catalog", {})
+    if not isinstance(manifest, dict):
+        ctx.failures.append(f"{export_script_path} missing manifest object")
+        manifest = {}
+    if not isinstance(capability_catalog, dict):
+        ctx.failures.append(f"{export_script_path} missing capability_catalog object")
+        capability_catalog = {}
+    return {
+        "manifest": manifest,
+        "capability_catalog": capability_catalog,
+    }
+
+
+def validate_generated_registry_views(
+    ctx: GateContext,
+    *,
+    generated_views: dict,
+    committed_manifest: dict,
+    committed_capability_catalog: dict,
+    manifest_path: str,
+    capability_catalog_path: str,
+    source_dir: str,
+) -> None:
+    generated_manifest = generated_views.get("manifest", {})
+    generated_capability_catalog = generated_views.get("capability_catalog", {})
+    if not isinstance(generated_manifest, dict):
+        ctx.failures.append(f"generated manifest from {source_dir} must be object")
+        generated_manifest = {}
+    if not isinstance(generated_capability_catalog, dict):
+        ctx.failures.append(f"generated capability catalog from {source_dir} must be object")
+        generated_capability_catalog = {}
+    _validate_generated_view_matches_committed(
+        ctx,
+        generated_view=generated_manifest,
+        committed_view=committed_manifest,
+        committed_path=manifest_path,
+        source_dir=source_dir,
+    )
+    _validate_generated_view_matches_committed(
+        ctx,
+        generated_view=generated_capability_catalog,
+        committed_view=committed_capability_catalog,
+        committed_path=capability_catalog_path,
+        source_dir=source_dir,
+    )
 
 
 def run_godot_json_export(
     ctx: GateContext,
     *,
     export_script_path: str,
-    manifest_path: str,
+    input_path: str,
     failure_label: str,
 ) -> dict:
     if not (ctx.root / export_script_path).exists():
@@ -107,7 +164,7 @@ def run_godot_json_export(
                 export_script_path,
                 "--",
                 str(output_path),
-                manifest_path,
+                input_path,
             ],
             cwd=ctx.root,
             capture_output=True,
@@ -145,3 +202,63 @@ def _is_positive_int_like(value: object) -> bool:
     if isinstance(value, float):
         return value.is_integer() and value > 0
     return False
+
+
+def _validate_generated_view_matches_committed(
+    ctx: GateContext,
+    *,
+    generated_view: dict,
+    committed_view: dict,
+    committed_path: str,
+    source_dir: str,
+) -> None:
+    generated_text = _render_json_text(generated_view)
+    committed_text = ctx.read_text(committed_path)
+    if generated_text == committed_text:
+        return
+    diff_path = _first_difference_path(generated_view, committed_view)
+    if not diff_path:
+        diff_path = "$.__serialized_text__"
+    ctx.failures.append(
+        f"{committed_path} differs from generated view under {source_dir}; first mismatch at {diff_path}. Regenerate committed artifacts from tests/helpers/export_formal_registry_views.gd"
+    )
+
+
+def _first_difference_path(expected: object, actual: object, path: str = "$") -> str:
+    if type(expected) is not type(actual):
+        return path
+    if isinstance(expected, dict):
+        expected_keys = list(expected.keys())
+        actual_keys = list(actual.keys())
+        if expected_keys != actual_keys:
+            expected_key_set = set(expected_keys)
+            actual_key_set = set(actual_keys)
+            for key in expected_keys:
+                if key not in actual_key_set:
+                    return f"{path}.{key}"
+            for key in actual_keys:
+                if key not in expected_key_set:
+                    return f"{path}.{key}"
+            for key in expected_keys:
+                if actual_keys.index(key) != expected_keys.index(key):
+                    return f"{path}.{key}"
+        for key in expected_keys:
+            diff_path = _first_difference_path(expected[key], actual[key], f"{path}.{key}")
+            if diff_path != "":
+                return diff_path
+        return ""
+    if isinstance(expected, list):
+        if len(expected) != len(actual):
+            return path
+        for index, expected_item in enumerate(expected):
+            diff_path = _first_difference_path(expected_item, actual[index], f"{path}[{index}]")
+            if diff_path != "":
+                return diff_path
+        return ""
+    if expected != actual:
+        return path
+    return ""
+
+
+def _render_json_text(payload: object) -> str:
+    return json.dumps(payload, ensure_ascii=False, indent=2)

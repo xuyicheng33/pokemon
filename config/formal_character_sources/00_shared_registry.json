@@ -1,168 +1,263 @@
 {
+  "descriptor_kind": "formal_registry_shared",
+  "matchups": [
+    {
+      "matchup_id": "gojo_vs_sample",
+      "p1_units": [
+        "gojo_satoru",
+        "sample_mossaur",
+        "sample_tidekit"
+      ],
+      "p2_units": [
+        "sample_pyron",
+        "sample_tidekit",
+        "sample_mossaur"
+      ]
+    },
+    {
+      "matchup_id": "sample_vs_gojo",
+      "p1_units": [
+        "sample_pyron",
+        "sample_tidekit",
+        "sample_mossaur"
+      ],
+      "p2_units": [
+        "gojo_satoru",
+        "sample_mossaur",
+        "sample_tidekit"
+      ]
+    },
+    {
+      "matchup_id": "sukuna_vs_sample",
+      "p1_units": [
+        "sukuna",
+        "sample_mossaur",
+        "sample_tidekit"
+      ],
+      "p2_units": [
+        "sample_pyron",
+        "sample_tidekit",
+        "sample_mossaur"
+      ]
+    },
+    {
+      "matchup_id": "sukuna_setup",
+      "p1_units": [
+        "sukuna",
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "p2_units": [
+        "sample_tidekit",
+        "sample_pyron",
+        "sample_mossaur"
+      ]
+    },
+    {
+      "matchup_id": "kashimo_vs_sample",
+      "p1_units": [
+        "kashimo_hajime",
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "p2_units": [
+        "sample_tidekit",
+        "sample_pyron",
+        "sample_mossaur"
+      ]
+    },
+    {
+      "matchup_id": "obito_vs_sample",
+      "p1_units": [
+        "obito_juubi_jinchuriki",
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "p2_units": [
+        "sample_pyron",
+        "sample_tidekit",
+        "sample_mossaur"
+      ]
+    },
+    {
+      "matchup_id": "obito_mirror",
+      "p1_units": [
+        "obito_juubi_jinchuriki",
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "p2_units": [
+        "obito_juubi_jinchuriki",
+        "sample_tidekit",
+        "sample_mossaur"
+      ],
+      "test_only": true
+    }
+  ],
   "capabilities": [
     {
       "capability_id": "target_marker_preconditions",
-      "required_fact_ids": [
-        "required_target_effects",
-        "required_target_same_owner"
+      "rule_doc_paths": [
+        "docs/design/battle_content_schema.md",
+        "docs/rules/06_effect_schema_and_extension.md"
       ],
       "required_suite_paths": [
         "test/suites/extension_targeting_accuracy_suite.gd"
       ],
-      "rule_doc_paths": [
-        "docs/design/battle_content_schema.md",
-        "docs/rules/06_effect_schema_and_extension.md"
+      "required_fact_ids": [
+        "required_target_effects",
+        "required_target_same_owner"
       ],
       "stop_and_specialize_when": "当新角色需要把条件扩到跨多个目标、跨所有者或跨 side 组合判断时，停止继续扩这个共享入口，改做专用前置机制。"
     },
     {
       "capability_id": "incoming_accuracy_mod",
-      "required_fact_ids": [
-        "incoming_accuracy"
-      ],
-      "required_suite_paths": [
-        "test/suites/extension_targeting_accuracy_suite.gd"
-      ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/rules/06_effect_schema_and_extension.md",
         "docs/design/effect_engine.md"
+      ],
+      "required_suite_paths": [
+        "test/suites/extension_targeting_accuracy_suite.gd"
+      ],
+      "required_fact_ids": [
+        "incoming_accuracy"
       ],
       "stop_and_specialize_when": "当新角色需要把命中修正拆成多段来源、命中特判或非标准读取时，停止继续扩共享 incoming_accuracy，改做专用命中机制。"
     },
     {
       "capability_id": "nullify_field_accuracy_mod",
-      "required_fact_ids": [
-        "nullify_field_accuracy"
-      ],
-      "required_suite_paths": [
-        "test/suites/rule_mod_runtime_extension_suite.gd"
-      ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/rules/06_effect_schema_and_extension.md",
         "docs/design/effect_engine.md"
       ],
+      "required_suite_paths": [
+        "test/suites/rule_mod_runtime_extension_suite.gd"
+      ],
+      "required_fact_ids": [
+        "nullify_field_accuracy"
+      ],
       "stop_and_specialize_when": "当后续角色不再只是忽略领域附加必中，而是要改命中公式、改冲突裁定或改领域解析链时，停止继续扩这个共享入口，改做专用领域对冲机制。"
     },
     {
       "capability_id": "effect_stack_sum_power_bonus",
-      "required_fact_ids": [
-        "effect_stack_sum"
-      ],
-      "required_suite_paths": [
-        "test/suites/power_bonus_runtime_suite.gd"
-      ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/design/action_execution.md",
         "docs/rules/03_stats_resources_and_damage.md"
+      ],
+      "required_suite_paths": [
+        "test/suites/power_bonus_runtime_suite.gd"
+      ],
+      "required_fact_ids": [
+        "effect_stack_sum"
       ],
       "stop_and_specialize_when": "当新角色需要把威力来源扩成异步结算、跨多目标聚合或和其他威力公式混算时，停止继续扩共享 effect_stack_sum，改做专用威力解析器。"
     },
     {
       "capability_id": "once_per_battle_skill",
-      "required_fact_ids": [
-        "once_per_battle"
-      ],
-      "required_suite_paths": [
-        "test/suites/replay_turn_suite.gd"
-      ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/design/command_and_legality.md",
         "docs/design/battle_runtime_model.md"
       ],
+      "required_suite_paths": [
+        "test/suites/replay_turn_suite.gd"
+      ],
+      "required_fact_ids": [
+        "once_per_battle"
+      ],
       "stop_and_specialize_when": "当新角色需要把整场一次扩成充能重置、阶段重置或跨形态共享次数时，停止继续扩共享 once_per_battle，改做专用消耗记录。"
     },
     {
       "capability_id": "persistent_stat_stages",
-      "required_fact_ids": [
-        "persistent_stat_stages"
-      ],
-      "required_suite_paths": [
-        "test/suites/persistent_stat_stage_suite.gd"
-      ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/design/battle_runtime_model.md",
         "docs/rules/06_effect_schema_and_extension.md"
       ],
+      "required_suite_paths": [
+        "test/suites/persistent_stat_stage_suite.gd"
+      ],
+      "required_fact_ids": [
+        "persistent_stat_stages"
+      ],
       "stop_and_specialize_when": "当新角色需要把跨换人保留扩成多层状态包、局部保留或和形态切换联动时，停止继续扩共享 persistent_stat_stages，改做专用持久状态模型。"
     },
     {
       "capability_id": "missing_hp_heal",
-      "required_fact_ids": [
-        "missing_hp"
+      "rule_doc_paths": [
+        "docs/design/battle_content_schema.md",
+        "docs/rules/03_stats_resources_and_damage.md"
       ],
       "required_suite_paths": [
         "test/suites/heal_extension_suite.gd"
       ],
-      "rule_doc_paths": [
-        "docs/design/battle_content_schema.md",
-        "docs/rules/03_stats_resources_and_damage.md"
+      "required_fact_ids": [
+        "missing_hp"
       ],
       "stop_and_specialize_when": "当后续角色需要把缺失生命治疗接到多段触发、溢出转盾或目标外转移时，停止继续扩共享 missing_hp 百分比治疗，改做专用治疗入口。"
     },
     {
       "capability_id": "incoming_heal_final_mod",
-      "required_fact_ids": [
-        "incoming_heal_final_mod"
-      ],
-      "required_suite_paths": [
-        "test/suites/heal_extension_suite.gd"
-      ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/rules/03_stats_resources_and_damage.md",
         "docs/rules/06_effect_schema_and_extension.md"
+      ],
+      "required_suite_paths": [
+        "test/suites/heal_extension_suite.gd"
+      ],
+      "required_fact_ids": [
+        "incoming_heal_final_mod"
       ],
       "stop_and_specialize_when": "当后续角色需要把治疗末端修正扩成条件白名单、治疗转伤或按来源分流时，停止继续扩共享 incoming_heal_final_mod，改做专用治疗规则链。"
     },
     {
       "capability_id": "execute_finisher",
-      "required_fact_ids": [
-        "execute_target_hp_ratio_lte",
-        "execute_required_total_stacks"
-      ],
-      "required_suite_paths": [
-        "test/suites/skill_execute_contract_suite.gd"
-      ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/design/action_execution.md",
         "docs/rules/03_stats_resources_and_damage.md"
+      ],
+      "required_suite_paths": [
+        "test/suites/skill_execute_contract_suite.gd"
+      ],
+      "required_fact_ids": [
+        "execute_target_hp_ratio_lte",
+        "execute_required_total_stacks"
       ],
       "stop_and_specialize_when": "当后续角色需要把处决扩成多阶段判定、跨多目标选择或和多段主动伤害并行结算时，停止继续扩共享 execute_*，改做专用处决流程。"
     },
     {
       "capability_id": "damage_segments",
-      "required_fact_ids": [
-        "damage_segments"
-      ],
-      "required_suite_paths": [
-        "test/suites/multihit_skill_runtime_suite.gd"
-      ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/design/action_execution.md",
         "docs/rules/03_stats_resources_and_damage.md"
       ],
+      "required_suite_paths": [
+        "test/suites/multihit_skill_runtime_suite.gd"
+      ],
+      "required_fact_ids": [
+        "damage_segments"
+      ],
       "stop_and_specialize_when": "当后续角色需要把多段伤害扩成段间改目标、段间插入额外行动或段间写独立命中判定时，停止继续扩共享 damage_segments，改做专用多段执行器。"
     },
     {
       "capability_id": "on_receive_action_damage_segment",
-      "required_fact_ids": [
-        "on_receive_action_damage_segment"
-      ],
-      "required_suite_paths": [
-        "test/suites/multihit_skill_runtime_suite.gd"
-      ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
         "docs/design/effect_engine.md",
         "docs/rules/03_stats_resources_and_damage.md",
         "docs/rules/06_effect_schema_and_extension.md"
+      ],
+      "required_suite_paths": [
+        "test/suites/multihit_skill_runtime_suite.gd"
+      ],
+      "required_fact_ids": [
+        "on_receive_action_damage_segment"
       ],
       "stop_and_specialize_when": "当后续角色需要把段级受击扩成额外插队、按段换目标或按段持久化上下文时，停止继续扩共享 on_receive_action_damage_segment，改做专用段级受击通道。"
     }

@@ -96,47 +96,6 @@ class DomainLegalityServiceClearStub:
 
 	func invalid_battle_code() -> Variant:
 		return null
-
-
-
-func test_manager_run_replay_empty_snapshot_paths_contract() -> void:
-	_assert_legacy_result(_test_manager_run_replay_empty_snapshot_paths_contract(_harness))
-
-func test_manager_run_replay_invalid_input_type_contract() -> void:
-	_assert_legacy_result(_test_manager_run_replay_invalid_input_type_contract(_harness))
-
-func test_manager_run_replay_null_command_contract() -> void:
-	_assert_legacy_result(_test_manager_run_replay_null_command_contract(_harness))
-
-func test_manager_run_replay_invalid_side_id_contract() -> void:
-	_assert_legacy_result(_test_manager_run_replay_invalid_side_id_contract(_harness))
-
-func test_manager_container_run_replay_failed_output_contract() -> void:
-	_assert_legacy_result(_test_manager_container_run_replay_failed_output_contract())
-
-func test_replay_output_helper_runtime_fault_contract() -> void:
-	_assert_legacy_result(_test_replay_output_helper_runtime_fault_contract())
-
-func test_replay_output_helper_logger_fault_contract() -> void:
-	_assert_legacy_result(_test_replay_output_helper_logger_fault_contract())
-
-func test_log_event_builder_missing_chain_context_contract() -> void:
-	_assert_legacy_result(_test_log_event_builder_missing_chain_context_contract())
-
-func test_log_event_builder_missing_cause_event_id_contract() -> void:
-	_assert_legacy_result(_test_log_event_builder_missing_cause_event_id_contract())
-
-func test_turn_selection_resolver_legal_action_service_failure_contract() -> void:
-	_assert_legacy_result(_test_turn_selection_resolver_legal_action_service_failure_contract(_harness))
-
-func test_turn_selection_resolver_failure_is_atomic_contract() -> void:
-	_assert_legacy_result(_test_turn_selection_resolver_failure_is_atomic_contract(_harness))
-
-func test_turn_selection_resolver_command_builder_failure_contract() -> void:
-	_assert_legacy_result(_test_turn_selection_resolver_command_builder_failure_contract(_harness))
-
-func test_legal_action_service_rule_mod_failure_contract() -> void:
-	_assert_legacy_result(_test_legal_action_service_rule_mod_failure_contract(_harness))
 func _test_manager_run_replay_empty_snapshot_paths_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
 	if manager_payload.has("error"):

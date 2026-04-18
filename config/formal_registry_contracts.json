@@ -5,7 +5,8 @@
       "unit_definition_id",
       "formal_setup_matchup_id",
       "pair_token",
-      "baseline_script_path"
+      "baseline_script_path",
+      "content_validator_script_path"
     ],
     "required_array_fields": [
       "required_content_paths",
@@ -14,9 +15,7 @@
       "owned_pair_interaction_specs"
     ],
     "required_positive_int_fields": [],
-    "optional_string_fields": [
-      "content_validator_script_path"
-    ]
+    "optional_string_fields": []
   },
   "manifest_character_delivery": {
     "required_string_fields": [

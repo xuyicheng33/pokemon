@@ -3,8 +3,10 @@ from __future__ import annotations
 from repo_consistency_formal_character_manifest_io_support import (
     contract_field_list,
     load_delivery_registry_entries,
+    load_generated_registry_views,
     load_pair_catalog,
     run_godot_json_export,
+    validate_generated_registry_views,
     validate_required_contract_fields,
 )
 from repo_consistency_formal_character_pair_capability_support import (

@@ -13,7 +13,9 @@ from repo_consistency_formal_character_gate_pairs import validate_pair_catalog
 from repo_consistency_formal_character_gate_support import (
     contract_field_list,
     load_delivery_registry_entries,
+    load_generated_registry_views,
     load_pair_catalog,
+    validate_generated_registry_views,
     validate_entry_validator_structure,
     validate_required_contract_fields,
 )
@@ -23,6 +25,7 @@ ctx = GateContext()
 MANIFEST_PATH = "config/formal_character_manifest.json"
 FORMAL_REGISTRY_CONTRACTS_PATH = "config/formal_registry_contracts.json"
 CAPABILITY_CATALOG_PATH = "config/formal_character_capability_catalog.json"
+FORMAL_CHARACTER_SOURCE_DIR = "config/formal_character_sources"
 LEGACY_REGISTRY_PATH = "config/formal_character_registry.json"
 LEGACY_RUNTIME_REGISTRY_PATH = "config/formal_character_runtime_registry.json"
 LEGACY_DELIVERY_REGISTRY_PATH = "config/formal_character_delivery_registry.json"
@@ -38,6 +41,7 @@ DELIVERY_REGISTRY_HELPER_PATH = "tests/support/formal_character_registry.gd"
 DELIVERY_REGISTRY_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_delivery_registry.gd"
 CAPABILITY_FACTS_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_capability_facts.gd"
 PAIR_CATALOG_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_pair_catalog.gd"
+FORMAL_REGISTRY_VIEWS_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_registry_views.gd"
 RUNTIME_REGISTRY_HELPER_PATH = "src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd"
 FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH = "src/shared/formal_registry_contracts.gd"
 FORMAL_MANIFEST_SCRIPT_PATH = "src/shared/formal_character_manifest.gd"
@@ -58,7 +62,22 @@ SHARED_SUITE_ROOTS = [
 ]
 
 manifest = ctx.load_json_object(MANIFEST_PATH, "formal character manifest")
+capability_catalog = ctx.load_json_object(CAPABILITY_CATALOG_PATH, "formal character capability catalog")
 formal_registry_contracts = ctx.load_json_object(FORMAL_REGISTRY_CONTRACTS_PATH, "formal registry contracts")
+generated_registry_views = load_generated_registry_views(
+    ctx,
+    export_script_path=FORMAL_REGISTRY_VIEWS_EXPORT_SCRIPT_PATH,
+    source_dir=FORMAL_CHARACTER_SOURCE_DIR,
+)
+validate_generated_registry_views(
+    ctx,
+    generated_views=generated_registry_views,
+    committed_manifest=manifest,
+    committed_capability_catalog=capability_catalog,
+    manifest_path=MANIFEST_PATH,
+    capability_catalog_path=CAPABILITY_CATALOG_PATH,
+    source_dir=FORMAL_CHARACTER_SOURCE_DIR,
+)
 characters = manifest.get("characters", [])
 matchups = manifest.get("matchups", {})
 character_runtime_contract_bucket = formal_registry_contracts.get("manifest_character_runtime", {})

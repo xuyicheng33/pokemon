@@ -41,6 +41,41 @@
   - demo replay 这轮仍在拆 helper；如果没有固定 smoke，后续再次整理时很容易只保住 `manual_matchup` 主路径
   - demo 路径的 `battle_summary` 如果继续拿默认 launch config，会让 CLI/debug 复查看到错误局面元数据，摘要就失去意义
 
+## 0S. formal character registry 改为 source descriptor 单源，validator 升级为硬约束（2026-04-18）
+
+- `config/formal_character_sources/` 现在是 formal 角色 registry 的唯一人工维护入口：
+  - `00_shared_registry.json` 负责共享 `matchups/capabilities`
+  - 每个角色一份 `0N_<character>.json` 负责 runtime + delivery + `content_roots`
+- `config/formal_character_manifest.json` 与 `config/formal_character_capability_catalog.json` 继续提交到仓库，但角色方不再手改；它们固定由 `tests/helpers/export_formal_registry_views.gd` 从 source descriptors 导出。
+- `content_roots` 当前允许既是目录也可以是单文件资源，导出时统一递归展开成稳定排序的 `required_content_paths`。
+- `content_validator_script_path` 现在是 formal 角色 runtime 合同的必填字段，不再只是“有的话就校验”。
+- `tests/gates/repo_consistency_formal_character_gate.py` 当前固定额外校验：
+  - source descriptors 可导出
+  - 导出结果与 committed manifest/catalog 完全一致
+  - 同一轮里不允许 source 和 committed artifacts 漂移
+- 这么定的原因：
+  - 这轮真实成本最高的问题不是 loader 本身，而是扩角时要同时改 manifest、capability catalog、required content paths 和 gate 预期，重复维护太多
+  - 既然 loader 和 gate 还都消费 committed JSON，最短路径不是改成运行时动态生成，而是把“人工编辑入口”与“提交产物”明确分层
+  - validator 已经成为正式角色交付面的必要组成部分，再保留可选口径，只会让 gate、fixture 和实际交付标准三边继续漂
+
+## 0Q. 正式角色 manager smoke/blackbox 与 formal registry 厚 suite 固定模板化（2026-04-18）
+
+- `tests/support/formal_character_manager_smoke_helper.gd` 现在固定承担 shared runner：
+  - `run_named_case / run_case`
+  - `build_case_state`
+  - `get_legal_actions_result / get_public_snapshot_result / get_event_log_result`
+  - `build_command_result / run_turn_result / run_turn_sequence_result`
+- 四个正式角色的 `manager smoke/blackbox` suite 现在固定写成“case spec + 少量角色断言”，不再各自维护整段建局、造指令和收尾样板。
+- `catalog_factory_suite.gd` 与 `replay_guard_suite.gd` 当前固定不再回到单大文件：
+  - `catalog_factory` 拆成 `setup / delivery_alignment / surface`
+  - `replay_guard` 拆成 `input / summary / failure`
+  - 跨域断言只允许留在 shared support
+- formal registry 的 fixture helper 当前默认会补合法 validator 路径；如果某条坏例不是在测 validator，就不该先被 validator 缺失抢走失败原因。
+- 这么定的原因：
+  - manager 级 smoke 是正式角色公开交付面的一部分，继续让每个角色自己复制 session/command 样板，只会把扩角成本继续堆高
+  - formal registry 与 replay guard 的热点已经从“断言不足”变成“单文件过厚、改一点就整坨回归”，拆成单域 suite 后回归面更清楚
+  - 共享 fixture 默认对齐最新合同，才能保证坏例测试真正命中它想锁的错误，而不是被新的前置硬约束截胡
+
 ## 0U. BattleSandbox 的 launch config、preset matchup 与 sandbox-local policy 固定留在适配层（2026-04-13）
 
 - `BattleSandbox` 当前交互入口固定为 `BattleSandboxController`；默认研发试玩路径固定为 `gojo_vs_sample + 9101 + manual/policy`，因为当前目标已经从“双边热座打通”转到“单人日常复查更顺手”。

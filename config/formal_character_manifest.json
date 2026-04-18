@@ -1,12 +1,23 @@
 {
   "characters": [
     {
-      "character_id": "gojo_satoru",
-      "display_name": "Gojo",
-      "unit_definition_id": "gojo_satoru",
-      "formal_setup_matchup_id": "gojo_vs_sample",
-      "pair_token": "gojo",
+      "adjustment_doc": "docs/design/gojo_satoru_adjustments.md",
+      "adjustment_needles": [
+        "anchor:gojo.adjust.field-bound-action-lock",
+        "anchor:gojo.adjust.field-bound-cast-buff",
+        "anchor:gojo.adjust.tests-impacted"
+      ],
       "baseline_script_path": "src/shared/formal_character_baselines/gojo_satoru/gojo_satoru_formal_character_baseline.gd",
+      "character_id": "gojo_satoru",
+      "content_validator_script_path": "src/battle_core/content/formal_validators/gojo/content_snapshot_formal_gojo_validator.gd",
+      "design_doc": "docs/design/gojo_satoru_design.md",
+      "design_needles": [
+        "anchor:gojo.design.success-lock-via-on_success_effect_ids",
+        "anchor:gojo.design.failed-clash-no-field-buff-lock"
+      ],
+      "display_name": "Gojo",
+      "formal_setup_matchup_id": "gojo_vs_sample",
+      "owned_pair_interaction_specs": [],
       "pair_initiator_bench_unit_ids": [
         "sample_mossaur",
         "sample_pyron"
@@ -15,47 +26,30 @@
         "sample_tidekit",
         "sample_mossaur"
       ],
-      "owned_pair_interaction_specs": [],
+      "pair_token": "gojo",
       "required_content_paths": [
-        "content/units/gojo/gojo_satoru.tres",
-        "content/skills/gojo/gojo_ao.tres",
+        "content/effects/gojo/gojo_aka_mark.tres",
+        "content/effects/gojo/gojo_aka_mark_apply.tres",
+        "content/effects/gojo/gojo_aka_slow_down.tres",
+        "content/effects/gojo/gojo_ao_mark.tres",
+        "content/effects/gojo/gojo_ao_mark_apply.tres",
+        "content/effects/gojo/gojo_ao_speed_up.tres",
+        "content/effects/gojo/gojo_apply_domain_field.tres",
+        "content/effects/gojo/gojo_domain_action_lock.tres",
+        "content/effects/gojo/gojo_domain_buff_remove.tres",
+        "content/effects/gojo/gojo_domain_cast_buff.tres",
+        "content/effects/gojo/gojo_mugen_incoming_accuracy_down.tres",
+        "content/effects/gojo/gojo_murasaki_conditional_burst.tres",
+        "content/effects/gojo/gojo_reverse_heal.tres",
+        "content/fields/gojo/gojo_unlimited_void_field.tres",
+        "content/passive_skills/gojo/gojo_mugen.tres",
         "content/skills/gojo/gojo_aka.tres",
+        "content/skills/gojo/gojo_ao.tres",
         "content/skills/gojo/gojo_murasaki.tres",
         "content/skills/gojo/gojo_reverse_ritual.tres",
         "content/skills/gojo/gojo_unlimited_void.tres",
-        "content/effects/gojo/gojo_ao_speed_up.tres",
-        "content/effects/gojo/gojo_ao_mark_apply.tres",
-        "content/effects/gojo/gojo_ao_mark.tres",
-        "content/effects/gojo/gojo_aka_slow_down.tres",
-        "content/effects/gojo/gojo_aka_mark_apply.tres",
-        "content/effects/gojo/gojo_aka_mark.tres",
-        "content/effects/gojo/gojo_murasaki_conditional_burst.tres",
-        "content/effects/gojo/gojo_reverse_heal.tres",
-        "content/effects/gojo/gojo_apply_domain_field.tres",
-        "content/effects/gojo/gojo_domain_action_lock.tres",
-        "content/effects/gojo/gojo_domain_cast_buff.tres",
-        "content/effects/gojo/gojo_domain_buff_remove.tres",
-        "content/effects/gojo/gojo_mugen_incoming_accuracy_down.tres",
-        "content/passive_skills/gojo/gojo_mugen.tres",
-        "content/fields/gojo/gojo_unlimited_void_field.tres"
+        "content/units/gojo/gojo_satoru.tres"
       ],
-      "content_validator_script_path": "src/battle_core/content/formal_validators/gojo/content_snapshot_formal_gojo_validator.gd",
-      "design_doc": "docs/design/gojo_satoru_design.md",
-      "adjustment_doc": "docs/design/gojo_satoru_adjustments.md",
-      "design_needles": [
-        "anchor:gojo.design.success-lock-via-on_success_effect_ids",
-        "anchor:gojo.design.failed-clash-no-field-buff-lock"
-      ],
-      "adjustment_needles": [
-        "anchor:gojo.adjust.field-bound-action-lock",
-        "anchor:gojo.adjust.field-bound-cast-buff",
-        "anchor:gojo.adjust.tests-impacted"
-      ],
-      "shared_capability_ids": [
-        "target_marker_preconditions",
-        "incoming_accuracy_mod"
-      ],
-      "suite_path": "test/suites/gojo_suite.gd",
       "required_suite_paths": [
         "test/suites/gojo_setup_and_markers_suite.gd",
         "test/suites/gojo_snapshot_suite.gd",
@@ -111,59 +105,16 @@
         "formal_gojo_validator_action_lock_surface_bad_case_contract",
         "formal_gojo_validator_action_lock_stacking_bad_case_contract"
       ],
-      "surface_smoke_skill_id": "gojo_ao"
+      "shared_capability_ids": [
+        "target_marker_preconditions",
+        "incoming_accuracy_mod"
+      ],
+      "suite_path": "test/suites/gojo_suite.gd",
+      "surface_smoke_skill_id": "gojo_ao",
+      "unit_definition_id": "gojo_satoru"
     },
     {
-      "character_id": "sukuna",
-      "display_name": "宿傩",
-      "unit_definition_id": "sukuna",
-      "formal_setup_matchup_id": "sukuna_setup",
-      "pair_token": "sukuna",
-      "baseline_script_path": "src/shared/formal_character_baselines/sukuna/sukuna_formal_character_baseline.gd",
-      "pair_initiator_bench_unit_ids": [
-        "sample_mossaur",
-        "sample_pyron"
-      ],
-      "pair_responder_bench_unit_ids": [
-        "sample_tidekit",
-        "sample_mossaur"
-      ],
-      "owned_pair_interaction_specs": [
-        {
-          "other_character_id": "gojo_satoru",
-          "scenario_key": "gojo_sukuna_domain_cleanup",
-          "owner_as_initiator_battle_seed": 2667,
-          "owner_as_responder_battle_seed": 2661
-        }
-      ],
-      "required_content_paths": [
-        "content/units/sukuna/sukuna.tres",
-        "content/skills/sukuna/sukuna_kai.tres",
-        "content/skills/sukuna/sukuna_hatsu.tres",
-        "content/skills/sukuna/sukuna_hiraku.tres",
-        "content/skills/sukuna/sukuna_reverse_ritual.tres",
-        "content/skills/sukuna/sukuna_fukuma_mizushi.tres",
-        "content/effects/sukuna/sukuna_apply_kamado.tres",
-        "content/effects/sukuna/sukuna_kamado_mark.tres",
-        "content/effects/sukuna/sukuna_kamado_explode.tres",
-        "content/effects/sukuna/sukuna_reverse_heal.tres",
-        "content/effects/sukuna/sukuna_apply_domain_field.tres",
-        "content/effects/sukuna/sukuna_domain_cast_buff.tres",
-        "content/effects/sukuna/sukuna_domain_buff_remove.tres",
-        "content/effects/sukuna/sukuna_domain_expire_burst.tres",
-        "content/effects/sukuna/sukuna_refresh_love_regen.tres",
-        "content/passive_skills/sukuna/sukuna_teach_love.tres",
-        "content/fields/sukuna/sukuna_malevolent_shrine_field.tres"
-      ],
-      "content_validator_script_path": "src/battle_core/content/formal_validators/sukuna/content_snapshot_formal_sukuna_validator.gd",
-      "design_doc": "docs/design/sukuna_design.md",
       "adjustment_doc": "docs/design/sukuna_adjustments.md",
-      "design_needles": [
-        "anchor:sukuna.design.domain-expire-burst-kept",
-        "anchor:sukuna.design.first-ultimate-window-turn-4-default",
-        "anchor:sukuna.design.first-ultimate-window-turn-4-ritual",
-        "anchor:sukuna.design.matchup-regen-duration-permanent"
-      ],
       "adjustment_needles": [
         "anchor:sukuna.adjust.matchup-regen-permanent",
         "anchor:sukuna.adjust.replace-long-term-regen",
@@ -172,8 +123,54 @@
         "anchor:sukuna.adjust.mp_regen-add",
         "anchor:sukuna.adjust.tests-impacted"
       ],
-      "shared_capability_ids": [],
-      "suite_path": "test/suites/sukuna_suite.gd",
+      "baseline_script_path": "src/shared/formal_character_baselines/sukuna/sukuna_formal_character_baseline.gd",
+      "character_id": "sukuna",
+      "content_validator_script_path": "src/battle_core/content/formal_validators/sukuna/content_snapshot_formal_sukuna_validator.gd",
+      "design_doc": "docs/design/sukuna_design.md",
+      "design_needles": [
+        "anchor:sukuna.design.domain-expire-burst-kept",
+        "anchor:sukuna.design.first-ultimate-window-turn-4-default",
+        "anchor:sukuna.design.first-ultimate-window-turn-4-ritual",
+        "anchor:sukuna.design.matchup-regen-duration-permanent"
+      ],
+      "display_name": "宿傩",
+      "formal_setup_matchup_id": "sukuna_setup",
+      "owned_pair_interaction_specs": [
+        {
+          "other_character_id": "gojo_satoru",
+          "owner_as_initiator_battle_seed": 2667,
+          "owner_as_responder_battle_seed": 2661,
+          "scenario_key": "gojo_sukuna_domain_cleanup"
+        }
+      ],
+      "pair_initiator_bench_unit_ids": [
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "pair_responder_bench_unit_ids": [
+        "sample_tidekit",
+        "sample_mossaur"
+      ],
+      "pair_token": "sukuna",
+      "required_content_paths": [
+        "content/effects/sukuna/sukuna_apply_domain_field.tres",
+        "content/effects/sukuna/sukuna_apply_kamado.tres",
+        "content/effects/sukuna/sukuna_domain_buff_remove.tres",
+        "content/effects/sukuna/sukuna_domain_cast_buff.tres",
+        "content/effects/sukuna/sukuna_domain_expire_burst.tres",
+        "content/effects/sukuna/sukuna_kamado_explode.tres",
+        "content/effects/sukuna/sukuna_kamado_mark.tres",
+        "content/effects/sukuna/sukuna_refresh_love_regen.tres",
+        "content/effects/sukuna/sukuna_reverse_heal.tres",
+        "content/fields/sukuna/sukuna_malevolent_shrine_field.tres",
+        "content/passive_skills/sukuna/sukuna_teach_love.tres",
+        "content/skills/sukuna/sukuna_fukuma_mizushi.tres",
+        "content/skills/sukuna/sukuna_hatsu.tres",
+        "content/skills/sukuna/sukuna_hiraku.tres",
+        "content/skills/sukuna/sukuna_kai.tres",
+        "content/skills/sukuna/sukuna_reverse_ritual.tres",
+        "content/units/sukuna/sukuna.tres"
+      ],
       "required_suite_paths": [
         "test/suites/sukuna_setup_loadout_regen_suite.gd",
         "test/suites/sukuna_teach_love_band_suite.gd",
@@ -223,69 +220,13 @@
         "sukuna_manager_hatsu_public_contract",
         "sukuna_manager_teach_love_public_contract"
       ],
-      "surface_smoke_skill_id": "sukuna_kai"
+      "shared_capability_ids": [],
+      "suite_path": "test/suites/sukuna_suite.gd",
+      "surface_smoke_skill_id": "sukuna_kai",
+      "unit_definition_id": "sukuna"
     },
     {
-      "character_id": "kashimo_hajime",
-      "display_name": "Kashimo",
-      "unit_definition_id": "kashimo_hajime",
-      "formal_setup_matchup_id": "kashimo_vs_sample",
-      "pair_token": "kashimo",
-      "baseline_script_path": "src/shared/formal_character_baselines/kashimo_hajime/kashimo_hajime_formal_character_baseline.gd",
-      "pair_initiator_bench_unit_ids": [
-        "sample_mossaur",
-        "sample_pyron"
-      ],
-      "pair_responder_bench_unit_ids": [
-        "sample_tidekit",
-        "sample_mossaur"
-      ],
-      "owned_pair_interaction_specs": [
-        {
-          "other_character_id": "gojo_satoru",
-          "scenario_key": "gojo_kashimo_kyokyo_nullify_domain_accuracy",
-          "owner_as_initiator_battle_seed": 2668,
-          "owner_as_responder_battle_seed": 2662
-        },
-        {
-          "other_character_id": "sukuna",
-          "scenario_key": "sukuna_kashimo_domain_accuracy_nullified",
-          "owner_as_initiator_battle_seed": 2670,
-          "owner_as_responder_battle_seed": 2664
-        }
-      ],
-      "required_content_paths": [
-        "content/units/kashimo/kashimo_hajime.tres",
-        "content/skills/kashimo/kashimo_raiken.tres",
-        "content/skills/kashimo/kashimo_charge.tres",
-        "content/skills/kashimo/kashimo_feedback_strike.tres",
-        "content/skills/kashimo/kashimo_kyokyo_katsura.tres",
-        "content/skills/kashimo/kashimo_phantom_beast_amber.tres",
-        "content/effects/kashimo/kashimo_apply_negative_charge.tres",
-        "content/effects/kashimo/kashimo_negative_charge_mark.tres",
-        "content/effects/kashimo/kashimo_apply_positive_charge.tres",
-        "content/effects/kashimo/kashimo_positive_charge_mark.tres",
-        "content/effects/kashimo/kashimo_consume_positive_charges.tres",
-        "content/effects/kashimo/kashimo_consume_negative_charges.tres",
-        "content/effects/kashimo/kashimo_kyokyo_nullify.tres",
-        "content/effects/kashimo/kashimo_thunder_resist.tres",
-        "content/effects/kashimo/kashimo_apply_water_leak_listeners.tres",
-        "content/effects/kashimo/kashimo_water_leak_self_listener.tres",
-        "content/effects/kashimo/kashimo_water_leak_counter_listener.tres",
-        "content/effects/kashimo/kashimo_amber_self_transform.tres",
-        "content/effects/kashimo/kashimo_amber_bleed.tres",
-        "content/passive_skills/kashimo/kashimo_charge_separation.tres",
-        "content/combat_types/poison.tres"
-      ],
-      "content_validator_script_path": "src/battle_core/content/formal_validators/kashimo/content_snapshot_formal_kashimo_validator.gd",
-      "design_doc": "docs/design/kashimo_hajime_design.md",
       "adjustment_doc": "docs/design/kashimo_hajime_adjustments.md",
-      "design_needles": [
-        "anchor:kashimo.design.feedback-strike-dual-charge-burst",
-        "anchor:kashimo.design.kyokyo-domain-accuracy-only",
-        "anchor:kashimo.design.once-per-battle",
-        "anchor:kashimo.design.water-hit-punish"
-      ],
       "adjustment_needles": [
         "anchor:kashimo.adjust.battle-scoped-usage-record",
         "anchor:kashimo.adjust.once-per-battle",
@@ -294,13 +235,64 @@
         "anchor:kashimo.adjust.amber-switch-persist",
         "anchor:kashimo.adjust.amber-same-turn-reentry"
       ],
-      "shared_capability_ids": [
-        "nullify_field_accuracy_mod",
-        "effect_stack_sum_power_bonus",
-        "once_per_battle_skill",
-        "persistent_stat_stages"
+      "baseline_script_path": "src/shared/formal_character_baselines/kashimo_hajime/kashimo_hajime_formal_character_baseline.gd",
+      "character_id": "kashimo_hajime",
+      "content_validator_script_path": "src/battle_core/content/formal_validators/kashimo/content_snapshot_formal_kashimo_validator.gd",
+      "design_doc": "docs/design/kashimo_hajime_design.md",
+      "design_needles": [
+        "anchor:kashimo.design.feedback-strike-dual-charge-burst",
+        "anchor:kashimo.design.kyokyo-domain-accuracy-only",
+        "anchor:kashimo.design.once-per-battle",
+        "anchor:kashimo.design.water-hit-punish"
       ],
-      "suite_path": "test/suites/kashimo_suite.gd",
+      "display_name": "Kashimo",
+      "formal_setup_matchup_id": "kashimo_vs_sample",
+      "owned_pair_interaction_specs": [
+        {
+          "other_character_id": "gojo_satoru",
+          "owner_as_initiator_battle_seed": 2668,
+          "owner_as_responder_battle_seed": 2662,
+          "scenario_key": "gojo_kashimo_kyokyo_nullify_domain_accuracy"
+        },
+        {
+          "other_character_id": "sukuna",
+          "owner_as_initiator_battle_seed": 2670,
+          "owner_as_responder_battle_seed": 2664,
+          "scenario_key": "sukuna_kashimo_domain_accuracy_nullified"
+        }
+      ],
+      "pair_initiator_bench_unit_ids": [
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "pair_responder_bench_unit_ids": [
+        "sample_tidekit",
+        "sample_mossaur"
+      ],
+      "pair_token": "kashimo",
+      "required_content_paths": [
+        "content/combat_types/poison.tres",
+        "content/effects/kashimo/kashimo_amber_bleed.tres",
+        "content/effects/kashimo/kashimo_amber_self_transform.tres",
+        "content/effects/kashimo/kashimo_apply_negative_charge.tres",
+        "content/effects/kashimo/kashimo_apply_positive_charge.tres",
+        "content/effects/kashimo/kashimo_apply_water_leak_listeners.tres",
+        "content/effects/kashimo/kashimo_consume_negative_charges.tres",
+        "content/effects/kashimo/kashimo_consume_positive_charges.tres",
+        "content/effects/kashimo/kashimo_kyokyo_nullify.tres",
+        "content/effects/kashimo/kashimo_negative_charge_mark.tres",
+        "content/effects/kashimo/kashimo_positive_charge_mark.tres",
+        "content/effects/kashimo/kashimo_thunder_resist.tres",
+        "content/effects/kashimo/kashimo_water_leak_counter_listener.tres",
+        "content/effects/kashimo/kashimo_water_leak_self_listener.tres",
+        "content/passive_skills/kashimo/kashimo_charge_separation.tres",
+        "content/skills/kashimo/kashimo_charge.tres",
+        "content/skills/kashimo/kashimo_feedback_strike.tres",
+        "content/skills/kashimo/kashimo_kyokyo_katsura.tres",
+        "content/skills/kashimo/kashimo_phantom_beast_amber.tres",
+        "content/skills/kashimo/kashimo_raiken.tres",
+        "content/units/kashimo/kashimo_hajime.tres"
+      ],
       "required_suite_paths": [
         "test/suites/kashimo_snapshot_suite.gd",
         "test/suites/kashimo_runtime_suite.gd",
@@ -343,15 +335,57 @@
         "formal_kashimo_validator_thunder_resist_surface_bad_case_contract",
         "formal_kashimo_validator_water_leak_counter_fixed_damage_bad_case_contract"
       ],
-      "surface_smoke_skill_id": "kashimo_raiken"
+      "shared_capability_ids": [
+        "nullify_field_accuracy_mod",
+        "effect_stack_sum_power_bonus",
+        "once_per_battle_skill",
+        "persistent_stat_stages"
+      ],
+      "suite_path": "test/suites/kashimo_suite.gd",
+      "surface_smoke_skill_id": "kashimo_raiken",
+      "unit_definition_id": "kashimo_hajime"
     },
     {
-      "character_id": "obito_juubi_jinchuriki",
-      "display_name": "Obito",
-      "unit_definition_id": "obito_juubi_jinchuriki",
-      "formal_setup_matchup_id": "obito_vs_sample",
-      "pair_token": "obito",
+      "adjustment_doc": "docs/design/obito_juubi_jinchuriki_adjustments.md",
+      "adjustment_needles": [
+        "anchor:obito.adjust.formal-first-delivery",
+        "anchor:obito.adjust.yinyang-dun-skill-ultimate-filter",
+        "anchor:obito.adjust.heal-block-sync-expire",
+        "anchor:obito.adjust.no-balance-retune",
+        "anchor:obito.adjust.tests-impacted"
+      ],
       "baseline_script_path": "src/shared/formal_character_baselines/obito_juubi_jinchuriki/obito_juubi_jinchuriki_formal_character_baseline.gd",
+      "character_id": "obito_juubi_jinchuriki",
+      "content_validator_script_path": "src/battle_core/content/formal_validators/obito/content_snapshot_formal_obito_validator.gd",
+      "design_doc": "docs/design/obito_juubi_jinchuriki_design.md",
+      "design_needles": [
+        "anchor:obito.design.qiudao-jiaotu-heal-block-window",
+        "anchor:obito.design.yinyang-dun-skill-ultimate-segment-filter",
+        "anchor:obito.design.qiudaoyu-five-stack-execute",
+        "anchor:obito.design.weishouyu-ten-segment-burst"
+      ],
+      "display_name": "Obito",
+      "formal_setup_matchup_id": "obito_vs_sample",
+      "owned_pair_interaction_specs": [
+        {
+          "other_character_id": "gojo_satoru",
+          "owner_as_initiator_battle_seed": 2669,
+          "owner_as_responder_battle_seed": 2663,
+          "scenario_key": "gojo_obito_heal_block_public_contract"
+        },
+        {
+          "other_character_id": "sukuna",
+          "owner_as_initiator_battle_seed": 2671,
+          "owner_as_responder_battle_seed": 2665,
+          "scenario_key": "sukuna_obito_field_seal_and_kamado_lifecycle"
+        },
+        {
+          "other_character_id": "kashimo_hajime",
+          "owner_as_initiator_battle_seed": 2672,
+          "owner_as_responder_battle_seed": 2666,
+          "scenario_key": "kashimo_obito_yinyang_and_amber_persistence"
+        }
+      ],
       "pair_initiator_bench_unit_ids": [
         "sample_mossaur",
         "sample_pyron"
@@ -360,70 +394,26 @@
         "sample_tidekit",
         "sample_mossaur"
       ],
-      "owned_pair_interaction_specs": [
-        {
-          "other_character_id": "gojo_satoru",
-          "scenario_key": "gojo_obito_heal_block_public_contract",
-          "owner_as_initiator_battle_seed": 2669,
-          "owner_as_responder_battle_seed": 2663
-        },
-        {
-          "other_character_id": "sukuna",
-          "scenario_key": "sukuna_obito_field_seal_and_kamado_lifecycle",
-          "owner_as_initiator_battle_seed": 2671,
-          "owner_as_responder_battle_seed": 2665
-        },
-        {
-          "other_character_id": "kashimo_hajime",
-          "scenario_key": "kashimo_obito_yinyang_and_amber_persistence",
-          "owner_as_initiator_battle_seed": 2672,
-          "owner_as_responder_battle_seed": 2666
-        }
-      ],
+      "pair_token": "obito",
       "required_content_paths": [
-        "content/units/obito/obito_juubi_jinchuriki.tres",
-        "content/skills/obito/obito_qiudao_jiaotu.tres",
-        "content/skills/obito/obito_yinyang_dun.tres",
-        "content/skills/obito/obito_qiudao_yu.tres",
-        "content/skills/obito/obito_liudao_shizi_fenghuo.tres",
-        "content/skills/obito/obito_shiwei_weishouyu.tres",
-        "content/effects/obito/obito_xianren_zhili_heal.tres",
-        "content/effects/obito/obito_yinyang_zhili.tres",
-        "content/effects/obito/obito_qiudao_jiaotu_heal_block_mark.tres",
         "content/effects/obito/obito_qiudao_jiaotu_heal_block_apply.tres",
+        "content/effects/obito/obito_qiudao_jiaotu_heal_block_mark.tres",
         "content/effects/obito/obito_qiudao_jiaotu_heal_block_rule_mod.tres",
+        "content/effects/obito/obito_qiudao_yu_clear_yinyang.tres",
+        "content/effects/obito/obito_xianren_zhili_heal.tres",
         "content/effects/obito/obito_yinyang_dun_boost_and_charge.tres",
         "content/effects/obito/obito_yinyang_dun_guard_rule_mod.tres",
         "content/effects/obito/obito_yinyang_dun_guard_stack_listener.tres",
         "content/effects/obito/obito_yinyang_dun_guard_stack_listener_state.tres",
-        "content/effects/obito/obito_qiudao_yu_clear_yinyang.tres",
-        "content/passive_skills/obito/obito_xianren_zhili.tres"
+        "content/effects/obito/obito_yinyang_zhili.tres",
+        "content/passive_skills/obito/obito_xianren_zhili.tres",
+        "content/skills/obito/obito_liudao_shizi_fenghuo.tres",
+        "content/skills/obito/obito_qiudao_jiaotu.tres",
+        "content/skills/obito/obito_qiudao_yu.tres",
+        "content/skills/obito/obito_shiwei_weishouyu.tres",
+        "content/skills/obito/obito_yinyang_dun.tres",
+        "content/units/obito/obito_juubi_jinchuriki.tres"
       ],
-      "content_validator_script_path": "src/battle_core/content/formal_validators/obito/content_snapshot_formal_obito_validator.gd",
-      "design_doc": "docs/design/obito_juubi_jinchuriki_design.md",
-      "adjustment_doc": "docs/design/obito_juubi_jinchuriki_adjustments.md",
-      "design_needles": [
-        "anchor:obito.design.qiudao-jiaotu-heal-block-window",
-        "anchor:obito.design.yinyang-dun-skill-ultimate-segment-filter",
-        "anchor:obito.design.qiudaoyu-five-stack-execute",
-        "anchor:obito.design.weishouyu-ten-segment-burst"
-      ],
-      "adjustment_needles": [
-        "anchor:obito.adjust.formal-first-delivery",
-        "anchor:obito.adjust.yinyang-dun-skill-ultimate-filter",
-        "anchor:obito.adjust.heal-block-sync-expire",
-        "anchor:obito.adjust.no-balance-retune",
-        "anchor:obito.adjust.tests-impacted"
-      ],
-      "shared_capability_ids": [
-        "effect_stack_sum_power_bonus",
-        "missing_hp_heal",
-        "incoming_heal_final_mod",
-        "execute_finisher",
-        "damage_segments",
-        "on_receive_action_damage_segment"
-      ],
-      "suite_path": "test/suites/obito_suite.gd",
       "required_suite_paths": [
         "test/suites/obito_snapshot_suite.gd",
         "test/suites/obito_runtime_passive_and_seal_suite.gd",
@@ -466,38 +456,104 @@
         "formal_obito_validator_yinyang_listener_surface_bad_case_contract",
         "formal_obito_validator_ultimate_segments_bad_case_contract"
       ],
-      "surface_smoke_skill_id": "obito_qiudao_jiaotu"
+      "shared_capability_ids": [
+        "effect_stack_sum_power_bonus",
+        "missing_hp_heal",
+        "incoming_heal_final_mod",
+        "execute_finisher",
+        "damage_segments",
+        "on_receive_action_damage_segment"
+      ],
+      "suite_path": "test/suites/obito_suite.gd",
+      "surface_smoke_skill_id": "obito_qiudao_jiaotu",
+      "unit_definition_id": "obito_juubi_jinchuriki"
     }
   ],
   "matchups": {
     "gojo_vs_sample": {
-      "p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
-      "p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
-    },
-    "sample_vs_gojo": {
-      "p1_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"],
-      "p2_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"]
-    },
-    "sukuna_vs_sample": {
-      "p1_units": ["sukuna", "sample_mossaur", "sample_tidekit"],
-      "p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
-    },
-    "sukuna_setup": {
-      "p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
-      "p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
+      "p1_units": [
+        "gojo_satoru",
+        "sample_mossaur",
+        "sample_tidekit"
+      ],
+      "p2_units": [
+        "sample_pyron",
+        "sample_tidekit",
+        "sample_mossaur"
+      ]
     },
     "kashimo_vs_sample": {
-      "p1_units": ["kashimo_hajime", "sample_mossaur", "sample_pyron"],
-      "p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
-    },
-    "obito_vs_sample": {
-      "p1_units": ["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"],
-      "p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
+      "p1_units": [
+        "kashimo_hajime",
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "p2_units": [
+        "sample_tidekit",
+        "sample_pyron",
+        "sample_mossaur"
+      ]
     },
     "obito_mirror": {
-      "p1_units": ["obito_juubi_jinchuriki", "sample_mossaur", "sample_pyron"],
-      "p2_units": ["obito_juubi_jinchuriki", "sample_tidekit", "sample_mossaur"],
+      "p1_units": [
+        "obito_juubi_jinchuriki",
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "p2_units": [
+        "obito_juubi_jinchuriki",
+        "sample_tidekit",
+        "sample_mossaur"
+      ],
       "test_only": true
+    },
+    "obito_vs_sample": {
+      "p1_units": [
+        "obito_juubi_jinchuriki",
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "p2_units": [
+        "sample_pyron",
+        "sample_tidekit",
+        "sample_mossaur"
+      ]
+    },
+    "sample_vs_gojo": {
+      "p1_units": [
+        "sample_pyron",
+        "sample_tidekit",
+        "sample_mossaur"
+      ],
+      "p2_units": [
+        "gojo_satoru",
+        "sample_mossaur",
+        "sample_tidekit"
+      ]
+    },
+    "sukuna_setup": {
+      "p1_units": [
+        "sukuna",
+        "sample_mossaur",
+        "sample_pyron"
+      ],
+      "p2_units": [
+        "sample_tidekit",
+        "sample_pyron",
+        "sample_mossaur"
+      ]
+    },
+    "sukuna_vs_sample": {
+      "p1_units": [
+        "sukuna",
+        "sample_mossaur",
+        "sample_tidekit"
+      ],
+      "p2_units": [
+        "sample_pyron",
+        "sample_tidekit",
+        "sample_mossaur"
+      ]
     }
   }
 }

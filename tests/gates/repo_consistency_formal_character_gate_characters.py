@@ -134,7 +134,9 @@ def validate_character_entries(
             for rel_path in required_content_paths:
                 ctx.require_exists(str(rel_path), f"{character_id} runtime content asset")
 
-        if validator_script_path:
+        if not validator_script_path:
+            ctx.failures.append(f"formal manifest[{character_id}] missing content_validator_script_path")
+        else:
             ctx.require_exists(validator_script_path, f"{character_id} content validator script")
         if not design_doc:
             ctx.failures.append(f"formal manifest[{character_id}] missing design_doc")

@@ -7,6 +7,12 @@ const ContentSnapshotFormalCharacterValidatorScript := preload("res://src/battle
 const InvalidValidatorFixturePath := "tests/fixtures/formal_validators/invalid_missing_validate_validator.gd"
 const DEFAULT_PAIR_INITIATOR_BENCH_UNIT_IDS := ["sample_mossaur", "sample_pyron"]
 const DEFAULT_PAIR_RESPONDER_BENCH_UNIT_IDS := ["sample_tidekit", "sample_mossaur"]
+const DEFAULT_VALIDATOR_PATH_BY_UNIT_ID := {
+	"gojo_satoru": "src/battle_core/content/formal_validators/gojo/content_snapshot_formal_gojo_validator.gd",
+	"sukuna": "src/battle_core/content/formal_validators/sukuna/content_snapshot_formal_sukuna_validator.gd",
+	"kashimo_hajime": "src/battle_core/content/formal_validators/kashimo/content_snapshot_formal_kashimo_validator.gd",
+	"obito_juubi_jinchuriki": "src/battle_core/content/formal_validators/obito/content_snapshot_formal_obito_validator.gd",
+}
 
 func _default_pair_token_for_matchup_id(matchup_id: String) -> String:
 	var normalized_matchup_id := matchup_id.strip_edges()
@@ -25,6 +31,9 @@ func _default_baseline_script_path_for_unit_id(unit_definition_id: String) -> St
 		normalized_unit_definition_id,
 		normalized_unit_definition_id,
 	]
+
+func _default_validator_script_path_for_unit_id(unit_definition_id: String) -> String:
+	return String(DEFAULT_VALIDATOR_PATH_BY_UNIT_ID.get(unit_definition_id.strip_edges(), ""))
 
 func _write_json_fixture(path: String, payload: String) -> bool:
 	var file := FileAccess.open(path, FileAccess.WRITE)
@@ -68,8 +77,9 @@ func _build_runtime_registry_entry(
 		"pair_responder_bench_unit_ids": DEFAULT_PAIR_RESPONDER_BENCH_UNIT_IDS.duplicate(),
 		"owned_pair_interaction_specs": owned_pair_interaction_specs.duplicate(true),
 	}
-	if not validator_path.is_empty():
-		entry["content_validator_script_path"] = validator_path
+	var resolved_validator_path := validator_path if not validator_path.is_empty() else _default_validator_script_path_for_unit_id(unit_definition_id)
+	if not resolved_validator_path.is_empty():
+		entry["content_validator_script_path"] = resolved_validator_path
 	return entry
 
 func _build_manifest_character_entry(
@@ -113,8 +123,9 @@ func _build_manifest_character_entry(
 		"design_needles": design_needles,
 		"adjustment_needles": adjustment_needles,
 	}
-	if not validator_path.is_empty():
-		entry["content_validator_script_path"] = validator_path
+	var resolved_validator_path := validator_path if not validator_path.is_empty() else _default_validator_script_path_for_unit_id(unit_definition_id)
+	if not resolved_validator_path.is_empty():
+		entry["content_validator_script_path"] = resolved_validator_path
 	return entry
 
 func _build_owned_pair_interaction_spec(

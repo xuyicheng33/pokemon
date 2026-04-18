@@ -1,0 +1,113 @@
+{
+  "descriptor_kind": "formal_character_source",
+  "character": {
+    "character_id": "obito_juubi_jinchuriki",
+    "display_name": "Obito",
+    "unit_definition_id": "obito_juubi_jinchuriki",
+    "formal_setup_matchup_id": "obito_vs_sample",
+    "pair_token": "obito",
+    "baseline_script_path": "src/shared/formal_character_baselines/obito_juubi_jinchuriki/obito_juubi_jinchuriki_formal_character_baseline.gd",
+    "pair_initiator_bench_unit_ids": [
+      "sample_mossaur",
+      "sample_pyron"
+    ],
+    "pair_responder_bench_unit_ids": [
+      "sample_tidekit",
+      "sample_mossaur"
+    ],
+    "owned_pair_interaction_specs": [
+      {
+        "other_character_id": "gojo_satoru",
+        "scenario_key": "gojo_obito_heal_block_public_contract",
+        "owner_as_initiator_battle_seed": 2669,
+        "owner_as_responder_battle_seed": 2663
+      },
+      {
+        "other_character_id": "sukuna",
+        "scenario_key": "sukuna_obito_field_seal_and_kamado_lifecycle",
+        "owner_as_initiator_battle_seed": 2671,
+        "owner_as_responder_battle_seed": 2665
+      },
+      {
+        "other_character_id": "kashimo_hajime",
+        "scenario_key": "kashimo_obito_yinyang_and_amber_persistence",
+        "owner_as_initiator_battle_seed": 2672,
+        "owner_as_responder_battle_seed": 2666
+      }
+    ],
+    "content_roots": [
+      "content/units/obito",
+      "content/skills/obito",
+      "content/effects/obito",
+      "content/passive_skills/obito"
+    ],
+    "content_validator_script_path": "src/battle_core/content/formal_validators/obito/content_snapshot_formal_obito_validator.gd",
+    "design_doc": "docs/design/obito_juubi_jinchuriki_design.md",
+    "adjustment_doc": "docs/design/obito_juubi_jinchuriki_adjustments.md",
+    "design_needles": [
+      "anchor:obito.design.qiudao-jiaotu-heal-block-window",
+      "anchor:obito.design.yinyang-dun-skill-ultimate-segment-filter",
+      "anchor:obito.design.qiudaoyu-five-stack-execute",
+      "anchor:obito.design.weishouyu-ten-segment-burst"
+    ],
+    "adjustment_needles": [
+      "anchor:obito.adjust.formal-first-delivery",
+      "anchor:obito.adjust.yinyang-dun-skill-ultimate-filter",
+      "anchor:obito.adjust.heal-block-sync-expire",
+      "anchor:obito.adjust.no-balance-retune",
+      "anchor:obito.adjust.tests-impacted"
+    ],
+    "shared_capability_ids": [
+      "effect_stack_sum_power_bonus",
+      "missing_hp_heal",
+      "incoming_heal_final_mod",
+      "execute_finisher",
+      "damage_segments",
+      "on_receive_action_damage_segment"
+    ],
+    "suite_path": "test/suites/obito_suite.gd",
+    "required_suite_paths": [
+      "test/suites/obito_snapshot_suite.gd",
+      "test/suites/obito_runtime_passive_and_seal_suite.gd",
+      "test/suites/obito_runtime_yinyang_suite.gd",
+      "test/suites/obito_runtime_qiudaoyu_suite.gd",
+      "test/suites/obito_ultimate_suite.gd",
+      "test/suites/obito_manager_smoke_suite.gd",
+      "test/suites/obito_manager_blackbox_suite.gd",
+      "test/suites/formal_character_pair_smoke_suite.gd",
+      "test/suites/ultimate_points_contract_suite.gd"
+    ],
+    "required_test_names": [
+      "obito_unit_snapshot_contract",
+      "obito_skill_snapshot_contract",
+      "obito_effect_snapshot_contract",
+      "obito_candidate_loadout_contract",
+      "obito_passive_missing_hp_heal_contract",
+      "obito_qiudao_jiaotu_heal_block_contract",
+      "obito_qiudao_jiaotu_expire_sync_contract",
+      "obito_qiudao_jiaotu_switch_persist_contract",
+      "obito_yinyang_dun_segment_mitigation_and_stack_contract",
+      "obito_yinyang_dun_non_skill_segment_ignored_contract",
+      "obito_yinyang_dun_same_side_segment_ignored_contract",
+      "obito_yinyang_dun_stack_cap_contract",
+      "obito_qiudaoyu_power_bonus_contract",
+      "obito_qiudaoyu_execute_contract",
+      "obito_qiudaoyu_execute_short_circuit_contract",
+      "obito_qiudaoyu_hit_and_miss_clear_contract",
+      "obito_shiwei_weishouyu_segment_order_contract",
+      "obito_shiwei_weishouyu_segment_damage_log_contract",
+      "obito_shiwei_weishouyu_mid_kill_stop_contract",
+      "obito_manager_smoke_contract",
+      "obito_manager_public_contract",
+      "obito_manager_fenghuo_public_contract",
+      "obito_manager_yinyang_public_contract",
+      "formal_obito_validator_heal_block_bad_case_contract",
+      "formal_obito_validator_heal_block_surface_bad_case_contract",
+      "formal_obito_validator_execute_bad_case_contract",
+      "formal_obito_validator_yinyang_guard_surface_bad_case_contract",
+      "formal_obito_validator_yinyang_listener_surface_bad_case_contract",
+      "formal_obito_validator_ultimate_segments_bad_case_contract"
+    ],
+    "surface_smoke_skill_id": "obito_qiudao_jiaotu"
+  }
+}
