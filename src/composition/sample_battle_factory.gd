@@ -5,6 +5,7 @@ const BaselineMatchupCatalogScript := preload("res://src/composition/sample_batt
 const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
 const DemoInputBuilderScript := preload("res://src/composition/sample_battle_factory_demo_input_builder.gd")
 const DemoCatalogScript := preload("res://src/composition/sample_battle_factory_demo_catalog.gd")
+const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
 const MatchupCatalogScript := preload("res://src/composition/sample_battle_factory_matchup_catalog.gd")
 const SetupAccessScript := preload("res://src/composition/sample_battle_factory_setup_access.gd")
@@ -65,8 +66,7 @@ func dispose() -> void:
 	_formal_access = null
 	_formal_matchup_catalog = null
 	_setup_access = null
-	last_error_code = null
-	last_error_message = ""
+	ErrorStateHelperScript.clear(self)
 
 func configure_registry_path_override(path: String) -> void:
 	_catalog_access.configure_registry_path_override(path)
@@ -99,10 +99,7 @@ func demo_profile_result(profile_id: String) -> Dictionary:
 	return _record_result(_demo_catalog.profile_result(profile_id))
 
 func error_state() -> Dictionary:
-	return {
-		"code": last_error_code,
-		"message": last_error_message,
-	}
+	return ErrorStateHelperScript.error_state(self)
 
 func build_side_spec(
 	unit_definition_ids: PackedStringArray,
@@ -185,7 +182,5 @@ func build_passive_item_demo_replay_input_result(command_port) -> Dictionary:
 	return _record_result(_demo_input_builder.build_passive_item_demo_replay_input_result(command_port))
 
 func _record_result(result: Dictionary) -> Dictionary:
-	last_error_code = result.get("error_code", null)
-	var error_message = result.get("error_message", "")
-	last_error_message = "" if error_message == null else str(error_message)
+	ErrorStateHelperScript.capture_envelope(self, result)
 	return result

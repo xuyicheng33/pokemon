@@ -2,6 +2,7 @@ extends RefCounted
 class_name RuleModOwnerScopeService
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 const OWNER_SCOPE_UNIT := "unit"
 const OWNER_SCOPE_FIELD := "field"
@@ -11,38 +12,29 @@ var last_error_code: Variant = null
 var last_error_message: String = ""
 
 func error_state() -> Dictionary:
-	return {
-		"code": last_error_code,
-		"message": last_error_message,
-	}
+	return ErrorStateHelperScript.error_state(self)
 
 func validate_owner_ref(owner_ref: Dictionary, payload_scope: String, battle_state) -> bool:
-	last_error_code = null
-	last_error_message = ""
+	ErrorStateHelperScript.clear(self)
 	if owner_ref == null or not owner_ref.has("scope") or not owner_ref.has("id"):
-		last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-		last_error_message = "rule_mod owner_ref must include scope/id"
+		ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "rule_mod owner_ref must include scope/id")
 		return false
 	var owner_scope: String = str(owner_ref["scope"])
 	var owner_id: String = str(owner_ref["id"])
 	if owner_scope == OWNER_SCOPE_UNIT:
 		if payload_scope == "field":
-			last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-			last_error_message = "field-scope rule_mod requires field owner"
+			ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "field-scope rule_mod requires field owner")
 			return false
 		if battle_state.get_unit(owner_id) == null:
-			last_error_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
-			last_error_message = "rule_mod owner unit missing: %s" % owner_id
+			ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_STATE_CORRUPTION, "rule_mod owner unit missing: %s" % owner_id)
 			return false
 		return true
 	if owner_scope == OWNER_SCOPE_FIELD:
 		if payload_scope != "field" or owner_id != FIELD_OWNER_ID:
-			last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-			last_error_message = "field owner_ref must bind scope=field id=field"
+			ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "field owner_ref must bind scope=field id=field")
 			return false
 		return true
-	last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-	last_error_message = "unsupported rule_mod owner scope: %s" % owner_scope
+	ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "unsupported rule_mod owner scope: %s" % owner_scope)
 	return false
 
 func get_owner_instances(battle_state, owner_ref: Dictionary) -> Array:

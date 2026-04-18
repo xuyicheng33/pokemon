@@ -36,13 +36,13 @@ func bootstrap_scene(state: SandboxSessionState, requested_config: Dictionary, p
 		if not replay_error.is_empty():
 			fail_runtime(state, replay_error)
 			return _error_result(replay_error)
-		return {"ok": true}
+		return _envelope.ok_result(null)
 	if policy_driver == null:
-		return {"ok": true}
+		return _envelope.ok_result(null)
 	var policy_result: Dictionary = _command_service.advance_until_manual_or_finished(state, policy_driver)
 	if not bool(policy_result.get("ok", false)):
 		return policy_result
-	return {"ok": true}
+	return _envelope.ok_result(null)
 
 func fetch_legal_actions_for_side(state: SandboxSessionState, side_id: String) -> Dictionary:
 	return _command_service.fetch_legal_actions_for_side(state, side_id)

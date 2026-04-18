@@ -13,7 +13,7 @@ func primary_side_id() -> String:
 
 func advance_until_manual_or_finished(state: SandboxSessionState, policy_driver) -> Dictionary:
 	if policy_driver == null:
-		return {"ok": true}
+		return envelope.ok_result({"command_steps": state.command_steps})
 	return policy_driver.advance_until_manual_or_finished(state, self)
 
 func fetch_legal_actions_for_side(state: SandboxSessionState, side_id: String) -> Dictionary:
@@ -28,7 +28,7 @@ func fetch_legal_actions_for_side(state: SandboxSessionState, side_id: String) -
 
 func refresh_legal_actions_for_side(state: SandboxSessionState, side_id: String) -> Dictionary:
 	if side_id.is_empty():
-		return {"ok": true, "data": null}
+		return envelope.ok_result(null)
 	var legal_actions_unwrap := envelope.unwrap_ok(
 		state.manager.get_legal_actions(state.session_id, side_id),
 		"get_legal_actions(%s)" % side_id
@@ -83,15 +83,12 @@ func submit_action(
 			var policy_progress_result: Dictionary = advance_until_manual_or_finished(state, policy_driver)
 			if not bool(policy_progress_result.get("ok", false)):
 				return policy_progress_result
-		return {
-			"ok": true,
-			"data": {
-				"side_id": side_id,
-				"pending_commands": state.pending_commands.size(),
-				"current_side_to_select": state.current_side_to_select,
-				"command_steps": state.command_steps,
-			},
-		}
+		return envelope.ok_result({
+			"side_id": side_id,
+			"pending_commands": state.pending_commands.size(),
+			"current_side_to_select": state.current_side_to_select,
+			"command_steps": state.command_steps,
+		})
 	return _run_pending_turn(state, policy_driver, allow_policy_progression)
 
 func has_battle_result(state: SandboxSessionState) -> bool:
@@ -159,18 +156,15 @@ func _run_pending_turn(state: SandboxSessionState, policy_driver, allow_policy_p
 			var policy_progress_result: Dictionary = advance_until_manual_or_finished(state, policy_driver)
 			if not bool(policy_progress_result.get("ok", false)):
 				return policy_progress_result
-	return {
-		"ok": true,
-		"data": {
-			"event_log_cursor": state.event_log_buffer.event_log_cursor,
-			"battle_finished": has_battle_result(state),
-			"event_delta": state.event_log_buffer.last_event_delta.duplicate(true),
-			"public_snapshot": state.public_snapshot.duplicate(true),
-			"current_side_to_select": state.current_side_to_select,
-			"battle_summary": state.event_log_buffer.battle_summary.duplicate(true),
-			"command_steps": state.command_steps,
-		}
-	}
+	return envelope.ok_result({
+		"event_log_cursor": state.event_log_buffer.event_log_cursor,
+		"battle_finished": has_battle_result(state),
+		"event_delta": state.event_log_buffer.last_event_delta.duplicate(true),
+		"public_snapshot": state.public_snapshot.duplicate(true),
+		"current_side_to_select": state.current_side_to_select,
+		"battle_summary": state.event_log_buffer.battle_summary.duplicate(true),
+		"command_steps": state.command_steps,
+	})
 
 func _error_result(message: String) -> Dictionary:
 	return envelope.error_result(message)

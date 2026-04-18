@@ -14,7 +14,7 @@ func advance_until_manual_or_finished(state: SandboxSessionState, session_coordi
 	while not state.startup_failed and not state.is_demo_mode and not session_coordinator.has_battle_result(state):
 		var side_id = str(state.current_side_to_select).strip_edges()
 		if side_id.is_empty() or not _is_policy_side(state.side_control_modes, side_id):
-			return {"ok": true, "data": {"command_steps": command_steps}}
+			return ResultEnvelopeHelperScript.ok({"command_steps": command_steps})
 		if command_steps >= MAX_POLICY_COMMAND_STEPS:
 			var limit_error = "Battle sandbox policy exceeded command step limit %d" % MAX_POLICY_COMMAND_STEPS
 			session_coordinator.fail_runtime(state, limit_error)
@@ -39,7 +39,7 @@ func advance_until_manual_or_finished(state: SandboxSessionState, session_coordi
 		if not bool(submit_result.get("ok", false)):
 			return submit_result
 		command_steps += 1
-	return {"ok": true, "data": {"command_steps": command_steps}}
+	return ResultEnvelopeHelperScript.ok({"command_steps": command_steps})
 
 func _is_policy_side(side_control_modes: Dictionary, side_id: String) -> bool:
 	return _launch_config_helper.is_policy_control_mode(

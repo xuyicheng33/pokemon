@@ -2,6 +2,7 @@ extends RefCounted
 class_name SampleBattleFactorySurfaceCaseBuilder
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const SURFACE_SMOKE_SEED_BASE := 1659
 
 func build_surface_cases_result(catalog: Dictionary, runtime_entries: Array, delivery_entries: Array) -> Dictionary:
@@ -190,17 +191,7 @@ func _directed_pair_key(left_character_id: String, right_character_id: String) -
 	return "%s->%s" % [left_character_id, right_character_id]
 
 func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(data)
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(error_code, error_message)

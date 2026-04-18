@@ -2,6 +2,7 @@ extends RefCounted
 class_name FormalCharacterManifestPairMatchups
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 const MATCHUP_INFIX := "_vs_"
 const REQUIRED_BENCH_UNIT_COUNT := 2
@@ -145,17 +146,7 @@ func _normalize_bench_units_result(raw_bench_units, field_name: String, characte
 	return _ok_result(normalized_bench_units)
 
 func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(data)
 
 func _error_result(error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": ErrorCodesScript.INVALID_BATTLE_SETUP,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_BATTLE_SETUP, error_message)

@@ -3,22 +3,13 @@ class_name BattleCoreManagerContractHelper
 
 const BattleInputContractHelperScript := preload("res://src/battle_core/contracts/battle_input_contract_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 static func ok(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(data)
 
-static func error(error_code: String, error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}
+static func error(error_code: Variant, error_message: String, data = null) -> Dictionary:
+	return ResultEnvelopeHelperScript.error(error_code, error_message, data)
 
 static func dependency_error(missing_dependency: String) -> Variant:
 	if missing_dependency.is_empty():

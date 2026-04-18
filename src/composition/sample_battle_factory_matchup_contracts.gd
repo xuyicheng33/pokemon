@@ -2,6 +2,7 @@ extends RefCounted
 class_name SampleBattleFactoryMatchupContracts
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 func validate_matchups_result(matchups, source_label: String) -> Dictionary:
 	if not (matchups is Dictionary):
@@ -54,17 +55,7 @@ func collect_unit_definition_ids(matchups: Dictionary) -> PackedStringArray:
 	return unit_definition_ids
 
 func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(data)
 
 func _error_result(error_message: String, error_code: String = ErrorCodesScript.INVALID_BATTLE_SETUP) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(error_code, error_message)

@@ -2,6 +2,7 @@ extends RefCounted
 class_name FormalCharacterManifestLoader
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 const DEFAULT_MANIFEST_PATH := "res://config/formal_character_manifest.json"
 const CHARACTERS_BUCKET := "characters"
@@ -66,17 +67,7 @@ static func normalize_resource_path(raw_path: String) -> String:
 	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
 
 func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(data)
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(error_code, error_message)

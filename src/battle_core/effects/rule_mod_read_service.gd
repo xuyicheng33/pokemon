@@ -4,6 +4,7 @@ class_name RuleModReadService
 const RuleModActiveInstanceCollectorScript := preload("res://src/battle_core/effects/rule_mod_active_instance_collector.gd")
 const RuleModLegalityQueryScript := preload("res://src/battle_core/effects/rule_mod_legality_query.gd")
 const RuleModNumericQueryScript := preload("res://src/battle_core/effects/rule_mod_numeric_query.gd")
+const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 var last_error_code: Variant = null
 var last_error_message: String = ""
@@ -13,10 +14,7 @@ var _legality_query = RuleModLegalityQueryScript.new()
 var _numeric_query = RuleModNumericQueryScript.new()
 
 func error_state() -> Dictionary:
-	return {
-		"code": last_error_code,
-		"message": last_error_message,
-	}
+	return ErrorStateHelperScript.error_state(self)
 
 func get_final_multiplier(battle_state, owner_id: String) -> float:
 	_reset_error_state()
@@ -74,9 +72,7 @@ func _ordered_instances_for_read(battle_state, owner_id: String) -> Array:
 	return _collector.sorted_active_instances_for_read(battle_state, owner_id)
 
 func _apply_query_error(result: Dictionary) -> void:
-	last_error_code = result.get("error_code", null)
-	last_error_message = String(result.get("error_message", ""))
+	ErrorStateHelperScript.capture_envelope(self, result)
 
 func _reset_error_state() -> void:
-	last_error_code = null
-	last_error_message = ""
+	ErrorStateHelperScript.clear(self)

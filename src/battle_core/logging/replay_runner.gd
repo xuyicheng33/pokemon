@@ -42,6 +42,7 @@ const COMPOSE_DEPS := [
 ]
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 const ReplayRunnerInputHelperScript := preload("res://src/battle_core/logging/replay_runner_input_helper.gd")
 const ReplayRunnerExecutionContextBuilderScript := preload("res://src/battle_core/logging/replay_runner_execution_context_builder.gd")
 const ReplayRunnerOutputHelperScript := preload("res://src/battle_core/logging/replay_runner_output_helper.gd")
@@ -64,17 +65,13 @@ func resolve_missing_dependency() -> String:
 
 
 func error_state() -> Dictionary:
-	return {
-		"code": last_error_code,
-		"message": last_error_message,
-	}
+	return ErrorStateHelperScript.error_state(self)
 
 func run_replay(replay_input) -> Variant:
 	return run_replay_with_context(replay_input).get("replay_output", null)
 
 func run_replay_with_context(replay_input) -> Dictionary:
-	last_error_code = null
-	last_error_message = ""
+	ErrorStateHelperScript.clear(self)
 	var missing_dependency := resolve_missing_dependency()
 	if not missing_dependency.is_empty():
 		return _fail("ReplayRunner missing dependency: %s" % missing_dependency, ErrorCodesScript.INVALID_COMPOSITION)
@@ -89,8 +86,12 @@ func run_replay_with_context(replay_input) -> Dictionary:
 		battle_initializer
 	)
 	if not bool(context_result.get("ok", false)):
-		last_error_code = context_result.get("error_code", ErrorCodesScript.INVALID_REPLAY_INPUT)
-		last_error_message = String(context_result.get("error_message", "ReplayRunner failed to build replay context"))
+		ErrorStateHelperScript.capture_envelope(
+			self,
+			context_result,
+			ErrorCodesScript.INVALID_REPLAY_INPUT,
+			"ReplayRunner failed to build replay context"
+		)
 		return {
 			"replay_output": null,
 			"content_index": context_result.get("content_index", null),
@@ -133,14 +134,17 @@ func run_replay_with_context(replay_input) -> Dictionary:
 	)
 	var replay_output = output_result.get("replay_output", null)
 	if not bool(output_result.get("ok", false)):
-		last_error_code = output_result.get("error_code", ErrorCodesScript.INVALID_STATE_CORRUPTION)
-		last_error_message = String(output_result.get("error_message", "ReplayRunner failed to build replay output"))
+		ErrorStateHelperScript.capture_envelope(
+			self,
+			output_result,
+			ErrorCodesScript.INVALID_STATE_CORRUPTION,
+			"ReplayRunner failed to build replay output"
+		)
 	return {
 		"replay_output": replay_output,
 		"content_index": content_index,
 	}
 
 func _fail(message: String, error_code: String = ErrorCodesScript.INVALID_REPLAY_INPUT) -> Dictionary:
-	last_error_code = error_code
-	last_error_message = message
+	ErrorStateHelperScript.fail(self, error_code, message)
 	return {"replay_output": null, "content_index": null}

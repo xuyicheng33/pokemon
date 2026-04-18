@@ -3,6 +3,7 @@ class_name FormalCharacterManifestPairCatalog
 
 const PairInteractionsScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_pair_interactions.gd")
 const PairMatchupsScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_pair_matchups.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 var _pair_interactions = PairInteractionsScript.new()
 var _pair_matchups = PairMatchupsScript.new()
@@ -37,9 +38,4 @@ func build_catalog_result(characters: Array, raw_matchups, manifest_path: String
 	})
 
 func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(data)

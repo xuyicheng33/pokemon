@@ -2,28 +2,24 @@ extends RefCounted
 class_name BattleLogger
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 var event_log: Array = []
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
 func error_state() -> Dictionary:
-    return {
-        "code": last_error_code,
-        "message": last_error_message,
-    }
+	return ErrorStateHelperScript.error_state(self)
 
 func reset() -> void:
-    event_log.clear()
-    last_error_code = null
-    last_error_message = ""
+	event_log.clear()
+	ErrorStateHelperScript.clear(self)
 
 func append_event(log_event) -> void:
-    if log_event == null:
-        last_error_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
-        last_error_message = "BattleLogger received null log_event"
-        return
-    event_log.append(log_event)
+	if log_event == null:
+		ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_STATE_CORRUPTION, "BattleLogger received null log_event")
+		return
+	event_log.append(log_event)
 
 func snapshot() -> Array:
-    return event_log.duplicate()
+	return event_log.duplicate()

@@ -2,6 +2,7 @@ extends RefCounted
 class_name BattleInitializer
 
 const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -59,26 +60,6 @@ const COMPOSE_DEPS := [
 		"source": "turn_field_lifecycle_service",
 		"nested": true,
 	},
-	{
-		"field": "public_id_allocator",
-		"source": "",
-		"nested": false,
-	},
-	{
-		"field": "_state_builder",
-		"source": "",
-		"nested": false,
-	},
-	{
-		"field": "_setup_validator",
-		"source": "",
-		"nested": false,
-	},
-	{
-		"field": "_phase_service",
-		"source": "",
-		"nested": false,
-	},
 ]
 
 const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
@@ -91,6 +72,12 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const INIT_PHASE_CONTINUE := 0
 const INIT_PHASE_STOP := 1
 const INIT_PHASE_FAIL := 2
+const LOCAL_HELPER_FIELDS := [
+	"public_id_allocator",
+	"_state_builder",
+	"_setup_validator",
+	"_phase_service",
+]
 
 var id_factory: RefCounted = null
 var rng_service: RefCounted = null
@@ -111,17 +98,16 @@ var last_error_code: Variant = null
 var last_error_message: String = ""
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self, LOCAL_HELPER_FIELDS)
 
 func error_state() -> Dictionary:
-	return {
-		"code": last_error_code,
-		"message": last_error_message,
-	}
+	return ErrorStateHelperScript.error_state(self)
 
 func initialize_battle(battle_state, content_index, battle_setup) -> bool:
-	last_error_code = null
-	last_error_message = ""
+	ErrorStateHelperScript.clear(self)
+	var missing_local_helper := _resolve_missing_local_helper()
+	if not missing_local_helper.is_empty():
+		return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer missing local helper: %s" % missing_local_helper)
 	var missing_dependency := resolve_missing_dependency()
 	if not missing_dependency.is_empty():
 		return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer missing dependency: %s" % missing_dependency)
@@ -200,6 +186,11 @@ func _build_ports() -> BattleInitializerPorts:
 	return ports
 
 func _fail(error_code: String, message: String) -> bool:
-	last_error_code = error_code
-	last_error_message = message
+	ErrorStateHelperScript.fail(self, error_code, message)
 	return false
+
+func _resolve_missing_local_helper() -> String:
+	for field_name in LOCAL_HELPER_FIELDS:
+		if get(String(field_name)) == null:
+			return String(field_name)
+	return ""

@@ -28,3 +28,6 @@ func read_property(value, property_name: String, default_value = null):
 
 func error_result(message: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.error(null, message)
+
+func ok_result(data = null) -> Dictionary:
+	return ResultEnvelopeHelperScript.ok(data)

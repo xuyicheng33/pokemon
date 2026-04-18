@@ -4,6 +4,7 @@ class_name FormalCharacterManifestRuntimeEntryNormalizer
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ManifestLoaderScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_loader.gd")
 const FormalRegistryContractsScript := preload("res://src/shared/formal_registry_contracts.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 const REQUIRED_BENCH_UNIT_COUNT := 2
 
@@ -114,17 +115,7 @@ func _normalize_script_path_result(raw_script_path: String, label: String, chara
 	return _ok_result(resolved_script_path)
 
 func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(data)
 
 func _error_result(error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": ErrorCodesScript.INVALID_BATTLE_SETUP,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_BATTLE_SETUP, error_message)

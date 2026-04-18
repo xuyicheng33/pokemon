@@ -6,6 +6,7 @@ const RuleModSchemaScript := preload("res://src/battle_core/content/rule_mod_sch
 const RuleModInstanceScript := preload("res://src/battle_core/runtime/rule_mod_instance.gd")
 const RuleModOwnerScopeServiceScript := preload("res://src/battle_core/effects/rule_mod_owner_scope_service.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 const FIELD_OWNER_ID := "field"
 const STACKING_KEY_SCHEMA_BY_KIND := RuleModSchemaScript.STACKING_KEY_SCHEMA_BY_KIND
@@ -18,21 +19,15 @@ var _rule_mod_schema = RuleModSchemaScript.new()
 var _owner_scope_service = RuleModOwnerScopeServiceScript.new()
 
 func error_state() -> Dictionary:
-	return {
-		"code": last_error_code,
-		"message": last_error_message,
-	}
+	return ErrorStateHelperScript.error_state(self)
 
 func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = "") -> Variant:
-	last_error_code = null
-	last_error_message = ""
+	ErrorStateHelperScript.clear(self)
 	last_apply_skipped = false
 	if not _validate_rule_mod_payload(rule_mod_payload):
 		return null
 	if not _owner_scope_service.validate_owner_ref(owner_ref, rule_mod_payload.scope, battle_state):
-		var owner_error_state: Dictionary = _owner_scope_service.error_state()
-		last_error_code = owner_error_state.get("code", null)
-		last_error_message = String(owner_error_state.get("message", ""))
+		ErrorStateHelperScript.capture_service_state(self, _owner_scope_service)
 		return null
 	var owner_instances: Array = _owner_scope_service.get_owner_instances(battle_state, owner_ref)
 	var resolved_source_stacking_key := _resolve_source_stacking_key(rule_mod_payload, source_stacking_token, source_instance_id)
@@ -111,15 +106,13 @@ func _find_existing(owner_instances: Array, stacking_key: String) -> Variant:
 func _validate_rule_mod_payload(rule_mod_payload) -> bool:
 	if _rule_mod_schema.validate_payload(rule_mod_payload).is_empty():
 		return true
-	last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-	last_error_message = "rule_mod payload failed schema validation"
+	ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "rule_mod payload failed schema validation")
 	return false
 
 func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary, source_stacking_key: String) -> String:
 	var schema: Array = _resolve_stacking_key_schema(String(rule_mod_payload.mod_kind))
 	if schema.is_empty():
-		last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-		last_error_message = "Missing stacking key schema for rule_mod kind: %s" % rule_mod_payload.mod_kind
+		ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "Missing stacking key schema for rule_mod kind: %s" % rule_mod_payload.mod_kind)
 		return ""
 	var key_parts: PackedStringArray = PackedStringArray()
 	for field_name in schema:
@@ -139,8 +132,7 @@ func _build_stacking_key(rule_mod_payload, owner_ref: Dictionary, source_stackin
 			"value":
 				key_parts.append(_resolve_stacking_value_token(rule_mod_payload))
 			_:
-				last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-				last_error_message = "Unknown stacking key field: %s" % str(field_name)
+				ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "Unknown stacking key field: %s" % str(field_name))
 				return ""
 	return "|".join(key_parts)
 
@@ -172,12 +164,10 @@ func _resolve_runtime_value(rule_mod_payload, resolved_value) -> Variant:
 	match String(rule_mod_payload.mod_kind):
 		ContentSchemaScript.RULE_MOD_MP_REGEN, ContentSchemaScript.RULE_MOD_INCOMING_ACCURACY:
 			if typeof(runtime_value) != TYPE_INT and typeof(runtime_value) != TYPE_FLOAT:
-				last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-				last_error_message = "%s runtime value must be int" % String(rule_mod_payload.mod_kind)
+				ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "%s runtime value must be int" % String(rule_mod_payload.mod_kind))
 				return null
 			if not is_equal_approx(float(runtime_value), float(int(runtime_value))):
-				last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
-				last_error_message = "%s runtime value must be int" % String(rule_mod_payload.mod_kind)
+				ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "%s runtime value must be int" % String(rule_mod_payload.mod_kind))
 				return null
 			return int(runtime_value)
 	return runtime_value

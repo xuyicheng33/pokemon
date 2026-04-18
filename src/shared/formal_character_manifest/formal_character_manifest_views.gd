@@ -5,6 +5,7 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const FormalCharacterCapabilityCatalogScript := preload("res://src/shared/formal_character_capability_catalog.gd")
 const FormalRegistryContractsScript := preload("res://src/shared/formal_registry_contracts.gd")
 const RuntimeEntryNormalizerScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_runtime_entry_normalizer.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 const CHARACTERS_BUCKET := "characters"
 const VALIDATOR_REQUIRED_SUITE_PATH := "test/suites/extension_validation_contract_suite.gd"
@@ -163,17 +164,7 @@ func _append_unique_suite_path(required_suite_paths: Array, seen_suite_paths: Di
 	required_suite_paths.append(suite_path)
 
 func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(data)
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(error_code, error_message)

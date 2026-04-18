@@ -24,6 +24,7 @@ const COMPOSE_DEPS := [
 const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const BattleResultScript := preload("res://src/battle_core/contracts/battle_result.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 var rng_service: RefCounted = null
 var battle_logger: RefCounted = null
@@ -32,10 +33,7 @@ var last_error_code: Variant = null
 var last_error_message: String = ""
 
 func error_state() -> Dictionary:
-	return {
-		"code": last_error_code,
-		"message": last_error_message,
-	}
+	return ErrorStateHelperScript.error_state(self)
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
@@ -51,8 +49,7 @@ func configure_ports(ports: BattleInitializerPorts) -> void:
 	combat_type_service = ports.combat_type_service
 
 func validate_and_prepare_battle_state(battle_state, content_index, battle_setup) -> Variant:
-	last_error_code = null
-	last_error_message = ""
+	ErrorStateHelperScript.clear(self)
 	if battle_setup == null:
 		return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup is required")
 	if content_index == null:
@@ -93,6 +90,5 @@ func validate_and_prepare_battle_state(battle_state, content_index, battle_setup
 	return format_config
 
 func _fail(error_code: String, message: String) -> Variant:
-	last_error_code = error_code
-	last_error_message = message
+	ErrorStateHelperScript.fail(self, error_code, message)
 	return null

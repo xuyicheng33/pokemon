@@ -2,6 +2,7 @@ extends RefCounted
 class_name FormalCharacterManifestPairInteractions
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const MATCHUP_INFIX := "_vs_"
 
 func derive_pair_interaction_cases_result(characters: Array, pair_maps: Dictionary, matchups: Dictionary, manifest_path: String) -> Dictionary:
@@ -140,17 +141,7 @@ func _unordered_pair_key(left_character_id: String, right_character_id: String) 
 	return "%s<->%s" % [ordered_pair[0], ordered_pair[1]]
 
 func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
+	return ResultEnvelopeHelperScript.ok(data)
 
 func _error_result(error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": ErrorCodesScript.INVALID_BATTLE_SETUP,
-		"error_message": error_message,
-	}
+	return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_BATTLE_SETUP, error_message)
