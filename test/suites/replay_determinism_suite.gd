@@ -20,6 +20,9 @@ func test_miss_path() -> void:
 func test_replay_turn_index_lookup_contract() -> void:
 	_assert_legacy_result(_test_replay_turn_index_lookup_contract(_harness))
 
+func test_replay_turn_timeline_contract() -> void:
+	_assert_legacy_result(_test_replay_turn_timeline_contract(_harness))
+
 func test_final_state_hash_tracks_once_per_battle_usage_contract() -> void:
 	_assert_legacy_result(_test_final_state_hash_tracks_once_per_battle_usage_contract(_harness))
 func _test_deterministic_replay(harness) -> Dictionary:
@@ -126,6 +129,40 @@ func _test_replay_turn_index_lookup_contract(harness) -> Dictionary:
 		return harness.fail_result("turn-index grouping must preserve the legacy replay final_state_hash")
 	if _stable_log_array(mixed_output.event_log) != _stable_log_array(normalized_output.event_log):
 		return harness.fail_result("turn-index grouping must preserve the legacy replay event log")
+	return harness.pass_result()
+
+func _test_replay_turn_timeline_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var replay_input = harness.build_demo_replay_input(sample_factory, core.service("command_builder"))
+	if replay_input == null:
+		return harness.fail_result("demo replay input build failed")
+	var replay_output = core.service("replay_runner").run_replay(replay_input)
+	if replay_output == null or not replay_output.succeeded:
+		return harness.fail_result("replay runner should return successful replay_output for timeline contract")
+	if not (replay_output.turn_timeline is Array) or replay_output.turn_timeline.size() < 2:
+		return harness.fail_result("turn_timeline should include initial frame and at least one completed turn frame")
+	var initial_frame: Dictionary = replay_output.turn_timeline[0]
+	if int(initial_frame.get("turn_index", -1)) != 0:
+		return harness.fail_result("initial frame turn_index should be 0")
+	if int(initial_frame.get("event_from", -1)) != 0 or int(initial_frame.get("event_to", -1)) != 0:
+		return harness.fail_result("initial frame event range should be 0..0")
+	if not (initial_frame.get("public_snapshot", null) is Dictionary):
+		return harness.fail_result("initial frame should expose public_snapshot")
+	var final_frame: Dictionary = replay_output.turn_timeline[replay_output.turn_timeline.size() - 1]
+	if int(final_frame.get("event_to", -1)) != replay_output.event_log.size():
+		return harness.fail_result("final frame should cover all replay events")
+	if not bool(final_frame.get("battle_finished", false)):
+		return harness.fail_result("final frame should mark battle_finished=true")
+	var final_snapshot: Dictionary = final_frame.get("public_snapshot", {})
+	var final_battle_result = final_snapshot.get("battle_result", {})
+	if not (final_battle_result is Dictionary) or not bool(final_battle_result.get("finished", false)):
+		return harness.fail_result("final frame public_snapshot should expose finished battle_result")
 	return harness.pass_result()
 
 func _test_final_state_hash_tracks_once_per_battle_usage_contract(harness) -> Dictionary:
