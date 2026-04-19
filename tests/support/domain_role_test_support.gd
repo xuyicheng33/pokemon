@@ -13,8 +13,7 @@ func build_battle_state(core, content_index, battle_setup, seed: int):
 	battle_state.battle_id = core.service("id_factory").next_id("battle")
 	battle_state.seed = seed
 	battle_state.rng_stream_index = core.service("rng_service").get_stream_index()
-	if core.service("battle_initializer").initialize_battle(battle_state, content_index, battle_setup):
-		battle_state.rebuild_indexes()
+	core.service("battle_initializer").initialize_battle(battle_state, content_index, battle_setup)
 	return battle_state
 
 func build_manual_skill_command(core, turn_index: int, side_id: String, actor_public_id: String, skill_id: String):

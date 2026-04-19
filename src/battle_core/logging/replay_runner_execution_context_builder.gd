@@ -32,7 +32,6 @@ func build_context(replay_input, content_snapshot_cache, id_factory, rng_service
 			"error_code": initializer_error_state.get("code", ErrorCodesScript.INVALID_BATTLE_SETUP),
 			"error_message": String(initializer_error_state.get("message", "ReplayRunner failed to initialize battle")),
 		}
-	battle_state.rebuild_indexes()
 	return {
 		"ok": true,
 		"content_index": content_index,

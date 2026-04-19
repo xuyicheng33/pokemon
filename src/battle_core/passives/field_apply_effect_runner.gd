@@ -5,10 +5,10 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var field_service
-var trigger_dispatcher
-var id_factory
-var context_resolver
+var field_service: FieldService
+var trigger_dispatcher: TriggerDispatcher
+var id_factory: IdFactory
+var context_resolver: FieldApplyContextResolver
 var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:

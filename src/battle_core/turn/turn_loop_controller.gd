@@ -63,17 +63,17 @@ const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const TurnLoopValidationHelperScript := preload("res://src/battle_core/turn/turn_loop_validation_helper.gd")
 
-var action_queue_builder
-var action_executor
-var faint_resolver
-var turn_selection_resolver
-var turn_start_phase_service
-var turn_end_phase_service
-var turn_field_lifecycle_service
-var battle_result_service
-var runtime_guard_service
-var battle_logger
-var log_event_builder
+var action_queue_builder: ActionQueueBuilder
+var action_executor: ActionExecutor
+var faint_resolver: FaintResolver
+var turn_selection_resolver: TurnSelectionResolver
+var turn_start_phase_service: TurnStartPhaseService
+var turn_end_phase_service: TurnEndPhaseService
+var turn_field_lifecycle_service: TurnFieldLifecycleService
+var battle_result_service: BattleResultService
+var runtime_guard_service: RuntimeGuardService
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
 var _validation_helper = TurnLoopValidationHelperScript.new()
 
 func run_turn(battle_state, content_index, commands: Array) -> void:

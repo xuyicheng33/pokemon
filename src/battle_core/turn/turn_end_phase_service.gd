@@ -48,14 +48,14 @@ const COMPOSE_DEPS := [
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
-var turn_field_lifecycle_service
-var trigger_batch_runner
-var effect_instance_dispatcher
-var rule_mod_service
-var faint_resolver
-var battle_logger
-var log_event_builder
-var battle_result_service
+var turn_field_lifecycle_service: TurnFieldLifecycleService
+var trigger_batch_runner: TriggerBatchRunner
+var effect_instance_dispatcher: EffectInstanceDispatcher
+var rule_mod_service: RuleModService
+var faint_resolver: FaintResolver
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var battle_result_service: BattleResultService
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

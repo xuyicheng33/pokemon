@@ -47,13 +47,13 @@ const ReplayRunnerInputHelperScript := preload("res://src/battle_core/logging/re
 const ReplayRunnerExecutionContextBuilderScript := preload("res://src/battle_core/logging/replay_runner_execution_context_builder.gd")
 const ReplayRunnerOutputHelperScript := preload("res://src/battle_core/logging/replay_runner_output_helper.gd")
 
-var battle_initializer
-var turn_loop_controller
-var battle_logger
-var id_factory
-var rng_service
-var content_snapshot_cache
-var public_snapshot_builder
+var battle_initializer: BattleInitializer
+var turn_loop_controller: TurnLoopController
+var battle_logger: BattleLogger
+var id_factory: IdFactory
+var rng_service: RngService
+var content_snapshot_cache: ContentSnapshotCache
+var public_snapshot_builder: BattleCorePublicSnapshotBuilder
 var last_error_code: Variant = null
 var last_error_message: String = ""
 var _input_helper = ReplayRunnerInputHelperScript.new()
@@ -125,7 +125,7 @@ func run_replay_with_context(replay_input) -> Dictionary:
 			)
 		)
 		event_from = event_to
-	var logger_error_state: Dictionary = battle_logger.error_state() if battle_logger != null and battle_logger.has_method("error_state") else {}
+	var logger_error_state: Dictionary = battle_logger.error_state()
 	var output_result := _output_helper.build_replay_output_result(
 		battle_logger.snapshot(),
 		battle_state,

@@ -36,11 +36,11 @@ const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_e
 const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/effect_source_meta_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var battle_logger
-var log_event_builder
-var effect_instance_service
-var target_helper
-var effect_event_helper
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var effect_instance_service: EffectInstanceService
+var target_helper: PayloadUnitTargetHelper
+var effect_event_helper: PayloadEffectEventHelper
 
 var last_invalid_battle_code: Variant = null
 

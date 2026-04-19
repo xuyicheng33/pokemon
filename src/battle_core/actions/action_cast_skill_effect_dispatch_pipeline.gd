@@ -1,11 +1,11 @@
 extends RefCounted
 class_name ActionCastSkillEffectDispatchPipeline
 
-var trigger_dispatcher
-var effect_queue_service
-var payload_executor
-var rng_service
-var trigger_batch_runner
+var trigger_dispatcher: TriggerDispatcher
+var effect_queue_service: EffectQueueService
+var payload_executor: PayloadExecutor
+var rng_service: RngService
+var trigger_batch_runner: TriggerBatchRunner
 
 
 func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String, queued_action, actor, battle_state, content_index, result, source_kind_order_active_skill: int) -> void:

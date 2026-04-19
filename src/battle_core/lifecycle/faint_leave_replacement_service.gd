@@ -3,8 +3,8 @@ class_name FaintLeaveReplacementService
 
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
-var leave_service
-var replacement_service
+var leave_service: LeaveService
+var replacement_service: ReplacementService
 
 
 func collect_pending_fainted_units(battle_state) -> Array:

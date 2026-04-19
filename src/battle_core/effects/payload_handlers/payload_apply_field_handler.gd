@@ -14,7 +14,7 @@ const COMPOSE_DEPS := [
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 
 var last_invalid_battle_code: Variant = null
-var field_apply_service
+var field_apply_service: FieldApplyService
 
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code

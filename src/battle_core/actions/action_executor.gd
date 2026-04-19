@@ -22,18 +22,18 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const ActionResultScript := preload("res://src/battle_core/contracts/action_result.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var action_log_service
-var action_cast_service
-var rule_mod_service
-var domain_legality_service
-var replacement_service
+var action_log_service: ActionLogService
+var action_cast_service: ActionCastService
+var rule_mod_service: RuleModService
+var domain_legality_service: DomainLegalityService
+var replacement_service: ReplacementService
 
-var action_chain_context_builder
-var action_start_phase_service
-var action_skill_effect_service
-var action_execution_resolution_service
-var switch_action_service
-var action_domain_guard
+var action_chain_context_builder: ActionChainContextBuilder
+var action_start_phase_service: ActionStartPhaseService
+var action_skill_effect_service: ActionSkillEffectService
+var action_execution_resolution_service: ActionExecutionResolutionService
+var switch_action_service: SwitchActionService
+var action_domain_guard: ActionDomainGuard
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

@@ -18,8 +18,8 @@ const COMPOSE_DEPS := [
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var effect_precondition_service
-var payload_handler_registry
+var effect_precondition_service: EffectPreconditionService
+var payload_handler_registry: PayloadHandlerRegistry
 
 var last_invalid_battle_code: Variant = null
 

@@ -15,10 +15,10 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ReplacementSelectionHelperScript := preload("res://src/battle_core/lifecycle/replacement_selection_helper.gd")
 const ReplacementEntryHelperScript := preload("res://src/battle_core/lifecycle/replacement_entry_helper.gd")
-var battle_logger
-var log_event_builder
-var leave_service
-var field_service
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var leave_service: LeaveService
+var field_service: FieldService
 var replacement_selector = DefaultReplacementSelectorScript.new()
 var _selection_helper = ReplacementSelectionHelperScript.new()
 var _entry_helper = ReplacementEntryHelperScript.new()

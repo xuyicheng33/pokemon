@@ -40,12 +40,12 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var battle_logger
-var log_event_builder
-var rule_mod_service
-var rule_mod_value_resolver
-var target_helper
-var effect_event_helper
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var rule_mod_service: RuleModService
+var rule_mod_value_resolver: RuleModValueResolver
+var target_helper: PayloadUnitTargetHelper
+var effect_event_helper: PayloadEffectEventHelper
 
 var last_invalid_battle_code: Variant = null
 

@@ -36,11 +36,11 @@ const FieldChangeScript := preload("res://src/battle_core/contracts/field_change
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
-var field_service
-var trigger_batch_runner
-var battle_logger
-var log_event_builder
-var battle_result_service
+var field_service: FieldService
+var trigger_batch_runner: TriggerBatchRunner
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var battle_result_service: BattleResultService
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

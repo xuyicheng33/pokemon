@@ -30,24 +30,24 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 
-var mp_service
-var target_resolver
-var trigger_batch_runner
-var action_log_service
-var damage_service
-var combat_type_service
-var stat_calculator
-var rule_mod_service
-var faint_killer_attribution_service
-var trigger_dispatcher
-var effect_queue_service
-var payload_executor
-var rng_service
-var hit_service
+var mp_service: MpService
+var target_resolver: TargetResolver
+var trigger_batch_runner: TriggerBatchRunner
+var action_log_service: ActionLogService
+var damage_service: DamageService
+var combat_type_service: CombatTypeService
+var stat_calculator: StatCalculator
+var rule_mod_service: RuleModService
+var faint_killer_attribution_service: FaintKillerAttributionService
+var trigger_dispatcher: TriggerDispatcher
+var effect_queue_service: EffectQueueService
+var payload_executor: PayloadExecutor
+var rng_service: RngService
+var hit_service: HitService
 
-var action_hit_resolution_service
-var action_cast_direct_damage_pipeline
-var action_cast_skill_effect_dispatch_pipeline
+var action_hit_resolution_service: ActionHitResolutionService
+var action_cast_direct_damage_pipeline: ActionCastDirectDamagePipeline
+var action_cast_skill_effect_dispatch_pipeline: ActionCastSkillEffectDispatchPipeline
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

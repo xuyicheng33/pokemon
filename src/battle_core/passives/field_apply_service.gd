@@ -18,15 +18,15 @@ const COMPOSE_DEPS := [
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var field_service
-var domain_clash_orchestrator
-var battle_logger
-var log_event_builder
-var field_apply_context_resolver
-var trigger_dispatcher
-var id_factory
-var field_apply_log_service
-var field_apply_effect_runner
+var field_service: FieldService
+var domain_clash_orchestrator: DomainClashOrchestrator
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var field_apply_context_resolver: FieldApplyContextResolver
+var trigger_dispatcher: TriggerDispatcher
+var id_factory: IdFactory
+var field_apply_log_service: FieldApplyLogService
+var field_apply_effect_runner: FieldApplyEffectRunner
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

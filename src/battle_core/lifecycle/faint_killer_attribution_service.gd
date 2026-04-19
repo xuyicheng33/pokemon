@@ -16,7 +16,7 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 
-var trigger_dispatcher
+var trigger_dispatcher: TriggerDispatcher
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

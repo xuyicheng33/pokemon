@@ -56,15 +56,15 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var battle_logger
-var log_event_builder
-var damage_service
-var combat_type_service
-var stat_calculator
-var rule_mod_service
-var faint_killer_attribution_service
-var target_helper
-var effect_event_helper
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var damage_service: DamageService
+var combat_type_service: CombatTypeService
+var stat_calculator: StatCalculator
+var rule_mod_service: RuleModService
+var faint_killer_attribution_service: FaintKillerAttributionService
+var target_helper: PayloadUnitTargetHelper
+var effect_event_helper: PayloadEffectEventHelper
 var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:

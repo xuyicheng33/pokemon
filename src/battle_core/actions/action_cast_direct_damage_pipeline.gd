@@ -6,14 +6,14 @@ const ActionDamageSegmentResolutionServiceScript := preload("res://src/battle_co
 const ActionDamageLogServiceScript := preload("res://src/battle_core/actions/action_damage_log_service.gd")
 const ActionDamageSegmentTriggerContextServiceScript := preload("res://src/battle_core/actions/action_damage_segment_trigger_context_service.gd")
 
-var damage_service
-var combat_type_service
-var stat_calculator
-var rule_mod_service
-var faint_killer_attribution_service
-var action_log_service
-var power_bonus_resolver
-var trigger_batch_runner
+var damage_service: DamageService
+var combat_type_service: CombatTypeService
+var stat_calculator: StatCalculator
+var rule_mod_service: RuleModService
+var faint_killer_attribution_service: FaintKillerAttributionService
+var action_log_service: ActionLogService
+var power_bonus_resolver: PowerBonusResolver
+var trigger_batch_runner: TriggerBatchRunner
 
 var _segment_resolution_service = ActionDamageSegmentResolutionServiceScript.new()
 var _damage_log_service = ActionDamageLogServiceScript.new()
