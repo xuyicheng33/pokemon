@@ -18,7 +18,18 @@
 - 总体目标：
   - 项目定位从"原型期"升级为长期工程，底层架构必须稳定规范；本波次把当前过度工程化的形式噪声清理掉，同时保留工程严谨性
 - 保留（不动）：
-  - 6 层架构与依赖方向、单一运行态真相、确定性回放、核心 facade 稳定合同、内容资源加载期 fail-fast、Composition Root 显式装配、对外公开 ID 边界、主测试闸门
+  - `BattleCoreManager` 外部 envelope 合同、deterministic replay、fail-fast、单一运行态真相、`tests/run_with_gate.sh` 主 gate 总入口
+- 分阶段计划：
+
+| Stage | 内容 | 对应问题 | 状态 |
+|---|---|---|---|
+| 0 | 统一定位与活跃规则基线 | #6, #10(部分) | 进行中 |
+| 1 | composition 盘点 + 目标图冻结 + 死元数据清理 + 错误体系目标设计 + payload dispatch 决策 | #1, #2, #3, #4(设计), #12(部分) | 待开始 |
+| 2 | composition 主链路收缩与装配方式改造 | #1, #2, #3, #12(部分) | 待开始 |
+| 3 | 错误体系统一 + 类型补强 + BattleState 语义修复 | #4, #5, #9, #12(部分) | 待开始 |
+| 4 | 测试 + formal 治理层精简 | #7, #8 | 待开始 |
+| 5 | SampleBattleFactory 专项收口 | #11 | 待开始 |
+| 6 | 文档、gate、records、残留死代码总收口 | #10, #12(剩余) | 待开始 |
 
 ### 阶段 2：放宽架构阈值（已完成）
 
@@ -56,7 +67,7 @@
 
 - 原计划：测试比例 1:0.96 → 1:0.5；test/ + tests/ → tests/gdunit/ 等；配合源码合并同步瘦身
 - 实际降级：考虑到 1:0.5 目标需要删除约 10k 行测试代码、损失覆盖面；test/ → tests/gdunit/ 重命名涉及 204+ suite 文件的 preload 路径 + manifest + gate 硬编码路径替换，回归风险高
-- 观察：当前 test 目录下有 ~15 个"纯 preload wrapper"（7-16 行，无 test_*）仅作为 manifest `suite_path` 入口；这些 wrapper 单独删除需要改 manifest 契约 + 对应 gate，ROI 低
+- 观察：当前 test 目录下有 37 个"纯 preload wrapper"（7-16 行，无 test_*）仅作为 manifest `suite_path` 入口；这些 wrapper 单独删除需要改 manifest 契约 + 对应 gate，ROI 低
 - 决议：保留当前测试结构，把测试优化留到未来按具体痛点（某个 suite 跑得慢 / 某个角色接入后有明显重复）时针对性做，而不是批量改
 - 验证：无改动，沿用已验证的 `bash tests/run_with_gate.sh`（418 tests、sandbox smoke）
 

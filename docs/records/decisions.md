@@ -25,6 +25,16 @@
   - 理由：原 `250` 行硬线适合原型期速写，长期工程需要主 owner 与 facade 容纳稳定合同与装配编排。
 - 分阶段推进：详见 `docs/records/tasks.md` 当前阶段。
 
+### 本轮长期不动边界（2026-04-19 冻结）
+
+以下 5 项在本轮工程化重构全程不动，任何阶段如需触碰必须先暂停说明：
+
+1. **`BattleCoreManager` 外部 envelope 合同**：`create_session / get_legal_actions / build_command / run_turn / get_public_snapshot / get_event_log_snapshot / close_session / run_replay` 的签名与返回 envelope `{ok, data, error_code, error_message}` 不变。
+2. **Deterministic replay**：同 `seed + content snapshot + command stream` 必须产出同一 `final_state_hash`。
+3. **Fail-fast**：非法输入直接报错，不做静默降级。
+4. **单一运行态真相**：`BattleState` 是唯一运行态对象，其他模块不得各自缓存状态副本。
+5. **`tests/run_with_gate.sh` 作为主 gate 总入口**：内部顺序 `gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → sandbox smoke matrix` 不变。
+
 ## 0. 正式角色整合修复波次的新固定决定
 
 - `docs/records/` 以后只承担活跃记录、决策入口与 archive 索引，不再继续充当现行规则的机器约束层。

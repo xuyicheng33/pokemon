@@ -1,6 +1,6 @@
 # 当前研发工作流
 
-本文件定义当前原型期的日常研发入口、允许改动边界，以及文档更新顺序。规则权威仍以 `docs/rules/` 为准；这里不重复写玩法规则，只收口“现在该怎么开发”。
+本文件定义当前的日常研发入口、允许改动边界，以及文档更新顺序。规则权威仍以 `docs/rules/` 为准；这里不重复写玩法规则，只收口“现在该怎么开发”。
 
 ## 1. 文档治理基线
 
@@ -46,7 +46,7 @@
 |外围适配|`src/adapters/`|BattleSandbox、UI、输入适配、sandbox-local policy|改试玩入口、重构 controller、view/policy/session 协作|修改 battle core contract 语义|
 |场景与测试|`scenes/`、`test/`、`tests/`|试玩场景、gdUnit suite、gate、helper|补 smoke、补 contract、拆 support|把历史 wrapper 再变成正式入口|
 
-当前这一轮默认只动外围层、测试治理层和文档治理层；`BattleCoreManager` 合同、replay 语义、formal manifest / capability catalog / content schema 都继续视为稳定边界。
+当前波次为长期工程化重构，允许动 composition 主链路、错误体系、类型标注和测试治理层；但 `BattleCoreManager` 外部 envelope 合同、replay 语义、formal manifest / capability catalog / content schema 继续视为稳定边界。详见 `docs/records/tasks.md` 阶段计划。
 
 ## 3. Sandbox 日常试玩路径
 

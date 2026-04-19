@@ -1,6 +1,6 @@
-# 战斗系统架构总览（骨架阶段）
+# 战斗系统架构总览
 
-本文件描述当前原型期战斗核心的工程总览。规则权威仍以 `docs/rules/` 为准；本文件只回答“按什么结构实现，才能不分叉”。
+本文件描述当前战斗核心的工程总览。规则权威仍以 `docs/rules/` 为准；本文件只回答“按什么结构实现，才能不分叉”。
 
 > 详细红线见：`docs/design/battle_core_architecture_constraints.md`。
 
@@ -54,8 +54,8 @@
 
 补充说明：
 
-- 为了把 owner 文件维持在可控体量内，同子域允许拆出只服务于该 owner 的内部 helper；当前例子包括 `BattleInitializerStateBuilder`、`BattleInitializerPhaseService`、`BattleCoreManagerContractHelper`、`BattleCoreManagerContainerService`、`BattleCoreManagerSessionService`、`ContentSnapshotFormalCharacterUnitSkillContractHelper`、`ContentSnapshotFormalCharacterEffectFieldContractHelper`、`SampleBattleFactorySetupAccess`、`SampleBattleFactoryOverrideRouter`、`BattleResultServiceChainBuilder`、`BattleResultServiceOutcomeResolver`，以及 `LegalActionServiceRuleGate / CastOptionCollector / SwitchOptionCollector`。
-- `BattleInitializerPhaseService` 负责初始化阶段的 `battle_header / on_enter / battle_init / 首回合预回蓝` 子流程；`BattleCoreManagerContainerService` 负责 session 建立与 replay 的容器级编排，`BattleCoreManagerSessionService` 负责 create/read/turn/close 这类 session 级 facade 调度；`ContentSnapshotFormalCharacterUnitSkillContractHelper / EffectFieldContractHelper` 负责把 formal shared contract 里的 `unit/skill/passive_skill` 与 `effect/field/payload shape` 断言按资源族拆开；`SampleBattleFactorySetupAccess / OverrideRouter` 负责把 baseline/formal setup 访问与 manifest/demo override 广播从 owner facade 里拆出去；`BattleResultServiceChainBuilder / OutcomeResolver` 负责把 system/battle_end chain 构建与 victory/surrender/turn limit 判定从终局 owner 里拆出去；`LegalActionServiceRuleGate / CastOptionCollector / SwitchOptionCollector` 负责把规则门、技能/奥义候选收集与换人候选收集从合法性 owner 里拆出去，目的是把 owner 本体留在稳定边界内，而不是继续长成混合型大文件。
+- 为了把 owner 文件维持在可控体量内，同子域允许拆出只服务于该 owner 的内部 helper；当前例子包括 `BattleInitializerStateBuilder`、`BattleInitializerPhaseService`、`BattleCoreManagerContractHelper`、`BattleCoreManagerContainerService`、`BattleCoreManagerSessionService`、`ContentSnapshotFormalCharacterUnitSkillContractHelper`、`ContentSnapshotFormalCharacterEffectFieldContractHelper`、`SampleBattleFactorySetupAccess`、`BattleResultServiceChainBuilder`、`BattleResultServiceOutcomeResolver`，以及 `LegalActionServiceRuleGate / CastOptionCollector / SwitchOptionCollector`。
+- `BattleInitializerPhaseService` 负责初始化阶段的 `battle_header / on_enter / battle_init / 首回合预回蓝` 子流程；`BattleCoreManagerContainerService` 负责 session 建立与 replay 的容器级编排，`BattleCoreManagerSessionService` 负责 create/read/turn/close 这类 session 级 facade 调度；`ContentSnapshotFormalCharacterUnitSkillContractHelper / EffectFieldContractHelper` 负责把 formal shared contract 里的 `unit/skill/passive_skill` 与 `effect/field/payload shape` 断言按资源族拆开；`SampleBattleFactorySetupAccess` 负责把 baseline/formal setup 访问从 owner facade 里拆出去；`BattleResultServiceChainBuilder / OutcomeResolver` 负责把 system/battle_end chain 构建与 victory/surrender/turn limit 判定从终局 owner 里拆出去；`LegalActionServiceRuleGate / CastOptionCollector / SwitchOptionCollector` 负责把规则门、技能/奥义候选收集与换人候选收集从合法性 owner 里拆出去，目的是把 owner 本体留在稳定边界内，而不是继续长成混合型大文件。
 - 这类 helper 只负责分担编排或 contract 拼装，不改变模块边界，也不自动升级成新的稳定入口。
 
 ## 4. 数据流
@@ -111,7 +111,7 @@
   - 不再暴露显式 slot 属性。
   - 统一通过 `set_service(...) / service(...) / has_service(...) / clear_service(...)` 管理内部服务引用。
 
-当前不采用 autoload 主导架构，避免原型期过早引入全局状态污染。
+当前不采用 autoload 主导架构，避免过早引入全局状态污染。
 
 ## 7. 扩展纪律
 

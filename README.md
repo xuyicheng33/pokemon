@@ -1,12 +1,12 @@
-# Pokemon Battle Core Prototype
+# Pokemon Battle Core
 
-概念期 Godot 回合制战斗原型项目（类宝可梦）。
+Godot 回合制战斗引擎项目（类宝可梦）。
 
 当前目标是先稳定 1v1 战斗核心闭环（可回放、可测试、可扩展），再进入角色与内容扩展阶段。
 
 ## 1. 项目定位
 
-- 阶段：概念/原型期（非发布版）
+- 阶段：长期工程（非发布版）
 - 核心能力：
   - 1v1、每队 3 单位、固定 Lv50
   - 指令选择、`wait / resource_forced_default` 分流、行动排序、命中/伤害、换人、击倒补位
