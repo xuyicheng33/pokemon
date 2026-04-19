@@ -11,7 +11,6 @@ var _public_snapshot_builder: RefCounted = null
 var _container_factory_owner: RefCounted = null
 var _sessions: Dictionary = {}
 var _session_seq: int = 0
-var _event_log_public_snapshot_builder: RefCounted = null
 var _container_service: RefCounted = null
 var _session_service: BattleCoreManagerSessionService = BattleCoreManagerSessionServiceScript.new()
 var _disposed: bool = false
@@ -103,9 +102,8 @@ func dispose() -> void:
 	_command_builder = null
 	_command_id_factory = null
 	_public_snapshot_builder = null
-	_event_log_public_snapshot_builder = null
 	_container_service = null
-	_session_service.configure_session_ports(_sessions, null, null)
+	_session_service.configure_session_ports(_sessions, null)
 
 func resolve_missing_dependency() -> String:
 	if not _container_factory.is_valid():
@@ -116,24 +114,20 @@ func resolve_missing_dependency() -> String:
 		return "command_id_factory"
 	if _public_snapshot_builder == null:
 		return "public_snapshot_builder"
-	if _event_log_public_snapshot_builder == null:
-		return "event_log_public_snapshot_builder"
 	if _container_service == null:
 		return "container_service"
 	return ""
 
-func _configure_core_ports(container_factory: Callable, command_builder, command_id_factory, public_snapshot_builder, event_log_public_snapshot_builder, container_service, container_factory_owner = null) -> void:
+func _configure_core_ports(container_factory: Callable, command_builder, command_id_factory, public_snapshot_builder, container_service, container_factory_owner = null) -> void:
 	_container_factory = container_factory
 	_command_builder = command_builder
 	_command_id_factory = command_id_factory
 	_public_snapshot_builder = public_snapshot_builder
-	_event_log_public_snapshot_builder = event_log_public_snapshot_builder
 	_container_service = container_service
 	_container_factory_owner = container_factory_owner
 	_session_service.configure_session_ports(
 		_sessions,
-		_public_snapshot_builder,
-		_event_log_public_snapshot_builder
+		_public_snapshot_builder
 	)
 	if _command_builder != null:
 		_command_builder.id_factory = _command_id_factory

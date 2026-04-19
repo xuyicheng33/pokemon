@@ -2,11 +2,11 @@ extends "res://test/support/gdunit_suite_bridge.gd"
 
 const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input.gd")
 const CommandScript := preload("res://src/battle_core/contracts/command.gd")
-const EventLogPublicSnapshotBuilderScript := preload("res://src/battle_core/facades/event_log_public_snapshot_builder.gd")
+const PublicSnapshotBuilderScript := preload("res://src/battle_core/facades/public_snapshot_builder.gd")
 const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
 
 var _helper = ManagerContractTestHelperScript.new()
-var _event_log_public_snapshot_builder = EventLogPublicSnapshotBuilderScript.new()
+var _public_snapshot_builder = PublicSnapshotBuilderScript.new()
 
 
 
@@ -126,7 +126,7 @@ func _normalize_battle_id(public_snapshot: Dictionary) -> Dictionary:
 func _build_public_event_snapshots(event_log: Array, battle_state) -> Array:
 	var public_events: Array = []
 	for log_event in event_log:
-		public_events.append(_event_log_public_snapshot_builder.build_public_snapshot(log_event, battle_state))
+		public_events.append(_public_snapshot_builder.build_event_public_snapshot(log_event, battle_state))
 	return public_events
 
 func _normalize_public_event_snapshots(event_snapshots: Array) -> Array:

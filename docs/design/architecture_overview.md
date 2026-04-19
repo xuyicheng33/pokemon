@@ -128,8 +128,7 @@
 `battle_core/facades/` 当前包含：
 
 - `battle_core_manager.gd`
-- `public_snapshot_builder.gd`
-- `event_log_public_snapshot_builder.gd`
+- `public_snapshot_builder.gd`（同时承担战斗公开快照与事件日志公开快照构建）
 - `battle_core_manager_contract_helper.gd`（manager 内部 helper）
 - `battle_core_manager_container_service.gd`（manager 内部 helper）
 - `battle_core_manager_session_service.gd`（manager 内部 helper）

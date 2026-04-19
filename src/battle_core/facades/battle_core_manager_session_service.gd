@@ -7,16 +7,13 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var sessions: Dictionary = {}
 var public_snapshot_builder: RefCounted = null
-var event_log_public_snapshot_builder: RefCounted = null
 
 func configure_session_ports(
 	next_sessions: Dictionary,
-	next_public_snapshot_builder,
-	next_event_log_public_snapshot_builder
+	next_public_snapshot_builder
 ) -> void:
 	sessions = next_sessions
 	public_snapshot_builder = next_public_snapshot_builder
-	event_log_public_snapshot_builder = next_event_log_public_snapshot_builder
 
 func create_session_result(container_service, session_id: String, init_payload: Dictionary) -> Dictionary:
 	var create_result = container_service.create_session_result(session_id, init_payload)
@@ -123,7 +120,7 @@ func get_event_log_snapshot_result(session_id: String, from_index: int = 0) -> D
 	var event_snapshots: Array = []
 	for event_index in range(start_index, event_log.size()):
 		event_snapshots.append(
-			event_log_public_snapshot_builder.build_public_snapshot(
+			public_snapshot_builder.build_event_public_snapshot(
 				event_log[event_index],
 				session.current_battle_state()
 			)

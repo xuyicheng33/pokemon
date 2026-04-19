@@ -4,7 +4,6 @@ class_name BattleCoreComposer
 const BattleCoreContainerScript := preload("res://src/composition/battle_core_container.gd")
 const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_core_manager.gd")
 const BattleCoreManagerContainerServiceScript := preload("res://src/battle_core/facades/battle_core_manager_container_service.gd")
-const EventLogPublicSnapshotBuilderScript := preload("res://src/battle_core/facades/event_log_public_snapshot_builder.gd")
 const ServiceSpecsScript := preload("res://src/composition/battle_core_service_specs.gd")
 const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -77,10 +76,6 @@ func compose_manager_with_factory(container_factory: Callable, container_factory
 	var public_snapshot_builder = _new_service_instance("public_snapshot_builder")
 	if public_snapshot_builder == null:
 		return null
-	var event_log_public_snapshot_builder = EventLogPublicSnapshotBuilderScript.new()
-	if event_log_public_snapshot_builder == null:
-		_fail("compose_manager requires event_log_public_snapshot_builder")
-		return null
 	var container_service = BattleCoreManagerContainerServiceScript.new()
 	if container_service == null:
 		_fail("compose_manager requires container_service")
@@ -90,7 +85,6 @@ func compose_manager_with_factory(container_factory: Callable, container_factory
 		command_builder,
 		command_id_factory,
 		public_snapshot_builder,
-		event_log_public_snapshot_builder,
 		container_service,
 		container_factory_owner
 	)
