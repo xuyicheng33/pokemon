@@ -1,6 +1,7 @@
 extends "res://test/support/gdunit_suite_bridge.gd"
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const TriggerDispatcherScript := preload("res://src/battle_core/effects/trigger_dispatcher.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const FieldDefinitionScript := preload("res://src/battle_core/content/field_definition.gd")
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
@@ -9,10 +10,9 @@ const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd"
 const UltimateFieldTestHelperScript := preload("res://tests/support/ultimate_field_test_helper.gd")
 
 class CaptureFieldTriggerDispatcher:
-	extends RefCounted
+	extends TriggerDispatcherScript
 
 	var captured_chain_context = null
-	var last_invalid_battle_code: Variant = null
 
 	func invalid_battle_code() -> Variant:
 		return last_invalid_battle_code

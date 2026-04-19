@@ -1,13 +1,14 @@
 extends "res://test/support/gdunit_suite_bridge.gd"
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+const PowerBonusResolverScript := preload("res://src/battle_core/actions/power_bonus_resolver.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const SukunaSetupRegenTestSupportScript := preload("res://tests/support/sukuna_setup_regen_test_support.gd")
 
 var _support = SukunaSetupRegenTestSupportScript.new()
 
 class FlatBonusPowerBonusResolver:
-	extends RefCounted
+	extends PowerBonusResolverScript
 
 	func resolve_power_bonus(skill_definition, _actor, _target, _actor_mp_after_cost: int, _target_mp_before_cast: int) -> int:
 		if skill_definition == null:
@@ -154,7 +155,8 @@ func _test_power_bonus_resolver_delegation_contract(harness) -> Dictionary:
 		target_unit,
 		skill_definition,
 		sukuna_unit.current_mp - skill_definition.mp_cost,
-		target_unit.current_mp
+		target_unit.current_mp,
+		fake_resolver
 	)
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_skill_command(core, 1, "P1", "P1-A", "sukuna_hatsu"),

@@ -6,6 +6,10 @@ const BattleResultScript := preload("res://src/battle_core/contracts/battle_resu
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const LegalActionServiceScript := preload("res://src/battle_core/commands/legal_action_service.gd")
+const CommandBuilderScript := preload("res://src/battle_core/commands/command_builder.gd")
+const RuleModServiceScript := preload("res://src/battle_core/effects/rule_mod_service.gd")
+const DomainLegalityServiceScript := preload("res://src/battle_core/commands/domain_legality_service.gd")
 const LegalActionSetScript := preload("res://src/battle_core/contracts/legal_action_set.gd")
 const LogEventBuilderScript := preload("res://src/battle_core/logging/log_event_builder.gd")
 const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input.gd")
@@ -50,6 +54,8 @@ class PublicSnapshotBuilderStub:
 		return {"public_snapshot": true}
 
 class NullLegalActionService:
+	extends LegalActionServiceScript
+
 	func get_legal_actions(_battle_state, _side_id: String, _content_index):
 		return null
 
@@ -60,6 +66,8 @@ class NullLegalActionService:
 		}
 
 class OneSideLegalActionFailureStub:
+	extends LegalActionServiceScript
+
 	var _failed_side_id: String = ""
 
 	func _init(failed_side_id: String) -> void:
@@ -77,6 +85,8 @@ class OneSideLegalActionFailureStub:
 		}
 
 class NullCommandBuilder:
+	extends CommandBuilderScript
+
 	func build_command(_input_payload: Dictionary):
 		return null
 
@@ -87,6 +97,8 @@ class NullCommandBuilder:
 		}
 
 class RuleModServiceFailureStub:
+	extends RuleModServiceScript
+
 	func is_action_allowed(_battle_state, _owner_id: String, _action_type: String, _skill_id: String = "") -> bool:
 		return false
 
@@ -97,6 +109,8 @@ class RuleModServiceFailureStub:
 		}
 
 class DomainLegalityServiceClearStub:
+	extends DomainLegalityServiceScript
+
 	func is_side_domain_recast_blocked(_battle_state, _side_id: String, _content_index) -> bool:
 		return false
 
