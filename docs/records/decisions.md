@@ -104,11 +104,18 @@
 6. 共享结果式 helper 的适用边界当前扩大到 policy / adapters / facade helper；外层成功/失败结果统一只认 `ok / data / error_code / error_message`。
 7. 本地报告目录当前固定只认 `reports/gdunit`；其余历史 `reports/gdunit_*` 目录与 `tmp / .tmp` 都视为可清理噪声。
 
-### 核心类型标注边界（2026-04-19）
+### 核心类型标注边界（2026-04-19，更新）
 
 - `BattleCoreManager` / `BattleCoreManagerContainerService` 这类 facade 公开入口，继续允许非法输入走运行时 envelope 校验并返回正式错误，不把 contract 失败提前变成 GDScript 解析错误。
 - `session state / facade service / initializer ports` 这类核心运行态依赖字段，继续优先补成显式具体类型，不回退成大面积 `RefCounted`。
 - 测试替身如果要写进这些强类型字段，固定通过继承真实类或 typed stub 适配；`shared_contract_suite` 这类 wiring 契约测试不再用裸 `RefCounted` 穿过类型边界。
+- `battle_core` 核心函数参数中的高频运行态类型（`BattleState`、`BattleContentIndex`、`ChainContext`、`QueuedAction`、`EffectEvent`、`Command`）已补齐显式类型标注。GDScript 4 class-type 参数允许 null，不影响现有防御性 null 检查。
+
+### `battle_core → composition` 受控例外（2026-04-19）
+
+- `battle_core` 各 service 允许 preload `src/composition/service_dependency_contract_helper.gd` 用于 `resolve_missing_dependency` 自检。
+- 此依赖方向是架构层面唯一的逆向白名单，由 `tests/check_architecture_constraints.sh` 显式管控。
+- 除 `service_dependency_contract_helper.gd` 外，`battle_core` 不得 import `composition` 的任何其他文件。
 
 ## 2. 组合依赖与编排冻结（2026-04-18）
 

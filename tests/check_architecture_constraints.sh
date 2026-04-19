@@ -72,6 +72,16 @@ if rg -n "res://src/battle_core/commands/" src/adapters scenes >/tmp/outer_comma
 fi
 rm -f /tmp/outer_command_imports.out /tmp/outer_command_imports_filtered.out
 
+if rg -n "res://src/composition/" src/battle_core >/tmp/core_to_composition.out 2>/dev/null; then
+  if rg -v "res://src/composition/service_dependency_contract_helper.gd" /tmp/core_to_composition.out >/tmp/core_to_composition_filtered.out 2>/dev/null; then
+    echo "ARCH_GATE_FAILED: battle_core must not import composition except service_dependency_contract_helper.gd" >&2
+    cat /tmp/core_to_composition_filtered.out
+    rm -f /tmp/core_to_composition.out /tmp/core_to_composition_filtered.out
+    exit 1
+  fi
+fi
+rm -f /tmp/core_to_composition.out /tmp/core_to_composition_filtered.out
+
 python3 - <<'PY'
 from pathlib import Path
 import sys

@@ -46,6 +46,7 @@ Composition 补充约束：
   - `const COMPOSE_DEPS := [{ "field": "...", "source": "...", "nested": true|false }]`
   - `const COMPOSE_RESET_FIELDS := [{ "field": "...", "value": ... }]`
 - `BattleCoreComposer`、runtime 缺依赖检查与两条 architecture gate 统一通过 `src/composition/service_dependency_contract_helper.gd` 读取这份声明；不再维护 split wiring spec 目录或聚合入口。
+- **受控例外**：`battle_core` 各 service 允许 preload `src/composition/service_dependency_contract_helper.gd` 用于 `resolve_missing_dependency` 自检。此依赖方向（`battle_core → composition`）是架构层面唯一的逆向白名单，由 architecture gate 显式管控；除此之外 `battle_core` 不得 import `composition` 的任何其他文件。
 - `BattleCoreContainer` 只允许暴露：
   - `set_service`
   - `service`

@@ -79,7 +79,7 @@
 
 ## 5. 依赖纪律
 
-- `battle_core` 不依赖 `adapters`、`composition`、`scenes`。
+- `battle_core` 不依赖 `adapters`、`composition`、`scenes`。受控例外：`battle_core` 各 service 允许 preload `src/composition/service_dependency_contract_helper.gd` 用于 `resolve_missing_dependency` 自检；此路径由 architecture gate 白名单管控。
 - `shared` 不依赖 `battle_core`。
 - `math` 不写 `BattleState`。
 - `logging` 不改写运行态，只观察并记录。
