@@ -58,6 +58,12 @@
 - 共享结果式 helper 的适用边界当前扩大到 policy / adapters / facade helper；外层成功/失败结果统一只认 `ok / data / error_code / error_message`。
 - 本地报告目录当前固定只认 `reports/gdunit`；其余历史 `reports/gdunit_*` 目录与 `tmp / .tmp` 都视为可清理噪声。
 
+## 0W. 核心类型标注边界固定为“内部强类型，对外合同仍走运行时校验”（2026-04-19）
+
+- `BattleCoreManager` / `BattleCoreManagerContainerService` 这类 facade 公开入口，继续允许非法输入走运行时 envelope 校验并返回正式错误，不把 contract 失败提前变成 GDScript 解析错误。
+- `session state / facade service / initializer ports` 这类核心运行态依赖字段，继续优先补成显式具体类型，不回退成大面积 `RefCounted`。
+- 测试替身如果要写进这些强类型字段，固定通过继承真实类或 typed stub 适配；`shared_contract_suite` 这类 wiring 契约测试不再用裸 `RefCounted` 穿过类型边界。
+
 ## 0R. README surface 合同与 demo replay smoke 固定补回主线（2026-04-18）
 
 - README / `tests/README.md` 当前只继续承担入口与操作说明，不再镜像 formal 字段清单或长段 contract 正文。

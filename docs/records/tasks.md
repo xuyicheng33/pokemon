@@ -72,9 +72,15 @@
   - README/decisions 激进瘦身：当前长度（README 320 行、decisions 179 行）是长期工程正常量，强行压到 3KB 会损失重要入口与决策溯源
 - 验证：`bash tests/run_with_gate.sh` 全通过
 
-### 阶段 7：核心类型标注
+### 阶段 7：核心类型标注（已完成）
 
 - runtime/contracts 全字段、facade 参数/返回值、主 orchestrator/service 依赖字段加类型
+- 实际产出：
+  - `SandboxSessionState`、`BattleCoreSession`、`BattleCoreManager*`、`BattleInitializer*` 等核心运行态对象已补齐显式类型，减少 facade / orchestrator / ports 之间的弱引用漂移
+  - `BattleCorePublicSnapshotBuilder` 继续统一承担公开快照与事件日志快照投影，并把相关调用点切到一致的类型边界
+  - `run_replay` 公开合同保留运行时 envelope 校验，不把非法输入提前升级成 GDScript 解析期错误；对应契约测试与 ports 契约测试已同步改成 typed stub
+- 验证：
+  - `bash tests/run_with_gate.sh` 通过
 
 ## 当前阶段：BattleSandbox 边界收口与 SampleBattleFactory 减负（2026-04-18）
 
