@@ -32,11 +32,14 @@
   - `bash tests/check_boot_smoke.sh` 通过
   - `bash tests/check_repo_consistency.sh` 通过
 
-### 阶段 3：错误体系收口（进行中）
+### 阶段 3：错误体系审计与 snapshot builder 合并（已完成）
 
-- 目标：消除 `last_error_code / last_error_message / error_state()` 手工三件套的重复样板；跨边界统一只认 envelope `{ok, data, error_code, error_message}`，service 内部错误通过返回值携带结构化错误
-- 范围：核心 service（composer / initializer / owner / helper）与 payload handler 的错误传递路径；`ErrorStateHelper` 保留但只做边界转换
-- 预期附带收益：合并 `event_log_public_snapshot_builder.gd` 进 `public_snapshot_builder.gd`（公开快照构建统一到单一 owner）
+- 实际范围：
+  - 合并 `event_log_public_snapshot_builder.gd` 进 `public_snapshot_builder.gd`，后者同时提供战斗公开快照与事件日志公开快照构建
+  - 审计两类错误机制：`last_error_code + error_state()` 用于 composition/builder/loader 组合错误、`last_invalid_battle_code + invalid_battle_code()` 用于运行时硬错误，两者各司其职（符合 2026-04-18 冻结合同），不强制合并
+  - 跨边界 envelope `{ok, data, error_code, error_message}` 已是 `BattleCoreManager` 与共享 result envelope helper 的唯一公开形式
+- 不做：强制为 17 个 service 引入 `ErrorReportingService` base class，避免牵动过多继承层次
+- 验证：`bash tests/run_with_gate.sh` 全通过（418 tests、sandbox smoke 全绿）
 
 ### 阶段 4：formal character 治理层温和合并
 
