@@ -28,7 +28,9 @@ func passes_effect_preconditions(effect_definition, effect_event: EffectEvent, b
 	if not _is_required_target_valid(target_unit):
 		return false
 	var require_same_owner: bool = bool(effect_definition.required_target_same_owner)
-	var required_owner_id := _optional_string(effect_event.owner_id if effect_event != null else null)
+	var required_owner_id := ""
+	if effect_event != null:
+		required_owner_id = _optional_string(effect_event.owner_id)
 	for required_effect_id in effect_definition.required_target_effects:
 		if not _target_has_required_effect(target_unit, _optional_string(required_effect_id), require_same_owner, required_owner_id):
 			return false

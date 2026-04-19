@@ -43,6 +43,22 @@
   3. 冗余 `.gitkeep` 清理：移除 `content/` 下 7 个已有实际内容的目录中的 `.gitkeep`
 - 验证：全部 gate 通过
 
+## 最近完成：gate 修复收口（2026-04-19）
+
+- 状态：已完成
+- 目标：修复本轮类型标注后遗留的 gate 失败，恢复主线验证基线
+- 修复内容：
+  1. 强类型测试替身补齐：`sukuna_setup_skill_runtime_suite`、`field_lifecycle_contract_suite`、`manager_log_and_runtime_contract/replay_guard_failure_suite` 改为继承真实 service / resolver / dispatcher 类型，不再向强类型字段写入裸 `RefCounted`
+  2. 期望伤害辅助同步 fake resolver：`tests/support/sukuna_setup_regen_test_support.gd` 新增可注入 `PowerBonusResolver`，保证 delegation contract 测试和运行时走同一套口径
+  3. gdUnit warning 清零：`effect_precondition_service`、`payload_executor`、`action_chain_context_builder` 的 ternary 类型不兼容改成显式分支
+  4. README 代码规模统计回写到当前真值，修复 repo consistency surface gate
+- 验证：
+  - `TEST_PATH=res://test/suites/sukuna_setup_skill_runtime_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/field_lifecycle_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/replay_guard_failure_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_gdunit_gate.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前验证基线
 
 - 最小可玩性检查：

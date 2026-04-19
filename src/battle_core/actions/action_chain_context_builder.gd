@@ -13,7 +13,10 @@ func build_chain_context(queued_action: QueuedAction, battle_state: BattleState,
 	chain_context.actor_id = queued_action.command.actor_id
 	chain_context.command_type = queued_action.command.command_type
 	chain_context.command_source = queued_action.command.command_source
-	chain_context.skill_id = queued_action.command.skill_id if _uses_skill_definition(queued_action.command.command_type) else null
+	if _uses_skill_definition(queued_action.command.command_type):
+		chain_context.skill_id = queued_action.command.skill_id
+	else:
+		chain_context.skill_id = null
 	chain_context.select_timeout = queued_action.command.command_source == "timeout_auto"
 	chain_context.select_deadline_ms = battle_state.selection_deadline_ms
 	chain_context.target_unit_id = queued_action.target_snapshot.target_unit_id

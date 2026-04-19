@@ -128,18 +128,31 @@ func _leave_effect_guard(battle_state: BattleState) -> void:
 		battle_state.chain_context.chain_depth -= 1
 
 func _build_dedupe_key(effect_event: EffectEvent) -> String:
+	var source_instance_id := ""
+	var effect_instance_id := ""
+	var trigger_name := ""
+	var effect_definition_id := ""
+	var owner_id := ""
+	var dedupe_discriminator := ""
 	var target_unit_id := ""
 	var action_segment_index := 0
-	if effect_event != null and effect_event.chain_context != null:
-		target_unit_id = _string_or_empty(effect_event.chain_context.target_unit_id)
-		action_segment_index = int(effect_event.chain_context.action_segment_index)
+	if effect_event != null:
+		source_instance_id = _string_or_empty(effect_event.source_instance_id)
+		effect_instance_id = _string_or_empty(effect_event.effect_instance_id)
+		trigger_name = _string_or_empty(effect_event.trigger_name)
+		effect_definition_id = _string_or_empty(effect_event.effect_definition_id)
+		owner_id = _string_or_empty(effect_event.owner_id)
+		dedupe_discriminator = _string_or_empty(effect_event.dedupe_discriminator)
+		if effect_event.chain_context != null:
+			target_unit_id = _string_or_empty(effect_event.chain_context.target_unit_id)
+			action_segment_index = int(effect_event.chain_context.action_segment_index)
 	return "%s|%s|%s|%s|%s|%s|%s|%d" % [
-		_string_or_empty(effect_event.source_instance_id if effect_event != null else null),
-		_string_or_empty(effect_event.effect_instance_id if effect_event != null else null),
-		_string_or_empty(effect_event.trigger_name if effect_event != null else null),
-		_string_or_empty(effect_event.effect_definition_id if effect_event != null else null),
-		_string_or_empty(effect_event.owner_id if effect_event != null else null),
-		_string_or_empty(effect_event.dedupe_discriminator if effect_event != null else null),
+		source_instance_id,
+		effect_instance_id,
+		trigger_name,
+		effect_definition_id,
+		owner_id,
+		dedupe_discriminator,
 		target_unit_id,
 		action_segment_index,
 	]
