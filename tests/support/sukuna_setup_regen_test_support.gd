@@ -35,7 +35,7 @@ func run_sukuna_hatsu_damage_case(harness, seed: int, actor_mp_before_cast: int,
 	}
 
 func calc_expected_damage(core, battle_state, actor, target, skill_definition, actor_mp_after_cost: int, target_mp_before_cast: int) -> int:
-	var resolver = core.service("power_bonus_resolver") if core != null and core.service("power_bonus_resolver") != null else PowerBonusResolverScript.new()
+	var resolver = PowerBonusResolverScript.new()
 	var power_bonus := int(resolver.resolve_power_bonus(
 		skill_definition,
 		actor,

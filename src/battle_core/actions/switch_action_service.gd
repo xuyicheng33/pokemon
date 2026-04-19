@@ -1,35 +1,12 @@
 extends RefCounted
 class_name SwitchActionService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
-
-const COMPOSE_DEPS := [
-	{
-		"field": "action_cast_service",
-		"source": "action_cast_service",
-		"nested": true,
-	},
-	{
-		"field": "action_log_service",
-		"source": "action_log_service",
-		"nested": true,
-	},
-	{
-		"field": "replacement_service",
-		"source": "replacement_service",
-		"nested": true,
-	},
-]
-
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ActionResultScript := preload("res://src/battle_core/contracts/action_result.gd")
 
 var action_cast_service
 var action_log_service
 var replacement_service
-
-func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func execute_switch_action(queued_action, battle_state, content_index) -> Variant:

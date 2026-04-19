@@ -1,26 +1,6 @@
 extends RefCounted
 class_name ActionHitResolutionService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
-
-const COMPOSE_DEPS := [
-	{
-		"field": "hit_service",
-		"source": "hit_service",
-		"nested": true,
-	},
-	{
-		"field": "rule_mod_service",
-		"source": "rule_mod_service",
-		"nested": true,
-	},
-	{
-		"field": "rng_service",
-		"source": "rng_service",
-		"nested": true,
-	},
-]
-
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
@@ -28,9 +8,6 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 var hit_service
 var rule_mod_service
 var rng_service
-
-func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func resolve_hit(command, skill_definition, resolved_target, battle_state, content_index) -> Dictionary:

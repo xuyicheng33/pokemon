@@ -2,43 +2,26 @@ extends RefCounted
 class_name ActionCastService
 
 const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const ActionCastDirectDamagePipelineScript := preload("res://src/battle_core/actions/action_cast_direct_damage_pipeline.gd")
+const ActionCastSkillEffectDispatchPipelineScript := preload("res://src/battle_core/actions/action_cast_skill_effect_dispatch_pipeline.gd")
+const ActionHitResolutionServiceScript := preload("res://src/battle_core/actions/action_hit_resolution_service.gd")
+const PowerBonusResolverScript := preload("res://src/battle_core/actions/power_bonus_resolver.gd")
 
 const COMPOSE_DEPS := [
-	{
-		"field": "mp_service",
-		"source": "mp_service",
-		"nested": true,
-	},
-	{
-		"field": "action_hit_resolution_service",
-		"source": "action_hit_resolution_service",
-		"nested": true,
-	},
-	{
-		"field": "target_resolver",
-		"source": "target_resolver",
-		"nested": true,
-	},
-	{
-		"field": "trigger_batch_runner",
-		"source": "trigger_batch_runner",
-		"nested": true,
-	},
-	{
-		"field": "action_log_service",
-		"source": "action_log_service",
-		"nested": true,
-	},
-	{
-		"field": "action_cast_direct_damage_pipeline",
-		"source": "action_cast_direct_damage_pipeline",
-		"nested": true,
-	},
-	{
-		"field": "action_cast_skill_effect_dispatch_pipeline",
-		"source": "action_cast_skill_effect_dispatch_pipeline",
-		"nested": true,
-	},
+	{"field": "mp_service", "source": "mp_service", "nested": true},
+	{"field": "target_resolver", "source": "target_resolver", "nested": true},
+	{"field": "trigger_batch_runner", "source": "trigger_batch_runner", "nested": true},
+	{"field": "action_log_service", "source": "action_log_service", "nested": true},
+	{"field": "damage_service", "source": "damage_service"},
+	{"field": "combat_type_service", "source": "combat_type_service"},
+	{"field": "stat_calculator", "source": "stat_calculator"},
+	{"field": "rule_mod_service", "source": "rule_mod_service"},
+	{"field": "faint_killer_attribution_service", "source": "faint_killer_attribution_service"},
+	{"field": "trigger_dispatcher", "source": "trigger_dispatcher"},
+	{"field": "effect_queue_service", "source": "effect_queue_service"},
+	{"field": "payload_executor", "source": "payload_executor"},
+	{"field": "rng_service", "source": "rng_service"},
+	{"field": "hit_service", "source": "hit_service"},
 ]
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
@@ -48,15 +31,48 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 
 var mp_service
-var action_hit_resolution_service
 var target_resolver
 var trigger_batch_runner
 var action_log_service
+var damage_service
+var combat_type_service
+var stat_calculator
+var rule_mod_service
+var faint_killer_attribution_service
+var trigger_dispatcher
+var effect_queue_service
+var payload_executor
+var rng_service
+var hit_service
+
+var action_hit_resolution_service
 var action_cast_direct_damage_pipeline
 var action_cast_skill_effect_dispatch_pipeline
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
+func _compose_post_wire() -> void:
+	var power_bonus_resolver = PowerBonusResolverScript.new()
+	action_hit_resolution_service = ActionHitResolutionServiceScript.new()
+	action_hit_resolution_service.hit_service = hit_service
+	action_hit_resolution_service.rule_mod_service = rule_mod_service
+	action_hit_resolution_service.rng_service = rng_service
+	action_cast_direct_damage_pipeline = ActionCastDirectDamagePipelineScript.new()
+	action_cast_direct_damage_pipeline.power_bonus_resolver = power_bonus_resolver
+	action_cast_direct_damage_pipeline.damage_service = damage_service
+	action_cast_direct_damage_pipeline.combat_type_service = combat_type_service
+	action_cast_direct_damage_pipeline.stat_calculator = stat_calculator
+	action_cast_direct_damage_pipeline.rule_mod_service = rule_mod_service
+	action_cast_direct_damage_pipeline.faint_killer_attribution_service = faint_killer_attribution_service
+	action_cast_direct_damage_pipeline.action_log_service = action_log_service
+	action_cast_direct_damage_pipeline.trigger_batch_runner = trigger_batch_runner
+	action_cast_skill_effect_dispatch_pipeline = ActionCastSkillEffectDispatchPipelineScript.new()
+	action_cast_skill_effect_dispatch_pipeline.trigger_dispatcher = trigger_dispatcher
+	action_cast_skill_effect_dispatch_pipeline.effect_queue_service = effect_queue_service
+	action_cast_skill_effect_dispatch_pipeline.payload_executor = payload_executor
+	action_cast_skill_effect_dispatch_pipeline.rng_service = rng_service
+	action_cast_skill_effect_dispatch_pipeline.trigger_batch_runner = trigger_batch_runner
 
 
 func resolve_mp_cost(command, skill_definition) -> int:
