@@ -125,7 +125,7 @@ func run_replay_with_context(replay_input) -> Dictionary:
 			)
 		)
 		event_from = event_to
-	var logger_error_state: Dictionary = battle_logger.error_state() if battle_logger != null and battle_logger.has_method("error_state") else {}
+	var logger_error_state: Dictionary = battle_logger.error_state()
 	var output_result := _output_helper.build_replay_output_result(
 		battle_logger.snapshot(),
 		battle_state,

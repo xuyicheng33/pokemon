@@ -55,10 +55,6 @@ func get_unit_by_public_id(public_id: String) -> Variant:
 func append_side(side_state) -> void:
 	sides.append(side_state)
 
-func rebuild_indexes() -> void:
-	# Compatibility hook: BattleState now resolves lookups directly from live sides/team_units.
-	return
-
 func get_active_unit(side_id: String, slot_id: String = ContentSchemaScript.ACTIVE_SLOT_PRIMARY) -> Variant:
 	var side_state = get_side(side_id)
 	if side_state == null:

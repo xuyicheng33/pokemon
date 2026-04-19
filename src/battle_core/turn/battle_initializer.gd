@@ -162,7 +162,6 @@ func _build_side_states(battle_state, battle_setup, format_config, content_index
 				String(state_builder_error.get("message", "BattleInitializerStateBuilder failed"))
 			)
 		battle_state.append_side(side_state)
-	battle_state.rebuild_indexes()
 	return true
 
 func _configure_child_ports() -> void:

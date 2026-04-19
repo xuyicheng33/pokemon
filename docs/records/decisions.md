@@ -99,7 +99,7 @@
    - 孤儿 `.gd.uid` 必须删除，并由 repo consistency gate 直接失败
 2. GDScript 前导缩进当前固定只允许 tab（`src/`、`test/`、`tests/`、`scenes/`），space-only 与 tab/space 混用都直接视为失败。
 3. 测试 support helper 体量 gate 当前固定扩到 `test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd`，落在 `220..250` 行输出预警，> `250` 直接失败。
-4. `BattleState` 查询路径当前固定不再保留假缓存语义；`get_side / get_unit / get_unit_by_public_id` 只要求始终返回当前 `sides / team_units` 真值。
+4. `BattleState` 查询路径不保留缓存语义；`get_side / get_unit / get_unit_by_public_id` 始终返回当前 `sides / team_units` 真值；`rebuild_indexes()` 已移除。
 5. `COMPOSE_DEPS` 当前固定只描述 composer 注入的外部依赖；owner 私有 helper 不再混入这份声明。
 6. 共享结果式 helper 的适用边界当前扩大到 policy / adapters / facade helper；外层成功/失败结果统一只认 `ok / data / error_code / error_message`。
 7. 本地报告目录当前固定只认 `reports/gdunit`；其余历史 `reports/gdunit_*` 目录与 `tmp / .tmp` 都视为可清理噪声。
