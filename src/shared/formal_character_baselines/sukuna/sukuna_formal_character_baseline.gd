@@ -1,12 +1,6 @@
 extends RefCounted
 class_name SukunaFormalCharacterBaseline
 
-const EffectContractsScript := preload("res://src/shared/formal_character_baselines/sukuna/sukuna_effect_contracts.gd")
-const UltimateDomainContractsScript := preload("res://src/shared/formal_character_baselines/sukuna/sukuna_ultimate_domain_contracts.gd")
-
-var _effect_contracts = EffectContractsScript.new()
-var _ultimate_domain_contracts = UltimateDomainContractsScript.new()
-
 func unit_contract() -> Dictionary:
 	return {
 		"label": "formal[sukuna].unit",
@@ -116,7 +110,26 @@ func regular_skill_contracts() -> Array[Dictionary]:
 	]
 
 func ultimate_skill_contract() -> Dictionary:
-	return _ultimate_domain_contracts.ultimate_skill_contract()
+	return {
+		"label": "formal[sukuna].fukuma_mizushi",
+		"snapshot_label": "sukuna_fukuma_mizushi",
+		"skill_id": "sukuna_fukuma_mizushi",
+		"fields": {
+			"display_name": "伏魔御厨子",
+			"damage_kind": "special",
+			"power": 68,
+			"accuracy": 100,
+			"mp_cost": 50,
+			"priority": 5,
+			"combat_type_id": "demon",
+			"targeting": "enemy_active_slot",
+			"is_domain_skill": true,
+			"effects_on_cast_ids": PackedStringArray(),
+			"effects_on_hit_ids": PackedStringArray(["sukuna_apply_domain_field"]),
+			"effects_on_miss_ids": PackedStringArray(),
+			"effects_on_kill_ids": PackedStringArray(),
+		},
+	}
 
 func passive_skill_contract() -> Dictionary:
 	return {
@@ -130,7 +143,60 @@ func passive_skill_contract() -> Dictionary:
 	}
 
 func effect_contracts() -> Array[Dictionary]:
-	return _effect_contracts.effect_contracts()
+	return [
+		{
+			"label": "formal[sukuna].kamado.mark",
+			"snapshot_label": "sukuna_kamado_mark",
+			"effect_id": "sukuna_kamado_mark",
+			"fields": {
+				"duration_mode": "turns",
+				"duration": 3,
+				"decrement_on": "turn_end",
+				"stacking": "stack",
+				"max_stacks": 3,
+				"trigger_names": PackedStringArray(["on_exit"]),
+				"on_expire_effect_ids": PackedStringArray(["sukuna_kamado_explode"]),
+				"persists_on_switch": false,
+			},
+		},
+		{
+			"label": "formal[sukuna].domain.apply",
+			"snapshot_label": "sukuna_apply_domain_field",
+			"effect_id": "sukuna_apply_domain_field",
+			"fields": {
+				"scope": "field",
+				"duration_mode": "turns",
+				"duration": 3,
+				"decrement_on": "turn_end",
+				"stacking": "replace",
+				"trigger_names": PackedStringArray(["on_hit"]),
+			},
+		},
+		{
+			"label": "formal[sukuna].reverse_ritual.effect",
+			"snapshot_label": "sukuna_reverse_heal",
+			"effect_id": "sukuna_reverse_heal",
+			"fields": {
+				"scope": "self",
+				"duration_mode": "permanent",
+				"stacking": "none",
+				"trigger_names": PackedStringArray(["on_cast"]),
+			},
+		},
+	]
 
 func field_contracts() -> Array[Dictionary]:
-	return _ultimate_domain_contracts.field_contracts()
+	return [
+		{
+			"label": "formal[sukuna].domain_field",
+			"snapshot_label": "sukuna_malevolent_shrine_field",
+			"field_id": "sukuna_malevolent_shrine_field",
+			"fields": {
+				"field_kind": "domain",
+				"effect_ids": PackedStringArray(["sukuna_domain_cast_buff"]),
+				"on_expire_effect_ids": PackedStringArray(["sukuna_domain_buff_remove", "sukuna_domain_expire_burst"]),
+				"on_break_effect_ids": PackedStringArray(["sukuna_domain_buff_remove"]),
+				"creator_accuracy_override": 100,
+			},
+		},
+	]

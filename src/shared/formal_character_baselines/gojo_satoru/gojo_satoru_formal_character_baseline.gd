@@ -1,12 +1,6 @@
 extends RefCounted
 class_name GojoSatoruFormalCharacterBaseline
 
-const EffectContractsScript := preload("res://src/shared/formal_character_baselines/gojo_satoru/gojo_satoru_effect_contracts.gd")
-const UltimateDomainContractsScript := preload("res://src/shared/formal_character_baselines/gojo_satoru/gojo_satoru_ultimate_domain_contracts.gd")
-
-var _effect_contracts = EffectContractsScript.new()
-var _ultimate_domain_contracts = UltimateDomainContractsScript.new()
-
 func unit_contract() -> Dictionary:
 	return {
 		"label": "formal[gojo_satoru].unit",
@@ -115,7 +109,26 @@ func regular_skill_contracts() -> Array[Dictionary]:
 	]
 
 func ultimate_skill_contract() -> Dictionary:
-	return _ultimate_domain_contracts.ultimate_skill_contract()
+	return {
+		"label": "formal[gojo_satoru].unlimited_void",
+		"snapshot_label": "gojo_unlimited_void",
+		"skill_id": "gojo_unlimited_void",
+		"fields": {
+			"display_name": "无量空处",
+			"damage_kind": "special",
+			"power": 48,
+			"accuracy": 100,
+			"mp_cost": 50,
+			"priority": 5,
+			"combat_type_id": "space",
+			"targeting": "enemy_active_slot",
+			"is_domain_skill": true,
+			"effects_on_cast_ids": PackedStringArray(),
+			"effects_on_hit_ids": PackedStringArray(["gojo_apply_domain_field"]),
+			"effects_on_miss_ids": PackedStringArray(),
+			"effects_on_kill_ids": PackedStringArray(),
+		},
+	}
 
 func passive_skill_contract() -> Dictionary:
 	return {
@@ -129,7 +142,90 @@ func passive_skill_contract() -> Dictionary:
 	}
 
 func effect_contracts() -> Array[Dictionary]:
-	return _effect_contracts.effect_contracts()
+	return [
+		{
+			"label": "formal[gojo_satoru].ao_mark",
+			"snapshot_label": "gojo_ao_mark",
+			"effect_id": "gojo_ao_mark",
+			"fields": {
+				"scope": "self",
+				"duration_mode": "turns",
+				"duration": 3,
+				"decrement_on": "turn_end",
+				"stacking": "refresh",
+				"persists_on_switch": false,
+			},
+		},
+		{
+			"label": "formal[gojo_satoru].aka_mark",
+			"snapshot_label": "gojo_aka_mark",
+			"effect_id": "gojo_aka_mark",
+			"fields": {
+				"scope": "self",
+				"duration_mode": "turns",
+				"duration": 3,
+				"decrement_on": "turn_end",
+				"stacking": "refresh",
+				"persists_on_switch": false,
+			},
+		},
+		{
+			"label": "formal[gojo_satoru].murasaki_burst",
+			"snapshot_label": "gojo_murasaki_conditional_burst",
+			"effect_id": "gojo_murasaki_conditional_burst",
+			"fields": {
+				"scope": "target",
+				"trigger_names": PackedStringArray(["on_hit"]),
+				"required_target_effects": PackedStringArray(["gojo_ao_mark", "gojo_aka_mark"]),
+				"required_target_same_owner": true,
+			},
+		},
+		{
+			"label": "formal[gojo_satoru].domain_followup",
+			"snapshot_label": "gojo_apply_domain_field",
+			"effect_id": "gojo_apply_domain_field",
+			"fields": {
+				"scope": "field",
+				"duration_mode": "turns",
+				"duration": 3,
+				"decrement_on": "turn_end",
+				"stacking": "replace",
+				"trigger_names": PackedStringArray(["on_hit"]),
+			},
+		},
+		{
+			"label": "formal[gojo_satoru].reverse_ritual.effect",
+			"snapshot_label": "gojo_reverse_heal",
+			"effect_id": "gojo_reverse_heal",
+			"fields": {
+				"scope": "self",
+				"duration_mode": "permanent",
+				"stacking": "none",
+				"trigger_names": PackedStringArray(["on_cast"]),
+			},
+		},
+		{
+			"label": "formal[gojo_satoru].mugen.effect",
+			"snapshot_label": "gojo_mugen_incoming_accuracy_down",
+			"effect_id": "gojo_mugen_incoming_accuracy_down",
+			"fields": {
+				"trigger_names": PackedStringArray(["on_enter"]),
+			},
+		},
+	]
 
 func field_contracts() -> Array[Dictionary]:
-	return _ultimate_domain_contracts.field_contracts()
+	return [
+		{
+			"label": "formal[gojo_satoru].domain_field",
+			"snapshot_label": "gojo_unlimited_void_field",
+			"field_id": "gojo_unlimited_void_field",
+			"fields": {
+				"field_kind": "domain",
+				"effect_ids": PackedStringArray(["gojo_domain_cast_buff"]),
+				"on_expire_effect_ids": PackedStringArray(["gojo_domain_buff_remove"]),
+				"on_break_effect_ids": PackedStringArray(["gojo_domain_buff_remove"]),
+				"creator_accuracy_override": 100,
+			},
+		},
+	]
