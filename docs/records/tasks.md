@@ -12,6 +12,26 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 当前阶段：长期工程化重构波次（2026-04-19 开始）
+
+- 状态：进行中
+- 总体目标：
+  - 项目定位从"原型期"升级为长期工程，底层架构必须稳定规范；本波次负责把当前过度工程化的形式噪声清理掉，同时保留工程严谨性
+- 保留（不动）：
+  - 6 层架构与依赖方向、单一运行态真相、确定性回放、核心 facade 稳定合同、内容资源加载期 fail-fast、Composition Root 显式装配、对外公开 ID 边界、主测试闸门
+- 分阶段范围：
+  - 阶段 2：放宽架构文件行数阈值（500 警戒 / 800 硬线），合并碎片 owner（`SampleBattleFactory` 13→3、`BattleCoreManager` 外壳 7→2、`BattleInitializer` 5→2、sandbox adapter 15→5）
+  - 阶段 3：错误体系收口，统一跨边界 envelope、内部只保留单一错误传递方式，删除 `last_error_*` 双写样板
+  - 阶段 4：formal character 治理层温和合并（baselines/validators 每角色 5-6→1-2；manifest view 6→2；gate 8→1-2）
+  - 阶段 5：测试中度瘦身到 1:0.5 比例，`test/` 与 `tests/` 合并为单树
+  - 阶段 6：`docs/design/` 27→8；`docs/records/` 清理 review；`README.md` 18KB→3KB；24 gate py→3-4
+  - 阶段 7：核心 runtime/contracts 全字段 + facade + 主 service 依赖字段补类型
+- 阶段 2 验收标准：
+  - architecture gate 阈值更新并留文档备注
+  - 目标合并全部完成，公开 facade 行为不变
+  - `bash tests/run_with_gate.sh` 通过
+  - 文件数从 301 降到 220 附近
+
 ## 当前阶段：BattleSandbox 边界收口与 SampleBattleFactory 减负（2026-04-18）
 
 - 状态：已完成

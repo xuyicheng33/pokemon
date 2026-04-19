@@ -86,33 +86,31 @@ review_roots = [
     root / "src/shared/formal_character_manifest",
 ]
 
+SIZE_WARN_MIN = 500
+SIZE_HARD_MAX = 800
+
 review_required = []
 warning_review = []
 for source_root in review_roots:
     for path in source_root.rglob("*.gd"):
         rel = str(path.relative_to(root))
         line_count = len(path.read_text(encoding="utf-8").splitlines())
-        if 220 <= line_count <= 250:
+        if SIZE_WARN_MIN <= line_count <= SIZE_HARD_MAX:
             warning_review.append((rel, line_count))
-        if line_count > 250:
+        if line_count > SIZE_HARD_MAX:
             review_required.append((rel, line_count))
 
-formal_baseline_entry = root / "src/shared/formal_character_baselines.gd"
-if formal_baseline_entry.exists():
-    rel = str(formal_baseline_entry.relative_to(root))
-    line_count = len(formal_baseline_entry.read_text(encoding="utf-8").splitlines())
-    if 220 <= line_count <= 250:
+for extra_entry in [
+    root / "src/shared/formal_character_baselines.gd",
+    root / "src/shared/formal_character_manifest.gd",
+]:
+    if not extra_entry.exists():
+        continue
+    rel = str(extra_entry.relative_to(root))
+    line_count = len(extra_entry.read_text(encoding="utf-8").splitlines())
+    if SIZE_WARN_MIN <= line_count <= SIZE_HARD_MAX:
         warning_review.append((rel, line_count))
-    if line_count > 250:
-        review_required.append((rel, line_count))
-
-formal_manifest_entry = root / "src/shared/formal_character_manifest.gd"
-if formal_manifest_entry.exists():
-    rel = str(formal_manifest_entry.relative_to(root))
-    line_count = len(formal_manifest_entry.read_text(encoding="utf-8").splitlines())
-    if 220 <= line_count <= 250:
-        warning_review.append((rel, line_count))
-    if line_count > 250:
+    if line_count > SIZE_HARD_MAX:
         review_required.append((rel, line_count))
 
 missing_review_allowlist = []
@@ -121,14 +119,14 @@ for rel, line_count in review_required:
         missing_review_allowlist.append((rel, line_count))
 
 if missing_review_allowlist:
-    print("ARCH_GATE_FAILED: core files >250 lines require fresh split or explicit temporary allowlist:", file=sys.stderr)
+    print(f"ARCH_GATE_FAILED: core files >{SIZE_HARD_MAX} lines require fresh split or explicit temporary allowlist:", file=sys.stderr)
     for rel, line_count in missing_review_allowlist:
         print(f"  - {rel} ({line_count} lines)", file=sys.stderr)
     sys.exit(1)
 
 stale_allowlist = sorted(set(size_review_rules.keys()) - {rel for rel, _line_count in review_required})
 if stale_allowlist:
-    print("ARCH_GATE_FAILED: remove stale large-file allowlist entries that no longer exceed 250 lines:", file=sys.stderr)
+    print(f"ARCH_GATE_FAILED: remove stale large-file allowlist entries that no longer exceed {SIZE_HARD_MAX} lines:", file=sys.stderr)
     for rel in stale_allowlist:
         print(f"  - {rel}", file=sys.stderr)
     sys.exit(1)
@@ -146,7 +144,7 @@ if allowlist_overflow:
     sys.exit(1)
 
 if warning_review:
-    print("ARCH_GATE_WARNING: core files approaching 250-line review threshold:")
+    print(f"ARCH_GATE_WARNING: core files approaching {SIZE_HARD_MAX}-line review threshold:")
     for rel, line_count in warning_review:
         print(f"  - {rel} ({line_count} lines)")
 
@@ -162,6 +160,9 @@ def is_shared_support(rel: str) -> bool:
     filename = Path(rel).name
     return filename.startswith("shared") or filename.endswith("_shared.gd")
 
+TEST_SUPPORT_WARN_MIN = 400
+TEST_SUPPORT_HARD_MAX = 600
+TEST_FILE_HARD_MAX = 1200
 for test_root in test_roots:
     if not test_root.exists():
         continue
@@ -169,22 +170,24 @@ for test_root in test_roots:
         rel = str(path.relative_to(root))
         line_count = len(path.read_text(encoding="utf-8").splitlines())
         if is_shared_support(rel):
-            if 220 <= line_count <= 250:
-                print(f"ARCH_GATE_WARNING: tests support file approaching 250-line split threshold: {rel} ({line_count} lines)")
-            if line_count > 250:
-                print(f"ARCH_GATE_FAILED: tests support file exceeds 250 lines and must be split: {rel} ({line_count})", file=sys.stderr)
+            if TEST_SUPPORT_WARN_MIN <= line_count <= TEST_SUPPORT_HARD_MAX:
+                print(f"ARCH_GATE_WARNING: tests support file approaching {TEST_SUPPORT_HARD_MAX}-line split threshold: {rel} ({line_count} lines)")
+            if line_count > TEST_SUPPORT_HARD_MAX:
+                print(f"ARCH_GATE_FAILED: tests support file exceeds {TEST_SUPPORT_HARD_MAX} lines and must be split: {rel} ({line_count})", file=sys.stderr)
                 sys.exit(1)
-        if line_count > 600:
-            print(f"ARCH_GATE_FAILED: test file exceeds 600 lines: {rel} ({line_count})", file=sys.stderr)
+        if line_count > TEST_FILE_HARD_MAX:
+            print(f"ARCH_GATE_FAILED: test file exceeds {TEST_FILE_HARD_MAX} lines: {rel} ({line_count})", file=sys.stderr)
             sys.exit(1)
 
+GATE_PY_WARN_MIN = 800
+GATE_PY_HARD_MAX = 1200
 for path in sorted((root / "tests/gates").glob("*.py")):
     rel = str(path.relative_to(root))
     line_count = len(path.read_text(encoding="utf-8").splitlines())
-    if 350 <= line_count <= 400:
-        print(f"ARCH_GATE_WARNING: tests gate file approaching 400-line split threshold: {rel} ({line_count} lines)")
-    if line_count > 400:
-        print(f"ARCH_GATE_FAILED: tests gate file exceeds 400 lines and must be split: {rel} ({line_count})", file=sys.stderr)
+    if GATE_PY_WARN_MIN <= line_count <= GATE_PY_HARD_MAX:
+        print(f"ARCH_GATE_WARNING: tests gate file approaching {GATE_PY_HARD_MAX}-line split threshold: {rel} ({line_count} lines)")
+    if line_count > GATE_PY_HARD_MAX:
+        print(f"ARCH_GATE_FAILED: tests gate file exceeds {GATE_PY_HARD_MAX} lines and must be split: {rel} ({line_count})", file=sys.stderr)
         sys.exit(1)
 
 print("ARCH_GATE_PASSED: outer/internal layering and size constraints are satisfied")

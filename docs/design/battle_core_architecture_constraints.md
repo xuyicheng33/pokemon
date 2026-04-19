@@ -107,17 +107,23 @@ Composition 补充约束：
 
 ### 4.2 强预警阈值
 
-- 核心服务文件、`src/composition/*.gd` 落在 `220..250` 行：输出非阻断预警，并纳入下一轮职责复核观察名单。
-- 核心服务文件 > `250` 行：必须触发职责复核。
-- `src/composition/*.gd` 同样纳入 > `250` 行复核范围（组合根虽然不在 `battle_core` 子目录，但属于核心装配边界）。
-- orchestrator / coordinator > `350` 行：默认拆分。
-- 单测试文件 > `600` 行：默认按子域拆分。
-- `test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd` 视为 support helper，落在 `220..250` 行时输出预警，> `250` 行必须拆分。
+- 核心服务文件（`src/battle_core/**.gd`、`src/composition/**.gd`、`src/shared/formal_character_baselines/**.gd`、`src/shared/formal_character_manifest/**.gd`）：
+  - `500..800` 行：输出非阻断预警，纳入下一轮职责复核观察名单
+  - `> 800` 行：必须触发职责复核并拆分
+- 测试 support（`test/support/**.gd`、`tests/support/**.gd`、`test/**/shared*.gd`、`test/**/*_shared.gd`）：
+  - `400..600` 行：预警
+  - `> 600` 行：必须拆分
+- 单测试文件：`> 1200` 行：必须按子域拆分
+- Gate py 文件（`tests/gates/*.py`）：
+  - `800..1200` 行：预警
+  - `> 1200` 行：必须拆分
+
+说明：阈值相比早期原型期的 `250` 行硬线明显放宽，原因是项目已经升级为长期工程，主 owner 与 facade 文件需要容纳稳定合同与装配编排，不再以拆分文件为主要治理手段；职责内聚与分层依赖仍然是硬约束。
 
 若超阈值仍不拆，必须同时满足：
 
-- 在 `docs/records/decisions.md` 写明“为何仍合理 + 预计何时拆分”。
-- 当前架构闸门实际采用零 allowlist 策略：`size_review_rules = {}`，也就是核心文件一旦 > `250` 行就必须先拆分，不能靠临时白名单放行。
+- 在 `docs/records/decisions.md` 写明"为何仍合理 + 预计何时拆分"。
+- 当前架构闸门保留 `size_review_rules = {}` 零 allowlist 策略：一旦超过硬线就必须先拆分，不能依赖临时白名单放行。
 - 若未来确实要恢复临时 allowlist，必须同时补齐 gate 实现、`docs/records/decisions.md` 记录和本文档口径，三者缺一不可。
 
 ### 4.3 `assert()` 与 fail-fast 边界
