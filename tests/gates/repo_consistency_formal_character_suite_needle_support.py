@@ -19,58 +19,17 @@ def baseline_script_path_for_character_id(character_id: str) -> str:
 
 def validate_entry_validator_structure(ctx: GateContext, *, character_id: str, validator_script_path: str) -> None:
     text = ctx.read_text(validator_script_path)
-    preload_paths = re.findall(
-        r'^const [A-Za-z_][A-Za-z0-9_]* := preload\("res://([^"]+)"\)',
-        text,
-        re.M,
+    validator_base_extends = (
+        'extends "res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_validator_base.gd"'
     )
-    allowed_suffixes = {
-        "_unit_passive_contracts.gd": "unit_passive_contracts",
-        "_skill_effect_contracts.gd": "skill_effect_contracts",
-        "_ultimate_domain_contracts.gd": "ultimate_domain_contracts",
-    }
-    preload_buckets: list[str] = []
-    for preload_path in preload_paths:
-        matched_bucket = next(
-            (bucket for suffix, bucket in allowed_suffixes.items() if preload_path.endswith(suffix)),
-            "",
-        )
-        if not matched_bucket:
-            ctx.failures.append(
-                f"{validator_script_path} entry validator may only preload unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts buckets"
-            )
-            continue
-        preload_buckets.append(matched_bucket)
-    if sorted(preload_buckets) != [
-        "skill_effect_contracts",
-        "ultimate_domain_contracts",
-        "unit_passive_contracts",
-    ]:
+    if validator_base_extends not in text:
         ctx.failures.append(
-            f"{validator_script_path} must preload exactly the three formal validator buckets for {character_id}"
+            f"{validator_script_path} entry validator must extend content_snapshot_formal_character_validator_base"
         )
-    expected_var_needles = [
-        "var _unit_passive_contracts = ",
-        "var _skill_effect_contracts = ",
-        "var _ultimate_domain_contracts = ",
-    ]
-    for needle in expected_var_needles:
-        if needle not in text:
-            ctx.failures.append(f"{validator_script_path} missing registry bucket instance: {needle.strip()}")
     validate_signature = "func validate(content_index, errors: Array) -> void:"
     if validate_signature not in text:
-        ctx.failures.append(f"{validator_script_path} must expose validate(content_index, errors: Array)")
-        return
-    validate_block = _function_block(text, validate_signature)
-    normalized_validate_lines = [line.strip() for line in validate_block if line.strip()]
-    expected_validate_lines = [
-        "_unit_passive_contracts.validate(self, content_index, errors)",
-        "_skill_effect_contracts.validate(self, content_index, errors)",
-        "_ultimate_domain_contracts.validate(self, content_index, errors)",
-    ]
-    if normalized_validate_lines != expected_validate_lines:
         ctx.failures.append(
-            f"{validator_script_path} validate() must only chain unit_passive_contracts -> skill_effect_contracts -> ultimate_domain_contracts"
+            f"{validator_script_path} must expose validate(content_index, errors: Array) for {character_id}"
         )
 
 
@@ -119,18 +78,3 @@ def collect_support_scope_tree(ctx: GateContext, start_paths: list[str]) -> list
     return sorted(discovered)
 
 
-def _function_block(text: str, signature: str) -> list[str]:
-    lines = text.splitlines()
-    capture = False
-    block: list[str] = []
-    for line in lines:
-        if not capture:
-            if line.strip() == signature:
-                capture = True
-            continue
-        if line.startswith("func "):
-            break
-        if line and not line.startswith((" ", "\t")):
-            break
-        block.append(line)
-    return block
