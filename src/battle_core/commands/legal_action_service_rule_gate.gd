@@ -17,6 +17,7 @@ const COMPOSE_DEPS := [
 ]
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 var rule_mod_service
 var domain_legality_service
@@ -27,7 +28,7 @@ func resolve_missing_dependency() -> String:
 
 func side_domain_recast_blocked_result(battle_state, side_id: String, content_index) -> Dictionary:
 	if domain_legality_service == null:
-		return _error_result(
+		return ResultEnvelopeHelperScript.error(
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"LegalActionService.domain_legality_service is required"
 		)
@@ -37,11 +38,11 @@ func side_domain_recast_blocked_result(battle_state, side_id: String, content_in
 		content_index
 	)
 	if domain_legality_service.invalid_battle_code() != null:
-		return _error_result(
+		return ResultEnvelopeHelperScript.error(
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"LegalActionService detected invalid active field runtime while resolving domain legality"
 		)
-	return _ok_result(side_domain_recast_blocked)
+	return ResultEnvelopeHelperScript.ok(side_domain_recast_blocked)
 
 func action_allowed_result(
 	battle_state,
@@ -50,7 +51,7 @@ func action_allowed_result(
 	skill_id: String = ""
 ) -> Dictionary:
 	if rule_mod_service == null:
-		return _error_result(
+		return ResultEnvelopeHelperScript.error(
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"LegalActionService.rule_mod_service is required"
 		)
@@ -60,24 +61,9 @@ func action_allowed_result(
 		var error_code = error_state.get("code", null)
 		if error_code != null:
 			var error_message := String(error_state.get("message", ""))
-			return _error_result(
+			return ResultEnvelopeHelperScript.error(
 				str(error_code),
 				error_message if not error_message.is_empty() else "LegalActionService failed to resolve rule mod action legality"
 			)
-	return _ok_result(is_allowed)
+	return ResultEnvelopeHelperScript.ok(is_allowed)
 
-func _ok_result(data) -> Dictionary:
-	return {
-		"ok": true,
-		"data": data,
-		"error_code": null,
-		"error_message": null,
-	}
-
-func _error_result(error_code: String, error_message: String) -> Dictionary:
-	return {
-		"ok": false,
-		"data": null,
-		"error_code": error_code,
-		"error_message": error_message,
-	}

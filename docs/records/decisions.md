@@ -82,9 +82,9 @@
 
 | 类别 | 文件数 | 处理 |
 |---|---|---|
-| A：已 delegate 到 `ResultEnvelopeHelper` 的纯别名 | 18 | Stage 3 统一内联为直接调用，删除本地 wrapper |
-| B：标准 envelope 结构但未 import helper | 6 | Stage 3 加 import 后内联 |
-| C：有副作用或自定义返回结构 | 1 (replay_runner_output_helper) | 保留，统一命名为 `_build_error_envelope` |
+| A：已 delegate 到 `ResultEnvelopeHelper` 的纯别名 | 18 | 保留。部分 wrapper 注入固定 error code 或 strip_edges()，内联后调用点更冗长，可读性下降 |
+| B：标准 envelope 结构但未 import helper | 6 | ✅ Stage 3 已加 import 并内联 |
+| C：有副作用或自定义返回结构 | 1 (replay_runner_output_helper) | ✅ Stage 3 已重命名为 `_build_error_envelope` |
 
 详细文件清单：
 - A 类（18）：sandbox_policy_driver / sample_battle_factory_* 全部 10 个 / formal_character_baselines + loader / formal_character_capability_catalog / formal_character_manifest + loader + views / formal_registry_contracts
