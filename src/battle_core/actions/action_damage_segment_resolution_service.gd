@@ -16,11 +16,11 @@ func can_continue_damage_sequence(target) -> bool:
 	return ActionCastDamageSegmentHelperScript.can_continue_damage_sequence(target)
 
 func apply_damage_segment(
-	queued_action,
+	queued_action: QueuedAction,
 	actor,
 	target,
 	damage_segment: Dictionary,
-	battle_state,
+	battle_state: BattleState,
 	damage_service,
 	combat_type_service,
 	stat_calculator,

@@ -6,7 +6,7 @@ const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_fi
 
 var _content_index = null
 
-func validate(content_index, errors: Array) -> void:
+func validate(content_index: BattleContentIndex, errors: Array) -> void:
 	_content_index = content_index
 	var allowed_triggers := PackedStringArray([
 		"battle_init",

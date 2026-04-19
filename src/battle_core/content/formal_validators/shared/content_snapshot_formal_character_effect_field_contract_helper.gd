@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ContentSnapshotFormalCharacterEffectFieldContractHelper
 
-func validate_effect_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
+func validate_effect_contracts(validator, content_index: BattleContentIndex, errors: Array, descriptors: Array) -> void:
 	for raw_descriptor in descriptors:
 		if not (raw_descriptor is Dictionary):
 			errors.append("formal effect contract descriptor must be Dictionary")
@@ -10,7 +10,7 @@ func validate_effect_contracts(validator, content_index, errors: Array, descript
 			continue
 		_validate_effect_contract(validator, content_index, errors, raw_descriptor)
 
-func validate_field_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
+func validate_field_contracts(validator, content_index: BattleContentIndex, errors: Array, descriptors: Array) -> void:
 	for raw_descriptor in descriptors:
 		if not (raw_descriptor is Dictionary):
 			errors.append("formal field contract descriptor must be Dictionary")
@@ -40,7 +40,7 @@ func expect_single_payload_shape(
 	validator._expect_payload_shape(errors, "%s %s" % [label, payload_name], payload, expected_fields)
 	return payload
 
-func _validate_effect_contract(validator, content_index, errors: Array, descriptor: Dictionary) -> void:
+func _validate_effect_contract(validator, content_index: BattleContentIndex, errors: Array, descriptor: Dictionary) -> void:
 	if validator._consume_formal_baseline_error(errors, descriptor):
 		return
 	var label := String(descriptor.get("label", "")).strip_edges()
@@ -76,7 +76,7 @@ func _validate_effect_contract(validator, content_index, errors: Array, descript
 				expected_fields.get(field_name, PackedStringArray())
 			)
 
-func _validate_field_contract(validator, content_index, errors: Array, descriptor: Dictionary) -> void:
+func _validate_field_contract(validator, content_index: BattleContentIndex, errors: Array, descriptor: Dictionary) -> void:
 	if validator._consume_formal_baseline_error(errors, descriptor):
 		return
 	var label := String(descriptor.get("label", "")).strip_edges()

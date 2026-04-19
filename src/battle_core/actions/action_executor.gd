@@ -58,7 +58,7 @@ func _compose_post_wire() -> void:
 	switch_action_service.replacement_service = replacement_service
 
 
-func execute_action(queued_action, battle_state, content_index) -> Variant:
+func execute_action(queued_action: QueuedAction, battle_state: BattleState, content_index: BattleContentIndex) -> Variant:
 	var result = ActionResultScript.new()
 	result.action_id = queued_action.action_id
 	var command = queued_action.command
@@ -101,7 +101,7 @@ func execute_action(queued_action, battle_state, content_index) -> Variant:
 	)
 	return result
 
-func _resolve_skill_definition(command, content_index) -> Variant:
+func _resolve_skill_definition(command: Command, content_index: BattleContentIndex) -> Variant:
 	if not _uses_skill_definition(command.command_type):
 		return null
 	return content_index.skills.get(command.skill_id, null)
@@ -109,16 +109,16 @@ func _resolve_skill_definition(command, content_index) -> Variant:
 func _uses_skill_definition(command_type: String) -> bool:
 	return command_type == CommandTypesScript.SKILL or command_type == CommandTypesScript.ULTIMATE
 
-func _can_start_and_stay_legal(queued_action, command, actor, battle_state, content_index) -> bool:
+func _can_start_and_stay_legal(queued_action: QueuedAction, command: Command, actor, battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	if not _can_start_action(actor, command, battle_state):
 		return false
 	return action_domain_guard.is_action_still_allowed(queued_action, command, actor, battle_state, content_index)
 
-func _log_cancelled_pre_start(queued_action, battle_state, command, result) -> void:
+func _log_cancelled_pre_start(queued_action: QueuedAction, battle_state: BattleState, command: Command, result) -> void:
 	action_log_service.log_action_cancelled_pre_start(queued_action, battle_state, command)
 	result.result_type = "cancelled_pre_start"
 
-func _can_start_action(actor, command, battle_state) -> bool:
+func _can_start_action(actor, command: Command, battle_state: BattleState) -> bool:
 	if actor == null or actor.current_hp <= 0 or actor.leave_state != LeaveStatesScript.ACTIVE:
 		return false
 	var side_state = battle_state.get_side(command.side_id)

@@ -13,12 +13,12 @@ const SHARED_FIRE_BURST_RESOURCE_PATH := "res://content/shared/effects/sukuna_sh
 
 var _helper = ContractHelperScript.new()
 
-func validate(content_index, errors: Array) -> void:
+func validate(content_index: BattleContentIndex, errors: Array) -> void:
 	_validate_unit_passive(content_index, errors)
 	_validate_skill_effect(content_index, errors)
 	_validate_ultimate_domain(content_index, errors)
 
-func _validate_unit_passive(content_index, errors: Array) -> void:
+func _validate_unit_passive(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_unit_contract_descriptor(
 		self,
 		content_index,
@@ -27,7 +27,7 @@ func _validate_unit_passive(content_index, errors: Array) -> void:
 	)
 	_validate_teach_love_contract(content_index, errors)
 
-func _validate_teach_love_contract(content_index, errors: Array) -> void:
+func _validate_teach_love_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[sukuna].teach_love"
 	_helper.validate_passive_skill_contracts(
 		self,
@@ -60,7 +60,7 @@ func _validate_teach_love_contract(content_index, errors: Array) -> void:
 		if payload.dynamic_value_outputs != PackedFloat32Array([9.0, 8.0, 7.0, 6.0, 5.0]):
 			errors.append("%s effect.dynamic_value_outputs mismatch: expected %s got %s" % [label, var_to_str(PackedFloat32Array([9.0, 8.0, 7.0, 6.0, 5.0])), var_to_str(payload.dynamic_value_outputs)])
 
-func _validate_skill_effect(content_index, errors: Array) -> void:
+func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_skill_contracts(
 		self,
 		content_index,
@@ -78,7 +78,7 @@ func _validate_skill_effect(content_index, errors: Array) -> void:
 	_validate_kamado_contract(content_index, errors)
 	_validate_reverse_ritual_contract(content_index, errors)
 
-func _validate_kamado_contract(content_index, errors: Array) -> void:
+func _validate_kamado_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[sukuna].kamado"
 	var apply_effect = _require_effect(content_index, errors, label, "sukuna_apply_kamado")
 	if apply_effect != null:
@@ -93,7 +93,7 @@ func _validate_kamado_contract(content_index, errors: Array) -> void:
 			[FormalCharacterBaselinesScript.effect_contract("sukuna", "sukuna_kamado_mark", "%s mark" % label)]
 		)
 
-func _validate_reverse_ritual_contract(content_index, errors: Array) -> void:
+func _validate_reverse_ritual_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[sukuna].reverse_ritual"
 	var effect_definition = _require_effect(content_index, errors, label, "sukuna_reverse_heal")
 	if effect_definition == null:
@@ -126,7 +126,7 @@ func _validate_reverse_ritual_contract(content_index, errors: Array) -> void:
 		}
 	)
 
-func _validate_ultimate_domain(content_index, errors: Array) -> void:
+func _validate_ultimate_domain(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_skill_contracts(
 		self,
 		content_index,
@@ -147,7 +147,7 @@ func _validate_ultimate_domain(content_index, errors: Array) -> void:
 		}
 	)
 
-func _validate_domain_contract(content_index, errors: Array) -> void:
+func _validate_domain_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[sukuna].domain"
 	var apply_effect = _require_effect(content_index, errors, label, "sukuna_apply_domain_field")
 	if apply_effect != null:
@@ -178,7 +178,7 @@ func _validate_domain_contract(content_index, errors: Array) -> void:
 	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_buff_remove", "attack", -1, 0, PackedStringArray(["field_break", "field_expire"]))
 	_validate_domain_stat_mod(content_index, errors, label, "sukuna_domain_buff_remove", "sp_attack", -1, 1, PackedStringArray(["field_break", "field_expire"]))
 
-func _validate_domain_stat_mod(content_index, errors: Array, label: String, effect_id: String, stat_name: String, stage_delta: int, payload_index: int, expected_trigger_names: PackedStringArray) -> void:
+func _validate_domain_stat_mod(content_index: BattleContentIndex, errors: Array, label: String, effect_id: String, stat_name: String, stage_delta: int, payload_index: int, expected_trigger_names: PackedStringArray) -> void:
 	var effect_definition = _require_effect(content_index, errors, label, effect_id)
 	if effect_definition == null:
 		return
@@ -195,7 +195,7 @@ func _validate_domain_stat_mod(content_index, errors: Array, label: String, effe
 		return
 	_expect_payload_shape(errors, "%s effect[%s].payload[%d]" % [label, effect_id, payload_index], payload, {"stat_name": stat_name, "stage_delta": stage_delta})
 
-func _validate_shared_damage_payload_resource(content_index, errors: Array, label: String, effect_ids: PackedStringArray, expected_resource_path: String, expected_fields: Dictionary) -> void:
+func _validate_shared_damage_payload_resource(content_index: BattleContentIndex, errors: Array, label: String, effect_ids: PackedStringArray, expected_resource_path: String, expected_fields: Dictionary) -> void:
 	for raw_effect_id in effect_ids:
 		var effect_id := String(raw_effect_id)
 		var effect_definition = _require_effect(content_index, errors, label, effect_id)

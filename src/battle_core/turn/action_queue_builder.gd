@@ -45,7 +45,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func build_queue(commands: Array, battle_state, content_index) -> Array:
+func build_queue(commands: Array, battle_state: BattleState, content_index: BattleContentIndex) -> Array:
 	last_invalid_battle_code = null
 	var queued_actions: Array = []
 	var grouped_actions: Dictionary = {}
@@ -79,7 +79,7 @@ func build_queue(commands: Array, battle_state, content_index) -> Array:
 		return []
 	return queued_actions
 
-func _resolve_priority(command, _battle_state, content_index) -> int:
+func _resolve_priority(command: Command, _battle_state: BattleState, content_index: BattleContentIndex) -> int:
 	match command.command_type:
 		CommandTypesScript.SWITCH:
 			return 4
@@ -94,7 +94,7 @@ func _resolve_priority(command, _battle_state, content_index) -> int:
 		_:
 			return 0
 
-func _resolve_speed_snapshot(command, battle_state) -> int:
+func _resolve_speed_snapshot(command: Command, battle_state: BattleState) -> int:
 	var actor = battle_state.get_unit(command.actor_id)
 	if actor == null:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
@@ -102,7 +102,7 @@ func _resolve_speed_snapshot(command, battle_state) -> int:
 	actor.last_effective_speed = stat_calculator.calc_effective_stat(actor.base_speed, actor.get_effective_stage("speed"))
 	return actor.last_effective_speed
 
-func _build_target_snapshot(command, battle_state, content_index) -> Variant:
+func _build_target_snapshot(command: Command, battle_state: BattleState, content_index: BattleContentIndex) -> Variant:
 	var target_snapshot = TargetSnapshotScript.new()
 	match command.command_type:
 		CommandTypesScript.SWITCH:

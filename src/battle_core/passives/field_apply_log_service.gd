@@ -8,7 +8,7 @@ var battle_logger: BattleLogger
 var log_event_builder: LogEventBuilder
 var context_resolver: FieldApplyContextResolver
 
-func log_field_clash(clash_result, before_field, payload, effect_event, battle_state) -> void:
+func log_field_clash(clash_result, before_field, payload, effect_event: EffectEvent, battle_state: BattleState) -> void:
 	if clash_result == null or bool(clash_result.same_creator):
 		return
 	var challenger_creator: String = clash_result.challenger_creator
@@ -38,7 +38,7 @@ func log_field_clash(clash_result, before_field, payload, effect_event, battle_s
 		}
 	))
 
-func log_field_blocked_by_active_domain(before_field, payload, effect_event, battle_state) -> void:
+func log_field_blocked_by_active_domain(before_field, payload, effect_event: EffectEvent, battle_state: BattleState) -> void:
 	var active_creator_public_id: String = context_resolver.resolve_public_id_or_system(battle_state, String(before_field.creator))
 	battle_logger.append_event(log_event_builder.build_effect_event(
 		EventTypesScript.EFFECT_FIELD_BLOCKED,
@@ -58,7 +58,7 @@ func log_field_blocked_by_active_domain(before_field, payload, effect_event, bat
 		}
 	))
 
-func log_apply_field(before_field, field_state, effect_event, battle_state) -> void:
+func log_apply_field(before_field, field_state, effect_event: EffectEvent, battle_state: BattleState) -> void:
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.EFFECT_APPLY_FIELD,
 		battle_state,

@@ -20,7 +20,7 @@ func error_state() -> Dictionary:
 		"message": "",
 	}
 
-func resolve_value(rule_mod_payload, effect_event, battle_state) -> Variant:
+func resolve_value(rule_mod_payload, effect_event: EffectEvent, battle_state: BattleState) -> Variant:
 	last_error_code = null
 	if rule_mod_payload == null:
 		last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
@@ -35,7 +35,7 @@ func resolve_value(rule_mod_payload, effect_event, battle_state) -> Variant:
 			last_error_code = ErrorCodesScript.INVALID_RULE_MOD_DEFINITION
 			return null
 
-func _resolve_matchup_bst_gap_band(rule_mod_payload, effect_event, battle_state) -> Variant:
+func _resolve_matchup_bst_gap_band(rule_mod_payload, effect_event: EffectEvent, battle_state: BattleState) -> Variant:
 	var owner_id := ""
 	if effect_event != null and effect_event.owner_id != null:
 		owner_id = str(effect_event.owner_id)

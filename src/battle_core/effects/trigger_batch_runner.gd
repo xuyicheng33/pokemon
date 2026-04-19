@@ -57,10 +57,10 @@ func invalid_battle_code() -> Variant:
 
 func execute_trigger_batch(
 	trigger_name: String,
-	battle_state,
-	content_index,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	owner_unit_ids: Array,
-	chain_context,
+	chain_context: ChainContext,
 	extra_effect_events: Array = []
 ) -> Variant:
 	last_invalid_battle_code = null
@@ -97,10 +97,10 @@ func execute_trigger_batch(
 
 func collect_trigger_events(
 	trigger_name: String,
-	battle_state,
-	content_index,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	owner_unit_ids: Array,
-	chain_context,
+	chain_context: ChainContext,
 	extra_effect_events: Array = []
 ) -> Array:
 	last_invalid_battle_code = null

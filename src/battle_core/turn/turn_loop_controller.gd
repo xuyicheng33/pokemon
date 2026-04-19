@@ -76,7 +76,7 @@ var battle_logger: BattleLogger
 var log_event_builder: LogEventBuilder
 var _validation_helper = TurnLoopValidationHelperScript.new()
 
-func run_turn(battle_state, content_index, commands: Array) -> void:
+func run_turn(battle_state: BattleState, content_index: BattleContentIndex, commands: Array) -> void:
 	if battle_state.battle_result.finished:
 		return
 	_sync_validation_helper()
@@ -101,7 +101,7 @@ func run_turn(battle_state, content_index, commands: Array) -> void:
 		return
 	_finish_turn_progression(battle_state)
 
-func _run_turn_start_phase(battle_state, content_index) -> bool:
+func _run_turn_start_phase(battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	battle_state.phase = BattlePhasesScript.TURN_START
 	battle_state.chain_context = battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_START)
 	var turn_start_event = log_event_builder.build_event(
@@ -121,7 +121,7 @@ func _run_turn_start_phase(battle_state, content_index) -> bool:
 	battle_state.pre_applied_turn_start_regen_turn_index = 0
 	return turn_start_phase_service.execute_phase(battle_state, content_index, turn_start_event_id)
 
-func _build_action_queue_result(battle_state, content_index, commands: Array) -> Dictionary:
+func _build_action_queue_result(battle_state: BattleState, content_index: BattleContentIndex, commands: Array) -> Dictionary:
 	battle_state.phase = BattlePhasesScript.SELECTION
 	var resolve_result = turn_selection_resolver.resolve_commands_for_turn(battle_state, content_index, commands)
 	if resolve_result["invalid_code"] != null:
@@ -137,7 +137,7 @@ func _build_action_queue_result(battle_state, content_index, commands: Array) ->
 		return _action_queue_result(false)
 	return _action_queue_result(true, action_queue)
 
-func _execute_action_queue(battle_state, content_index, action_queue: Array) -> bool:
+func _execute_action_queue(battle_state: BattleState, content_index: BattleContentIndex, action_queue: Array) -> bool:
 	for queued_action in action_queue:
 		var action_result = action_executor.execute_action(queued_action, battle_state, content_index)
 		if action_result.invalid_battle_code != null:
@@ -157,7 +157,7 @@ func _execute_action_queue(battle_state, content_index, action_queue: Array) -> 
 			return true
 	return false
 
-func _run_turn_end_phase(battle_state, content_index) -> bool:
+func _run_turn_end_phase(battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	battle_state.phase = BattlePhasesScript.TURN_END
 	battle_state.chain_context = battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_END)
 	var turn_end_event = log_event_builder.build_event(
@@ -185,7 +185,7 @@ func _run_turn_end_phase(battle_state, content_index) -> bool:
 	turn_selection_resolver.clear_turn_end_state(battle_state)
 	return false
 
-func _finish_turn_progression(battle_state) -> void:
+func _finish_turn_progression(battle_state: BattleState) -> void:
 	battle_state.phase = BattlePhasesScript.VICTORY_CHECK
 	if battle_result_service.resolve_standard_victory(battle_state):
 		return

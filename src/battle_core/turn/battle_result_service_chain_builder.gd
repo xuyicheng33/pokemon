@@ -15,7 +15,7 @@ func build_system_chain(id_factory, command_type: String) -> Variant:
 	chain_context.select_timeout = null
 	return chain_context
 
-func build_battle_end_chain(id_factory, resolved_phase: String, battle_state) -> Variant:
+func build_battle_end_chain(id_factory, resolved_phase: String, battle_state: BattleState) -> Variant:
 	if battle_state != null and battle_state.chain_context != null:
 		var existing_chain_context = battle_state.chain_context
 		if String(existing_chain_context.chain_origin) == "action":

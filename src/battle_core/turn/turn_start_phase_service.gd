@@ -70,11 +70,11 @@ var _regen_service = TurnStartRegenServiceScript.new()
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
-func apply_turn_start_regen(battle_state, cause_event_id: String) -> void:
+func apply_turn_start_regen(battle_state: BattleState, cause_event_id: String) -> void:
 	_sync_helper_dependencies()
 	_regen_service.apply_turn_start_regen(battle_state, cause_event_id)
 
-func execute_phase(battle_state, content_index, cause_event_id: String) -> bool:
+func execute_phase(battle_state: BattleState, content_index: BattleContentIndex, cause_event_id: String) -> bool:
 	_sync_helper_dependencies()
 	if _execute_system_trigger_batch("turn_start", battle_state, content_index):
 		return true
@@ -86,7 +86,7 @@ func execute_phase(battle_state, content_index, cause_event_id: String) -> bool:
 		return true
 	return false
 
-func _execute_system_trigger_batch(trigger_name: String, battle_state, content_index) -> bool:
+func _execute_system_trigger_batch(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	var invalid_code = trigger_batch_runner.execute_trigger_batch(
 		trigger_name,
 		battle_state,

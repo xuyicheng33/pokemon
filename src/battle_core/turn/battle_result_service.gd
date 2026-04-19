@@ -45,7 +45,7 @@ func resolve_missing_dependency() -> String:
 func build_system_chain(command_type: String) -> Variant:
 	return _chain_builder.build_system_chain(id_factory, command_type)
 
-func terminate_invalid_battle(battle_state, invalid_code: String) -> void:
+func terminate_invalid_battle(battle_state: BattleState, invalid_code: String) -> void:
 	var resolved_message := String(battle_state.runtime_fault_message) if battle_state != null else ""
 	if resolved_message.is_empty():
 		resolved_message = "BattleResultService terminate_invalid_battle: battle_id=%s phase=%s invalid_code=%s" % [
@@ -77,7 +77,7 @@ func terminate_invalid_battle(battle_state, invalid_code: String) -> void:
 		}
 	))
 
-func hard_terminate_invalid_state(battle_state, invalid_code: String, missing_dependency: String) -> void:
+func hard_terminate_invalid_state(battle_state: BattleState, invalid_code: String, missing_dependency: String) -> void:
 	var resolved_message := String(battle_state.runtime_fault_message) if battle_state != null else ""
 	if resolved_message.is_empty():
 		resolved_message = "BattleResultService hard_terminate_invalid_state: battle_id=%s phase=%s invalid_code=%s missing_dependency=%s" % [
@@ -116,7 +116,7 @@ func hard_terminate_invalid_state(battle_state, invalid_code: String, missing_de
 		}
 	))
 
-func resolve_initialization_victory(battle_state) -> bool:
+func resolve_initialization_victory(battle_state: BattleState) -> bool:
 	return _outcome_resolver.resolve_initialization_victory(
 		_chain_builder,
 		id_factory,
@@ -125,7 +125,7 @@ func resolve_initialization_victory(battle_state) -> bool:
 		battle_state,
 	)
 
-func resolve_surrender(battle_state, commands: Array) -> bool:
+func resolve_surrender(battle_state: BattleState, commands: Array) -> bool:
 	return _outcome_resolver.resolve_surrender(
 		_chain_builder,
 		id_factory,
@@ -135,7 +135,7 @@ func resolve_surrender(battle_state, commands: Array) -> bool:
 		commands
 	)
 
-func resolve_standard_victory(battle_state) -> bool:
+func resolve_standard_victory(battle_state: BattleState) -> bool:
 	return _outcome_resolver.resolve_standard_victory(
 		_chain_builder,
 		id_factory,
@@ -144,7 +144,7 @@ func resolve_standard_victory(battle_state) -> bool:
 		battle_state,
 	)
 
-func resolve_turn_limit(battle_state) -> void:
+func resolve_turn_limit(battle_state: BattleState) -> void:
 	_outcome_resolver.resolve_turn_limit(
 		_chain_builder,
 		id_factory,
@@ -157,7 +157,7 @@ func resolve_turn_limit(battle_state) -> void:
 func _report_invalid_termination(message: String) -> void:
 	printerr("INVALID_TERMINATION: %s" % message)
 
-func _latch_runtime_fault(battle_state, invalid_code: String, message: String) -> void:
+func _latch_runtime_fault(battle_state: BattleState, invalid_code: String, message: String) -> void:
 	if battle_state == null:
 		return
 	battle_state.runtime_fault_code = invalid_code

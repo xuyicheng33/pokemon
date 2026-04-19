@@ -7,7 +7,7 @@ var rule_mod_service: RuleModService
 var domain_legality_service: DomainLegalityService
 
 
-func is_action_still_allowed(queued_action, command, actor, battle_state, content_index) -> bool:
+func is_action_still_allowed(queued_action: QueuedAction, command: Command, actor, battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	if actor == null:
 		return false
 	if domain_legality_service.is_domain_command_blocked_by_active_side_domain(command, battle_state, content_index):

@@ -17,7 +17,7 @@ var _field_validator = ContentSnapshotFieldValidatorScript.new()
 var _effect_validator = ContentSnapshotEffectValidatorScript.new()
 var _formal_character_validator = ContentSnapshotFormalCharacterValidatorScript.new()
 
-func validate(content_index, errors: Array, payload_validator) -> void:
+func validate(content_index: BattleContentIndex, errors: Array, payload_validator) -> void:
 	_content_index = content_index
 	_payload_validator = payload_validator
 	var regular_skill_refs: Dictionary = {}

@@ -4,7 +4,7 @@ class_name ReplacementEntryHelper
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
-func enter_replacement(battle_state, side_state, slot_id: String, selected_unit_id: String, battle_logger, log_event_builder) -> Variant:
+func enter_replacement(battle_state: BattleState, side_state, slot_id: String, selected_unit_id: String, battle_logger, log_event_builder) -> Variant:
 	var bench_unit = battle_state.get_unit(selected_unit_id)
 	if bench_unit == null or bench_unit.current_hp <= 0 or not side_state.has_bench_unit(selected_unit_id):
 		return null

@@ -15,7 +15,7 @@ func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
 
-func create_field_state(effect_definition, payload, effect_event) -> Variant:
+func create_field_state(effect_definition, payload, effect_event: EffectEvent) -> Variant:
 	last_invalid_battle_code = null
 	var field_state = FieldStateScript.new()
 	field_state.field_def_id = payload.field_definition_id
@@ -33,9 +33,9 @@ func create_field_state(effect_definition, payload, effect_event) -> Variant:
 func execute_field_effects(
 	trigger_name: String,
 	field_state,
-	battle_state,
-	content_index,
-	chain_context,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
+	chain_context: ChainContext,
 	execute_trigger_batch: Callable = Callable()
 ) -> Variant:
 	var field_definition = field_service.get_field_definition_for_state(field_state, content_index)
@@ -68,9 +68,9 @@ func execute_field_effects(
 
 func execute_success_effects(
 	effect_ids: PackedStringArray,
-	effect_event,
-	battle_state,
-	content_index,
+	effect_event: EffectEvent,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	execute_trigger_batch: Callable = Callable()
 ) -> Variant:
 	if effect_ids.is_empty():
@@ -103,7 +103,7 @@ func execute_success_effects(
 		success_events
 	)
 
-func defer_success_effects(field_state, effect_ids: PackedStringArray, effect_event) -> void:
+func defer_success_effects(field_state, effect_ids: PackedStringArray, effect_event: EffectEvent) -> void:
 	if field_state == null or effect_ids.is_empty() or effect_event == null:
 		return
 	field_state.pending_success_effect_ids = effect_ids.duplicate()
@@ -114,8 +114,8 @@ func defer_success_effects(field_state, effect_ids: PackedStringArray, effect_ev
 
 func execute_pending_success_effects(
 	field_state,
-	battle_state,
-	content_index,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	execute_trigger_batch: Callable = Callable()
 ) -> Variant:
 	if field_state == null or field_state.pending_success_effect_ids.is_empty():

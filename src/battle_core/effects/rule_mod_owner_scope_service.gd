@@ -14,7 +14,7 @@ var last_error_message: String = ""
 func error_state() -> Dictionary:
 	return ErrorStateHelperScript.error_state(self)
 
-func validate_owner_ref(owner_ref: Dictionary, payload_scope: String, battle_state) -> bool:
+func validate_owner_ref(owner_ref: Dictionary, payload_scope: String, battle_state: BattleState) -> bool:
 	ErrorStateHelperScript.clear(self)
 	if owner_ref == null or not owner_ref.has("scope") or not owner_ref.has("id"):
 		ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "rule_mod owner_ref must include scope/id")
@@ -37,7 +37,7 @@ func validate_owner_ref(owner_ref: Dictionary, payload_scope: String, battle_sta
 	ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_RULE_MOD_DEFINITION, "unsupported rule_mod owner scope: %s" % owner_scope)
 	return false
 
-func get_owner_instances(battle_state, owner_ref: Dictionary) -> Array:
+func get_owner_instances(battle_state: BattleState, owner_ref: Dictionary) -> Array:
 	var owner_scope: String = str(owner_ref["scope"])
 	if owner_scope == OWNER_SCOPE_FIELD:
 		return battle_state.field_rule_mod_instances
@@ -46,7 +46,7 @@ func get_owner_instances(battle_state, owner_ref: Dictionary) -> Array:
 		return []
 	return owner_unit.rule_mod_instances
 
-func set_owner_instances(battle_state, owner_ref: Dictionary, instances: Array) -> void:
+func set_owner_instances(battle_state: BattleState, owner_ref: Dictionary, instances: Array) -> void:
 	var owner_scope: String = str(owner_ref["scope"])
 	if owner_scope == OWNER_SCOPE_FIELD:
 		battle_state.field_rule_mod_instances = instances
@@ -76,7 +76,7 @@ func decrement_owner_instances(owner_instances: Array, owner_id: String, trigger
 		"removed_instances": removed_instances,
 	}
 
-func resolve_field_instance_id(owner_ref: Dictionary, battle_state) -> String:
+func resolve_field_instance_id(owner_ref: Dictionary, battle_state: BattleState) -> String:
 	if str(owner_ref.get("scope", "")) != OWNER_SCOPE_FIELD:
 		return ""
 	if battle_state == null or battle_state.field_state == null:

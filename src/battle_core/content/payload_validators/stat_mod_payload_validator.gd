@@ -9,7 +9,7 @@ const ALLOWED_STAT_NAMES := [
 ]
 const ALLOWED_STAT_RETENTION_MODES := ["normal", "persist_on_switch"]
 
-func validate(errors: Array, effect_id: String, payload, _content_index, _dispatcher) -> void:
+func validate(errors: Array, effect_id: String, payload, _content_index: BattleContentIndex, _dispatcher) -> void:
 	if not ALLOWED_STAT_NAMES.has(String(payload.stat_name)):
 		errors.append("effect[%s].stat_mod invalid stat_name: %s" % [effect_id, payload.stat_name])
 	if not ALLOWED_STAT_RETENTION_MODES.has(String(payload.retention_mode)):

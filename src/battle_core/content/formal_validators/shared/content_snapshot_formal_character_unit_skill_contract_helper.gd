@@ -3,7 +3,7 @@ class_name ContentSnapshotFormalCharacterUnitSkillContractHelper
 
 func validate_unit_contract(
 	validator,
-	content_index,
+	content_index: BattleContentIndex,
 	errors: Array,
 	label: String,
 	unit_id: String,
@@ -43,7 +43,7 @@ func validate_unit_contract(
 			validator._expect_string(errors, "%s %s" % [label, field_name], unit_definition.get(field_name), String(expected_fields.get(field_name, "")))
 	return unit_definition
 
-func validate_unit_contract_descriptor(validator, content_index, errors: Array, descriptor: Dictionary) -> Variant:
+func validate_unit_contract_descriptor(validator, content_index: BattleContentIndex, errors: Array, descriptor: Dictionary) -> Variant:
 	if validator._consume_formal_baseline_error(errors, descriptor):
 		return null
 	var label := String(descriptor.get("label", "")).strip_edges()
@@ -54,7 +54,7 @@ func validate_unit_contract_descriptor(validator, content_index, errors: Array, 
 		return null
 	return validate_unit_contract(validator, content_index, errors, label, unit_id, expected_fields)
 
-func validate_skill_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
+func validate_skill_contracts(validator, content_index: BattleContentIndex, errors: Array, descriptors: Array) -> void:
 	for raw_descriptor in descriptors:
 		if not (raw_descriptor is Dictionary):
 			errors.append("formal skill contract descriptor must be Dictionary")
@@ -63,7 +63,7 @@ func validate_skill_contracts(validator, content_index, errors: Array, descripto
 			continue
 		_validate_skill_contract(validator, content_index, errors, raw_descriptor)
 
-func validate_passive_skill_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
+func validate_passive_skill_contracts(validator, content_index: BattleContentIndex, errors: Array, descriptors: Array) -> void:
 	for raw_descriptor in descriptors:
 		if not (raw_descriptor is Dictionary):
 			errors.append("formal passive contract descriptor must be Dictionary")
@@ -72,7 +72,7 @@ func validate_passive_skill_contracts(validator, content_index, errors: Array, d
 			continue
 		_validate_passive_skill_contract(validator, content_index, errors, raw_descriptor)
 
-func _validate_skill_contract(validator, content_index, errors: Array, descriptor: Dictionary) -> void:
+func _validate_skill_contract(validator, content_index: BattleContentIndex, errors: Array, descriptor: Dictionary) -> void:
 	if validator._consume_formal_baseline_error(errors, descriptor):
 		return
 	var label := String(descriptor.get("label", "")).strip_edges()
@@ -114,7 +114,7 @@ func _validate_skill_contract(validator, content_index, errors: Array, descripto
 				expected_fields.get(field_name, PackedStringArray())
 			)
 
-func _validate_passive_skill_contract(validator, content_index, errors: Array, descriptor: Dictionary) -> void:
+func _validate_passive_skill_contract(validator, content_index: BattleContentIndex, errors: Array, descriptor: Dictionary) -> void:
 	if validator._consume_formal_baseline_error(errors, descriptor):
 		return
 	var label := String(descriptor.get("label", "")).strip_edges()

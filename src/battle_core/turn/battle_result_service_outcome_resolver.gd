@@ -5,7 +5,7 @@ const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
-func resolve_initialization_victory(chain_builder, id_factory, battle_logger, log_event_builder, battle_state) -> bool:
+func resolve_initialization_victory(chain_builder, id_factory, battle_logger, log_event_builder, battle_state: BattleState) -> bool:
 	return _resolve_victory(
 		chain_builder,
 		id_factory,
@@ -15,7 +15,7 @@ func resolve_initialization_victory(chain_builder, id_factory, battle_logger, lo
 		"battle finished during initialization"
 	)
 
-func resolve_standard_victory(chain_builder, id_factory, battle_logger, log_event_builder, battle_state) -> bool:
+func resolve_standard_victory(chain_builder, id_factory, battle_logger, log_event_builder, battle_state: BattleState) -> bool:
 	return _resolve_victory(
 		chain_builder,
 		id_factory,
@@ -25,7 +25,7 @@ func resolve_standard_victory(chain_builder, id_factory, battle_logger, log_even
 		"battle finished by elimination"
 	)
 
-func resolve_surrender(chain_builder, id_factory, battle_logger, log_event_builder, battle_state, commands: Array) -> bool:
+func resolve_surrender(chain_builder, id_factory, battle_logger, log_event_builder, battle_state: BattleState, commands: Array) -> bool:
 	var surrendering_sides: Array = []
 	for command in commands:
 		if command.command_type == CommandTypesScript.SURRENDER:
@@ -54,7 +54,7 @@ func resolve_surrender(chain_builder, id_factory, battle_logger, log_event_build
 	))
 	return true
 
-func resolve_turn_limit(chain_builder, id_factory, battle_logger, log_event_builder, turn_limit_scoring_service, battle_state) -> void:
+func resolve_turn_limit(chain_builder, id_factory, battle_logger, log_event_builder, turn_limit_scoring_service, battle_state: BattleState) -> void:
 	var scored_sides: Array = turn_limit_scoring_service.build_scored_sides(battle_state)
 	battle_state.battle_result.finished = true
 	battle_state.phase = BattlePhasesScript.FINISHED
@@ -83,7 +83,7 @@ func resolve_turn_limit(chain_builder, id_factory, battle_logger, log_event_buil
 		}
 	))
 
-func _resolve_victory(chain_builder, id_factory, battle_logger, log_event_builder, battle_state, payload_summary: String) -> bool:
+func _resolve_victory(chain_builder, id_factory, battle_logger, log_event_builder, battle_state: BattleState, payload_summary: String) -> bool:
 	var alive_side_ids: Array = []
 	for side_state in battle_state.sides:
 		if _side_has_available_unit(side_state):

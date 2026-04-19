@@ -23,7 +23,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func execute(payload, effect_definition, effect_event, battle_state, _content_index, _execute_trigger_batch: Callable = Callable()) -> void:
+func execute(payload, effect_definition, effect_event: EffectEvent, battle_state: BattleState, _content_index: BattleContentIndex, _execute_trigger_batch: Callable = Callable()) -> void:
 	last_invalid_battle_code = null
 	if not payload is StatModPayloadScript:
 		return

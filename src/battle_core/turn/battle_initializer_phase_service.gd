@@ -95,7 +95,7 @@ func configure_ports(ports: BattleInitializerPorts) -> void:
 	battle_result_service = ports.battle_result_service
 	field_lifecycle_service = ports.field_lifecycle_service
 
-func append_battle_header_event(battle_state, content_index) -> void:
+func append_battle_header_event(battle_state: BattleState, content_index: BattleContentIndex) -> void:
 	battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_HEADER, "battle_init")
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.SYSTEM_BATTLE_HEADER,
@@ -107,7 +107,7 @@ func append_battle_header_event(battle_state, content_index) -> void:
 		}
 	))
 
-func run_on_enter_phase(battle_state, content_index) -> int:
+func run_on_enter_phase(battle_state: BattleState, content_index: BattleContentIndex) -> int:
 	battle_state.chain_context = _build_system_chain("system:replace", "system_replace")
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
@@ -132,7 +132,7 @@ func run_on_enter_phase(battle_state, content_index) -> int:
 		return INIT_PHASE_FAIL
 	return INIT_PHASE_STOP if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index) else INIT_PHASE_CONTINUE
 
-func run_battle_init_phase(battle_state, content_index) -> int:
+func run_battle_init_phase(battle_state: BattleState, content_index: BattleContentIndex) -> int:
 	battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, "battle_init")
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.SYSTEM_BATTLE_INIT,
@@ -153,7 +153,7 @@ func run_battle_init_phase(battle_state, content_index) -> int:
 		return INIT_PHASE_FAIL
 	return INIT_PHASE_STOP if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index) else INIT_PHASE_CONTINUE
 
-func apply_initial_turn_start_regen(battle_state) -> void:
+func apply_initial_turn_start_regen(battle_state: BattleState) -> void:
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
 		if active_unit == null or active_unit.current_hp <= 0:
@@ -170,10 +170,10 @@ func apply_initial_turn_start_regen(battle_state) -> void:
 		)
 	battle_state.pre_applied_turn_start_regen_turn_index = battle_state.turn_index
 
-func _execute_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array) -> Variant:
+func _execute_trigger_batch(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex, owner_unit_ids: Array) -> Variant:
 	return trigger_batch_runner.execute_trigger_batch(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context)
 
-func _collect_active_unit_ids(battle_state) -> Array:
+func _collect_active_unit_ids(battle_state: BattleState) -> Array:
 	var active_ids: Array = []
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()

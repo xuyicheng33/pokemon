@@ -3,7 +3,7 @@ class_name ContentSnapshotCatalogValidator
 
 const CombatTypeChartEntryScript := preload("res://src/battle_core/content/combat_type_chart_entry.gd")
 
-func validate(content_index, errors: Array) -> void:
+func validate(content_index: BattleContentIndex, errors: Array) -> void:
 	var allowed_chart_multipliers: Array[float] = [2.0, 1.0, 0.5]
 	for combat_type_id in content_index.combat_types.keys():
 		var combat_type_definition = content_index.combat_types[combat_type_id]

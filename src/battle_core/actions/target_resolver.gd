@@ -4,7 +4,7 @@ class_name TargetResolver
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
-func resolve_target(queued_action, battle_state) -> Variant:
+func resolve_target(queued_action: QueuedAction, battle_state: BattleState) -> Variant:
 	if queued_action.command.command_type == CommandTypesScript.SWITCH:
 		return battle_state.get_unit(queued_action.command.target_unit_id)
 	match queued_action.target_snapshot.target_kind:

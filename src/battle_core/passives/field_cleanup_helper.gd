@@ -1,12 +1,12 @@
 extends RefCounted
 class_name FieldCleanupHelper
 
-func clear_field_state_if_matches(battle_state, field_state) -> void:
+func clear_field_state_if_matches(battle_state: BattleState, field_state) -> void:
 	if battle_state == null or field_state == null:
 		return
 	clear_old_field_if_still_active(battle_state, field_state)
 
-func clear_old_field_if_still_active(battle_state, field_state) -> void:
+func clear_old_field_if_still_active(battle_state: BattleState, field_state) -> void:
 	if battle_state == null or field_state == null:
 		return
 	_remove_field_rule_mods_for_instance(battle_state, String(field_state.instance_id))
@@ -17,7 +17,7 @@ func clear_old_field_if_still_active(battle_state, field_state) -> void:
 		return
 	battle_state.field_state = null
 
-func _remove_field_rule_mods_for_instance(battle_state, field_instance_id: String) -> void:
+func _remove_field_rule_mods_for_instance(battle_state: BattleState, field_instance_id: String) -> void:
 	if battle_state == null:
 		return
 	if field_instance_id.is_empty():

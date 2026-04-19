@@ -74,7 +74,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func apply_damage_payload(payload, effect_definition, effect_event, battle_state, content_index) -> void:
+func apply_damage_payload(payload, effect_definition, effect_event: EffectEvent, battle_state: BattleState, content_index: BattleContentIndex) -> void:
 	last_invalid_battle_code = null
 	var target_unit = target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
 	if not target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
@@ -127,7 +127,7 @@ func apply_damage_payload(payload, effect_definition, effect_event, battle_state
 		type_effectiveness
 	)
 
-func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event_type: String, summary_tag: String, type_effectiveness: Variant = null) -> void:
+func _apply_hp_change(battle_state: BattleState, effect_event: EffectEvent, target_unit, delta: int, event_type: String, summary_tag: String, type_effectiveness: Variant = null) -> void:
 	var is_damage_event := event_type == EventTypesScript.EFFECT_DAMAGE
 	if (is_damage_event and type_effectiveness == null) or (not is_damage_event and type_effectiveness != null):
 		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
@@ -176,7 +176,7 @@ func _apply_hp_change(battle_state, effect_event, target_unit, delta: int, event
 func _build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int) -> Variant:
 	return ValueChangeFactoryScript.create(entity_id, resource_name, before_value, after_value)
 
-func _resolve_chain_skill_definition(effect_event, content_index) -> Variant:
+func _resolve_chain_skill_definition(effect_event: EffectEvent, content_index: BattleContentIndex) -> Variant:
 	if effect_event == null or effect_event.chain_context == null:
 		return null
 	var raw_skill_id = effect_event.chain_context.skill_id

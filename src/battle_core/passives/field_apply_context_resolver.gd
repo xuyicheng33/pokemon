@@ -1,7 +1,7 @@
 extends RefCounted
 class_name FieldApplyContextResolver
 
-func resolve_field_creator(effect_event) -> String:
+func resolve_field_creator(effect_event: EffectEvent) -> String:
 	if effect_event != null and effect_event.owner_id != null:
 		var owner_id := str(effect_event.owner_id)
 		if not owner_id.is_empty():
@@ -12,7 +12,7 @@ func resolve_field_creator(effect_event) -> String:
 			return actor_id
 	return ""
 
-func resolve_public_id_or_system(battle_state, source_id: String) -> String:
+func resolve_public_id_or_system(battle_state: BattleState, source_id: String) -> String:
 	if source_id.is_empty():
 		return "system"
 	var source_unit = battle_state.get_unit(source_id)

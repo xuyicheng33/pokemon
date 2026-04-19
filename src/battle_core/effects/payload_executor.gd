@@ -31,9 +31,9 @@ func resolve_missing_dependency() -> String:
 
 
 func execute_effect_event(
-	effect_event,
-	battle_state,
-	content_index,
+	effect_event: EffectEvent,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	execute_trigger_batch: Callable = Callable()
 ) -> void:
 	last_invalid_battle_code = null
@@ -69,9 +69,9 @@ func execute_effect_event(
 func execute_payload(
 	payload,
 	effect_definition,
-	effect_event,
-	battle_state,
-	content_index,
+	effect_event: EffectEvent,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	execute_trigger_batch: Callable = Callable()
 ) -> void:
 	var handler = payload_handler_registry.handler_for(payload)
@@ -104,7 +104,7 @@ func _resolve_handler_missing(handler) -> String:
 		return str(handler.resolve_missing_dependency())
 	return ""
 
-func _enter_effect_guard(effect_event, battle_state) -> bool:
+func _enter_effect_guard(effect_event: EffectEvent, battle_state: BattleState) -> bool:
 	if battle_state.chain_context == null or battle_state.max_chain_depth <= 0:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
 		return false
@@ -121,13 +121,13 @@ func _enter_effect_guard(effect_event, battle_state) -> bool:
 		return false
 	return true
 
-func _leave_effect_guard(battle_state) -> void:
+func _leave_effect_guard(battle_state: BattleState) -> void:
 	if battle_state.chain_context == null:
 		return
 	if battle_state.chain_context.chain_depth > 0:
 		battle_state.chain_context.chain_depth -= 1
 
-func _build_dedupe_key(effect_event) -> String:
+func _build_dedupe_key(effect_event: EffectEvent) -> String:
 	var target_unit_id := ""
 	var action_segment_index := 0
 	if effect_event != null and effect_event.chain_context != null:

@@ -17,7 +17,7 @@ const STACKING_KEY_SCHEMA_BY_KIND := {
 	"incoming_heal_final_mod": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
 }
 
-func validate_payload(rule_mod_payload, content_index = null) -> Array:
+func validate_payload(rule_mod_payload, content_index: BattleContentIndex = null) -> Array:
 	var errors: Array = []
 	if not ALLOWED_MOD_KINDS.has(rule_mod_payload.mod_kind):
 		errors.append("mod_kind %s" % rule_mod_payload.mod_kind)
@@ -70,7 +70,7 @@ func validate_payload(rule_mod_payload, content_index = null) -> Array:
 	_validate_dynamic_value_schema(errors, rule_mod_payload)
 	return errors
 
-func _validate_action_legality_value(errors: Array, rule_mod_payload, content_index) -> void:
+func _validate_action_legality_value(errors: Array, rule_mod_payload, content_index: BattleContentIndex) -> void:
 	if typeof(rule_mod_payload.value) != TYPE_STRING:
 		errors.append("action_legality value must be String")
 		return
@@ -126,7 +126,7 @@ func _is_integral_number(value) -> bool:
 		return false
 	return is_equal_approx(float(value), float(int(value)))
 
-func _validate_incoming_action_filters(errors: Array, rule_mod_payload, content_index) -> void:
+func _validate_incoming_action_filters(errors: Array, rule_mod_payload, content_index: BattleContentIndex) -> void:
 	var command_filters: PackedStringArray = rule_mod_payload.required_incoming_command_types
 	var combat_type_filters: PackedStringArray = rule_mod_payload.required_incoming_combat_type_ids
 	if String(rule_mod_payload.mod_kind) != ContentSchemaScript.RULE_MOD_INCOMING_ACTION_FINAL_MOD:

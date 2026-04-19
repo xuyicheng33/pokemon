@@ -26,7 +26,7 @@ var _entry_helper = ReplacementEntryHelperScript.new()
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
-func resolve_replacement(battle_state, side_state, reason: String) -> Dictionary:
+func resolve_replacement(battle_state: BattleState, side_state, reason: String) -> Dictionary:
 	var legal_bench_ids := _selection_helper.collect_legal_bench_ids(battle_state, side_state)
 	if legal_bench_ids.is_empty():
 		return _resolve_result(null, null)
@@ -52,8 +52,8 @@ func resolve_replacement(battle_state, side_state, reason: String) -> Dictionary
 	return _resolve_result(entered_unit, null)
 
 func execute_replacement_lifecycle(
-	battle_state,
-	content_index,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	target_unit_id: String,
 	selected_unit_id: String,
 	leave_reason: String,
@@ -123,8 +123,8 @@ func execute_replacement_lifecycle(
 	return _replacement_result(true, entered_unit, null)
 
 func execute_forced_replace(
-	battle_state,
-	content_index,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	target_unit_id: String,
 	selector_reason: String = "forced_replace",
 	execute_trigger_batch: Callable = Callable()
@@ -176,8 +176,8 @@ func execute_forced_replace(
 
 func _execute_lifecycle_trigger_batch(
 	trigger_name: String,
-	battle_state,
-	content_index,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	owner_unit_ids: Array,
 	execute_trigger_batch: Callable = Callable()
 ) -> Variant:

@@ -13,12 +13,12 @@ const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_pa
 
 var _helper = ContractHelperScript.new()
 
-func validate(content_index, errors: Array) -> void:
+func validate(content_index: BattleContentIndex, errors: Array) -> void:
 	_validate_unit_passive(content_index, errors)
 	_validate_skill_effect(content_index, errors)
 	_validate_ultimate_domain(content_index, errors)
 
-func _validate_unit_passive(content_index, errors: Array) -> void:
+func _validate_unit_passive(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_unit_contract_descriptor(
 		self,
 		content_index,
@@ -27,7 +27,7 @@ func _validate_unit_passive(content_index, errors: Array) -> void:
 	)
 	_validate_mugen_contract(content_index, errors)
 
-func _validate_mugen_contract(content_index, errors: Array) -> void:
+func _validate_mugen_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[gojo_satoru].mugen"
 	_helper.validate_passive_skill_contracts(
 		self,
@@ -61,7 +61,7 @@ func _validate_mugen_contract(content_index, errors: Array) -> void:
 		}
 	)
 
-func _validate_skill_effect(content_index, errors: Array) -> void:
+func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_skill_contracts(
 		self,
 		content_index,
@@ -75,12 +75,12 @@ func _validate_skill_effect(content_index, errors: Array) -> void:
 	_validate_reverse_ritual_contract(content_index, errors)
 	_validate_murasaki_burst(content_index, errors)
 
-func _validate_marker_contract(content_index, errors: Array) -> void:
+func _validate_marker_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	_validate_marker_effect(content_index, errors, "formal[gojo_satoru].ao_mark", "gojo_ao_mark", "gojo_ao_speed_up", "speed", 1)
 	_validate_marker_effect(content_index, errors, "formal[gojo_satoru].aka_mark", "gojo_aka_mark", "gojo_aka_slow_down", "speed", -1)
 
 func _validate_marker_effect(
-	content_index,
+	content_index: BattleContentIndex,
 	errors: Array,
 	label: String,
 	marker_effect_id: String,
@@ -117,7 +117,7 @@ func _validate_marker_effect(
 		}
 	)
 
-func _validate_reverse_ritual_contract(content_index, errors: Array) -> void:
+func _validate_reverse_ritual_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[gojo_satoru].reverse_ritual"
 	var effect_definition = _require_effect(content_index, errors, label, "gojo_reverse_heal")
 	if effect_definition == null:
@@ -150,7 +150,7 @@ func _validate_reverse_ritual_contract(content_index, errors: Array) -> void:
 		}
 	)
 
-func _validate_murasaki_burst(content_index, errors: Array) -> void:
+func _validate_murasaki_burst(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[gojo_satoru].murasaki_burst"
 	var effect_definition = _require_effect(content_index, errors, label, "gojo_murasaki_conditional_burst")
 	if effect_definition == null:
@@ -194,7 +194,7 @@ func _expect_remove_effect_payload_at(effect_definition, errors: Array, label: S
 		{"effect_definition_id": expected_effect_id}
 	)
 
-func _validate_ultimate_domain(content_index, errors: Array) -> void:
+func _validate_ultimate_domain(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_skill_contracts(
 		self,
 		content_index,
@@ -204,7 +204,7 @@ func _validate_ultimate_domain(content_index, errors: Array) -> void:
 	_validate_domain_followup(content_index, errors)
 	_validate_domain_buff_contract(content_index, errors)
 
-func _validate_domain_followup(content_index, errors: Array) -> void:
+func _validate_domain_followup(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[gojo_satoru].domain_followup"
 	var effect_definition = _require_effect(content_index, errors, label, "gojo_apply_domain_field")
 	if effect_definition == null:
@@ -243,7 +243,7 @@ func _validate_domain_followup(content_index, errors: Array) -> void:
 		PackedStringArray(["gojo_domain_action_lock"])
 	)
 
-func _validate_domain_buff_contract(content_index, errors: Array) -> void:
+func _validate_domain_buff_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[gojo_satoru].domain_buff_contract"
 	_helper.validate_field_contracts(
 		self,
@@ -290,7 +290,7 @@ func _validate_domain_buff_contract(content_index, errors: Array) -> void:
 	_validate_stat_mod_effect(content_index, errors, label, "gojo_domain_buff_remove", "sp_attack", -1, PackedStringArray(["field_break", "field_expire"]))
 
 func _validate_stat_mod_effect(
-	content_index,
+	content_index: BattleContentIndex,
 	errors: Array,
 	label: String,
 	effect_id: String,

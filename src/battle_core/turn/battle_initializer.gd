@@ -103,7 +103,7 @@ func resolve_missing_dependency() -> String:
 func error_state() -> Dictionary:
 	return ErrorStateHelperScript.error_state(self)
 
-func initialize_battle(battle_state, content_index, battle_setup) -> bool:
+func initialize_battle(battle_state: BattleState, content_index: BattleContentIndex, battle_setup) -> bool:
 	ErrorStateHelperScript.clear(self)
 	var missing_local_helper := _resolve_missing_local_helper()
 	if not missing_local_helper.is_empty():
@@ -152,7 +152,7 @@ func initialize_battle(battle_state, content_index, battle_setup) -> bool:
 	battle_state.phase = BattlePhasesScript.SELECTION
 	return true
 
-func _build_side_states(battle_state, battle_setup, format_config, content_index) -> bool:
+func _build_side_states(battle_state: BattleState, battle_setup, format_config, content_index: BattleContentIndex) -> bool:
 	for side_setup in battle_setup.sides:
 		var side_state = _state_builder.build_side_state(side_setup, format_config, content_index, id_factory, public_id_allocator)
 		if side_state == null:

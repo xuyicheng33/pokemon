@@ -31,7 +31,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func execute(payload, _effect_definition, effect_event, battle_state, content_index, execute_trigger_batch: Callable = Callable()) -> void:
+func execute(payload, _effect_definition, effect_event: EffectEvent, battle_state: BattleState, content_index: BattleContentIndex, execute_trigger_batch: Callable = Callable()) -> void:
 	last_invalid_battle_code = null
 	if not payload is ForcedReplacePayloadScript:
 		return

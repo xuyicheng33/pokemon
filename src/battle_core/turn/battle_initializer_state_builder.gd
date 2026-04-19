@@ -14,7 +14,7 @@ var last_error_message: String = ""
 func error_state() -> Dictionary:
 	return ErrorStateHelperScript.error_state(self)
 
-func build_side_state(side_setup, format_config, content_index, id_factory, public_id_allocator) -> Variant:
+func build_side_state(side_setup, format_config, content_index: BattleContentIndex, id_factory, public_id_allocator) -> Variant:
 	ErrorStateHelperScript.clear(self)
 	if side_setup == null:
 		return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "BattleInitializerStateBuilder requires side_setup")

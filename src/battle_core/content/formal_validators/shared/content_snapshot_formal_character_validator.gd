@@ -10,7 +10,7 @@ var _validator_cache: Dictionary = {}
 var _validator_error_cache: Dictionary = {}
 var _descriptors_loaded: bool = false
 
-func validate(content_index, errors: Array) -> void:
+func validate(content_index: BattleContentIndex, errors: Array) -> void:
 	_ensure_descriptors_loaded()
 	if not _registry_error.is_empty():
 		errors.append(_registry_error)
@@ -33,7 +33,7 @@ func validate(content_index, errors: Array) -> void:
 			continue
 		validator.validate(content_index, errors)
 
-func _character_is_present(content_index, descriptor: Dictionary) -> bool:
+func _character_is_present(content_index: BattleContentIndex, descriptor: Dictionary) -> bool:
 	var unit_definition_id := String(descriptor.get("unit_definition_id", "")).strip_edges()
 	if unit_definition_id.is_empty():
 		return false

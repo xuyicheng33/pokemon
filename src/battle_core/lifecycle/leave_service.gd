@@ -25,7 +25,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func leave_unit(battle_state, unit_state, reason: String, content_index) -> void:
+func leave_unit(battle_state: BattleState, unit_state, reason: String, content_index: BattleContentIndex) -> void:
 	last_invalid_battle_code = null
 	var side_state = battle_state.get_side_for_unit(unit_state.unit_instance_id)
 	if side_state == null:

@@ -46,7 +46,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func collect_active_unit_ids(battle_state) -> Array:
+func collect_active_unit_ids(battle_state: BattleState) -> Array:
 	var owner_ids: Array = []
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
@@ -54,7 +54,7 @@ func collect_active_unit_ids(battle_state) -> Array:
 			owner_ids.append(active_unit.unit_instance_id)
 	return owner_ids
 
-func execute_matchup_changed_if_needed(battle_state, content_index) -> bool:
+func execute_matchup_changed_if_needed(battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	var signature: String = field_service.build_matchup_signature(battle_state)
 	if signature.is_empty() or signature == battle_state.last_matchup_signature:
 		return false
@@ -71,7 +71,7 @@ func execute_matchup_changed_if_needed(battle_state, content_index) -> bool:
 	battle_state.last_matchup_signature = signature
 	return false
 
-func break_field_if_creator_inactive(battle_state, content_index) -> bool:
+func break_field_if_creator_inactive(battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	var invalid_code = field_service.break_field_if_creator_inactive(
 		battle_state,
 		content_index,
@@ -83,7 +83,7 @@ func break_field_if_creator_inactive(battle_state, content_index) -> bool:
 	battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
 	return true
 
-func break_active_field(battle_state, content_index, trigger_name: String) -> bool:
+func break_active_field(battle_state: BattleState, content_index: BattleContentIndex, trigger_name: String) -> bool:
 	var invalid_code = field_service.break_active_field(
 		battle_state,
 		content_index,
@@ -96,7 +96,7 @@ func break_active_field(battle_state, content_index, trigger_name: String) -> bo
 	battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
 	return true
 
-func apply_turn_end_field_tick(battle_state, content_index, cause_event_id: String) -> Variant:
+func apply_turn_end_field_tick(battle_state: BattleState, content_index: BattleContentIndex, cause_event_id: String) -> Variant:
 	if battle_state.field_state == null:
 		return {
 			"field_change": null,

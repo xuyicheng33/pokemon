@@ -8,7 +8,7 @@ var battle_result_service: BattleResultService
 var runtime_guard_service: RuntimeGuardService
 var battle_logger: BattleLogger
 
-func validate_runtime_or_terminate(battle_state, content_index = null) -> bool:
+func validate_runtime_or_terminate(battle_state: BattleState, content_index: BattleContentIndex = null) -> bool:
 	var invalid_code = runtime_guard_service.validate_runtime_state(battle_state, content_index)
 	if invalid_code == null and battle_logger != null and battle_logger.has_method("error_state"):
 		var logger_error_state: Dictionary = battle_logger.error_state()
@@ -18,7 +18,7 @@ func validate_runtime_or_terminate(battle_state, content_index = null) -> bool:
 	battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
 	return true
 
-func validate_dependencies_or_terminate(battle_state, owner) -> bool:
+func validate_dependencies_or_terminate(battle_state: BattleState, owner) -> bool:
 	var missing_dependency: String = "runtime_guard_service" if runtime_guard_service == null else str(runtime_guard_service.resolve_missing_dependency(owner))
 	if missing_dependency.is_empty():
 		return false
@@ -32,7 +32,7 @@ func validate_dependencies_or_terminate(battle_state, owner) -> bool:
 		_fallback_hard_terminate_invalid_state(battle_state, ErrorCodesScript.INVALID_STATE_CORRUPTION)
 	return true
 
-func _fallback_hard_terminate_invalid_state(battle_state, invalid_code: String) -> void:
+func _fallback_hard_terminate_invalid_state(battle_state: BattleState, invalid_code: String) -> void:
 	if battle_state.battle_result == null:
 		return
 	battle_state.battle_result.finished = true

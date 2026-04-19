@@ -39,7 +39,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func apply_stat_mod_payload(payload, effect_definition, effect_event, battle_state) -> void:
+func apply_stat_mod_payload(payload, effect_definition, effect_event: EffectEvent, battle_state: BattleState) -> void:
 	var target_unit = target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
 	if not target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
 		return
@@ -91,14 +91,14 @@ func apply_stat_mod_payload(payload, effect_definition, effect_event, battle_sta
 		}
 	))
 
-func _should_record_field_reversible_stat_mod(effect_event, battle_state) -> bool:
+func _should_record_field_reversible_stat_mod(effect_event: EffectEvent, battle_state: BattleState) -> bool:
 	return battle_state != null \
 		and battle_state.field_state != null \
 		and effect_event != null \
 		and effect_event.trigger_name == "field_apply" \
 		and effect_event.source_instance_id == battle_state.field_state.instance_id
 
-func _should_consume_field_reversible_stat_mod(effect_event, battle_state) -> bool:
+func _should_consume_field_reversible_stat_mod(effect_event: EffectEvent, battle_state: BattleState) -> bool:
 	return battle_state != null \
 		and battle_state.field_state != null \
 		and effect_event != null \

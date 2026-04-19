@@ -27,7 +27,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func log_action_cancelled_pre_start(queued_action, battle_state, command) -> void:
+func log_action_cancelled_pre_start(queued_action: QueuedAction, battle_state: BattleState, command: Command) -> void:
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.ACTION_CANCELLED_PRE_START,
 		battle_state,
@@ -41,7 +41,7 @@ func log_action_cancelled_pre_start(queued_action, battle_state, command) -> voi
 		}
 	))
 
-func log_action_cast(queued_action, battle_state, command, mp_changes: Array) -> String:
+func log_action_cast(queued_action: QueuedAction, battle_state: BattleState, command: Command, mp_changes: Array) -> String:
 	var log_event = log_event_builder.build_event(
 		EventTypesScript.ACTION_CAST,
 		battle_state,
@@ -61,7 +61,7 @@ func log_action_cast(queued_action, battle_state, command, mp_changes: Array) ->
 	battle_logger.append_event(log_event)
 	return log_event_builder.resolve_event_id(log_event)
 
-func log_action_failed_post_start(queued_action, battle_state, command) -> void:
+func log_action_failed_post_start(queued_action: QueuedAction, battle_state: BattleState, command: Command) -> void:
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.ACTION_FAILED_POST_START,
 		battle_state,
@@ -77,7 +77,7 @@ func log_action_failed_post_start(queued_action, battle_state, command) -> void:
 		}
 	))
 
-func log_action_miss(queued_action, battle_state, command, target_instance_id: Variant, hit_roll: Variant) -> void:
+func log_action_miss(queued_action: QueuedAction, battle_state: BattleState, command: Command, target_instance_id: Variant, hit_roll: Variant) -> void:
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.ACTION_MISS,
 		battle_state,
@@ -95,7 +95,7 @@ func log_action_miss(queued_action, battle_state, command, target_instance_id: V
 		}
 	))
 
-func log_action_hit(queued_action, battle_state, command, target_instance_id: Variant, hit_roll: Variant) -> String:
+func log_action_hit(queued_action: QueuedAction, battle_state: BattleState, command: Command, target_instance_id: Variant, hit_roll: Variant) -> String:
 	var log_event = log_event_builder.build_event(
 		EventTypesScript.ACTION_HIT,
 		battle_state,
@@ -115,7 +115,7 @@ func log_action_hit(queued_action, battle_state, command, target_instance_id: Va
 	battle_logger.append_event(log_event)
 	return log_event_builder.resolve_event_id(log_event)
 
-func log_damage(queued_action, battle_state, actor, target, damage_amount: int, value_change, type_effectiveness: float, cause_event_id: String, segment_index: int = 0, segment_total: int = 0, summary_suffix: String = "") -> Variant:
+func log_damage(queued_action: QueuedAction, battle_state: BattleState, actor, target, damage_amount: int, value_change, type_effectiveness: float, cause_event_id: String, segment_index: int = 0, segment_total: int = 0, summary_suffix: String = "") -> Variant:
 	var payload_summary := "%s dealt %d damage to %s" % [actor.public_id, damage_amount, target.public_id]
 	if segment_index > 0 and segment_total > 0:
 		payload_summary += " [segment %d/%d]" % [segment_index, segment_total]
@@ -139,7 +139,7 @@ func log_damage(queued_action, battle_state, actor, target, damage_amount: int, 
 	battle_logger.append_event(log_event)
 	return log_event
 
-func log_recoil(queued_action, battle_state, actor, recoil_amount: int, value_change, cause_event_id: String) -> Variant:
+func log_recoil(queued_action: QueuedAction, battle_state: BattleState, actor, recoil_amount: int, value_change, cause_event_id: String) -> Variant:
 	var log_event = log_event_builder.build_effect_event(
 		EventTypesScript.EFFECT_DAMAGE,
 		battle_state,
@@ -157,7 +157,7 @@ func log_recoil(queued_action, battle_state, actor, recoil_amount: int, value_ch
 	battle_logger.append_event(log_event)
 	return log_event
 
-func log_switch_state(queued_action, battle_state, actor, target_unit) -> void:
+func log_switch_state(queued_action: QueuedAction, battle_state: BattleState, actor, target_unit) -> void:
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.STATE_SWITCH,
 		battle_state,
@@ -172,7 +172,7 @@ func log_switch_state(queued_action, battle_state, actor, target_unit) -> void:
 		}
 	))
 
-func log_state_enter(battle_state, target_unit) -> void:
+func log_state_enter(battle_state: BattleState, target_unit) -> void:
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.STATE_ENTER,
 		battle_state,
@@ -188,7 +188,7 @@ func log_state_enter(battle_state, target_unit) -> void:
 func build_value_change(entity_id: String, resource_name: String, before_value: int, after_value: int) -> Variant:
 	return ValueChangeFactoryScript.create(entity_id, resource_name, before_value, after_value)
 
-func log_action_resource_change(queued_action, battle_state, actor, resource_name: String, before_value: int, after_value: int, cause_event_id: String, payload_summary: String) -> void:
+func log_action_resource_change(queued_action: QueuedAction, battle_state: BattleState, actor, resource_name: String, before_value: int, after_value: int, cause_event_id: String, payload_summary: String) -> void:
 	if before_value == after_value:
 		return
 	var value_change = build_value_change(actor.unit_instance_id, resource_name, before_value, after_value)

@@ -1,6 +1,6 @@
 extends RefCounted
 
-func validate(errors: Array, effect_id: String, payload, _content_index, _dispatcher) -> void:
+func validate(errors: Array, effect_id: String, payload, _content_index: BattleContentIndex, _dispatcher) -> void:
 	if bool(payload.use_percent):
 		if int(payload.percent) < 1 or int(payload.percent) > 100:
 			errors.append("effect[%s].heal percent out of range: %d" % [effect_id, int(payload.percent)])

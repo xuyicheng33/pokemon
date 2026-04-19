@@ -24,7 +24,7 @@ func resolve_missing_dependency() -> String:
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
-func collect_trigger_events(trigger_name: String, battle_state, content_index, owner_unit_ids: Array, chain_context) -> Array:
+func collect_trigger_events(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex, owner_unit_ids: Array, chain_context: ChainContext) -> Array:
 	last_invalid_battle_code = null
 	var effect_events: Array = []
 	for owner_id in owner_unit_ids:
@@ -54,7 +54,7 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, o
 			effect_events.append(effect_event)
 	return effect_events
 
-func _should_skip_reentered_persistent_turn_trigger(effect_instance, trigger_name: String, owner_unit, battle_state) -> bool:
+func _should_skip_reentered_persistent_turn_trigger(effect_instance, trigger_name: String, owner_unit, battle_state: BattleState) -> bool:
 	if effect_instance == null or owner_unit == null or battle_state == null:
 		return false
 	if not bool(effect_instance.persists_on_switch):
@@ -63,7 +63,7 @@ func _should_skip_reentered_persistent_turn_trigger(effect_instance, trigger_nam
 		return false
 	return int(owner_unit.reentered_turn_index) == int(battle_state.turn_index)
 
-func decrement_for_trigger(trigger_name: String, battle_state, content_index, owner_unit_ids: Array) -> Dictionary:
+func decrement_for_trigger(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex, owner_unit_ids: Array) -> Dictionary:
 	last_invalid_battle_code = null
 	var removed_instances: Array = []
 	var expire_events: Array = []
@@ -115,7 +115,7 @@ func decrement_for_trigger(trigger_name: String, battle_state, content_index, ow
 		"invalid_code": null,
 	}
 
-func _is_unit_currently_active(battle_state, owner_unit) -> bool:
+func _is_unit_currently_active(battle_state: BattleState, owner_unit) -> bool:
 	if battle_state == null or owner_unit == null:
 		return false
 	var owner_side = battle_state.get_side_for_unit(owner_unit.unit_instance_id)
@@ -126,7 +126,7 @@ func _is_unit_currently_active(battle_state, owner_unit) -> bool:
 			return true
 	return false
 
-func _collect_expire_events(effect_instance, effect_definition, owner_id: String, battle_state, content_index) -> Array:
+func _collect_expire_events(effect_instance, effect_definition, owner_id: String, battle_state: BattleState, content_index: BattleContentIndex) -> Array:
 	var expire_events: Array = []
 	for effect_id in effect_definition.on_expire_effect_ids:
 		var next_effect_definition = content_index.effects.get(effect_id)
@@ -147,7 +147,7 @@ func _collect_expire_events(effect_instance, effect_definition, owner_id: String
 		expire_events.append(effect_event)
 	return expire_events
 
-func _build_expire_chain_context(chain_context, battle_state, owner_id: String) -> Variant:
+func _build_expire_chain_context(chain_context: ChainContext, battle_state: BattleState, owner_id: String) -> Variant:
 	if chain_context == null:
 		return null
 	var expire_chain_context = chain_context.copy_shallow()

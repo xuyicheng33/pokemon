@@ -11,7 +11,7 @@ const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_e
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 
-func validate(content_index, errors: Array, payload_validator) -> void:
+func validate(content_index: BattleContentIndex, errors: Array, payload_validator) -> void:
 	var allowed_scopes := PackedStringArray(["self", "target", "field", "action_actor"])
 	for effect_id in content_index.effects.keys():
 		var effect_definition = content_index.effects[effect_id]
@@ -100,7 +100,7 @@ func _resolve_payload_scope_label(payload) -> String:
 		return "rule_mod"
 	return String(payload.payload_type if payload != null else "payload")
 
-func _validate_required_target_effects(content_index, errors: Array, effect_id: String, effect_definition) -> void:
+func _validate_required_target_effects(content_index: BattleContentIndex, errors: Array, effect_id: String, effect_definition) -> void:
 	if effect_definition.required_target_effects.is_empty():
 		if bool(effect_definition.required_target_same_owner):
 			errors.append("effect[%s].required_target_same_owner requires required_target_effects" % effect_id)
@@ -132,7 +132,7 @@ func _validate_persistent_rule_mod_contract(errors: Array, effect_id: String, ef
 			continue
 		errors.append("effect[%s].rule_mod persists_on_switch must be true when effect persists_on_switch=true" % effect_id)
 
-func _validate_incoming_action_filters(content_index, errors: Array, effect_id: String, effect_definition) -> void:
+func _validate_incoming_action_filters(content_index: BattleContentIndex, errors: Array, effect_id: String, effect_definition) -> void:
 	var command_filters: PackedStringArray = effect_definition.required_incoming_command_types
 	var combat_type_filters: PackedStringArray = effect_definition.required_incoming_combat_type_ids
 	if command_filters.is_empty() and combat_type_filters.is_empty():

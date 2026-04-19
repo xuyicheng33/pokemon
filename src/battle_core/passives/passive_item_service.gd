@@ -23,7 +23,7 @@ func resolve_missing_dependency() -> String:
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
-func collect_trigger_events(trigger_name: String, battle_state, content_index, owner_unit_ids: Array, chain_context) -> Array:
+func collect_trigger_events(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex, owner_unit_ids: Array, chain_context: ChainContext) -> Array:
 	last_invalid_battle_code = null
 	var effect_events: Array = []
 	for owner_id in owner_unit_ids:

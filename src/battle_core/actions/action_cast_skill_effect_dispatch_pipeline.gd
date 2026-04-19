@@ -8,7 +8,7 @@ var rng_service: RngService
 var trigger_batch_runner: TriggerBatchRunner
 
 
-func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String, queued_action, actor, battle_state, content_index, result, source_kind_order_active_skill: int) -> void:
+func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String, queued_action: QueuedAction, actor, battle_state: BattleState, content_index: BattleContentIndex, result, source_kind_order_active_skill: int) -> void:
 	if effect_ids.is_empty():
 		return
 	var effect_events = trigger_dispatcher.collect_events(

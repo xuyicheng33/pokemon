@@ -9,7 +9,7 @@ var _unit_skill_helper = UnitSkillContractHelperScript.new()
 
 func validate_unit_contract(
 	validator,
-	content_index,
+	content_index: BattleContentIndex,
 	errors: Array,
 	label: String,
 	unit_id: String,
@@ -24,7 +24,7 @@ func validate_unit_contract(
 		expected_fields
 	)
 
-func validate_unit_contract_descriptor(validator, content_index, errors: Array, descriptor: Dictionary) -> Variant:
+func validate_unit_contract_descriptor(validator, content_index: BattleContentIndex, errors: Array, descriptor: Dictionary) -> Variant:
 	return _unit_skill_helper.validate_unit_contract_descriptor(
 		validator,
 		content_index,
@@ -32,16 +32,16 @@ func validate_unit_contract_descriptor(validator, content_index, errors: Array, 
 		descriptor
 	)
 
-func validate_skill_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
+func validate_skill_contracts(validator, content_index: BattleContentIndex, errors: Array, descriptors: Array) -> void:
 	_unit_skill_helper.validate_skill_contracts(validator, content_index, errors, descriptors)
 
-func validate_effect_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
+func validate_effect_contracts(validator, content_index: BattleContentIndex, errors: Array, descriptors: Array) -> void:
 	_effect_field_helper.validate_effect_contracts(validator, content_index, errors, descriptors)
 
-func validate_field_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
+func validate_field_contracts(validator, content_index: BattleContentIndex, errors: Array, descriptors: Array) -> void:
 	_effect_field_helper.validate_field_contracts(validator, content_index, errors, descriptors)
 
-func validate_passive_skill_contracts(validator, content_index, errors: Array, descriptors: Array) -> void:
+func validate_passive_skill_contracts(validator, content_index: BattleContentIndex, errors: Array, descriptors: Array) -> void:
 	_unit_skill_helper.validate_passive_skill_contracts(
 		validator,
 		content_index,

@@ -11,7 +11,7 @@ var battle_logger: BattleLogger
 var log_event_builder: LogEventBuilder
 var battle_result_service: BattleResultService
 
-func execute_expiry_phase(battle_state, content_index, trigger_name: String, cause_event_id: String) -> bool:
+func execute_expiry_phase(battle_state: BattleState, content_index: BattleContentIndex, trigger_name: String, cause_event_id: String) -> bool:
 	var owner_unit_ids: Array = collect_effect_decrement_owner_ids(battle_state)
 	if _decrement_effect_instances_and_log(
 		battle_state,
@@ -26,7 +26,7 @@ func execute_expiry_phase(battle_state, content_index, trigger_name: String, cau
 		return true
 	return false
 
-func collect_effect_decrement_owner_ids(battle_state) -> Array:
+func collect_effect_decrement_owner_ids(battle_state: BattleState) -> Array:
 	var owner_ids: Array = turn_field_lifecycle_service.collect_active_unit_ids(battle_state)
 	var seen_owner_ids: Dictionary = {}
 	for owner_id in owner_ids:
@@ -44,7 +44,7 @@ func collect_effect_decrement_owner_ids(battle_state) -> Array:
 			seen_owner_ids[unit_id] = true
 	return owner_ids
 
-func _decrement_rule_mods_and_log(battle_state, trigger_name: String, cause_event_id: String) -> void:
+func _decrement_rule_mods_and_log(battle_state: BattleState, trigger_name: String, cause_event_id: String) -> void:
 	var removed_instances: Array = rule_mod_service.decrement_for_trigger(battle_state, trigger_name)
 	for removed in removed_instances:
 		var removed_instance = removed["instance"]
@@ -62,7 +62,7 @@ func _decrement_rule_mods_and_log(battle_state, trigger_name: String, cause_even
 		)
 		battle_logger.append_event(log_event)
 
-func _decrement_effect_instances_and_log(battle_state, content_index, trigger_name: String, owner_unit_ids: Array, cause_event_id: String) -> bool:
+func _decrement_effect_instances_and_log(battle_state: BattleState, content_index: BattleContentIndex, trigger_name: String, owner_unit_ids: Array, cause_event_id: String) -> bool:
 	var decrement_result: Dictionary = effect_instance_dispatcher.decrement_for_trigger(
 		trigger_name,
 		battle_state,

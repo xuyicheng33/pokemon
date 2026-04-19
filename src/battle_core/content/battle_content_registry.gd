@@ -12,7 +12,7 @@ const FieldDefinitionScript := preload("res://src/battle_core/content/field_defi
 
 var last_error_message: String = ""
 
-func clear(content_index) -> void:
+func clear(content_index: BattleContentIndex) -> void:
 	content_index.battle_formats.clear()
 	content_index.combat_types.clear()
 	content_index.units.clear()
@@ -24,7 +24,7 @@ func clear(content_index) -> void:
 	content_index.duplicate_registration_errors.clear()
 	last_error_message = ""
 
-func register_resource(content_index, resource: Resource) -> bool:
+func register_resource(content_index: BattleContentIndex, resource: Resource) -> bool:
 	last_error_message = ""
 	if resource is BattleFormatConfigScript:
 		return _register_unique_resource(content_index.battle_formats, String(resource.format_id), resource, "battle_format", content_index.duplicate_registration_errors)

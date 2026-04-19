@@ -10,7 +10,7 @@ var rule_mod_service: RuleModService
 var rng_service: RngService
 
 
-func resolve_hit(command, skill_definition, resolved_target, battle_state, content_index) -> Dictionary:
+func resolve_hit(command: Command, skill_definition, resolved_target, battle_state: BattleState, content_index: BattleContentIndex) -> Dictionary:
 	if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
 		return {"hit": true, "hit_roll": null}
 	var resolved_accuracy: int = _resolve_base_accuracy(skill_definition)
@@ -36,7 +36,7 @@ func resolve_hit(command, skill_definition, resolved_target, battle_state, conte
 func _resolve_base_accuracy(skill_definition) -> int:
 	return int(skill_definition.accuracy)
 
-func _apply_field_accuracy_override(base_accuracy: int, command, skill_definition, resolved_target, battle_state, content_index) -> int:
+func _apply_field_accuracy_override(base_accuracy: int, command: Command, skill_definition, resolved_target, battle_state: BattleState, content_index: BattleContentIndex) -> int:
 	if battle_state.field_state == null or command.actor_id != battle_state.field_state.creator:
 		return base_accuracy
 	var field_definition = content_index.fields.get(battle_state.field_state.field_def_id) if content_index != null else null
@@ -48,7 +48,7 @@ func _apply_field_accuracy_override(base_accuracy: int, command, skill_definitio
 		return base_accuracy
 	return int(field_definition.creator_accuracy_override)
 
-func _apply_incoming_accuracy_override(base_accuracy: int, command, skill_definition, resolved_target, battle_state) -> int:
+func _apply_incoming_accuracy_override(base_accuracy: int, command: Command, skill_definition, resolved_target, battle_state: BattleState) -> int:
 	if base_accuracy >= 100:
 		return base_accuracy
 	if not _should_read_incoming_accuracy(command, skill_definition, resolved_target, battle_state):
@@ -62,7 +62,7 @@ func _apply_incoming_accuracy_override(base_accuracy: int, command, skill_defini
 func _roll_hit_result(resolved_accuracy: int) -> Dictionary:
 	return hit_service.roll_hit(resolved_accuracy, rng_service)
 
-func _should_nullify_field_accuracy(command, skill_definition, resolved_target, battle_state) -> bool:
+func _should_nullify_field_accuracy(command: Command, skill_definition, resolved_target, battle_state: BattleState) -> bool:
 	if not _should_read_incoming_accuracy(command, skill_definition, resolved_target, battle_state):
 		return false
 	return rule_mod_service.has_nullify_field_accuracy(
@@ -70,7 +70,7 @@ func _should_nullify_field_accuracy(command, skill_definition, resolved_target, 
 		resolved_target.unit_instance_id
 	)
 
-func _should_read_incoming_accuracy(command, skill_definition, resolved_target, battle_state) -> bool:
+func _should_read_incoming_accuracy(command: Command, skill_definition, resolved_target, battle_state: BattleState) -> bool:
 	if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
 		return false
 	if skill_definition == null or String(skill_definition.targeting) != ContentSchemaScript.TARGET_ENEMY_ACTIVE:

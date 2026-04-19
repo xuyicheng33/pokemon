@@ -9,7 +9,7 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 func resolve_missing_dependency(service_owner) -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(service_owner)
 
-func validate_runtime_state(battle_state, content_index = null) -> Variant:
+func validate_runtime_state(battle_state: BattleState, content_index: BattleContentIndex = null) -> Variant:
 	if battle_state.chain_context == null:
 		return ErrorCodesScript.INVALID_STATE_CORRUPTION
 	if battle_state.max_chain_depth <= 0:

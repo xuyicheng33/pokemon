@@ -3,7 +3,7 @@ class_name ContentSnapshotFieldValidator
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
-func validate(content_index, errors: Array, payload_validator) -> void:
+func validate(content_index: BattleContentIndex, errors: Array, payload_validator) -> void:
 	var allowed_field_kinds := PackedStringArray([
 		ContentSchemaScript.FIELD_KIND_NORMAL,
 		ContentSchemaScript.FIELD_KIND_DOMAIN,

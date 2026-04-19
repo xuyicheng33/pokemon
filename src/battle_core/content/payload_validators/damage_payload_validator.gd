@@ -2,7 +2,7 @@ extends RefCounted
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
-func validate(errors: Array, effect_id: String, payload, content_index, _dispatcher) -> void:
+func validate(errors: Array, effect_id: String, payload, content_index: BattleContentIndex, _dispatcher) -> void:
 	if int(payload.amount) <= 0:
 		errors.append("effect[%s].damage amount must be > 0, got %d" % [effect_id, int(payload.amount)])
 	if bool(payload.use_formula):

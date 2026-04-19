@@ -12,12 +12,12 @@ const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_pa
 
 var _helper = ContractHelperScript.new()
 
-func validate(content_index, errors: Array) -> void:
+func validate(content_index: BattleContentIndex, errors: Array) -> void:
 	_validate_unit_passive(content_index, errors)
 	_validate_skill_effect(content_index, errors)
 	_validate_ultimate_domain(content_index, errors)
 
-func _validate_unit_passive(content_index, errors: Array) -> void:
+func _validate_unit_passive(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_unit_contract_descriptor(
 		self,
 		content_index,
@@ -27,7 +27,7 @@ func _validate_unit_passive(content_index, errors: Array) -> void:
 	_validate_charge_separation_contract(content_index, errors)
 	_validate_charge_separation_effects(content_index, errors)
 
-func _validate_charge_separation_contract(content_index, errors: Array) -> void:
+func _validate_charge_separation_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_passive_skill_contracts(
 		self,
 		content_index,
@@ -35,13 +35,13 @@ func _validate_charge_separation_contract(content_index, errors: Array) -> void:
 		[FormalCharacterBaselinesScript.passive_contract("kashimo_hajime", "kashimo_charge_separation")]
 	)
 
-func _validate_charge_separation_effects(content_index, errors: Array) -> void:
+func _validate_charge_separation_effects(content_index: BattleContentIndex, errors: Array) -> void:
 	_validate_apply_water_leak_listeners(content_index, errors)
 	_validate_thunder_resist(content_index, errors)
 	_validate_water_leak_self(content_index, errors)
 	_validate_water_leak_counter(content_index, errors)
 
-func _validate_thunder_resist(content_index, errors: Array) -> void:
+func _validate_thunder_resist(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].thunder_resist"
 	var effect_definition = _require_effect(content_index, errors, label, "kashimo_thunder_resist")
 	if effect_definition == null:
@@ -62,7 +62,7 @@ func _validate_thunder_resist(content_index, errors: Array) -> void:
 	_expect_packed_string_array(errors, "%s required_incoming_command_types" % label, payload.required_incoming_command_types, PackedStringArray(["skill", "ultimate"]))
 	_expect_packed_string_array(errors, "%s required_incoming_combat_type_ids" % label, payload.required_incoming_combat_type_ids, PackedStringArray(["thunder"]))
 
-func _validate_apply_water_leak_listeners(content_index, errors: Array) -> void:
+func _validate_apply_water_leak_listeners(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].water_leak_listeners"
 	var effect_definition = _require_effect(content_index, errors, label, "kashimo_apply_water_leak_listeners")
 	if effect_definition == null:
@@ -84,7 +84,7 @@ func _validate_apply_water_leak_listeners(content_index, errors: Array) -> void:
 			continue
 		_expect_payload_shape(errors, "%s payload[%d]" % [label, payload_index], payload, {"effect_definition_id": expected_effect_ids[payload_index]})
 
-func _validate_water_leak_self(content_index, errors: Array) -> void:
+func _validate_water_leak_self(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].water_leak_self"
 	var effect_definition = _require_effect(content_index, errors, label, "kashimo_water_leak_self_listener")
 	if effect_definition == null:
@@ -98,7 +98,7 @@ func _validate_water_leak_self(content_index, errors: Array) -> void:
 	var payload = _extract_single_payload(errors, label, "kashimo_water_leak_self_listener", effect_definition, ResourceModPayloadScript, "resource_mod")
 	_expect_payload_shape(errors, "%s effect" % label, payload, {"resource_key": "mp", "amount": -15})
 
-func _validate_water_leak_counter(content_index, errors: Array) -> void:
+func _validate_water_leak_counter(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].water_leak_counter"
 	var effect_definition = _require_effect(content_index, errors, label, "kashimo_water_leak_counter_listener")
 	if effect_definition == null:
@@ -116,7 +116,7 @@ func _validate_water_leak_counter(content_index, errors: Array) -> void:
 	_expect_bool(errors, "%s use_formula" % label, payload.use_formula, false)
 	_expect_string(errors, "%s combat_type_id" % label, payload.combat_type_id, "poison")
 
-func _validate_skill_effect(content_index, errors: Array) -> void:
+func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) -> void:
 	var regular_skill_ids := PackedStringArray([
 		"kashimo_raiken",
 		"kashimo_charge",
@@ -132,7 +132,7 @@ func _validate_skill_effect(content_index, errors: Array) -> void:
 	_validate_kyokyo_contract(content_index, errors)
 	_validate_charge_apply_consume(content_index, errors)
 
-func _validate_kyokyo_contract(content_index, errors: Array) -> void:
+func _validate_kyokyo_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].kyokyo"
 	var effect_definition = _require_effect(content_index, errors, label, "kashimo_kyokyo_nullify")
 	if effect_definition == null:
@@ -161,7 +161,7 @@ func _validate_kyokyo_contract(content_index, errors: Array) -> void:
 		}
 	)
 
-func _validate_charge_apply_consume(content_index, errors: Array) -> void:
+func _validate_charge_apply_consume(content_index: BattleContentIndex, errors: Array) -> void:
 	_validate_apply_charge(
 		content_index,
 		errors,
@@ -200,7 +200,7 @@ func _validate_charge_apply_consume(content_index, errors: Array) -> void:
 	)
 
 func _validate_apply_charge(
-	content_index,
+	content_index: BattleContentIndex,
 	errors: Array,
 	label: String,
 	effect_id: String,
@@ -227,7 +227,7 @@ func _validate_apply_charge(
 		{"effect_definition_id": expected_mark_effect_id}
 	)
 
-func _validate_negative_charge_mark(content_index, errors: Array) -> void:
+func _validate_negative_charge_mark(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].negative_charge_mark"
 	var effect_definition = _require_effect(content_index, errors, label, "kashimo_negative_charge_mark")
 	if effect_definition == null:
@@ -261,7 +261,7 @@ func _validate_negative_charge_mark(content_index, errors: Array) -> void:
 		{"amount": 8, "use_formula": false, "combat_type_id": "thunder"}
 	)
 
-func _validate_positive_charge_mark(content_index, errors: Array) -> void:
+func _validate_positive_charge_mark(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].positive_charge_mark"
 	var effect_definition = _require_effect(content_index, errors, label, "kashimo_positive_charge_mark")
 	if effect_definition == null:
@@ -296,7 +296,7 @@ func _validate_positive_charge_mark(content_index, errors: Array) -> void:
 	)
 
 func _validate_consume_charge(
-	content_index,
+	content_index: BattleContentIndex,
 	errors: Array,
 	label: String,
 	effect_id: String,
@@ -329,7 +329,7 @@ func _validate_consume_charge(
 		{"effect_definition_id": expected_mark_effect_id, "remove_mode": "all"}
 	)
 
-func _validate_ultimate_domain(content_index, errors: Array) -> void:
+func _validate_ultimate_domain(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_skill_contracts(
 		self,
 		content_index,
@@ -338,7 +338,7 @@ func _validate_ultimate_domain(content_index, errors: Array) -> void:
 	)
 	_validate_amber_contract(content_index, errors)
 
-func _validate_amber_contract(content_index, errors: Array) -> void:
+func _validate_amber_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].amber_contract"
 	var amber_effect = _require_effect(content_index, errors, label, "kashimo_amber_self_transform")
 	var amber_bleed = _require_effect(content_index, errors, label, "kashimo_amber_bleed")

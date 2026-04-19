@@ -7,10 +7,10 @@ const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_he
 var rule_gate
 
 func collect_cast_action_flags_result(
-	battle_state,
+	battle_state: BattleState,
 	actor,
 	unit_definition,
-	content_index,
+	content_index: BattleContentIndex,
 	side_domain_recast_blocked: bool,
 	legal_action_set
 ) -> Dictionary:
@@ -54,10 +54,10 @@ func collect_cast_action_flags_result(
 	})
 
 func _resolve_skill_legality_result(
-	battle_state,
+	battle_state: BattleState,
 	actor,
 	skill_id: String,
-	content_index,
+	content_index: BattleContentIndex,
 	side_domain_recast_blocked: bool
 ) -> Dictionary:
 	var skill_definition = content_index.skills.get(skill_id)
@@ -80,10 +80,10 @@ func _resolve_skill_legality_result(
 	})
 
 func _resolve_ultimate_legality_result(
-	battle_state,
+	battle_state: BattleState,
 	actor,
 	unit_definition,
-	content_index,
+	content_index: BattleContentIndex,
 	side_domain_recast_blocked: bool
 ) -> Dictionary:
 	if unit_definition == null or unit_definition.ultimate_skill_id.is_empty():

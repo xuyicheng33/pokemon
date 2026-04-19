@@ -1,7 +1,7 @@
 extends RefCounted
 class_name RuleModActiveInstanceCollector
 
-func sorted_active_instances_for_read(battle_state, owner_id: String) -> Array:
+func sorted_active_instances_for_read(battle_state: BattleState, owner_id: String) -> Array:
 	var owner_unit = battle_state.get_unit(owner_id)
 	if owner_unit == null:
 		return []

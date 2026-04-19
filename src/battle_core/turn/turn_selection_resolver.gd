@@ -39,13 +39,13 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func reset_turn_state(battle_state) -> void:
+func reset_turn_state(battle_state: BattleState) -> void:
 	for side_state in battle_state.sides:
 		side_state.selection_state = SelectionStateScript.new()
 		for unit_state in side_state.team_units:
 			unit_state.has_acted = false
 
-func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> Dictionary:
+func resolve_commands_for_turn(battle_state: BattleState, content_index: BattleContentIndex, commands: Array) -> Dictionary:
 	ErrorStateHelperScript.clear(self)
 	var allowed_side_ids: Dictionary = {}
 	for side_state in battle_state.sides:
@@ -134,7 +134,7 @@ func resolve_commands_for_turn(battle_state, content_index, commands: Array) -> 
 		pending_side_state.selection_state.timed_out = bool(pending_selection_result.get("timed_out", false))
 	return _success_result(locked_commands)
 
-func _fail_invalid_result(battle_state, invalid_code: String, message: String) -> Dictionary:
+func _fail_invalid_result(battle_state: BattleState, invalid_code: String, message: String) -> Dictionary:
 	ErrorStateHelperScript.fail(self, invalid_code, message)
 	_clear_selection_state(battle_state)
 	if battle_state != null:
@@ -142,7 +142,7 @@ func _fail_invalid_result(battle_state, invalid_code: String, message: String) -
 		battle_state.runtime_fault_message = message
 	return _invalid_result(invalid_code, message)
 
-func _service_invalid_result(battle_state, service, fallback_code: String, fallback_message: String) -> Dictionary:
+func _service_invalid_result(battle_state: BattleState, service, fallback_code: String, fallback_message: String) -> Dictionary:
 	var service_error_state: Dictionary = service.error_state() if service != null and service.has_method("error_state") else {}
 	var invalid_code := String(service_error_state.get("code", fallback_code))
 	var invalid_message := String(service_error_state.get("message", fallback_message))
@@ -164,7 +164,7 @@ func _invalid_result(invalid_code: String, invalid_message: String = "") -> Dict
 		"invalid_message": invalid_message,
 	}
 
-func _clear_selection_state(battle_state) -> void:
+func _clear_selection_state(battle_state: BattleState) -> void:
 	if battle_state == null:
 		return
 	for side_state in battle_state.sides:
@@ -178,13 +178,13 @@ func _side_has_available_unit(side_state) -> bool:
 			return true
 	return false
 
-func clear_turn_end_state(battle_state) -> void:
+func clear_turn_end_state(battle_state: BattleState) -> void:
 	for side_state in battle_state.sides:
 		side_state.selection_state = SelectionStateScript.new()
 		for unit_state in side_state.team_units:
 			unit_state.action_window_passed = false
 
-func _is_command_in_legal_set(command, legal_action_set, battle_state) -> bool:
+func _is_command_in_legal_set(command: Command, legal_action_set, battle_state: BattleState) -> bool:
 	match command.command_type:
 		CommandTypesScript.SKILL:
 			return legal_action_set.legal_skill_ids.has(command.skill_id)
@@ -199,7 +199,7 @@ func _is_command_in_legal_set(command, legal_action_set, battle_state) -> bool:
 		_:
 			return false
 
-func _resolve_switch_target_public_id(command, battle_state) -> String:
+func _resolve_switch_target_public_id(command: Command, battle_state: BattleState) -> String:
 	if not command.target_public_id.is_empty():
 		return command.target_public_id
 	if command.target_unit_id.is_empty():

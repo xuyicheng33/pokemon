@@ -60,7 +60,7 @@ var battle_result_service: BattleResultService
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
-func execute_phase(battle_state, content_index, cause_event_id: String, turn_end_event = null) -> Dictionary:
+func execute_phase(battle_state: BattleState, content_index: BattleContentIndex, cause_event_id: String, turn_end_event = null) -> Dictionary:
 	if _execute_system_trigger_batch("turn_end", battle_state, content_index):
 		return {"terminated": true, "field_change": null}
 	var field_tick_result = turn_field_lifecycle_service.apply_turn_end_field_tick(
@@ -94,7 +94,7 @@ func execute_phase(battle_state, content_index, cause_event_id: String, turn_end
 		return {"terminated": true, "field_change": field_change}
 	return {"terminated": false, "field_change": field_change}
 
-func collect_effect_decrement_owner_ids(battle_state) -> Array:
+func collect_effect_decrement_owner_ids(battle_state: BattleState) -> Array:
 	var owner_ids: Array = turn_field_lifecycle_service.collect_active_unit_ids(battle_state)
 	var seen_owner_ids: Dictionary = {}
 	for owner_id in owner_ids:
@@ -112,7 +112,7 @@ func collect_effect_decrement_owner_ids(battle_state) -> Array:
 			seen_owner_ids[unit_id] = true
 	return owner_ids
 
-func _execute_system_trigger_batch(trigger_name: String, battle_state, content_index) -> bool:
+func _execute_system_trigger_batch(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	var invalid_code = trigger_batch_runner.execute_trigger_batch(
 		trigger_name,
 		battle_state,
@@ -131,7 +131,7 @@ func _execute_system_trigger_batch(trigger_name: String, battle_state, content_i
 		return true
 	return false
 
-func _decrement_rule_mods_and_log(battle_state, trigger_name: String, cause_event_id: String) -> void:
+func _decrement_rule_mods_and_log(battle_state: BattleState, trigger_name: String, cause_event_id: String) -> void:
 	var removed_instances: Array = rule_mod_service.decrement_for_trigger(battle_state, trigger_name)
 	for removed in removed_instances:
 		var removed_instance = removed["instance"]
@@ -149,7 +149,7 @@ func _decrement_rule_mods_and_log(battle_state, trigger_name: String, cause_even
 		)
 		battle_logger.append_event(log_event)
 
-func _decrement_effect_instances_and_log(battle_state, content_index, trigger_name: String, owner_unit_ids: Array, cause_event_id: String) -> bool:
+func _decrement_effect_instances_and_log(battle_state: BattleState, content_index: BattleContentIndex, trigger_name: String, owner_unit_ids: Array, cause_event_id: String) -> bool:
 	var decrement_result: Dictionary = effect_instance_dispatcher.decrement_for_trigger(
 		trigger_name,
 		battle_state,

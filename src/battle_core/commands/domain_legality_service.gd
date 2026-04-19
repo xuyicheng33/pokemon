@@ -25,7 +25,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func is_domain_command(command, content_index) -> bool:
+func is_domain_command(command: Command, content_index: BattleContentIndex) -> bool:
 	last_invalid_battle_code = null
 	if domain_clash_orchestrator == null:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
@@ -34,7 +34,7 @@ func is_domain_command(command, content_index) -> bool:
 	last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
 	return result
 
-func resolve_active_domain_creator_side_id(battle_state, content_index) -> String:
+func resolve_active_domain_creator_side_id(battle_state: BattleState, content_index: BattleContentIndex) -> String:
 	last_invalid_battle_code = null
 	if domain_clash_orchestrator == null:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
@@ -43,7 +43,7 @@ func resolve_active_domain_creator_side_id(battle_state, content_index) -> Strin
 	last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
 	return creator_side_id
 
-func is_side_domain_recast_blocked(battle_state, side_id: String, content_index) -> bool:
+func is_side_domain_recast_blocked(battle_state: BattleState, side_id: String, content_index: BattleContentIndex) -> bool:
 	if domain_clash_orchestrator == null:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
 		return false
@@ -51,7 +51,7 @@ func is_side_domain_recast_blocked(battle_state, side_id: String, content_index)
 	last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
 	return blocked
 
-func is_domain_command_blocked_by_active_side_domain(command, battle_state, content_index) -> bool:
+func is_domain_command_blocked_by_active_side_domain(command: Command, battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	if domain_clash_orchestrator == null:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
 		return false
@@ -59,7 +59,7 @@ func is_domain_command_blocked_by_active_side_domain(command, battle_state, cont
 	last_invalid_battle_code = domain_clash_orchestrator.invalid_battle_code()
 	return blocked
 
-func can_bypass_domain_recast_for_clash(queued_action, command, battle_state, content_index) -> bool:
+func can_bypass_domain_recast_for_clash(queued_action: QueuedAction, command: Command, battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	if domain_clash_orchestrator == null:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_COMPOSITION
 		return false

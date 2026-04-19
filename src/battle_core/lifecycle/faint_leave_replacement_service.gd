@@ -7,7 +7,7 @@ var leave_service: LeaveService
 var replacement_service: ReplacementService
 
 
-func collect_pending_fainted_units(battle_state) -> Array:
+func collect_pending_fainted_units(battle_state: BattleState) -> Array:
 	var fainted_units: Array = []
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
@@ -19,14 +19,14 @@ func collect_pending_fainted_units(battle_state) -> Array:
 			fainted_units.append(active_unit)
 	return fainted_units
 
-func resolve_fainted_units_leave(battle_state, content_index, fainted_units: Array) -> Variant:
+func resolve_fainted_units_leave(battle_state: BattleState, content_index: BattleContentIndex, fainted_units: Array) -> Variant:
 	for fainted_unit in fainted_units:
 		leave_service.leave_unit(battle_state, fainted_unit, "faint", content_index)
 		if leave_service.invalid_battle_code() != null:
 			return leave_service.invalid_battle_code()
 	return null
 
-func resolve_faint_replacements(battle_state) -> Dictionary:
+func resolve_faint_replacements(battle_state: BattleState) -> Dictionary:
 	var entered_unit_ids: Array = []
 	for side_state in battle_state.sides:
 		if side_state.get_active_unit() != null:
@@ -40,7 +40,7 @@ func resolve_faint_replacements(battle_state) -> Dictionary:
 			entered_unit_ids.append(entered_unit.unit_instance_id)
 	return {"entered_unit_ids": entered_unit_ids, "invalid_code": null}
 
-func has_pending_faint_active(battle_state) -> bool:
+func has_pending_faint_active(battle_state: BattleState) -> bool:
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
 		if active_unit == null:

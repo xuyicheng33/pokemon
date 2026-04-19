@@ -7,7 +7,7 @@ var action_cast_service: ActionCastService
 var action_log_service: ActionLogService
 
 
-func apply_action_start_phase(queued_action, battle_state, actor, command, skill_definition) -> Dictionary:
+func apply_action_start_phase(queued_action: QueuedAction, battle_state: BattleState, actor, command: Command, skill_definition) -> Dictionary:
 	actor.action_window_passed = true
 	actor.has_acted = true
 	var consumed_mp: int = action_cast_service.resolve_mp_cost(command, skill_definition)
@@ -24,7 +24,7 @@ func apply_action_start_phase(queued_action, battle_state, actor, command, skill
 		"result_type": result_type,
 	}
 
-func _apply_action_start_resource_changes(queued_action, battle_state, actor, command, cause_event_id: String) -> void:
+func _apply_action_start_resource_changes(queued_action: QueuedAction, battle_state: BattleState, actor, command: Command, cause_event_id: String) -> void:
 	if actor == null:
 		return
 	match command.command_type:
@@ -33,7 +33,7 @@ func _apply_action_start_resource_changes(queued_action, battle_state, actor, co
 		CommandTypesScript.ULTIMATE:
 			_clear_ultimate_points(queued_action, battle_state, actor, cause_event_id)
 
-func _gain_ultimate_points(queued_action, battle_state, actor, cause_event_id: String) -> void:
+func _gain_ultimate_points(queued_action: QueuedAction, battle_state: BattleState, actor, cause_event_id: String) -> void:
 	if actor.ultimate_points_cap <= 0 or actor.ultimate_point_gain_on_regular_skill_cast <= 0:
 		return
 	var before_points: int = actor.ultimate_points
@@ -49,7 +49,7 @@ func _gain_ultimate_points(queued_action, battle_state, actor, cause_event_id: S
 		"%s ultimate_points %+d (%d/%d)" % [actor.public_id, actor.ultimate_points - before_points, actor.ultimate_points, actor.ultimate_points_cap]
 	)
 
-func _clear_ultimate_points(queued_action, battle_state, actor, cause_event_id: String) -> void:
+func _clear_ultimate_points(queued_action: QueuedAction, battle_state: BattleState, actor, cause_event_id: String) -> void:
 	var before_points: int = actor.ultimate_points
 	actor.ultimate_points = 0
 	action_log_service.log_action_resource_change(
@@ -63,7 +63,7 @@ func _clear_ultimate_points(queued_action, battle_state, actor, cause_event_id: 
 		"%s ultimate_points reset (%d/%d)" % [actor.public_id, actor.ultimate_points, actor.ultimate_points_cap]
 	)
 
-func _mark_once_per_battle_usage(actor, command, skill_definition) -> void:
+func _mark_once_per_battle_usage(actor, command: Command, skill_definition) -> void:
 	if actor == null or command == null or skill_definition == null:
 		return
 	if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:

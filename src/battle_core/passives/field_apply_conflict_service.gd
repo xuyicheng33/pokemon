@@ -64,7 +64,7 @@ func is_normal_field_blocked_by_domain(challenger_field_definition, incumbent_fi
 	return challenger_kind == ContentSchemaScript.FIELD_KIND_NORMAL \
 	and incumbent_kind == ContentSchemaScript.FIELD_KIND_DOMAIN
 
-func resolve_field_clash(before_field, effect_event, battle_state) -> Dictionary:
+func resolve_field_clash(before_field, effect_event: EffectEvent, battle_state: BattleState) -> Dictionary:
 	var challenger_creator: String = context_resolver.resolve_field_creator(effect_event)
 	var incumbent_creator: String = String(before_field.creator)
 	if challenger_creator.is_empty() or incumbent_creator.is_empty():
@@ -111,7 +111,7 @@ func _build_clash_result(challenger_won: bool, same_creator: bool, challenger_cr
 	clash_result.tie_roll = tie_roll
 	return clash_result
 
-func _resolve_creator_mp(battle_state, creator_id: String) -> int:
+func _resolve_creator_mp(battle_state: BattleState, creator_id: String) -> int:
 	if creator_id.is_empty():
 		return -1
 	var creator_unit = battle_state.get_unit(creator_id)

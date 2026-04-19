@@ -34,7 +34,7 @@ func _compose_post_wire() -> void:
 	faint_leave_replacement_service.replacement_service = replacement_service
 
 
-func resolve_faint_window(battle_state, content_index) -> Variant:
+func resolve_faint_window(battle_state: BattleState, content_index: BattleContentIndex) -> Variant:
 	while true:
 		var fainted_units: Array = faint_leave_replacement_service.collect_pending_fainted_units(battle_state)
 
@@ -56,7 +56,7 @@ func resolve_faint_window(battle_state, content_index) -> Variant:
 			break
 	return null
 
-func _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units: Array) -> Variant:
+func _resolve_fainted_units_and_exit(battle_state: BattleState, content_index: BattleContentIndex, fainted_units: Array) -> Variant:
 	var fainted_unit_ids: Array = faint_leave_replacement_service.collect_unit_ids(fainted_units)
 	var killer_by_target: Dictionary = {}
 	for fainted_unit_id in fainted_unit_ids:
@@ -112,7 +112,7 @@ func _resolve_fainted_units_and_exit(battle_state, content_index, fainted_units:
 	faint_killer_attribution_service.clear_fatal_damage_records(battle_state, fainted_unit_ids)
 	return null
 
-func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_index, owner_unit_ids: Array, extra_effect_events: Array = []) -> Variant:
+func _execute_unit_trigger_batch(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex, owner_unit_ids: Array, extra_effect_events: Array = []) -> Variant:
 	return trigger_batch_runner.execute_trigger_batch(
 		trigger_name,
 		battle_state,
@@ -122,7 +122,7 @@ func _execute_unit_trigger_batch(trigger_name: String, battle_state, content_ind
 		extra_effect_events
 	)
 
-func _execute_field_break_if_creator_inactive(battle_state, content_index) -> Variant:
+func _execute_field_break_if_creator_inactive(battle_state: BattleState, content_index: BattleContentIndex) -> Variant:
 	if field_service == null:
 		return null
 	return field_service.break_field_if_creator_inactive(

@@ -12,12 +12,12 @@ const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_pa
 
 var _helper = ContractHelperScript.new()
 
-func validate(content_index, errors: Array) -> void:
+func validate(content_index: BattleContentIndex, errors: Array) -> void:
 	_validate_unit_passive(content_index, errors)
 	_validate_skill_effect(content_index, errors)
 	_validate_ultimate_domain(content_index, errors)
 
-func _validate_unit_passive(content_index, errors: Array) -> void:
+func _validate_unit_passive(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_unit_contract_descriptor(
 		self,
 		content_index,
@@ -27,7 +27,7 @@ func _validate_unit_passive(content_index, errors: Array) -> void:
 	_validate_passive_contract(content_index, errors)
 	_validate_yinyang_stack_contract(content_index, errors)
 
-func _validate_passive_contract(content_index, errors: Array) -> void:
+func _validate_passive_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[obito_juubi_jinchuriki].xianren_zhili"
 	_helper.validate_passive_skill_contracts(
 		self,
@@ -63,7 +63,7 @@ func _validate_passive_contract(content_index, errors: Array) -> void:
 		}
 	)
 
-func _validate_yinyang_stack_contract(content_index, errors: Array) -> void:
+func _validate_yinyang_stack_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_effect_contracts(
 		self,
 		content_index,
@@ -71,7 +71,7 @@ func _validate_yinyang_stack_contract(content_index, errors: Array) -> void:
 		[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_yinyang_zhili")]
 	)
 
-func _validate_skill_effect(content_index, errors: Array) -> void:
+func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_skill_contracts(
 		self,
 		content_index,
@@ -90,7 +90,7 @@ func _validate_skill_effect(content_index, errors: Array) -> void:
 	_validate_yinyang_dun_contracts(content_index, errors)
 	_validate_qiudaoyu_contracts(content_index, errors)
 
-func _validate_heal_block_contracts(content_index, errors: Array) -> void:
+func _validate_heal_block_contracts(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[obito_juubi_jinchuriki].heal_block"
 	var apply_effect = _require_effect(content_index, errors, label, "obito_qiudao_jiaotu_heal_block_apply")
 	if apply_effect != null:
@@ -138,7 +138,7 @@ func _validate_heal_block_contracts(content_index, errors: Array) -> void:
 		}
 	)
 
-func _validate_yinyang_dun_contracts(content_index, errors: Array) -> void:
+func _validate_yinyang_dun_contracts(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[obito_juubi_jinchuriki].yinyang_dun"
 	var boost_effect = _require_effect(content_index, errors, label, "obito_yinyang_dun_boost_and_charge")
 	if boost_effect != null:
@@ -206,7 +206,7 @@ func _expect_boost_payloads(errors: Array, label: String, payloads: Array) -> vo
 	else:
 		_expect_payload_shape(errors, "%s boost.payload[2]" % label, sp_defense_payload, {"stat_name": "sp_defense", "stage_delta": 1, "retention_mode": "normal"})
 
-func _validate_qiudaoyu_contracts(content_index, errors: Array) -> void:
+func _validate_qiudaoyu_contracts(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[obito_juubi_jinchuriki].qiudao_yu"
 	var clear_effect = _require_effect(content_index, errors, label, "obito_qiudao_yu_clear_yinyang")
 	if clear_effect == null:
@@ -232,7 +232,7 @@ func _validate_qiudaoyu_contracts(content_index, errors: Array) -> void:
 		{"effect_definition_id": "obito_yinyang_zhili", "remove_mode": "all"}
 	)
 
-func _validate_ultimate_domain(content_index, errors: Array) -> void:
+func _validate_ultimate_domain(content_index: BattleContentIndex, errors: Array) -> void:
 	_helper.validate_skill_contracts(
 		self,
 		content_index,

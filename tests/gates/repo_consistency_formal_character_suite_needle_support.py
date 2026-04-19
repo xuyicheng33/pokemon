@@ -26,10 +26,10 @@ def validate_entry_validator_structure(ctx: GateContext, *, character_id: str, v
         ctx.failures.append(
             f"{validator_script_path} entry validator must extend content_snapshot_formal_character_validator_base"
         )
-    validate_signature = "func validate(content_index, errors: Array) -> void:"
+    validate_signature = "func validate(content_index: BattleContentIndex, errors: Array) -> void:"
     if validate_signature not in text:
         ctx.failures.append(
-            f"{validator_script_path} must expose validate(content_index, errors: Array) for {character_id}"
+            f"{validator_script_path} must expose validate(content_index: BattleContentIndex, errors: Array) for {character_id}"
         )
 
 

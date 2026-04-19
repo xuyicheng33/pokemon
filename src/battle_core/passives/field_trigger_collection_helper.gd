@@ -6,9 +6,9 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 func collect_trigger_events(
 	trigger_name: String,
-	battle_state,
-	content_index,
-	chain_context,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
+	chain_context: ChainContext,
 	trigger_dispatcher,
 	source_kind_order_field: int
 ) -> Dictionary:
@@ -47,9 +47,9 @@ func collect_lifecycle_effect_events(
 	trigger_name: String,
 	field_state,
 	effect_ids: PackedStringArray,
-	battle_state,
-	content_index,
-	chain_context,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
+	chain_context: ChainContext,
 	trigger_dispatcher,
 	source_kind_order_field: int
 ) -> Dictionary:
@@ -72,12 +72,12 @@ func collect_lifecycle_effect_events(
 		"invalid_code": _read_trigger_dispatcher_invalid_battle_code(trigger_dispatcher),
 	}
 
-func get_field_definition_for_state(field_state, content_index) -> Variant:
+func get_field_definition_for_state(field_state, content_index: BattleContentIndex) -> Variant:
 	if field_state == null or content_index == null:
 		return null
 	return content_index.fields.get(field_state.field_def_id)
 
-func build_matchup_signature(battle_state) -> String:
+func build_matchup_signature(battle_state: BattleState) -> String:
 	var active_ids: Array = []
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
@@ -87,7 +87,7 @@ func build_matchup_signature(battle_state) -> String:
 	active_ids.sort()
 	return "|".join(PackedStringArray(active_ids))
 
-func resolve_opponent_active_id_for_creator(battle_state, creator_id: String) -> Variant:
+func resolve_opponent_active_id_for_creator(battle_state: BattleState, creator_id: String) -> Variant:
 	if creator_id.is_empty():
 		return null
 	var side_state = battle_state.get_side_for_unit(creator_id)
@@ -101,7 +101,7 @@ func resolve_opponent_active_id_for_creator(battle_state, creator_id: String) ->
 		return null
 	return target_unit.unit_instance_id
 
-func build_lifecycle_chain_context(chain_context, battle_state, creator_id: String) -> Variant:
+func build_lifecycle_chain_context(chain_context: ChainContext, battle_state: BattleState, creator_id: String) -> Variant:
 	if chain_context == null:
 		return null
 	var lifecycle_chain_context = chain_context.copy_shallow()

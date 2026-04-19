@@ -2,8 +2,8 @@ extends RefCounted
 class_name ActionDamageLogService
 
 func log_damage_segment(
-	queued_action,
-	battle_state,
+	queued_action: QueuedAction,
+	battle_state: BattleState,
 	action_log_service,
 	faint_killer_attribution_service,
 	actor,
@@ -43,8 +43,8 @@ func log_damage_segment(
 	)
 
 func log_execute_damage(
-	queued_action,
-	battle_state,
+	queued_action: QueuedAction,
+	battle_state: BattleState,
 	action_log_service,
 	faint_killer_attribution_service,
 	actor,
@@ -83,9 +83,9 @@ func log_execute_damage(
 	)
 
 func log_default_recoil(
-	queued_action,
+	queued_action: QueuedAction,
 	actor,
-	battle_state,
+	battle_state: BattleState,
 	action_log_service,
 	faint_killer_attribution_service,
 	cause_event_id: String,
@@ -111,7 +111,7 @@ func log_default_recoil(
 	)
 
 func _record_fatal_damage(
-	battle_state,
+	battle_state: BattleState,
 	faint_killer_attribution_service,
 	target_unit_id: String,
 	before_hp: int,

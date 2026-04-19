@@ -26,7 +26,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func side_domain_recast_blocked_result(battle_state, side_id: String, content_index) -> Dictionary:
+func side_domain_recast_blocked_result(battle_state: BattleState, side_id: String, content_index: BattleContentIndex) -> Dictionary:
 	if domain_legality_service == null:
 		return ResultEnvelopeHelperScript.error(
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
@@ -45,7 +45,7 @@ func side_domain_recast_blocked_result(battle_state, side_id: String, content_in
 	return ResultEnvelopeHelperScript.ok(side_domain_recast_blocked)
 
 func action_allowed_result(
-	battle_state,
+	battle_state: BattleState,
 	actor_id: String,
 	action_type: String,
 	skill_id: String = ""

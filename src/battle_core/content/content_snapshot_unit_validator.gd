@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ContentSnapshotUnitValidator
 
-func validate_units(content_index, errors: Array, regular_skill_refs: Dictionary, ultimate_skill_refs: Dictionary) -> void:
+func validate_units(content_index: BattleContentIndex, errors: Array, regular_skill_refs: Dictionary, ultimate_skill_refs: Dictionary) -> void:
 	for unit_id in content_index.units.keys():
 		var unit_definition = content_index.units[unit_id]
 		_validate_unit_ultimate_config(errors, unit_id, unit_definition)
@@ -21,7 +21,7 @@ func _validate_unit_ultimate_config(errors: Array, unit_id: String, unit_definit
 	if int(unit_definition.ultimate_points_cap) < int(unit_definition.ultimate_points_required):
 		errors.append("unit[%s].ultimate_points_cap must be >= ultimate_points_required" % unit_id)
 
-func _validate_unit_combat_types(content_index, errors: Array, unit_id: String, unit_definition) -> void:
+func _validate_unit_combat_types(content_index: BattleContentIndex, errors: Array, unit_id: String, unit_definition) -> void:
 	if unit_definition.combat_type_ids.size() > 2:
 		errors.append("unit[%s].combat_type_ids must contain at most 2 entries, got %d" % [unit_id, unit_definition.combat_type_ids.size()])
 	var seen_unit_types: Dictionary = {}
@@ -37,7 +37,7 @@ func _validate_unit_combat_types(content_index, errors: Array, unit_id: String, 
 		if not content_index.combat_types.has(normalized_type_id):
 			errors.append("unit[%s].combat_type_ids missing combat type: %s" % [unit_id, normalized_type_id])
 
-func _validate_unit_regular_skills(content_index, errors: Array, unit_id: String, unit_definition, regular_skill_refs: Dictionary) -> void:
+func _validate_unit_regular_skills(content_index: BattleContentIndex, errors: Array, unit_id: String, unit_definition, regular_skill_refs: Dictionary) -> void:
 	if unit_definition.skill_ids.size() != 3:
 		errors.append("unit[%s].skill_ids must contain exactly 3 entries, got %d" % [unit_id, unit_definition.skill_ids.size()])
 	for skill_id in unit_definition.skill_ids:
@@ -45,7 +45,7 @@ func _validate_unit_regular_skills(content_index, errors: Array, unit_id: String
 		if not content_index.skills.has(skill_id):
 			errors.append("unit[%s].skill_ids missing skill: %s" % [unit_id, skill_id])
 
-func _validate_unit_candidate_skills(content_index, errors: Array, unit_id: String, unit_definition, regular_skill_refs: Dictionary) -> void:
+func _validate_unit_candidate_skills(content_index: BattleContentIndex, errors: Array, unit_id: String, unit_definition, regular_skill_refs: Dictionary) -> void:
 	if unit_definition.candidate_skill_ids.is_empty():
 		return
 	if unit_definition.candidate_skill_ids.size() < 3:
@@ -69,7 +69,7 @@ func _validate_unit_candidate_skills(content_index, errors: Array, unit_id: Stri
 		if not unit_definition.candidate_skill_ids.has(default_skill_id):
 			errors.append("unit[%s].candidate_skill_ids must include default skill: %s" % [unit_id, default_skill_id])
 
-func _validate_unit_ultimate_skill(content_index, errors: Array, unit_id: String, unit_definition, ultimate_skill_refs: Dictionary) -> void:
+func _validate_unit_ultimate_skill(content_index: BattleContentIndex, errors: Array, unit_id: String, unit_definition, ultimate_skill_refs: Dictionary) -> void:
 	if not unit_definition.ultimate_skill_id.is_empty():
 		ultimate_skill_refs[unit_definition.ultimate_skill_id] = true
 		if not content_index.skills.has(unit_definition.ultimate_skill_id):
@@ -82,7 +82,7 @@ func _validate_unit_ultimate_skill(content_index, errors: Array, unit_id: String
 	or int(unit_definition.ultimate_point_gain_on_regular_skill_cast) != 0:
 		errors.append("unit[%s].ultimate point config requires ultimate_skill_id" % unit_id)
 
-func _validate_unit_passives(content_index, errors: Array, unit_id: String, unit_definition) -> void:
+func _validate_unit_passives(content_index: BattleContentIndex, errors: Array, unit_id: String, unit_definition) -> void:
 	if not unit_definition.passive_skill_id.is_empty() and not content_index.passive_skills.has(unit_definition.passive_skill_id):
 		errors.append("unit[%s].passive_skill_id missing passive skill: %s" % [unit_id, unit_definition.passive_skill_id])
 	if not unit_definition.passive_item_id.is_empty() and not content_index.passive_items.has(unit_definition.passive_item_id):

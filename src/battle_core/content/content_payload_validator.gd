@@ -48,7 +48,7 @@ func validate_effect_refs(errors: Array, label: String, effect_ids: PackedString
 		if not effects.has(effect_id):
 			errors.append("%s missing effect: %s" % [label, effect_id])
 
-func validate_payload(errors: Array, effect_id: String, payload, content_index) -> void:
+func validate_payload(errors: Array, effect_id: String, payload, content_index: BattleContentIndex) -> void:
 	if payload == null:
 		errors.append("effect[%s].payloads contains null" % effect_id)
 		return

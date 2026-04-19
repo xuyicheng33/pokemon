@@ -12,7 +12,7 @@ var last_error_message: String = ""
 func error_state() -> Dictionary:
 	return ErrorStateHelperScript.error_state(self)
 
-func build_event(event_type: String, battle_state, payload: Dictionary = {}) -> Variant:
+func build_event(event_type: String, battle_state: BattleState, payload: Dictionary = {}) -> Variant:
 	_clear_error()
 	if battle_state == null:
 		return _fail("LogEventBuilder.build_event requires battle_state")
@@ -44,7 +44,7 @@ func build_event(event_type: String, battle_state, payload: Dictionary = {}) -> 
 		log_event.set(key, payload[key])
 	return log_event
 
-func build_effect_event(event_type: String, battle_state, cause_event_id: String, payload: Dictionary = {}) -> Variant:
+func build_effect_event(event_type: String, battle_state: BattleState, cause_event_id: String, payload: Dictionary = {}) -> Variant:
 	_clear_error()
 	if not event_type.begins_with("effect:"):
 		return _fail("LogEventBuilder.build_effect_event only accepts effect:* events", battle_state)
@@ -63,7 +63,7 @@ func resolve_event_id(log_event) -> String:
 func _clear_error() -> void:
 	ErrorStateHelperScript.clear(self)
 
-func _fail(message: String, battle_state = null) -> Variant:
+func _fail(message: String, battle_state: BattleState = null) -> Variant:
 	ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_STATE_CORRUPTION, message)
 	if battle_state != null:
 		battle_state.runtime_fault_code = String(last_error_code)

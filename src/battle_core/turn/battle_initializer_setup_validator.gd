@@ -48,7 +48,7 @@ func configure_ports(ports: BattleInitializerPorts) -> void:
 	battle_logger = ports.battle_logger
 	combat_type_service = ports.combat_type_service
 
-func validate_and_prepare_battle_state(battle_state, content_index, battle_setup) -> Variant:
+func validate_and_prepare_battle_state(battle_state: BattleState, content_index: BattleContentIndex, battle_setup) -> Variant:
 	ErrorStateHelperScript.clear(self)
 	if battle_setup == null:
 		return _fail(ErrorCodesScript.INVALID_BATTLE_SETUP, "Battle setup is required")

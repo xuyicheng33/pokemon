@@ -9,7 +9,7 @@ var action_log_service: ActionLogService
 var action_skill_effect_service: ActionSkillEffectService
 
 
-func resolve_started_action(queued_action, actor, command, skill_definition, battle_state, content_index, result) -> void:
+func resolve_started_action(queued_action: QueuedAction, actor, command: Command, skill_definition, battle_state: BattleState, content_index: BattleContentIndex, result) -> void:
 	var resolved_target = action_cast_service.resolve_target(queued_action, battle_state)
 	_update_chain_context_target(queued_action, battle_state, resolved_target)
 	if not action_cast_service.is_action_target_valid(command, queued_action, resolved_target):
@@ -50,14 +50,14 @@ func resolve_started_action(queued_action, actor, command, skill_definition, bat
 		return
 	result.result_type = "resolved"
 
-func _update_chain_context_target(queued_action, battle_state, resolved_target) -> void:
+func _update_chain_context_target(queued_action: QueuedAction, battle_state: BattleState, resolved_target) -> void:
 	if resolved_target == null:
 		return
 	if queued_action.target_snapshot.target_kind == ContentSchemaScript.TARGET_FIELD:
 		return
 	battle_state.chain_context.target_unit_id = resolved_target.unit_instance_id
 
-func _resolve_miss(queued_action, actor, command, skill_definition, resolved_target, hit_info: Dictionary, battle_state, content_index, result) -> void:
+func _resolve_miss(queued_action: QueuedAction, actor, command: Command, skill_definition, resolved_target, hit_info: Dictionary, battle_state: BattleState, content_index: BattleContentIndex, result) -> void:
 	action_log_service.log_action_miss(
 		queued_action,
 		battle_state,
@@ -70,7 +70,7 @@ func _resolve_miss(queued_action, actor, command, skill_definition, resolved_tar
 		return
 	result.result_type = "miss"
 
-func _dispatch_on_receive_action_hit_if_needed(queued_action, command, resolved_target, battle_state, content_index, result) -> void:
+func _dispatch_on_receive_action_hit_if_needed(queued_action: QueuedAction, command: Command, resolved_target, battle_state: BattleState, content_index: BattleContentIndex, result) -> void:
 	if command.command_type != CommandTypesScript.SKILL and command.command_type != CommandTypesScript.ULTIMATE:
 		return
 	if queued_action.target_snapshot.target_kind != ContentSchemaScript.TARGET_ENEMY_ACTIVE:

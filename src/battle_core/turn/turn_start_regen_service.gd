@@ -9,7 +9,7 @@ var rule_mod_service: RuleModService
 var battle_logger: BattleLogger
 var log_event_builder: LogEventBuilder
 
-func apply_turn_start_regen(battle_state, cause_event_id: String) -> void:
+func apply_turn_start_regen(battle_state: BattleState, cause_event_id: String) -> void:
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
 		if active_unit == null or active_unit.current_hp <= 0:

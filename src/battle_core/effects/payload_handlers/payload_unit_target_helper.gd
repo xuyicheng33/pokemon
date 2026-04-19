@@ -3,7 +3,7 @@ class_name PayloadUnitTargetHelper
 
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
-func resolve_target_unit(scope: String, effect_event, battle_state) -> Variant:
+func resolve_target_unit(scope: String, effect_event: EffectEvent, battle_state: BattleState) -> Variant:
 	match scope:
 		"self":
 			return battle_state.get_unit(effect_event.owner_id)
@@ -18,7 +18,7 @@ func resolve_target_unit(scope: String, effect_event, battle_state) -> Variant:
 		_:
 			return null
 
-func is_effect_target_valid(target_unit, scope: String = "", effect_event = null) -> bool:
+func is_effect_target_valid(target_unit, scope: String = "", effect_event: EffectEvent = null) -> bool:
 	if target_unit == null:
 		return false
 	if _allows_on_receive_action_hit_target(scope, effect_event):
@@ -29,12 +29,12 @@ func is_effect_target_valid(target_unit, scope: String = "", effect_event = null
 		return true
 	return target_unit.leave_state == LeaveStatesScript.ACTIVE
 
-func _allows_inactive_field_owner_target(scope: String, effect_event) -> bool:
+func _allows_inactive_field_owner_target(scope: String, effect_event: EffectEvent) -> bool:
 	if scope != "self" or effect_event == null:
 		return false
 	return effect_event.trigger_name == "field_break" or effect_event.trigger_name == "field_expire"
 
-func _allows_on_receive_action_hit_target(scope: String, effect_event) -> bool:
+func _allows_on_receive_action_hit_target(scope: String, effect_event: EffectEvent) -> bool:
 	if effect_event == null:
 		return false
 	var trigger_name := String(effect_event.trigger_name)

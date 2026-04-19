@@ -44,7 +44,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func apply_heal_payload(payload, effect_definition, effect_event, battle_state) -> void:
+func apply_heal_payload(payload, effect_definition, effect_event: EffectEvent, battle_state: BattleState) -> void:
 	var target_unit = target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
 	if not target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
 		return
@@ -73,7 +73,7 @@ func apply_heal_payload(payload, effect_definition, effect_event, battle_state) 
 		target_unit.max_hp
 	)
 
-func apply_resource_mod_payload(payload, effect_definition, effect_event, battle_state) -> void:
+func apply_resource_mod_payload(payload, effect_definition, effect_event: EffectEvent, battle_state: BattleState) -> void:
 	var target_unit = target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
 	if not target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
 		return
@@ -88,7 +88,7 @@ func apply_resource_mod_payload(payload, effect_definition, effect_event, battle
 		target_unit.max_mp
 	)
 
-func _apply_resource_like_change(battle_state, effect_event, target_unit, resource_name: String, delta: int, event_type: String, summary_tag: String, max_value: int) -> void:
+func _apply_resource_like_change(battle_state: BattleState, effect_event: EffectEvent, target_unit, resource_name: String, delta: int, event_type: String, summary_tag: String, max_value: int) -> void:
 	if delta == 0:
 		return
 	var before_value: int = _read_resource_value(target_unit, resource_name)

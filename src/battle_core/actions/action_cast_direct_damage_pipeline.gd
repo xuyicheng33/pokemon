@@ -20,7 +20,7 @@ var _damage_log_service = ActionDamageLogServiceScript.new()
 var _segment_trigger_context_service = ActionDamageSegmentTriggerContextServiceScript.new()
 
 
-func apply_direct_damage(queued_action, actor, target, skill_definition, battle_state, content_index, cause_event_id: String, source_kind_order_active_skill: int) -> Dictionary:
+func apply_direct_damage(queued_action: QueuedAction, actor, target, skill_definition, battle_state: BattleState, content_index: BattleContentIndex, cause_event_id: String, source_kind_order_active_skill: int) -> Dictionary:
 	if target == null:
 		return {"invalid_battle_code": null, "resolved_segments": 0}
 	if ActionCastExecuteContractHelperScript.should_execute_skill(actor, target, skill_definition):
@@ -93,7 +93,7 @@ func apply_direct_damage(queued_action, actor, target, skill_definition, battle_
 		"resolved_segments": resolved_segments,
 	}
 
-func apply_default_recoil(queued_action, actor, battle_state, cause_event_id: String, source_kind_order_active_skill: int) -> void:
+func apply_default_recoil(queued_action: QueuedAction, actor, battle_state: BattleState, cause_event_id: String, source_kind_order_active_skill: int) -> void:
 	var recoil_ratio: float = 0.25
 	if battle_state != null:
 		recoil_ratio = float(battle_state.default_recoil_ratio)

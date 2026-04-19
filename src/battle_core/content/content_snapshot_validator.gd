@@ -9,7 +9,7 @@ var _payload_validator = ContentPayloadValidatorScript.new()
 var _shape_validator = ContentSnapshotShapeValidatorScript.new()
 var _trigger_contract_validator = ContentSnapshotTriggerContractValidatorScript.new()
 
-func validate(content_index) -> Array:
+func validate(content_index: BattleContentIndex) -> Array:
 	var errors: Array = content_index.duplicate_registration_errors.duplicate()
 	_shape_validator.validate(content_index, errors, _payload_validator)
 	_trigger_contract_validator.validate(content_index, errors)

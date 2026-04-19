@@ -8,7 +8,7 @@ const SkillDamageSegmentScript := preload("res://src/battle_core/content/skill_d
 var _content_index = null
 var _payload_validator = null
 
-func validate(content_index, errors: Array, payload_validator, regular_skill_refs: Dictionary, ultimate_skill_refs: Dictionary) -> void:
+func validate(content_index: BattleContentIndex, errors: Array, payload_validator, regular_skill_refs: Dictionary, ultimate_skill_refs: Dictionary) -> void:
 	_content_index = content_index
 	_payload_validator = payload_validator
 	_validate_skills(errors, regular_skill_refs, ultimate_skill_refs)

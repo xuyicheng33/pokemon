@@ -48,7 +48,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func get_legal_actions(battle_state, side_id: String, content_index) -> Variant:
+func get_legal_actions(battle_state: BattleState, side_id: String, content_index: BattleContentIndex) -> Variant:
 	_reset_error_state()
 	_sync_rule_gate_dependencies()
 	var side_state = battle_state.get_side(side_id)

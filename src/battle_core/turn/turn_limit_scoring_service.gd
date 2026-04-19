@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TurnLimitScoringService
 
-func build_scored_sides(battle_state) -> Array:
+func build_scored_sides(battle_state: BattleState) -> Array:
 	var scored_sides: Array = []
 	for side_state in battle_state.sides:
 		scored_sides.append(_build_side_score(side_state))

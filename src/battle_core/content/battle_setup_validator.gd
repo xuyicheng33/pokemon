@@ -5,7 +5,7 @@ const BattleInputContractHelperScript := preload("res://src/battle_core/contract
 
 var _content_index = null
 
-func validate(content_index, battle_setup) -> Array:
+func validate(content_index: BattleContentIndex, battle_setup) -> Array:
 	_content_index = content_index
 	var errors: Array = []
 	if battle_setup == null:

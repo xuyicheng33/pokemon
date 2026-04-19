@@ -21,7 +21,7 @@ var _owner_scope_service = RuleModOwnerScopeServiceScript.new()
 func error_state() -> Dictionary:
 	return ErrorStateHelperScript.error_state(self)
 
-func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = "") -> Variant:
+func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state: BattleState, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, resolved_value = null, source_stacking_token: String = "") -> Variant:
 	ErrorStateHelperScript.clear(self)
 	last_apply_skipped = false
 	if not _validate_rule_mod_payload(rule_mod_payload):
@@ -85,7 +85,7 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state, sour
 	_owner_scope_service.set_owner_instances(battle_state, owner_ref, owner_instances)
 	return rule_mod_instance
 
-func decrement_for_trigger(battle_state, trigger_name: String) -> Array:
+func decrement_for_trigger(battle_state: BattleState, trigger_name: String) -> Array:
 	var removed_instances: Array = []
 	for side_state in battle_state.sides:
 		for unit_state in side_state.team_units:

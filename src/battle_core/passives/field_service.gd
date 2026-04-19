@@ -30,7 +30,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func collect_trigger_events(trigger_name: String, battle_state, content_index, chain_context) -> Array:
+func collect_trigger_events(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex, chain_context: ChainContext) -> Array:
 	last_invalid_battle_code = null
 	var result: Dictionary = _trigger_helper.collect_trigger_events(
 		trigger_name,
@@ -43,10 +43,10 @@ func collect_trigger_events(trigger_name: String, battle_state, content_index, c
 	last_invalid_battle_code = result.get("invalid_code", null)
 	return result.get("events", [])
 
-func get_field_definition_for_state(field_state, content_index) -> Variant:
+func get_field_definition_for_state(field_state, content_index: BattleContentIndex) -> Variant:
 	return _trigger_helper.get_field_definition_for_state(field_state, content_index)
 
-func collect_lifecycle_effect_events(trigger_name: String, field_state, effect_ids: PackedStringArray, battle_state, content_index, chain_context) -> Array:
+func collect_lifecycle_effect_events(trigger_name: String, field_state, effect_ids: PackedStringArray, battle_state: BattleState, content_index: BattleContentIndex, chain_context: ChainContext) -> Array:
 	last_invalid_battle_code = null
 	var result: Dictionary = _trigger_helper.collect_lifecycle_effect_events(
 		trigger_name,
@@ -62,9 +62,9 @@ func collect_lifecycle_effect_events(trigger_name: String, field_state, effect_i
 	return result.get("events", [])
 
 func break_field_if_creator_inactive(
-	battle_state,
-	content_index,
-	chain_context,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
+	chain_context: ChainContext,
 	execute_trigger_batch: Callable = Callable()
 ) -> Variant:
 	if battle_state.field_state == null:
@@ -84,10 +84,10 @@ func break_field_if_creator_inactive(
 	)
 
 func break_active_field(
-	battle_state,
-	content_index,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	trigger_name: String,
-	chain_context,
+	chain_context: ChainContext,
 	execute_trigger_batch: Callable = Callable()
 ) -> Variant:
 	if battle_state.field_state == null:
@@ -129,11 +129,11 @@ func tick_turn_end(field_state) -> bool:
 	field_state.remaining_turns -= 1
 	return field_state.remaining_turns <= 0
 
-func build_matchup_signature(battle_state) -> String:
+func build_matchup_signature(battle_state: BattleState) -> String:
 	return _trigger_helper.build_matchup_signature(battle_state)
 
-func resolve_opponent_active_id_for_creator(battle_state, creator_id: String) -> Variant:
+func resolve_opponent_active_id_for_creator(battle_state: BattleState, creator_id: String) -> Variant:
 	return _trigger_helper.resolve_opponent_active_id_for_creator(battle_state, creator_id)
 
-func clear_field_state_if_matches(battle_state, field_state) -> void:
+func clear_field_state_if_matches(battle_state: BattleState, field_state) -> void:
 	_cleanup_helper.clear_field_state_if_matches(battle_state, field_state)

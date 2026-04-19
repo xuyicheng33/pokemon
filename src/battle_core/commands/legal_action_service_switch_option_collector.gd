@@ -6,7 +6,7 @@ const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_he
 
 var rule_gate
 
-func collect_switch_action_flags_result(battle_state, side_state, actor, legal_action_set) -> Dictionary:
+func collect_switch_action_flags_result(battle_state: BattleState, side_state, actor, legal_action_set) -> Dictionary:
 	var switch_allowed_by_rule_mod_result: Dictionary = rule_gate.action_allowed_result(
 		battle_state,
 		actor.unit_instance_id,
@@ -24,7 +24,7 @@ func collect_switch_action_flags_result(battle_state, side_state, actor, legal_a
 		"has_non_mp_blocked_option": not switch_allowed_by_rule_mod and _has_alive_bench_unit(battle_state, side_state),
 	})
 
-func _has_alive_bench_unit(battle_state, side_state) -> bool:
+func _has_alive_bench_unit(battle_state: BattleState, side_state) -> bool:
 	for bench_unit_id in side_state.bench_order:
 		var bench_unit = battle_state.get_unit(bench_unit_id)
 		if bench_unit != null and bench_unit.current_hp > 0:

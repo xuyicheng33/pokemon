@@ -23,7 +23,7 @@ func resolve_missing_dependency() -> String:
 
 
 func record_fatal_damage(
-	battle_state,
+	battle_state: BattleState,
 	target_unit_id: String,
 	before_hp: int,
 	after_hp: int,
@@ -56,7 +56,7 @@ func record_fatal_damage(
 		battle_state.fatal_damage_records_by_target[target_unit_id] = []
 	battle_state.fatal_damage_records_by_target[target_unit_id].append(fatal_record)
 
-func resolve_killer_units(battle_state, fainted_unit_ids: Array) -> Dictionary:
+func resolve_killer_units(battle_state: BattleState, fainted_unit_ids: Array) -> Dictionary:
 	var killer_unit_ids: Array = []
 	for fainted_unit_id in fainted_unit_ids:
 		var killer_id = resolve_killer_for_target(battle_state, fainted_unit_id)
@@ -67,7 +67,7 @@ func resolve_killer_units(battle_state, fainted_unit_ids: Array) -> Dictionary:
 	killer_unit_ids.sort()
 	return {"killer_unit_ids": killer_unit_ids}
 
-func resolve_killer_for_target(battle_state, target_unit_id: String) -> Variant:
+func resolve_killer_for_target(battle_state: BattleState, target_unit_id: String) -> Variant:
 	if not battle_state.fatal_damage_records_by_target.has(target_unit_id):
 		return null
 	var records: Array = battle_state.fatal_damage_records_by_target[target_unit_id]
@@ -91,7 +91,7 @@ func resolve_killer_for_target(battle_state, target_unit_id: String) -> Variant:
 		return null
 	return killer_id_string
 
-func collect_action_on_kill_events(battle_state, content_index, killer_unit_ids: Array) -> Dictionary:
+func collect_action_on_kill_events(battle_state: BattleState, content_index: BattleContentIndex, killer_unit_ids: Array) -> Dictionary:
 	if killer_unit_ids.is_empty():
 		return {"events": [], "invalid_code": null}
 	if battle_state.chain_context == null or battle_state.chain_context.chain_origin != "action":
@@ -131,7 +131,7 @@ func collect_action_on_kill_events(battle_state, content_index, killer_unit_ids:
 	)
 	return {"events": effect_events, "invalid_code": null}
 
-func clear_fatal_damage_records(battle_state, fainted_unit_ids: Array) -> void:
+func clear_fatal_damage_records(battle_state: BattleState, fainted_unit_ids: Array) -> void:
 	for fainted_unit_id in fainted_unit_ids:
 		battle_state.fatal_damage_records_by_target.erase(fainted_unit_id)
 

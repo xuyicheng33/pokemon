@@ -3,7 +3,7 @@ class_name CommandValidator
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
-func validate_command(command, battle_state, content_index) -> bool:
+func validate_command(command: Command, battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	if command == null:
 		return false
 	if battle_state.get_side(command.side_id) == null:
@@ -36,7 +36,7 @@ func validate_command(command, battle_state, content_index) -> bool:
 		_:
 			return false
 
-func _resolve_runtime_ids(command, battle_state) -> bool:
+func _resolve_runtime_ids(command: Command, battle_state: BattleState) -> bool:
 	if not command.actor_public_id.is_empty():
 		var actor_unit = battle_state.get_unit_by_public_id(command.actor_public_id)
 		if actor_unit == null:
@@ -59,7 +59,7 @@ func _resolve_runtime_ids(command, battle_state) -> bool:
 		command.target_public_id = runtime_target.public_id
 	return true
 
-func _validate_skill(command, active_unit, content_index, require_ultimate: bool) -> bool:
+func _validate_skill(command: Command, active_unit, content_index: BattleContentIndex, require_ultimate: bool) -> bool:
 	var unit_definition = content_index.units.get(active_unit.definition_id)
 	if unit_definition == null:
 		return false

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ReplacementSelectionHelper
 
-func collect_legal_bench_ids(battle_state, side_state) -> PackedStringArray:
+func collect_legal_bench_ids(battle_state: BattleState, side_state) -> PackedStringArray:
 	var legal_bench_ids := PackedStringArray()
 	for bench_unit_id in side_state.bench_order:
 		var bench_unit = battle_state.get_unit(bench_unit_id)
@@ -16,7 +16,7 @@ func find_active_slot_id(side_state, unit_instance_id: String) -> String:
 			return str(slot_id)
 	return ""
 
-func select_replacement_unit_id(battle_state, side_state, legal_bench_ids: PackedStringArray, reason: String, replacement_selector) -> String:
+func select_replacement_unit_id(battle_state: BattleState, side_state, legal_bench_ids: PackedStringArray, reason: String, replacement_selector) -> String:
 	if legal_bench_ids.size() == 1:
 		return legal_bench_ids[0]
 	if replacement_selector == null:

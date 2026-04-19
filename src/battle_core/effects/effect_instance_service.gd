@@ -25,7 +25,7 @@ func resolve_missing_dependency() -> String:
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
-func create_instance(effect_definition, owner_id: String, battle_state, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, meta: Dictionary = {}) -> Variant:
+func create_instance(effect_definition, owner_id: String, battle_state: BattleState, source_instance_id: String, source_kind_order: int, source_order_speed_snapshot: int, meta: Dictionary = {}) -> Variant:
 	last_invalid_battle_code = null
 	last_apply_skipped = false
 	var owner_unit = battle_state.get_unit(owner_id)
@@ -70,7 +70,7 @@ func create_instance(effect_definition, owner_id: String, battle_state, source_i
 	owner_unit.effect_instances.append(effect_instance)
 	return effect_instance
 
-func remove_instance(owner_id: String, effect_definition_id: String, battle_state) -> Variant:
+func remove_instance(owner_id: String, effect_definition_id: String, battle_state: BattleState) -> Variant:
 	var owner_unit = battle_state.get_unit(owner_id)
 	if owner_unit == null:
 		return null
@@ -81,7 +81,7 @@ func remove_instance(owner_id: String, effect_definition_id: String, battle_stat
 	owner_unit.effect_instances.erase(existing_instance)
 	return existing_instance
 
-func remove_all_instances(owner_id: String, effect_definition_id: String, battle_state) -> Array:
+func remove_all_instances(owner_id: String, effect_definition_id: String, battle_state: BattleState) -> Array:
 	var owner_unit = battle_state.get_unit(owner_id)
 	if owner_unit == null:
 		return []

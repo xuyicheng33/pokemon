@@ -1,6 +1,6 @@
 extends RefCounted
 
-func validate_skill_contract(errors: Array, skill_id: String, skill_definition, content_index) -> void:
+func validate_skill_contract(errors: Array, skill_id: String, skill_definition, content_index: BattleContentIndex) -> void:
 	var has_any_effect_id := false
 	for effect_id in skill_definition.power_bonus_self_effect_ids:
 		var normalized_effect_id := String(effect_id).strip_edges()

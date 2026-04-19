@@ -56,7 +56,7 @@ func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
-func execute(payload, _effect_definition, effect_event, battle_state, _content_index, _execute_trigger_batch: Callable = Callable()) -> void:
+func execute(payload, _effect_definition, effect_event: EffectEvent, battle_state: BattleState, _content_index: BattleContentIndex, _execute_trigger_batch: Callable = Callable()) -> void:
 	last_invalid_battle_code = null
 	if not payload is RuleModPayloadScript:
 		return
@@ -98,7 +98,7 @@ func execute(payload, _effect_definition, effect_event, battle_state, _content_i
 		}
 	))
 
-func _resolve_rule_mod_owner(payload, effect_event, battle_state) -> Variant:
+func _resolve_rule_mod_owner(payload, effect_event: EffectEvent, battle_state: BattleState) -> Variant:
 	match payload.scope:
 		"self":
 			var owner_unit = battle_state.get_unit(effect_event.owner_id)

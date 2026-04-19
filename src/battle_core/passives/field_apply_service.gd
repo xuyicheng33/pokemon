@@ -46,9 +46,9 @@ func _compose_post_wire() -> void:
 func apply_field(
 	effect_definition,
 	payload,
-	effect_event,
-	battle_state,
-	content_index,
+	effect_event: EffectEvent,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	execute_trigger_batch: Callable = Callable()
 ) -> Variant:
 	if effect_definition == null or payload == null or effect_event == null:
@@ -120,7 +120,7 @@ func apply_field(
 		execute_trigger_batch
 	)
 
-func _should_defer_success_effects(field_definition, payload, effect_event) -> bool:
+func _should_defer_success_effects(field_definition, payload, effect_event: EffectEvent) -> bool:
 	if field_definition == null or payload == null or effect_event == null or effect_event.chain_context == null:
 		return false
 	if payload.on_success_effect_ids.is_empty():
@@ -129,7 +129,7 @@ func _should_defer_success_effects(field_definition, payload, effect_event) -> b
 		return false
 	return bool(effect_event.chain_context.defer_field_apply_success)
 
-func _is_replacing_current_field_from_its_lifecycle(effect_event, current_field_state) -> bool:
+func _is_replacing_current_field_from_its_lifecycle(effect_event: EffectEvent, current_field_state) -> bool:
 	if effect_event == null or current_field_state == null:
 		return false
 	var trigger_name := String(effect_event.trigger_name)

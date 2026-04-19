@@ -5,9 +5,9 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
 func execute_receive_damage_segment_trigger(
-	queued_action,
-	battle_state,
-	content_index,
+	queued_action: QueuedAction,
+	battle_state: BattleState,
+	content_index: BattleContentIndex,
 	target_unit_id: String,
 	segment_index: int,
 	segment_total: int,
@@ -36,7 +36,7 @@ func execute_receive_damage_segment_trigger(
 	_restore_chain_context_state(battle_state.chain_context, previous_state)
 	return invalid_code
 
-func _should_dispatch_receive_damage_segment(queued_action, battle_state, target_unit_id: String) -> bool:
+func _should_dispatch_receive_damage_segment(queued_action: QueuedAction, battle_state: BattleState, target_unit_id: String) -> bool:
 	if queued_action.command == null:
 		return false
 	var command_type := String(queued_action.command.command_type)
@@ -55,13 +55,13 @@ func _should_dispatch_receive_damage_segment(queued_action, battle_state, target
 		return false
 	return String(actor_side.side_id) != String(target_side.side_id)
 
-func _apply_segment_context(chain_context, target_unit_id: String, segment_index: int, segment_total: int, segment_combat_type_id: String) -> void:
+func _apply_segment_context(chain_context: ChainContext, target_unit_id: String, segment_index: int, segment_total: int, segment_combat_type_id: String) -> void:
 	chain_context.action_segment_index = segment_index
 	chain_context.action_segment_total = segment_total
 	chain_context.action_combat_type_id = segment_combat_type_id
 	chain_context.target_unit_id = target_unit_id
 
-func _capture_chain_context_state(chain_context) -> Dictionary:
+func _capture_chain_context_state(chain_context: ChainContext) -> Dictionary:
 	return {
 		"action_segment_index": int(chain_context.action_segment_index),
 		"action_segment_total": int(chain_context.action_segment_total),
@@ -69,7 +69,7 @@ func _capture_chain_context_state(chain_context) -> Dictionary:
 		"target_unit_id": chain_context.target_unit_id,
 	}
 
-func _restore_chain_context_state(chain_context, previous_state: Dictionary) -> void:
+func _restore_chain_context_state(chain_context: ChainContext, previous_state: Dictionary) -> void:
 	chain_context.action_segment_index = int(previous_state.get("action_segment_index", 0))
 	chain_context.action_segment_total = int(previous_state.get("action_segment_total", 0))
 	chain_context.action_combat_type_id = String(previous_state.get("action_combat_type_id", ""))

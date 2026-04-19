@@ -9,7 +9,7 @@ var action_log_service: ActionLogService
 var replacement_service: ReplacementService
 
 
-func execute_switch_action(queued_action, battle_state, content_index) -> Variant:
+func execute_switch_action(queued_action: QueuedAction, battle_state: BattleState, content_index: BattleContentIndex) -> Variant:
 	var result = ActionResultScript.new()
 	var command = queued_action.command
 	var side_state = battle_state.get_side(command.side_id)
