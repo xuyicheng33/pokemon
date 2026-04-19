@@ -15,7 +15,7 @@ const ContentSchemaScript := preload("res://src/battle_core/content/content_sche
 const EffectInstanceScript := preload("res://src/battle_core/runtime/effect_instance.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var id_factory
+var id_factory: IdFactory
 var last_invalid_battle_code: Variant = null
 var last_apply_skipped: bool = false
 

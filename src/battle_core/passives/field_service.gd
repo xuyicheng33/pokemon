@@ -17,7 +17,7 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const FieldTriggerCollectionHelperScript := preload("res://src/battle_core/passives/field_trigger_collection_helper.gd")
 const FieldCleanupHelperScript := preload("res://src/battle_core/passives/field_cleanup_helper.gd")
 
-var trigger_dispatcher
+var trigger_dispatcher: TriggerDispatcher
 var last_invalid_battle_code: Variant = null
 
 var _trigger_helper = FieldTriggerCollectionHelperScript.new()

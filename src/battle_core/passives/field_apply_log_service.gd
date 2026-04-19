@@ -4,9 +4,9 @@ class_name FieldApplyLogService
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
 
-var battle_logger
-var log_event_builder
-var context_resolver
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var context_resolver: FieldApplyContextResolver
 
 func log_field_clash(clash_result, before_field, payload, effect_event, battle_state) -> void:
 	if clash_result == null or bool(clash_result.same_creator):

@@ -14,7 +14,7 @@ const COMPOSE_DEPS := [
 const EffectEventScript := preload("res://src/battle_core/contracts/effect_event.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var id_factory
+var id_factory: IdFactory
 var last_invalid_battle_code: Variant = null
 
 func resolve_missing_dependency() -> String:

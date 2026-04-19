@@ -26,9 +26,9 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const SelectionStateScript := preload("res://src/battle_core/contracts/selection_state.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var legal_action_service
-var command_builder
-var command_validator
+var legal_action_service: LegalActionService
+var command_builder: CommandBuilder
+var command_validator: CommandValidator
 var last_error_code: Variant = null
 var last_error_message: String = ""
 

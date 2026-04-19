@@ -19,8 +19,8 @@ const COMPOSE_DEPS := [
 const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var replacement_service
-var target_helper
+var replacement_service: ReplacementService
+var target_helper: PayloadUnitTargetHelper
 
 var last_invalid_battle_code: Variant = null
 

@@ -31,10 +31,10 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 const OutcomeResolverScript := preload("res://src/battle_core/turn/battle_result_service_outcome_resolver.gd")
 const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 
-var id_factory
-var battle_logger
-var log_event_builder
-var turn_limit_scoring_service
+var id_factory: IdFactory
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var turn_limit_scoring_service: TurnLimitScoringService
 var _chain_builder = ChainBuilderScript.new()
 var _outcome_resolver = OutcomeResolverScript.new()
 

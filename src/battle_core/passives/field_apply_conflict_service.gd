@@ -20,8 +20,8 @@ const ClashResultScript := preload("res://src/battle_core/contracts/clash_result
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var rng_service
-var context_resolver
+var rng_service: RngService
+var context_resolver: FieldApplyContextResolver
 var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:

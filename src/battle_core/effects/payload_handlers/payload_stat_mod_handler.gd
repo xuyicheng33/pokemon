@@ -14,7 +14,7 @@ const COMPOSE_DEPS := [
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 
 var last_invalid_battle_code: Variant = null
-var payload_stat_mod_runtime_service
+var payload_stat_mod_runtime_service: PayloadStatModRuntimeService
 
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code

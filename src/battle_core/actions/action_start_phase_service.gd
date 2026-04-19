@@ -3,8 +3,8 @@ class_name ActionStartPhaseService
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
-var action_cast_service
-var action_log_service
+var action_cast_service: ActionCastService
+var action_log_service: ActionLogService
 
 
 func apply_action_start_phase(queued_action, battle_state, actor, command, skill_definition) -> Dictionary:

@@ -4,9 +4,9 @@ class_name ActionExecutionResolutionService
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
-var action_cast_service
-var action_log_service
-var action_skill_effect_service
+var action_cast_service: ActionCastService
+var action_log_service: ActionLogService
+var action_skill_effect_service: ActionSkillEffectService
 
 
 func resolve_started_action(queued_action, actor, command, skill_definition, battle_state, content_index, result) -> void:

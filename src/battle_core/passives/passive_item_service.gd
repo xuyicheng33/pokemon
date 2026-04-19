@@ -14,7 +14,7 @@ const COMPOSE_DEPS := [
 const SOURCE_KIND_ORDER_PASSIVE_ITEM := 4
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var trigger_dispatcher
+var trigger_dispatcher: TriggerDispatcher
 var last_invalid_battle_code: Variant = null
 
 func resolve_missing_dependency() -> String:

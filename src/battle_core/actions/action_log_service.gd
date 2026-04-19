@@ -20,8 +20,8 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
 
-var battle_logger
-var log_event_builder
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

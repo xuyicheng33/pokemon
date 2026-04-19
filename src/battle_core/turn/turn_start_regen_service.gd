@@ -4,10 +4,10 @@ class_name TurnStartRegenService
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
 
-var mp_service
-var rule_mod_service
-var battle_logger
-var log_event_builder
+var mp_service: MpService
+var rule_mod_service: RuleModService
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
 
 func apply_turn_start_regen(battle_state, cause_event_id: String) -> void:
 	for side_state in battle_state.sides:

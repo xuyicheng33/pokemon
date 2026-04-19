@@ -14,7 +14,7 @@ const COMPOSE_DEPS := [
 const HealPayloadScript := preload("res://src/battle_core/content/heal_payload.gd")
 
 var last_invalid_battle_code: Variant = null
-var payload_resource_runtime_service
+var payload_resource_runtime_service: PayloadResourceRuntimeService
 
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code

@@ -3,8 +3,8 @@ class_name ActionDomainGuard
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
-var rule_mod_service
-var domain_legality_service
+var rule_mod_service: RuleModService
+var domain_legality_service: DomainLegalityService
 
 
 func is_action_still_allowed(queued_action, command, actor, battle_state, content_index) -> bool:

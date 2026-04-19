@@ -32,10 +32,10 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var id_factory
-var rng_service
-var stat_calculator
-var domain_clash_orchestrator
+var id_factory: IdFactory
+var rng_service: RngService
+var stat_calculator: StatCalculator
+var domain_clash_orchestrator: DomainClashOrchestrator
 var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:

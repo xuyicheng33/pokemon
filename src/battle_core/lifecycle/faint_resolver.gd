@@ -16,14 +16,14 @@ const COMPOSE_DEPS := [
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
-var trigger_batch_runner
-var battle_logger
-var log_event_builder
-var faint_killer_attribution_service
-var field_service
-var leave_service
-var replacement_service
-var faint_leave_replacement_service
+var trigger_batch_runner: TriggerBatchRunner
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var faint_killer_attribution_service: FaintKillerAttributionService
+var field_service: FieldService
+var leave_service: LeaveService
+var replacement_service: ReplacementService
+var faint_leave_replacement_service: FaintLeaveReplacementService
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

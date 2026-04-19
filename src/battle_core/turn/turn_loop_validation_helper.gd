@@ -4,9 +4,9 @@ class_name TurnLoopValidationHelper
 const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var battle_result_service
-var runtime_guard_service
-var battle_logger
+var battle_result_service: BattleResultService
+var runtime_guard_service: RuntimeGuardService
+var battle_logger: BattleLogger
 
 func validate_runtime_or_terminate(battle_state, content_index = null) -> bool:
 	var invalid_code = runtime_guard_service.validate_runtime_state(battle_state, content_index)

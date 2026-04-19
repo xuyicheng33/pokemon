@@ -3,13 +3,13 @@ class_name TurnStartExpiryService
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
-var turn_field_lifecycle_service
-var effect_instance_dispatcher
-var trigger_batch_runner
-var rule_mod_service
-var battle_logger
-var log_event_builder
-var battle_result_service
+var turn_field_lifecycle_service: TurnFieldLifecycleService
+var effect_instance_dispatcher: EffectInstanceDispatcher
+var trigger_batch_runner: TriggerBatchRunner
+var rule_mod_service: RuleModService
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var battle_result_service: BattleResultService
 
 func execute_expiry_phase(battle_state, content_index, trigger_name: String, cause_event_id: String) -> bool:
 	var owner_unit_ids: Array = collect_effect_decrement_owner_ids(battle_state)

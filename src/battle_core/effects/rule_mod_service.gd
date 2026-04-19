@@ -14,7 +14,7 @@ const COMPOSE_DEPS := [
 const RuleModReadServiceScript := preload("res://src/battle_core/effects/rule_mod_read_service.gd")
 const RuleModWriteServiceScript := preload("res://src/battle_core/effects/rule_mod_write_service.gd")
 
-var id_factory
+var id_factory: IdFactory
 var last_error_code: Variant = null
 var last_apply_skipped: bool = false
 var _read_service = RuleModReadServiceScript.new()

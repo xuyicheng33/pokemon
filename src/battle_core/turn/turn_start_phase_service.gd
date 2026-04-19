@@ -55,15 +55,15 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 const TurnStartExpiryServiceScript := preload("res://src/battle_core/turn/turn_start_expiry_service.gd")
 const TurnStartRegenServiceScript := preload("res://src/battle_core/turn/turn_start_regen_service.gd")
 
-var turn_field_lifecycle_service
-var mp_service
-var trigger_batch_runner
-var effect_instance_dispatcher
-var rule_mod_service
-var faint_resolver
-var battle_logger
-var log_event_builder
-var battle_result_service
+var turn_field_lifecycle_service: TurnFieldLifecycleService
+var mp_service: MpService
+var trigger_batch_runner: TriggerBatchRunner
+var effect_instance_dispatcher: EffectInstanceDispatcher
+var rule_mod_service: RuleModService
+var faint_resolver: FaintResolver
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
+var battle_result_service: BattleResultService
 var _expiry_service = TurnStartExpiryServiceScript.new()
 var _regen_service = TurnStartRegenServiceScript.new()
 

@@ -15,7 +15,7 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var field_apply_conflict_service
+var field_apply_conflict_service: FieldApplyConflictService
 var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:

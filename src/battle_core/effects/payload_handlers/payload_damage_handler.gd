@@ -14,7 +14,7 @@ const COMPOSE_DEPS := [
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
 
 var last_invalid_battle_code: Variant = null
-var payload_damage_runtime_service
+var payload_damage_runtime_service: PayloadDamageRuntimeService
 
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code

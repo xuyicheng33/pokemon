@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ActionSkillEffectService
 
-var action_cast_service
+var action_cast_service: ActionCastService
 
 
 func dispatch_trigger(trigger_name: String, skill_definition, queued_action, actor, battle_state, content_index, result) -> void:

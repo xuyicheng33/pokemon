@@ -13,8 +13,8 @@ const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var battle_logger
-var log_event_builder
+var battle_logger: BattleLogger
+var log_event_builder: LogEventBuilder
 var lifecycle_retention_policy = LifecycleRetentionPolicyScript.new()
 var last_invalid_battle_code: Variant = null
 

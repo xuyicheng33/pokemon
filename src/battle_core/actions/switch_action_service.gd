@@ -4,9 +4,9 @@ class_name SwitchActionService
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ActionResultScript := preload("res://src/battle_core/contracts/action_result.gd")
 
-var action_cast_service
-var action_log_service
-var replacement_service
+var action_cast_service: ActionCastService
+var action_log_service: ActionLogService
+var replacement_service: ReplacementService
 
 
 func execute_switch_action(queued_action, battle_state, content_index) -> Variant:

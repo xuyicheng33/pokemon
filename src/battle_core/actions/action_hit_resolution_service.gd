@@ -5,9 +5,9 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
-var hit_service
-var rule_mod_service
-var rng_service
+var hit_service: HitService
+var rule_mod_service: RuleModService
+var rng_service: RngService
 
 
 func resolve_hit(command, skill_definition, resolved_target, battle_state, content_index) -> Dictionary:

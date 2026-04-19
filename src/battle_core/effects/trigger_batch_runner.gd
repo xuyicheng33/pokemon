@@ -43,13 +43,13 @@ const COMPOSE_DEPS := [
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-var passive_skill_service
-var passive_item_service
-var field_service
-var effect_instance_dispatcher
-var effect_queue_service
-var payload_executor
-var rng_service
+var passive_skill_service: PassiveSkillService
+var passive_item_service: PassiveItemService
+var field_service: FieldService
+var effect_instance_dispatcher: EffectInstanceDispatcher
+var effect_queue_service: EffectQueueService
+var payload_executor: PayloadExecutor
+var rng_service: RngService
 var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:

@@ -11,7 +11,7 @@ const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd"
 const FIELD_OWNER_ID := "field"
 const STACKING_KEY_SCHEMA_BY_KIND := RuleModSchemaScript.STACKING_KEY_SCHEMA_BY_KIND
 
-var id_factory
+var id_factory: IdFactory
 var last_error_code: Variant = null
 var last_error_message: String = ""
 var last_apply_skipped: bool = false
