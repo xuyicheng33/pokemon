@@ -6,16 +6,16 @@ const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var sessions: Dictionary = {}
-var public_snapshot_builder: RefCounted = null
+var public_snapshot_builder: BattleCorePublicSnapshotBuilder = null
 
 func configure_session_ports(
 	next_sessions: Dictionary,
-	next_public_snapshot_builder
+	next_public_snapshot_builder: BattleCorePublicSnapshotBuilder
 ) -> void:
 	sessions = next_sessions
 	public_snapshot_builder = next_public_snapshot_builder
 
-func create_session_result(container_service, session_id: String, init_payload: Dictionary) -> Dictionary:
+func create_session_result(container_service: BattleCoreManagerContainerService, session_id: String, init_payload: Dictionary) -> Dictionary:
 	var create_result = container_service.create_session_result(session_id, init_payload)
 	if not bool(create_result.get("ok", false)):
 		return create_result

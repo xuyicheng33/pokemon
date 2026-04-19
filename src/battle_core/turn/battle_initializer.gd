@@ -79,17 +79,17 @@ const LOCAL_HELPER_FIELDS := [
 	"_phase_service",
 ]
 
-var id_factory: RefCounted = null
-var rng_service: RefCounted = null
-var faint_resolver: RefCounted = null
-var trigger_batch_runner: RefCounted = null
-var battle_logger: RefCounted = null
-var log_event_builder: RefCounted = null
-var combat_type_service: RefCounted = null
-var mp_service: RefCounted = null
-var rule_mod_service: RefCounted = null
-var battle_result_service: RefCounted = null
-var field_lifecycle_service: RefCounted = null
+var id_factory: IdFactory = null
+var rng_service: RngService = null
+var faint_resolver: FaintResolver = null
+var trigger_batch_runner: TriggerBatchRunner = null
+var battle_logger: BattleLogger = null
+var log_event_builder: LogEventBuilder = null
+var combat_type_service: CombatTypeService = null
+var mp_service: MpService = null
+var rule_mod_service: RuleModService = null
+var battle_result_service: BattleResultService = null
+var field_lifecycle_service: TurnFieldLifecycleService = null
 var public_id_allocator: PublicIdAllocator = PublicIdAllocatorScript.new()
 var _state_builder: BattleInitializerStateBuilder = BattleInitializerStateBuilderScript.new()
 var _setup_validator: BattleInitializerSetupValidator = BattleInitializerSetupValidatorScript.new()

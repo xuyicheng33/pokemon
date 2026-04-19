@@ -26,9 +26,9 @@ const BattleResultScript := preload("res://src/battle_core/contracts/battle_resu
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
-var rng_service: RefCounted = null
-var battle_logger: RefCounted = null
-var combat_type_service: RefCounted = null
+var rng_service: RngService = null
+var battle_logger: BattleLogger = null
+var combat_type_service: CombatTypeService = null
 var last_error_code: Variant = null
 var last_error_message: String = ""
 

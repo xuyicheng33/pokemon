@@ -1,6 +1,7 @@
 extends "res://test/support/gdunit_suite_bridge.gd"
 
 const BattleCoreManagerContainerServiceScript := preload("res://src/battle_core/facades/battle_core_manager_container_service.gd")
+const BattleCorePublicSnapshotBuilderScript := preload("res://src/battle_core/facades/public_snapshot_builder.gd")
 const BattleResultScript := preload("res://src/battle_core/contracts/battle_result.gd")
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
@@ -40,9 +41,11 @@ class ContainerStub:
 		disposed = true
 
 class PublicSnapshotBuilderStub:
+	extends BattleCorePublicSnapshotBuilderScript
+
 	var build_calls: int = 0
 
-	func build_public_snapshot(_battle_state, _content_index):
+	func build_public_snapshot(_battle_state: BattleState, _content_index: BattleContentIndex = null) -> Dictionary:
 		build_calls += 1
 		return {"public_snapshot": true}
 

@@ -1,14 +1,15 @@
 extends RefCounted
+class_name BattleCoreSession
 
 const BattleCoreManagerContractHelperScript := preload("res://src/battle_core/facades/battle_core_manager_contract_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var session_id: String = ""
-var _container: RefCounted = null
+var _container: BattleCoreContainer = null
 var _battle_state: BattleState = null
 var _content_index: BattleContentIndex = null
 
-func configure_runtime(container, battle_state, content_index) -> void:
+func configure_runtime(container: BattleCoreContainer, battle_state: BattleState, content_index: BattleContentIndex) -> void:
 	_container = container
 	_battle_state = battle_state
 	_content_index = content_index
@@ -78,10 +79,10 @@ func get_event_log_snapshot_result() -> Dictionary:
 		return BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: battle_logger")
 	return BattleCoreManagerContractHelperScript.ok(battle_logger.snapshot())
 
-func current_battle_state():
+func current_battle_state() -> BattleState:
 	return _battle_state
 
-func current_content_index():
+func current_content_index() -> BattleContentIndex:
 	return _content_index
 
 func dispose() -> void:

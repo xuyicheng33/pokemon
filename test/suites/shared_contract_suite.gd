@@ -5,12 +5,71 @@ const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_he
 const BattleInitializerPortsScript := preload("res://src/battle_core/turn/battle_initializer_ports.gd")
 const BattleInitializerSetupValidatorScript := preload("res://src/battle_core/turn/battle_initializer_setup_validator.gd")
 const BattleInitializerPhaseServiceScript := preload("res://src/battle_core/turn/battle_initializer_phase_service.gd")
+const IdFactoryScript := preload("res://src/shared/id_factory.gd")
+const RngServiceScript := preload("res://src/shared/rng_service.gd")
+const FaintResolverScript := preload("res://src/battle_core/lifecycle/faint_resolver.gd")
+const TriggerBatchRunnerScript := preload("res://src/battle_core/effects/trigger_batch_runner.gd")
+const BattleLoggerScript := preload("res://src/battle_core/logging/battle_logger.gd")
+const LogEventBuilderScript := preload("res://src/battle_core/logging/log_event_builder.gd")
+const CombatTypeServiceScript := preload("res://src/battle_core/math/combat_type_service.gd")
+const MpServiceScript := preload("res://src/battle_core/math/mp_service.gd")
+const RuleModServiceScript := preload("res://src/battle_core/effects/rule_mod_service.gd")
+const BattleResultServiceScript := preload("res://src/battle_core/turn/battle_result_service.gd")
+const TurnFieldLifecycleServiceScript := preload("res://src/battle_core/turn/turn_field_lifecycle_service.gd")
 
 class PropertyCarrier:
 	extends RefCounted
 
 	var answer: int = 42
 	var label: String = "sandbox"
+
+class FaintResolverStub:
+	extends FaintResolverScript
+
+	func resolve_missing_dependency() -> String:
+		return ""
+
+class TriggerBatchRunnerStub:
+	extends TriggerBatchRunnerScript
+
+	func resolve_missing_dependency() -> String:
+		return ""
+
+class BattleLoggerStub:
+	extends BattleLoggerScript
+
+	func resolve_missing_dependency() -> String:
+		return ""
+
+class LogEventBuilderStub:
+	extends LogEventBuilderScript
+
+	func resolve_missing_dependency() -> String:
+		return ""
+
+class MpServiceStub:
+	extends MpServiceScript
+
+	func resolve_missing_dependency() -> String:
+		return ""
+
+class RuleModServiceStub:
+	extends RuleModServiceScript
+
+	func resolve_missing_dependency() -> String:
+		return ""
+
+class BattleResultServiceStub:
+	extends BattleResultServiceScript
+
+	func resolve_missing_dependency() -> String:
+		return ""
+
+class TurnFieldLifecycleServiceStub:
+	extends TurnFieldLifecycleServiceScript
+
+	func resolve_missing_dependency() -> String:
+		return ""
 
 func test_property_access_helper_reads_dictionary_and_object_contract() -> void:
 	var carrier := PropertyCarrier.new()
@@ -44,17 +103,17 @@ func test_result_envelope_helper_contract_uses_four_field_shape() -> void:
 
 func test_battle_initializer_child_ports_contract() -> void:
 	var ports: BattleInitializerPorts = BattleInitializerPortsScript.new()
-	ports.id_factory = RefCounted.new()
-	ports.rng_service = RefCounted.new()
-	ports.faint_resolver = RefCounted.new()
-	ports.trigger_batch_runner = RefCounted.new()
-	ports.battle_logger = RefCounted.new()
-	ports.log_event_builder = RefCounted.new()
-	ports.combat_type_service = RefCounted.new()
-	ports.mp_service = RefCounted.new()
-	ports.rule_mod_service = RefCounted.new()
-	ports.battle_result_service = RefCounted.new()
-	ports.field_lifecycle_service = RefCounted.new()
+	ports.id_factory = IdFactoryScript.new()
+	ports.rng_service = RngServiceScript.new()
+	ports.faint_resolver = FaintResolverStub.new()
+	ports.trigger_batch_runner = TriggerBatchRunnerStub.new()
+	ports.battle_logger = BattleLoggerStub.new()
+	ports.log_event_builder = LogEventBuilderStub.new()
+	ports.combat_type_service = CombatTypeServiceScript.new()
+	ports.mp_service = MpServiceStub.new()
+	ports.rule_mod_service = RuleModServiceStub.new()
+	ports.battle_result_service = BattleResultServiceStub.new()
+	ports.field_lifecycle_service = TurnFieldLifecycleServiceStub.new()
 
 	var setup_validator: BattleInitializerSetupValidator = BattleInitializerSetupValidatorScript.new()
 	setup_validator.configure_ports(ports)

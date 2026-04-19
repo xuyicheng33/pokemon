@@ -60,15 +60,15 @@ const INIT_PHASE_CONTINUE := 0
 const INIT_PHASE_STOP := 1
 const INIT_PHASE_FAIL := 2
 
-var id_factory: RefCounted = null
-var faint_resolver: RefCounted = null
-var trigger_batch_runner: RefCounted = null
-var battle_logger: RefCounted = null
-var log_event_builder: RefCounted = null
-var mp_service: RefCounted = null
-var rule_mod_service: RefCounted = null
-var battle_result_service: RefCounted = null
-var field_lifecycle_service: RefCounted = null
+var id_factory: IdFactory = null
+var faint_resolver: FaintResolver = null
+var trigger_batch_runner: TriggerBatchRunner = null
+var battle_logger: BattleLogger = null
+var log_event_builder: LogEventBuilder = null
+var mp_service: MpService = null
+var rule_mod_service: RuleModService = null
+var battle_result_service: BattleResultService = null
+var field_lifecycle_service: TurnFieldLifecycleService = null
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)

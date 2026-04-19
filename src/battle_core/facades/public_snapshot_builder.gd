@@ -36,7 +36,7 @@ const SAFE_EVENT_FIELDS := [
 	"header_snapshot",
 ]
 
-func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
+func build_public_snapshot(battle_state: BattleState, content_index: BattleContentIndex = null) -> Dictionary:
 	if battle_state == null:
 		return {}
 	var field_snapshot = BattleHeaderSnapshotBuilderScript.build_public_field_snapshot(battle_state, content_index)
@@ -79,10 +79,10 @@ func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
 		"battle_result": battle_result_dict,
 	})
 
-func build_header_snapshot(battle_state, content_index = null) -> Dictionary:
+func build_header_snapshot(battle_state: BattleState, content_index: BattleContentIndex = null) -> Dictionary:
 	return BattleHeaderSnapshotBuilderScript.build_header_snapshot(battle_state, content_index)
 
-func build_event_public_snapshot(log_event, battle_state) -> Dictionary:
+func build_event_public_snapshot(log_event: LogEvent, battle_state: BattleState) -> Dictionary:
 	if log_event == null:
 		return {}
 	var event_snapshot: Dictionary = {}
@@ -98,12 +98,12 @@ func build_event_public_snapshot(log_event, battle_state) -> Dictionary:
 	event_snapshot["killer_definition_id"] = _resolve_definition_id(battle_state, log_event.killer_id)
 	return DeepCopyHelperScript.copy_value(event_snapshot)
 
-func _serialize_field_change(field_change) -> Variant:
+func _serialize_field_change(field_change: FieldChange) -> Variant:
 	if field_change == null:
 		return null
 	return field_change.to_stable_dict()
 
-func _build_public_value_changes(value_changes: Array, battle_state) -> Array:
+func _build_public_value_changes(value_changes: Array, battle_state: BattleState) -> Array:
 	var public_changes: Array = []
 	for value_change in value_changes:
 		if value_change == null:
@@ -118,19 +118,19 @@ func _build_public_value_changes(value_changes: Array, battle_state) -> Array:
 		})
 	return public_changes
 
-func _resolve_public_id(battle_state, runtime_unit_id) -> Variant:
+func _resolve_public_id(battle_state: BattleState, runtime_unit_id) -> Variant:
 	var unit_state = _resolve_unit_state(battle_state, runtime_unit_id)
 	if unit_state == null:
 		return null
 	return unit_state.public_id
 
-func _resolve_definition_id(battle_state, runtime_unit_id) -> Variant:
+func _resolve_definition_id(battle_state: BattleState, runtime_unit_id) -> Variant:
 	var unit_state = _resolve_unit_state(battle_state, runtime_unit_id)
 	if unit_state == null:
 		return null
 	return unit_state.definition_id
 
-func _resolve_unit_state(battle_state, runtime_unit_id) -> Variant:
+func _resolve_unit_state(battle_state: BattleState, runtime_unit_id) -> Variant:
 	if battle_state == null:
 		return null
 	var normalized_id := str(runtime_unit_id)
@@ -138,7 +138,7 @@ func _resolve_unit_state(battle_state, runtime_unit_id) -> Variant:
 		return null
 	return battle_state.get_unit(normalized_id)
 
-func _build_public_unit_snapshot(side_state, unit_state) -> Dictionary:
+func _build_public_unit_snapshot(side_state: SideState, unit_state: UnitState) -> Dictionary:
 	var is_active: bool = false
 	var active_slot: Variant = null
 	for slot_id in side_state.active_slots.keys():

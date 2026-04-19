@@ -13,7 +13,7 @@ const REQUIRED_CONTAINER_SERVICES := [
 ]
 
 var container_factory: Callable = Callable()
-var public_snapshot_builder: RefCounted = null
+var public_snapshot_builder: BattleCorePublicSnapshotBuilder = null
 var container_factory_owner: RefCounted = null
 
 func create_session_result(session_id: String, init_payload: Dictionary) -> Dictionary:
@@ -115,7 +115,7 @@ func run_replay_result(replay_input) -> Dictionary:
 	temp_container.dispose()
 	return BattleCoreManagerContractHelperScript.ok({"replay_output": replay_output, "public_snapshot": public_snapshot})
 
-func _describe_replay_failure(replay_output) -> String:
+func _describe_replay_failure(replay_output: ReplayOutput) -> String:
 	if replay_output == null:
 		return "BattleCoreManager replay returned null replay_output"
 	if not String(replay_output.failure_message).is_empty():
@@ -135,7 +135,7 @@ func _describe_replay_failure(replay_output) -> String:
 		return "BattleCoreManager replay returned invalid battle_result"
 	return "BattleCoreManager replay log schema validation failed"
 
-func _resolve_final_replay_public_snapshot(internal_replay_output, final_battle_state, content_index) -> Dictionary:
+func _resolve_final_replay_public_snapshot(internal_replay_output: ReplayOutput, final_battle_state: BattleState, content_index: BattleContentIndex) -> Dictionary:
 	if internal_replay_output != null:
 		var turn_timeline = internal_replay_output.turn_timeline
 		if turn_timeline is Array and not turn_timeline.is_empty():
@@ -158,7 +158,7 @@ func _compose_container_result() -> Dictionary:
 		)
 	return BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager failed to compose battle core container")
 
-func _required_services_result(container) -> Dictionary:
+func _required_services_result(container: BattleCoreContainer) -> Dictionary:
 	var resolved_services: Dictionary = {}
 	for service_name in REQUIRED_CONTAINER_SERVICES:
 		var service = container.service(String(service_name))

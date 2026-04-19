@@ -1,6 +1,8 @@
 extends "res://test/support/gdunit_suite_bridge.gd"
 
 const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_core_manager.gd")
+const BattleCoreManagerContainerServiceScript := preload("res://src/battle_core/facades/battle_core_manager_container_service.gd")
+const BattleCorePublicSnapshotBuilderScript := preload("res://src/battle_core/facades/public_snapshot_builder.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
@@ -24,11 +26,8 @@ class InvalidRuntimeSession:
 		disposed = true
 
 class InvalidRuntimeContainerService:
-	extends RefCounted
+	extends BattleCoreManagerContainerServiceScript
 
-	var container_factory: Callable = Callable()
-	var public_snapshot_builder = null
-	var container_factory_owner = null
 	var invalid_session := InvalidRuntimeSession.new()
 
 	func create_session_result(session_id: String, _init_payload: Dictionary) -> Dictionary:
@@ -43,11 +42,11 @@ class InvalidRuntimeContainerService:
 		}
 
 class RecordingPublicSnapshotBuilder:
-	extends RefCounted
+	extends BattleCorePublicSnapshotBuilderScript
 
 	var build_calls: int = 0
 
-	func build_public_snapshot(_battle_state, _content_index) -> Dictionary:
+	func build_public_snapshot(_battle_state: BattleState, _content_index: BattleContentIndex = null) -> Dictionary:
 		build_calls += 1
 		return {"should_not_escape": true}
 

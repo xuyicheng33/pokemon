@@ -3,9 +3,9 @@ class_name SandboxSessionState
 
 const SandboxEventLogBufferScript := preload("res://src/adapters/sandbox_event_log_buffer.gd")
 
-var composer: RefCounted = null
-var manager: RefCounted = null
-var sample_factory: RefCounted = null
+var composer: BattleCoreComposer = null
+var manager: BattleCoreManager = null
+var sample_factory: SampleBattleFactory = null
 
 var session_id: String = ""
 var battle_setup: Variant = null

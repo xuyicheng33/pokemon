@@ -5,13 +5,13 @@ const BattleCoreManagerContractHelperScript := preload("res://src/battle_core/fa
 const BattleCoreManagerSessionServiceScript := preload("res://src/battle_core/facades/battle_core_manager_session_service.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var _container_factory: Callable = Callable()
-var _command_builder: RefCounted = null
-var _command_id_factory: RefCounted = null
-var _public_snapshot_builder: RefCounted = null
+var _command_builder: CommandBuilder = null
+var _command_id_factory: IdFactory = null
+var _public_snapshot_builder: BattleCorePublicSnapshotBuilder = null
 var _container_factory_owner: RefCounted = null
 var _sessions: Dictionary = {}
 var _session_seq: int = 0
-var _container_service: RefCounted = null
+var _container_service: BattleCoreManagerContainerService = null
 var _session_service: BattleCoreManagerSessionService = BattleCoreManagerSessionServiceScript.new()
 var _disposed: bool = false
 
@@ -118,7 +118,7 @@ func resolve_missing_dependency() -> String:
 		return "container_service"
 	return ""
 
-func _configure_core_ports(container_factory: Callable, command_builder, command_id_factory, public_snapshot_builder, container_service, container_factory_owner = null) -> void:
+func _configure_core_ports(container_factory: Callable, command_builder: CommandBuilder, command_id_factory: IdFactory, public_snapshot_builder: BattleCorePublicSnapshotBuilder, container_service: BattleCoreManagerContainerService, container_factory_owner: RefCounted = null) -> void:
 	_container_factory = container_factory
 	_command_builder = command_builder
 	_command_id_factory = command_id_factory
