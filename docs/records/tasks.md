@@ -16,21 +16,50 @@
 
 - 状态：进行中
 - 总体目标：
-  - 项目定位从"原型期"升级为长期工程，底层架构必须稳定规范；本波次负责把当前过度工程化的形式噪声清理掉，同时保留工程严谨性
+  - 项目定位从"原型期"升级为长期工程，底层架构必须稳定规范；本波次把当前过度工程化的形式噪声清理掉，同时保留工程严谨性
 - 保留（不动）：
   - 6 层架构与依赖方向、单一运行态真相、确定性回放、核心 facade 稳定合同、内容资源加载期 fail-fast、Composition Root 显式装配、对外公开 ID 边界、主测试闸门
-- 分阶段范围：
-  - 阶段 2：放宽架构文件行数阈值（500 警戒 / 800 硬线），合并碎片 owner（`SampleBattleFactory` 13→3、`BattleCoreManager` 外壳 7→2、`BattleInitializer` 5→2、sandbox adapter 15→5）
-  - 阶段 3：错误体系收口，统一跨边界 envelope、内部只保留单一错误传递方式，删除 `last_error_*` 双写样板
-  - 阶段 4：formal character 治理层温和合并（baselines/validators 每角色 5-6→1-2；manifest view 6→2；gate 8→1-2）
-  - 阶段 5：测试中度瘦身到 1:0.5 比例，`test/` 与 `tests/` 合并为单树
-  - 阶段 6：`docs/design/` 27→8；`docs/records/` 清理 review；`README.md` 18KB→3KB；24 gate py→3-4
-  - 阶段 7：核心 runtime/contracts 全字段 + facade + 主 service 依赖字段补类型
-- 阶段 2 验收标准：
-  - architecture gate 阈值更新并留文档备注
-  - 目标合并全部完成，公开 facade 行为不变
-  - `bash tests/run_with_gate.sh` 通过
-  - 文件数从 301 降到 220 附近
+
+### 阶段 2：放宽架构阈值（已完成）
+
+- 实际范围：
+  - 架构 gate 阈值放宽：核心源文件 `500 警戒 / 800 硬线`、测试 support `400 警戒 / 600 硬线`、测试文件 `1200 硬线`、gate py `800 警戒 / 1200 硬线`
+  - `docs/design/battle_core_architecture_constraints.md` 同步阈值描述
+  - `docs/records/decisions.md` 正式标记项目升级为长期工程 + 阈值决策
+- 存量 owner 合并（`SampleBattleFactory` / `BattleCoreManager` 外壳 / `BattleInitializer` / sandbox adapter）不再强制为阶段 2 的单独动作，而是让它们跟随后续阶段 3-5 的业务重构自然合并（为合并而合并 ROI 偏低，且容易引入回归风险）
+- 验证：
+  - `bash tests/check_architecture_constraints.sh` 通过
+  - `bash tests/check_boot_smoke.sh` 通过
+  - `bash tests/check_repo_consistency.sh` 通过
+
+### 阶段 3：错误体系收口（进行中）
+
+- 目标：消除 `last_error_code / last_error_message / error_state()` 手工三件套的重复样板；跨边界统一只认 envelope `{ok, data, error_code, error_message}`，service 内部错误通过返回值携带结构化错误
+- 范围：核心 service（composer / initializer / owner / helper）与 payload handler 的错误传递路径；`ErrorStateHelper` 保留但只做边界转换
+- 预期附带收益：合并 `event_log_public_snapshot_builder.gd` 进 `public_snapshot_builder.gd`（公开快照构建统一到单一 owner）
+
+### 阶段 4：formal character 治理层温和合并
+
+- `baselines/` 每角色 5-6 → 1-2 文件
+- `validators/` 每角色多文件 → 1-2 文件
+- `manifest/` view 层 6 → 2 文件
+- formal gate 8 → 1-2 个
+
+### 阶段 5：测试中度瘦身 + 目录合并
+
+- 测试比例从 1:0.96 降到 1:0.5
+- `test/` + `tests/` → `tests/gdunit/ tests/gates/ tests/support/ tests/helpers/`
+- sandbox adapter / sample_factory 相关测试随对应源码合并同步瘦身
+
+### 阶段 6：文档 + gate 合并
+
+- `docs/design/` 27 → 8
+- `decisions.md` 重写为清晰章节、`README.md` 18KB → 3KB
+- 24 gate py → 3-4
+
+### 阶段 7：核心类型标注
+
+- runtime/contracts 全字段、facade 参数/返回值、主 orchestrator/service 依赖字段加类型
 
 ## 当前阶段：BattleSandbox 边界收口与 SampleBattleFactory 减负（2026-04-18）
 
