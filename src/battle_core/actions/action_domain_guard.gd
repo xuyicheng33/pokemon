@@ -1,28 +1,10 @@
 extends RefCounted
 class_name ActionDomainGuard
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
-
-const COMPOSE_DEPS := [
-	{
-		"field": "rule_mod_service",
-		"source": "rule_mod_service",
-		"nested": true,
-	},
-	{
-		"field": "domain_legality_service",
-		"source": "domain_legality_service",
-		"nested": true,
-	},
-]
-
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
 var rule_mod_service
 var domain_legality_service
-
-func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func is_action_still_allowed(queued_action, command, actor, battle_state, content_index) -> bool:

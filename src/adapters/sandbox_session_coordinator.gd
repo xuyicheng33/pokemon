@@ -30,12 +30,12 @@ func bootstrap_scene(state: SandboxSessionState, requested_config: Dictionary, p
 	var bootstrap_error = _bootstrap_service.prepare_scene(state, requested_config)
 	if not bootstrap_error.is_empty():
 		fail_runtime(state, bootstrap_error)
-		return _error_result(bootstrap_error)
+		return _envelope.error_result(bootstrap_error)
 	if state.is_demo_mode:
 		var replay_error = _demo_service.run_demo_replay(state, state.demo_profile)
 		if not replay_error.is_empty():
 			fail_runtime(state, replay_error)
-			return _error_result(replay_error)
+			return _envelope.error_result(replay_error)
 		return _envelope.ok_result(null)
 	if policy_driver == null:
 		return _envelope.ok_result(null)
@@ -85,5 +85,3 @@ func close_runtime(state: SandboxSessionState) -> Dictionary:
 	dispose_manager(state)
 	return close_result
 
-func _error_result(message: String) -> Dictionary:
-	return _envelope.error_result(message)

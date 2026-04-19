@@ -19,11 +19,11 @@ func advance_until_manual_or_finished(state: SandboxSessionState, policy_driver)
 func fetch_legal_actions_for_side(state: SandboxSessionState, side_id: String) -> Dictionary:
 	var normalized_side_id = str(side_id).strip_edges()
 	if normalized_side_id.is_empty():
-		return _error_result("side_id is required")
+		return envelope.error_result("side_id is required")
 	if state.is_demo_mode:
-		return _error_result("demo mode does not expose legal actions")
+		return envelope.error_result("demo mode does not expose legal actions")
 	if state.manager == null or str(state.session_id).strip_edges().is_empty():
-		return _error_result("manual scene has no active session")
+		return envelope.error_result("manual scene has no active session")
 	return refresh_legal_actions_for_side(state, normalized_side_id)
 
 func refresh_legal_actions_for_side(state: SandboxSessionState, side_id: String) -> Dictionary:
@@ -46,18 +46,18 @@ func submit_action(
 	allow_policy_progression: bool = true
 ) -> Dictionary:
 	if state.is_demo_mode:
-		return _error_result("demo mode does not accept manual actions")
+		return envelope.error_result("demo mode does not accept manual actions")
 	if state.startup_failed:
-		return _error_result("battle sandbox is in failed state")
+		return envelope.error_result("battle sandbox is in failed state")
 	if has_battle_result(state):
-		return _error_result("battle already finished")
+		return envelope.error_result("battle already finished")
 	var side_id = str(state.current_side_to_select).strip_edges()
 	if side_id.is_empty():
-		return _error_result("no side is waiting for selection")
+		return envelope.error_result("no side is waiting for selection")
 	var legal_actions = state.legal_actions_by_side.get(side_id, null)
 	var actor_public_id = str(envelope.read_property(legal_actions, "actor_public_id", "")).strip_edges()
 	if actor_public_id.is_empty():
-		return _error_result("missing actor_public_id for side %s" % side_id)
+		return envelope.error_result("missing actor_public_id for side %s" % side_id)
 	var action_payload: Dictionary = selected_action.duplicate(true)
 	action_payload["side_id"] = side_id
 	action_payload["actor_public_id"] = actor_public_id
@@ -129,7 +129,7 @@ func _run_pending_turn(state: SandboxSessionState, policy_driver, allow_policy_p
 	var commands: Array = []
 	for side_id in SIDE_ORDER:
 		if not state.pending_commands.has(side_id):
-			return _error_result("missing pending command for side %s" % side_id)
+			return envelope.error_result("missing pending command for side %s" % side_id)
 		commands.append(state.pending_commands.get(side_id, null))
 	var from_index: int = state.event_log_buffer.event_log_cursor
 	var run_turn_unwrap: Dictionary = envelope.unwrap_ok(
@@ -145,7 +145,7 @@ func _run_pending_turn(state: SandboxSessionState, policy_driver, allow_policy_p
 	var refresh_error = refresh_session_snapshot_and_logs(state, from_index)
 	if not refresh_error.is_empty():
 		fail_runtime(state, refresh_error)
-		return _error_result(refresh_error)
+		return envelope.error_result(refresh_error)
 	if not has_battle_result(state):
 		state.current_side_to_select = primary_side_id()
 		var legal_unwrap: Dictionary = refresh_legal_actions_for_side(state, state.current_side_to_select)
@@ -166,5 +166,3 @@ func _run_pending_turn(state: SandboxSessionState, policy_driver, allow_policy_p
 		"command_steps": state.command_steps,
 	})
 
-func _error_result(message: String) -> Dictionary:
-	return envelope.error_result(message)

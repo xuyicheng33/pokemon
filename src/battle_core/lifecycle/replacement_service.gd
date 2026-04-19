@@ -1,32 +1,13 @@
 extends RefCounted
 class_name ReplacementService
 const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DefaultReplacementSelectorScript := preload("res://src/battle_core/lifecycle/default_replacement_selector.gd")
+
 const COMPOSE_DEPS := [
-	{
-		"field": "battle_logger",
-		"source": "battle_logger",
-		"nested": true,
-	},
-	{
-		"field": "log_event_builder",
-		"source": "log_event_builder",
-		"nested": true,
-	},
-	{
-		"field": "replacement_selector",
-		"source": "replacement_selector",
-		"nested": true,
-	},
-	{
-		"field": "leave_service",
-		"source": "leave_service",
-		"nested": true,
-	},
-	{
-		"field": "field_service",
-		"source": "field_service",
-		"nested": true,
-	},
+	{"field": "battle_logger", "source": "battle_logger", "nested": true},
+	{"field": "log_event_builder", "source": "log_event_builder", "nested": true},
+	{"field": "leave_service", "source": "leave_service", "nested": true},
+	{"field": "field_service", "source": "field_service", "nested": true},
 ]
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
@@ -36,9 +17,9 @@ const ReplacementSelectionHelperScript := preload("res://src/battle_core/lifecyc
 const ReplacementEntryHelperScript := preload("res://src/battle_core/lifecycle/replacement_entry_helper.gd")
 var battle_logger
 var log_event_builder
-var replacement_selector
 var leave_service
 var field_service
+var replacement_selector = DefaultReplacementSelectorScript.new()
 var _selection_helper = ReplacementSelectionHelperScript.new()
 var _entry_helper = ReplacementEntryHelperScript.new()
 

@@ -2,23 +2,11 @@ extends RefCounted
 class_name LeaveService
 
 const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const LifecycleRetentionPolicyScript := preload("res://src/battle_core/lifecycle/lifecycle_retention_policy.gd")
 
 const COMPOSE_DEPS := [
-	{
-		"field": "battle_logger",
-		"source": "battle_logger",
-		"nested": true,
-	},
-	{
-		"field": "log_event_builder",
-		"source": "log_event_builder",
-		"nested": true,
-	},
-	{
-		"field": "lifecycle_retention_policy",
-		"source": "lifecycle_retention_policy",
-		"nested": true,
-	},
+	{"field": "battle_logger", "source": "battle_logger", "nested": true},
+	{"field": "log_event_builder", "source": "log_event_builder", "nested": true},
 ]
 
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
@@ -27,7 +15,7 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_logger
 var log_event_builder
-var lifecycle_retention_policy
+var lifecycle_retention_policy = LifecycleRetentionPolicyScript.new()
 var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:

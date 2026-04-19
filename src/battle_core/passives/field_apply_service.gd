@@ -2,39 +2,45 @@ extends RefCounted
 class_name FieldApplyService
 
 const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const FieldApplyLogServiceScript := preload("res://src/battle_core/passives/field_apply_log_service.gd")
+const FieldApplyEffectRunnerScript := preload("res://src/battle_core/passives/field_apply_effect_runner.gd")
 
 const COMPOSE_DEPS := [
-	{
-		"field": "field_service",
-		"source": "field_service",
-		"nested": true,
-	},
-	{
-		"field": "domain_clash_orchestrator",
-		"source": "domain_clash_orchestrator",
-		"nested": true,
-	},
-	{
-		"field": "field_apply_log_service",
-		"source": "field_apply_log_service",
-		"nested": true,
-	},
-	{
-		"field": "field_apply_effect_runner",
-		"source": "field_apply_effect_runner",
-		"nested": true,
-	},
+	{"field": "field_service", "source": "field_service", "nested": true},
+	{"field": "domain_clash_orchestrator", "source": "domain_clash_orchestrator", "nested": true},
+	{"field": "battle_logger", "source": "battle_logger"},
+	{"field": "log_event_builder", "source": "log_event_builder"},
+	{"field": "field_apply_context_resolver", "source": "field_apply_context_resolver"},
+	{"field": "trigger_dispatcher", "source": "trigger_dispatcher"},
+	{"field": "id_factory", "source": "id_factory"},
 ]
 
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+
 var field_service
 var domain_clash_orchestrator
+var battle_logger
+var log_event_builder
+var field_apply_context_resolver
+var trigger_dispatcher
+var id_factory
 var field_apply_log_service
 var field_apply_effect_runner
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+
+func _compose_post_wire() -> void:
+	field_apply_log_service = FieldApplyLogServiceScript.new()
+	field_apply_log_service.battle_logger = battle_logger
+	field_apply_log_service.log_event_builder = log_event_builder
+	field_apply_log_service.context_resolver = field_apply_context_resolver
+	field_apply_effect_runner = FieldApplyEffectRunnerScript.new()
+	field_apply_effect_runner.field_service = field_service
+	field_apply_effect_runner.trigger_dispatcher = trigger_dispatcher
+	field_apply_effect_runner.id_factory = id_factory
+	field_apply_effect_runner.context_resolver = field_apply_context_resolver
 
 
 func apply_field(

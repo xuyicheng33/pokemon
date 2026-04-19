@@ -49,6 +49,7 @@ func compose() -> Variant:
 		return null
 	if not _wire_dependencies(container, wiring_specs):
 		return null
+	_setup_private_helpers(container, service_slots)
 	container.configure_dispose_specs(service_slots, wiring_specs, reset_specs)
 	if not _validate_container_dependencies(container, service_slots, wiring_specs):
 		container.dispose()
@@ -139,6 +140,12 @@ func _validate_container_dependencies(container, service_slots: PackedStringArra
 		if not missing_dependency.is_empty():
 			return _fail("%s missing dependency: %s" % [slot_name, missing_dependency])
 	return true
+
+func _setup_private_helpers(container, service_slots: PackedStringArray) -> void:
+	for slot_name in service_slots:
+		var service = container.service(slot_name)
+		if service != null and service.has_method("_compose_post_wire"):
+			service._compose_post_wire()
 
 func _resolve_service_slots() -> PackedStringArray:
 	return ServiceSpecsScript.service_slots()

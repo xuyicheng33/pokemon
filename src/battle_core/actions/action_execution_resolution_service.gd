@@ -1,35 +1,12 @@
 extends RefCounted
 class_name ActionExecutionResolutionService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
-
-const COMPOSE_DEPS := [
-	{
-		"field": "action_cast_service",
-		"source": "action_cast_service",
-		"nested": true,
-	},
-	{
-		"field": "action_log_service",
-		"source": "action_log_service",
-		"nested": true,
-	},
-	{
-		"field": "action_skill_effect_service",
-		"source": "action_skill_effect_service",
-		"nested": true,
-	},
-]
-
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
 var action_cast_service
 var action_log_service
 var action_skill_effect_service
-
-func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func resolve_started_action(queued_action, actor, command, skill_definition, battle_state, content_index, result) -> void:

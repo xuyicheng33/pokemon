@@ -1,12 +1,12 @@
-# Pokemon Battle Core Prototype
+# Pokemon Battle Core
 
-概念期 Godot 回合制战斗原型项目（类宝可梦）。
+Godot 回合制战斗引擎项目（类宝可梦）。
 
 当前目标是先稳定 1v1 战斗核心闭环（可回放、可测试、可扩展），再进入角色与内容扩展阶段。
 
 ## 1. 项目定位
 
-- 阶段：概念/原型期（非发布版）
+- 阶段：长期工程（非发布版）
 - 核心能力：
   - 1v1、每队 3 单位、固定 Lv50
   - 指令选择、`wait / resource_forced_default` 分流、行动排序、命中/伤害、换人、击倒补位
@@ -302,10 +302,10 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-19）
 
-- `src/**/*.gd`：`22362` 行
-- `test/**/*.gd`：`21958` 行
+- `src/**/*.gd`：`21897` 行
+- `test/**/*.gd`：`21957` 行
 - `tests/**/*.gd`：`4962` 行
-- GDScript 合计：`49282` 行
+- GDScript 合计：`48816` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

@@ -1,36 +1,12 @@
 extends RefCounted
 class_name FieldApplyLogService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
-
-const COMPOSE_DEPS := [
-	{
-		"field": "battle_logger",
-		"source": "battle_logger",
-		"nested": true,
-	},
-	{
-		"field": "log_event_builder",
-		"source": "log_event_builder",
-		"nested": true,
-	},
-	{
-		"field": "context_resolver",
-		"source": "field_apply_context_resolver",
-		"nested": true,
-	},
-]
-
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const FieldChangeScript := preload("res://src/battle_core/contracts/field_change.gd")
 
 var battle_logger
 var log_event_builder
 var context_resolver
-
-func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
-
 
 func log_field_clash(clash_result, before_field, payload, effect_event, battle_state) -> void:
 	if clash_result == null or bool(clash_result.same_creator):

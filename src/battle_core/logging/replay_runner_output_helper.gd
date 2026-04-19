@@ -28,7 +28,7 @@ func build_replay_output_result(
 	replay_output.final_battle_state = battle_state
 	if battle_state == null:
 		replay_output.succeeded = false
-		return _error_result(
+		return _build_error_envelope(
 			replay_output,
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay returned null battle_state"
@@ -36,7 +36,7 @@ func build_replay_output_result(
 	var runtime_fault_code = battle_state.runtime_fault_code
 	if runtime_fault_code != null and not String(runtime_fault_code).is_empty():
 		replay_output.succeeded = false
-		return _error_result(
+		return _build_error_envelope(
 			replay_output,
 			String(runtime_fault_code),
 			String(battle_state.runtime_fault_message) if not String(battle_state.runtime_fault_message).is_empty() else "ReplayRunner replay entered invalid runtime state"
@@ -45,7 +45,7 @@ func build_replay_output_result(
 	if logger_error_code != null:
 		var logger_error_message := String(logger_error_state.get("message", ""))
 		replay_output.succeeded = false
-		return _error_result(
+		return _build_error_envelope(
 			replay_output,
 			String(logger_error_code),
 			logger_error_message if not logger_error_message.is_empty() else "ReplayRunner replay log state invalid"
@@ -53,28 +53,28 @@ func build_replay_output_result(
 	var run_completed: bool = battle_state != null and battle_state.battle_result != null and battle_state.battle_result.finished
 	if not run_completed:
 		replay_output.succeeded = false
-		return _error_result(
+		return _build_error_envelope(
 			replay_output,
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay did not complete"
 		)
 	if not _validator.validate_log_schema_v3(replay_output.event_log):
 		replay_output.succeeded = false
-		return _error_result(
+		return _build_error_envelope(
 			replay_output,
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay log schema validation failed"
 		)
 	if not _validator.validate_battle_result(battle_state.battle_result):
 		replay_output.succeeded = false
-		return _error_result(
+		return _build_error_envelope(
 			replay_output,
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay returned invalid battle_result"
 		)
 	if not _validator.validate_turn_timeline(replay_output.turn_timeline, replay_output.event_log):
 		replay_output.succeeded = false
-		return _error_result(
+		return _build_error_envelope(
 			replay_output,
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay turn_timeline validation failed"
@@ -112,7 +112,7 @@ func _compute_state_hash(battle_state) -> String:
 	hashing_context.update(json_text.to_utf8_buffer())
 	return hashing_context.finish().hex_encode()
 
-func _error_result(replay_output, error_code: String, error_message: String) -> Dictionary:
+func _build_error_envelope(replay_output, error_code: String, error_message: String) -> Dictionary:
 	if replay_output != null:
 		replay_output.failure_code = error_code
 		replay_output.failure_message = error_message

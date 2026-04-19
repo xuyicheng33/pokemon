@@ -144,8 +144,7 @@ func _test_power_bonus_resolver_delegation_contract(harness) -> Dictionary:
 	if sukuna_unit == null or target_unit == null:
 		return harness.fail_result("missing active units for power bonus resolver delegation contract")
 	var fake_resolver = FlatBonusPowerBonusResolver.new()
-	core.set_service("power_bonus_resolver", fake_resolver)
-	core.service("action_cast_direct_damage_pipeline").power_bonus_resolver = fake_resolver
+	core.service("action_cast_service").action_cast_direct_damage_pipeline.power_bonus_resolver = fake_resolver
 	var skill_definition = content_index.skills["sukuna_hatsu"]
 	skill_definition.power_bonus_source = "test_flat_bonus"
 	var expected_damage = _support.calc_expected_damage(

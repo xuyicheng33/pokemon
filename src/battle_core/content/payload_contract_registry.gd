@@ -141,38 +141,6 @@ static func registered_runtime_service_slots() -> PackedStringArray:
 			runtime_service_slots.append(runtime_service_slot)
 	return runtime_service_slots
 
-static func registry_wiring_specs() -> Array:
-	var wiring_specs: Array = []
-	for handler_slot in registered_handler_slots():
-		wiring_specs.append({
-			"owner": "payload_handler_registry",
-			"dependency": handler_slot,
-			"source": handler_slot,
-		})
-	return wiring_specs
-
-static func handler_wiring_specs() -> Array:
-	var wiring_specs: Array = []
-	for descriptor in PAYLOAD_DESCRIPTORS:
-		var handler_slot := String(descriptor.get("handler_slot", ""))
-		for raw_runtime_service_slot in Array(descriptor.get("runtime_service_slots", [])):
-			var runtime_service_slot := String(raw_runtime_service_slot).strip_edges()
-			if runtime_service_slot.is_empty():
-				continue
-			wiring_specs.append({
-				"owner": handler_slot,
-				"dependency": runtime_service_slot,
-				"source": runtime_service_slot,
-			})
-		for raw_dependency_spec in Array(descriptor.get("handler_dependencies", [])):
-			var dependency_spec := Dictionary(raw_dependency_spec)
-			wiring_specs.append({
-				"owner": handler_slot,
-				"dependency": String(dependency_spec.get("dependency", "")),
-				"source": String(dependency_spec.get("source", "")),
-			})
-	return wiring_specs
-
 static func handler_slot_for_payload(payload) -> String:
 	var descriptor := descriptor_for_payload(payload)
 	return String(descriptor.get("handler_slot", ""))

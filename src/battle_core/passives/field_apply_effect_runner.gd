@@ -1,31 +1,6 @@
 extends RefCounted
 class_name FieldApplyEffectRunner
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
-
-const COMPOSE_DEPS := [
-	{
-		"field": "field_service",
-		"source": "field_service",
-		"nested": true,
-	},
-	{
-		"field": "trigger_dispatcher",
-		"source": "trigger_dispatcher",
-		"nested": true,
-	},
-	{
-		"field": "id_factory",
-		"source": "id_factory",
-		"nested": true,
-	},
-	{
-		"field": "context_resolver",
-		"source": "field_apply_context_resolver",
-		"nested": true,
-	},
-]
-
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -38,9 +13,6 @@ var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
-
-func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func create_field_state(effect_definition, payload, effect_event) -> Variant:

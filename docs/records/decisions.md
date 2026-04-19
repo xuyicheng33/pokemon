@@ -25,6 +25,72 @@
   - 理由：原 `250` 行硬线适合原型期速写，长期工程需要主 owner 与 facade 容纳稳定合同与装配编排。
 - 分阶段推进：详见 `docs/records/tasks.md` 当前阶段。
 
+### 本轮长期不动边界（2026-04-19 冻结）
+
+以下 5 项在本轮工程化重构全程不动，任何阶段如需触碰必须先暂停说明：
+
+1. **`BattleCoreManager` 外部 envelope 合同**：`create_session / get_legal_actions / build_command / run_turn / get_public_snapshot / get_event_log_snapshot / close_session / run_replay` 的签名与返回 envelope `{ok, data, error_code, error_message}` 不变。
+2. **Deterministic replay**：同 `seed + content snapshot + command stream` 必须产出同一 `final_state_hash`。
+3. **Fail-fast**：非法输入直接报错，不做静默降级。
+4. **单一运行态真相**：`BattleState` 是唯一运行态对象，其他模块不得各自缓存状态副本。
+5. **`tests/run_with_gate.sh` 作为主 gate 总入口**：内部顺序 `gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → sandbox smoke matrix` 不变。
+
+### Stage 1 composition slot 收缩目标图（2026-04-19 冻结）
+
+当前 81 slot = base 66 + payload shared 3 + payload runtime 3 + payload handler 9。
+
+**Payload dispatch 模式决策：保留。**  
+`PayloadContractRegistry → PayloadHandlerRegistry → handler slot` 动态分派模式清晰可扩展，15 个 payload 相关 slot 本轮不动。
+
+**Base 66 → 50：下沉 16 个 slot 为 owner 私有 helper。**  
+目标总 slot 数：**65**（50 base + 15 payload）。
+
+下沉清单：
+
+| 原 slot | 下沉到 owner |
+|---|---|
+| action_chain_context_builder | action_executor |
+| action_start_phase_service | action_executor |
+| action_skill_effect_service | action_executor |
+| action_execution_resolution_service | action_executor |
+| action_domain_guard | action_executor |
+| action_cast_direct_damage_pipeline | action_cast_service |
+| action_cast_skill_effect_dispatch_pipeline | action_cast_service |
+| action_hit_resolution_service | action_cast_service |
+| power_bonus_resolver | action_cast_service |
+| switch_action_service | action_executor |
+| battle_initializer_setup_validator | battle_initializer |
+| field_apply_log_service | field_apply_service |
+| field_apply_effect_runner | field_apply_service |
+| lifecycle_retention_policy | leave_service |
+| faint_leave_replacement_service | faint_resolver |
+| replacement_selector | replacement_service |
+
+保留 50 slot 理由：均为跨模块依赖（被 2+ 其他 service 引用）或模块入口。
+
+### Stage 1 错误体系目标设计（2026-04-19 冻结）
+
+**结论：维持双轨模型，不强制合并。**
+
+- **Track A — `ErrorStateHelper`（`last_error_code` + `error_state()`）**：用于 composition / builder / content loader 的组装期错误。这类错误发生在战斗开始前。
+- **Track B — `last_invalid_battle_code` + `invalid_battle_code()`**：用于运行时战斗规则违反。这类错误发生在战斗执行中。
+- **对外 — `ResultEnvelopeHelper`**：manager envelope 统一 `{ok, data, error_code, error_message}`。
+
+两者各司其职（2026-04-18 审计结论确认），不合并。
+
+**`_ok_result`/`_error_result` 本地包装处理方案：**
+
+| 类别 | 文件数 | 处理 |
+|---|---|---|
+| A：已 delegate 到 `ResultEnvelopeHelper` 的纯别名 | 18 | 保留。部分 wrapper 注入固定 error code 或 strip_edges()，内联后调用点更冗长，可读性下降 |
+| B：标准 envelope 结构但未 import helper | 6 | ✅ Stage 3 已加 import 并内联 |
+| C：有副作用或自定义返回结构 | 1 (replay_runner_output_helper) | ✅ Stage 3 已重命名为 `_build_error_envelope` |
+
+详细文件清单：
+- A 类（18）：sandbox_policy_driver / sample_battle_factory_* 全部 10 个 / formal_character_baselines + loader / formal_character_capability_catalog / formal_character_manifest + loader + views / formal_registry_contracts
+- B 类（6）：legal_action_service_rule_gate / cast_option_collector / switch_option_collector / sandbox_session_command_service / sandbox_session_coordinator
+- C 类（1）：replay_runner_output_helper
+
 ## 0. 正式角色整合修复波次的新固定决定
 
 - `docs/records/` 以后只承担活跃记录、决策入口与 archive 索引，不再继续充当现行规则的机器约束层。
