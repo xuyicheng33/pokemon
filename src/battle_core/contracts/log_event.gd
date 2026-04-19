@@ -33,7 +33,7 @@ var select_timeout: Variant = null
 var invalid_battle_code: Variant = null
 var type_effectiveness: Variant = null
 var value_changes: Array = []
-var field_change = null
+var field_change: FieldChange = null
 var payload_summary: String = ""
 var header_snapshot: Variant = null
 
@@ -41,6 +41,9 @@ func to_stable_dict() -> Dictionary:
 	var value_change_dicts: Array = []
 	for value_change in value_changes:
 		value_change_dicts.append(value_change.to_stable_dict())
+	var field_change_dict: Variant = null
+	if field_change != null:
+		field_change_dict = field_change.to_stable_dict()
 	return {
 		"battle_seed": battle_seed,
 		"battle_rng_profile": battle_rng_profile,
@@ -74,7 +77,7 @@ func to_stable_dict() -> Dictionary:
 		"invalid_battle_code": invalid_battle_code,
 		"type_effectiveness": type_effectiveness,
 		"value_changes": value_change_dicts,
-		"field_change": field_change.to_stable_dict() if field_change != null else null,
+		"field_change": field_change_dict,
 		"payload_summary": payload_summary,
 		"header_snapshot": header_snapshot,
 	}

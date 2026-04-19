@@ -11,5 +11,5 @@ var source_order_speed_snapshot: int = 0
 var effect_definition_id: String = ""
 var owner_id: String = ""
 var dedupe_discriminator: String = ""
-var chain_context = null
+var chain_context: ChainContext = null
 var sort_random_roll: Variant = null

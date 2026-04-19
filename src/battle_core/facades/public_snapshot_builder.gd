@@ -64,6 +64,9 @@ func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
 			"team_units": team_units,
 		})
 	side_models.sort_custom(func(left, right): return String(left.get("side_id", "")) < String(right.get("side_id", "")))
+	var battle_result_dict: Variant = null
+	if battle_state.battle_result != null:
+		battle_result_dict = battle_state.battle_result.to_stable_dict()
 	return DeepCopyHelperScript.copy_value({
 		"battle_id": battle_state.battle_id,
 		"turn_index": battle_state.turn_index,
@@ -73,7 +76,7 @@ func build_public_snapshot(battle_state, content_index = null) -> Dictionary:
 		"field": field_snapshot,
 		"sides": side_models,
 		"prebattle_public_teams": BattleHeaderSnapshotBuilderScript.build_prebattle_public_teams(battle_state, content_index),
-		"battle_result": battle_state.battle_result.to_stable_dict() if battle_state.battle_result != null else null,
+		"battle_result": battle_result_dict,
 	})
 
 func build_header_snapshot(battle_state, content_index = null) -> Dictionary:

@@ -7,8 +7,8 @@ var final_state_hash: String = ""
 var succeeded: bool = false
 var failure_code: String = ""
 var failure_message: String = ""
-var battle_result = null
-var final_battle_state = null
+var battle_result: BattleResult = null
+var final_battle_state: BattleState = null
 
 func clone_without_runtime_state() -> Variant:
 	var replay_output = get_script().new()

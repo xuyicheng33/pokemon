@@ -8,7 +8,7 @@ var team_units: Array = []
 var active_slots: Dictionary = {}
 var bench_order: PackedStringArray = PackedStringArray()
 var public_labels: Dictionary = {}
-var selection_state = null
+var selection_state: SelectionState = null
 
 func find_unit(unit_instance_id: String) -> Variant:
 	for unit_state in team_units:
@@ -51,11 +51,14 @@ func to_stable_dict() -> Dictionary:
 			"slot_id": slot_id,
 			"unit_instance_id": active_slots[slot_id],
 		})
+	var selection_state_dict: Variant = null
+	if selection_state != null:
+		selection_state_dict = selection_state.to_stable_dict()
 	return {
 		"side_id": side_id,
 		"active_slots": active_slot_dicts,
 		"bench_order": bench_order,
 		"public_labels": public_labels,
 		"team_units": team_dicts,
-		"selection_state": selection_state.to_stable_dict() if selection_state != null else null,
+		"selection_state": selection_state_dict,
 	}

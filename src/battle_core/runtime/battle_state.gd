@@ -19,10 +19,10 @@ var domain_clash_tie_threshold: float = 0.5
 var turn_index: int = 0
 var phase: String = BattlePhasesScript.BATTLE_INIT
 var sides: Array = []
-var field_state = null
+var field_state: FieldState = null
 var pending_effect_queue: Array = []
-var chain_context = null
-var battle_result = null
+var chain_context: ChainContext = null
+var battle_result: BattleResult = null
 var rng_stream_index: int = 0
 var fatal_damage_records_by_target: Dictionary = {}
 var field_rule_mod_instances: Array = []
@@ -76,6 +76,12 @@ func to_stable_dict() -> Dictionary:
 	sorted_field_rule_mods.sort_custom(func(a, b): return a.instance_id < b.instance_id)
 	for rule_mod_instance in sorted_field_rule_mods:
 		field_rule_mod_dicts.append(rule_mod_instance.to_stable_dict())
+	var field_state_dict: Variant = null
+	if field_state != null:
+		field_state_dict = field_state.to_stable_dict()
+	var battle_result_dict: Variant = null
+	if battle_result != null:
+		battle_result_dict = battle_result.to_stable_dict()
 	return {
 		"battle_id": battle_id,
 		"seed": seed,
@@ -91,13 +97,13 @@ func to_stable_dict() -> Dictionary:
 		"turn_index": turn_index,
 		"phase": phase,
 		"sides": side_dicts,
-		"field_state": field_state.to_stable_dict() if field_state != null else null,
+		"field_state": field_state_dict,
 		"field_rule_mod_instances": field_rule_mod_dicts,
 		"last_matchup_signature": last_matchup_signature,
 		"pre_applied_turn_start_regen_turn_index": pre_applied_turn_start_regen_turn_index,
 		"runtime_fault_code": runtime_fault_code,
 		"runtime_fault_message": runtime_fault_message,
-		"battle_result": battle_result.to_stable_dict() if battle_result != null else null,
+		"battle_result": battle_result_dict,
 		"rng_stream_index": rng_stream_index,
 	}
 
