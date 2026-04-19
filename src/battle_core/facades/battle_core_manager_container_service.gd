@@ -11,6 +11,9 @@ const REQUIRED_CONTAINER_SERVICES := [
 	"battle_initializer",
 	"content_snapshot_cache",
 ]
+const REQUIRED_REPLAY_CONTAINER_SERVICES := [
+	"replay_runner",
+]
 
 var container_factory: Callable = Callable()
 var public_snapshot_builder: BattleCorePublicSnapshotBuilder = null
@@ -21,7 +24,7 @@ func create_session_result(session_id: String, init_payload: Dictionary) -> Dict
 	if not bool(compose_result.get("ok", false)):
 		return compose_result
 	var container = compose_result.get("data", null)
-	var services_result := _required_services_result(container)
+	var services_result := _required_services_result(container, REQUIRED_CONTAINER_SERVICES)
 	if not bool(services_result.get("ok", false)):
 		if container != null and container.has_method("dispose"):
 			container.dispose()
@@ -78,7 +81,12 @@ func run_replay_result(replay_input) -> Dictionary:
 	if not bool(compose_result.get("ok", false)):
 		return compose_result
 	var temp_container = compose_result.get("data", null)
-	var replay_runner = temp_container.service("replay_runner")
+	var services_result := _required_services_result(temp_container, REQUIRED_REPLAY_CONTAINER_SERVICES)
+	if not bool(services_result.get("ok", false)):
+		if temp_container != null and temp_container.has_method("dispose"):
+			temp_container.dispose()
+		return services_result
+	var replay_runner = services_result.get("data", {}).get("replay_runner", null)
 	var replay_result: Dictionary = replay_runner.run_replay_with_context(replay_input)
 	var internal_replay_output = replay_result.get("replay_output", null)
 	if internal_replay_output == null:
@@ -158,9 +166,9 @@ func _compose_container_result() -> Dictionary:
 		)
 	return BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager failed to compose battle core container")
 
-func _required_services_result(container: BattleCoreContainer) -> Dictionary:
+func _required_services_result(container, required_service_names: Array) -> Dictionary:
 	var resolved_services: Dictionary = {}
-	for service_name in REQUIRED_CONTAINER_SERVICES:
+	for service_name in required_service_names:
 		var service = container.service(String(service_name))
 		if service == null:
 			return BattleCoreManagerContractHelperScript.error(

@@ -74,6 +74,43 @@ func _test_manager_container_run_replay_failed_output_contract() -> Dictionary:
 		"ok": true,
 	}
 
+func _test_manager_container_run_replay_missing_dependency_contract() -> Dictionary:
+	var container := ContainerStub.new({})
+	var public_snapshot_builder := PublicSnapshotBuilderStub.new()
+	var container_service := BattleCoreManagerContainerServiceScript.new()
+	container_service.container_factory = func():
+		return container
+	container_service.public_snapshot_builder = public_snapshot_builder
+	var result: Dictionary = container_service.run_replay_result({})
+	if bool(result.get("ok", true)):
+		return {
+			"ok": false,
+			"error": "missing replay_runner should return failure envelope",
+		}
+	if String(result.get("error_code", "")) != ErrorCodesScript.INVALID_COMPOSITION:
+		return {
+			"ok": false,
+			"error": "missing replay_runner should report invalid_composition: %s" % var_to_str(result),
+		}
+	if String(result.get("error_message", "")).find("replay_runner") == -1:
+		return {
+			"ok": false,
+			"error": "missing replay_runner error message drifted: %s" % String(result.get("error_message", "")),
+		}
+	if public_snapshot_builder.build_calls != 0:
+		return {
+			"ok": false,
+			"error": "missing replay_runner must not build public_snapshot",
+		}
+	if not container.disposed:
+		return {
+			"ok": false,
+			"error": "missing replay_runner should dispose temporary container before returning",
+		}
+	return {
+		"ok": true,
+	}
+
 func _test_replay_output_helper_runtime_fault_contract() -> Dictionary:
 	var helper = ReplayRunnerOutputHelperScript.new()
 	var battle_state = _build_finished_battle_state()
