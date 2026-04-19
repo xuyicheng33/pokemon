@@ -41,12 +41,16 @@
 - 不做：强制为 17 个 service 引入 `ErrorReportingService` base class，避免牵动过多继承层次
 - 验证：`bash tests/run_with_gate.sh` 全通过（418 tests、sandbox smoke 全绿）
 
-### 阶段 4：formal character 治理层温和合并
+### 阶段 4：formal character 治理层温和合并（已完成）
 
-- `baselines/` 每角色 5-6 → 1-2 文件
-- `validators/` 每角色多文件 → 1-2 文件
-- `manifest/` view 层 6 → 2 文件
-- formal gate 8 → 1-2 个
+- 实际产出：
+  - `baselines/` 每角色 3 → 1 文件（12 → 4），每角色 baseline 单文件含 unit/regular_skill/ultimate/passive/effect/field 全部合同
+  - `validators/` 每角色 5-7 → 1 文件（25 → 4），每角色 validator 单文件直接扩展 `validator_base` 并内联所有分桶校验逻辑
+  - `manifest/` 子目录 6 → 2 文件（loader + views），loader 吸收 runtime_entry_normalizer，views 吸收 pair_catalog + pair_interactions + pair_matchups
+  - formal gate 支撑层减 1：删除 `repo_consistency_formal_character_gate_support.py`（纯 import aggregator），三个 gate 脚本直接 import 源 support
+  - 放宽 `validate_entry_validator_structure`：只保留 base class extend + `validate(content_index, errors)` 签名检查，删除三桶 preload/var/chain 的强制要求
+- 不做：进一步合并 characters/capabilities/cutover/pairs 等 gate 文件（它们按职责拆分已很清晰）
+- 验证：`bash tests/run_with_gate.sh` 全通过（418 tests、sandbox smoke）
 
 ### 阶段 5：测试中度瘦身 + 目录合并
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from repo_consistency_formal_character_gate_support import (
+from repo_consistency_formal_character_pair_capability_support import (
     scan_legacy_registry_refs,
     scan_legacy_sample_factory_calls,
     scan_pair_interaction_support_regressions,

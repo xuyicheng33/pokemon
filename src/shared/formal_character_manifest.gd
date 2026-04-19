@@ -4,7 +4,6 @@ class_name FormalCharacterManifest
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const ManifestLoaderScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_loader.gd")
-const PairCatalogScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_pair_catalog.gd")
 const ManifestViewsScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_views.gd")
 
 const CHARACTERS_BUCKET := "characters"
@@ -12,7 +11,6 @@ const MATCHUPS_BUCKET := "matchups"
 
 var manifest_path_override: String = ""
 var _manifest_loader = ManifestLoaderScript.new()
-var _pair_catalog = PairCatalogScript.new()
 var _manifest_views = ManifestViewsScript.new()
 
 func load_manifest_result(manifest_path: String = "") -> Dictionary:
@@ -70,7 +68,7 @@ func build_catalog_result(manifest_path: String = "") -> Dictionary:
 	if not bool(manifest_result.get("ok", false)):
 		return manifest_result
 	var manifest: Dictionary = manifest_result.get("data", {})
-	return _pair_catalog.build_catalog_result(
+	return _manifest_views.build_catalog_result(
 		manifest.get(CHARACTERS_BUCKET, []).duplicate(true),
 		manifest.get(MATCHUPS_BUCKET, {}).duplicate(true),
 		_manifest_loader.resolve_manifest_path(manifest_path, manifest_path_override)

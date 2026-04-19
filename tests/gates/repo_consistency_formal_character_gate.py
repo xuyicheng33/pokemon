@@ -10,14 +10,16 @@ from repo_consistency_formal_character_gate_characters import validate_character
 from repo_consistency_formal_character_gate_capabilities import validate_capability_catalog
 from repo_consistency_formal_character_gate_cutover import validate_manifest_cutover
 from repo_consistency_formal_character_gate_pairs import validate_pair_catalog
-from repo_consistency_formal_character_gate_support import (
+from repo_consistency_formal_character_manifest_io_support import (
     contract_field_list,
     load_delivery_registry_entries,
     load_generated_registry_views,
     load_pair_catalog,
     validate_generated_registry_views,
-    validate_entry_validator_structure,
     validate_required_contract_fields,
+)
+from repo_consistency_formal_character_suite_needle_support import (
+    validate_entry_validator_structure,
 )
 
 

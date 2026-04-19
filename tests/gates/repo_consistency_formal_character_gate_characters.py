@@ -2,10 +2,14 @@ from __future__ import annotations
 
 import re
 
-from repo_consistency_formal_character_gate_support import (
-    collect_scope_tree,
-    scan_legacy_formal_character_id_refs,
+from repo_consistency_formal_character_manifest_io_support import (
     validate_required_contract_fields,
+)
+from repo_consistency_formal_character_pair_capability_support import (
+    scan_legacy_formal_character_id_refs,
+)
+from repo_consistency_formal_character_suite_needle_support import (
+    collect_scope_tree,
     validator_test_prefix,
 )
 
