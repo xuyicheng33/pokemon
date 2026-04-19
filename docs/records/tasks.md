@@ -60,11 +60,17 @@
 - 决议：保留当前测试结构，把测试优化留到未来按具体痛点（某个 suite 跑得慢 / 某个角色接入后有明显重复）时针对性做，而不是批量改
 - 验证：无改动，沿用已验证的 `bash tests/run_with_gate.sh`（418 tests、sandbox smoke）
 
-### 阶段 6：文档 + gate 合并
+### 阶段 6：文档 + gate 温和合并（降级完成）
 
-- `docs/design/` 27 → 8
-- `decisions.md` 重写为清晰章节、`README.md` 18KB → 3KB
-- 24 gate py → 3-4
+- 原计划：docs/design 27 → 8、decisions.md 重写、README 18KB → 3KB、24 gate py → 3-4
+- 实际产出：
+  - 合并 docs gate 7 个文件为 1 个：删除 `repo_consistency_docs_gate_content_formal_delivery.py`、`repo_consistency_docs_gate_module_self_check.py`、`repo_consistency_docs_gate_records_archive_wording.py`、`repo_consistency_docs_gate_runtime_contracts.py`、`repo_consistency_docs_gate_sandbox_testing_surface.py`、`repo_consistency_docs_gate_shared.py`，内容作为内部函数内联到 `repo_consistency_docs_gate.py`；同时去掉 `module_self_check` 强制拆分的形式约束
+- 不做：
+  - `docs/design/` 27→8：当前每个文件都有明确职责（architecture/effect/turn/log/replay/formal/角色设计等），合并会牺牲可查阅性
+  - `architecture_composition_consistency_gate` 三件套：`_support` 被 `architecture_wiring_graph_gate` 共用，强行合并破坏现有解耦
+  - `formal_character_gate` 分组文件：按 characters/capabilities/cutover/pairs 职责拆分清晰，已在阶段 4 删除纯 aggregator
+  - README/decisions 激进瘦身：当前长度（README 320 行、decisions 179 行）是长期工程正常量，强行压到 3KB 会损失重要入口与决策溯源
+- 验证：`bash tests/run_with_gate.sh` 全通过
 
 ### 阶段 7：核心类型标注
 
