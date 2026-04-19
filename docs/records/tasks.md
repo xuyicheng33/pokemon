@@ -59,6 +59,19 @@
   - `bash tests/check_gdunit_gate.sh`
   - `bash tests/run_with_gate.sh`
 
+## 最近完成：审阅问题补齐（2026-04-20）
+
+- 状态：已完成
+- 目标：把 2026-04-19 全部提交复查后确认的问题补齐到代码、gate 和文档
+- 修复内容：
+  1. manager replay 容器依赖补校验：`BattleCoreManagerContainerService.run_replay_result()` 现在显式校验 `replay_runner`，缺失时返回 `invalid_composition` 并释放临时容器；补了对应 contract suite
+  2. sandbox smoke 合同对齐真实 battle contract：`winner_side_id` 只在 `result_type=win` 时要求非空，`draw / no_winner` 必须保持为空
+  3. `manual/manual` 主路径补成真实整局回归：`tests/check_sandbox_smoke_matrix.sh` 新增 `gojo_vs_sample + manual/manual` 覆盖，README 与当前阶段基线同步回写
+- 验证：
+  - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/replay_guard_summary_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_sandbox_smoke_matrix.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 当前验证基线
 
 - 最小可玩性检查：

@@ -78,12 +78,14 @@ if payload["p2_control_mode"] != expected_p2_mode:
     raise SystemExit(f"SANDBOX_SMOKE_FAILED: {label} P2 mode drifted: {payload['p2_control_mode']} != {expected_p2_mode}")
 if int(payload["battle_seed"]) <= 0:
     raise SystemExit(f"SANDBOX_SMOKE_FAILED: {label} invalid battle_seed: {payload['battle_seed']}")
-if not str(payload["winner_side_id"]).strip():
-    raise SystemExit(f"SANDBOX_SMOKE_FAILED: {label} winner_side_id is empty")
 if not str(payload["reason"]).strip():
     raise SystemExit(f"SANDBOX_SMOKE_FAILED: {label} reason is empty")
 if not str(payload["result_type"]).strip():
     raise SystemExit(f"SANDBOX_SMOKE_FAILED: {label} result_type is empty")
+if payload["result_type"] == "win" and not str(payload["winner_side_id"]).strip():
+    raise SystemExit(f"SANDBOX_SMOKE_FAILED: {label} win result requires non-empty winner_side_id")
+if payload["result_type"] in ("draw", "no_winner") and str(payload["winner_side_id"]).strip():
+    raise SystemExit(f"SANDBOX_SMOKE_FAILED: {label} {payload['result_type']} result must keep winner_side_id empty")
 if int(payload["turn_index"]) <= 0:
     raise SystemExit(f"SANDBOX_SMOKE_FAILED: {label} invalid turn_index: {payload['turn_index']}")
 if int(payload["event_log_cursor"]) <= 0:
@@ -206,6 +208,14 @@ run_case \
   env P1_MODE=policy P2_MODE=policy \
   godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
 
+run_case \
+  "gojo_manual_manual" \
+  "gojo_vs_sample" \
+  "manual" \
+  "manual" \
+  env P1_MODE=manual P2_MODE=manual \
+  godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+
 run_demo_case \
   "legacy_demo_replay" \
   "legacy" \
@@ -222,4 +232,4 @@ run_demo_case \
   env DEMO_PROFILE=kashimo \
   godot --headless --path . --script tests/helpers/demo_replay_full_run.gd
 
-echo "SANDBOX_SMOKE_MATRIX_PASSED: manual matchup and demo replay paths are stable"
+echo "SANDBOX_SMOKE_MATRIX_PASSED: manual/manual, manual/policy, policy/policy, and demo replay paths are stable"

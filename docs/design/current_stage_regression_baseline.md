@@ -16,6 +16,7 @@
 - 默认主路径：`gojo_vs_sample + 9101 + manual/policy`
 - 变体一：`kashimo_vs_sample + manual/policy`
 - 变体二：`gojo_vs_sample + policy/policy`
+- 变体三：`gojo_vs_sample + manual/manual`
 - demo 变体：`legacy`、`kashimo`
 - headless 统一入口：`godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 - demo replay 入口：`DEMO_PROFILE=legacy godot --headless --path . --script tests/helpers/demo_replay_full_run.gd`
@@ -24,6 +25,6 @@
 
 - 可启动：`BattleSandbox` 能进入主流程，`bash tests/run_with_gate.sh` 与 `bash tests/check_boot_smoke.sh` 不报阻断错误
 - 可操作：默认 `manual/policy` 路径能完成至少一轮人工选指与 policy 自动推进
-- 能跑完一局：三条主 smoke 路径都能稳定打到终局
+- 能跑完一局：四条主 smoke 路径都能稳定打到终局
 - 无阻断报错：不得出现 `BATTLE_SANDBOX_FAILED:`、`SCRIPT ERROR:`、`Compile Error:`、`Parse Error:`
 - 统一终局摘要：`manual_battle_full_run.gd` 固定输出同一套 `battle_summary` JSON
