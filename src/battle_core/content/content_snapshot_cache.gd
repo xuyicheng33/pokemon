@@ -21,23 +21,14 @@ var _signature_static_dir_paths := PackedStringArray([
 	"res://src/battle_core/content/formal_validators",
 	"res://src/shared/formal_character_manifest",
 ])
-var signature_static_file_paths := PackedStringArray([
-	"res://config/formal_character_manifest.json",
-	"res://config/formal_registry_contracts.json",
-	"res://src/shared/formal_character_manifest.gd",
-	"res://src/shared/formal_registry_contracts.gd",
-]):
+var signature_static_file_paths: PackedStringArray:
 	set(value):
 		_signature_static_file_paths = value
 		if _dependency_collector != null:
 			_dependency_collector.signature_static_file_paths = value
 	get:
 		return _dependency_collector.signature_static_file_paths if _dependency_collector != null else _signature_static_file_paths
-var signature_static_dir_paths := PackedStringArray([
-	"res://src/battle_core/content",
-	"res://src/battle_core/content/formal_validators",
-	"res://src/shared/formal_character_manifest",
-]):
+var signature_static_dir_paths: PackedStringArray:
 	set(value):
 		_signature_static_dir_paths = value
 		if _dependency_collector != null:

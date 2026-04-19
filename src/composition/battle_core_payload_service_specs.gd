@@ -24,9 +24,6 @@ static func service_descriptors() -> Array:
 		descriptors.append(_handler_service_descriptor(handler_slot))
 	return descriptors
 
-static func shared_service_wiring_specs() -> Array:
-	return PayloadRuntimeServiceRegistryScript.wiring_specs()
-
 static func handler_script_path_for_slot(handler_slot: String) -> String:
 	var normalized_slot := handler_slot.strip_edges()
 	if normalized_slot.is_empty():
