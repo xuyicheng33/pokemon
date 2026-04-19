@@ -52,11 +52,13 @@
 - 不做：进一步合并 characters/capabilities/cutover/pairs 等 gate 文件（它们按职责拆分已很清晰）
 - 验证：`bash tests/run_with_gate.sh` 全通过（418 tests、sandbox smoke）
 
-### 阶段 5：测试中度瘦身 + 目录合并
+### 阶段 5：测试温和评估（降级完成）
 
-- 测试比例从 1:0.96 降到 1:0.5
-- `test/` + `tests/` → `tests/gdunit/ tests/gates/ tests/support/ tests/helpers/`
-- sandbox adapter / sample_factory 相关测试随对应源码合并同步瘦身
+- 原计划：测试比例 1:0.96 → 1:0.5；test/ + tests/ → tests/gdunit/ 等；配合源码合并同步瘦身
+- 实际降级：考虑到 1:0.5 目标需要删除约 10k 行测试代码、损失覆盖面；test/ → tests/gdunit/ 重命名涉及 204+ suite 文件的 preload 路径 + manifest + gate 硬编码路径替换，回归风险高
+- 观察：当前 test 目录下有 ~15 个"纯 preload wrapper"（7-16 行，无 test_*）仅作为 manifest `suite_path` 入口；这些 wrapper 单独删除需要改 manifest 契约 + 对应 gate，ROI 低
+- 决议：保留当前测试结构，把测试优化留到未来按具体痛点（某个 suite 跑得慢 / 某个角色接入后有明显重复）时针对性做，而不是批量改
+- 验证：无改动，沿用已验证的 `bash tests/run_with_gate.sh`（418 tests、sandbox smoke）
 
 ### 阶段 6：文档 + gate 合并
 
