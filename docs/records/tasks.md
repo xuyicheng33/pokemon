@@ -33,6 +33,16 @@
 - 验证：`bash tests/run_with_gate.sh` 全通过
 - 详细子阶段记录见 `docs/records/archive/tasks_2026-04-19_engineering_overhaul.md`
 
+## 最近完成：代码审阅修复（2026-04-19）
+
+- 状态：已完成
+- 目标：审阅当前实现并修复发现的问题
+- 修复内容：
+  1. `battle_core → composition` 逆向依赖：文档标注为受控例外 + architecture gate 增加白名单校验
+  2. 核心函数参数类型标注：`battle_core` 119 个文件补齐 `BattleState / BattleContentIndex / ChainContext / QueuedAction / EffectEvent / Command` 的显式类型
+  3. 冗余 `.gitkeep` 清理：移除 `content/` 下 7 个已有实际内容的目录中的 `.gitkeep`
+- 验证：全部 gate 通过
+
 ## 当前验证基线
 
 - 最小可玩性检查：
