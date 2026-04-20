@@ -201,6 +201,22 @@ run_case \
   godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
 
 run_case \
+  "obito_manual_policy" \
+  "obito_vs_sample" \
+  "manual" \
+  "policy" \
+  env MATCHUP_ID=obito_vs_sample P1_MODE=manual P2_MODE=policy \
+  godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+
+run_case \
+  "sukuna_manual_policy" \
+  "sukuna_setup" \
+  "manual" \
+  "policy" \
+  env MATCHUP_ID=sukuna_setup P1_MODE=manual P2_MODE=policy \
+  godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+
+run_case \
   "gojo_policy_policy" \
   "gojo_vs_sample" \
   "policy" \
@@ -232,5 +248,5 @@ run_demo_case \
   env DEMO_PROFILE=kashimo \
   godot --headless --path . --script tests/helpers/demo_replay_full_run.gd
 
-echo "SANDBOX_SMOKE_MATRIX_PASSED: manual/manual, manual/policy, policy/policy, and demo replay paths are stable"
+echo "SANDBOX_SMOKE_MATRIX_PASSED: manual/manual, manual/policy, policy/policy, and demo replay paths are stable (gojo, kashimo, obito, sukuna)"
 echo "NOTE: all manual paths are currently driven by BattleSandboxFirstLegalPolicy auto-selection; real manual pause/submit via SandboxPolicyDriver is not covered by this matrix"

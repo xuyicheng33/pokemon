@@ -103,7 +103,7 @@ godot --path .
 当前推荐复查命令和最小可玩性检查，统一看 `docs/design/current_stage_regression_baseline.md`。
 
 默认会进入 `BattleSandbox` 的单人研发试玩 sandbox，固定 launch config 为 `mode=manual_matchup`、`matchup_id=gojo_vs_sample`、`battle_seed=9101`、`p1_control_mode=manual`、`p2_control_mode=policy`，启动后停在 `P1` 选指界面。
-HUD 当前支持按当前配置重开：`matchup` 下拉、`battle_seed` 输入、`P1 control mode`、`P2 control mode` 和重启按钮。控制模式只支持 `manual | policy`；预设对局列表来自 `SampleBattleFactory.available_matchups_result()`，UI 默认只显示非 `test_only` matchup，并按 `gojo_vs_sample -> kashimo_vs_sample -> sukuna_setup -> sample_default -> 其余可见 matchup` 的推荐顺序展示。状态区固定补出当前配置摘要、当前轮到谁操作与 policy 状态、已提交指令摘要、稳定 `battle_summary` 和按回合分隔的最近日志；`manual/manual` 与 `policy/policy` 继续保留为显式模式。
+HUD 当前支持按当前配置重开：`matchup` 下拉、`battle_seed` 输入、`P1 control mode`、`P2 control mode` 和重启按钮。控制模式只支持 `manual | policy`；预设对局列表来自 `SampleBattleFactory.available_matchups_result()`，UI 默认只显示非 `test_only` matchup，并按 `gojo_vs_sample -> kashimo_vs_sample -> obito_vs_sample -> sukuna_setup -> sample_default -> 其余可见 matchup` 的推荐顺序展示。状态区固定补出当前配置摘要、当前轮到谁操作与 policy 状态、已提交指令摘要、稳定 `battle_summary` 和按回合分隔的最近日志；`manual/manual` 与 `policy/policy` 继续保留为显式模式。
 如需复查旧自动回放，可追加命令行参数 `-- demo=<profile>`，例如 `godot --path . -- demo=legacy`。demo profile 的单一真相仍在 `config/demo_replay_catalog.json`；`BattleSandboxController` 在检测到 `demo=<profile>` 时会进入只读回放浏览态，固定消费 `ReplayOutput.turn_timeline`，并通过“上一回合 / 下一回合”浏览 frame，不再允许提交 action。当前 smoke matrix 继续固定复查 `legacy` 与 `kashimo` 两个 demo profile。
 
 ### 5.2 Sandbox 主验证入口
@@ -176,7 +176,7 @@ tests/run_with_gate.sh
   - 当前额外包含 composition `SERVICE_DESCRIPTORS / container API / wiring_specs` 一致性检查，以及 runtime wiring DAG 检查
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
   - 当前会聚合 `tests/gates/repo_consistency_surface_gate.py`、`tests/gates/repo_consistency_formal_character_gate.py`、`tests/gates/repo_consistency_docs_gate.py`
-- sandbox smoke matrix 通过（`tests/check_sandbox_smoke_matrix.sh`，固定覆盖默认 `manual/policy`、`kashimo_vs_sample + manual/policy`、`gojo_vs_sample + policy/policy`、`gojo_vs_sample + manual/manual`、`legacy demo`、`kashimo demo`）
+- sandbox smoke matrix 通过（`tests/check_sandbox_smoke_matrix.sh`，固定覆盖默认 `manual/policy`、`kashimo_vs_sample + manual/policy`、`obito_vs_sample + manual/policy`、`sukuna_setup + manual/policy`、`gojo_vs_sample + policy/policy`、`gojo_vs_sample + manual/manual`、`legacy demo`、`kashimo demo`）
 
 ## 6. 对外核心接口（Manager）
 
@@ -301,12 +301,12 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-20）
+## 10. 当前代码规模（2026-04-21）
 
-- `src/**/*.gd`：`22068` 行
-- `test/**/*.gd`：`22020` 行
+- `src/**/*.gd`：`22069` 行
+- `test/**/*.gd`：`22021` 行
 - `tests/**/*.gd`：`4958` 行
-- GDScript 合计：`49046` 行
+- GDScript 合计：`49048` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

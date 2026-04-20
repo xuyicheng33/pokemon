@@ -39,8 +39,9 @@ func test_launch_config_visible_matchup_recommended_order_contract() -> void:
 	var visible_ids := _matchup_ids(visible_matchups)
 	assert_int(visible_ids.find("gojo_vs_sample")).is_equal(0)
 	assert_int(visible_ids.find("kashimo_vs_sample")).is_equal(1)
-	assert_int(visible_ids.find("sukuna_setup")).is_equal(2)
-	assert_int(visible_ids.find("sample_default")).is_equal(3)
+	assert_int(visible_ids.find("obito_vs_sample")).is_equal(2)
+	assert_int(visible_ids.find("sukuna_setup")).is_equal(3)
+	assert_int(visible_ids.find("sample_default")).is_equal(4)
 	for descriptor in visible_matchups:
 		if not (descriptor is Dictionary):
 			continue

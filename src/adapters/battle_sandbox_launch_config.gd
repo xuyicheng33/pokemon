@@ -11,6 +11,7 @@ const SIDE_IDS := ["P1", "P2"]
 const RECOMMENDED_MATCHUP_IDS := [
 	"gojo_vs_sample",
 	"kashimo_vs_sample",
+	"obito_vs_sample",
 	"sukuna_setup",
 	"sample_default",
 ]

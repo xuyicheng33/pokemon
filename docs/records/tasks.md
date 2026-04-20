@@ -13,6 +13,19 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：Sandbox 正式角色覆盖补齐（2026-04-21）
+
+- 状态：已完成
+- 目标：在继续下一个正式角色开发前，补齐 BattleSandbox 推荐对局和 smoke matrix 对已交付角色的可见覆盖
+- 范围：
+  1. `BattleSandboxLaunchConfig` 推荐 matchup 顺序加入 `obito_vs_sample`
+  2. `tests/check_sandbox_smoke_matrix.sh` 固定补跑 `obito_vs_sample + manual/policy` 与 `sukuna_setup + manual/policy`
+  3. README 与 launch config contract suite 同步到新的推荐顺序和 smoke 覆盖面
+- 验证：
+  - `TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_sandbox_smoke_matrix.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 最近完成：深度审查 9 项问题修复（2026-04-21）
 
 - 状态：已完成
