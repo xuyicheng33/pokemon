@@ -2,7 +2,7 @@
 """Scaffold generator for a new formal character.
 
 Usage:
-    python3 scripts/new_formal_character.py <character_id> <display_name> [--pair-token TOKEN]
+    python3 scripts/new_formal_character.py <character_id> <display_name> [options]
 
 Example:
     python3 scripts/new_formal_character.py itadori_yuji "虎杖悠仁" --pair-token itadori
@@ -18,6 +18,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = REPO_ROOT / "config" / "formal_character_sources"
+DRAFTS_DIR = REPO_ROOT / "scripts" / "drafts"
 
 
 # ---------------------------------------------------------------------------
@@ -40,17 +41,36 @@ def next_source_index() -> int:
     return max_index + 1
 
 
+def _iter_source_descriptors():
+    """Yield (path, parsed_data) for every source descriptor JSON."""
+    for search_dir in [SOURCE_DIR, DRAFTS_DIR]:
+        if not search_dir.exists():
+            continue
+        for f in search_dir.iterdir():
+            if not f.name.endswith(".json") or f.name == "00_shared_registry.json":
+                continue
+            try:
+                data = json.loads(f.read_text(encoding="utf-8"))
+                if data.get("descriptor_kind") == "formal_character_source":
+                    yield f, data
+            except (json.JSONDecodeError, OSError):
+                continue
+
+
 def find_existing_source_descriptor(char_id: str) -> Path | None:
     """Return existing source descriptor path for char_id, or None."""
-    for f in SOURCE_DIR.iterdir():
-        if not f.name.endswith(".json") or f.name == "00_shared_registry.json":
-            continue
-        try:
-            data = json.loads(f.read_text(encoding="utf-8"))
-            if data.get("character", {}).get("character_id") == char_id:
-                return f
-        except (json.JSONDecodeError, OSError):
-            continue
+    for f, data in _iter_source_descriptors():
+        if data.get("character", {}).get("character_id") == char_id:
+            return f
+    return None
+
+
+def find_pair_token_owner(pair_token: str) -> str | None:
+    """Return character_id that already owns this pair_token, or None."""
+    for _f, data in _iter_source_descriptors():
+        char = data.get("character", {})
+        if char.get("pair_token") == pair_token:
+            return str(char.get("character_id", ""))
     return None
 
 
@@ -62,16 +82,22 @@ def generate_source_descriptor(
     char_id: str,
     display_name: str,
     pair_token: str,
+    unit_definition_id: str,
     index: int,
 ) -> tuple[str, str]:
-    """Return (filename, json_content) for the source descriptor."""
+    """Return (filename, json_content) for the source descriptor.
+
+    Generated as a draft — delivery-required fields are left with
+    placeholder markers so the user fills them before moving the file
+    into config/formal_character_sources/.
+    """
     filename = f"{index:02d}_{char_id}.json"
     data = {
         "descriptor_kind": "formal_character_source",
         "character": {
             "character_id": char_id,
             "display_name": display_name,
-            "unit_definition_id": char_id,
+            "unit_definition_id": unit_definition_id,
             "formal_setup_matchup_id": f"{pair_token}_vs_sample",
             "pair_token": pair_token,
             "baseline_script_path": f"src/shared/formal_character_baselines/{char_id}/{char_id}_formal_character_baseline.gd",
@@ -94,16 +120,16 @@ def generate_source_descriptor(
             "content_validator_script_path": f"src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd",
             "design_doc": f"docs/design/{char_id}_design.md",
             "adjustment_doc": f"docs/design/{char_id}_adjustments.md",
-            "design_needles": [],
-            "adjustment_needles": [],
+            "design_needles": ["FILL_IN_design_anchor"],
+            "adjustment_needles": ["FILL_IN_adjustment_anchor"],
             "shared_capability_ids": [],
             "suite_path": f"test/suites/{pair_token}_suite.gd",
             "required_suite_paths": [
                 f"test/suites/{pair_token}_snapshot_suite.gd",
                 f"test/suites/{pair_token}_manager_smoke_suite.gd",
             ],
-            "required_test_names": [],
-            "surface_smoke_skill_id": "",
+            "required_test_names": ["FILL_IN_test_name"],
+            "surface_smoke_skill_id": "FILL_IN_skill_id",
         },
     }
     content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
@@ -345,14 +371,27 @@ def main() -> None:
     parser.add_argument("display_name", help="Display name (Chinese), e.g. 虎杖悠仁")
     parser.add_argument("--pair-token", dest="pair_token", default=None,
                         help="Short name for suites/validator dirs (default: first segment of character_id)")
+    parser.add_argument("--unit-definition-id", dest="unit_definition_id", default=None,
+                        help="Unit resource id (default: same as character_id)")
     args = parser.parse_args()
 
     char_id: str = args.character_id.strip()
     display_name: str = args.display_name.strip()
     pair_token: str = (args.pair_token or char_id.split("_")[0]).strip()
+    unit_def_id: str = (args.unit_definition_id or char_id).strip()
 
     if not char_id or not display_name:
         print("ERROR: character_id and display_name are required.", file=sys.stderr)
+        sys.exit(1)
+
+    # --- pair_token collision check ---
+    existing_owner = find_pair_token_owner(pair_token)
+    if existing_owner and existing_owner != char_id:
+        print(
+            f"ERROR: pair_token '{pair_token}' is already used by character "
+            f"'{existing_owner}'. Choose a different --pair-token.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     index = next_source_index()
@@ -365,15 +404,19 @@ def main() -> None:
     print(f"  source index   = {index:02d}")
     print()
 
-    # 1. Source descriptor
-    print("[1/6] Source descriptor")
+    # 1. Source descriptor (staged to scripts/drafts/, NOT live config)
+    print("[1/6] Source descriptor (draft)")
     existing_sd = find_existing_source_descriptor(char_id)
     if existing_sd:
         sd_filename = existing_sd.name
-        print(f"  SKIP (exists): config/formal_character_sources/{sd_filename}")
+        sd_location = str(existing_sd.relative_to(REPO_ROOT))
+        print(f"  SKIP (exists): {sd_location}")
     else:
-        sd_filename, sd_content = generate_source_descriptor(char_id, display_name, pair_token, index)
-        write_file(SOURCE_DIR / sd_filename, sd_content)
+        sd_filename, sd_content = generate_source_descriptor(
+            char_id, display_name, pair_token, unit_def_id, index,
+        )
+        write_file(DRAFTS_DIR / sd_filename, sd_content)
+        sd_location = f"scripts/drafts/{sd_filename}"
 
     # 2. Content directories
     print("[2/6] Content directories")
@@ -413,6 +456,9 @@ def main() -> None:
     print(f"""
 === Scaffold complete ===
 
+!! Source descriptor is in scripts/drafts/, NOT in config/.
+!! DO NOT run sync_formal_registry.sh until you complete steps 1-6 below.
+
 Next steps:
 
   1. Fill in .tres content resources under:
@@ -428,28 +474,27 @@ Next steps:
   3. Fill in validator assertions:
      - src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd
 
-  4. Add matchup to 00_shared_registry.json:
-     - Add "{pair_token}_vs_sample" matchup with actual team composition
-
-  5. Add SampleBattleFactory matchup entry (if needed)
-
-  6. Sync formal registry:
-     bash tests/sync_formal_registry.sh
-
-  7. Fill in manager smoke suite:
+  4. Fill in manager smoke suite:
      - test/suites/{pair_token}_manager_smoke_suite.gd
      - Update battle_seed, skill assertions, etc.
 
-  8. Update source descriptor:
-     - config/formal_character_sources/{sd_filename}
-     - Fill in: surface_smoke_skill_id, required_test_names, design_needles, adjustment_needles
+  5. Complete the source descriptor (currently at {sd_location}):
+     - Replace FILL_IN_skill_id with actual surface_smoke_skill_id
+     - Replace FILL_IN_test_name entries with actual required_test_names
+     - Replace FILL_IN_design_anchor / FILL_IN_adjustment_anchor with actual doc anchors
      - Add shared_capability_ids if the character uses shared capabilities
 
-  9. Update docs/records/tasks.md with the task record
+  6. Add matchup to 00_shared_registry.json:
+     - Add "{pair_token}_vs_sample" matchup with actual team composition
 
-  10. Run validation:
-      bash tests/sync_formal_registry.sh
-      bash tests/run_with_gate.sh
+  7. Move source descriptor into live config:
+     mv {sd_location} config/formal_character_sources/{sd_filename}
+
+  8. Sync formal registry:
+     bash tests/sync_formal_registry.sh
+
+  9. Run validation:
+     bash tests/run_with_gate.sh
 """)
 
 
