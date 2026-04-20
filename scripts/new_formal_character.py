@@ -1,0 +1,457 @@
+#!/usr/bin/env python3
+"""Scaffold generator for a new formal character.
+
+Usage:
+    python3 scripts/new_formal_character.py <character_id> <display_name> [--pair-token TOKEN]
+
+Example:
+    python3 scripts/new_formal_character.py itadori_yuji "虎杖悠仁" --pair-token itadori
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SOURCE_DIR = REPO_ROOT / "config" / "formal_character_sources"
+
+
+# ---------------------------------------------------------------------------
+# Naming helpers
+# ---------------------------------------------------------------------------
+
+def to_pascal_case(snake: str) -> str:
+    """Convert 'gojo_satoru' to 'GojoSatoru'."""
+    return "".join(word.capitalize() for word in snake.split("_"))
+
+
+def next_source_index() -> int:
+    """Scan existing 0N_*.json and return max+1."""
+    pattern = re.compile(r"^(\d+)_.+\.json$")
+    max_index = 0
+    for f in SOURCE_DIR.iterdir():
+        m = pattern.match(f.name)
+        if m:
+            max_index = max(max_index, int(m.group(1)))
+    return max_index + 1
+
+
+def find_existing_source_descriptor(char_id: str) -> Path | None:
+    """Return existing source descriptor path for char_id, or None."""
+    for f in SOURCE_DIR.iterdir():
+        if not f.name.endswith(".json") or f.name == "00_shared_registry.json":
+            continue
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            if data.get("character", {}).get("character_id") == char_id:
+                return f
+        except (json.JSONDecodeError, OSError):
+            continue
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Template generators
+# ---------------------------------------------------------------------------
+
+def generate_source_descriptor(
+    char_id: str,
+    display_name: str,
+    pair_token: str,
+    index: int,
+) -> tuple[str, str]:
+    """Return (filename, json_content) for the source descriptor."""
+    filename = f"{index:02d}_{char_id}.json"
+    data = {
+        "descriptor_kind": "formal_character_source",
+        "character": {
+            "character_id": char_id,
+            "display_name": display_name,
+            "unit_definition_id": char_id,
+            "formal_setup_matchup_id": f"{pair_token}_vs_sample",
+            "pair_token": pair_token,
+            "baseline_script_path": f"src/shared/formal_character_baselines/{char_id}/{char_id}_formal_character_baseline.gd",
+            "pair_initiator_bench_unit_ids": [
+                "sample_mossaur",
+                "sample_pyron"
+            ],
+            "pair_responder_bench_unit_ids": [
+                "sample_tidekit",
+                "sample_mossaur"
+            ],
+            "owned_pair_interaction_specs": [],
+            "content_roots": [
+                f"content/units/{pair_token}",
+                f"content/skills/{pair_token}",
+                f"content/effects/{pair_token}",
+                f"content/passive_skills/{pair_token}",
+                f"content/fields/{pair_token}",
+            ],
+            "content_validator_script_path": f"src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd",
+            "design_doc": f"docs/design/{char_id}_design.md",
+            "adjustment_doc": f"docs/design/{char_id}_adjustments.md",
+            "design_needles": [],
+            "adjustment_needles": [],
+            "shared_capability_ids": [],
+            "suite_path": f"test/suites/{pair_token}_suite.gd",
+            "required_suite_paths": [
+                f"test/suites/{pair_token}_snapshot_suite.gd",
+                f"test/suites/{pair_token}_manager_smoke_suite.gd",
+            ],
+            "required_test_names": [],
+            "surface_smoke_skill_id": "",
+        },
+    }
+    content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+    return filename, content
+
+
+def generate_baseline(char_id: str, display_name: str) -> str:
+    """Generate the formal character baseline GDScript."""
+    pascal = to_pascal_case(char_id)
+    return f'''\
+extends RefCounted
+class_name {pascal}FormalCharacterBaseline
+
+func unit_contract() -> Dictionary:
+\treturn {{
+\t\t"label": "formal[{char_id}].unit",
+\t\t"snapshot_label": "{char_id}",
+\t\t"unit_id": "{char_id}",
+\t\t"fields": {{
+\t\t\t"display_name": "{display_name}",
+\t\t\t"base_hp": 0,
+\t\t\t"base_attack": 0,
+\t\t\t"base_defense": 0,
+\t\t\t"base_sp_attack": 0,
+\t\t\t"base_sp_defense": 0,
+\t\t\t"base_speed": 0,
+\t\t\t"max_mp": 100,
+\t\t\t"init_mp": 50,
+\t\t\t"regen_per_turn": 0,
+\t\t\t"ultimate_points_required": 3,
+\t\t\t"ultimate_points_cap": 3,
+\t\t\t"ultimate_point_gain_on_regular_skill_cast": 1,
+\t\t\t"combat_type_ids": PackedStringArray([]),
+\t\t\t"skill_ids": PackedStringArray([]),
+\t\t\t"candidate_skill_ids": PackedStringArray([]),
+\t\t\t"ultimate_skill_id": "",
+\t\t\t"passive_skill_id": "",
+\t\t}},
+\t}}
+
+func regular_skill_contracts() -> Array[Dictionary]:
+\treturn []
+
+func ultimate_skill_contract() -> Dictionary:
+\treturn {{}}
+
+func passive_skill_contract() -> Dictionary:
+\treturn {{}}
+
+func effect_contracts() -> Array[Dictionary]:
+\treturn []
+
+func field_contracts() -> Array[Dictionary]:
+\treturn []
+'''
+
+
+def generate_validator(char_id: str, pair_token: str) -> str:
+    """Generate the formal character validator GDScript."""
+    pascal_token = to_pascal_case(pair_token)
+    return f'''\
+extends "res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_validator_base.gd"
+class_name ContentSnapshotFormal{pascal_token}Validator
+
+const ContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
+const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
+
+var _helper = ContractHelperScript.new()
+
+func validate(content_index: BattleContentIndex, errors: Array) -> void:
+\t_validate_unit_passive(content_index, errors)
+\t_validate_skill_effect(content_index, errors)
+\t_validate_ultimate_domain(content_index, errors)
+
+func _validate_unit_passive(content_index: BattleContentIndex, errors: Array) -> void:
+\t_helper.validate_unit_contract_descriptor(
+\t\tself,
+\t\tcontent_index,
+\t\terrors,
+\t\tFormalCharacterBaselinesScript.unit_contract("{char_id}")
+\t)
+
+func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) -> void:
+\tpass
+
+func _validate_ultimate_domain(content_index: BattleContentIndex, errors: Array) -> void:
+\tpass
+'''
+
+
+def generate_snapshot_suite(char_id: str, pair_token: str, display_name: str) -> str:
+    """Generate the snapshot test suite shell."""
+    return f'''\
+extends "res://test/support/gdunit_suite_bridge.gd"
+
+const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
+const FormalCharacterSnapshotTestHelperScript := preload("res://tests/support/formal_character_snapshot_test_helper.gd")
+
+var _helper = FormalCharacterSnapshotTestHelperScript.new()
+
+
+func test_{pair_token}_unit_snapshot_contract() -> void:
+\t_assert_legacy_result(_test_{pair_token}_unit_snapshot_contract(_harness))
+
+func test_{pair_token}_skill_snapshot_contract() -> void:
+\t_assert_legacy_result(_test_{pair_token}_skill_snapshot_contract(_harness))
+
+func test_{pair_token}_effect_snapshot_contract() -> void:
+\t_assert_legacy_result(_test_{pair_token}_effect_snapshot_contract(_harness))
+
+func _test_{pair_token}_unit_snapshot_contract(harness) -> Dictionary:
+\tvar content_index = _helper.build_content_index(harness)
+\tif content_index == null:
+\t\treturn harness.fail_result("failed to load content snapshot for {display_name} unit snapshot")
+\treturn _helper.run_descriptor_checks(
+\t\tharness,
+\t\tcontent_index.units,
+\t\t[FormalCharacterBaselinesScript.unit_contract("{char_id}")],
+\t\t"unit_id",
+\t\t"missing {pair_token} unit definition"
+\t)
+
+func _test_{pair_token}_skill_snapshot_contract(harness) -> Dictionary:
+\tvar content_index = _helper.build_content_index(harness)
+\tif content_index == null:
+\t\treturn harness.fail_result("failed to load content snapshot for {display_name} skill snapshot")
+\treturn _helper.run_descriptor_checks(
+\t\tharness,
+\t\tcontent_index.skills,
+\t\tFormalCharacterBaselinesScript.skill_contracts("{char_id}"),
+\t\t"skill_id",
+\t\t"missing {pair_token} snapshot skill resource"
+\t)
+
+func _test_{pair_token}_effect_snapshot_contract(harness) -> Dictionary:
+\tvar content_index = _helper.build_content_index(harness)
+\tif content_index == null:
+\t\treturn harness.fail_result("failed to load content snapshot for {display_name} effect snapshot")
+\treturn _helper.run_descriptor_checks(
+\t\tharness,
+\t\tcontent_index.effects,
+\t\tFormalCharacterBaselinesScript.effect_contracts("{char_id}"),
+\t\t"effect_id",
+\t\t"missing {pair_token} snapshot effect resource"
+\t)
+'''
+
+
+def generate_runtime_suite(pair_token: str) -> str:
+    """Generate the runtime suite wrapper shell."""
+    pascal_token = to_pascal_case(pair_token)
+    return f'''\
+extends GdUnitTestSuite
+
+const {pascal_token}SnapshotSuiteScript := preload("res://test/suites/{pair_token}_snapshot_suite.gd")
+const {pascal_token}ManagerSmokeSuiteScript := preload("res://test/suites/{pair_token}_manager_smoke_suite.gd")
+'''
+
+
+def generate_manager_smoke_suite(char_id: str, pair_token: str) -> str:
+    """Generate the manager smoke suite shell."""
+    return f'''\
+extends "res://test/support/gdunit_suite_bridge.gd"
+
+const FormalCharacterManagerSmokeHelperScript := preload("res://tests/support/formal_character_manager_smoke_helper.gd")
+
+var _smoke_helper = null
+var _helper = null
+var _case_specs: Array = []
+
+func _ensure_suite_state() -> void:
+\tif _smoke_helper == null or _helper == null:
+\t\t_smoke_helper = FormalCharacterManagerSmokeHelperScript.new()
+\t\t_helper = _smoke_helper.contracts()
+\tif _case_specs.is_empty():
+\t\t_case_specs = [
+\t\t\t{{
+\t\t\t\t"test_name": "test_{pair_token}_manager_smoke_contract",
+\t\t\t\t"battle_seed": 9999,
+\t\t\t\t"build_battle_setup": Callable(self, "_build_{pair_token}_manager_smoke_setup"),
+\t\t\t\t"run_case": Callable(self, "_run_{pair_token}_manager_smoke_case"),
+\t\t\t}},
+\t\t]
+
+func before_test() -> void:
+\t_ensure_suite_state()
+
+func test_{pair_token}_manager_smoke_contract() -> void:
+\t_assert_legacy_result(_test_{pair_token}_manager_smoke_contract(_harness))
+
+func _test_{pair_token}_manager_smoke_contract(harness) -> Dictionary:
+\treturn _smoke_helper.run_named_case(harness, _case_specs, "test_{pair_token}_manager_smoke_contract")
+
+func _build_{pair_token}_manager_smoke_setup(harness, sample_factory, _case_spec: Dictionary):
+\treturn harness.build_setup_by_matchup_id(sample_factory, "{pair_token}_vs_sample")
+
+func _run_{pair_token}_manager_smoke_case(state: Dictionary) -> Dictionary:
+\tvar harness = state["harness"]
+\tvar manager = state["manager"]
+\tvar session_id := String(state["session_id"])
+\tvar legal_actions_unwrap = _smoke_helper.get_legal_actions_result(manager, session_id, "P1", "get_legal_actions")
+\tif not bool(legal_actions_unwrap.get("ok", false)):
+\t\treturn harness.fail_result(str(legal_actions_unwrap.get("error", "manager get_legal_actions failed")))
+\treturn harness.pass_result("{pair_token} manager smoke passed")
+'''
+
+
+# ---------------------------------------------------------------------------
+# File writer
+# ---------------------------------------------------------------------------
+
+def write_file(path: Path, content: str) -> None:
+    """Write content to path, creating parent dirs as needed. Refuse to overwrite."""
+    if path.exists():
+        print(f"  SKIP (exists): {path.relative_to(REPO_ROOT)}")
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
+    print(f"  CREATE: {path.relative_to(REPO_ROOT)}")
+
+
+def ensure_dir(path: Path) -> None:
+    """Create directory with a .gitkeep if it doesn't exist."""
+    if path.exists():
+        print(f"  SKIP (exists): {path.relative_to(REPO_ROOT)}/")
+        return
+    path.mkdir(parents=True, exist_ok=True)
+    (path / ".gitkeep").touch()
+    print(f"  CREATE: {path.relative_to(REPO_ROOT)}/")
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Scaffold a new formal character.")
+    parser.add_argument("character_id", help="Snake_case character id, e.g. itadori_yuji")
+    parser.add_argument("display_name", help="Display name (Chinese), e.g. 虎杖悠仁")
+    parser.add_argument("--pair-token", dest="pair_token", default=None,
+                        help="Short name for suites/validator dirs (default: first segment of character_id)")
+    args = parser.parse_args()
+
+    char_id: str = args.character_id.strip()
+    display_name: str = args.display_name.strip()
+    pair_token: str = (args.pair_token or char_id.split("_")[0]).strip()
+
+    if not char_id or not display_name:
+        print("ERROR: character_id and display_name are required.", file=sys.stderr)
+        sys.exit(1)
+
+    index = next_source_index()
+    pascal = to_pascal_case(char_id)
+    pascal_token = to_pascal_case(pair_token)
+
+    print(f"\n=== Scaffolding formal character: {char_id} ({display_name}) ===")
+    print(f"  pair_token     = {pair_token}")
+    print(f"  PascalCase     = {pascal}")
+    print(f"  source index   = {index:02d}")
+    print()
+
+    # 1. Source descriptor
+    print("[1/6] Source descriptor")
+    existing_sd = find_existing_source_descriptor(char_id)
+    if existing_sd:
+        sd_filename = existing_sd.name
+        print(f"  SKIP (exists): config/formal_character_sources/{sd_filename}")
+    else:
+        sd_filename, sd_content = generate_source_descriptor(char_id, display_name, pair_token, index)
+        write_file(SOURCE_DIR / sd_filename, sd_content)
+
+    # 2. Content directories
+    print("[2/6] Content directories")
+    for sub in ["units", "skills", "effects", "passive_skills", "fields"]:
+        ensure_dir(REPO_ROOT / "content" / sub / pair_token)
+
+    # 3. Baseline
+    print("[3/6] Baseline script")
+    baseline_dir = REPO_ROOT / "src" / "shared" / "formal_character_baselines" / char_id
+    write_file(baseline_dir / f"{char_id}_formal_character_baseline.gd",
+               generate_baseline(char_id, display_name))
+
+    # 4. Validator
+    print("[4/6] Validator script")
+    validator_dir = REPO_ROOT / "src" / "battle_core" / "content" / "formal_validators" / pair_token
+    write_file(validator_dir / f"content_snapshot_formal_{pair_token}_validator.gd",
+               generate_validator(char_id, pair_token))
+
+    # 5. Test suites
+    print("[5/6] Test suite shells")
+    suites_dir = REPO_ROOT / "test" / "suites"
+    write_file(suites_dir / f"{pair_token}_snapshot_suite.gd",
+               generate_snapshot_suite(char_id, pair_token, display_name))
+    write_file(suites_dir / f"{pair_token}_suite.gd",
+               generate_runtime_suite(pair_token))
+    write_file(suites_dir / f"{pair_token}_manager_smoke_suite.gd",
+               generate_manager_smoke_suite(char_id, pair_token))
+
+    # 6. Design doc placeholders
+    print("[6/6] Design doc placeholders")
+    write_file(REPO_ROOT / "docs" / "design" / f"{char_id}_design.md",
+               f"# {display_name} 设计稿\n\n（待补充）\n")
+    write_file(REPO_ROOT / "docs" / "design" / f"{char_id}_adjustments.md",
+               f"# {display_name} 调整记录\n\n（待补充）\n")
+
+    # Checklist
+    print(f"""
+=== Scaffold complete ===
+
+Next steps:
+
+  1. Fill in .tres content resources under:
+     - content/units/{pair_token}/
+     - content/skills/{pair_token}/
+     - content/effects/{pair_token}/
+     - content/passive_skills/{pair_token}/
+     - content/fields/{pair_token}/ (if character has domain/field)
+
+  2. Fill in baseline data values:
+     - src/shared/formal_character_baselines/{char_id}/{char_id}_formal_character_baseline.gd
+
+  3. Fill in validator assertions:
+     - src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd
+
+  4. Add matchup to 00_shared_registry.json:
+     - Add "{pair_token}_vs_sample" matchup with actual team composition
+
+  5. Add SampleBattleFactory matchup entry (if needed)
+
+  6. Sync formal registry:
+     bash tests/sync_formal_registry.sh
+
+  7. Fill in manager smoke suite:
+     - test/suites/{pair_token}_manager_smoke_suite.gd
+     - Update battle_seed, skill assertions, etc.
+
+  8. Update source descriptor:
+     - config/formal_character_sources/{sd_filename}
+     - Fill in: surface_smoke_skill_id, required_test_names, design_needles, adjustment_needles
+     - Add shared_capability_ids if the character uses shared capabilities
+
+  9. Update docs/records/tasks.md with the task record
+
+  10. Run validation:
+      bash tests/sync_formal_registry.sh
+      bash tests/run_with_gate.sh
+""")
+
+
+if __name__ == "__main__":
+    main()

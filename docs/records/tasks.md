@@ -94,6 +94,21 @@
   - `bash tests/check_architecture_constraints.sh`
   - `bash tests/check_repo_consistency.sh`
 
+## 最近完成：formal 新角色接入脚手架（2026-04-20）
+
+- 状态：已完成
+- 目标：降低新正式角色接入的手工成本，为 source descriptor、baseline、validator、test suite 提供模板生成
+- 范围：
+  1. 新增脚手架脚本 `scripts/new_formal_character.sh`（bash wrapper）+ `scripts/new_formal_character.py`（Python 生成逻辑）
+  2. 自动生成：source descriptor、baseline 脚本、validator 脚本、snapshot/runtime/manager smoke 三个 suite 壳子、content 目录占位、设计稿占位
+  3. 不改现有 formal 模型、gate、`COMPOSE_DEPS` 边界、battle_core 架构
+  4. 生成物为"半成品但合法"：GDScript 可加载、JSON 可解析、不会让 gate 因脚手架自身报结构错误
+- 验收标准：
+  - 脚手架生成的 `.gd` / `.json` 文件语法合法
+  - 脚手架幂等：重复运行不会覆盖已有文件或重复创建 source descriptor
+  - 不改任何现有角色时，现有 gate 不受影响
+- 用法：`bash scripts/new_formal_character.sh <character_id> <display_name> [--pair-token TOKEN]`
+
 ## 当前验证基线
 
 - 最小可玩性检查：
