@@ -109,6 +109,16 @@
   - 不改任何现有角色时，现有 gate 不受影响
 - 用法：`bash scripts/new_formal_character.sh <character_id> <display_name> [--pair-token TOKEN]`
 
+## 最近完成：核心函数参数类型标注补齐（2026-04-20）
+
+- 状态：已完成
+- 目标：补齐上一轮类型标注遗漏的核心函数参数
+- 修复内容：
+  1. `hit_service.gd` — `roll_hit` 的 `rng_service` 参数补 `RngService` 类型
+  2. `effect_queue_service.gd` — `sort_events` 的 `rng_service` 参数补 `RngService` 类型
+  3. `replay_runner_execution_context_builder.gd` — `build_context` 的 5 个参数全部补显式类型（`ReplayInput / ContentSnapshotCache / IdFactory / RngService / BattleInitializer`）
+- 验证：`bash tests/run_with_gate.sh` 全通过
+
 ## 当前验证基线
 
 - 最小可玩性检查：
