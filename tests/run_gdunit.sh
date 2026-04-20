@@ -5,11 +5,14 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tests/require_tools.sh"
 cd "$ROOT_DIR"
 
-require_command godot "running gdUnit4 suites"
-
 REPORT_DIR="${REPORT_DIR:-reports/gdunit}"
 TEST_PATH="${TEST_PATH:-res://test}"
 GODOT_BIN_PATH="${GODOT_BIN:-$(command -v godot)}"
+
+if [[ -z "$GODOT_BIN_PATH" || ! -x "$GODOT_BIN_PATH" ]]; then
+  echo "TEST_PREREQ_MISSING: requires executable GODOT_BIN (current: '${GODOT_BIN_PATH}')" >&2
+  exit 1
+fi
 
 mkdir -p "$REPORT_DIR"
 
@@ -31,6 +34,6 @@ else
 		"$@"
 fi
 
-godot --headless --path . --quiet -s res://addons/gdUnit4/bin/GdUnitCopyLog.gd \
+"$GODOT_BIN_PATH" --headless --path . --quiet -s res://addons/gdUnit4/bin/GdUnitCopyLog.gd \
 	-rd "$REPORT_DIR" \
 	"$@" >/dev/null

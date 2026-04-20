@@ -34,10 +34,13 @@ def next_source_index() -> int:
     """Scan existing 0N_*.json and return max+1."""
     pattern = re.compile(r"^(\d+)_.+\.json$")
     max_index = 0
-    for f in SOURCE_DIR.iterdir():
-        m = pattern.match(f.name)
-        if m:
-            max_index = max(max_index, int(m.group(1)))
+    for search_dir in [SOURCE_DIR, DRAFTS_DIR]:
+        if not search_dir.exists():
+            continue
+        for f in search_dir.iterdir():
+            m = pattern.match(f.name)
+            if m:
+                max_index = max(max_index, int(m.group(1)))
     return max_index + 1
 
 

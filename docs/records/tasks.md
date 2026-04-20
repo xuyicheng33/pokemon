@@ -13,6 +13,25 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：审阅问题修复收口（2026-04-20）
+
+- 状态：已完成
+- 目标：把本轮详细审查确认的工程问题直接修回脚本、gate 与记录
+- 范围：
+  1. 修复 `tests/run_gdunit.sh` 的 `GODOT_BIN` 闭合问题
+  2. 修复 formal scaffold 的 source index 与 drafts 脱节问题
+  3. 把 tests support helper 体量 gate 调回当前决策记录约定
+- 修复内容：
+  1. `tests/run_gdunit.sh` 改为统一校验并复用 `GODOT_BIN_PATH`，不再在收尾日志复制步骤偷偷回退到裸 `godot`
+  2. `scripts/new_formal_character.py` 的 `next_source_index()` 现在同时扫描 `config/formal_character_sources/` 与 `scripts/drafts/`，避免连续 scaffold 时重复占号
+  3. `tests/check_architecture_constraints.sh` 把 tests support helper 阈值恢复到 `220..250` 预警、`>250` 失败，重新和 `docs/records/decisions.md` 对齐
+- 验证：
+  - `GODOT_BIN="$(command -v godot)" TEST_PATH=res://test/suites/composition_container_contract_suite.gd bash tests/run_gdunit.sh`
+  - `python3 scripts/new_formal_character.py review_probe_alpha "审查探针A"`
+  - `python3 scripts/new_formal_character.py review_probe_beta "审查探针B"`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/run_with_gate.sh`
+
 ## 最近完成：长期工程化重构波次（2026-04-19）
 
 - 状态：已完成

@@ -170,8 +170,8 @@ def is_shared_support(rel: str) -> bool:
     filename = Path(rel).name
     return filename.startswith("shared") or filename.endswith("_shared.gd")
 
-TEST_SUPPORT_WARN_MIN = 400
-TEST_SUPPORT_HARD_MAX = 600
+TEST_SUPPORT_WARN_MIN = 220
+TEST_SUPPORT_HARD_MAX = 250
 TEST_FILE_HARD_MAX = 1200
 for test_root in test_roots:
     if not test_root.exists():
