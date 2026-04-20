@@ -4,7 +4,7 @@ class_name ReplayRunnerExecutionContextBuilder
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
-func build_context(replay_input, content_snapshot_cache, id_factory, rng_service, battle_initializer) -> Dictionary:
+func build_context(replay_input: ReplayInput, content_snapshot_cache: ContentSnapshotCache, id_factory: IdFactory, rng_service: RngService, battle_initializer: BattleInitializer) -> Dictionary:
 	id_factory.reset()
 	var content_index_result = content_snapshot_cache.build_content_index(replay_input.content_snapshot_paths)
 	if not bool(content_index_result.get("ok", false)):

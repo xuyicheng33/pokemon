@@ -1,7 +1,7 @@
 extends RefCounted
 class_name HitService
 
-func roll_hit(accuracy: int, rng_service) -> Dictionary:
+func roll_hit(accuracy: int, rng_service: RngService) -> Dictionary:
 	var hit_rate: float = clamp(float(accuracy) / 100.0, 0.0, 1.0)
 	if accuracy >= 100:
 		return {

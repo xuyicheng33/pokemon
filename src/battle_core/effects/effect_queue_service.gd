@@ -1,7 +1,7 @@
 extends RefCounted
 class_name EffectQueueService
 
-func sort_events(effect_events: Array, rng_service) -> Array:
+func sort_events(effect_events: Array, rng_service: RngService) -> Array:
 	assert(rng_service != null, "EffectQueueService.rng_service is required")
 	var grouped_events: Dictionary = {}
 	for effect_event in effect_events:
