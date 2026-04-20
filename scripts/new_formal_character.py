@@ -410,6 +410,28 @@ def main() -> None:
     if existing_sd:
         sd_filename = existing_sd.name
         sd_location = str(existing_sd.relative_to(REPO_ROOT))
+        # Verify current args match the existing descriptor
+        existing_data = json.loads(existing_sd.read_text(encoding="utf-8"))
+        existing_char = existing_data.get("character", {})
+        existing_token = str(existing_char.get("pair_token", "")).strip()
+        existing_unit_def = str(existing_char.get("unit_definition_id", "")).strip()
+        mismatches: list[str] = []
+        if existing_token and existing_token != pair_token:
+            mismatches.append(
+                f"pair_token: descriptor has '{existing_token}', args say '{pair_token}'"
+            )
+        if existing_unit_def and existing_unit_def != unit_def_id:
+            mismatches.append(
+                f"unit_definition_id: descriptor has '{existing_unit_def}', args say '{unit_def_id}'"
+            )
+        if mismatches:
+            print(
+                f"ERROR: existing descriptor at {sd_location} conflicts with current args:\n  "
+                + "\n  ".join(mismatches)
+                + "\nDelete or manually update the existing descriptor first.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
         print(f"  SKIP (exists): {sd_location}")
     else:
         sd_filename, sd_content = generate_source_descriptor(
