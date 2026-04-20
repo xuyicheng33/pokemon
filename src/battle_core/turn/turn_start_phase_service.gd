@@ -84,6 +84,12 @@ func execute_phase(battle_state: BattleState, content_index: BattleContentIndex,
 		return true
 	if _expiry_service.execute_expiry_phase(battle_state, content_index, "turn_start", cause_event_id):
 		return true
+	var faint_invalid_code = faint_resolver.resolve_faint_window(battle_state, content_index)
+	if faint_invalid_code != null:
+		battle_result_service.terminate_invalid_battle(battle_state, str(faint_invalid_code))
+		return true
+	if battle_result_service.resolve_standard_victory(battle_state):
+		return true
 	return false
 
 func _execute_system_trigger_batch(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex) -> bool:

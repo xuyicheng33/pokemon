@@ -71,13 +71,12 @@ func available_matchups_result() -> Dictionary:
 		"baseline"
 	)
 	var formal_result: Dictionary = formal_matchup_catalog.load_matchups_result()
-	if not bool(formal_result.get("ok", false)):
-		return formal_result
-	_append_available_matchup_descriptors(
-		descriptors,
-		formal_result.get("data", {}).get("matchups", {}),
-		"formal"
-	)
+	if bool(formal_result.get("ok", false)):
+		_append_available_matchup_descriptors(
+			descriptors,
+			formal_result.get("data", {}).get("matchups", {}),
+			"formal"
+		)
 	return ResultEnvelopeHelperScript.ok(descriptors)
 
 func configure_registry_path_override(path: String) -> void:
@@ -91,16 +90,11 @@ func configure_matchup_catalog_path_override(path: String) -> void:
 	if formal_matchup_catalog == null:
 		return
 	formal_matchup_catalog.catalog_path_override = path
-	_broadcast_shared_registry_override(path)
 
 func configure_delivery_registry_path_override(path: String) -> void:
-	if formal_matchup_catalog != null:
-		formal_matchup_catalog.catalog_path_override = path
 	_broadcast_shared_registry_override(path)
 
 func configure_formal_manifest_path_override(path: String) -> void:
-	if formal_matchup_catalog != null:
-		formal_matchup_catalog.catalog_path_override = path
 	_broadcast_shared_registry_override(path)
 
 func configure_demo_catalog_path_override(path: String) -> void:

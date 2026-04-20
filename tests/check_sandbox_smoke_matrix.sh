@@ -233,3 +233,4 @@ run_demo_case \
   godot --headless --path . --script tests/helpers/demo_replay_full_run.gd
 
 echo "SANDBOX_SMOKE_MATRIX_PASSED: manual/manual, manual/policy, policy/policy, and demo replay paths are stable"
+echo "NOTE: all manual paths are currently driven by BattleSandboxFirstLegalPolicy auto-selection; real manual pause/submit via SandboxPolicyDriver is not covered by this matrix"

@@ -2,6 +2,7 @@ extends RefCounted
 class_name ReplayRunnerOutputHelper
 
 const ReplayOutputScript := preload("res://src/battle_core/contracts/replay_output.gd")
+const BattleResultScript := preload("res://src/battle_core/contracts/battle_result.gd")
 const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ReplayRunnerOutputValidatorScript := preload("res://src/battle_core/logging/replay_runner_output_validator.gd")
@@ -21,10 +22,10 @@ func build_replay_output_result(
 	turn_timeline: Array = []
 ) -> Dictionary:
 	var replay_output = ReplayOutputScript.new()
-	replay_output.event_log = event_log
+	replay_output.event_log = event_log.duplicate(true)
 	replay_output.turn_timeline = turn_timeline.duplicate(true) if turn_timeline is Array else []
 	replay_output.final_state_hash = ""
-	replay_output.battle_result = battle_state.battle_result if battle_state != null else null
+	replay_output.battle_result = _copy_battle_result(battle_state.battle_result) if battle_state != null and battle_state.battle_result != null else null
 	replay_output.final_battle_state = battle_state
 	if battle_state == null:
 		replay_output.succeeded = false
@@ -111,6 +112,16 @@ func _compute_state_hash(battle_state: BattleState) -> String:
 	hashing_context.start(HashingContext.HASH_SHA256)
 	hashing_context.update(json_text.to_utf8_buffer())
 	return hashing_context.finish().hex_encode()
+
+func _copy_battle_result(source: BattleResult) -> BattleResult:
+	if source == null:
+		return null
+	var copied = BattleResultScript.new()
+	copied.finished = source.finished
+	copied.winner_side_id = source.winner_side_id
+	copied.result_type = source.result_type
+	copied.reason = source.reason
+	return copied
 
 func _build_error_envelope(replay_output, error_code: String, error_message: String) -> Dictionary:
 	if replay_output != null:

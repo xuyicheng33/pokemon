@@ -17,6 +17,7 @@ func sort_events(effect_events: Array, rng_service: RngService) -> Array:
 	for group_key in grouped_events.keys():
 		var group: Array = grouped_events[group_key]
 		if group.size() > 1:
+			group.sort_custom(func(a, b): return a.event_id < b.event_id)
 			for effect_event in group:
 				effect_event.sort_random_roll = rng_service.next_float()
 	var sorted_events: Array = effect_events.duplicate()
