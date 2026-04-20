@@ -30,7 +30,8 @@ func collect_trigger_events(trigger_name: String, battle_state: BattleState, con
 	for owner_id in owner_unit_ids:
 		var owner_unit = battle_state.get_unit(str(owner_id))
 		if owner_unit == null:
-			continue
+			last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+			return []
 		for effect_instance in owner_unit.effect_instances:
 			var effect_definition = content_index.effects.get(effect_instance.def_id)
 			if effect_definition == null:
@@ -70,7 +71,12 @@ func decrement_for_trigger(trigger_name: String, battle_state: BattleState, cont
 	for owner_id in owner_unit_ids:
 		var owner_unit = battle_state.get_unit(str(owner_id))
 		if owner_unit == null:
-			continue
+			last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+			return {
+				"removed_instances": [],
+				"expire_events": [],
+				"invalid_code": last_invalid_battle_code,
+			}
 		var keep_instances: Array = []
 		for effect_instance in owner_unit.effect_instances:
 			var effect_definition = content_index.effects.get(effect_instance.def_id)

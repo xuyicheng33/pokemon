@@ -13,6 +13,22 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：深度审查 9 项问题修复（2026-04-21）
+
+- 状态：已完成
+- 目标：修复仓库深度审查确认的 3 个阻断级 + 6 个重要级问题
+- 范围：
+  1. （阻断）`turn_start_phase_service` 在 expiry phase 后补 `faint_resolver.resolve_faint_window` + victory check
+  2. （阻断）`sample_battle_factory_baseline_matchup_catalog.available_matchups_result()` formal catalog 失败时 graceful 降级，不再拖死 baseline/demo
+  3. （阻断）`check_sandbox_smoke_matrix.sh` 标注"manual 路径实际由 auto-policy 驱动"已知限制
+  4. （重要）`replay_runner_output_helper` + `replay_output` 的 `event_log` / `battle_result` 改为 deep copy，断开 live 引用
+  5. （重要）`field_apply_service` 在取 `challenger_field_definition` 后立刻判空，fail-fast
+  6. （重要）`effect_queue_service` tie group 分配 random roll 前按 `event_id` 排序，消除收集顺序对 RNG 的影响
+  7. （重要）`sample_battle_factory_baseline_matchup_catalog` 三个 override 函数各归各位，不再互相污染
+  8. （重要）`effect_instance_dispatcher` dangling owner 从 `continue` 改为 fail-fast 返回 `INVALID_STATE_CORRUPTION`
+  9. （重要）`content_snapshot_effect_validator._uses_effect_scope_unit_target` 添加 `ForcedReplacePayload`
+- 验证：`bash tests/run_with_gate.sh`
+
 ## 最近完成：审阅问题修复收口（2026-04-20）
 
 - 状态：已完成

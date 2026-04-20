@@ -12,12 +12,22 @@ var final_battle_state: BattleState = null
 
 func clone_without_runtime_state() -> Variant:
 	var replay_output = get_script().new()
-	replay_output.event_log = event_log.duplicate()
+	replay_output.event_log = event_log.duplicate(true)
 	replay_output.turn_timeline = turn_timeline.duplicate(true)
 	replay_output.final_state_hash = final_state_hash
 	replay_output.succeeded = succeeded
 	replay_output.failure_code = failure_code
 	replay_output.failure_message = failure_message
-	replay_output.battle_result = battle_result
+	replay_output.battle_result = _copy_battle_result(battle_result)
 	replay_output.final_battle_state = null
 	return replay_output
+
+func _copy_battle_result(source) -> Variant:
+	if source == null:
+		return null
+	var copied = source.get_script().new()
+	copied.finished = source.finished
+	copied.winner_side_id = source.winner_side_id
+	copied.result_type = source.result_type
+	copied.reason = source.reason
+	return copied

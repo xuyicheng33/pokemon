@@ -54,6 +54,8 @@ func apply_field(
 	if effect_definition == null or payload == null or effect_event == null:
 		return ErrorCodesScript.INVALID_STATE_CORRUPTION
 	var challenger_field_definition = content_index.fields.get(payload.field_definition_id)
+	if challenger_field_definition == null:
+		return ErrorCodesScript.INVALID_STATE_CORRUPTION
 	var before_field = battle_state.field_state
 	var resolves_replacing_field_lifecycle := before_field != null and _is_replacing_current_field_from_its_lifecycle(effect_event, before_field)
 	if before_field != null and not resolves_replacing_field_lifecycle:

@@ -9,6 +9,7 @@ const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_pa
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const RemoveEffectPayloadScript := preload("res://src/battle_core/content/remove_effect_payload.gd")
+const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 
 func validate(content_index: BattleContentIndex, errors: Array, payload_validator) -> void:
@@ -79,7 +80,8 @@ func _uses_effect_scope_unit_target(payload) -> bool:
 		or payload is ResourceModPayloadScript \
 		or payload is StatModPayloadScript \
 		or payload is ApplyEffectPayloadScript \
-		or payload is RemoveEffectPayloadScript
+		or payload is RemoveEffectPayloadScript \
+		or payload is ForcedReplacePayloadScript
 
 func _resolve_payload_scope_label(payload) -> String:
 	if payload is DamagePayloadScript:
@@ -96,6 +98,8 @@ func _resolve_payload_scope_label(payload) -> String:
 		return "apply_effect"
 	if payload is RemoveEffectPayloadScript:
 		return "remove_effect"
+	if payload is ForcedReplacePayloadScript:
+		return "forced_replace"
 	if payload is RuleModPayloadScript:
 		return "rule_mod"
 	return String(payload.payload_type if payload != null else "payload")
