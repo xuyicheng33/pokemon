@@ -8,7 +8,7 @@ var _container_factory: Callable = Callable()
 var _command_builder: CommandBuilder = null
 var _command_id_factory: IdFactory = null
 var _public_snapshot_builder: BattleCorePublicSnapshotBuilder = null
-var _container_factory_owner: RefCounted = null
+var _container_factory_owner: ContainerFactoryOwnerPort = null
 var _sessions: Dictionary = {}
 var _session_seq: int = 0
 var _container_service: BattleCoreManagerContainerService = null
@@ -118,7 +118,7 @@ func resolve_missing_dependency() -> String:
 		return "container_service"
 	return ""
 
-func _configure_core_ports(container_factory: Callable, command_builder: CommandBuilder, command_id_factory: IdFactory, public_snapshot_builder: BattleCorePublicSnapshotBuilder, container_service: BattleCoreManagerContainerService, container_factory_owner: RefCounted = null) -> void:
+func _configure_core_ports(container_factory: Callable, command_builder: CommandBuilder, command_id_factory: IdFactory, public_snapshot_builder: BattleCorePublicSnapshotBuilder, container_service: BattleCoreManagerContainerService, container_factory_owner: ContainerFactoryOwnerPort = null) -> void:
 	_container_factory = container_factory
 	_command_builder = command_builder
 	_command_id_factory = command_id_factory

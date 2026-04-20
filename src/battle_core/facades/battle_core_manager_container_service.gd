@@ -17,7 +17,7 @@ const REQUIRED_REPLAY_CONTAINER_SERVICES := [
 
 var container_factory: Callable = Callable()
 var public_snapshot_builder: BattleCorePublicSnapshotBuilder = null
-var container_factory_owner: RefCounted = null
+var container_factory_owner: ContainerFactoryOwnerPort = null
 
 func create_session_result(session_id: String, init_payload: Dictionary) -> Dictionary:
 	var compose_result = _compose_container_result()
@@ -158,7 +158,7 @@ func _compose_container_result() -> Dictionary:
 	var container = container_factory.call()
 	if container != null:
 		return BattleCoreManagerContractHelperScript.ok(container)
-	if container_factory_owner != null and container_factory_owner.has_method("error_state"):
+	if container_factory_owner != null:
 		var composer_error_state: Dictionary = container_factory_owner.error_state()
 		return BattleCoreManagerContractHelperScript.error(
 			composer_error_state.get("code", ErrorCodesScript.INVALID_COMPOSITION),

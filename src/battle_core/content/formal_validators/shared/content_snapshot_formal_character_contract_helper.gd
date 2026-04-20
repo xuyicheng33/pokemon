@@ -69,3 +69,48 @@ func expect_single_payload_shape(
 		payload_name,
 		expected_fields
 	)
+
+func extract_payloads_by_script(effect_definition, payload_script) -> Array:
+	return _effect_field_helper.extract_payloads_by_script(effect_definition, payload_script)
+
+func expect_typed_payload_shape(
+	validator,
+	errors: Array,
+	label: String,
+	payload,
+	payload_script,
+	payload_name: String,
+	expected_fields: Dictionary
+) -> Variant:
+	return _effect_field_helper.expect_typed_payload_shape(
+		validator,
+		errors,
+		label,
+		payload,
+		payload_script,
+		payload_name,
+		expected_fields
+	)
+
+func expect_payload_shape_by_field(
+	validator,
+	errors: Array,
+	label: String,
+	payloads: Array,
+	match_field_name: String,
+	match_field_value,
+	payload_script,
+	payload_name: String,
+	expected_fields: Dictionary
+) -> Variant:
+	return _effect_field_helper.expect_payload_shape_by_field(
+		validator,
+		errors,
+		label,
+		payloads,
+		match_field_name,
+		match_field_value,
+		payload_script,
+		payload_name,
+		expected_fields
+	)

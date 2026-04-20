@@ -346,10 +346,40 @@ func _validate_amber_contract(content_index: BattleContentIndex, errors: Array) 
 		return
 	_expect_string(errors, "%s effect.scope" % label, amber_effect.scope, "self")
 	_expect_packed_string_array(errors, "%s effect.trigger_names" % label, amber_effect.trigger_names, PackedStringArray(["on_cast"]))
-	var stat_payloads := _extract_stat_payloads(amber_effect)
-	_expect_persistent_stat_mod(errors, label, stat_payloads, "attack", 2)
-	_expect_persistent_stat_mod(errors, label, stat_payloads, "sp_attack", 2)
-	_expect_persistent_stat_mod(errors, label, stat_payloads, "speed", 1)
+	var stat_payloads := _helper.extract_payloads_by_script(amber_effect, StatModPayloadScript)
+	_helper.expect_payload_shape_by_field(
+		self,
+		errors,
+		"%s stat[attack]" % label,
+		stat_payloads,
+		"stat_name",
+		"attack",
+		StatModPayloadScript,
+		"stat_mod",
+		{"stat_name": "attack", "stage_delta": 2, "retention_mode": "persist_on_switch"}
+	)
+	_helper.expect_payload_shape_by_field(
+		self,
+		errors,
+		"%s stat[sp_attack]" % label,
+		stat_payloads,
+		"stat_name",
+		"sp_attack",
+		StatModPayloadScript,
+		"stat_mod",
+		{"stat_name": "sp_attack", "stage_delta": 2, "retention_mode": "persist_on_switch"}
+	)
+	_helper.expect_payload_shape_by_field(
+		self,
+		errors,
+		"%s stat[speed]" % label,
+		stat_payloads,
+		"stat_name",
+		"speed",
+		StatModPayloadScript,
+		"stat_mod",
+		{"stat_name": "speed", "stage_delta": 1, "retention_mode": "persist_on_switch"}
+	)
 	var bleed_apply = _extract_single_payload(
 		errors,
 		label,
@@ -396,35 +426,8 @@ func _validate_amber_contract(content_index: BattleContentIndex, errors: Array) 
 		{"amount": 20, "use_formula": false, "combat_type_id": ""}
 	)
 
-func _extract_stat_payloads(effect_definition) -> Array:
-	var matched_payloads: Array = []
-	for payload in effect_definition.payloads:
-		if payload is StatModPayloadScript:
-			matched_payloads.append(payload)
-	return matched_payloads
-
 func _extract_rule_mod_by_kind(effect_definition, mod_kind: String) -> Variant:
 	for payload in effect_definition.payloads:
 		if payload is RuleModPayloadScript and String(payload.mod_kind) == mod_kind:
 			return payload
 	return null
-
-func _expect_persistent_stat_mod(errors: Array, label: String, stat_payloads: Array, stat_name: String, stage_delta: int) -> void:
-	for payload in stat_payloads:
-		if String(payload.stat_name) != stat_name:
-			continue
-		if int(payload.stage_delta) != stage_delta:
-			errors.append("%s stat[%s].stage_delta mismatch: expected %d got %d" % [
-				label,
-				stat_name,
-				stage_delta,
-				int(payload.stage_delta),
-			])
-		if String(payload.retention_mode) != "persist_on_switch":
-			errors.append("%s stat[%s].retention_mode mismatch: expected persist_on_switch got %s" % [
-				label,
-				stat_name,
-				String(payload.retention_mode),
-			])
-		return
-	errors.append("%s missing stat_mod payload for %s" % [label, stat_name])

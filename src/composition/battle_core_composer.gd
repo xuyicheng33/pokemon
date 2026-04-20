@@ -4,13 +4,14 @@ class_name BattleCoreComposer
 const BattleCoreContainerScript := preload("res://src/composition/battle_core_container.gd")
 const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_core_manager.gd")
 const BattleCoreManagerContainerServiceScript := preload("res://src/battle_core/facades/battle_core_manager_container_service.gd")
+const ContainerFactoryOwnerPortScript := preload("res://src/battle_core/facades/container_factory_owner_port.gd")
 const ServiceSpecsScript := preload("res://src/composition/battle_core_service_specs.gd")
 const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 class ContainerFactoryPort:
-	extends RefCounted
+	extends ContainerFactoryOwnerPortScript
 
 	var composer
 
@@ -62,7 +63,7 @@ func compose_manager() -> Variant:
 	factory_port.composer = self
 	return compose_manager_with_factory(Callable(factory_port, "build_container"), factory_port)
 
-func compose_manager_with_factory(container_factory: Callable, container_factory_owner = null) -> Variant:
+func compose_manager_with_factory(container_factory: Callable, container_factory_owner: ContainerFactoryOwnerPort = null) -> Variant:
 	ErrorStateHelperScript.clear(self)
 	var manager = BattleCoreManagerScript.new()
 	if manager == null:

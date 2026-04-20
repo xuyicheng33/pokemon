@@ -151,7 +151,33 @@ func _validate_yinyang_dun_contracts(content_index: BattleContentIndex, errors: 
 		if boost_effect.payloads.size() != 3:
 			errors.append("%s boost payload count mismatch: expected 3 got %d" % [label, boost_effect.payloads.size()])
 		else:
-			_expect_boost_payloads(errors, label, boost_effect.payloads)
+			_helper.expect_typed_payload_shape(
+				self,
+				errors,
+				"%s boost.payload[0]" % label,
+				boost_effect.payloads[0],
+				ApplyEffectPayloadScript,
+				"apply_effect",
+				{"effect_definition_id": "obito_yinyang_zhili"}
+			)
+			_helper.expect_typed_payload_shape(
+				self,
+				errors,
+				"%s boost.payload[1]" % label,
+				boost_effect.payloads[1],
+				StatModPayloadScript,
+				"stat_mod",
+				{"stat_name": "defense", "stage_delta": 1, "retention_mode": "normal"}
+			)
+			_helper.expect_typed_payload_shape(
+				self,
+				errors,
+				"%s boost.payload[2]" % label,
+				boost_effect.payloads[2],
+				StatModPayloadScript,
+				"stat_mod",
+				{"stat_name": "sp_defense", "stage_delta": 1, "retention_mode": "normal"}
+			)
 	var guard_effect = _require_effect(content_index, errors, label, "obito_yinyang_dun_guard_rule_mod")
 	if guard_effect != null:
 		_helper.validate_effect_contracts(
@@ -188,23 +214,6 @@ func _validate_yinyang_dun_contracts(content_index: BattleContentIndex, errors: 
 	)
 	var listener_state_payload = _extract_single_payload(errors, label, "obito_yinyang_dun_guard_stack_listener_state", listener_state_effect, ApplyEffectPayloadScript, "apply_effect")
 	_expect_payload_shape(errors, "%s listener_state.payload" % label, listener_state_payload, {"effect_definition_id": "obito_yinyang_zhili"})
-
-func _expect_boost_payloads(errors: Array, label: String, payloads: Array) -> void:
-	var apply_payload = payloads[0]
-	var defense_payload = payloads[1]
-	var sp_defense_payload = payloads[2]
-	if apply_payload == null or apply_payload.get_script() != ApplyEffectPayloadScript:
-		errors.append("%s boost payload[0] must be apply_effect" % label)
-	else:
-		_expect_payload_shape(errors, "%s boost.payload[0]" % label, apply_payload, {"effect_definition_id": "obito_yinyang_zhili"})
-	if defense_payload == null or defense_payload.get_script() != StatModPayloadScript:
-		errors.append("%s boost payload[1] must be stat_mod" % label)
-	else:
-		_expect_payload_shape(errors, "%s boost.payload[1]" % label, defense_payload, {"stat_name": "defense", "stage_delta": 1, "retention_mode": "normal"})
-	if sp_defense_payload == null or sp_defense_payload.get_script() != StatModPayloadScript:
-		errors.append("%s boost payload[2] must be stat_mod" % label)
-	else:
-		_expect_payload_shape(errors, "%s boost.payload[2]" % label, sp_defense_payload, {"stat_name": "sp_defense", "stage_delta": 1, "retention_mode": "normal"})
 
 func _validate_qiudaoyu_contracts(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[obito_juubi_jinchuriki].qiudao_yu"
