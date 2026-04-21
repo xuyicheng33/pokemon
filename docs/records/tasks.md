@@ -13,6 +13,17 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：提取 TurnExpiryDecrementHelper 消除 turn 阶段重复代码（2026-04-22）
+
+- 状态：已完成
+- 目标：消除 TurnStartExpiryService 与 TurnEndPhaseService 之间的 4 个重复方法，补齐 `_unit_has_persistent_effect` 缺失的 UnitState 类型标注
+- 范围：
+  - 新增 `src/battle_core/turn/turn_expiry_decrement_helper.gd`，承载 `collect_effect_decrement_owner_ids`、`decrement_effect_instances_and_log`、`decrement_rule_mods_and_log`、`_unit_has_persistent_effect` 共 4 个方法
+  - 重构 `turn_start_expiry_service.gd` 和 `turn_end_phase_service.gd`，改为委托 helper
+  - 更新 README 代码行数统计
+- 验收标准：闸门全通过，行为不变
+- 验证结果：419 test cases / 0 failures，所有架构约束和 sandbox smoke matrix 通过
+
 ## 最近完成：Sandbox 正式角色覆盖补齐（2026-04-21）
 
 - 状态：已完成
