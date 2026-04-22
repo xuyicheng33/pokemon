@@ -36,6 +36,7 @@ VALIDATOR_BAD_CASE_SUITE_PATH = "test/suites/extension_validation_contract_suite
 PAIR_INTERACTION_SUITE_PATH = "test/suites/formal_character_pair_smoke/interaction_suite.gd"
 PAIR_INTERACTION_SUPPORT_PATH = "test/suites/formal_character_pair_smoke/interaction_support.gd"
 PAIR_INTERACTION_SCENARIO_REGISTRY_PATH = "tests/support/formal_pair_interaction/scenario_registry.gd"
+PAIR_INTERACTION_SCENARIO_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_pair_interaction_runner_keys.gd"
 FORMAL_ACCESS_SCRIPT_PATH = "src/composition/sample_battle_factory_formal_access.gd"
 RUNTIME_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_formal_access.gd"
 DELIVERY_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_formal_access.gd"
@@ -273,6 +274,7 @@ validate_pair_catalog(
     matchup_catalog_path=MANIFEST_PATH,
     delivery_registry_path=MANIFEST_PATH,
     scenario_registry_path=PAIR_INTERACTION_SCENARIO_REGISTRY_PATH,
+    scenario_registry_export_script_path=PAIR_INTERACTION_SCENARIO_EXPORT_SCRIPT_PATH,
 )
 
 ctx.finish("formal character manifest, pair coverage, and anti-regression guards are aligned")

@@ -64,6 +64,53 @@ func _test_formal_character_setup_registry_runtime_contract(harness) -> Dictiona
 		return harness.fail_result("formal_character_ids should preserve registry file order")
 	return harness.pass_result()
 
+func _test_formal_character_auto_sample_matchup_contract(harness) -> Dictionary:
+	var manifest_path := "user://formal_character_manifest_auto_sample_fixture.json"
+	var manifest_payload := JSON.stringify(_build_manifest_payload([
+		_build_manifest_character_entry(
+			"gojo_alias",
+			"Gojo Alias",
+			"gojo_satoru",
+			"gojo_alias_vs_sample",
+			["content/units/gojo/gojo_satoru.tres"],
+			"",
+			"docs/design/gojo_satoru_design.md",
+			"docs/design/gojo_satoru_adjustments.md",
+			"gojo_ao",
+			"test/suites/gojo_suite.gd",
+			["test/suites/formal_character_pair_smoke_suite.gd"],
+			["gojo_manager_smoke_contract"],
+			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
+			["anchor:gojo.adjust.tests-impacted"]
+		),
+	]), "  ")
+	if not _write_json_fixture(manifest_path, manifest_payload):
+		return harness.fail_result("failed to write auto sample matchup fixture")
+	var override_factory = harness.build_sample_factory_with_overrides(manifest_path)
+	if override_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed for auto sample matchup fixture")
+	var setup_result: Dictionary = override_factory.build_formal_character_setup_result("gojo_alias")
+	if not bool(setup_result.get("ok", false)):
+		return harness.fail_result("auto-derived sample matchup should resolve formal setup without touching shared registry: %s" % String(setup_result.get("error_message", "unknown error")))
+	var direct_setup_result: Dictionary = override_factory.build_setup_by_matchup_id_result("gojo_alias_vs_sample")
+	if not bool(direct_setup_result.get("ok", false)):
+		return harness.fail_result("auto-derived sample matchup should be directly loadable by matchup id: %s" % String(direct_setup_result.get("error_message", "unknown error")))
+	if _setup_signature(setup_result.get("data", null)) != _setup_signature(direct_setup_result.get("data", null)):
+		return harness.fail_result("formal setup should match the auto-derived sample matchup")
+	var available_result: Dictionary = override_factory.available_matchups_result()
+	if not bool(available_result.get("ok", false)):
+		return harness.fail_result("available_matchups_result should expose auto-derived sample matchup: %s" % String(available_result.get("error_message", "unknown error")))
+	for raw_descriptor in available_result.get("data", []):
+		if not (raw_descriptor is Dictionary):
+			continue
+		var descriptor: Dictionary = raw_descriptor
+		if String(descriptor.get("matchup_id", "")) != "gojo_alias_vs_sample":
+			continue
+		if String(descriptor.get("source", "")) != "formal":
+			return harness.fail_result("auto-derived sample matchup should surface as formal descriptor")
+		return harness.pass_result()
+	return harness.fail_result("available_matchups_result should include the auto-derived sample matchup id")
+
 func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary:
 	var manifest_path := "user://formal_character_manifest_mismatch_fixture.json"
 	var manifest_payload := JSON.stringify(_build_manifest_payload([

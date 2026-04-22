@@ -7,6 +7,11 @@ const SukunaTestSupportScript := preload("res://tests/support/sukuna_test_suppor
 var _formal_support = FormalCharacterTestSupportScript.new()
 var _sukuna_support = SukunaTestSupportScript.new()
 
+func build_runners() -> Dictionary:
+	return {
+		"sukuna_obito_field_seal_and_kamado_lifecycle": Callable(self, "run_sukuna_vs_obito_field_seal_and_kamado_lifecycle"),
+	}
+
 func run_sukuna_vs_obito_field_seal_and_kamado_lifecycle(harness, case_spec: Dictionary) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):

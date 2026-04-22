@@ -7,6 +7,8 @@ var _registry = ScenarioRegistryScript.new()
 var _runners: Dictionary = _registry.build_runners()
 
 func validate_case_catalog(harness, interaction_cases: Array) -> Dictionary:
+	if _runners.is_empty():
+		return harness.fail_result("formal pair interaction runner registry is empty")
 	var scenario_case_counts: Dictionary = {}
 	var seen_test_names: Dictionary = {}
 	for raw_case_spec in interaction_cases:
@@ -32,6 +34,8 @@ func validate_case_catalog(harness, interaction_cases: Array) -> Dictionary:
 	return harness.pass_result()
 
 func run_case(harness, case_spec: Dictionary) -> Dictionary:
+	if _runners.is_empty():
+		return harness.fail_result("formal pair interaction runner registry is empty")
 	var scenario_key := String(case_spec.get("scenario_key", "")).strip_edges()
 	var runner: Callable = _runners.get(scenario_key, Callable())
 	if not runner.is_valid():

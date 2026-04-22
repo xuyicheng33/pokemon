@@ -13,6 +13,19 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：formal 接线自动化与 Sandbox smoke 动态化（2026-04-22）
+
+- 状态：已完成
+- 目标：继续扩角前，把 formal 角色接入末端的手工步骤和 sandbox smoke 的硬编码名单进一步收口
+- 范围：
+  1. `FormalCharacterManifestViews` 默认自动派生 `<pair_token>_vs_sample` matchup，formal setup 不再强依赖手工改 `00_shared_registry.json`
+  2. `tests/support/formal_pair_interaction/scenario_registry.gd` 改为自动发现 `tests/support/formal_pair_interaction/*_cases.gd`，新增角色不再手工注册 scenario runner
+  3. `scripts/new_formal_character.py` 同步改为生成 `build_runners()` 壳子，并把 shared matchup / pair interaction 说明改成新的自动化流程
+  4. `tests/check_sandbox_smoke_matrix.sh` 改为动态覆盖全部可见 matchup、默认模式变体、真实 submit 路径和全部 demo profile
+  5. 补 `demo_profile_ids_result()`、sandbox smoke catalog helper、pair runner key export helper 与对应 contract/gate 对齐
+- 验收标准：新增角色默认接线步骤更少，sandbox 主 smoke 自动跟随当前 manifest/demo 真相，现有 gate 与主回归继续通过
+- 验证结果：`bash tests/run_with_gate.sh` 通过，`421 test cases / 0 failures`；动态 sandbox smoke 已覆盖全部可见 matchup、默认模式变体、真实 submit 路径和全部 demo replay
+
 ## 最近完成：扩角前文档口径修正与脚手架增强（2026-04-22）
 
 - 状态：已完成
@@ -28,7 +41,7 @@
      - main 流程扩充到 8 步，第 7 步生成 interaction cases 文件，第 8 步打印 scenario_registry.gd 注册提示
      - checklist 输出补充 pair interaction 层的完整操作说明
 - 验收标准：文档口径统一，脚手架幂等无破坏，现有闸门不受影响
-- 验证结果：待闸门验证
+- 验证结果：`bash tests/run_with_gate.sh` 通过，`421 test cases / 0 failures`；repo consistency / formal pair coverage / 文档入口对齐 gate 全部通过
 
 ## 最近完成：提取 TurnExpiryDecrementHelper 消除 turn 阶段重复代码（2026-04-22）
 

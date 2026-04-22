@@ -19,6 +19,27 @@ func default_profile_id_result() -> Dictionary:
 		return catalog_result
 	return _ok_result(String(catalog_result.get("data", {}).get("default_profile_id", "")).strip_edges())
 
+func profile_ids_result() -> Dictionary:
+	var catalog_result := _load_catalog_result()
+	if not bool(catalog_result.get("ok", false)):
+		return catalog_result
+	var catalog_payload: Dictionary = catalog_result.get("data", {})
+	var profiles: Dictionary = catalog_payload.get("profiles", {})
+	var default_profile_id_value := String(catalog_payload.get("default_profile_id", "")).strip_edges()
+	var profile_ids: Array = []
+	if not default_profile_id_value.is_empty():
+		profile_ids.append(default_profile_id_value)
+	var remaining_profile_ids: Array = []
+	for raw_profile_id in profiles.keys():
+		var profile_id := String(raw_profile_id).strip_edges()
+		if profile_id.is_empty() or profile_id == default_profile_id_value:
+			continue
+		remaining_profile_ids.append(profile_id)
+	remaining_profile_ids.sort()
+	for profile_id in remaining_profile_ids:
+		profile_ids.append(profile_id)
+	return _ok_result(profile_ids)
+
 func profile_result(profile_id: String) -> Dictionary:
 	var catalog_result := _load_catalog_result()
 	if not bool(catalog_result.get("ok", false)):

@@ -38,6 +38,9 @@ func test_sample_factory_demo_default_profile_contract() -> void:
 func test_sample_factory_demo_invalid_default_profile_contract() -> void:
 	_assert_legacy_result(_test_demo_invalid_default_profile_contract(_harness))
 
+func test_sample_factory_demo_profile_ids_contract() -> void:
+	_assert_legacy_result(_test_demo_profile_ids_contract(_harness))
+
 func test_sample_factory_demo_switch_command_replay_contract() -> void:
 	_assert_legacy_result(_test_demo_switch_command_replay_contract(_harness))
 func _test_baseline_setup_ignores_formal_runtime_registry_failure(harness) -> Dictionary:
@@ -243,6 +246,22 @@ func _test_demo_invalid_default_profile_contract(harness) -> Dictionary:
 		return harness.fail_result("build_demo_replay_input_result should not fall back to kashimo when default_profile_id is invalid")
 	if String(replay_result.get("error_message", "")).find("default_profile_id") == -1:
 		return harness.fail_result("default demo replay build failure should preserve default_profile_id error")
+	return harness.pass_result()
+
+func _test_demo_profile_ids_contract(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var profile_ids_result: Dictionary = sample_factory.demo_profile_ids_result()
+	if not bool(profile_ids_result.get("ok", false)):
+		return harness.fail_result("demo_profile_ids_result should succeed: %s" % String(profile_ids_result.get("error_message", "unknown error")))
+	var profile_ids = profile_ids_result.get("data", [])
+	if not (profile_ids is Array) or profile_ids.is_empty():
+		return harness.fail_result("demo_profile_ids_result should return a non-empty array")
+	if String(profile_ids[0]) != "kashimo":
+		return harness.fail_result("demo_profile_ids_result should keep the default profile first")
+	if profile_ids != ["kashimo", "legacy"]:
+		return harness.fail_result("demo_profile_ids_result should keep a stable default-first ordering")
 	return harness.pass_result()
 
 func _test_demo_switch_command_replay_contract(harness) -> Dictionary:

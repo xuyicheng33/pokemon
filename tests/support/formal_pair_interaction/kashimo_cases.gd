@@ -9,6 +9,12 @@ var _formal_support = FormalCharacterTestSupportScript.new()
 var _kashimo_support = KashimoTestSupportScript.new()
 var _obito_contracts = ObitoRuntimeContractSupportScript.new()
 
+func build_runners() -> Dictionary:
+	return {
+		"sukuna_kashimo_domain_accuracy_nullified": Callable(self, "run_sukuna_vs_kashimo_domain_accuracy_nullified"),
+		"kashimo_obito_yinyang_and_amber_persistence": Callable(self, "run_kashimo_vs_obito_yinyang_and_amber_persistence"),
+	}
+
 func run_sukuna_vs_kashimo_domain_accuracy_nullified(harness, case_spec: Dictionary) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:

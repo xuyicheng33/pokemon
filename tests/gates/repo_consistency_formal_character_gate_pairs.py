@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import re
+from repo_consistency_formal_character_manifest_io_support import run_godot_json_export
 
 
 def _unordered_pair_key(left_character_id: str, right_character_id: str) -> str:
@@ -30,6 +30,7 @@ def validate_pair_catalog(
     matchup_catalog_path: str,
     delivery_registry_path: str,
     scenario_registry_path: str,
+    scenario_registry_export_script_path: str,
 ) -> None:
     surface_skill_by_character = {
         str(entry.get("character_id", "")).strip(): str(entry.get("surface_smoke_skill_id", "")).strip()
@@ -178,8 +179,21 @@ def validate_pair_catalog(
     actual_interaction_pairs: set[str] = set()
     actual_directional_cases: set[tuple[str, str, str, str]] = set()
     actual_test_names: set[str] = set()
-    scenario_registry_text = ctx.read_text(scenario_registry_path)
-    registered_scenario_keys = set(re.findall(r'"([^"]+)": Callable', scenario_registry_text))
+    scenario_registry_payload = run_godot_json_export(
+        ctx,
+        export_script_path=scenario_registry_export_script_path,
+        input_path=scenario_registry_path,
+        failure_label="formal pair interaction runner registry",
+    )
+    raw_registered_scenario_keys = scenario_registry_payload.get("scenario_keys", [])
+    if not isinstance(raw_registered_scenario_keys, list):
+        ctx.failures.append(f"{scenario_registry_export_script_path} missing scenario_keys array")
+        raw_registered_scenario_keys = []
+    registered_scenario_keys = {
+        str(raw_scenario_key).strip()
+        for raw_scenario_key in raw_registered_scenario_keys
+        if str(raw_scenario_key).strip()
+    }
     actual_scenario_keys: set[str] = set()
     scenario_case_counts: dict[str, int] = {}
     actual_scenario_keys_by_pair: dict[str, str] = {}

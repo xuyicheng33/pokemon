@@ -31,6 +31,9 @@ func run_hotseat_turn(context_support, context: Dictionary, p1_selected_action: 
 	}
 
 func run_to_battle_end(context_support, context: Dictionary, max_turns: int = 64) -> Dictionary:
+	return run_to_battle_end_via_submit(context_support, context, max_turns)
+
+func run_to_battle_end_via_submit(context_support, context: Dictionary, max_turns: int = 64) -> Dictionary:
 	var controller = context.get("controller", null)
 	if controller == null:
 		return _fail("run_to_battle_end requires controller context")

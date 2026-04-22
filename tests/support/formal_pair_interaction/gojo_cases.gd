@@ -9,6 +9,13 @@ var _gojo_contracts = GojoUnlimitedVoidContractSupportScript.new()
 var _kashimo_support = KashimoTestSupportScript.new()
 var _obito_contracts = ObitoRuntimeContractSupportScript.new()
 
+func build_runners() -> Dictionary:
+	return {
+		"gojo_sukuna_domain_cleanup": Callable(self, "run_gojo_vs_sukuna_domain_cleanup"),
+		"gojo_kashimo_kyokyo_nullify_domain_accuracy": Callable(self, "run_gojo_vs_kashimo_kyokyo_nullify_domain_accuracy"),
+		"gojo_obito_heal_block_public_contract": Callable(self, "run_gojo_vs_obito_heal_block_public_contract"),
+	}
+
 func run_gojo_vs_sukuna_domain_cleanup(harness, case_spec: Dictionary) -> Dictionary:
 	var matchup_id := _require_matchup_id(harness, case_spec)
 	if matchup_id.is_empty():

@@ -380,12 +380,15 @@ def generate_interaction_cases(char_id: str, pair_token: str) -> str:
 extends RefCounted
 class_name FormalPairInteraction{pascal_token}Cases
 
-# No existing formal characters to interact with.
+func build_runners() -> Dictionary:
+\treturn {{}}
 '''
     runner_methods: list[str] = []
+    runner_entries: list[str] = []
     for entry in existing:
         other_token = entry["pair_token"]
         scenario_key = f"FILL_IN_{other_token}_{pair_token}_scenario"
+        runner_entries.append(f'\t\t"{scenario_key}": Callable(self, "run_{scenario_key}")')
         runner_methods.append(f'''\
 func run_{scenario_key}(harness, case_spec: Dictionary) -> Dictionary:
 \tvar matchup_id := String(case_spec.get("matchup_id", "")).strip_edges()
@@ -397,10 +400,16 @@ func run_{scenario_key}(harness, case_spec: Dictionary) -> Dictionary:
 \t# TODO: implement {pair_token} vs {other_token} interaction contract
 \treturn harness.pass_result("{pair_token} vs {other_token} interaction placeholder")''')
 
+    runners_block = ",\n".join(runner_entries)
     methods_block = "\n\n".join(runner_methods)
     return f'''\
 extends RefCounted
 class_name FormalPairInteraction{pascal_token}Cases
+
+func build_runners() -> Dictionary:
+\treturn {{
+{runners_block}
+\t}}
 
 {methods_block}
 '''
@@ -465,8 +474,6 @@ def main() -> None:
 
     index = next_source_index()
     pascal = to_pascal_case(char_id)
-    pascal_token = to_pascal_case(pair_token)
-
     print(f"\n=== Scaffolding formal character: {char_id} ({display_name}) ===")
     print(f"  pair_token     = {pair_token}")
     print(f"  PascalCase     = {pascal}")
@@ -553,21 +560,12 @@ def main() -> None:
     else:
         print("[7/8] Pair interaction cases shell (skipped — no existing characters)")
 
-    # 8. Summary of scenario_registry.gd changes needed
-    print("[8/8] Scenario registry reminder")
-    if existing_characters:
-        print("  NOTE: You must manually register scenario_keys in:")
-        print("    tests/support/formal_pair_interaction/scenario_registry.gd")
-        print(f"  Add preload + instance for {pair_token}_cases.gd and register runners.")
-    else:
-        print("  (no pair interaction registration needed for the first character)")
-
     # Checklist
     print(f"""
 === Scaffold complete ===
 
 !! Source descriptor is in scripts/drafts/, NOT in config/.
-!! DO NOT run sync_formal_registry.sh until you complete steps 1-6 below.
+!! DO NOT run sync_formal_registry.sh until you complete steps 1-7 below.
 
 Next steps:
 
@@ -594,17 +592,18 @@ Next steps:
      - Replace FILL_IN_design_anchor / FILL_IN_adjustment_anchor with actual doc anchors
      - Add shared_capability_ids if the character uses shared capabilities
 
-  6. Add matchup to 00_shared_registry.json:
-     - Add "{pair_token}_vs_sample" matchup with actual team composition
+  6. Review shared matchup needs:
+     - Default "{pair_token}_vs_sample" is now auto-derived from pair_initiator_bench_unit_ids
+     - Only update config/formal_character_sources/00_shared_registry.json if you need:
+       a. custom formal_setup_matchup_id
+       b. custom sample team composition
+       c. extra shared/test_only matchup
 
   7. Complete pair interaction layer:
      - Fill in scenario_key values in owned_pair_interaction_specs (replace FILL_IN_* placeholders)
      - Fill in battle_seed values (must be positive integers, unique per directed case)
      - Implement runner methods in tests/support/formal_pair_interaction/{pair_token}_cases.gd
-     - Register scenario_keys in tests/support/formal_pair_interaction/scenario_registry.gd:
-       a. Add: const {pascal_token}CasesScript := preload("res://tests/support/formal_pair_interaction/{pair_token}_cases.gd")
-       b. Add: var _{pair_token}_cases = {pascal_token}CasesScript.new()
-       c. Add entries to build_runners() for each scenario_key
+     - scenario_registry.gd now auto-discovers *_cases.gd files; no manual registry edit is needed
 
   8. Move source descriptor into live config:
      mv {sd_location} config/formal_character_sources/{sd_filename}

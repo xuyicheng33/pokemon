@@ -22,6 +22,9 @@ func run_hotseat_turn(context: Dictionary, p1_selected_action: Dictionary, p2_se
 func run_to_battle_end(context: Dictionary, max_turns: int = 64) -> Dictionary:
 	return _drive_support.run_to_battle_end(_context_support, context, max_turns)
 
+func run_to_battle_end_via_submit(context: Dictionary, max_turns: int = 64) -> Dictionary:
+	return _drive_support.run_to_battle_end_via_submit(_context_support, context, max_turns)
+
 func build_view_model(context: Dictionary) -> Dictionary:
 	return _drive_support.build_view_model(context)
 
