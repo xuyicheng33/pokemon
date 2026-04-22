@@ -39,9 +39,8 @@
 
 ## 3. 接线与正式交付面
 
-- [ ] `SampleBattleFactory` 增加该角色相关构局入口，避免 suite 内手写拼装
-- [ ] `SampleBattleFactory` 公开 builder 名称保持稳定，内部只允许走统一 helper，不再为单角色保留私有手写构局
-- [ ] `SampleBattleFactory` 正式失败路径统一走结果式接口；manager smoke、pair smoke 与 formal demo replay 默认读取 `content_snapshot_paths_for_setup_result(battle_setup)`，只有全量正式快照 / baseline demo 才走 `content_snapshot_paths_result()`
+- [ ] `SampleBattleFactory` 已有统一动态入口 `build_formal_character_setup_result(character_id)`，不需要为新角色单独增加构局方法
+- [ ] manager smoke、pair smoke 与 formal demo replay 默认读取 `content_snapshot_paths_for_setup_result(battle_setup)`，只有全量正式快照 / baseline demo 才走 `content_snapshot_paths_result()`
 - [ ] 更新 `config/formal_character_sources/<character>.json` 对应角色 source descriptor
 - [ ] 若角色复用共享扩展、补新 matchup 或新增共享能力，同时更新 `config/formal_character_sources/00_shared_registry.json`
 - [ ] 通过唯一同步入口重新生成并提交产物：`bash tests/sync_formal_registry.sh`

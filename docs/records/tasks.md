@@ -13,6 +13,23 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：扩角前文档口径修正与脚手架增强（2026-04-22）
+
+- 状态：已完成
+- 目标：统一文档口径冲突，增强脚手架覆盖 pair interaction 层，降低下一个正式角色接入的手工成本
+- 范围：
+  1. 修正 `decisions.md` pair 覆盖模型描述：从"允许同 pair 多 case"改为"每个无序 pair 恰好 1 条 spec"，与 gate 和 checklist 保持一致
+  2. 修正 `formal_character_delivery_checklist.md` SampleBattleFactory 条目：明确已有动态入口 `build_formal_character_setup_result(character_id)`，不需要手动加构局方法
+  3. 修正 `project_folder_structure.md`：删掉不存在的 `assets/` 目录及相关约束
+  4. 增强 `scripts/new_formal_character.py`：
+     - 新增 `collect_existing_characters()` 自动发现已有正式角色
+     - `generate_source_descriptor()` 自动生成 `owned_pair_interaction_specs` 占位（含所有已有角色）
+     - 新增 `generate_interaction_cases()` 生成 pair interaction runner 壳子
+     - main 流程扩充到 8 步，第 7 步生成 interaction cases 文件，第 8 步打印 scenario_registry.gd 注册提示
+     - checklist 输出补充 pair interaction 层的完整操作说明
+- 验收标准：文档口径统一，脚手架幂等无破坏，现有闸门不受影响
+- 验证结果：待闸门验证
+
 ## 最近完成：提取 TurnExpiryDecrementHelper 消除 turn 阶段重复代码（2026-04-22）
 
 - 状态：已完成

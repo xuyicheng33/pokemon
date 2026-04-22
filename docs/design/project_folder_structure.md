@@ -53,7 +53,6 @@
     fixtures/
     helpers/
     replay_cases/
-  assets/
 ```
 
 ## 2. 目录职责
@@ -89,8 +88,6 @@
 |`tests/helpers`|预留的测试辅助脚本目录|
 |`tests/replay_cases`|预留的 deterministic 回放用例说明目录|
 |`tests/sync_formal_registry.sh`|formal source descriptor -> committed manifest/catalog 的唯一人工同步入口|
-|`assets/`|美术、音频、UI 静态资源|
-
 补充治理入口：
 
 - `docs/design/current_development_workflow.md`：当前研发工作流、Sandbox 日常路径、测试入口与文档更新顺序。
@@ -109,8 +106,7 @@
 
 ## 4. 约束
 
-1. `content/` 与 `assets/` 语义必须分离，战斗定义资源不允许继续堆到 `assets/`。
-2. `battle_core` 不依赖 `adapters`、`composition`、`scenes`。
-3. `composition` 可以依赖 `battle_core` 与 `shared`，但不能反向被它们依赖。
-4. `shared` 只放不依赖 `battle_core` 的共享代码；允许承载 formal registry / contract 这类跨子域治理入口，但不能反向依赖核心实现。
-5. `tests/` 可以依赖全部公开接口，但不能成为正式运行时依赖。
+1. `battle_core` 不依赖 `adapters`、`composition`、`scenes`。
+2. `composition` 可以依赖 `battle_core` 与 `shared`，但不能反向被它们依赖。
+3. `shared` 只放不依赖 `battle_core` 的共享代码；允许承载 formal registry / contract 这类跨子域治理入口，但不能反向依赖核心实现。
+4. `tests/` 可以依赖全部公开接口，但不能成为正式运行时依赖。

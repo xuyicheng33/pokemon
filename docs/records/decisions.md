@@ -133,7 +133,7 @@
 
 - `docs/records/` 以后只承担活跃记录、决策入口与 archive 索引，不再继续充当现行规则的机器约束层。
 - formal 共享字段定义只保留一份真相：`config/formal_registry_contracts.json`、`src/shared/formal_registry_contracts.gd`。
-- formal pair 覆盖模型继续固定为：每个无序正式角色对至少 1 条 interaction case，允许同 pair 多 case。
+- formal pair 覆盖模型继续固定为：每个无序正式角色对恰好 1 条 interaction spec（1 个 `scenario_key`），派生出 2 条 directed case。gate 与 checklist 不再允许同 pair 多 case。
 - Kashimo / Sukuna 的 manager 黑盒继续视为正式交付面的一部分；后续扩角不得跳过 manager 级黑盒。
 
 ### Registry 单源与 validator 硬约束
