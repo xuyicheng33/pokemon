@@ -19,6 +19,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = REPO_ROOT / "config" / "formal_character_sources"
 DRAFTS_DIR = REPO_ROOT / "scripts" / "drafts"
+SAFE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9]*(?:_[a-z0-9]+)*$")
 
 
 # ---------------------------------------------------------------------------
@@ -28,6 +29,16 @@ DRAFTS_DIR = REPO_ROOT / "scripts" / "drafts"
 def to_pascal_case(snake: str) -> str:
     """Convert 'gojo_satoru' to 'GojoSatoru'."""
     return "".join(word.capitalize() for word in snake.split("_"))
+
+
+def validate_safe_id(value: str, label: str) -> None:
+    if SAFE_ID_PATTERN.fullmatch(value):
+        return
+    print(
+        f"ERROR: {label} must be lower snake_case and start with a letter: {value}",
+        file=sys.stderr,
+    )
+    sys.exit(1)
 
 
 def next_source_index() -> int:
@@ -54,10 +65,11 @@ def _iter_source_descriptors():
                 continue
             try:
                 data = json.loads(f.read_text(encoding="utf-8"))
-                if data.get("descriptor_kind") == "formal_character_source":
-                    yield f, data
-            except (json.JSONDecodeError, OSError):
-                continue
+            except (json.JSONDecodeError, OSError) as exc:
+                print(f"ERROR: failed to read source descriptor {f.relative_to(REPO_ROOT)}: {exc}", file=sys.stderr)
+                sys.exit(1)
+            if data.get("descriptor_kind") == "formal_character_source":
+                yield f, data
 
 
 def find_existing_source_descriptor(char_id: str) -> Path | None:
@@ -128,7 +140,7 @@ def generate_source_descriptor(
                 "sample_tidekit",
                 "sample_mossaur"
             ],
-            "owned_pair_interaction_specs": _build_interaction_spec_placeholders(char_id),
+            "owned_pair_interaction_specs": _build_interaction_spec_placeholders(pair_token),
             "content_roots": [
                 f"content/units/{pair_token}",
                 f"content/skills/{pair_token}",
@@ -155,7 +167,7 @@ def generate_source_descriptor(
     return filename, content
 
 
-def _build_interaction_spec_placeholders(char_id: str) -> list[dict]:
+def _build_interaction_spec_placeholders(pair_token: str) -> list[dict]:
     """Build owned_pair_interaction_specs placeholders for all existing characters."""
     existing = collect_existing_characters()
     specs: list[dict] = []
@@ -163,7 +175,7 @@ def _build_interaction_spec_placeholders(char_id: str) -> list[dict]:
     for i, entry in enumerate(existing):
         specs.append({
             "other_character_id": entry["character_id"],
-            "scenario_key": f"FILL_IN_{entry['pair_token']}_{char_id.split('_')[0]}_scenario",
+            "scenario_key": f"FILL_IN_{entry['pair_token']}_{pair_token}_scenario",
             "owner_as_initiator_battle_seed": base_seed + i * 2,
             "owner_as_responder_battle_seed": base_seed + i * 2 + 1,
         })
@@ -183,6 +195,7 @@ func unit_contract() -> Dictionary:
 \t\t"snapshot_label": "{char_id}",
 \t\t"unit_id": "{char_id}",
 \t\t"fields": {{
+\t\t\t"draft_marker": "FORMAL_DRAFT_BASELINE_REPLACE_BEFORE_LIVE",
 \t\t\t"display_name": "{display_name}",
 \t\t\t"base_hp": 0,
 \t\t\t"base_attack": 0,
@@ -247,10 +260,10 @@ func _validate_unit_passive(content_index: BattleContentIndex, errors: Array) ->
 \t)
 
 func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) -> void:
-\tpass
+\terrors.append("FORMAL_DRAFT_VALIDATOR_REPLACE_BEFORE_LIVE: {char_id} skill/effect assertions are incomplete")
 
 func _validate_ultimate_domain(content_index: BattleContentIndex, errors: Array) -> void:
-\tpass
+\terrors.append("FORMAL_DRAFT_VALIDATOR_REPLACE_BEFORE_LIVE: {char_id} ultimate/domain assertions are incomplete")
 '''
 
 
@@ -430,12 +443,11 @@ def write_file(path: Path, content: str) -> None:
 
 
 def ensure_dir(path: Path) -> None:
-    """Create directory with a .gitkeep if it doesn't exist."""
+    """Create directory if it doesn't exist."""
     if path.exists():
         print(f"  SKIP (exists): {path.relative_to(REPO_ROOT)}/")
         return
     path.mkdir(parents=True, exist_ok=True)
-    (path / ".gitkeep").touch()
     print(f"  CREATE: {path.relative_to(REPO_ROOT)}/")
 
 
@@ -461,6 +473,9 @@ def main() -> None:
     if not char_id or not display_name:
         print("ERROR: character_id and display_name are required.", file=sys.stderr)
         sys.exit(1)
+    validate_safe_id(char_id, "character_id")
+    validate_safe_id(pair_token, "pair_token")
+    validate_safe_id(unit_def_id, "unit_definition_id")
 
     # --- pair_token collision check ---
     existing_owner = find_pair_token_owner(pair_token)
@@ -522,20 +537,20 @@ def main() -> None:
         ensure_dir(REPO_ROOT / "content" / sub / pair_token)
 
     # 3. Baseline
-    print("[3/8] Baseline script")
-    baseline_dir = REPO_ROOT / "src" / "shared" / "formal_character_baselines" / char_id
+    print("[3/8] Baseline script (draft)")
+    baseline_dir = DRAFTS_DIR / "src" / "shared" / "formal_character_baselines" / char_id
     write_file(baseline_dir / f"{char_id}_formal_character_baseline.gd",
                generate_baseline(char_id, display_name))
 
     # 4. Validator
-    print("[4/8] Validator script")
-    validator_dir = REPO_ROOT / "src" / "battle_core" / "content" / "formal_validators" / pair_token
+    print("[4/8] Validator script (draft)")
+    validator_dir = DRAFTS_DIR / "src" / "battle_core" / "content" / "formal_validators" / pair_token
     write_file(validator_dir / f"content_snapshot_formal_{pair_token}_validator.gd",
                generate_validator(char_id, pair_token))
 
     # 5. Test suites
-    print("[5/8] Test suite shells")
-    suites_dir = REPO_ROOT / "test" / "suites"
+    print("[5/8] Test suite shells (draft)")
+    suites_dir = DRAFTS_DIR / "test" / "suites"
     write_file(suites_dir / f"{pair_token}_snapshot_suite.gd",
                generate_snapshot_suite(char_id, pair_token, display_name))
     write_file(suites_dir / f"{pair_token}_suite.gd",
@@ -544,17 +559,19 @@ def main() -> None:
                generate_manager_smoke_suite(char_id, pair_token))
 
     # 6. Design doc placeholders
-    print("[6/8] Design doc placeholders")
-    write_file(REPO_ROOT / "docs" / "design" / f"{char_id}_design.md",
+    print("[6/8] Design doc placeholders (draft)")
+    write_file(DRAFTS_DIR / "docs" / "design" / f"{char_id}_design.md",
                f"# {display_name} 设计稿\n\n（待补充）\n")
-    write_file(REPO_ROOT / "docs" / "design" / f"{char_id}_adjustments.md",
+    write_file(DRAFTS_DIR / "docs" / "design" / f"{char_id}_adjustments.md",
                f"# {display_name} 调整记录\n\n（待补充）\n")
 
     # 7. Pair interaction cases shell
     existing_characters = collect_existing_characters()
+    interaction_location = ""
     if existing_characters:
-        print("[7/8] Pair interaction cases shell")
-        interaction_dir = REPO_ROOT / "tests" / "support" / "formal_pair_interaction"
+        print("[7/8] Pair interaction cases shell (draft)")
+        interaction_dir = DRAFTS_DIR / "formal_pair_interaction"
+        interaction_location = str((interaction_dir / f"{pair_token}_cases.gd").relative_to(REPO_ROOT))
         write_file(interaction_dir / f"{pair_token}_cases.gd",
                    generate_interaction_cases(char_id, pair_token))
     else:
@@ -577,13 +594,13 @@ Next steps:
      - content/fields/{pair_token}/ (if character has domain/field)
 
   2. Fill in baseline data values:
-     - src/shared/formal_character_baselines/{char_id}/{char_id}_formal_character_baseline.gd
+     - scripts/drafts/src/shared/formal_character_baselines/{char_id}/{char_id}_formal_character_baseline.gd
 
   3. Fill in validator assertions:
-     - src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd
+     - scripts/drafts/src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd
 
   4. Fill in manager smoke suite:
-     - test/suites/{pair_token}_manager_smoke_suite.gd
+     - scripts/drafts/test/suites/{pair_token}_manager_smoke_suite.gd
      - Update battle_seed, skill assertions, etc.
 
   5. Complete the source descriptor (currently at {sd_location}):
@@ -602,16 +619,23 @@ Next steps:
   7. Complete pair interaction layer:
      - Fill in scenario_key values in owned_pair_interaction_specs (replace FILL_IN_* placeholders)
      - Fill in battle_seed values (must be positive integers, unique per directed case)
-     - Implement runner methods in tests/support/formal_pair_interaction/{pair_token}_cases.gd
-     - scenario_registry.gd now auto-discovers *_cases.gd files; no manual registry edit is needed
+     - Implement runner methods in {interaction_location if interaction_location else "the generated pair case draft"}
+     - Move the finished runner to tests/support/formal_pair_interaction/{pair_token}_cases.gd only when the source descriptor moves into live config
+     - scenario_registry.gd auto-discovers live *_cases.gd files; draft files are intentionally not discovered
 
-  8. Move source descriptor into live config:
+  8. Move completed draft files into live paths:
+     - scripts/drafts/src/shared/formal_character_baselines/{char_id}/ -> src/shared/formal_character_baselines/{char_id}/
+     - scripts/drafts/src/battle_core/content/formal_validators/{pair_token}/ -> src/battle_core/content/formal_validators/{pair_token}/
+     - scripts/drafts/test/suites/{pair_token}_*.gd -> test/suites/
+     - scripts/drafts/docs/design/{char_id}_*.md -> docs/design/
+
+  9. Move source descriptor into live config:
      mv {sd_location} config/formal_character_sources/{sd_filename}
 
-  9. Sync formal registry:
+  10. Sync formal registry:
      bash tests/sync_formal_registry.sh
 
-  10. Run validation:
+  11. Run validation:
       bash tests/run_with_gate.sh
 """)
 
