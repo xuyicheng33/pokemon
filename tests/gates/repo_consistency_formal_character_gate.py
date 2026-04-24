@@ -38,6 +38,7 @@ PAIR_INTERACTION_SUITE_PATH = "test/suites/formal_character_pair_smoke/interacti
 PAIR_INTERACTION_SUPPORT_PATH = "test/suites/formal_character_pair_smoke/interaction_support.gd"
 PAIR_INTERACTION_SCENARIO_REGISTRY_PATH = "tests/support/formal_pair_interaction/scenario_registry.gd"
 PAIR_INTERACTION_SCENARIO_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_pair_interaction_runner_keys.gd"
+PAIR_INTERACTION_CASE_BUILDER_PATH = "src/shared/formal_character_manifest/formal_character_pair_interaction_case_builder.gd"
 FORMAL_ACCESS_SCRIPT_PATH = "src/composition/sample_battle_factory_formal_access.gd"
 RUNTIME_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_formal_access.gd"
 DELIVERY_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_formal_access.gd"
@@ -107,6 +108,19 @@ def validate_no_incomplete_live_validators(ctx: GateContext, characters: list) -
         if re.search(r"(?m)^\s*pass\s*$", text):
             ctx.failures.append(f"{validator_script_path} contains pass in live validator for {character_id}")
 
+
+def validate_pair_interaction_ordering_contract(ctx: GateContext) -> None:
+    builder_text = ctx.read_text(PAIR_INTERACTION_CASE_BUILDER_PATH)
+    required_needles = [
+        "expected_other_character_ids",
+        "range(owner_index)",
+        "must only target earlier manifest characters",
+        "missing owned_pair_interaction_specs coverage for earlier characters",
+    ]
+    for needle in required_needles:
+        if needle not in builder_text:
+            ctx.failures.append(f"{PAIR_INTERACTION_CASE_BUILDER_PATH} must keep manifest-order pair ownership contract: {needle}")
+
 manifest = ctx.load_json_object(MANIFEST_PATH, "formal character manifest")
 capability_catalog = ctx.load_json_object(CAPABILITY_CATALOG_PATH, "formal character capability catalog")
 formal_registry_contracts = ctx.load_json_object(FORMAL_REGISTRY_CONTRACTS_PATH, "formal registry contracts")
@@ -127,6 +141,7 @@ validate_generated_registry_views(
 validate_no_live_scaffold_placeholders(ctx)
 characters = manifest.get("characters", [])
 validate_no_incomplete_live_validators(ctx, characters if isinstance(characters, list) else [])
+validate_pair_interaction_ordering_contract(ctx)
 matchups = manifest.get("matchups", {})
 character_runtime_contract_bucket = formal_registry_contracts.get("manifest_character_runtime", {})
 character_delivery_contract_bucket = formal_registry_contracts.get("manifest_character_delivery", {})

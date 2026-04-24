@@ -167,6 +167,7 @@
 
 - formal pair 输入继续固定挂在 `characters[*]` 的 runtime 条目：`pair_token`、`baseline_script_path`、`owned_pair_interaction_specs`。
 - `pair_token` 继续作为 formal pair 身份字段；`baseline_script_path` 继续作为 formal baseline 注册字段；`owned_pair_interaction_specs` 继续是唯一手写 pair interaction 输入。
+- manifest 角色顺序继续作为 pair interaction ownership 的稳定输入：新正式角色默认追加到末尾，只能声明与更早角色的 `owned_pair_interaction_specs`；重排既有正式角色属于规范变更，必须同步迁移 specs 并记录决策。
 - manifest 不再恢复顶层 pair bucket；pair 覆盖与 directed case 继续从 manifest 角色条目派生。
 
 ## 4. 外层结果式与回放（2026-04-18）

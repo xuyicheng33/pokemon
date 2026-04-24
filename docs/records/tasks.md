@@ -13,6 +13,18 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：Pair interaction 顺序归属合同显式化（2026-04-24）
+
+- 状态：已完成
+- 目标：把 manifest 顺序承担 pair interaction ownership 的隐含规则写入正式文档，并用 gate 防止实现/文档漂移
+- 范围：
+  1. `formal_character_delivery_checklist.md` 明确新角色默认追加到 manifest 末尾，不能为排序美观重排既有正式角色
+  2. `battle_content_schema.md` 与 `decisions.md` 同步记录 manifest 角色顺序是 pair interaction ownership 的稳定输入
+  3. repo consistency gate 同时锁文档措辞与 `formal_character_pair_interaction_case_builder.gd` 的 earlier-character 约束
+- 验收标准：
+  - 后续扩角时不会误把 manifest 顺序当纯展示排序
+  - gate 能发现 pair ownership 实现或规范文字被移除
+
 ## 最近完成：Sandbox 推荐入口去角色硬编码（2026-04-24）
 
 - 状态：已完成
