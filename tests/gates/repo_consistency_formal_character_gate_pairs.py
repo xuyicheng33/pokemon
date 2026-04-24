@@ -17,6 +17,43 @@ def _matchup_test_only(ctx, matchup_catalog_path: str, matchup_id: str, raw_matc
     return test_only
 
 
+def _runner_method_names(scenario_key: str) -> set[str]:
+    method_names = {f"run_{scenario_key}"}
+    parts = scenario_key.split("_", 2)
+    if len(parts) == 3:
+        method_names.add(f"run_{parts[0]}_vs_{parts[1]}_{parts[2]}")
+    return method_names
+
+
+def _implemented_runner_methods(ctx, scenario_registry_path: str) -> set[str]:
+    registry_text = ctx.read_text(scenario_registry_path)
+    for stale_needle in [
+        "const GojoCasesScript",
+        "const KashimoCasesScript",
+        "const ObitoCasesScript",
+        '"gojo_sukuna_domain_cleanup": Callable',
+    ]:
+        if stale_needle in registry_text:
+            ctx.failures.append(
+                f"{scenario_registry_path} must auto-discover pair interaction runners instead of keeping manual mapping: {stale_needle}"
+            )
+
+    support_dir = ctx.root / "tests/support/formal_pair_interaction"
+    implemented: set[str] = set()
+    for path in sorted(support_dir.glob("*_cases.gd")):
+        rel_path = str(path.relative_to(ctx.root))
+        text = path.read_text(encoding="utf-8")
+        for forbidden in ["TODO:", "interaction placeholder", "pass_result(\""]:
+            if forbidden in text:
+                ctx.failures.append(f"{rel_path} must not keep placeholder interaction runner code: {forbidden}")
+        for match in re.finditer(r"func\s+run_([A-Za-z0-9_]+)\s*\(", text):
+            method_name = f"run_{match.group(1)}"
+            if method_name in implemented:
+                ctx.failures.append(f"duplicated pair interaction runner method: {method_name}")
+            implemented.add(method_name)
+    return implemented
+
+
 def validate_pair_catalog(
     ctx,
     *,
@@ -178,8 +215,7 @@ def validate_pair_catalog(
     actual_interaction_pairs: set[str] = set()
     actual_directional_cases: set[tuple[str, str, str, str]] = set()
     actual_test_names: set[str] = set()
-    scenario_registry_text = ctx.read_text(scenario_registry_path)
-    registered_scenario_keys = set(re.findall(r'"([^"]+)": Callable', scenario_registry_text))
+    implemented_runner_methods = _implemented_runner_methods(ctx, scenario_registry_path)
     actual_scenario_keys: set[str] = set()
     scenario_case_counts: dict[str, int] = {}
     actual_scenario_keys_by_pair: dict[str, str] = {}
@@ -202,8 +238,8 @@ def validate_pair_catalog(
         else:
             actual_scenario_keys.add(scenario_key)
             scenario_case_counts[scenario_key] = scenario_case_counts.get(scenario_key, 0) + 1
-            if scenario_key not in registered_scenario_keys:
-                ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] scenario_key not registered in {scenario_registry_path}: {scenario_key}")
+            if not (implemented_runner_methods & _runner_method_names(scenario_key)):
+                ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] scenario_key has no runner in {scenario_registry_path}: {scenario_key}")
         if matchup_id not in derived_matchups:
             ctx.failures.append(f"{matchup_catalog_path} pair_interaction_cases[{case_index}] unknown matchup_id: {matchup_id}")
         if not isinstance(character_ids, list) or len(character_ids) != 2:
@@ -246,15 +282,23 @@ def validate_pair_catalog(
             )
             continue
         actual_directional_cases.add(case_signature)
-    missing_registered_scenarios = sorted(registered_scenario_keys - actual_scenario_keys)
-    if missing_registered_scenarios:
+    unreferenced_runner_methods = sorted(
+        method_name
+        for method_name in implemented_runner_methods
+        if not any(method_name in _runner_method_names(scenario_key) for scenario_key in actual_scenario_keys)
+    )
+    if unreferenced_runner_methods:
         ctx.failures.append(
-            f"{scenario_registry_path} contains unreferenced scenario registrations: {', '.join(missing_registered_scenarios)}"
+            f"{scenario_registry_path} contains unreferenced pair interaction runner methods: {', '.join(unreferenced_runner_methods)}"
         )
-    extra_registered_scenarios = sorted(actual_scenario_keys - registered_scenario_keys)
-    if extra_registered_scenarios:
+    missing_runner_scenarios = sorted(
+        scenario_key
+        for scenario_key in actual_scenario_keys
+        if not (implemented_runner_methods & _runner_method_names(scenario_key))
+    )
+    if missing_runner_scenarios:
         ctx.failures.append(
-            f"{matchup_catalog_path} contains unregistered interaction scenario_keys: {', '.join(extra_registered_scenarios)}"
+            f"{matchup_catalog_path} contains interaction scenario_keys without runner methods: {', '.join(missing_runner_scenarios)}"
         )
     for scenario_key, case_count in sorted(scenario_case_counts.items()):
         if case_count != 2:

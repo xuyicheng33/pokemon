@@ -553,12 +553,12 @@ def main() -> None:
     else:
         print("[7/8] Pair interaction cases shell (skipped — no existing characters)")
 
-    # 8. Summary of scenario_registry.gd changes needed
-    print("[8/8] Scenario registry reminder")
+    # 8. Summary of automatic scenario registration
+    print("[8/8] Scenario registry")
     if existing_characters:
-        print("  NOTE: You must manually register scenario_keys in:")
-        print("    tests/support/formal_pair_interaction/scenario_registry.gd")
-        print(f"  Add preload + instance for {pair_token}_cases.gd and register runners.")
+        print("  Scenario runners are auto-discovered from:")
+        print("    tests/support/formal_pair_interaction/*_cases.gd")
+        print("  Implement run_<scenario_key>() methods; do not edit scenario_registry.gd.")
     else:
         print("  (no pair interaction registration needed for the first character)")
 
@@ -601,10 +601,7 @@ Next steps:
      - Fill in scenario_key values in owned_pair_interaction_specs (replace FILL_IN_* placeholders)
      - Fill in battle_seed values (must be positive integers, unique per directed case)
      - Implement runner methods in tests/support/formal_pair_interaction/{pair_token}_cases.gd
-     - Register scenario_keys in tests/support/formal_pair_interaction/scenario_registry.gd:
-       a. Add: const {pascal_token}CasesScript := preload("res://tests/support/formal_pair_interaction/{pair_token}_cases.gd")
-       b. Add: var _{pair_token}_cases = {pascal_token}CasesScript.new()
-       c. Add entries to build_runners() for each scenario_key
+     - scenario_registry.gd auto-discovers run_<scenario_key>() from *_cases.gd files
 
   8. Move source descriptor into live config:
      mv {sd_location} config/formal_character_sources/{sd_filename}

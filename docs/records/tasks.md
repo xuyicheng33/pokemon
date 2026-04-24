@@ -219,3 +219,17 @@
 - 当前总验收入口：
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/run_with_gate.sh`
+
+## 最近完成：formal pair interaction 接入面收窄（2026-04-24）
+
+- 状态：进行中
+- 目标：在接入新正式角色前，减少 pair interaction 中央注册改动，并阻止占位交互用例进入主线
+- 范围：
+  1. `scenario_registry.gd` 从 manifest 派生 scenario_key，并从 `tests/support/formal_pair_interaction/*_cases.gd` 自动发现 runner
+  2. `repo_consistency_formal_character_gate_pairs.py` 禁止回退到手写中央 registry，并禁止 pair interaction case 保留 `TODO` / placeholder runner
+  3. `scripts/new_formal_character.py` 的后续步骤改为提示自动发现 runner，不再要求手改 `scenario_registry.gd`
+  4. 补交 `src/shared/resource_path_helper.gd.uid`，修复当前 repo consistency 阻断项
+- 验证：
+  - `python3 -m py_compile tests/gates/repo_consistency_formal_character_gate_pairs.py scripts/new_formal_character.py`
+  - `bash tests/check_suite_reachability.sh && bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh` 当前受本机 Godot 日志轮转崩溃影响未完成；前置 uid / surface gate 已通过
