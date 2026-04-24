@@ -1,9 +1,11 @@
 extends GdUnitTestSuite
 
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
+const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_factory.gd")
 
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
+var _manifest = FormalCharacterManifestScript.new()
 var _sample_factory = SampleBattleFactoryScript.new()
 
 func after() -> void:
@@ -56,11 +58,10 @@ func test_launch_config_strict_invalid_config_contract() -> void:
 func test_launch_config_visible_matchup_recommended_order_contract() -> void:
 	var visible_matchups: Array = _launch_config_helper.visible_matchup_descriptors(_available_matchups())
 	var visible_ids := _matchup_ids(visible_matchups)
-	assert_int(visible_ids.find("gojo_vs_sample")).is_equal(0)
-	assert_int(visible_ids.find("sukuna_setup")).is_equal(1)
-	assert_int(visible_ids.find("kashimo_vs_sample")).is_equal(2)
-	assert_int(visible_ids.find("obito_vs_sample")).is_equal(3)
-	assert_int(visible_ids.find("sample_default")).is_equal(4)
+	var recommended_ids := _launch_config_helper.recommended_matchup_ids()
+	assert_int(visible_ids.size()).is_greater_equal(recommended_ids.size())
+	for index in range(recommended_ids.size()):
+		assert_str(String(visible_ids[index])).is_equal(String(recommended_ids[index]))
 	for descriptor in visible_matchups:
 		if not (descriptor is Dictionary):
 			continue
@@ -68,16 +69,36 @@ func test_launch_config_visible_matchup_recommended_order_contract() -> void:
 
 func test_launch_config_recommended_matchups_follow_manifest_contract() -> void:
 	var recommended_ids := _launch_config_helper.recommended_matchup_ids()
-	var expected_ids := [
-		"gojo_vs_sample",
-		"sukuna_setup",
-		"kashimo_vs_sample",
-		"obito_vs_sample",
-		"sample_default",
-	]
+	var expected_ids := _expected_recommended_matchup_ids()
 	assert_int(recommended_ids.size()).is_equal(expected_ids.size())
 	for index in range(expected_ids.size()):
 		assert_str(String(recommended_ids[index])).is_equal(String(expected_ids[index]))
+
+func _expected_recommended_matchup_ids() -> Array:
+	var expected_ids: Array = []
+	var seen_ids: Dictionary = {}
+	var entries_result: Dictionary = _manifest.build_runtime_entries_result()
+	assert_bool(bool(entries_result.get("ok", false))).is_true()
+	for raw_entry in entries_result.get("data", []):
+		if not (raw_entry is Dictionary):
+			continue
+		_append_unique_matchup_id(
+			expected_ids,
+			seen_ids,
+			String(raw_entry.get("formal_setup_matchup_id", "")).strip_edges()
+		)
+	_append_unique_matchup_id(
+		expected_ids,
+		seen_ids,
+		BattleSandboxLaunchConfigScript.SAMPLE_DEFAULT_MATCHUP_ID
+	)
+	return expected_ids
+
+func _append_unique_matchup_id(matchup_ids: Array, seen_ids: Dictionary, matchup_id: String) -> void:
+	if matchup_id.is_empty() or seen_ids.has(matchup_id):
+		return
+	seen_ids[matchup_id] = true
+	matchup_ids.append(matchup_id)
 
 func _available_matchups() -> Array:
 	var available_result: Dictionary = _sample_factory.available_matchups_result()
