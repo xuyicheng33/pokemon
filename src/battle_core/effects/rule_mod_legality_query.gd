@@ -66,10 +66,10 @@ func _build_action_legality_match_tokens(action_type: String, skill_id: String) 
 	}
 
 func _is_managed_action_type(action_type: String) -> bool:
-	return ContentSchemaScript.MANAGED_ACTION_TYPES.has(String(action_type))
+	return ContentSchemaScript.managed_action_types().has(String(action_type))
 
 func _is_always_allowed_action_type(action_type: String) -> bool:
-	return ContentSchemaScript.ALWAYS_ALLOWED_ACTION_TYPES.has(String(action_type))
+	return ContentSchemaScript.always_allowed_action_types().has(String(action_type))
 
 func _build_unsupported_action_type_error(action_type: String) -> Dictionary:
 	return {
