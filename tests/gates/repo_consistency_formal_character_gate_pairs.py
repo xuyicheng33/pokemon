@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from repo_consistency_formal_character_manifest_io_support import run_godot_json_export
 
 

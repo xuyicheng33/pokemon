@@ -60,7 +60,7 @@ def validate_service_descriptors(texts: CompositionTexts, facts: DescriptorFacts
         "static func payload_service_descriptors() -> Array:",
         "static func all_service_descriptors() -> Array:",
         "static func service_slots()",
-        "static func script_by_slot(slot_name: String):",
+        "static func script_by_slot(slot_name: String)",
     ]
     missing_service_specs_helpers = [
         helper for helper in required_service_specs_helpers if helper not in texts.service_specs_text
