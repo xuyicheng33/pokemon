@@ -167,11 +167,23 @@ def generate_source_descriptor(
     return filename, content
 
 
+def _scan_max_interaction_seed() -> int:
+    """Scan all source descriptors and return the largest battle_seed found in owned_pair_interaction_specs."""
+    max_seed = 0
+    for _f, data in _iter_source_descriptors():
+        for spec in data.get("character", {}).get("owned_pair_interaction_specs", []):
+            for key in ("owner_as_initiator_battle_seed", "owner_as_responder_battle_seed"):
+                val = spec.get(key, 0)
+                if isinstance(val, int) and val > max_seed:
+                    max_seed = val
+    return max_seed
+
+
 def _build_interaction_spec_placeholders(pair_token: str) -> list[dict]:
     """Build owned_pair_interaction_specs placeholders for all existing characters."""
     existing = collect_existing_characters()
     specs: list[dict] = []
-    base_seed = 3001
+    base_seed = max(3001, _scan_max_interaction_seed() + 2)
     for i, entry in enumerate(existing):
         specs.append({
             "other_character_id": entry["character_id"],

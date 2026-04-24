@@ -15,8 +15,11 @@ const REQUIRED_ARRAY_FIELDS := [
 ]
 
 var catalog_path_override: String = ""
+var _cached_entries_result: Variant = null
 
 func load_entries_result(catalog_path: String = "") -> Dictionary:
+	if _cached_entries_result != null:
+		return _cached_entries_result
 	var resolved_catalog_path := _resolve_catalog_path(catalog_path)
 	var file := FileAccess.open(resolved_catalog_path, FileAccess.READ)
 	if file == null:
@@ -54,7 +57,8 @@ func load_entries_result(catalog_path: String = "") -> Dictionary:
 			return _error_result("FormalCharacterCapabilityCatalog duplicated capability_id: %s" % capability_id)
 		seen_capability_ids[capability_id] = true
 		entries.append(entry.duplicate(true))
-	return ResultEnvelopeHelperScript.ok(entries)
+	_cached_entries_result = ResultEnvelopeHelperScript.ok(entries)
+	return _cached_entries_result
 
 func find_entry_result(capability_id: String, catalog_path: String = "") -> Dictionary:
 	var entries_result := load_entries_result(catalog_path)

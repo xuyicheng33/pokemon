@@ -13,6 +13,17 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：架构审阅第四轮修复（2026-04-25）
+
+- 状态：已完成
+- 目标：修复第四轮架构审阅报告中的全部优先级问题
+- 范围：
+  1. A1+B1: `PairInteractionBuilder` 中 ~125 行 pair interaction case 派生逻辑委托给 `CaseBuilder`，消除与 `FormalCharacterPairInteractionCaseBuilder` 的代码重复；清理 `ManifestViews` 中未使用的 `PairInteractionCaseBuilderScript` import 和 `_pair_interaction_case_builder` 实例
+  2. A2+B3: `FormalCharacterCapabilityCatalog` 加实例级缓存（`_cached_entries_result`），与 `FormalRegistryContracts` 模式一致；`find_entry_result` / `capability_ids_result` 不再每次重新读取 JSON
+  3. A3: `_build_pair_maps_result` 中 `pair_token_by_character.values().has()` O(n) 查重改为 `seen_pair_tokens` Dictionary O(1) 查重
+  4. B2: scaffold `_build_interaction_spec_placeholders` 的 `base_seed` 从硬编码 3001 改为扫描已有 source descriptor 最大 seed + 2，避免连续 scaffold 时 seed 碰撞
+- 验收标准：行为不变，结构更清晰，性能和安全性改善
+
 ## 最近完成：架构审阅第三轮清理（2026-04-24）
 
 - 状态：已完成
