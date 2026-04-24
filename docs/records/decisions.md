@@ -191,6 +191,21 @@
 - `BattleInitializer` 的 `_setup_validator / _phase_service / _state_builder` 继续只做 owner 私有 helper，不升级成 composer service slot；但共享依赖必须通过显式 ports 配置，不再散写 `_sync_*` 赋值。
 - `SampleBattleFactory` 允许合并内部 helper 以减少文件数和跳转成本；前提是：公开 facade 方法与 override 入口保持稳定，任何 owner 文件都不能突破 architecture gate 行数限制，引用到的 helper 路径必须同轮完成迁移。
 
+### Formal Character Validator 拆分阈值
+
+- 单个 formal character validator 文件超过 400 行时，应按验证维度（unit / skill / effect / passive / field）拆分为子 validator。
+- 拆分后各子 validator 由主 validator 组合调用，保持对外接口不变。
+
+### SampleBattleFactory 复杂度边界
+
+- `SampleBattleFactory` 内部 helper 文件总数不超过 5 个。如果新增 matchup 类型导致 helper 膨胀，应引入 factory strategy 模式按 matchup 类型分发，而非继续堆叠 helper 方法。
+
+### test/ 与 tests/ 目录约定
+
+- `test/` 存放运行时测试套件（gdUnit suite 文件、support bridge 等，由 Godot 直接加载）。
+- `tests/` 存放外部验证脚本（gate 脚本、shell runner、Python 检查器等，不由 Godot 加载）。
+- 文档中引用时必须准确使用对应目录名，不得混用。
+
 ## 6. Archive 读取顺序
 
 - 查当前仍生效的结构与交付规则：先看本文件，再看 `docs/design/`
