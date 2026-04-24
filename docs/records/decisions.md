@@ -101,7 +101,7 @@
 3. 测试 support helper 体量 gate 当前固定扩到 `test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd`，落在 `220..250` 行输出预警，> `250` 直接失败。
 4. `BattleState` 查询路径不保留缓存语义；`get_side / get_unit / get_unit_by_public_id` 始终返回当前 `sides / team_units` 真值；`rebuild_indexes()` 已移除。
 5. `COMPOSE_DEPS` 当前固定只描述 composer 注入的外部依赖；owner 私有 helper 不再混入这份声明。
-6. 共享结果式 helper 的适用边界当前扩大到 policy / adapters / facade helper；外层成功/失败结果统一只认 `ok / data / error_code / error_message`。
+6. 共享结果式 helper 的适用边界当前扩大到 policy / adapters / facade helper；外层成功/失败结果统一只认 `ok / data / error_code / error_message`。各文件允许定义 `_ok_result` / `_error_result` 等私有包装器委托到 `ResultEnvelopeHelperScript`，这属于可接受的约定性模式，不视为冗余。
 7. 本地报告目录当前固定只认 `reports/gdunit`；其余历史 `reports/gdunit_*` 目录与 `tmp / .tmp` 都视为可清理噪声。
 
 ### 核心类型标注边界（2026-04-19，更新）
