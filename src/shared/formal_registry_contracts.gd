@@ -10,6 +10,7 @@ const MANIFEST_CHARACTER_DELIVERY_BUCKET := "manifest_character_delivery"
 const OWNED_PAIR_INTERACTION_SPEC_BUCKET := "owned_pair_interaction_spec"
 
 var contract_path_override: String = ""
+var _cached_contracts_result: Variant = null
 
 func required_string_fields_result(bucket_name: String) -> Dictionary:
 	return _field_list_result(bucket_name, "required_string_fields")
@@ -53,6 +54,8 @@ func validate_required_fields_result(bucket_name: String, entry: Dictionary, err
 	return ResultEnvelopeHelperScript.ok(true)
 
 func load_contracts_result() -> Dictionary:
+	if _cached_contracts_result != null:
+		return _cached_contracts_result
 	var resolved_contract_path := _resolve_resource_path(contract_path_override, DEFAULT_CONTRACT_PATH)
 	var file := FileAccess.open(resolved_contract_path, FileAccess.READ)
 	if file == null:
@@ -90,7 +93,8 @@ func load_contracts_result() -> Dictionary:
 		var optional_fields_result := _read_field_list_result(bucket, "optional_string_fields", "%s.optional_string_fields" % bucket_name, false)
 		if not bool(optional_fields_result.get("ok", false)):
 			return optional_fields_result
-	return ResultEnvelopeHelperScript.ok(parsed.duplicate(true))
+	_cached_contracts_result = ResultEnvelopeHelperScript.ok(parsed.duplicate(true))
+	return _cached_contracts_result
 
 func normalize_resource_path(raw_path: String) -> String:
 	return ResourcePathHelperScript.normalize(raw_path)
