@@ -13,7 +13,7 @@ static func has_property(value, property_name: String) -> bool:
 			return true
 	return false
 
-static func read_property(value, property_name: String, default_value = null):
+static func read_property(value, property_name: String, default_value = null) -> Variant:
 	if value == null or property_name.is_empty():
 		return default_value
 	if value is Dictionary:

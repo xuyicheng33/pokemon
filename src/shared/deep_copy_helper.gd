@@ -1,7 +1,7 @@
 extends RefCounted
 class_name DeepCopyHelper
 
-static func copy_value(value):
+static func copy_value(value) -> Variant:
 	if value == null:
 		return null
 	match typeof(value):

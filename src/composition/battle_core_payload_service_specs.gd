@@ -36,7 +36,7 @@ static func _handler_service_descriptor(handler_slot: String) -> Dictionary:
 		"script": _load_handler_script(handler_slot),
 	}
 
-static func _load_handler_script(handler_slot: String):
+static func _load_handler_script(handler_slot: String) -> Variant:
 	var script_path := handler_script_path_for_slot(handler_slot)
 	if script_path.is_empty() or not ResourceLoader.exists(script_path):
 		return null

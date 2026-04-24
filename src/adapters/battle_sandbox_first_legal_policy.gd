@@ -32,7 +32,7 @@ func select_action_result(legal_actions, _public_snapshot: Dictionary = {}, _con
 		return ResultEnvelopeHelperScript.ok({"command_type": CommandTypesScript.WAIT})
 	return _fail("policy found no legal action to submit")
 
-func _read_property(value, property_name: String, default_value = null):
+func _read_property(value, property_name: String, default_value = null) -> Variant:
 	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
 
 func _to_string_array(raw_value) -> Array:

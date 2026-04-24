@@ -35,7 +35,7 @@ static func registered_validator_keys() -> PackedStringArray:
 		validator_keys.append(validator_key)
 	return validator_keys
 
-static func validator_script_for_key(validator_key: String):
+static func validator_script_for_key(validator_key: String) -> Variant:
 	return descriptor_for_key(validator_key).get("script", null)
 
 static func validator_script_path_for_key(validator_key: String) -> String:

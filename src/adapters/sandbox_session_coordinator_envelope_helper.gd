@@ -23,7 +23,7 @@ func unwrap_sample_factory_result(result: Dictionary, label: String) -> Dictiona
 func unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.unwrap_ok(envelope, label)
 
-func read_property(value, property_name: String, default_value = null):
+func read_property(value, property_name: String, default_value = null) -> Variant:
 	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
 
 func error_result(message: String) -> Dictionary:

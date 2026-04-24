@@ -36,7 +36,7 @@ func resolve_power_bonus(skill_definition, actor, target, actor_mp_after_cost: i
 		target_mp_before_cast
 	))
 
-func _resolver_for_source(source: String):
+func _resolver_for_source(source: String) -> Variant:
 	var normalized_source := source.strip_edges()
 	if _resolver_instances.has(normalized_source):
 		return _resolver_instances[normalized_source]

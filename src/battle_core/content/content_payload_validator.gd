@@ -28,7 +28,7 @@ func stale_registered_validator_keys() -> PackedStringArray:
 		stale_keys.append(validator_key)
 	return stale_keys
 
-func validator_for_key(validator_key: String):
+func validator_for_key(validator_key: String) -> Variant:
 	var normalized_key := validator_key.strip_edges()
 	if normalized_key.is_empty():
 		return null

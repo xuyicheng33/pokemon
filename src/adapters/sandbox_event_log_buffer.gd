@@ -110,5 +110,5 @@ func _update_battle_summary(public_snapshot: Dictionary, summary_context: Dictio
 		battle_summary["reason"] = str(battle_result.get("reason", "")).strip_edges()
 		battle_summary["result_type"] = str(battle_result.get("result_type", "")).strip_edges()
 
-func _read_property(value, property_name: String, default_value = null):
+func _read_property(value, property_name: String, default_value = null) -> Variant:
 	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
