@@ -3,14 +3,17 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tests/require_tools.sh"
+source "$ROOT_DIR/tests/godot_headless_env.sh"
 
 cd "$ROOT_DIR"
+
+setup_godot_headless_home
 
 require_command godot "running sandbox smoke matrix"
 require_command python3 "validating sandbox smoke summary"
 
 SMOKE_CATALOG_FILE="$(mktemp)"
-trap 'rm -f "$SMOKE_CATALOG_FILE"' EXIT
+trap 'rm -f "$SMOKE_CATALOG_FILE"; cleanup_godot_headless_home' EXIT
 
 godot --headless --path . --script tests/helpers/export_sandbox_smoke_catalog.gd -- "$SMOKE_CATALOG_FILE"
 

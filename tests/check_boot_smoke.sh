@@ -3,9 +3,12 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tests/require_tools.sh"
+source "$ROOT_DIR/tests/godot_headless_env.sh"
+
+setup_godot_headless_home
 
 LOG_FILE="$(mktemp)"
-trap 'rm -f "$LOG_FILE"' EXIT
+trap 'rm -f "$LOG_FILE"; cleanup_godot_headless_home' EXIT
 
 ENGINE_ERROR_PATTERN='SCRIPT ERROR:|Parse Error:|Compile Error:|Failed to load script|Failed loading resource|Failed to instantiate script|Cannot open file '\''res://'
 ENGINE_WARNING_PATTERN='^WARNING:'

@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from pathlib import Path
 import json
+import os
 import re
 import sys
+import tempfile
 
 
 class GateContext:
@@ -102,3 +105,12 @@ class GateContext:
                 print(failure, file=sys.stderr)
             sys.exit(1)
         print(f"REPO_CONSISTENCY_GATE_PASSED: {label}")
+
+
+@contextmanager
+def isolated_godot_user_env():
+    with tempfile.TemporaryDirectory(prefix="pokemon-godot-home.") as temp_home:
+        env = os.environ.copy()
+        env["HOME"] = temp_home
+        env["GODOT_USER_HOME"] = temp_home
+        yield env

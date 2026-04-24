@@ -3,7 +3,11 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tests/require_tools.sh"
+source "$ROOT_DIR/tests/godot_headless_env.sh"
 cd "$ROOT_DIR"
+
+setup_godot_headless_home
+trap cleanup_godot_headless_home EXIT
 
 REPORT_DIR="${REPORT_DIR:-reports/gdunit}"
 TEST_PATH="${TEST_PATH:-res://test}"
