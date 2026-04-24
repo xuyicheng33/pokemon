@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import re
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -36,6 +37,8 @@ VALIDATOR_BAD_CASE_SUITE_PATH = "test/suites/extension_validation_contract_suite
 PAIR_INTERACTION_SUITE_PATH = "test/suites/formal_character_pair_smoke/interaction_suite.gd"
 PAIR_INTERACTION_SUPPORT_PATH = "test/suites/formal_character_pair_smoke/interaction_support.gd"
 PAIR_INTERACTION_SCENARIO_REGISTRY_PATH = "tests/support/formal_pair_interaction/scenario_registry.gd"
+PAIR_INTERACTION_SCENARIO_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_pair_interaction_runner_keys.gd"
+PAIR_INTERACTION_CASE_BUILDER_PATH = "src/shared/formal_character_manifest/formal_character_pair_interaction_case_builder.gd"
 FORMAL_ACCESS_SCRIPT_PATH = "src/composition/sample_battle_factory_formal_access.gd"
 RUNTIME_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_formal_access.gd"
 DELIVERY_REGISTRY_LOADER_PATH = "src/composition/sample_battle_factory_formal_access.gd"
@@ -62,6 +65,61 @@ SHARED_SUITE_ROOTS = [
     "test/suites/combat_type_definition_suite.gd",
     "test/suites/combat_type_runtime_suite.gd",
 ]
+LIVE_PLACEHOLDER_SCAN_ROOTS = [
+    "config/formal_character_sources",
+    "src/shared/formal_character_baselines",
+    "src/battle_core/content/formal_validators",
+    "test/suites",
+    "tests/support/formal_pair_interaction",
+]
+LIVE_PLACEHOLDER_NEEDLES = [
+    "FILL_IN",
+    "TODO: implement",
+    "interaction placeholder",
+    "FORMAL_DRAFT_",
+    "draft_marker",
+]
+
+
+def validate_no_live_scaffold_placeholders(ctx: GateContext) -> None:
+    for scan_root in LIVE_PLACEHOLDER_SCAN_ROOTS:
+        root_path = ctx.root / scan_root
+        if not root_path.exists():
+            continue
+        for path in sorted(root_path.rglob("*")):
+            if not path.is_file() or path.suffix not in {".gd", ".json"}:
+                continue
+            rel_path = str(path.relative_to(ctx.root))
+            text = path.read_text(encoding="utf-8")
+            for needle in LIVE_PLACEHOLDER_NEEDLES:
+                if needle in text:
+                    ctx.failures.append(f"{rel_path} contains live scaffold placeholder: {needle}")
+
+
+def validate_no_incomplete_live_validators(ctx: GateContext, characters: list) -> None:
+    for entry in characters:
+        if not isinstance(entry, dict):
+            continue
+        character_id = str(entry.get("character_id", "")).strip()
+        validator_script_path = str(entry.get("content_validator_script_path", "")).strip()
+        if not validator_script_path:
+            continue
+        text = ctx.read_text(validator_script_path)
+        if re.search(r"(?m)^\s*pass\s*$", text):
+            ctx.failures.append(f"{validator_script_path} contains pass in live validator for {character_id}")
+
+
+def validate_pair_interaction_ordering_contract(ctx: GateContext) -> None:
+    builder_text = ctx.read_text(PAIR_INTERACTION_CASE_BUILDER_PATH)
+    required_needles = [
+        "expected_other_character_ids",
+        "range(owner_index)",
+        "must only target earlier manifest characters",
+        "missing owned_pair_interaction_specs coverage for earlier characters",
+    ]
+    for needle in required_needles:
+        if needle not in builder_text:
+            ctx.failures.append(f"{PAIR_INTERACTION_CASE_BUILDER_PATH} must keep manifest-order pair ownership contract: {needle}")
 
 manifest = ctx.load_json_object(MANIFEST_PATH, "formal character manifest")
 capability_catalog = ctx.load_json_object(CAPABILITY_CATALOG_PATH, "formal character capability catalog")
@@ -80,7 +138,10 @@ validate_generated_registry_views(
     capability_catalog_path=CAPABILITY_CATALOG_PATH,
     source_dir=FORMAL_CHARACTER_SOURCE_DIR,
 )
+validate_no_live_scaffold_placeholders(ctx)
 characters = manifest.get("characters", [])
+validate_no_incomplete_live_validators(ctx, characters if isinstance(characters, list) else [])
+validate_pair_interaction_ordering_contract(ctx)
 matchups = manifest.get("matchups", {})
 character_runtime_contract_bucket = formal_registry_contracts.get("manifest_character_runtime", {})
 character_delivery_contract_bucket = formal_registry_contracts.get("manifest_character_delivery", {})
@@ -273,6 +334,7 @@ validate_pair_catalog(
     matchup_catalog_path=MANIFEST_PATH,
     delivery_registry_path=MANIFEST_PATH,
     scenario_registry_path=PAIR_INTERACTION_SCENARIO_REGISTRY_PATH,
+    scenario_registry_export_script_path=PAIR_INTERACTION_SCENARIO_EXPORT_SCRIPT_PATH,
 )
 
 ctx.finish("formal character manifest, pair coverage, and anti-regression guards are aligned")

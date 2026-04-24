@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import re
+from repo_consistency_formal_character_manifest_io_support import run_godot_json_export
 
 
 def _unordered_pair_key(left_character_id: str, right_character_id: str) -> str:
@@ -66,6 +66,7 @@ def validate_pair_catalog(
     matchup_catalog_path: str,
     delivery_registry_path: str,
     scenario_registry_path: str,
+    scenario_registry_export_script_path: str,
 ) -> None:
     surface_skill_by_character = {
         str(entry.get("character_id", "")).strip(): str(entry.get("surface_smoke_skill_id", "")).strip()

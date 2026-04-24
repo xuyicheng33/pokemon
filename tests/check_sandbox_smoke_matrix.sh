@@ -3,11 +3,138 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tests/require_tools.sh"
+source "$ROOT_DIR/tests/godot_headless_env.sh"
 
 cd "$ROOT_DIR"
 
+setup_godot_headless_home
+
 require_command godot "running sandbox smoke matrix"
 require_command python3 "validating sandbox smoke summary"
+
+SMOKE_CATALOG_FILE="$(mktemp)"
+trap 'rm -f "$SMOKE_CATALOG_FILE"; cleanup_godot_headless_home' EXIT
+
+godot --headless --path . --script tests/helpers/export_sandbox_smoke_catalog.gd -- "$SMOKE_CATALOG_FILE"
+
+DEFAULT_MATCHUP_ID="$(python3 - "$SMOKE_CATALOG_FILE" <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+print(str(payload.get("default_matchup_id", "")).strip())
+PY
+)"
+
+if [[ -z "$DEFAULT_MATCHUP_ID" ]]; then
+  echo "SANDBOX_SMOKE_FAILED: missing default_matchup_id from sandbox smoke catalog" >&2
+  exit 1
+fi
+
+VISIBLE_MATCHUP_IDS=()
+while IFS= read -r matchup_id; do
+  if [[ -n "$matchup_id" ]]; then
+    VISIBLE_MATCHUP_IDS+=("$matchup_id")
+  fi
+done < <(python3 - "$SMOKE_CATALOG_FILE" <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+for raw_matchup_id in payload.get("visible_matchup_ids", []):
+    matchup_id = str(raw_matchup_id).strip()
+    if matchup_id:
+        print(matchup_id)
+PY
+)
+
+if [[ ${#VISIBLE_MATCHUP_IDS[@]} -eq 0 ]]; then
+  echo "SANDBOX_SMOKE_FAILED: sandbox smoke catalog exported no visible_matchup_ids" >&2
+  exit 1
+fi
+
+RECOMMENDED_MATCHUP_IDS=()
+while IFS= read -r matchup_id; do
+  if [[ -n "$matchup_id" ]]; then
+    RECOMMENDED_MATCHUP_IDS+=("$matchup_id")
+  fi
+done < <(python3 - "$SMOKE_CATALOG_FILE" <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+for raw_matchup_id in payload.get("recommended_matchup_ids", []):
+    matchup_id = str(raw_matchup_id).strip()
+    if matchup_id:
+        print(matchup_id)
+PY
+)
+
+if [[ ${#RECOMMENDED_MATCHUP_IDS[@]} -eq 0 ]]; then
+  echo "SANDBOX_SMOKE_FAILED: sandbox smoke catalog exported no recommended_matchup_ids" >&2
+  exit 1
+fi
+
+SANDBOX_SMOKE_SCOPE="${SANDBOX_SMOKE_SCOPE:-quick}"
+if [[ "$SANDBOX_SMOKE_SCOPE" != "quick" && "$SANDBOX_SMOKE_SCOPE" != "full" ]]; then
+  echo "SANDBOX_SMOKE_FAILED: SANDBOX_SMOKE_SCOPE must be quick or full: $SANDBOX_SMOKE_SCOPE" >&2
+  exit 1
+fi
+
+SMOKE_MATCHUP_IDS=()
+if [[ "$SANDBOX_SMOKE_SCOPE" == "full" ]]; then
+  SMOKE_MATCHUP_IDS=("${VISIBLE_MATCHUP_IDS[@]}")
+else
+  RECOMMENDED_MATCHUP_LOOKUP=" ${RECOMMENDED_MATCHUP_IDS[*]} "
+  for matchup_id in "${VISIBLE_MATCHUP_IDS[@]}"; do
+    if [[ "$matchup_id" == "$DEFAULT_MATCHUP_ID" || "$RECOMMENDED_MATCHUP_LOOKUP" == *" $matchup_id "* || "$matchup_id" == *_vs_sample ]]; then
+      SMOKE_MATCHUP_IDS+=("$matchup_id")
+    fi
+  done
+fi
+
+if [[ ${#SMOKE_MATCHUP_IDS[@]} -eq 0 ]]; then
+  echo "SANDBOX_SMOKE_FAILED: sandbox smoke scope selected no matchups: $SANDBOX_SMOKE_SCOPE" >&2
+  exit 1
+fi
+
+DEMO_PROFILE_ROWS=()
+while IFS= read -r demo_row; do
+  if [[ -n "$demo_row" ]]; then
+    DEMO_PROFILE_ROWS+=("$demo_row")
+  fi
+done < <(python3 - "$SMOKE_CATALOG_FILE" <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+for raw_profile in payload.get("demo_profiles", []):
+    if not isinstance(raw_profile, dict):
+        continue
+    demo_profile_id = str(raw_profile.get("demo_profile_id", "")).strip()
+    matchup_id = str(raw_profile.get("matchup_id", "")).strip()
+    battle_seed = int(raw_profile.get("battle_seed", 0))
+    if demo_profile_id and matchup_id and battle_seed > 0:
+        print(f"{demo_profile_id}\t{matchup_id}\t{battle_seed}")
+PY
+)
+
+if [[ ${#DEMO_PROFILE_ROWS[@]} -eq 0 ]]; then
+  echo "SANDBOX_SMOKE_FAILED: sandbox smoke catalog exported no demo_profiles" >&2
+  exit 1
+fi
 
 run_case() {
   local label="$1"
@@ -185,68 +312,59 @@ PY
   rm -f "$log_file"
 }
 
+for matchup_id in "${SMOKE_MATCHUP_IDS[@]}"; do
+  run_case \
+    "${matchup_id}_manual_policy" \
+    "$matchup_id" \
+    "manual" \
+    "policy" \
+    env MATCHUP_ID="$matchup_id" P1_MODE=manual P2_MODE=policy \
+    godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+done
+
 run_case \
-  "default_manual_policy" \
-  "gojo_vs_sample" \
-  "manual" \
+  "${DEFAULT_MATCHUP_ID}_policy_policy" \
+  "$DEFAULT_MATCHUP_ID" \
   "policy" \
+  "policy" \
+  env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=policy P2_MODE=policy \
   godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
 
 run_case \
-  "kashimo_manual_policy" \
-  "kashimo_vs_sample" \
+  "${DEFAULT_MATCHUP_ID}_manual_manual" \
+  "$DEFAULT_MATCHUP_ID" \
   "manual" \
-  "policy" \
-  env MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy \
+  "manual" \
+  env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=manual \
   godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
 
 run_case \
-  "obito_manual_policy" \
-  "obito_vs_sample" \
+  "${DEFAULT_MATCHUP_ID}_submit_manual_policy" \
+  "$DEFAULT_MATCHUP_ID" \
   "manual" \
   "policy" \
-  env MATCHUP_ID=obito_vs_sample P1_MODE=manual P2_MODE=policy \
-  godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+  env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=policy \
+  godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd
 
 run_case \
-  "sukuna_manual_policy" \
-  "sukuna_setup" \
-  "manual" \
-  "policy" \
-  env MATCHUP_ID=sukuna_setup P1_MODE=manual P2_MODE=policy \
-  godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
-
-run_case \
-  "gojo_policy_policy" \
-  "gojo_vs_sample" \
-  "policy" \
-  "policy" \
-  env P1_MODE=policy P2_MODE=policy \
-  godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
-
-run_case \
-  "gojo_manual_manual" \
-  "gojo_vs_sample" \
+  "${DEFAULT_MATCHUP_ID}_submit_manual_manual" \
+  "$DEFAULT_MATCHUP_ID" \
   "manual" \
   "manual" \
-  env P1_MODE=manual P2_MODE=manual \
-  godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+  env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=manual \
+  godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd
 
-run_demo_case \
-  "legacy_demo_replay" \
-  "legacy" \
-  "sample_default" \
-  "17" \
-  env DEMO_PROFILE=legacy \
-  godot --headless --path . --script tests/helpers/demo_replay_full_run.gd
+for demo_row in "${DEMO_PROFILE_ROWS[@]}"; do
+  IFS=$'\t' read -r demo_profile_id demo_matchup_id demo_battle_seed <<<"$demo_row"
+  run_demo_case \
+    "${demo_profile_id}_demo_replay" \
+    "$demo_profile_id" \
+    "$demo_matchup_id" \
+    "$demo_battle_seed" \
+    env DEMO_PROFILE="$demo_profile_id" \
+    godot --headless --path . --script tests/helpers/demo_replay_full_run.gd
+done
 
-run_demo_case \
-  "kashimo_demo_replay" \
-  "kashimo" \
-  "kashimo_vs_sample" \
-  "9101" \
-  env DEMO_PROFILE=kashimo \
-  godot --headless --path . --script tests/helpers/demo_replay_full_run.gd
-
-echo "SANDBOX_SMOKE_MATRIX_PASSED: manual/manual, manual/policy, policy/policy, and demo replay paths are stable (gojo, kashimo, obito, sukuna)"
-echo "NOTE: all manual paths are currently driven by BattleSandboxFirstLegalPolicy auto-selection; real manual pause/submit via SandboxPolicyDriver is not covered by this matrix"
+echo "SANDBOX_SMOKE_MATRIX_PASSED: ${SANDBOX_SMOKE_SCOPE} manual/policy matchups, default policy/manual-submit paths, and demo replays are stable"
+echo "NOTE: manual smoke now covers BattleSandboxController.submit_action on visible matchups; deterministic action choice still uses BattleSandboxFirstLegalPolicy"
+echo "NOTE: set SANDBOX_SMOKE_SCOPE=full to cover every visible matchup."

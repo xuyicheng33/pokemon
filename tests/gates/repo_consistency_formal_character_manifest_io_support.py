@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from repo_consistency_common import GateContext
+from repo_consistency_common import GateContext, isolated_godot_user_env
 
 
 def contract_field_list(
@@ -154,22 +154,24 @@ def run_godot_json_export(
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as handle:
         output_path = Path(handle.name)
     try:
-        result = subprocess.run(
-            [
-                "godot",
-                "--headless",
-                "--path",
-                ".",
-                "--script",
-                export_script_path,
-                "--",
-                str(output_path),
-                input_path,
-            ],
-            cwd=ctx.root,
-            capture_output=True,
-            text=True,
-        )
+        with isolated_godot_user_env() as env:
+            result = subprocess.run(
+                [
+                    "godot",
+                    "--headless",
+                    "--path",
+                    ".",
+                    "--script",
+                    export_script_path,
+                    "--",
+                    str(output_path),
+                    input_path,
+                ],
+                cwd=ctx.root,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
         if result.returncode != 0:
             stderr = result.stderr.strip()
             stdout = result.stdout.strip()

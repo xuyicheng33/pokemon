@@ -42,7 +42,8 @@
 - [ ] `SampleBattleFactory` 已有统一动态入口 `build_formal_character_setup_result(character_id)`，不需要为新角色单独增加构局方法
 - [ ] manager smoke、pair smoke 与 formal demo replay 默认读取 `content_snapshot_paths_for_setup_result(battle_setup)`，只有全量正式快照 / baseline demo 才走 `content_snapshot_paths_result()`
 - [ ] 更新 `config/formal_character_sources/<character>.json` 对应角色 source descriptor
-- [ ] 若角色复用共享扩展、补新 matchup 或新增共享能力，同时更新 `config/formal_character_sources/00_shared_registry.json`
+- [ ] 若角色复用共享扩展、需要自定义 formal setup matchup、补额外 shared/test_only matchup，或新增共享能力，同时更新 `config/formal_character_sources/00_shared_registry.json`
+- [ ] 若使用脚手架草稿，移动到正式路径前先跑 `bash scripts/check_formal_character_draft_ready.sh`，确认草稿没有占位符、缺文件或 live 目标冲突
 - [ ] 通过唯一同步入口重新生成并提交产物：`bash tests/sync_formal_registry.sh`
 - [ ] `characters[*]` 继续写在同一个 manifest 条目里，但要按两份消费视图检查：
   - [ ] runtime 视图：只服务 runtime loader / validator / setup
@@ -71,15 +72,16 @@
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
 - [ ] 确认 delivery/test 视图会自动并入 `test/suites/extension_validation_contract_suite.gd`
 - [ ] 至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
-- [ ] 角色 source descriptor 补齐 `pair_token / baseline_script_path / owned_pair_interaction_specs`；共享 `matchups` 改在 `00_shared_registry.json`
+- [ ] 角色 source descriptor 补齐 `pair_token / baseline_script_path / owned_pair_interaction_specs`；默认 `<pair_token>_vs_sample` 会从 `pair_initiator_bench_unit_ids` 自动派生，只有额外 shared/custom matchup 才改 `00_shared_registry.json`
 - [ ] 若新增只服务测试或手动 setup 的 matchup（例如 mirror 对局），在对应 `matchups[*]` 上显式标 `test_only: true`
 - [ ] 不再手写 formal-vs-formal 的非 `test_only` directed matchup；这部分只允许由 loader 按 `characters[*] + pair_token + pair_initiator_bench_unit_ids + pair_responder_bench_unit_ids` 自动派生
 - [ ] 确认该角色的 `surface_smoke_skill_id` 能在所有 formal directed matchup 的首发黑盒 smoke 中稳定施放；pair surface 不再手写登记到 catalog
 - [ ] `pair_token` 必须唯一、非空，并保持既有外部 `matchup_id / test_name` 稳定
 - [ ] `baseline_script_path` 必须显式指向 formal baseline 脚本；baseline loader 只允许从 manifest 读取，不再按命名约定猜路径
 - [ ] 若补 interaction 场景，只允许改该角色自己的 `owned_pair_interaction_specs[*]`；字段固定为 `other_character_id / scenario_key / owner_as_initiator_battle_seed / owner_as_responder_battle_seed`
-- [ ] `tests/support/formal_pair_interaction/scenario_registry.gd` 只登记无向 `scenario_key`；scenario runner 执行时读取的是派生好的 directed case context，不再给正反方向各维护一份场景 ID
+- [ ] `tests/support/formal_pair_interaction/scenario_registry.gd` 会自动发现 `*_cases.gd` 并聚合无向 `scenario_key`；scenario runner 执行时读取的是派生好的 directed case context，不再给正反方向各维护一份场景 ID
 - [ ] manifest 第 0 个角色必须留空 `owned_pair_interaction_specs`；第 `i` 个角色必须补齐与 `0..i-1` 所有更早角色的 pair spec，且每个无向 pair 只能声明一次
+- [ ] manifest 角色顺序是 pair interaction ownership 的正式输入：新角色只能追加到末尾；不得为了排序美观重排既有正式角色，除非同步迁移所有 `owned_pair_interaction_specs` 并记录决策
 - [ ] 若要给该角色补 sandbox/demo 演示，统一改 `config/demo_replay_catalog.json`；`BattleSandboxController` 不再写死角色专属命令流
 - [ ] 若希望该角色对局出现在 `BattleSandbox` 的预设列表里，只能走现有 baseline catalog / formal manifest 的 matchup，并保持 `test_only = false`
 

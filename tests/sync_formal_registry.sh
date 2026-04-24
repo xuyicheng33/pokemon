@@ -3,7 +3,10 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tests/require_tools.sh"
+source "$ROOT_DIR/tests/godot_headless_env.sh"
 cd "$ROOT_DIR"
+
+setup_godot_headless_home
 
 require_command godot "exporting formal registry views"
 require_command python3 "splitting exported formal registry views"
@@ -13,7 +16,7 @@ MANIFEST_PATH="${2:-config/formal_character_manifest.json}"
 CAPABILITY_CATALOG_PATH="${3:-config/formal_character_capability_catalog.json}"
 
 TMP_OUTPUT="$(mktemp)"
-trap 'rm -f "$TMP_OUTPUT"' EXIT
+trap 'rm -f "$TMP_OUTPUT"; cleanup_godot_headless_home' EXIT
 
 godot --headless --path . --script tests/helpers/export_formal_registry_views.gd -- "$TMP_OUTPUT" "$SOURCE_DIR"
 

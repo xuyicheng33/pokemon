@@ -62,7 +62,9 @@ formal 交付细节统一看：
 - BattleSandbox launch-config 回归：`TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
 - BattleSandbox boot smoke：`bash tests/check_boot_smoke.sh`
 - BattleSandbox 主路径 smoke：`bash tests/check_sandbox_smoke_matrix.sh`
+- BattleSandbox 全量可见 matchup smoke：`SANDBOX_SMOKE_SCOPE=full bash tests/check_sandbox_smoke_matrix.sh`
 - BattleSandbox headless 整局复查：`godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+- BattleSandbox headless 真实提交流程复查：`godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd`
 - demo replay headless 复查：`DEMO_PROFILE=legacy godot --headless --path . --script tests/helpers/demo_replay_full_run.gd`
 - 阶段总验收：`bash tests/run_with_gate.sh`
 - 清理本地废弃报告与 scratch：`bash tests/cleanup_local_artifacts.sh`

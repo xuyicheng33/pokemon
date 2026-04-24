@@ -6,6 +6,8 @@ import tempfile
 from collections import defaultdict
 from pathlib import Path
 
+from repo_consistency_common import isolated_godot_user_env
+
 
 def validate_capability_catalog(
     ctx,
@@ -152,22 +154,24 @@ def _load_capability_facts(ctx, *, export_script_path: str, manifest_path: str) 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".json") as handle:
         output_path = Path(handle.name)
     try:
-        result = subprocess.run(
-            [
-                "godot",
-                "--headless",
-                "--path",
-                ".",
-                "--script",
-                export_script_path,
-                "--",
-                str(output_path),
-                manifest_path,
-            ],
-            cwd=ctx.root,
-            capture_output=True,
-            text=True,
-        )
+        with isolated_godot_user_env() as env:
+            result = subprocess.run(
+                [
+                    "godot",
+                    "--headless",
+                    "--path",
+                    ".",
+                    "--script",
+                    export_script_path,
+                    "--",
+                    str(output_path),
+                    manifest_path,
+                ],
+                cwd=ctx.root,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
         if result.returncode != 0:
             stderr = result.stderr.strip()
             stdout = result.stdout.strip()

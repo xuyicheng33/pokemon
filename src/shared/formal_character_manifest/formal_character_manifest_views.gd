@@ -3,6 +3,7 @@ class_name FormalCharacterManifestViews
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const FormalCharacterCapabilityCatalogScript := preload("res://src/shared/formal_character_capability_catalog.gd")
+const PairInteractionCaseBuilderScript := preload("res://src/shared/formal_character_manifest/formal_character_pair_interaction_case_builder.gd")
 const FormalRegistryContractsScript := preload("res://src/shared/formal_registry_contracts.gd")
 const ManifestLoaderScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_loader.gd")
 const PairInteractionBuilderScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_pair_interaction_builder.gd")
@@ -14,6 +15,7 @@ const VALIDATOR_REQUIRED_SUITE_PATH := "test/suites/extension_validation_contrac
 var _manifest_loader = ManifestLoaderScript.new()
 var _pair_interaction_builder = PairInteractionBuilderScript.new()
 var _registry_contracts = FormalRegistryContractsScript.new()
+var _pair_interaction_case_builder = PairInteractionCaseBuilderScript.new()
 
 func validate_runtime_characters_result(characters: Array, manifest_path: String) -> Dictionary:
 	var seen_character_ids: Dictionary = {}

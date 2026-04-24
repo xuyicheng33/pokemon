@@ -35,6 +35,15 @@
 4. **单一运行态真相**：`BattleState` 是唯一运行态对象，其他模块不得各自缓存状态副本。
 5. **`tests/run_with_gate.sh` 作为主 gate 总入口**：内部顺序 `gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → sandbox smoke matrix` 不变。
 
+### 扩角前接入安全线（2026-04-24）
+
+- 新正式角色脚手架产物在完成前只能进入 `scripts/drafts/` 镜像路径；正式目录不接收 `FORMAL_DRAFT_`、`draft_marker`、`FILL_IN`、占位 runner 或 live validator `pass`。
+- `config/formal_character_sources/` 与 `scripts/drafts/` 中的 source descriptor 读取失败必须直接中止脚手架，不允许跳过坏 JSON 后继续做 collision 检查。
+- Sandbox UI 可以继续把用户控件输入规范化；测试、CLI smoke 和自动化入口必须使用 strict config，非法 matchup / mode / seed / control mode 直接失败。
+- Sandbox smoke matrix 默认使用 `SANDBOX_SMOKE_SCOPE=quick` 覆盖推荐与 `<pair>_vs_sample` 主路径；全量可见 matchup 只通过 `SANDBOX_SMOKE_SCOPE=full` 显式触发，避免 formal directed matchup 随角色数二次方拖慢日常 gate。
+- 内容快照缓存签名的显式依赖缺失属于内容快照错误，必须失败并暴露缺失路径，不允许退到 mtime 或空依赖签名。
+- `FormalCharacterManifestViews` 只保留 runtime / delivery / catalog 入口协调；pair interaction case 派生逻辑由 `FormalCharacterPairInteractionCaseBuilder` 承担，后续 manifest 派生继续按职责拆分。
+
 ### Stage 1 composition slot 收缩目标图（2026-04-19 冻结）
 
 当前 81 slot = base 66 + payload shared 3 + payload runtime 3 + payload handler 9。
@@ -158,6 +167,7 @@
 
 - formal pair 输入继续固定挂在 `characters[*]` 的 runtime 条目：`pair_token`、`baseline_script_path`、`owned_pair_interaction_specs`。
 - `pair_token` 继续作为 formal pair 身份字段；`baseline_script_path` 继续作为 formal baseline 注册字段；`owned_pair_interaction_specs` 继续是唯一手写 pair interaction 输入。
+- manifest 角色顺序继续作为 pair interaction ownership 的稳定输入：新正式角色默认追加到末尾，只能声明与更早角色的 `owned_pair_interaction_specs`；重排既有正式角色属于规范变更，必须同步迁移 specs 并记录决策。
 - manifest 不再恢复顶层 pair bucket；pair 覆盖与 directed case 继续从 manifest 角色条目派生。
 
 ## 4. 外层结果式与回放（2026-04-18）
@@ -174,6 +184,8 @@
 ### 主线入口与验证矩阵
 
 - `BattleSandboxController` 继续是当前研发试玩入口；默认路径继续固定为 `gojo_vs_sample + 9101 + manual/policy`。
+- BattleSandbox 可见推荐 matchup 的正式角色段从 `config/formal_character_manifest.json` 的 `characters[*].formal_setup_matchup_id` 派生；新增角色不再手工维护 sandbox 推荐名单或 quick smoke 角色名单。
+- CLI/debug 启动路径默认启用 strict launch config；非法 matchup / mode / seed / control mode 必须暴露为启动错误，只有 UI 控件内的选择归一化可以保留非 strict 行为。
 - `tests/run_with_gate.sh` 继续是唯一总入口，顺序保持：`gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → sandbox smoke matrix`。
 - `BattleSandbox`、`run_with_gate` 与 `gdUnit4 + test/` 继续构成当前仓库的主研发主线。
 - CI 当前固定拆成 3 个并行 job（`gdunit`、`repo_and_arch_gates`、`boot_and_sandbox_smoke`），并与本地总入口共用同一批子脚本。

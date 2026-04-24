@@ -7,7 +7,7 @@ const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_he
 
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 
-func build_manual_scene_context(battle_seed: int, launch_config: Dictionary = {}) -> Dictionary:
+func build_manual_scene_context(battle_seed = null, launch_config: Dictionary = {}) -> Dictionary:
 	var scene_result = instantiate_controller_result()
 	if not bool(scene_result.get("ok", false)):
 		return scene_result
@@ -15,7 +15,8 @@ func build_manual_scene_context(battle_seed: int, launch_config: Dictionary = {}
 	var normalized_config: Dictionary = launch_config.duplicate(true)
 	if normalized_config.is_empty():
 		normalized_config = _launch_config_helper.default_config()
-	normalized_config["battle_seed"] = battle_seed
+	if battle_seed != null:
+		normalized_config["battle_seed"] = battle_seed
 	var bootstrap_result = controller.bootstrap_with_config(normalized_config)
 	if not bool(bootstrap_result.get("ok", false)):
 		var message = str(bootstrap_result.get("error_message", "manual scene bootstrap failed"))

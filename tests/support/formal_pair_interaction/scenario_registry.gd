@@ -1,60 +1,61 @@
 extends RefCounted
 class_name FormalPairInteractionScenarioRegistry
 
-const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
+const CASES_DIR_PATH := "res://tests/support/formal_pair_interaction"
+const CASE_FILE_SUFFIX := "_cases.gd"
 
-const CASES_DIR := "res://tests/support/formal_pair_interaction"
+var _case_instances: Array = []
 
 func build_runners() -> Dictionary:
-	var case_instances := _load_case_instances()
 	var runners: Dictionary = {}
-	for scenario_key in _scenario_keys_from_manifest():
-		for method_name in _runner_method_names(scenario_key):
+	_case_instances.clear()
+	var case_script_paths := _case_script_paths()
+	if case_script_paths.is_empty():
+		printerr("FormalPairInteractionScenarioRegistry discovered no case scripts under %s" % CASES_DIR_PATH)
+		return {}
+	for raw_case_script_path in case_script_paths:
+		var case_script_path := String(raw_case_script_path).strip_edges()
+		var loaded_script = load(case_script_path)
+		if loaded_script == null or not loaded_script.can_instantiate():
+			printerr("FormalPairInteractionScenarioRegistry failed to load case script: %s" % case_script_path)
+			return {}
+		var cases = loaded_script.new()
+		if cases == null or not cases.has_method("build_runners"):
+			printerr("FormalPairInteractionScenarioRegistry case script missing build_runners(): %s" % case_script_path)
+			return {}
+		_case_instances.append(cases)
+		var case_runners = cases.build_runners()
+		if not (case_runners is Dictionary):
+			printerr("FormalPairInteractionScenarioRegistry case script build_runners() must return Dictionary: %s" % case_script_path)
+			return {}
+		for raw_scenario_key in case_runners.keys():
+			var scenario_key := String(raw_scenario_key).strip_edges()
+			var runner: Callable = case_runners.get(raw_scenario_key, Callable())
+			if scenario_key.is_empty():
+				printerr("FormalPairInteractionScenarioRegistry found empty scenario_key from %s" % case_script_path)
+				return {}
+			if not runner.is_valid():
+				printerr("FormalPairInteractionScenarioRegistry found invalid runner for %s in %s" % [scenario_key, case_script_path])
+				return {}
 			if runners.has(scenario_key):
-				break
-			for instance in case_instances:
-				if instance.has_method(method_name):
-					runners[scenario_key] = Callable(instance, method_name)
-					break
+				printerr("FormalPairInteractionScenarioRegistry duplicated scenario_key: %s" % scenario_key)
+				return {}
+			runners[scenario_key] = runner
 	return runners
 
-func _runner_method_names(scenario_key: String) -> PackedStringArray:
-	var method_names := PackedStringArray(["run_%s" % scenario_key])
-	var parts := scenario_key.split("_", false, 2)
-	if parts.size() == 3:
-		method_names.append("run_%s_vs_%s_%s" % [parts[0], parts[1], parts[2]])
-	return method_names
-
-func _scenario_keys_from_manifest() -> PackedStringArray:
-	var manifest = FormalCharacterManifestScript.new()
-	var catalog_result := manifest.build_catalog_result()
-	if not bool(catalog_result.get("ok", false)):
-		return PackedStringArray()
-	var seen: Dictionary = {}
-	var scenario_keys := PackedStringArray()
-	for raw_case in catalog_result.get("data", {}).get("pair_interaction_cases", []):
-		if not (raw_case is Dictionary):
-			continue
-		var scenario_key := String(raw_case.get("scenario_key", "")).strip_edges()
-		if scenario_key.is_empty() or seen.has(scenario_key):
-			continue
-		seen[scenario_key] = true
-		scenario_keys.append(scenario_key)
-	return scenario_keys
-
-func _load_case_instances() -> Array:
-	var case_instances: Array = []
-	var dir = DirAccess.open(CASES_DIR)
+func _case_script_paths() -> Array:
+	var dir := DirAccess.open(CASES_DIR_PATH)
 	if dir == null:
-		return case_instances
+		return []
+	var case_script_paths: Array = []
 	dir.list_dir_begin()
 	var file_name := dir.get_next()
 	while not file_name.is_empty():
-		if not dir.current_is_dir() and file_name.ends_with("_cases.gd"):
-			var script_path := "%s/%s" % [CASES_DIR, file_name]
-			var script = load(script_path)
-			if script is Script and script.can_instantiate():
-				case_instances.append(script.new())
+		if dir.current_is_dir() or file_name.begins_with(".") or not file_name.ends_with(CASE_FILE_SUFFIX):
+			file_name = dir.get_next()
+			continue
+		case_script_paths.append("%s/%s" % [CASES_DIR_PATH, file_name])
 		file_name = dir.get_next()
 	dir.list_dir_end()
-	return case_instances
+	case_script_paths.sort()
+	return case_script_paths

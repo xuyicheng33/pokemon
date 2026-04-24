@@ -13,14 +13,19 @@ var _signature_builder = SignatureBuilderScript.new()
 # When adding new content resource directories or config files that affect
 # snapshot validity, update these lists so the cache signature includes them.
 var _signature_static_file_paths := PackedStringArray([
+	"res://config/formal_character_capability_catalog.json",
 	"res://config/formal_character_manifest.json",
 	"res://config/formal_registry_contracts.json",
+	"res://src/shared/formal_character_baselines.gd",
+	"res://src/shared/formal_character_capability_catalog.gd",
 	"res://src/shared/formal_character_manifest.gd",
 	"res://src/shared/formal_registry_contracts.gd",
 ])
 var _signature_static_dir_paths := PackedStringArray([
+	"res://config/formal_character_sources",
 	"res://src/battle_core/content",
 	"res://src/battle_core/content/formal_validators",
+	"res://src/shared/formal_character_baselines",
 	"res://src/shared/formal_character_manifest",
 ])
 var signature_static_file_paths: PackedStringArray:
@@ -47,12 +52,15 @@ func build_content_index(content_snapshot_paths: PackedStringArray) -> Dictionar
 	_storage.begin_request()
 	var signature := _signature_builder.build_signature(content_snapshot_paths)
 	if signature.is_empty():
+		var signature_error := String(_signature_builder.get("last_error_message"))
+		if signature_error.is_empty():
+			signature_error = "ContentSnapshotCache requires non-empty content_snapshot_paths"
 		return {
 			"ok": false,
 			"content_index": null,
 			"cache_hit": false,
 			"error_code": ErrorCodesScript.INVALID_CONTENT_SNAPSHOT,
-			"error_message": "ContentSnapshotCache requires non-empty content_snapshot_paths",
+			"error_message": signature_error,
 		}
 	var cached_result := _storage.load_resources(signature)
 	if bool(cached_result.get("found", false)):

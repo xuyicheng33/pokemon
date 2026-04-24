@@ -22,6 +22,16 @@ func test_content_snapshot_cache_signature_tracks_runtime_registry_contract() ->
 
 func test_content_snapshot_cache_signature_tracks_content_script_contract() -> void:
 	_assert_legacy_result(_test_content_snapshot_cache_signature_tracks_content_script_contract(_harness))
+
+func test_content_snapshot_cache_signature_tracks_formal_scaffold_inputs_contract() -> void:
+	_assert_legacy_result(_test_content_snapshot_cache_signature_tracks_formal_scaffold_inputs_contract(_harness))
+
+func test_content_snapshot_cache_signature_tracks_static_json_dirs_contract() -> void:
+	_assert_legacy_result(_test_content_snapshot_cache_signature_tracks_static_json_dirs_contract(_harness))
+
+func test_content_snapshot_cache_signature_fails_on_missing_static_dir_contract() -> void:
+	_assert_legacy_result(_test_content_snapshot_cache_signature_fails_on_missing_static_dir_contract(_harness))
+
 func _test_content_snapshot_cache_composer_stats_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
 	if manager_payload.has("error"):
@@ -240,7 +250,7 @@ func _test_content_snapshot_cache_signature_tracks_content_script_contract(harne
 	if cache == null:
 		return harness.fail_result("shared content snapshot cache should be available")
 	var root_path := "user://content_snapshot_cache_script_root_probe.txt"
-	var script_dir_path := "user://content_snapshot_cache_script_probe"
+	var script_dir_path := "res://tmp/content_snapshot_cache_script_probe"
 	var script_path := "%s/schema_probe.gd" % script_dir_path
 	DirAccess.make_dir_recursive_absolute(script_dir_path)
 	var root_write = FileAccess.open(root_path, FileAccess.WRITE)
@@ -257,6 +267,12 @@ func _test_content_snapshot_cache_signature_tracks_content_script_contract(harne
 	script_write.close()
 	cache.signature_static_file_paths = PackedStringArray()
 	cache.signature_static_dir_paths = PackedStringArray([script_dir_path])
+	var tracked_script_paths_before: Array[String] = cache._dependency_collector.collect_tracked_signature_paths(PackedStringArray([root_path]))
+	if not tracked_script_paths_before.has(script_path):
+		DirAccess.remove_absolute(root_path)
+		DirAccess.remove_absolute(script_path)
+		DirAccess.remove_absolute(script_dir_path)
+		return harness.fail_result("cache signature should track static script path before rewrite: %s" % [tracked_script_paths_before])
 	var first_signature := String(cache._build_signature(PackedStringArray([root_path])))
 	var script_rewrite = FileAccess.open(script_path, FileAccess.WRITE)
 	if script_rewrite == null:
@@ -273,5 +289,112 @@ func _test_content_snapshot_cache_signature_tracks_content_script_contract(harne
 	if first_signature.is_empty() or second_signature.is_empty():
 		return harness.fail_result("cache signature should not be empty for content script probe")
 	if first_signature == second_signature:
-		return harness.fail_result("cache signature should change when tracked content script changes")
+		return harness.fail_result("cache signature should change when tracked content script changes: %s" % first_signature)
+	return harness.pass_result()
+
+func _test_content_snapshot_cache_signature_tracks_formal_scaffold_inputs_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var composer = manager_payload.get("composer", null)
+	if composer == null:
+		return harness.fail_result("content snapshot cache formal scaffold contract requires composer handle")
+	var cache = composer.shared_content_snapshot_cache()
+	if cache == null:
+		return harness.fail_result("shared content snapshot cache should be available")
+	var file_paths := Array(cache.signature_static_file_paths)
+	var dir_paths := Array(cache.signature_static_dir_paths)
+	for required_path in [
+		"res://config/formal_character_capability_catalog.json",
+		"res://src/shared/formal_character_baselines.gd",
+		"res://src/shared/formal_character_capability_catalog.gd",
+	]:
+		if not file_paths.has(required_path):
+			return harness.fail_result("cache signature must track formal static file: %s" % required_path)
+	for required_dir in [
+		"res://config/formal_character_sources",
+		"res://src/shared/formal_character_baselines",
+	]:
+		if not dir_paths.has(required_dir):
+			return harness.fail_result("cache signature must track formal static dir: %s" % required_dir)
+	return harness.pass_result()
+
+func _test_content_snapshot_cache_signature_tracks_static_json_dirs_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var composer = manager_payload.get("composer", null)
+	if composer == null:
+		return harness.fail_result("content snapshot cache static json contract requires composer handle")
+	var cache = composer.shared_content_snapshot_cache()
+	if cache == null:
+		return harness.fail_result("shared content snapshot cache should be available")
+	var root_path := "user://content_snapshot_cache_static_json_root_probe.txt"
+	var static_dir_path := "res://tmp/content_snapshot_cache_static_json_probe"
+	var static_json_path := "%s/formal_source_probe.json" % static_dir_path
+	DirAccess.make_dir_recursive_absolute(static_dir_path)
+	var root_write = FileAccess.open(root_path, FileAccess.WRITE)
+	if root_write == null:
+		return harness.fail_result("failed to create static json root probe file")
+	root_write.store_string("root")
+	root_write.close()
+	var json_write = FileAccess.open(static_json_path, FileAccess.WRITE)
+	if json_write == null:
+		DirAccess.remove_absolute(root_path)
+		DirAccess.remove_absolute(static_dir_path)
+		return harness.fail_result("failed to create static json probe file")
+	json_write.store_string("{\"version\":1}")
+	json_write.close()
+	cache.signature_static_file_paths = PackedStringArray()
+	cache.signature_static_dir_paths = PackedStringArray([static_dir_path])
+	var tracked_static_json_paths_before: Array[String] = cache._dependency_collector.collect_tracked_signature_paths(PackedStringArray([root_path]))
+	if not tracked_static_json_paths_before.has(static_json_path):
+		DirAccess.remove_absolute(root_path)
+		DirAccess.remove_absolute(static_json_path)
+		DirAccess.remove_absolute(static_dir_path)
+		return harness.fail_result("cache signature should track static json path before rewrite: %s" % [tracked_static_json_paths_before])
+	var first_signature := String(cache._build_signature(PackedStringArray([root_path])))
+	var json_rewrite = FileAccess.open(static_json_path, FileAccess.WRITE)
+	if json_rewrite == null:
+		DirAccess.remove_absolute(root_path)
+		DirAccess.remove_absolute(static_json_path)
+		DirAccess.remove_absolute(static_dir_path)
+		return harness.fail_result("failed to rewrite static json probe file")
+	json_rewrite.store_string("{\"version\":2}")
+	json_rewrite.close()
+	var second_signature := String(cache._build_signature(PackedStringArray([root_path])))
+	DirAccess.remove_absolute(root_path)
+	DirAccess.remove_absolute(static_json_path)
+	DirAccess.remove_absolute(static_dir_path)
+	if first_signature.is_empty() or second_signature.is_empty():
+		return harness.fail_result("cache signature should not be empty for static json probe")
+	if first_signature == second_signature:
+		return harness.fail_result("cache signature should change when tracked static json changes: %s" % first_signature)
+	return harness.pass_result()
+
+func _test_content_snapshot_cache_signature_fails_on_missing_static_dir_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var composer = manager_payload.get("composer", null)
+	if composer == null:
+		return harness.fail_result("content snapshot cache missing static dir contract requires composer handle")
+	var cache = composer.shared_content_snapshot_cache()
+	if cache == null:
+		return harness.fail_result("shared content snapshot cache should be available")
+	var root_path := "user://content_snapshot_cache_missing_static_root_probe.txt"
+	var root_write = FileAccess.open(root_path, FileAccess.WRITE)
+	if root_write == null:
+		return harness.fail_result("failed to create cache missing static root probe file")
+	root_write.store_string("root")
+	root_write.close()
+	cache.signature_static_file_paths = PackedStringArray()
+	cache.signature_static_dir_paths = PackedStringArray(["res://tmp/content_snapshot_cache_missing_static_dir_probe"])
+	var signature := String(cache._build_signature(PackedStringArray([root_path])))
+	DirAccess.remove_absolute(root_path)
+	if not signature.is_empty():
+		return harness.fail_result("cache signature should fail when tracked static dir is missing")
+	var signature_error := String(cache._signature_builder.get("last_error_message"))
+	if not signature_error.contains("missing content snapshot signature dir"):
+		return harness.fail_result("cache signature should expose missing static dir error: %s" % signature_error)
 	return harness.pass_result()

@@ -58,14 +58,16 @@
 2. 默认进入 `scenes/sandbox/BattleSandbox.tscn`
 3. 当前 launch config 基线为 `gojo_vs_sample + 9101 + manual/policy`
 4. HUD 上只通过 `matchup / battle_seed / P1 mode / P2 mode` 重开，不走历史 wrapper 或旧 runner；`manual/manual` 与 `policy/policy` 只作为显式模式保留
+5. 可见 matchup 的推荐顺序从 formal manifest 的 `formal_setup_matchup_id` 派生，新增正式角色不再手工维护 sandbox 推荐名单
 
 headless 复查入口固定为：
 
 - `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
+- `godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd`
 - `MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 - `P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 
-`manual_battle_full_run.gd` 当前统一输出稳定的 `battle_summary` JSON，固定字段至少包含 `matchup_id / battle_seed / p1_control_mode / p2_control_mode / winner_side_id / reason / result_type / turn_index / event_log_cursor / command_steps`。
+`manual_battle_full_run.gd` 当前统一输出稳定的 `battle_summary` JSON，固定字段至少包含 `matchup_id / battle_seed / p1_control_mode / p2_control_mode / winner_side_id / reason / result_type / turn_index / event_log_cursor / command_steps`。`manual_battle_submit_full_run.gd` 继续复用同一份摘要契约，作为 submit 链路的显式命令入口；当前两者都通过 `BattleSandboxController.submit_action()` 推进。
 
 若要复查 demo replay，继续显式走 `demo=<profile>` CLI 路径；`BattleSandbox` 会进入只读回放浏览态，固定展示 `turn_timeline`，并只允许用“上一回合 / 下一回合”浏览 frame。
 
@@ -117,6 +119,14 @@ CI 当前固定拆成 3 个并行 job：
 
 formal 单源继续固定为 `config/formal_character_sources/`。
 人工改动 source descriptor 后，只允许通过下面这条入口同步生成产物：
+
+草稿晋升前先检查：
+
+```bash
+bash scripts/check_formal_character_draft_ready.sh
+```
+
+正式同步：
 
 ```bash
 bash tests/sync_formal_registry.sh

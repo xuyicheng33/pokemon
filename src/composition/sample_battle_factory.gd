@@ -91,6 +91,9 @@ func default_demo_profile_id_result() -> Dictionary:
 func demo_profile_result(profile_id: String) -> Dictionary:
 	return _record_result(_demo_catalog.profile_result(profile_id))
 
+func demo_profile_ids_result() -> Dictionary:
+	return _record_result(_demo_catalog.profile_ids_result())
+
 func error_state() -> Dictionary:
 	return ErrorStateHelperScript.error_state(self)
 

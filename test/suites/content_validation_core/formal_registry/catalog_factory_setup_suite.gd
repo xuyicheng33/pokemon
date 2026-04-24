@@ -6,5 +6,8 @@ func test_formal_character_shared_fire_burst_validation() -> void:
 func test_formal_character_setup_registry_runtime_contract() -> void:
 	_assert_legacy_result(_test_formal_character_setup_registry_runtime_contract(_harness))
 
+func test_formal_character_auto_sample_matchup_contract() -> void:
+	_assert_legacy_result(_test_formal_character_auto_sample_matchup_contract(_harness))
+
 func test_formal_character_registry_id_mismatch_contract() -> void:
 	_assert_legacy_result(_test_formal_character_registry_id_mismatch_contract(_harness))

@@ -16,7 +16,11 @@ func prepare_scene(state: SandboxSessionState, requested_config: Dictionary) -> 
 	var available_matchups_error = _load_available_matchups(state)
 	if not available_matchups_error.is_empty():
 		return available_matchups_error
-	state.launch_config = launch_config_helper.normalize_config(requested_config, state.available_matchups)
+	var strict_config := bool(requested_config.get(BattleSandboxLaunchConfigScript.STRICT_CONFIG_KEY, false))
+	var launch_config_result := launch_config_helper.normalize_config_result(requested_config, state.available_matchups, strict_config)
+	if not bool(launch_config_result.get("ok", false)):
+		return "Battle sandbox invalid launch config: %s" % str(launch_config_result.get("error_message", "unknown config error"))
+	state.launch_config = launch_config_result.get("data", {}).duplicate(true)
 	state.side_control_modes = launch_config_helper.side_control_modes(state.launch_config)
 	state.is_demo_mode = str(state.launch_config.get("mode", "")).strip_edges() == BattleSandboxLaunchConfigScript.MODE_DEMO_REPLAY
 	state.demo_profile = str(state.launch_config.get("demo_profile_id", "")).strip_edges()

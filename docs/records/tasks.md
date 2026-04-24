@@ -41,6 +41,92 @@
 - 验收标准：行为不变，代码重复减少，格式统一
 - 验证：待闸门验证
 
+## 最近完成：Formal 草稿晋升前检查入口（2026-04-24）
+
+- 状态：已完成
+- 目标：给新角色脚手架草稿增加晋升前的独立检查，避免手工搬文件时把占位符或缺文件带入正式目录
+- 范围：
+  1. 新增 `scripts/check_formal_character_draft_ready.py/.sh`
+  2. 检查 source draft、baseline、validator、suite、设计文档和 pair runner 草稿是否齐全
+  3. 检查 `FILL_IN / FORMAL_DRAFT_ / draft_marker / TODO: implement / interaction placeholder` 等占位符，以及 live 目标路径冲突
+  4. 在脚手架输出、正式角色接入清单和当前工作流里记录入口
+- 验收标准：
+  - 无草稿时脚本可安全跳过
+  - 有草稿但未填完占位符时脚本失败
+  - repo consistency gate 继续锁住文档入口
+
+## 最近完成：Pair interaction 顺序归属合同显式化（2026-04-24）
+
+- 状态：已完成
+- 目标：把 manifest 顺序承担 pair interaction ownership 的隐含规则写入正式文档，并用 gate 防止实现/文档漂移
+- 范围：
+  1. `formal_character_delivery_checklist.md` 明确新角色默认追加到 manifest 末尾，不能为排序美观重排既有正式角色
+  2. `battle_content_schema.md` 与 `decisions.md` 同步记录 manifest 角色顺序是 pair interaction ownership 的稳定输入
+  3. repo consistency gate 同时锁文档措辞与 `formal_character_pair_interaction_case_builder.gd` 的 earlier-character 约束
+- 验收标准：
+  - 后续扩角时不会误把 manifest 顺序当纯展示排序
+  - gate 能发现 pair ownership 实现或规范文字被移除
+
+## 最近完成：Sandbox 推荐入口去角色硬编码（2026-04-24）
+
+- 状态：已完成
+- 目标：把扩角前审阅发现的 sandbox 推荐列表和 quick smoke 手写角色名移到 manifest 派生
+- 范围：
+  1. `BattleSandboxLaunchConfig.recommended_matchup_ids()` 从 formal runtime entries 的 `formal_setup_matchup_id` 派生推荐 matchup，并追加 `sample_default`
+  2. 命令行启动配置默认带 `strict_config=true`，拼错 matchup / mode / seed / control mode 直接暴露错误
+  3. `tests/check_sandbox_smoke_matrix.sh` 的 quick 集合读取 sandbox smoke catalog 导出的推荐 matchup，不再硬编码当前四个正式角色
+- 验收标准：
+  - 新角色使用自定义 `formal_setup_matchup_id` 时，sandbox 推荐排序和 quick smoke 自动跟随 manifest
+  - 默认 CLI/debug 启动不再静默吞掉非法配置
+  - launch-config suite 与 sandbox smoke matrix 通过
+
+## 最近完成：扩角前审阅问题修复（2026-04-24）
+
+- 状态：已完成
+- 目标：修复扩角前架构审阅确认的问题，降低新增角色后的自动化误判和验证成本
+- 范围：
+  1. `manual_battle_full_run.gd` / `manual_battle_submit_full_run.gd` 不再预先吞掉非法 `BATTLE_SEED`，strict config 统一负责失败判定
+  2. `tests/check_sandbox_smoke_matrix.sh` 增加 `SANDBOX_SMOKE_SCOPE=quick|full`，日常 gate 默认 quick，按需 full 覆盖全部可见 matchup
+  3. `demo_profile_ids_result` contract 不再写死当前 profile 全集，只锁默认优先与剩余稳定排序
+  4. 文档同步 submit 入口真实覆盖口径，避免把重复脚本误读成额外行为面
+- 验收标准：
+  - 非法 sandbox seed 在 strict helper 路径失败
+  - 日常 sandbox smoke 不随 formal directed matchup 二次方增长
+  - 新增 demo profile 不会被旧单测硬编码阻断
+  - `bash tests/run_with_gate.sh` 通过
+- 验证结果：`git diff --check`、非法 `BATTLE_SEED=-99` strict 反向检查、`bash tests/check_repo_consistency.sh`、`bash tests/check_sandbox_smoke_matrix.sh` 与 `bash tests/run_with_gate.sh` 均通过；总 gate 为 `425 test cases / 0 failures`
+
+## 最近完成：formal 接线自动化与 Sandbox smoke 动态化（2026-04-22）
+
+- 状态：已完成
+- 目标：继续扩角前，把 formal 角色接入末端的手工步骤和 sandbox smoke 的硬编码名单进一步收口
+- 范围：
+  1. `FormalCharacterManifestViews` 默认自动派生 `<pair_token>_vs_sample` matchup，formal setup 不再强依赖手工改 `00_shared_registry.json`
+  2. `tests/support/formal_pair_interaction/scenario_registry.gd` 改为自动发现 `tests/support/formal_pair_interaction/*_cases.gd`，新增角色不再手工注册 scenario runner
+  3. `scripts/new_formal_character.py` 同步改为生成 `build_runners()` 壳子，并把 shared matchup / pair interaction 说明改成新的自动化流程
+  4. `tests/check_sandbox_smoke_matrix.sh` 改为动态覆盖全部可见 matchup、默认模式变体、真实 submit 路径和全部 demo profile
+  5. 补 `demo_profile_ids_result()`、sandbox smoke catalog helper、pair runner key export helper 与对应 contract/gate 对齐
+- 验收标准：新增角色默认接线步骤更少，sandbox 主 smoke 自动跟随当前 manifest/demo 真相，现有 gate 与主回归继续通过
+- 验证结果：`bash tests/run_with_gate.sh` 通过，`421 test cases / 0 failures`；动态 sandbox smoke 已覆盖全部可见 matchup、默认模式变体、真实 submit 路径和全部 demo replay
+
+## 最近完成：扩角前架构审阅问题收口（2026-04-24）
+
+- 状态：已完成
+- 目标：接入新角色前，把审阅发现的脚手架、运行时配置、缓存签名和 manifest 体量风险收口
+- 范围：
+  1. `scripts/new_formal_character.py` 遇到坏 descriptor 直接失败；未完成 baseline / validator / suite / design doc 统一进入 `scripts/drafts/` 镜像路径
+  2. formal live gate 扫描 `FORMAL_DRAFT_` / `draft_marker`，并阻断 live validator 中残留的 `pass`
+  3. `BattleSandboxLaunchConfig` 新增 strict normalize 入口；测试与脚本 smoke 入口启用 strict config，非法 matchup / mode / seed / control mode 不再静默改成默认值
+  4. `ContentSnapshotCache` 签名依赖缺失时直接失败，并暴露具体缺失路径；缓存签名继续覆盖 formal source / baseline / capability / validator 输入
+  5. `formal_character_manifest_views.gd` 抽出 pair interaction case builder，主文件从 502 行降到 369 行
+  6. `tests/godot_headless_env.sh` cleanup 后清理 Godot headless 环境变量，避免同 shell 重复 setup 指向已删除目录
+- 验收标准：
+  - 新角色草稿不会污染正式目录
+  - 测试入口不会把拼错的 sandbox 配置当默认局跑成功
+  - 内容快照签名依赖缺失不再被弱签名掩盖
+  - manifest views 不再触发架构体量预警
+- 验证结果：分批定向 gdUnit、`check_repo_consistency`、`check_architecture_constraints`、`check_sandbox_smoke_matrix` 已通过；最终总 gate 见本轮提交记录
+
 ## 最近完成：扩角前文档口径修正与脚手架增强（2026-04-22）
 
 - 状态：已完成
@@ -56,7 +142,7 @@
      - main 流程扩充到 8 步，第 7 步生成 interaction cases 文件，第 8 步打印 scenario_registry.gd 注册提示
      - checklist 输出补充 pair interaction 层的完整操作说明
 - 验收标准：文档口径统一，脚手架幂等无破坏，现有闸门不受影响
-- 验证结果：待闸门验证
+- 验证结果：`bash tests/run_with_gate.sh` 通过，`421 test cases / 0 failures`；repo consistency / formal pair coverage / 文档入口对齐 gate 全部通过
 
 ## 最近完成：提取 TurnExpiryDecrementHelper 消除 turn 阶段重复代码（2026-04-22）
 
@@ -162,6 +248,21 @@
   - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/replay_guard_failure_suite.gd bash tests/run_gdunit.sh`
   - `bash tests/check_gdunit_gate.sh`
   - `bash tests/run_with_gate.sh`
+
+## 最近完成：formal 自动化审阅问题修复（2026-04-24）
+
+- 状态：已完成
+- 目标：修复 formal 自动化接入审阅中确认的问题，暂不拆分 `FormalCharacterManifestViews`
+- 范围：
+  1. 修复内容快照缓存签名遗漏 formal baseline/source/capability 输入的问题
+  2. 收紧新角色 scaffold 的命名校验与 pair interaction 草稿流转
+  3. 增加 live scaffold 占位符 gate，避免占位 runner 或 `FILL_IN` 进入正式目录
+  4. 清理本地 `.DS_Store` 噪声
+- 验收标准：
+  - cache signature 会随 formal baseline/source/capability 相关输入变化而变化
+  - draft pair interaction runner 不会被 live registry 自动发现
+  - live formal 目录中出现 scaffold 占位符时 repo consistency gate 会失败
+  - `bash tests/run_with_gate.sh` 通过
 
 ## 最近完成：审阅问题补齐（2026-04-20）
 

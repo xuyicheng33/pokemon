@@ -7,7 +7,7 @@ const ManualBattleSceneDriveSupportScript := preload("res://tests/support/manual
 var _context_support = ManualBattleSceneContextSupportScript.new()
 var _drive_support = ManualBattleSceneDriveSupportScript.new()
 
-func build_manual_scene_context(_harness, battle_seed: int, launch_config: Dictionary = {}) -> Dictionary:
+func build_manual_scene_context(_harness, battle_seed = null, launch_config: Dictionary = {}) -> Dictionary:
 	return _context_support.build_manual_scene_context(battle_seed, launch_config)
 
 func close_context(context: Dictionary) -> Dictionary:
@@ -21,6 +21,9 @@ func run_hotseat_turn(context: Dictionary, p1_selected_action: Dictionary, p2_se
 
 func run_to_battle_end(context: Dictionary, max_turns: int = 64) -> Dictionary:
 	return _drive_support.run_to_battle_end(_context_support, context, max_turns)
+
+func run_to_battle_end_via_submit(context: Dictionary, max_turns: int = 64) -> Dictionary:
+	return _drive_support.run_to_battle_end_via_submit(_context_support, context, max_turns)
 
 func build_view_model(context: Dictionary) -> Dictionary:
 	return _drive_support.build_view_model(context)

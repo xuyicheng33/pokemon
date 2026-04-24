@@ -5,6 +5,8 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 const MATCHUP_INFIX := "_vs_"
+const SAMPLE_MATCHUP_SUFFIX := "_vs_sample"
+const DEFAULT_SAMPLE_OPPONENT_UNIT_IDS := ["sample_tidekit", "sample_pyron", "sample_mossaur"]
 const REQUIRED_BENCH_UNIT_COUNT := 2
 
 func build_catalog_result(characters: Array, raw_matchups, manifest_path: String) -> Dictionary:
@@ -12,12 +14,16 @@ func build_catalog_result(characters: Array, raw_matchups, manifest_path: String
 	if not bool(pair_maps_result.get("ok", false)):
 		return pair_maps_result
 	var pair_maps: Dictionary = pair_maps_result.get("data", {})
+	var derived_sample_matchups_result := _derived_sample_matchups_result(pair_maps)
+	if not bool(derived_sample_matchups_result.get("ok", false)):
+		return derived_sample_matchups_result
 	var explicit_matchups_result := _normalize_explicit_matchups_result(raw_matchups, pair_maps, manifest_path)
 	if not bool(explicit_matchups_result.get("ok", false)):
 		return explicit_matchups_result
 	var merged_matchups_result := _merged_matchups_result(
 		pair_maps,
 		explicit_matchups_result.get("data", {}),
+		derived_sample_matchups_result.get("data", {}),
 		manifest_path
 	)
 	if not bool(merged_matchups_result.get("ok", false)):
@@ -131,8 +137,28 @@ func _normalize_explicit_matchups_result(raw_matchups, pair_maps: Dictionary, ma
 		normalized_matchups[matchup_id] = matchup_spec.duplicate(true)
 	return _ok_result(normalized_matchups)
 
-func _merged_matchups_result(pair_maps: Dictionary, explicit_matchups: Dictionary, manifest_path: String) -> Dictionary:
+func _derived_sample_matchups_result(pair_maps: Dictionary) -> Dictionary:
+	var derived_sample_matchups: Dictionary = {}
+	for raw_character_id in pair_maps.get("runtime_order", []):
+		var character_id := String(raw_character_id)
+		var matchup_id := _generated_sample_matchup_id(pair_maps, character_id)
+		if matchup_id.is_empty():
+			continue
+		derived_sample_matchups[matchup_id] = {
+			"p1_units": [pair_maps.get("character_to_unit", {}).get(character_id, "")] + pair_maps.get("initiator_bench_by_character", {}).get(character_id, []),
+			"p2_units": DEFAULT_SAMPLE_OPPONENT_UNIT_IDS.duplicate(),
+		}
+	return _ok_result(derived_sample_matchups)
+
+func _merged_matchups_result(pair_maps: Dictionary, explicit_matchups: Dictionary, derived_sample_matchups: Dictionary, manifest_path: String) -> Dictionary:
 	var merged_matchups: Dictionary = explicit_matchups.duplicate(true)
+	for raw_matchup_id in derived_sample_matchups.keys():
+		var matchup_id := String(raw_matchup_id).strip_edges()
+		if matchup_id.is_empty() or merged_matchups.has(matchup_id):
+			continue
+		var matchup_spec = derived_sample_matchups.get(raw_matchup_id, {})
+		if matchup_spec is Dictionary:
+			merged_matchups[matchup_id] = matchup_spec.duplicate(true)
 	for raw_left_character_id in pair_maps.get("runtime_order", []):
 		var left_character_id := String(raw_left_character_id)
 		for raw_right_character_id in pair_maps.get("runtime_order", []):
@@ -289,6 +315,12 @@ func _derived_interaction_case_result(pair_maps: Dictionary, matchups: Dictionar
 		"matchup_id": matchup_id,
 		"battle_seed": battle_seed,
 	})
+
+func _generated_sample_matchup_id(pair_maps: Dictionary, character_id: String) -> String:
+	var pair_token := String(pair_maps.get("pair_token_by_character", {}).get(character_id, "")).strip_edges()
+	if pair_token.is_empty():
+		return ""
+	return "%s%s" % [pair_token, SAMPLE_MATCHUP_SUFFIX]
 
 func _generated_matchup_id(pair_maps: Dictionary, left_character_id: String, right_character_id: String) -> String:
 	return "%s%s%s" % [
