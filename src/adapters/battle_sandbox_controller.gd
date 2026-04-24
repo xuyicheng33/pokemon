@@ -94,13 +94,10 @@ func fetch_legal_actions_for_side(side_id: String) -> Dictionary:
 	if not bool(legal_actions_unwrap.get("ok", false)):
 		return legal_actions_unwrap
 	var normalized_side_id = str(side_id).strip_edges()
-	return {
-		"ok": true,
-		"data": legal_actions_unwrap.get("data", null),
-		"error_code": null,
-		"error_message": null,
+	return ResultEnvelopeHelperScript.ok({
+		"legal_actions": legal_actions_unwrap.get("data", null),
 		"summary": _state.view_model.get("legal_actions_by_side", {}).get(normalized_side_id, {}),
-	}
+	})
 
 func submit_action(selected_action: Dictionary) -> Dictionary:
 	var submit_result: Dictionary = _session_coordinator.submit_action(_state, selected_action, _policy_driver)
