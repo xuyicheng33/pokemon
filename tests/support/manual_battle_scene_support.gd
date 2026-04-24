@@ -7,7 +7,7 @@ const ManualBattleSceneDriveSupportScript := preload("res://tests/support/manual
 var _context_support = ManualBattleSceneContextSupportScript.new()
 var _drive_support = ManualBattleSceneDriveSupportScript.new()
 
-func build_manual_scene_context(_harness, battle_seed: int, launch_config: Dictionary = {}) -> Dictionary:
+func build_manual_scene_context(_harness, battle_seed = null, launch_config: Dictionary = {}) -> Dictionary:
 	return _context_support.build_manual_scene_context(battle_seed, launch_config)
 
 func close_context(context: Dictionary) -> Dictionary:

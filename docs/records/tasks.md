@@ -13,6 +13,22 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：扩角前审阅问题修复（2026-04-24）
+
+- 状态：已完成
+- 目标：修复扩角前架构审阅确认的问题，降低新增角色后的自动化误判和验证成本
+- 范围：
+  1. `manual_battle_full_run.gd` / `manual_battle_submit_full_run.gd` 不再预先吞掉非法 `BATTLE_SEED`，strict config 统一负责失败判定
+  2. `tests/check_sandbox_smoke_matrix.sh` 增加 `SANDBOX_SMOKE_SCOPE=quick|full`，日常 gate 默认 quick，按需 full 覆盖全部可见 matchup
+  3. `demo_profile_ids_result` contract 不再写死当前 profile 全集，只锁默认优先与剩余稳定排序
+  4. 文档同步 submit 入口真实覆盖口径，避免把重复脚本误读成额外行为面
+- 验收标准：
+  - 非法 sandbox seed 在 strict helper 路径失败
+  - 日常 sandbox smoke 不随 formal directed matchup 二次方增长
+  - 新增 demo profile 不会被旧单测硬编码阻断
+  - `bash tests/run_with_gate.sh` 通过
+- 验证结果：`git diff --check`、非法 `BATTLE_SEED=-99` strict 反向检查、`bash tests/check_repo_consistency.sh`、`bash tests/check_sandbox_smoke_matrix.sh` 与 `bash tests/run_with_gate.sh` 均通过；总 gate 为 `425 test cases / 0 failures`
+
 ## 最近完成：formal 接线自动化与 Sandbox smoke 动态化（2026-04-22）
 
 - 状态：已完成

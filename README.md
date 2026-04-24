@@ -116,7 +116,7 @@ MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy godot --headless --pa
 P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
 ```
 
-`tests/helpers/manual_battle_full_run.gd` 是当前 `BattleSandbox` 的主 smoke 入口；省略环境变量时，默认沿用 sandbox 基线 `gojo_vs_sample + 9101 + manual/policy`。`tests/helpers/manual_battle_submit_full_run.gd` 额外显式覆盖 `BattleSandboxController.submit_action()` 的真实提交流程。两个脚本当前都支持：
+`tests/helpers/manual_battle_full_run.gd` 是当前 `BattleSandbox` 的主 smoke 入口；省略环境变量时，默认沿用 sandbox 基线 `gojo_vs_sample + 9101 + manual/policy`。`tests/helpers/manual_battle_submit_full_run.gd` 保留为 submit 链路的显式入口，当前与主 smoke 一样通过 `BattleSandboxController.submit_action()` 推进。两个脚本当前都支持：
 
 - `MATCHUP_ID`
 - `BATTLE_SEED`
@@ -136,7 +136,7 @@ P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/m
 - `event_log_cursor`
 - `command_steps`
 
-这样可以直接对比 `manual/manual`、`manual/policy`、`policy/policy` 三条主路径，以及真实 submit 链路。
+这样可以直接对比 `manual/manual`、`manual/policy`、`policy/policy` 三条主路径，并保留稳定的 submit 命令入口。
 
 ### 5.3 formal 产物同步
 
@@ -177,7 +177,7 @@ tests/run_with_gate.sh
   - 当前额外包含 composition `SERVICE_DESCRIPTORS / container API / wiring_specs` 一致性检查，以及 runtime wiring DAG 检查
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
   - 当前会聚合 `tests/gates/repo_consistency_surface_gate.py`、`tests/gates/repo_consistency_formal_character_gate.py`、`tests/gates/repo_consistency_docs_gate.py`
-- sandbox smoke matrix 通过（`tests/check_sandbox_smoke_matrix.sh`，动态覆盖当前全部可见 `manual/policy` matchup、默认 matchup 的 `policy/policy` 与 `manual/manual`、默认 matchup 的真实 submit 链路，以及全部 demo profile）
+- sandbox smoke matrix 通过（`tests/check_sandbox_smoke_matrix.sh`，默认 `SANDBOX_SMOKE_SCOPE=quick`，覆盖推荐 matchup、所有 `<pair>_vs_sample` 主路径、默认 matchup 的 `policy/policy` 与 `manual/manual`、默认 matchup 的 submit 入口，以及全部 demo profile；设 `SANDBOX_SMOKE_SCOPE=full` 可覆盖全部可见 matchup）
 
 ## 6. 对外核心接口（Manager）
 
@@ -305,9 +305,9 @@ tests/run_with_gate.sh
 ## 10. 当前代码规模（2026-04-24）
 
 - `src/**/*.gd`：`22218` 行
-- `test/**/*.gd`：`22231` 行
-- `tests/**/*.gd`：`5210` 行
-- GDScript 合计：`49659` 行
+- `test/**/*.gd`：`22238` 行
+- `tests/**/*.gd`：`5211` 行
+- GDScript 合计：`49667` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

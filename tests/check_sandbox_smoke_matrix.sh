@@ -59,6 +59,30 @@ if [[ ${#VISIBLE_MATCHUP_IDS[@]} -eq 0 ]]; then
   exit 1
 fi
 
+SANDBOX_SMOKE_SCOPE="${SANDBOX_SMOKE_SCOPE:-quick}"
+if [[ "$SANDBOX_SMOKE_SCOPE" != "quick" && "$SANDBOX_SMOKE_SCOPE" != "full" ]]; then
+  echo "SANDBOX_SMOKE_FAILED: SANDBOX_SMOKE_SCOPE must be quick or full: $SANDBOX_SMOKE_SCOPE" >&2
+  exit 1
+fi
+
+SMOKE_MATCHUP_IDS=()
+if [[ "$SANDBOX_SMOKE_SCOPE" == "full" ]]; then
+  SMOKE_MATCHUP_IDS=("${VISIBLE_MATCHUP_IDS[@]}")
+else
+  for matchup_id in "${VISIBLE_MATCHUP_IDS[@]}"; do
+    case "$matchup_id" in
+      "$DEFAULT_MATCHUP_ID"|"gojo_vs_sample"|"kashimo_vs_sample"|"obito_vs_sample"|"sukuna_setup"|"sample_default"|*_vs_sample)
+        SMOKE_MATCHUP_IDS+=("$matchup_id")
+        ;;
+    esac
+  done
+fi
+
+if [[ ${#SMOKE_MATCHUP_IDS[@]} -eq 0 ]]; then
+  echo "SANDBOX_SMOKE_FAILED: sandbox smoke scope selected no matchups: $SANDBOX_SMOKE_SCOPE" >&2
+  exit 1
+fi
+
 DEMO_PROFILE_ROWS=()
 while IFS= read -r demo_row; do
   if [[ -n "$demo_row" ]]; then
@@ -264,7 +288,7 @@ PY
   rm -f "$log_file"
 }
 
-for matchup_id in "${VISIBLE_MATCHUP_IDS[@]}"; do
+for matchup_id in "${SMOKE_MATCHUP_IDS[@]}"; do
   run_case \
     "${matchup_id}_manual_policy" \
     "$matchup_id" \
@@ -317,5 +341,6 @@ for demo_row in "${DEMO_PROFILE_ROWS[@]}"; do
     godot --headless --path . --script tests/helpers/demo_replay_full_run.gd
 done
 
-echo "SANDBOX_SMOKE_MATRIX_PASSED: visible manual/policy matchups, default policy/manual-submit paths, and demo replays are stable"
+echo "SANDBOX_SMOKE_MATRIX_PASSED: ${SANDBOX_SMOKE_SCOPE} manual/policy matchups, default policy/manual-submit paths, and demo replays are stable"
 echo "NOTE: manual smoke now covers BattleSandboxController.submit_action on visible matchups; deterministic action choice still uses BattleSandboxFirstLegalPolicy"
+echo "NOTE: set SANDBOX_SMOKE_SCOPE=full to cover every visible matchup."

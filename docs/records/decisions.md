@@ -40,6 +40,7 @@
 - 新正式角色脚手架产物在完成前只能进入 `scripts/drafts/` 镜像路径；正式目录不接收 `FORMAL_DRAFT_`、`draft_marker`、`FILL_IN`、占位 runner 或 live validator `pass`。
 - `config/formal_character_sources/` 与 `scripts/drafts/` 中的 source descriptor 读取失败必须直接中止脚手架，不允许跳过坏 JSON 后继续做 collision 检查。
 - Sandbox UI 可以继续把用户控件输入规范化；测试、CLI smoke 和自动化入口必须使用 strict config，非法 matchup / mode / seed / control mode 直接失败。
+- Sandbox smoke matrix 默认使用 `SANDBOX_SMOKE_SCOPE=quick` 覆盖推荐与 `<pair>_vs_sample` 主路径；全量可见 matchup 只通过 `SANDBOX_SMOKE_SCOPE=full` 显式触发，避免 formal directed matchup 随角色数二次方拖慢日常 gate。
 - 内容快照缓存签名的显式依赖缺失属于内容快照错误，必须失败并暴露缺失路径，不允许退到 mtime 或空依赖签名。
 - `FormalCharacterManifestViews` 只保留 runtime / delivery / catalog 入口协调；pair interaction case 派生逻辑由 `FormalCharacterPairInteractionCaseBuilder` 承担，后续 manifest 派生继续按职责拆分。
 

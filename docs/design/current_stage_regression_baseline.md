@@ -14,9 +14,10 @@
 ## 2. 当前主 smoke matchup
 
 - 默认主路径：`gojo_vs_sample + 9101 + manual/policy`
-- 可见 matchup 变体：`tests/check_sandbox_smoke_matrix.sh` 会动态覆盖当前全部非 `test_only` matchup 的 `manual/policy`
+- 可见 matchup 变体：`tests/check_sandbox_smoke_matrix.sh` 默认 `SANDBOX_SMOKE_SCOPE=quick`，动态覆盖推荐 matchup 与所有 `<pair>_vs_sample` 主路径的 `manual/policy`
+- 全量 matchup 变体：`SANDBOX_SMOKE_SCOPE=full bash tests/check_sandbox_smoke_matrix.sh` 覆盖当前全部非 `test_only` matchup 的 `manual/policy`
 - 默认模式变体：默认可见 matchup 额外覆盖 `policy/policy` 与 `manual/manual`
-- 真实提交变体：默认可见 matchup 额外覆盖 `tests/helpers/manual_battle_submit_full_run.gd`
+- submit 命令入口变体：默认可见 matchup 额外覆盖 `tests/helpers/manual_battle_submit_full_run.gd`
 - demo 变体：动态覆盖 `config/demo_replay_catalog.json` 中全部 demo profile
 - headless 统一入口：`godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 - submit 入口：`godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd`

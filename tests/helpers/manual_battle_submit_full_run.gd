@@ -7,11 +7,11 @@ var _support = ManualBattleSceneSupportScript.new()
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 
 func _init() -> void:
-	var battle_seed = int(str(OS.get_environment("BATTLE_SEED")).to_int())
-	if battle_seed <= 0:
-		battle_seed = BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED
 	var launch_config := _launch_config_helper.default_config()
 	launch_config[BattleSandboxLaunchConfigScript.STRICT_CONFIG_KEY] = true
+	var raw_battle_seed := str(OS.get_environment("BATTLE_SEED")).strip_edges()
+	if not raw_battle_seed.is_empty():
+		launch_config["battle_seed"] = raw_battle_seed
 	var matchup_id := str(OS.get_environment("MATCHUP_ID")).strip_edges()
 	if not matchup_id.is_empty():
 		launch_config["matchup_id"] = matchup_id
@@ -21,7 +21,7 @@ func _init() -> void:
 	var p2_mode := str(OS.get_environment("P2_MODE")).strip_edges()
 	if not p2_mode.is_empty():
 		launch_config["p2_control_mode"] = p2_mode
-	var context_result = _support.build_manual_scene_context(null, battle_seed, launch_config)
+	var context_result = _support.build_manual_scene_context(null, null, launch_config)
 	if not bool(context_result.get("ok", false)):
 		push_error(str(context_result.get("error_message", "manual submit battle bootstrap failed")))
 		quit(1)
@@ -41,7 +41,7 @@ func _init() -> void:
 	if battle_summary.is_empty():
 		battle_summary = {
 			"matchup_id": str(context.get("launch_config", {}).get("matchup_id", "")),
-			"battle_seed": battle_seed,
+			"battle_seed": int(context.get("launch_config", {}).get("battle_seed", 0)),
 			"p1_control_mode": str(context.get("side_control_modes", {}).get("P1", "")),
 			"p2_control_mode": str(context.get("side_control_modes", {}).get("P2", "")),
 			"winner_side_id": "",

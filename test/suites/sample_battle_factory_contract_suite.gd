@@ -258,10 +258,17 @@ func _test_demo_profile_ids_contract(harness) -> Dictionary:
 	var profile_ids = profile_ids_result.get("data", [])
 	if not (profile_ids is Array) or profile_ids.is_empty():
 		return harness.fail_result("demo_profile_ids_result should return a non-empty array")
-	if String(profile_ids[0]) != "kashimo":
+	var default_profile_id_result: Dictionary = sample_factory.default_demo_profile_id_result()
+	if not bool(default_profile_id_result.get("ok", false)):
+		return harness.fail_result("default_demo_profile_id_result should succeed: %s" % String(default_profile_id_result.get("error_message", "unknown error")))
+	var default_profile_id := String(default_profile_id_result.get("data", "")).strip_edges()
+	if String(profile_ids[0]) != default_profile_id:
 		return harness.fail_result("demo_profile_ids_result should keep the default profile first")
-	if profile_ids != ["kashimo", "legacy"]:
-		return harness.fail_result("demo_profile_ids_result should keep a stable default-first ordering")
+	var remaining_profile_ids: Array = profile_ids.slice(1)
+	var sorted_remaining_profile_ids: Array = remaining_profile_ids.duplicate()
+	sorted_remaining_profile_ids.sort()
+	if remaining_profile_ids != sorted_remaining_profile_ids:
+		return harness.fail_result("demo_profile_ids_result should keep remaining profile ids sorted")
 	return harness.pass_result()
 
 func _test_demo_switch_command_replay_contract(harness) -> Dictionary:
