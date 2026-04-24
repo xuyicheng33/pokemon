@@ -26,6 +26,24 @@
 - 验收标准：新增角色默认接线步骤更少，sandbox 主 smoke 自动跟随当前 manifest/demo 真相，现有 gate 与主回归继续通过
 - 验证结果：`bash tests/run_with_gate.sh` 通过，`421 test cases / 0 failures`；动态 sandbox smoke 已覆盖全部可见 matchup、默认模式变体、真实 submit 路径和全部 demo replay
 
+## 最近完成：扩角前架构审阅问题收口（2026-04-24）
+
+- 状态：已完成
+- 目标：接入新角色前，把审阅发现的脚手架、运行时配置、缓存签名和 manifest 体量风险收口
+- 范围：
+  1. `scripts/new_formal_character.py` 遇到坏 descriptor 直接失败；未完成 baseline / validator / suite / design doc 统一进入 `scripts/drafts/` 镜像路径
+  2. formal live gate 扫描 `FORMAL_DRAFT_` / `draft_marker`，并阻断 live validator 中残留的 `pass`
+  3. `BattleSandboxLaunchConfig` 新增 strict normalize 入口；测试与脚本 smoke 入口启用 strict config，非法 matchup / mode / seed / control mode 不再静默改成默认值
+  4. `ContentSnapshotCache` 签名依赖缺失时直接失败，并暴露具体缺失路径；缓存签名继续覆盖 formal source / baseline / capability / validator 输入
+  5. `formal_character_manifest_views.gd` 抽出 pair interaction case builder，主文件从 502 行降到 369 行
+  6. `tests/godot_headless_env.sh` cleanup 后清理 Godot headless 环境变量，避免同 shell 重复 setup 指向已删除目录
+- 验收标准：
+  - 新角色草稿不会污染正式目录
+  - 测试入口不会把拼错的 sandbox 配置当默认局跑成功
+  - 内容快照签名依赖缺失不再被弱签名掩盖
+  - manifest views 不再触发架构体量预警
+- 验证结果：分批定向 gdUnit、`check_repo_consistency`、`check_architecture_constraints`、`check_sandbox_smoke_matrix` 已通过；最终总 gate 见本轮提交记录
+
 ## 最近完成：扩角前文档口径修正与脚手架增强（2026-04-22）
 
 - 状态：已完成
@@ -147,6 +165,21 @@
   - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/replay_guard_failure_suite.gd bash tests/run_gdunit.sh`
   - `bash tests/check_gdunit_gate.sh`
   - `bash tests/run_with_gate.sh`
+
+## 最近完成：formal 自动化审阅问题修复（2026-04-24）
+
+- 状态：已完成
+- 目标：修复 formal 自动化接入审阅中确认的问题，暂不拆分 `FormalCharacterManifestViews`
+- 范围：
+  1. 修复内容快照缓存签名遗漏 formal baseline/source/capability 输入的问题
+  2. 收紧新角色 scaffold 的命名校验与 pair interaction 草稿流转
+  3. 增加 live scaffold 占位符 gate，避免占位 runner 或 `FILL_IN` 进入正式目录
+  4. 清理本地 `.DS_Store` 噪声
+- 验收标准：
+  - cache signature 会随 formal baseline/source/capability 相关输入变化而变化
+  - draft pair interaction runner 不会被 live registry 自动发现
+  - live formal 目录中出现 scaffold 占位符时 repo consistency gate 会失败
+  - `bash tests/run_with_gate.sh` 通过
 
 ## 最近完成：审阅问题补齐（2026-04-20）
 

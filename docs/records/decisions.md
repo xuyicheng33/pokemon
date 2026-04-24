@@ -35,6 +35,14 @@
 4. **单一运行态真相**：`BattleState` 是唯一运行态对象，其他模块不得各自缓存状态副本。
 5. **`tests/run_with_gate.sh` 作为主 gate 总入口**：内部顺序 `gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → sandbox smoke matrix` 不变。
 
+### 扩角前接入安全线（2026-04-24）
+
+- 新正式角色脚手架产物在完成前只能进入 `scripts/drafts/` 镜像路径；正式目录不接收 `FORMAL_DRAFT_`、`draft_marker`、`FILL_IN`、占位 runner 或 live validator `pass`。
+- `config/formal_character_sources/` 与 `scripts/drafts/` 中的 source descriptor 读取失败必须直接中止脚手架，不允许跳过坏 JSON 后继续做 collision 检查。
+- Sandbox UI 可以继续把用户控件输入规范化；测试、CLI smoke 和自动化入口必须使用 strict config，非法 matchup / mode / seed / control mode 直接失败。
+- 内容快照缓存签名的显式依赖缺失属于内容快照错误，必须失败并暴露缺失路径，不允许退到 mtime 或空依赖签名。
+- `FormalCharacterManifestViews` 只保留 runtime / delivery / catalog 入口协调；pair interaction case 派生逻辑由 `FormalCharacterPairInteractionCaseBuilder` 承担，后续 manifest 派生继续按职责拆分。
+
 ### Stage 1 composition slot 收缩目标图（2026-04-19 冻结）
 
 当前 81 slot = base 66 + payload shared 3 + payload runtime 3 + payload handler 9。
