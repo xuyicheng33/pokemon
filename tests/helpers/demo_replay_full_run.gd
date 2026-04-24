@@ -13,6 +13,7 @@ func _init() -> void:
 		quit(1)
 		return
 	var launch_config := _launch_config_helper.default_config()
+	launch_config[BattleSandboxLaunchConfigScript.STRICT_CONFIG_KEY] = true
 	launch_config["mode"] = BattleSandboxLaunchConfigScript.MODE_DEMO_REPLAY
 	launch_config["demo_profile_id"] = demo_profile_id
 	var context_result = _context_support.build_manual_scene_context(BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED, launch_config)

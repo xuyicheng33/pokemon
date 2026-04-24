@@ -11,6 +11,7 @@ func _init() -> void:
 	if battle_seed <= 0:
 		battle_seed = BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED
 	var launch_config := _launch_config_helper.default_config()
+	launch_config[BattleSandboxLaunchConfigScript.STRICT_CONFIG_KEY] = true
 	var matchup_id := str(OS.get_environment("MATCHUP_ID")).strip_edges()
 	if not matchup_id.is_empty():
 		launch_config["matchup_id"] = matchup_id

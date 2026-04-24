@@ -34,6 +34,21 @@ func test_launch_config_normalize_config_contract() -> void:
 	assert_str(String(normalized.get("p1_control_mode", ""))).is_equal("manual")
 	assert_str(String(normalized.get("p2_control_mode", ""))).is_equal("policy")
 
+func test_launch_config_strict_invalid_config_contract() -> void:
+	var result: Dictionary = _launch_config_helper.normalize_config_result({
+		"mode": "unsupported_mode",
+		"matchup_id": "missing_matchup",
+		"battle_seed": -99,
+		"p1_control_mode": "???",
+		"p2_control_mode": "policy",
+	}, _available_matchups(), true)
+	assert_bool(bool(result.get("ok", true))).is_false()
+	var error_message := String(result.get("error_message", ""))
+	assert_str(error_message).contains("invalid sandbox mode")
+	assert_str(error_message).contains("unknown sandbox matchup_id")
+	assert_str(error_message).contains("invalid sandbox battle_seed")
+	assert_str(error_message).contains("invalid sandbox control mode")
+
 func test_launch_config_visible_matchup_recommended_order_contract() -> void:
 	var visible_matchups: Array = _launch_config_helper.visible_matchup_descriptors(_available_matchups())
 	var visible_ids := _matchup_ids(visible_matchups)
