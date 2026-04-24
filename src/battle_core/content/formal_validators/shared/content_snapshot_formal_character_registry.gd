@@ -2,6 +2,7 @@ extends RefCounted
 class_name ContentSnapshotFormalCharacterRegistry
 
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
+const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const REGISTRY_PATH := "res://config/formal_character_manifest.json"
 
 static func load_entries() -> Dictionary:
@@ -112,7 +113,4 @@ static func build_validator_instances_from_path(registry_path: String) -> Dictio
 	}
 
 static func _resolve_registry_path(registry_path: String) -> String:
-	var normalized_path := String(registry_path).strip_edges()
-	if normalized_path.is_empty():
-		return REGISTRY_PATH
-	return normalized_path if normalized_path.begins_with("res://") or normalized_path.begins_with("user://") else "res://%s" % normalized_path
+	return ResourcePathHelperScript.resolve(registry_path, REGISTRY_PATH)

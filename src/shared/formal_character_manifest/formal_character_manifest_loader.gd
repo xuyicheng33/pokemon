@@ -3,6 +3,7 @@ class_name FormalCharacterManifestLoader
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const FormalRegistryContractsScript := preload("res://src/shared/formal_registry_contracts.gd")
+const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 const DEFAULT_MANIFEST_PATH := "res://config/formal_character_manifest.json"
@@ -59,16 +60,13 @@ func load_manifest_payload_result(manifest_path: String, manifest_path_override:
 	})
 
 func resolve_manifest_path(manifest_path: String, manifest_path_override: String = "") -> String:
-	var normalized_path := normalize_resource_path(manifest_path)
+	var normalized_path := ResourcePathHelperScript.normalize(manifest_path)
 	if not normalized_path.is_empty():
 		return normalized_path
-	return normalize_resource_path(manifest_path_override) if not String(manifest_path_override).strip_edges().is_empty() else DEFAULT_MANIFEST_PATH
+	return ResourcePathHelperScript.resolve(manifest_path_override, DEFAULT_MANIFEST_PATH)
 
 static func normalize_resource_path(raw_path: String) -> String:
-	var trimmed_path := String(raw_path).strip_edges()
-	if trimmed_path.is_empty():
-		return ""
-	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+	return ResourcePathHelperScript.normalize(raw_path)
 
 func normalize_entry_result(entry: Dictionary, character_id: String) -> Dictionary:
 	for raw_rel_path in entry.get("required_content_paths", []):

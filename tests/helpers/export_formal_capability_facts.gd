@@ -2,6 +2,7 @@ extends SceneTree
 
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 const ManifestLoaderScript := preload("res://src/shared/formal_character_manifest/formal_character_manifest_loader.gd")
+const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const COLLECTOR_DIR := "res://tests/helpers/formal_capability_fact_collectors"
 const COLLECTOR_SUFFIX := "_collector.gd"
 
@@ -104,7 +105,7 @@ func _collect_character_fact_sources_result(entry: Dictionary, collectors: Array
 		var rel_path := String(raw_rel_path).strip_edges()
 		if rel_path.is_empty():
 			continue
-		var resolved_path := ManifestLoaderScript.normalize_resource_path(rel_path)
+		var resolved_path := ResourcePathHelperScript.normalize(rel_path)
 		var resource = ResourceLoader.load(resolved_path)
 		if resource == null:
 			return _error_result("missing resource %s" % resolved_path)

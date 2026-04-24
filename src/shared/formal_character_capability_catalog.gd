@@ -2,6 +2,7 @@ extends RefCounted
 class_name FormalCharacterCapabilityCatalog
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 const DEFAULT_CATALOG_PATH := "res://config/formal_character_capability_catalog.json"
@@ -76,16 +77,10 @@ func capability_ids_result(catalog_path: String = "") -> Dictionary:
 	return ResultEnvelopeHelperScript.ok(capability_ids)
 
 func _resolve_catalog_path(catalog_path: String) -> String:
-	var normalized_path := _normalize_resource_path(catalog_path)
+	var normalized_path := ResourcePathHelperScript.normalize(catalog_path)
 	if not normalized_path.is_empty():
 		return normalized_path
-	return _normalize_resource_path(catalog_path_override) if not String(catalog_path_override).strip_edges().is_empty() else DEFAULT_CATALOG_PATH
-
-func _normalize_resource_path(raw_path: String) -> String:
-	var trimmed_path := String(raw_path).strip_edges()
-	if trimmed_path.is_empty():
-		return ""
-	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+	return ResourcePathHelperScript.resolve(catalog_path_override, DEFAULT_CATALOG_PATH)
 
 func _error_result(error_message: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_BATTLE_SETUP, error_message)
