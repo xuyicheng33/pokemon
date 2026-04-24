@@ -304,10 +304,10 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-24）
 
-- `src/**/*.gd`：`22301` 行
-- `test/**/*.gd`：`22130` 行
+- `src/**/*.gd`：`22296` 行
+- `test/**/*.gd`：`22147` 行
 - `tests/**/*.gd`：`5223` 行
-- GDScript 合计：`49654` 行
+- GDScript 合计：`49666` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

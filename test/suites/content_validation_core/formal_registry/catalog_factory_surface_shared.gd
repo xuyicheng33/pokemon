@@ -7,7 +7,7 @@ func _test_formal_pair_surface_delivery_skill_contract(harness) -> Dictionary:
 			"gojo_alias",
 			"Gojo Alias",
 			"gojo_satoru",
-			"gojo_alias_vs_sample",
+			"gojoalias_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
 			"",
 			"docs/design/gojo_satoru_design.md",
@@ -17,13 +17,15 @@ func _test_formal_pair_surface_delivery_skill_contract(harness) -> Dictionary:
 			["test/suites/formal_character_pair_smoke_suite.gd"],
 			["gojo_manager_smoke_contract"],
 			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
-			["anchor:gojo.adjust.tests-impacted"]
+			["anchor:gojo.adjust.tests-impacted"],
+			[],
+			"gojoalias"
 		),
 		_build_manifest_character_entry(
 			"sukuna_alias",
 			"Sukuna Alias",
 			"sukuna",
-			"sukuna_alias_setup",
+			"sukunaalias_setup",
 			["content/units/sukuna/sukuna.tres"],
 			"",
 			"docs/design/sukuna_design.md",
@@ -33,14 +35,25 @@ func _test_formal_pair_surface_delivery_skill_contract(harness) -> Dictionary:
 			["test/suites/formal_character_pair_smoke_suite.gd"],
 			["sukuna_manager_smoke_contract"],
 			["anchor:sukuna.design.domain-expire-burst-kept"],
-			["anchor:sukuna.adjust.tests-impacted"]
+			["anchor:sukuna.adjust.tests-impacted"],
+			[],
+			"sukunaalias",
+			"",
+			[
+				_build_owned_pair_interaction_spec(
+					"gojo_alias",
+					"gojo_sukuna_domain_cleanup",
+					5121,
+					5122
+				)
+			]
 		),
 	], {
-		"gojo_alias_vs_sample": {
+		"gojoalias_vs_sample": {
 			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
 			"p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
 		},
-		"sukuna_alias_setup": {
+		"sukunaalias_setup": {
 			"p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
 			"p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
 		}

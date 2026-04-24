@@ -70,7 +70,7 @@ func _test_formal_character_auto_sample_matchup_contract(harness) -> Dictionary:
 			"gojo_alias",
 			"Gojo Alias",
 			"gojo_satoru",
-			"gojo_alias_vs_sample",
+			"gojoalias_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
 			"",
 			"docs/design/gojo_satoru_design.md",
@@ -80,7 +80,9 @@ func _test_formal_character_auto_sample_matchup_contract(harness) -> Dictionary:
 			["test/suites/formal_character_pair_smoke_suite.gd"],
 			["gojo_manager_smoke_contract"],
 			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
-			["anchor:gojo.adjust.tests-impacted"]
+			["anchor:gojo.adjust.tests-impacted"],
+			[],
+			"gojoalias"
 		),
 	]), "  ")
 	if not _write_json_fixture(manifest_path, manifest_payload):
@@ -91,7 +93,7 @@ func _test_formal_character_auto_sample_matchup_contract(harness) -> Dictionary:
 	var setup_result: Dictionary = override_factory.build_formal_character_setup_result("gojo_alias")
 	if not bool(setup_result.get("ok", false)):
 		return harness.fail_result("auto-derived sample matchup should resolve formal setup without touching shared registry: %s" % String(setup_result.get("error_message", "unknown error")))
-	var direct_setup_result: Dictionary = override_factory.build_setup_by_matchup_id_result("gojo_alias_vs_sample")
+	var direct_setup_result: Dictionary = override_factory.build_setup_by_matchup_id_result("gojoalias_vs_sample")
 	if not bool(direct_setup_result.get("ok", false)):
 		return harness.fail_result("auto-derived sample matchup should be directly loadable by matchup id: %s" % String(direct_setup_result.get("error_message", "unknown error")))
 	if _setup_signature(setup_result.get("data", null)) != _setup_signature(direct_setup_result.get("data", null)):
@@ -103,7 +105,7 @@ func _test_formal_character_auto_sample_matchup_contract(harness) -> Dictionary:
 		if not (raw_descriptor is Dictionary):
 			continue
 		var descriptor: Dictionary = raw_descriptor
-		if String(descriptor.get("matchup_id", "")) != "gojo_alias_vs_sample":
+		if String(descriptor.get("matchup_id", "")) != "gojoalias_vs_sample":
 			continue
 		if String(descriptor.get("source", "")) != "formal":
 			return harness.fail_result("auto-derived sample matchup should surface as formal descriptor")
@@ -117,7 +119,7 @@ func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary
 			"gojo_alias",
 			"Gojo Alias",
 			"gojo_satoru",
-			"gojo_alias_vs_sample",
+			"gojoalias_vs_sample",
 			["content/units/gojo/gojo_satoru.tres"],
 			"",
 			"docs/design/gojo_satoru_design.md",
@@ -127,13 +129,15 @@ func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary
 			["test/suites/formal_character_pair_smoke_suite.gd"],
 			["gojo_manager_smoke_contract"],
 			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
-			["anchor:gojo.adjust.tests-impacted"]
+			["anchor:gojo.adjust.tests-impacted"],
+			[],
+			"gojoalias"
 		),
 		_build_manifest_character_entry(
 			"sukuna_alias",
 			"Sukuna Alias",
 			"sukuna",
-			"sukuna_alias_setup",
+			"sukunaalias_setup",
 			["content/units/sukuna/sukuna.tres"],
 			"",
 			"docs/design/sukuna_design.md",
@@ -145,7 +149,7 @@ func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary
 			["anchor:sukuna.design.domain-expire-burst-kept"],
 			["anchor:sukuna.adjust.tests-impacted"],
 			[],
-			"",
+			"sukunaalias",
 			"",
 			[
 				_build_owned_pair_interaction_spec(
@@ -157,11 +161,11 @@ func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary
 			]
 		),
 	], {
-		"gojo_alias_vs_sample": {
+		"gojoalias_vs_sample": {
 			"p1_units": ["gojo_satoru", "sample_mossaur", "sample_tidekit"],
 			"p2_units": ["sample_pyron", "sample_tidekit", "sample_mossaur"]
 		},
-		"sukuna_alias_setup": {
+		"sukunaalias_setup": {
 			"p1_units": ["sukuna", "sample_mossaur", "sample_pyron"],
 			"p2_units": ["sample_tidekit", "sample_pyron", "sample_mossaur"]
 		}

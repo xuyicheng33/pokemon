@@ -13,6 +13,22 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：扩角前基础架构稳固审阅修复（2026-04-25）
+
+- 状态：已完成
+- 目标：在接入新正式角色前，修复本轮审阅发现的基础架构、自动化和 fail-fast 风险
+- 范围：
+  1. 修复 repo gate 运行阻断：补 `repo_consistency_formal_character_gate_pairs.py` 缺失 `re` import，放宽 architecture helper needle 以兼容返回类型标注，并同步 README 行数与缺失 `.gd.uid`
+  2. formal pair smoke suite 从逐角色硬编码函数改为派生 case 循环，新增角色后不再为每个 directed pair 手写测试函数
+  3. sandbox launch config contract 从 manifest/runtime entries 派生推荐 matchup 顺序，移除当前四个正式角色名单硬编码
+  4. `export_formal_registry_views.gd` 对 source descriptor 的 `test_only` 执行严格 bool 校验，避免字符串被布尔转换吞掉
+  5. pair interaction case 派生器校验 battle seed 为正整数且全局唯一；formal gate 同步检查重复 seed，并补 seed 负向用例
+- 验收标准：
+  - 新增角色主要改 source descriptor 与对应内容，不需要同步扩写 pair smoke / sandbox 推荐测试名单
+  - source descriptor 类型错误和 pair interaction seed 冲突会在本地 gate 或运行态 catalog 构建时直接失败
+  - repo consistency、architecture constraints、定向 GdUnit 与最终总 gate 通过
+- 验证结果：定向 GdUnit、formal gate、repo consistency、architecture constraints 已通过；`bash tests/run_with_gate.sh` 通过，`405 test cases / 0 failures`，boot smoke、suite reachability、architecture、repo consistency 与 sandbox smoke matrix 均 clean
+
 ## 最近完成：架构审阅第四轮修复（2026-04-25）
 
 - 状态：已完成
