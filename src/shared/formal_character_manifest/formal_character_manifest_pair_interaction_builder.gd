@@ -50,6 +50,7 @@ func _build_pair_maps_result(characters: Array, manifest_path: String) -> Dictio
 	var known_character_ids: Dictionary = {}
 	var character_to_unit: Dictionary = {}
 	var pair_token_by_character: Dictionary = {}
+	var seen_pair_tokens: Dictionary = {}
 	var initiator_bench_by_character: Dictionary = {}
 	var responder_bench_by_character: Dictionary = {}
 	for entry_index in range(characters.size()):
@@ -86,8 +87,9 @@ func _build_pair_maps_result(characters: Array, manifest_path: String) -> Dictio
 		)
 		if not bool(responder_bench_result.get("ok", false)):
 			return responder_bench_result
-		if pair_token_by_character.values().has(pair_token):
+		if seen_pair_tokens.has(pair_token):
 			return _catalog_error_result("FormalCharacterManifest duplicated pair token: %s (%s)" % [pair_token, manifest_path])
+		seen_pair_tokens[pair_token] = true
 		runtime_order.append(character_id)
 		known_character_ids[character_id] = true
 		character_to_unit[character_id] = unit_definition_id
