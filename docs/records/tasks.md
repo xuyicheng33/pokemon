@@ -13,6 +13,19 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：架构审阅第二轮优化（2026-04-24）
+
+- 状态：已完成
+- 目标：修复架构审阅中发现的结构性和防御性问题
+- 范围：
+  1. `manifest_views.gd` 拆分 pair interaction 派生逻辑到 `formal_character_manifest_pair_interaction_builder.gd`（views 471→178 行，builder 309 行）
+  2. `pair_token` 不含下划线约束：脚手架 + manifest loader 双重校验
+  3. `BaselineLoader` 加 static cache 避免重复 manifest JSON 解析
+  4. Gate stale needle 检查从硬编码列表改为正则模式，新角色自动覆盖
+  5. decisions.md 补充三条规范：validator 拆分阈值（400 行）、factory helper 上限（5 个）、test/ vs tests/ 约定
+  6. ResultEnvelope wrapper 模式确认为可接受约定并记录
+- 验收标准：行为不变，结构更清晰，防御性校验更完整
+
 ## 最近完成：项目架构审阅问题清理（2026-04-24）
 
 - 状态：已完成
