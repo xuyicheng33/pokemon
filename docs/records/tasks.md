@@ -13,6 +13,21 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：项目架构审阅问题清理（2026-04-24）
+
+- 状态：已完成
+- 目标：修复架构审阅中发现的 7 项代码质量问题
+- 范围：
+  1. 澄清 `PayloadExecutor._leave_effect_guard` dedupe key 生命周期意图（注释）
+  2. 澄清 `ContentSnapshotCache` signature 路径列表的维护约定（注释）
+  3. 提取 `ResourcePathHelper`，消除 6 处 `normalize_resource_path` 重复实现
+  4. `FormalRegistryContracts.load_contracts_result()` 加实例级缓存，避免重复读文件
+  5. `ContentSnapshotFormalCharacterRegistry` 返回格式统一为 `ResultEnvelopeHelper` 标准 envelope
+  6. Gojo/Sukuna/Kashimo validator 中可替代的内联 effect contract dict 改为 baseline 引用
+  7. `SampleBattleFactory.dispose()` 提取 `_nullify_links` 简化循环引用清理
+- 验收标准：行为不变，代码重复减少，格式统一
+- 验证：待闸门验证
+
 ## 最近完成：扩角前文档口径修正与脚手架增强（2026-04-22）
 
 - 状态：已完成
