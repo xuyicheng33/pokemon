@@ -98,16 +98,12 @@ func _validate_reverse_ritual_contract(content_index: BattleContentIndex, errors
 	var effect_definition = _require_effect(content_index, errors, label, "sukuna_reverse_heal")
 	if effect_definition == null:
 		return
-	_helper.validate_effect_contracts(self, content_index, errors, [{
-		"label": "%s effect" % label,
-		"effect_id": "sukuna_reverse_heal",
-		"fields": {
-			"scope": "self",
-			"duration_mode": "permanent",
-			"stacking": "none",
-			"trigger_names": PackedStringArray(["on_cast"]),
-		},
-	}])
+	_helper.validate_effect_contracts(
+		self,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.effect_contract("sukuna", "sukuna_reverse_heal", "%s effect" % label)]
+	)
 	var heal_payload = _extract_single_payload(
 		errors,
 		label,
