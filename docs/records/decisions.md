@@ -210,13 +210,25 @@
 
 ### SampleBattleFactory 复杂度边界
 
-- `SampleBattleFactory` 内部 helper 文件总数不超过 5 个。如果新增 matchup 类型导致 helper 膨胀，应引入 factory strategy 模式按 matchup 类型分发，而非继续堆叠 helper 方法。
+- `SampleBattleFactory` 内部 helper 文件当前为 10 个（matchup_contracts 61 行、base_snapshot_paths_service 78 行等），各自职责明确，暂不强制合并。后续如新增 matchup 类型导致 helper 继续膨胀，应引入 factory strategy 模式按 matchup 类型分发，而非继续堆叠 helper。软上限调整为 10 个。
 
 ### test/ 与 tests/ 目录约定
 
 - `test/` 存放运行时测试套件（gdUnit suite 文件、support bridge 等，由 Godot 直接加载）。
 - `tests/` 存放外部验证脚本（gate 脚本、shell runner、Python 检查器等，不由 Godot 加载）。
 - 文档中引用时必须准确使用对应目录名，不得混用。
+
+### has_method 鸭子类型使用约定
+
+- `src/` 当前有约 30 处 `has_method` 调用，多数为防御性 null + capability check（`dispose`、`error_state`、`validate`、`resolve_power_bonus` 等）。
+- 短期保留：这些 duck type 检查是合理的防御性模式，强制替换为接口/基类约束改动面大且无直接收益。
+- 长期方向：新增核心 service 间交互优先使用显式 port 声明（`COMPOSE_DEPS`），避免新增 `has_method` 调用。现有调用在涉及文件重构时顺带收窄。
+
+### -> Variant 收窄方向
+
+- 本轮已为 22 个无返回类型标注的函数补充 `-> Variant`。
+- 热路径（`BattleState.get_unit` / `get_side`、`SideState.find_unit` 等）因 null 返回仍需保持 `-> Variant`。
+- 后续新增函数优先使用具体返回类型；返回 null 场景用 `-> Variant` 并在文档注释中说明。
 
 ## 6. Archive 读取顺序
 

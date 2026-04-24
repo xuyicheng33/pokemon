@@ -65,6 +65,9 @@ func get_active_unit(side_id: String, slot_id: String = ContentSchemaScript.ACTI
 		return null
 	return side_state.get_active_unit(slot_id)
 
+# Omitted from stable dict (transient per-turn state, reset between turns):
+#   pending_effect_queue, chain_context, fatal_damage_records_by_target,
+#   _unit_index, _unit_public_index (derived caches).
 func to_stable_dict() -> Dictionary:
 	var side_dicts: Array = []
 	var sorted_sides = sides.duplicate()

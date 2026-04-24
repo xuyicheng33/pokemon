@@ -131,6 +131,9 @@ func _leave_effect_guard(battle_state: BattleState) -> void:
 	if battle_state.chain_context.chain_depth > 0:
 		battle_state.chain_context.chain_depth -= 1
 
+# Key fields are joined by "|". No field value may contain "|"; all current
+# id / trigger_name / discriminator values are plain identifiers guaranteed
+# to be pipe-free by content validation.
 func _build_dedupe_key(effect_event: EffectEvent) -> String:
 	var source_instance_id := ""
 	var effect_instance_id := ""
