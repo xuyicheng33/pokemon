@@ -121,6 +121,10 @@ func _enter_effect_guard(effect_event: EffectEvent, battle_state: BattleState) -
 		return false
 	return true
 
+# Dedupe keys are intentionally kept for the entire action segment lifetime.
+# The key includes trigger_name, so the same effect under different triggers
+# produces distinct keys and won't be blocked. Only identical
+# (effect + trigger + segment) combinations are prevented from re-entering.
 func _leave_effect_guard(battle_state: BattleState) -> void:
 	if battle_state.chain_context == null:
 		return
