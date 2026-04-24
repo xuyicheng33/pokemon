@@ -59,6 +59,31 @@ if [[ ${#VISIBLE_MATCHUP_IDS[@]} -eq 0 ]]; then
   exit 1
 fi
 
+RECOMMENDED_MATCHUP_IDS=()
+while IFS= read -r matchup_id; do
+  if [[ -n "$matchup_id" ]]; then
+    RECOMMENDED_MATCHUP_IDS+=("$matchup_id")
+  fi
+done < <(python3 - "$SMOKE_CATALOG_FILE" <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+for raw_matchup_id in payload.get("recommended_matchup_ids", []):
+    matchup_id = str(raw_matchup_id).strip()
+    if matchup_id:
+        print(matchup_id)
+PY
+)
+
+if [[ ${#RECOMMENDED_MATCHUP_IDS[@]} -eq 0 ]]; then
+  echo "SANDBOX_SMOKE_FAILED: sandbox smoke catalog exported no recommended_matchup_ids" >&2
+  exit 1
+fi
+
 SANDBOX_SMOKE_SCOPE="${SANDBOX_SMOKE_SCOPE:-quick}"
 if [[ "$SANDBOX_SMOKE_SCOPE" != "quick" && "$SANDBOX_SMOKE_SCOPE" != "full" ]]; then
   echo "SANDBOX_SMOKE_FAILED: SANDBOX_SMOKE_SCOPE must be quick or full: $SANDBOX_SMOKE_SCOPE" >&2
@@ -69,12 +94,11 @@ SMOKE_MATCHUP_IDS=()
 if [[ "$SANDBOX_SMOKE_SCOPE" == "full" ]]; then
   SMOKE_MATCHUP_IDS=("${VISIBLE_MATCHUP_IDS[@]}")
 else
+  RECOMMENDED_MATCHUP_LOOKUP=" ${RECOMMENDED_MATCHUP_IDS[*]} "
   for matchup_id in "${VISIBLE_MATCHUP_IDS[@]}"; do
-    case "$matchup_id" in
-      "$DEFAULT_MATCHUP_ID"|"gojo_vs_sample"|"kashimo_vs_sample"|"obito_vs_sample"|"sukuna_setup"|"sample_default"|*_vs_sample)
-        SMOKE_MATCHUP_IDS+=("$matchup_id")
-        ;;
-    esac
+    if [[ "$matchup_id" == "$DEFAULT_MATCHUP_ID" || "$RECOMMENDED_MATCHUP_LOOKUP" == *" $matchup_id "* || "$matchup_id" == *_vs_sample ]]; then
+      SMOKE_MATCHUP_IDS+=("$matchup_id")
+    fi
   done
 fi
 

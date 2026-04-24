@@ -38,6 +38,12 @@ func _init() -> void:
 	for raw_descriptor in visible_matchups:
 		var descriptor: Dictionary = raw_descriptor
 		visible_matchup_ids.append(String(descriptor.get("matchup_id", "")).strip_edges())
+	var recommended_matchup_ids: Array = []
+	for raw_matchup_id in _launch_config_helper.recommended_matchup_ids():
+		var matchup_id := String(raw_matchup_id).strip_edges()
+		if matchup_id.is_empty():
+			continue
+		recommended_matchup_ids.append(matchup_id)
 	var demo_profile_ids_result: Dictionary = sample_factory.demo_profile_ids_result()
 	if not bool(demo_profile_ids_result.get("ok", false)):
 		_print_and_quit("EXPORT_SANDBOX_SMOKE_CATALOG_FAILED: %s" % String(demo_profile_ids_result.get("error_message", "failed to load demo profile ids")), sample_factory)
@@ -64,6 +70,7 @@ func _init() -> void:
 	file.store_string(JSON.stringify({
 		"default_matchup_id": default_matchup_id,
 		"visible_matchup_ids": visible_matchup_ids,
+		"recommended_matchup_ids": recommended_matchup_ids,
 		"demo_profiles": demo_profiles,
 	}, "  "))
 	file.flush()

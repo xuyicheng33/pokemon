@@ -13,6 +13,19 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：Sandbox 推荐入口去角色硬编码（2026-04-24）
+
+- 状态：已完成
+- 目标：把扩角前审阅发现的 sandbox 推荐列表和 quick smoke 手写角色名移到 manifest 派生
+- 范围：
+  1. `BattleSandboxLaunchConfig.recommended_matchup_ids()` 从 formal runtime entries 的 `formal_setup_matchup_id` 派生推荐 matchup，并追加 `sample_default`
+  2. 命令行启动配置默认带 `strict_config=true`，拼错 matchup / mode / seed / control mode 直接暴露错误
+  3. `tests/check_sandbox_smoke_matrix.sh` 的 quick 集合读取 sandbox smoke catalog 导出的推荐 matchup，不再硬编码当前四个正式角色
+- 验收标准：
+  - 新角色使用自定义 `formal_setup_matchup_id` 时，sandbox 推荐排序和 quick smoke 自动跟随 manifest
+  - 默认 CLI/debug 启动不再静默吞掉非法配置
+  - launch-config suite 与 sandbox smoke matrix 通过
+
 ## 最近完成：扩角前审阅问题修复（2026-04-24）
 
 - 状态：已完成

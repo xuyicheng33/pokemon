@@ -7,16 +7,13 @@ const CONTROL_MODE_MANUAL := "manual"
 const CONTROL_MODE_POLICY := "policy"
 const DEFAULT_MATCHUP_ID := "gojo_vs_sample"
 const DEFAULT_BATTLE_SEED := 9101
+const SAMPLE_DEFAULT_MATCHUP_ID := "sample_default"
 const SIDE_IDS := ["P1", "P2"]
 const ERROR_MESSAGE_KEY := "error_message"
 const STRICT_CONFIG_KEY := "strict_config"
-const RECOMMENDED_MATCHUP_IDS := [
-	"gojo_vs_sample",
-	"kashimo_vs_sample",
-	"obito_vs_sample",
-	"sukuna_setup",
-	"sample_default",
-]
+const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
+
+var _manifest = FormalCharacterManifestScript.new()
 
 func default_config() -> Dictionary:
 	return {
@@ -30,6 +27,7 @@ func default_config() -> Dictionary:
 
 func build_config_from_user_args(user_args: Array) -> Dictionary:
 	var config := default_config()
+	config[STRICT_CONFIG_KEY] = true
 	for raw_arg in user_args:
 		var arg := str(raw_arg).strip_edges()
 		if arg.is_empty() or not arg.contains("="):
@@ -116,6 +114,7 @@ func normalize_config_result(raw_config: Dictionary, available_matchups: Array =
 	}
 
 func visible_matchup_descriptors(available_matchups: Array) -> Array:
+	var recommended_ids := recommended_matchup_ids()
 	var visible_by_id: Dictionary = {}
 	var remaining_visible: Array = []
 	var visible: Array = []
@@ -128,15 +127,37 @@ func visible_matchup_descriptors(available_matchups: Array) -> Array:
 		var matchup_id := str(descriptor.get("matchup_id", "")).strip_edges()
 		if matchup_id.is_empty():
 			continue
-		if RECOMMENDED_MATCHUP_IDS.has(matchup_id):
+		if recommended_ids.has(matchup_id):
 			visible_by_id[matchup_id] = descriptor
 			continue
 		remaining_visible.append(descriptor)
-	for matchup_id in RECOMMENDED_MATCHUP_IDS:
+	for matchup_id in recommended_ids:
 		if visible_by_id.has(matchup_id):
 			visible.append(visible_by_id.get(matchup_id))
 	visible.append_array(remaining_visible)
 	return visible
+
+func recommended_matchup_ids() -> Array[String]:
+	var recommended_ids: Array[String] = []
+	var seen_ids: Dictionary = {}
+	var entries_result: Dictionary = _manifest.build_runtime_entries_result()
+	if bool(entries_result.get("ok", false)):
+		for raw_entry in entries_result.get("data", []):
+			if not (raw_entry is Dictionary):
+				continue
+			_append_unique_matchup_id(
+				recommended_ids,
+				seen_ids,
+				String(raw_entry.get("formal_setup_matchup_id", "")).strip_edges()
+			)
+	_append_unique_matchup_id(recommended_ids, seen_ids, SAMPLE_DEFAULT_MATCHUP_ID)
+	return recommended_ids
+
+func _append_unique_matchup_id(matchup_ids: Array[String], seen_ids: Dictionary, matchup_id: String) -> void:
+	if matchup_id.is_empty() or seen_ids.has(matchup_id):
+		return
+	seen_ids[matchup_id] = true
+	matchup_ids.append(matchup_id)
 
 func side_control_modes(config: Dictionary) -> Dictionary:
 	return {

@@ -20,6 +20,10 @@ func test_launch_config_default_config_contract() -> void:
 	assert_str(String(launch_config.get("p2_control_mode", ""))).is_equal("policy")
 	assert_str(String(launch_config.get("demo_profile_id", ""))).is_equal("")
 
+func test_launch_config_user_args_are_strict_contract() -> void:
+	var launch_config: Dictionary = _launch_config_helper.build_config_from_user_args([])
+	assert_bool(bool(launch_config.get(BattleSandboxLaunchConfigScript.STRICT_CONFIG_KEY, false))).is_true()
+
 func test_launch_config_normalize_config_contract() -> void:
 	var normalized: Dictionary = _launch_config_helper.normalize_config({
 		"mode": "unsupported_mode",
@@ -53,14 +57,27 @@ func test_launch_config_visible_matchup_recommended_order_contract() -> void:
 	var visible_matchups: Array = _launch_config_helper.visible_matchup_descriptors(_available_matchups())
 	var visible_ids := _matchup_ids(visible_matchups)
 	assert_int(visible_ids.find("gojo_vs_sample")).is_equal(0)
-	assert_int(visible_ids.find("kashimo_vs_sample")).is_equal(1)
-	assert_int(visible_ids.find("obito_vs_sample")).is_equal(2)
-	assert_int(visible_ids.find("sukuna_setup")).is_equal(3)
+	assert_int(visible_ids.find("sukuna_setup")).is_equal(1)
+	assert_int(visible_ids.find("kashimo_vs_sample")).is_equal(2)
+	assert_int(visible_ids.find("obito_vs_sample")).is_equal(3)
 	assert_int(visible_ids.find("sample_default")).is_equal(4)
 	for descriptor in visible_matchups:
 		if not (descriptor is Dictionary):
 			continue
 		assert_bool(bool(descriptor.get("test_only", false))).is_false()
+
+func test_launch_config_recommended_matchups_follow_manifest_contract() -> void:
+	var recommended_ids := _launch_config_helper.recommended_matchup_ids()
+	var expected_ids := [
+		"gojo_vs_sample",
+		"sukuna_setup",
+		"kashimo_vs_sample",
+		"obito_vs_sample",
+		"sample_default",
+	]
+	assert_int(recommended_ids.size()).is_equal(expected_ids.size())
+	for index in range(expected_ids.size()):
+		assert_str(String(recommended_ids[index])).is_equal(String(expected_ids[index]))
 
 func _available_matchups() -> Array:
 	var available_result: Dictionary = _sample_factory.available_matchups_result()

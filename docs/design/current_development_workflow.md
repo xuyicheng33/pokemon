@@ -58,6 +58,7 @@
 2. 默认进入 `scenes/sandbox/BattleSandbox.tscn`
 3. 当前 launch config 基线为 `gojo_vs_sample + 9101 + manual/policy`
 4. HUD 上只通过 `matchup / battle_seed / P1 mode / P2 mode` 重开，不走历史 wrapper 或旧 runner；`manual/manual` 与 `policy/policy` 只作为显式模式保留
+5. 可见 matchup 的推荐顺序从 formal manifest 的 `formal_setup_matchup_id` 派生，新增正式角色不再手工维护 sandbox 推荐名单
 
 headless 复查入口固定为：
 

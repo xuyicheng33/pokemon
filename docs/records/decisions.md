@@ -183,6 +183,8 @@
 ### 主线入口与验证矩阵
 
 - `BattleSandboxController` 继续是当前研发试玩入口；默认路径继续固定为 `gojo_vs_sample + 9101 + manual/policy`。
+- BattleSandbox 可见推荐 matchup 的正式角色段从 `config/formal_character_manifest.json` 的 `characters[*].formal_setup_matchup_id` 派生；新增角色不再手工维护 sandbox 推荐名单或 quick smoke 角色名单。
+- CLI/debug 启动路径默认启用 strict launch config；非法 matchup / mode / seed / control mode 必须暴露为启动错误，只有 UI 控件内的选择归一化可以保留非 strict 行为。
 - `tests/run_with_gate.sh` 继续是唯一总入口，顺序保持：`gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → sandbox smoke matrix`。
 - `BattleSandbox`、`run_with_gate` 与 `gdUnit4 + test/` 继续构成当前仓库的主研发主线。
 - CI 当前固定拆成 3 个并行 job（`gdunit`、`repo_and_arch_gates`、`boot_and_sandbox_smoke`），并与本地总入口共用同一批子脚本。
