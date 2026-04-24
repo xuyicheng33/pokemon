@@ -13,6 +13,7 @@ func derive_pair_interaction_cases_result(characters: Array, pair_maps: Dictiona
 		character_index_by_id[String(runtime_order[character_index])] = character_index
 	var seen_unordered_pairs: Dictionary = {}
 	var seen_scenario_keys: Dictionary = {}
+	var seen_battle_seeds: Dictionary = {}
 	var cases: Array = []
 	for owner_index in range(characters.size()):
 		var raw_entry = characters[owner_index]
@@ -78,25 +79,57 @@ func derive_pair_interaction_cases_result(characters: Array, pair_maps: Dictiona
 			if seen_scenario_keys.has(scenario_key):
 				return _catalog_error_result("FormalCharacterManifest duplicated owned pair interaction scenario_key: %s (%s)" % [scenario_key, manifest_path])
 			seen_scenario_keys[scenario_key] = true
+			var owner_initiator_seed_result := _positive_battle_seed_result(
+				spec.get("owner_as_initiator_battle_seed", null),
+				"FormalCharacterManifest[%s].owned_pair_interaction_specs[%d].owner_as_initiator_battle_seed" % [owner_character_id, spec_index],
+				manifest_path
+			)
+			if not bool(owner_initiator_seed_result.get("ok", false)):
+				return owner_initiator_seed_result
+			var owner_initiator_seed := int(owner_initiator_seed_result.get("data", 0))
+			var owner_initiator_seed_registration := _register_battle_seed_result(
+				seen_battle_seeds,
+				owner_initiator_seed,
+				"%s->%s:%s" % [owner_character_id, other_character_id, scenario_key],
+				manifest_path
+			)
+			if not bool(owner_initiator_seed_registration.get("ok", false)):
+				return owner_initiator_seed_registration
 			var owner_initiator_case_result := _derived_interaction_case_result(
 				pair_maps,
 				matchups,
 				owner_character_id,
 				other_character_id,
 				scenario_key,
-				int(spec.get("owner_as_initiator_battle_seed", 0)),
+				owner_initiator_seed,
 				manifest_path
 			)
 			if not bool(owner_initiator_case_result.get("ok", false)):
 				return owner_initiator_case_result
 			cases.append(owner_initiator_case_result.get("data", {}).duplicate(true))
+			var owner_responder_seed_result := _positive_battle_seed_result(
+				spec.get("owner_as_responder_battle_seed", null),
+				"FormalCharacterManifest[%s].owned_pair_interaction_specs[%d].owner_as_responder_battle_seed" % [owner_character_id, spec_index],
+				manifest_path
+			)
+			if not bool(owner_responder_seed_result.get("ok", false)):
+				return owner_responder_seed_result
+			var owner_responder_seed := int(owner_responder_seed_result.get("data", 0))
+			var owner_responder_seed_registration := _register_battle_seed_result(
+				seen_battle_seeds,
+				owner_responder_seed,
+				"%s->%s:%s" % [other_character_id, owner_character_id, scenario_key],
+				manifest_path
+			)
+			if not bool(owner_responder_seed_registration.get("ok", false)):
+				return owner_responder_seed_registration
 			var owner_responder_case_result := _derived_interaction_case_result(
 				pair_maps,
 				matchups,
 				other_character_id,
 				owner_character_id,
 				scenario_key,
-				int(spec.get("owner_as_responder_battle_seed", 0)),
+				owner_responder_seed,
 				manifest_path
 			)
 			if not bool(owner_responder_case_result.get("ok", false)):
@@ -116,6 +149,29 @@ func derive_pair_interaction_cases_result(characters: Array, pair_maps: Dictiona
 				]
 			)
 	return ResultEnvelopeHelperScript.ok(cases)
+
+func _positive_battle_seed_result(raw_value, field_label: String, manifest_path: String) -> Dictionary:
+	if typeof(raw_value) == TYPE_INT and int(raw_value) > 0:
+		return ResultEnvelopeHelperScript.ok(int(raw_value))
+	if typeof(raw_value) == TYPE_FLOAT:
+		var float_value := float(raw_value)
+		var int_value := int(float_value)
+		if float_value == float(int_value) and int_value > 0:
+			return ResultEnvelopeHelperScript.ok(int_value)
+	return _catalog_error_result("%s battle_seed must be positive integer: %s" % [field_label, manifest_path])
+
+func _register_battle_seed_result(seen_battle_seeds: Dictionary, battle_seed: int, case_label: String, manifest_path: String) -> Dictionary:
+	if seen_battle_seeds.has(battle_seed):
+		return _catalog_error_result(
+			"FormalCharacterManifest duplicated pair interaction battle_seed %d for %s; already used by %s (%s)" % [
+				battle_seed,
+				case_label,
+				String(seen_battle_seeds.get(battle_seed, "")),
+				manifest_path,
+			]
+		)
+	seen_battle_seeds[battle_seed] = case_label
+	return ResultEnvelopeHelperScript.ok(true)
 
 func _derived_interaction_case_result(pair_maps: Dictionary, matchups: Dictionary, left_character_id: String, right_character_id: String, scenario_key: String, battle_seed: int, manifest_path: String) -> Dictionary:
 	var matchup_id := _generated_matchup_id(pair_maps, left_character_id, right_character_id)

@@ -231,8 +231,12 @@ func _build_matchups_result(raw_matchups) -> Dictionary:
 		}
 		if matchup_entry["p1_units"] == null or matchup_entry["p2_units"] == null:
 			return _error_result("shared descriptor matchup %s missing p1_units or p2_units" % matchup_id)
-		if bool(entry.get("test_only", false)):
-			matchup_entry["test_only"] = true
+		if entry.has("test_only"):
+			var test_only = entry.get("test_only", null)
+			if not (test_only is bool):
+				return _error_result("shared descriptor matchup %s test_only must be boolean" % matchup_id)
+			if bool(test_only):
+				matchup_entry["test_only"] = true
 		matchups[matchup_id] = matchup_entry
 	return _ok_result(matchups)
 

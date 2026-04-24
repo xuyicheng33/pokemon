@@ -19,6 +19,16 @@ def _matchup_test_only(ctx, matchup_catalog_path: str, matchup_id: str, raw_matc
     return test_only
 
 
+def _positive_int_value(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if value > 0 else None
+    if isinstance(value, float) and value.is_integer() and value > 0:
+        return int(value)
+    return None
+
+
 def _runner_method_names(scenario_key: str) -> set[str]:
     method_names = {f"run_{scenario_key}"}
     parts = scenario_key.split("_", 2)
@@ -149,6 +159,7 @@ def validate_pair_catalog(
         character_id: index for index, character_id in enumerate(runtime_character_ids)
     }
     seen_owned_pairs: set[str] = set()
+    seen_battle_seeds: dict[int, str] = {}
     for owner_index, raw_entry in enumerate(characters):
         if not isinstance(raw_entry, dict):
             ctx.failures.append(f"{matchup_catalog_path} characters[{owner_index}] must be object")
@@ -197,6 +208,20 @@ def validate_pair_catalog(
                 ctx.failures.append(f"{matchup_catalog_path} duplicated unordered pair scenario: {pair_key}")
                 continue
             expected_scenario_keys_by_pair[pair_key] = scenario_key
+            for seed_field_name, direction_label in [
+                ("owner_as_initiator_battle_seed", f"{owner_character_id}->{other_character_id}"),
+                ("owner_as_responder_battle_seed", f"{other_character_id}->{owner_character_id}"),
+            ]:
+                battle_seed = _positive_int_value(raw_spec.get(seed_field_name))
+                if battle_seed is None:
+                    continue
+                case_label = f"{direction_label}:{scenario_key}.{seed_field_name}"
+                if battle_seed in seen_battle_seeds:
+                    ctx.failures.append(
+                        f"{matchup_catalog_path} duplicated pair interaction battle_seed {battle_seed}: {case_label} already used by {seen_battle_seeds[battle_seed]}"
+                    )
+                    continue
+                seen_battle_seeds[battle_seed] = case_label
             owner_initiator_matchup_id = generated_matchup_by_direction.get((owner_character_id, other_character_id), "")
             owner_responder_matchup_id = generated_matchup_by_direction.get((other_character_id, owner_character_id), "")
             if not owner_initiator_matchup_id or not owner_responder_matchup_id:

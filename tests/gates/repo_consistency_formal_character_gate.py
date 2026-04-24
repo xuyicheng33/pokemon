@@ -116,6 +116,8 @@ def validate_pair_interaction_ordering_contract(ctx: GateContext) -> None:
         "range(owner_index)",
         "must only target earlier manifest characters",
         "missing owned_pair_interaction_specs coverage for earlier characters",
+        "seen_battle_seeds",
+        "duplicated pair interaction battle_seed",
     ]
     for needle in required_needles:
         if needle not in builder_text:
