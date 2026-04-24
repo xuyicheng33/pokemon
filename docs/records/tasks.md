@@ -13,6 +13,22 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：项目审查问题收口（2026-04-25）
+
+- 状态：已完成
+- 目标：修复项目全量审查中确认的门禁、文档和仓库卫生问题
+- 范围：
+  1. engine log gate 纳入普通 `ERROR:` 扫描，并只对白名单内的 Godot shader cache 启动噪声做精确放行
+  2. 本地总闸门纳入 Python lint，与 CI 的 `ruff` 检查对齐
+  3. `.gitignore` 补 `.DS_Store`，并清理当前工作区系统文件噪声
+  4. 统一测试 support helper 行数阈值文档到实际 gate 口径：`220..250` 预警，`>250` 失败
+  5. 清理 Python lint 暴露的未使用 import
+- 验收标准：
+  - 本地 `tests/run_with_gate.sh` 覆盖 gdUnit、boot smoke、suite reachability、architecture、repo consistency、Python lint 和 sandbox smoke matrix
+  - `.DS_Store` 不再污染工作区
+  - 文档阈值与实际 gate 保持一致
+- 验证结果：`bash tests/run_with_gate.sh` 通过，`405 test cases / 0 failures`，Python lint、repo consistency、architecture constraints 与 sandbox smoke matrix 均 clean
+
 ## 最近完成：扩角前基础架构稳固审阅修复（2026-04-25）
 
 - 状态：已完成

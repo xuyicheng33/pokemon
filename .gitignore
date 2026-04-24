@@ -2,6 +2,7 @@
 .godot/
 /android/
 /reports/
+.DS_Store
 
 # Python gate cache
 __pycache__/

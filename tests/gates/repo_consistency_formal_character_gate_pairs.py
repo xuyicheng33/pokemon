@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import re
 
-from repo_consistency_formal_character_manifest_io_support import run_godot_json_export
-
 
 def _unordered_pair_key(left_character_id: str, right_character_id: str) -> str:
     return "<->".join(sorted([left_character_id, right_character_id]))

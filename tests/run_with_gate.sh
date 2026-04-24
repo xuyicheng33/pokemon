@@ -13,6 +13,7 @@ bash tests/check_boot_smoke.sh
 bash tests/check_suite_reachability.sh
 bash tests/check_architecture_constraints.sh
 bash tests/check_repo_consistency.sh
+bash tests/check_python_lint.sh
 bash tests/check_sandbox_smoke_matrix.sh
 
-echo "GATE PASSED: gdUnit, boot smoke, suite reachability, architecture constraints, repo consistency, and sandbox smoke matrix are clean"
+echo "GATE PASSED: gdUnit, boot smoke, suite reachability, architecture constraints, repo consistency, Python lint, and sandbox smoke matrix are clean"
