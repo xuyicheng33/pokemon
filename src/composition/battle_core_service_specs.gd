@@ -68,7 +68,7 @@ static func service_slots() -> PackedStringArray:
 		slots.append(String(descriptor.get("slot", "")))
 	return slots
 
-static func script_by_slot(slot_name: String):
+static func script_by_slot(slot_name: String) -> Variant:
 	for descriptor in all_service_descriptors():
 		if String(descriptor.get("slot", "")) == slot_name:
 			return descriptor.get("script", null)

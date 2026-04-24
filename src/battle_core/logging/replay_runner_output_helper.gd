@@ -9,7 +9,7 @@ const ReplayRunnerOutputValidatorScript := preload("res://src/battle_core/loggin
 
 var _validator = ReplayRunnerOutputValidatorScript.new()
 
-func build_replay_output(event_log: Array, battle_state: BattleState, logger_error_state: Dictionary = {}, turn_timeline: Array = []):
+func build_replay_output(event_log: Array, battle_state: BattleState, logger_error_state: Dictionary = {}, turn_timeline: Array = []) -> Variant:
 	return build_replay_output_result(event_log, battle_state, logger_error_state, turn_timeline).get("replay_output", null)
 
 func compute_state_hash(battle_state: BattleState) -> String:

@@ -158,7 +158,7 @@ func _load_runtime_entries_for_snapshot_result() -> Dictionary:
 func _has_property(value, property_name: String) -> bool:
 	return PropertyAccessHelperScript.has_property(value, property_name)
 
-func _read_property(value, property_name: String, default_value = null):
+func _read_property(value, property_name: String, default_value = null) -> Variant:
 	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:

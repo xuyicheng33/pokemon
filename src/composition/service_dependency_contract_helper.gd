@@ -131,7 +131,7 @@ static func _constant_array(target, constant_name: String) -> Array:
 	var value = constant_map.get(constant_name, [])
 	return Array(value)
 
-static func _script_for_target(target):
+static func _script_for_target(target) -> Variant:
 	if target == null:
 		return null
 	if target is Script:
@@ -142,7 +142,7 @@ static func _script_for_target(target):
 		return null
 	return target.get_script()
 
-static func _read_property(value, property_name: String, default_value = null):
+static func _read_property(value, property_name: String, default_value = null) -> Variant:
 	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
 
 static func _visit_key(value) -> String:

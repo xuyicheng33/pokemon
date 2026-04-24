@@ -30,6 +30,9 @@ var last_matchup_signature: String = ""
 var pre_applied_turn_start_regen_turn_index: int = 0
 var runtime_fault_code: String = ""
 var runtime_fault_message: String = ""
+# Derived lookup indexes — rebuilt on append_side, read-only during battle.
+var _unit_index: Dictionary = {}
+var _unit_public_index: Dictionary = {}
 
 func get_side(side_id: String) -> Variant:
 	return _find_side_by_id(side_id)
@@ -54,6 +57,7 @@ func get_unit_by_public_id(public_id: String) -> Variant:
 
 func append_side(side_state) -> void:
 	sides.append(side_state)
+	_rebuild_unit_indexes()
 
 func get_active_unit(side_id: String, slot_id: String = ContentSchemaScript.ACTIVE_SLOT_PRIMARY) -> Variant:
 	var side_state = get_side(side_id)
@@ -61,6 +65,9 @@ func get_active_unit(side_id: String, slot_id: String = ContentSchemaScript.ACTI
 		return null
 	return side_state.get_active_unit(slot_id)
 
+# Omitted from stable dict (transient per-turn state, reset between turns):
+#   pending_effect_queue, chain_context, fatal_damage_records_by_target,
+#   _unit_index, _unit_public_index (derived caches).
 func to_stable_dict() -> Dictionary:
 	var side_dicts: Array = []
 	var sorted_sides = sides.duplicate()
@@ -110,15 +117,15 @@ func _find_side_by_id(side_id: String) -> Variant:
 	return null
 
 func _find_unit_by_id(unit_instance_id: String) -> Variant:
-	for side_state in sides:
-		for unit_state in side_state.team_units:
-			if unit_state.unit_instance_id == unit_instance_id:
-				return unit_state
-	return null
+	return _unit_index.get(unit_instance_id, null)
 
 func _find_unit_by_public_id(public_id: String) -> Variant:
+	return _unit_public_index.get(public_id, null)
+
+func _rebuild_unit_indexes() -> void:
+	_unit_index.clear()
+	_unit_public_index.clear()
 	for side_state in sides:
 		for unit_state in side_state.team_units:
-			if unit_state.public_id == public_id:
-				return unit_state
-	return null
+			_unit_index[unit_state.unit_instance_id] = unit_state
+			_unit_public_index[unit_state.public_id] = unit_state

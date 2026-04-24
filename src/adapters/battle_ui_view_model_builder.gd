@@ -141,7 +141,7 @@ func _build_unit_model(unit_snapshot: Dictionary) -> Dictionary:
 		"effects": effects,
 	}
 
-func _read_property(value, property_name: String, default_value = null):
+func _read_property(value, property_name: String, default_value = null) -> Variant:
 	return PropertyAccessHelperScript.read_property(value, property_name, default_value)
 
 func _to_string_array(raw_value) -> Array:

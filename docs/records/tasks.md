@@ -13,6 +13,25 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：架构审阅第三轮清理（2026-04-24）
+
+- 状态：已完成
+- 目标：清理残留分支，修复架构审阅报告中所有优先级项目
+- 范围：
+  1. 合并 `codex/formal-automation-polish` 分支到 main，解决全部冲突，删除远端分支
+  2. A2: `BattleState` unit 查找加 Dictionary 索引（O(1) 代替 O(n*m)）
+  3. A3: `BaselineLoader` static cache 在 `SampleBattleFactory._init()` 时 invalidate
+  4. B6: `ContentSchema` 的 `MANAGED_ACTION_TYPES` / `ALWAYS_ALLOWED_ACTION_TYPES` 从 mutable `static var` 改为 `static func`
+  5. B8: Kashimo validator 拆分 ultimate domain 到子 validator（418→319+114 行）
+  6. B1: 为 22 个缺返回类型标注的函数补 `-> Variant`
+  7. B7: sandbox envelope 非标准 `summary` 字段收进 `data`
+  8. B5: SampleBattleFactory helper 评估，调整软上限为 10 个
+  9. B3/B2/B4: has_method / Variant 收窄 / ok_result codestyle 方向记录到 decisions.md
+  10. C1: `BattleState.to_stable_dict` 缺字段注释
+  11. C3: dedupe key 管道符约束注释
+  12. C6: CI 加 Python lint（ruff）
+- 验收标准：全部修复项落地、提交、推送
+
 ## 最近完成：架构审阅第二轮优化（2026-04-24）
 
 - 状态：已完成

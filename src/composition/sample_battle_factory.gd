@@ -8,6 +8,7 @@ const DemoCatalogScript := preload("res://src/composition/sample_battle_factory_
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
 const MatchupCatalogScript := preload("res://src/composition/sample_battle_factory_matchup_catalog.gd")
+const BaselineLoaderScript := preload("res://src/shared/formal_character_baselines/formal_character_baseline_loader.gd")
 const SetupAccessScript := preload("res://src/composition/sample_battle_factory_setup_access.gd")
 
 var _catalog_access: SampleBattleFactoryBaselineMatchupCatalog = BaselineMatchupCatalogScript.new()
@@ -36,6 +37,7 @@ func _init() -> void:
 	_catalog_access.formal_access = _formal_access
 	_catalog_access.formal_matchup_catalog = _formal_matchup_catalog
 	_catalog_access.refresh_baseline_unit_definition_ids()
+	BaselineLoaderScript.invalidate_cache()
 
 func dispose() -> void:
 	if _disposed:

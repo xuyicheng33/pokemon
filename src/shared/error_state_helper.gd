@@ -45,7 +45,7 @@ static func _write(target, error_code: Variant, error_message: Variant) -> void:
 	target.set("last_error_code", error_code)
 	target.set("last_error_message", _normalized_message(error_message))
 
-static func _read_code(target):
+static func _read_code(target) -> Variant:
 	return target.get("last_error_code") if target != null else null
 
 static func _read_message(target) -> String:

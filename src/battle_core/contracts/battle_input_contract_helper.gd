@@ -122,5 +122,5 @@ static func _collect_side_issues(sides: Array) -> Array[Dictionary]:
 static func _has_property(value, property_name: String) -> bool:
 	return PropertyAccessHelperScript.has_property(value, property_name)
 
-static func _read_property(value, property_name: String, default_value = null):
+static func _read_property(value, property_name: String, default_value = null) -> Variant:
 	return PropertyAccessHelperScript.read_property(value, property_name, default_value)

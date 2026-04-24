@@ -3,7 +3,7 @@ class_name ValueChangeFactory
 
 const ValueChangeScript := preload("res://src/battle_core/contracts/value_change.gd")
 
-static func create(entity_id_value: String, resource_name_value: String, before_value_value: int, after_value_value: int):
+static func create(entity_id_value: String, resource_name_value: String, before_value_value: int, after_value_value: int) -> Variant:
 	var value_change = ValueChangeScript.new()
 	value_change.entity_id = entity_id_value
 	value_change.resource_name = resource_name_value

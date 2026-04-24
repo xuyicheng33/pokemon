@@ -103,7 +103,7 @@ static func field_contracts(character_id: String, field_ids = []) -> Array[Dicti
 		character_id
 	)
 
-static func _skill_contract_pool(character_id: String):
+static func _skill_contract_pool(character_id: String) -> Variant:
 	var baseline_result := BaselineLoaderScript.baseline_result(character_id, "skill contract lookup")
 	if not bool(baseline_result.get("ok", false)):
 		return baseline_result
@@ -112,19 +112,19 @@ static func _skill_contract_pool(character_id: String):
 	descriptors.append(baseline.ultimate_skill_contract())
 	return _ok_result(descriptors)
 
-static func _passive_contract_pool(character_id: String):
+static func _passive_contract_pool(character_id: String) -> Variant:
 	var baseline_result := BaselineLoaderScript.baseline_result(character_id, "passive contract lookup")
 	if not bool(baseline_result.get("ok", false)):
 		return baseline_result
 	return _ok_result([baseline_result.get("data").passive_skill_contract()])
 
-static func _effect_contract_pool(character_id: String):
+static func _effect_contract_pool(character_id: String) -> Variant:
 	var baseline_result := BaselineLoaderScript.baseline_result(character_id, "effect contract lookup")
 	if not bool(baseline_result.get("ok", false)):
 		return baseline_result
 	return _ok_result(baseline_result.get("data").effect_contracts())
 
-static func _field_contract_pool(character_id: String):
+static func _field_contract_pool(character_id: String) -> Variant:
 	var baseline_result := BaselineLoaderScript.baseline_result(character_id, "field contract lookup")
 	if not bool(baseline_result.get("ok", false)):
 		return baseline_result

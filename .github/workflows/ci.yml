@@ -29,6 +29,20 @@ jobs:
       - name: Run Repo Consistency
         run: bash tests/check_repo_consistency.sh
 
+  python_lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: pip install ruff
+      - name: Lint Python scripts and gates
+        run: ruff check scripts/ tests/gates/ --select E,F,W --ignore E501
+
   boot_and_sandbox_smoke:
     runs-on: ubuntu-latest
     steps:
