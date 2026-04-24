@@ -13,6 +13,20 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：Formal 草稿晋升前检查入口（2026-04-24）
+
+- 状态：已完成
+- 目标：给新角色脚手架草稿增加晋升前的独立检查，避免手工搬文件时把占位符或缺文件带入正式目录
+- 范围：
+  1. 新增 `scripts/check_formal_character_draft_ready.py/.sh`
+  2. 检查 source draft、baseline、validator、suite、设计文档和 pair runner 草稿是否齐全
+  3. 检查 `FILL_IN / FORMAL_DRAFT_ / draft_marker / TODO: implement / interaction placeholder` 等占位符，以及 live 目标路径冲突
+  4. 在脚手架输出、正式角色接入清单和当前工作流里记录入口
+- 验收标准：
+  - 无草稿时脚本可安全跳过
+  - 有草稿但未填完占位符时脚本失败
+  - repo consistency gate 继续锁住文档入口
+
 ## 最近完成：Pair interaction 顺序归属合同显式化（2026-04-24）
 
 - 状态：已完成

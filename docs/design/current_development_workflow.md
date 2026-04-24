@@ -120,6 +120,14 @@ CI 当前固定拆成 3 个并行 job：
 formal 单源继续固定为 `config/formal_character_sources/`。
 人工改动 source descriptor 后，只允许通过下面这条入口同步生成产物：
 
+草稿晋升前先检查：
+
+```bash
+bash scripts/check_formal_character_draft_ready.sh
+```
+
+正式同步：
+
 ```bash
 bash tests/sync_formal_registry.sh
 ```

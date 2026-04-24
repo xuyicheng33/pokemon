@@ -629,13 +629,16 @@ Next steps:
      - scripts/drafts/test/suites/{pair_token}_*.gd -> test/suites/
      - scripts/drafts/docs/design/{char_id}_*.md -> docs/design/
 
-  9. Move source descriptor into live config:
+  9. Run draft readiness check:
+     bash scripts/check_formal_character_draft_ready.sh
+
+  10. Move source descriptor into live config:
      mv {sd_location} config/formal_character_sources/{sd_filename}
 
-  10. Sync formal registry:
+  11. Sync formal registry:
      bash tests/sync_formal_registry.sh
 
-  11. Run validation:
+  12. Run validation:
       bash tests/run_with_gate.sh
 """)
 
