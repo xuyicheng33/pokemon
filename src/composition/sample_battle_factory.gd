@@ -41,24 +41,11 @@ func dispose() -> void:
 	if _disposed:
 		return
 	_disposed = true
-	if _setup_access != null:
-		_setup_access.baseline_matchup_catalog = null
-		_setup_access.formal_matchup_catalog = null
-	if _snapshot_access != null:
-		_snapshot_access.formal_access = null
-	if _demo_input_builder != null:
-		_demo_input_builder.baseline_matchup_catalog = null
-		_demo_input_builder.content_paths_helper = null
-		_demo_input_builder.demo_catalog = null
-		_demo_input_builder.setup_access = null
-	if _formal_access != null:
-		_formal_access.formal_matchup_catalog = null
-		_formal_access.setup_access = null
-	if _catalog_access != null:
-		_catalog_access.snapshot_access = null
-		_catalog_access.demo_catalog = null
-		_catalog_access.formal_access = null
-		_catalog_access.formal_matchup_catalog = null
+	_nullify_links(_setup_access, ["baseline_matchup_catalog", "formal_matchup_catalog"])
+	_nullify_links(_snapshot_access, ["formal_access"])
+	_nullify_links(_demo_input_builder, ["baseline_matchup_catalog", "content_paths_helper", "demo_catalog", "setup_access"])
+	_nullify_links(_formal_access, ["formal_matchup_catalog", "setup_access"])
+	_nullify_links(_catalog_access, ["snapshot_access", "demo_catalog", "formal_access", "formal_matchup_catalog"])
 	_catalog_access = null
 	_snapshot_access = null
 	_demo_input_builder = null
@@ -67,6 +54,12 @@ func dispose() -> void:
 	_formal_matchup_catalog = null
 	_setup_access = null
 	ErrorStateHelperScript.clear(self)
+
+static func _nullify_links(target, property_names: Array) -> void:
+	if target == null:
+		return
+	for prop_name in property_names:
+		target.set(prop_name, null)
 
 func configure_registry_path_override(path: String) -> void:
 	_catalog_access.configure_registry_path_override(path)
