@@ -10,6 +10,8 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var _storage = StorageScript.new()
 var _dependency_collector = DependencyCollectorScript.new()
 var _signature_builder = SignatureBuilderScript.new()
+# When adding new content resource directories or config files that affect
+# snapshot validity, update these lists so the cache signature includes them.
 var _signature_static_file_paths := PackedStringArray([
 	"res://config/formal_character_manifest.json",
 	"res://config/formal_registry_contracts.json",

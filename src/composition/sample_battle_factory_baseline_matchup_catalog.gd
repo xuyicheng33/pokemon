@@ -2,6 +2,7 @@ extends RefCounted
 class_name SampleBattleFactoryBaselineMatchupCatalog
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const DEFAULT_CATALOG_PATH := "res://config/sample_matchup_catalog.json"
 
@@ -152,10 +153,7 @@ func _load_catalog_result() -> Dictionary:
 	return ResultEnvelopeHelperScript.ok(parsed)
 
 func _resolve_catalog_path() -> String:
-	var trimmed_path := String(catalog_path_override).strip_edges()
-	if trimmed_path.is_empty():
-		return DEFAULT_CATALOG_PATH
-	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+	return ResourcePathHelperScript.resolve(catalog_path_override, DEFAULT_CATALOG_PATH)
 
 func _append_available_matchup_descriptors(descriptors: Array, raw_matchups, source: String) -> void:
 	if not (raw_matchups is Dictionary):

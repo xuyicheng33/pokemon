@@ -2,6 +2,7 @@ extends RefCounted
 class_name SampleBattleFactoryDemoCatalog
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const DEFAULT_CATALOG_PATH := "res://config/demo_replay_catalog.json"
 
@@ -153,10 +154,7 @@ func _validate_command_payload(profile_id: String, catalog_path: String, command
 	return ""
 
 func _resolve_catalog_path() -> String:
-	var trimmed_path := String(catalog_path_override).strip_edges()
-	if trimmed_path.is_empty():
-		return DEFAULT_CATALOG_PATH
-	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+	return ResourcePathHelperScript.resolve(catalog_path_override, DEFAULT_CATALOG_PATH)
 
 func _parse_positive_int_result(value, error_message: String) -> Dictionary:
 	if typeof(value) == TYPE_INT:

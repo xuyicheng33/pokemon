@@ -32,10 +32,9 @@ func _test_formal_character_setup_registry_runtime_contract(harness) -> Dictiona
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
 	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries()
-	var error_message := String(load_result.get("error", ""))
-	if not error_message.is_empty():
-		return harness.fail_result("formal character registry should load cleanly for setup contract: %s" % error_message)
-	var entries: Array = load_result.get("entries", [])
+	if not bool(load_result.get("ok", false)):
+		return harness.fail_result("formal character registry should load cleanly for setup contract: %s" % String(load_result.get("error_message", "")))
+	var entries: Array = load_result.get("data", [])
 	var expected_ids := PackedStringArray()
 	for raw_entry in entries:
 		var entry: Dictionary = raw_entry

@@ -2,6 +2,7 @@ extends RefCounted
 class_name FormalRegistryContracts
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
+const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const DEFAULT_CONTRACT_PATH := "res://config/formal_registry_contracts.json"
 const MANIFEST_CHARACTER_RUNTIME_BUCKET := "manifest_character_runtime"
@@ -9,6 +10,7 @@ const MANIFEST_CHARACTER_DELIVERY_BUCKET := "manifest_character_delivery"
 const OWNED_PAIR_INTERACTION_SPEC_BUCKET := "owned_pair_interaction_spec"
 
 var contract_path_override: String = ""
+var _cached_contracts_result: Variant = null
 
 func required_string_fields_result(bucket_name: String) -> Dictionary:
 	return _field_list_result(bucket_name, "required_string_fields")
@@ -52,6 +54,8 @@ func validate_required_fields_result(bucket_name: String, entry: Dictionary, err
 	return ResultEnvelopeHelperScript.ok(true)
 
 func load_contracts_result() -> Dictionary:
+	if _cached_contracts_result != null:
+		return _cached_contracts_result
 	var resolved_contract_path := _resolve_resource_path(contract_path_override, DEFAULT_CONTRACT_PATH)
 	var file := FileAccess.open(resolved_contract_path, FileAccess.READ)
 	if file == null:
@@ -89,13 +93,11 @@ func load_contracts_result() -> Dictionary:
 		var optional_fields_result := _read_field_list_result(bucket, "optional_string_fields", "%s.optional_string_fields" % bucket_name, false)
 		if not bool(optional_fields_result.get("ok", false)):
 			return optional_fields_result
-	return ResultEnvelopeHelperScript.ok(parsed.duplicate(true))
+	_cached_contracts_result = ResultEnvelopeHelperScript.ok(parsed.duplicate(true))
+	return _cached_contracts_result
 
 func normalize_resource_path(raw_path: String) -> String:
-	var trimmed_path := String(raw_path).strip_edges()
-	if trimmed_path.is_empty():
-		return ""
-	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+	return ResourcePathHelperScript.normalize(raw_path)
 
 func _field_list_result(bucket_name: String, field_key: String, required: bool = true, allow_empty: bool = false) -> Dictionary:
 	var contracts_result := load_contracts_result()
@@ -134,10 +136,7 @@ func _parse_positive_int_result(value, error_message: String) -> Dictionary:
 	return _error_result(error_message)
 
 func _resolve_resource_path(raw_path: String, default_path: String = "") -> String:
-	var normalized_path := normalize_resource_path(raw_path)
-	if normalized_path.is_empty():
-		return default_path
-	return normalized_path
+	return ResourcePathHelperScript.resolve(raw_path, default_path)
 
 func _error_result(error_message: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_BATTLE_SETUP, error_message)

@@ -48,8 +48,10 @@ func _ensure_descriptors_loaded() -> void:
 		registry_result = FormalCharacterRegistryScript.build_validator_descriptors()
 	else:
 		registry_result = FormalCharacterRegistryScript.build_validator_descriptors_from_path(registry_path_override)
-	_registry_error = String(registry_result.get("error", ""))
-	_descriptors = registry_result.get("descriptors", [])
+	if not bool(registry_result.get("ok", false)):
+		_registry_error = String(registry_result.get("error_message", ""))
+		return
+	_descriptors = registry_result.get("data", [])
 
 func _resolve_validator_result(descriptor: Dictionary) -> Dictionary:
 	var cache_key := String(descriptor.get("unit_definition_id", "")).strip_edges()
@@ -66,14 +68,14 @@ func _resolve_validator_result(descriptor: Dictionary) -> Dictionary:
 			"error": "",
 		}
 	var instantiate_result := FormalCharacterRegistryScript.instantiate_validator_descriptor(descriptor)
-	var instantiate_error := String(instantiate_result.get("error", ""))
-	if not instantiate_error.is_empty():
+	if not bool(instantiate_result.get("ok", false)):
+		var instantiate_error := String(instantiate_result.get("error_message", ""))
 		_validator_error_cache[cache_key] = instantiate_error
 		return {
 			"validator": null,
 			"error": instantiate_error,
 		}
-	var validator = instantiate_result.get("validator", null)
+	var validator = instantiate_result.get("data", null)
 	if validator != null:
 		_validator_cache[cache_key] = validator
 	return {

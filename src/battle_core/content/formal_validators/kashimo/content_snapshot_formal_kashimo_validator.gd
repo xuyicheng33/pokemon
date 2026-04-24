@@ -232,20 +232,12 @@ func _validate_negative_charge_mark(content_index: BattleContentIndex, errors: A
 	var effect_definition = _require_effect(content_index, errors, label, "kashimo_negative_charge_mark")
 	if effect_definition == null:
 		return
-	_helper.validate_effect_contracts(self, content_index, errors, [{
-		"label": label,
-		"effect_id": "kashimo_negative_charge_mark",
-		"fields": {
-			"scope": "self",
-			"duration_mode": "turns",
-			"duration": 4,
-			"decrement_on": "turn_end",
-			"stacking": "stack",
-			"max_stacks": 3,
-			"persists_on_switch": false,
-			"trigger_names": PackedStringArray(["turn_end"]),
-		},
-	}])
+	_helper.validate_effect_contracts(
+		self,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_negative_charge_mark", label)]
+	)
 	var damage_payload = _extract_single_payload(
 		errors,
 		label,
@@ -266,20 +258,12 @@ func _validate_positive_charge_mark(content_index: BattleContentIndex, errors: A
 	var effect_definition = _require_effect(content_index, errors, label, "kashimo_positive_charge_mark")
 	if effect_definition == null:
 		return
-	_helper.validate_effect_contracts(self, content_index, errors, [{
-		"label": label,
-		"effect_id": "kashimo_positive_charge_mark",
-		"fields": {
-			"scope": "self",
-			"duration_mode": "turns",
-			"duration": 4,
-			"decrement_on": "turn_end",
-			"stacking": "stack",
-			"max_stacks": 3,
-			"persists_on_switch": false,
-			"trigger_names": PackedStringArray(["turn_start"]),
-		},
-	}])
+	_helper.validate_effect_contracts(
+		self,
+		content_index,
+		errors,
+		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_positive_charge_mark", label)]
+	)
 	var resource_payload = _extract_single_payload(
 		errors,
 		label,
