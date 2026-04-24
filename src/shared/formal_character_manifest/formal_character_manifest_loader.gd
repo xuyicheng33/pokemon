@@ -69,6 +69,9 @@ static func normalize_resource_path(raw_path: String) -> String:
 	return ResourcePathHelperScript.normalize(raw_path)
 
 func normalize_entry_result(entry: Dictionary, character_id: String) -> Dictionary:
+	var pair_token := String(entry.get("pair_token", "")).strip_edges()
+	if pair_token.find("_") >= 0:
+		return _normalize_error_result("FormalCharacterManifest[%s] pair_token must not contain underscores: %s" % [character_id, pair_token])
 	for raw_rel_path in entry.get("required_content_paths", []):
 		if String(raw_rel_path).strip_edges().is_empty():
 			return _normalize_error_result("FormalCharacterManifest[%s] has empty required_content_paths entry" % character_id)

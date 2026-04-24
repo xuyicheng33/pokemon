@@ -463,6 +463,16 @@ def main() -> None:
         )
         sys.exit(1)
 
+    # --- pair_token underscore check ---
+    if "_" in pair_token:
+        print(
+            f"ERROR: pair_token '{pair_token}' must not contain underscores. "
+            f"scenario_key parsing relies on splitting by '_' to derive "
+            f"runner method names. Use a single-segment token instead.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     index = next_source_index()
     pascal = to_pascal_case(char_id)
     pascal_token = to_pascal_case(pair_token)

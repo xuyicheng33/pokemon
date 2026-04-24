@@ -4,6 +4,8 @@ class_name FormalCharacterBaselineLoader
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
+static var _cached_entries_result: Dictionary = {}
+
 static func character_ids() -> PackedStringArray:
 	var resolved_ids := PackedStringArray()
 	var entries_result := character_entries_result()
@@ -15,13 +17,19 @@ static func character_ids() -> PackedStringArray:
 	return resolved_ids
 
 static func character_entries_result() -> Dictionary:
+	if _cached_entries_result.has("ok"):
+		return _cached_entries_result
 	var manifest = FormalCharacterManifestScript.new()
 	var entries_result := manifest.build_runtime_entries_result()
 	if not bool(entries_result.get("ok", false)):
 		return _error_result(
 			"FormalCharacterBaselines failed to load manifest entries: %s" % String(entries_result.get("error_message", "unknown error"))
 		)
-	return _ok_result(entries_result.get("data", []))
+	_cached_entries_result = _ok_result(entries_result.get("data", []))
+	return _cached_entries_result
+
+static func invalidate_cache() -> void:
+	_cached_entries_result = {}
 
 static func baseline_result(character_id: String, context: String = "") -> Dictionary:
 	var normalized_id := character_id.strip_edges()

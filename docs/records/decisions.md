@@ -101,7 +101,7 @@
 3. 测试 support helper 体量 gate 当前固定扩到 `test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd`，落在 `220..250` 行输出预警，> `250` 直接失败。
 4. `BattleState` 查询路径不保留缓存语义；`get_side / get_unit / get_unit_by_public_id` 始终返回当前 `sides / team_units` 真值；`rebuild_indexes()` 已移除。
 5. `COMPOSE_DEPS` 当前固定只描述 composer 注入的外部依赖；owner 私有 helper 不再混入这份声明。
-6. 共享结果式 helper 的适用边界当前扩大到 policy / adapters / facade helper；外层成功/失败结果统一只认 `ok / data / error_code / error_message`。
+6. 共享结果式 helper 的适用边界当前扩大到 policy / adapters / facade helper；外层成功/失败结果统一只认 `ok / data / error_code / error_message`。各文件允许定义 `_ok_result` / `_error_result` 等私有包装器委托到 `ResultEnvelopeHelperScript`，这属于可接受的约定性模式，不视为冗余。
 7. 本地报告目录当前固定只认 `reports/gdunit`；其余历史 `reports/gdunit_*` 目录与 `tmp / .tmp` 都视为可清理噪声。
 
 ### 核心类型标注边界（2026-04-19，更新）
@@ -190,6 +190,21 @@
 - `BattleSandboxController` 继续保留主入口方法与场景生命周期职责，但不再作为外部可写状态袋：运行态必须下沉到显式 session state，UI 节点引用必须下沉到独立 view refs，测试与 support 层不得再直接读写 `manager / session_id / sample_factory / error_message`。
 - `BattleInitializer` 的 `_setup_validator / _phase_service / _state_builder` 继续只做 owner 私有 helper，不升级成 composer service slot；但共享依赖必须通过显式 ports 配置，不再散写 `_sync_*` 赋值。
 - `SampleBattleFactory` 允许合并内部 helper 以减少文件数和跳转成本；前提是：公开 facade 方法与 override 入口保持稳定，任何 owner 文件都不能突破 architecture gate 行数限制，引用到的 helper 路径必须同轮完成迁移。
+
+### Formal Character Validator 拆分阈值
+
+- 单个 formal character validator 文件超过 400 行时，应按验证维度（unit / skill / effect / passive / field）拆分为子 validator。
+- 拆分后各子 validator 由主 validator 组合调用，保持对外接口不变。
+
+### SampleBattleFactory 复杂度边界
+
+- `SampleBattleFactory` 内部 helper 文件总数不超过 5 个。如果新增 matchup 类型导致 helper 膨胀，应引入 factory strategy 模式按 matchup 类型分发，而非继续堆叠 helper 方法。
+
+### test/ 与 tests/ 目录约定
+
+- `test/` 存放运行时测试套件（gdUnit suite 文件、support bridge 等，由 Godot 直接加载）。
+- `tests/` 存放外部验证脚本（gate 脚本、shell runner、Python 检查器等，不由 Godot 加载）。
+- 文档中引用时必须准确使用对应目录名，不得混用。
 
 ## 6. Archive 读取顺序
 

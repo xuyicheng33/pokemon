@@ -27,15 +27,14 @@ def _runner_method_names(scenario_key: str) -> set[str]:
 
 def _implemented_runner_methods(ctx, scenario_registry_path: str) -> set[str]:
     registry_text = ctx.read_text(scenario_registry_path)
-    for stale_needle in [
-        "const GojoCasesScript",
-        "const KashimoCasesScript",
-        "const ObitoCasesScript",
-        '"gojo_sukuna_domain_cleanup": Callable',
-    ]:
-        if stale_needle in registry_text:
+    _STALE_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
+        ("manual case script preload", re.compile(r"const\s+\w+CasesScript\b")),
+        ("manual scenario-to-callable mapping", re.compile(r'"\w+"\s*:\s*Callable')),
+    ]
+    for description, pattern in _STALE_PATTERNS:
+        for m in pattern.finditer(registry_text):
             ctx.failures.append(
-                f"{scenario_registry_path} must auto-discover pair interaction runners instead of keeping manual mapping: {stale_needle}"
+                f"{scenario_registry_path} must auto-discover pair interaction runners instead of keeping {description}: {m.group()}"
             )
 
     support_dir = ctx.root / "tests/support/formal_pair_interaction"
