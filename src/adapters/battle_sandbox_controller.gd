@@ -3,6 +3,7 @@ class_name BattleSandboxController
 
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
 const SandboxPolicyDriverScript := preload("res://src/adapters/sandbox_policy_driver.gd")
+const SandboxPlayerUIBuilderScript := preload("res://src/adapters/sandbox_player_ui_builder.gd")
 const SandboxSessionCoordinatorScript := preload("res://src/adapters/sandbox_session_coordinator.gd")
 const SandboxSessionStateScript := preload("res://src/adapters/sandbox_session_state.gd")
 const SandboxViewPresenterScript := preload("res://src/adapters/sandbox_view_presenter.gd")
@@ -11,14 +12,19 @@ const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_he
 
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 var _policy_driver = SandboxPolicyDriverScript.new()
+var _player_ui_builder = SandboxPlayerUIBuilderScript.new()
 var _session_coordinator = SandboxSessionCoordinatorScript.new()
 var _state: SandboxSessionState = SandboxSessionStateScript.new()
 var _view_presenter = SandboxViewPresenterScript.new()
 var _view_refs: SandboxViewRefs = SandboxViewRefsScript.new()
+var _player_ui_mode := "select"
 
 func _ready() -> void:
+	_player_ui_builder.build(self)
 	_view_refs.bind(self)
 	_view_refs.restart_button.pressed.connect(_on_restart_pressed)
+	_view_refs.result_restart_button.pressed.connect(_on_result_restart_pressed)
+	_view_refs.return_select_button.pressed.connect(_on_return_select_pressed)
 	_view_refs.replay_prev_button.pressed.connect(_on_replay_prev_pressed)
 	_view_refs.replay_next_button.pressed.connect(_on_replay_next_pressed)
 	_view_presenter.configure_static_controls(_view_refs)
@@ -55,6 +61,23 @@ func restart_session_with_config(config: Dictionary) -> Dictionary:
 	if bool(restart_result.get("ok", false)):
 		return ResultEnvelopeHelperScript.ok(get_state_snapshot())
 	return restart_result
+
+func start_player_matchup(matchup_id: String) -> Dictionary:
+	var next_config := _launch_config_helper.default_config()
+	next_config["mode"] = BattleSandboxLaunchConfigScript.MODE_MANUAL_MATCHUP
+	next_config["matchup_id"] = matchup_id
+	next_config["battle_seed"] = BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED
+	next_config["p1_control_mode"] = BattleSandboxLaunchConfigScript.CONTROL_MODE_MANUAL
+	next_config["p2_control_mode"] = BattleSandboxLaunchConfigScript.CONTROL_MODE_POLICY
+	_player_ui_mode = "battle"
+	return restart_session_with_config(next_config)
+
+func show_matchup_selection() -> void:
+	_player_ui_mode = "select"
+	_render_ui()
+
+func player_ui_mode() -> String:
+	return _player_ui_mode
 
 func current_replay_frame() -> Dictionary:
 	return _state.current_replay_frame()
@@ -101,6 +124,8 @@ func fetch_legal_actions_for_side(side_id: String) -> Dictionary:
 
 func submit_action(selected_action: Dictionary) -> Dictionary:
 	var submit_result: Dictionary = _session_coordinator.submit_action(_state, selected_action, _policy_driver)
+	if bool(submit_result.get("ok", false)) and _view_presenter.battle_finished(_state.public_snapshot):
+		_player_ui_mode = "result"
 	_render_ui()
 	if bool(submit_result.get("ok", false)):
 		return ResultEnvelopeHelperScript.ok(submit_result.get("data", null))
@@ -112,10 +137,18 @@ func _render_ui() -> void:
 	_view_presenter.render(self, _state, _view_refs, _state.view_model)
 
 func _on_restart_pressed() -> void:
+	_player_ui_mode = "battle"
 	if _state.is_demo_mode:
 		restart_session_with_config(_state.launch_config)
 		return
 	restart_session_with_config(_view_presenter.build_launch_config_from_controls(_state, _view_refs))
+
+func _on_result_restart_pressed() -> void:
+	_player_ui_mode = "battle"
+	restart_session_with_config(_state.launch_config)
+
+func _on_return_select_pressed() -> void:
+	show_matchup_selection()
 
 func _on_replay_prev_pressed() -> void:
 	if not _state.is_demo_mode:
@@ -145,4 +178,5 @@ func _build_view_context() -> Dictionary:
 		"replay_frame_index": _state.replay_frame_index,
 		"replay_frame_count": _state.replay_turn_timeline.size(),
 		"replay_current_frame": current_replay_frame(),
+		"player_ui_mode": _player_ui_mode,
 	}

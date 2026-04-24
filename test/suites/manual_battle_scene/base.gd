@@ -3,6 +3,15 @@ extends "res://test/support/gdunit_suite_bridge.gd"
 const BATTLE_SANDBOX_SCENE_PATH := "res://scenes/sandbox/BattleSandbox.tscn"
 
 func _create_runner() -> GdUnitSceneRunner:
+	var runner := await _create_selection_runner()
+	var controller = runner.scene()
+	var start_result: Dictionary = controller.start_player_matchup("gojo_vs_sample")
+	assert_bool(bool(start_result.get("ok", false))).is_true()
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	return runner
+
+func _create_selection_runner() -> GdUnitSceneRunner:
 	var runner := scene_runner(BATTLE_SANDBOX_SCENE_PATH)
 	runner.set_time_factor(8.0)
 	await await_millis(80)

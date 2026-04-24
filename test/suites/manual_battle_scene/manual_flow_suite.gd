@@ -1,6 +1,22 @@
 extends "res://test/suites/manual_battle_scene/base.gd"
 const BaseSuiteScript := preload("res://test/suites/manual_battle_scene/base.gd")
 
+func test_manual_scene_starts_on_character_selection() -> void:
+	var runner := await _create_selection_runner()
+	var controller := runner.scene()
+	assert_bool(controller.get_node("RootMargin/MainColumn/SelectPanel").visible).is_true()
+	assert_bool(controller.get_node("RootMargin/MainColumn/BodyRow").visible).is_false()
+	assert_bool(controller.get_node("RootMargin/MainColumn/ActionPanel").visible).is_false()
+	var cards: GridContainer = controller.get_node("RootMargin/MainColumn/SelectPanel/SelectContent/CharacterCards")
+	assert_int(cards.get_child_count()).is_equal(4)
+	var start_result: Dictionary = controller.start_player_matchup("gojo_vs_sample")
+	assert_bool(bool(start_result.get("ok", false))).is_true()
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	assert_bool(controller.get_node("RootMargin/MainColumn/SelectPanel").visible).is_false()
+	assert_bool(controller.get_node("RootMargin/MainColumn/BodyRow").visible).is_true()
+	assert_bool(controller.get_node("RootMargin/MainColumn/ActionPanel").visible).is_true()
+
 func test_manual_scene_initial_hud_stops_on_p1() -> void:
 	var runner := await _create_runner()
 	var controller := runner.scene()
