@@ -31,17 +31,15 @@ func test_formal_character_runtime_registry_missing_validator_guard_contract() -
 	_assert_legacy_result(_test_formal_character_runtime_registry_missing_validator_guard_contract(_harness))
 func _test_formal_character_validator_registry_runtime_contract(harness) -> Dictionary:
 	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries()
-	var error_message := String(load_result.get("error", ""))
-	if not error_message.is_empty():
-		return harness.fail_result("formal character validator registry should load cleanly: %s" % error_message)
-	var entries: Array = load_result.get("entries", [])
+	if not bool(load_result.get("ok", false)):
+		return harness.fail_result("formal character validator registry should load cleanly: %s" % String(load_result.get("error_message", "")))
+	var entries: Array = load_result.get("data", [])
 	if entries.is_empty():
 		return harness.fail_result("formal character validator registry should expose at least one manifest entry")
 	var descriptor_result: Dictionary = FormalCharacterValidatorRegistryScript.build_validator_descriptors()
-	error_message = String(descriptor_result.get("error", ""))
-	if not error_message.is_empty():
-		return harness.fail_result("formal character validator descriptors should build cleanly: %s" % error_message)
-	var descriptors: Array = descriptor_result.get("descriptors", [])
+	if not bool(descriptor_result.get("ok", false)):
+		return harness.fail_result("formal character validator descriptors should build cleanly: %s" % String(descriptor_result.get("error_message", "")))
+	var descriptors: Array = descriptor_result.get("data", [])
 	if descriptors.size() != entries.size():
 		return harness.fail_result("formal character validator descriptors should match manifest entry count")
 	for raw_descriptor in descriptors:
@@ -55,21 +53,19 @@ func _test_formal_character_validator_registry_runtime_contract(harness) -> Dict
 		if String(descriptor.get("content_validator_script_path", "")).is_empty():
 			return harness.fail_result("formal character validator descriptor missing content_validator_script_path")
 		var instantiate_result: Dictionary = FormalCharacterValidatorRegistryScript.instantiate_validator_descriptor(descriptor)
-		error_message = String(instantiate_result.get("error", ""))
-		if not error_message.is_empty():
-			return harness.fail_result("formal character validator descriptor should still instantiate when present: %s" % error_message)
-		var validator = instantiate_result.get("validator", null)
+		if not bool(instantiate_result.get("ok", false)):
+			return harness.fail_result("formal character validator descriptor should still instantiate when present: %s" % String(instantiate_result.get("error_message", "")))
+		var validator = instantiate_result.get("data", null)
 		if validator == null or not validator.has_method("validate"):
 			return harness.fail_result("formal character validator registry returned invalid validator instance")
 	return harness.pass_result()
 
 func _test_formal_character_baseline_manifest_id_contract(harness) -> Dictionary:
 	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries()
-	var error_message := String(load_result.get("error", ""))
-	if not error_message.is_empty():
-		return harness.fail_result("formal character validator registry should load cleanly for baseline id contract: %s" % error_message)
+	if not bool(load_result.get("ok", false)):
+		return harness.fail_result("formal character validator registry should load cleanly for baseline id contract: %s" % String(load_result.get("error_message", "")))
 	var expected_ids := PackedStringArray()
-	for raw_entry in load_result.get("entries", []):
+	for raw_entry in load_result.get("data", []):
 		var entry: Dictionary = raw_entry
 		expected_ids.append(String(entry.get("character_id", "")).strip_edges())
 	if FormalCharacterBaselinesScript.character_ids() != expected_ids:
@@ -119,7 +115,7 @@ func _test_formal_character_runtime_registry_duplicate_unit_definition_guard_con
 	if not _write_json_fixture(manifest_path, manifest_payload):
 		return harness.fail_result("failed to write duplicate manifest fixture")
 	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
-	var error_message := String(load_result.get("error", ""))
+	var error_message := String(load_result.get("error_message", ""))
 	if error_message.find("duplicated unit_definition_id") == -1:
 		return harness.fail_result("runtime registry should fail fast on duplicated unit_definition_id")
 	return harness.pass_result()
@@ -166,7 +162,7 @@ func _test_formal_character_runtime_registry_required_field_guard_contract(harne
 		if not _write_json_fixture(manifest_path, manifest_payload):
 			return harness.fail_result("failed to write missing-field manifest fixture")
 		var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
-		var error_message := String(load_result.get("error", ""))
+		var error_message := String(load_result.get("error_message", ""))
 		var expected_error := String(bad_case.get("expected_error", ""))
 		if error_message.find(expected_error) == -1:
 			return harness.fail_result("formal manifest should fail fast on %s, got: %s" % [expected_error, error_message])
@@ -185,10 +181,9 @@ func _test_formal_character_runtime_registry_ignores_delivery_field_contract(har
 	if not _write_json_fixture(manifest_path, manifest_payload):
 		return harness.fail_result("failed to write runtime-only manifest fixture")
 	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
-	var error_message := String(load_result.get("error", ""))
-	if not error_message.is_empty():
-		return harness.fail_result("runtime registry should not depend on delivery-only fields: %s" % error_message)
-	var entries: Array = load_result.get("entries", [])
+	if not bool(load_result.get("ok", false)):
+		return harness.fail_result("runtime registry should not depend on delivery-only fields: %s" % String(load_result.get("error_message", "")))
+	var entries: Array = load_result.get("data", [])
 	if entries.size() != 1:
 		return harness.fail_result("runtime registry should load runtime-only entry")
 	var entry: Dictionary = entries[0]
@@ -220,10 +215,9 @@ func _test_formal_character_runtime_registry_ignores_pair_interaction_catalog_co
 	if not _write_json_fixture(manifest_path, manifest_payload):
 		return harness.fail_result("failed to write runtime/pair-coverage manifest fixture")
 	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
-	var error_message := String(load_result.get("error", ""))
-	if not error_message.is_empty():
-		return harness.fail_result("runtime registry should ignore owned pair interaction coverage drift: %s" % error_message)
-	var entries: Array = load_result.get("entries", [])
+	if not bool(load_result.get("ok", false)):
+		return harness.fail_result("runtime registry should ignore owned pair interaction coverage drift: %s" % String(load_result.get("error_message", "")))
+	var entries: Array = load_result.get("data", [])
 	if entries.size() != 2:
 		return harness.fail_result("runtime registry should still load runtime entries when owned pair interaction coverage drifts")
 	return harness.pass_result()
@@ -242,7 +236,7 @@ func _test_formal_character_runtime_registry_missing_validator_guard_contract(ha
 	if not _write_json_fixture(manifest_path, manifest_payload):
 		return harness.fail_result("failed to write missing-validator manifest fixture")
 	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
-	var error_message := String(load_result.get("error", ""))
+	var error_message := String(load_result.get("error_message", ""))
 	if error_message.find("missing validator") == -1 and error_message.find("failed to load validator") == -1:
 		return harness.fail_result("formal manifest should fail fast on missing validator path")
 	return harness.pass_result()
