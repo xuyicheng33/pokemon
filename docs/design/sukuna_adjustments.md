@@ -24,7 +24,7 @@
   <!-- anchor:sukuna.adjust.remove-999-turn-fallback -->
   - 宿傩被动真正要表达的是“长期有效，直到对位变化后替换成新的档位”，不是“持续 999 回合”
 - 影响测试：
-  - `test/suites/sukuna_snapshot_suite.gd`
+  - `test/suites/formal_character_snapshot_matrix_suite.gd`
   - `test/suites/sukuna_setup_loadout_regen_suite.gd`
 - 是否改变玩家口径：
   - 否

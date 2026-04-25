@@ -54,7 +54,7 @@
   - `effect_stack_sum`、`persistent_stat_stages` 和同回合重上场暂停语义已经变成共享能力，必须落到正式文档与正式回归面，而不是继续留在临时测试口径里
   - formal 角色元数据现在统一收口到 `formal_character_manifest.json` 单真源，鹿紫云不能再靠 `run_all` 的临时直连维持
 - 影响测试：
-  - `test/suites/kashimo_snapshot_suite.gd`
+  - `test/suites/formal_character_snapshot_matrix_suite.gd`
   - `test/suites/kashimo_amber_suite.gd`
   - `test/suites/persistent_stat_stage_suite.gd`
   - `test/suites/combat_type_runtime_suite.gd`

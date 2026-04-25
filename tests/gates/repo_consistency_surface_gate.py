@@ -21,10 +21,10 @@ src_count = ctx.gd_line_count("src")
 test_count = ctx.gd_line_count("test")
 tests_count = ctx.gd_line_count("tests")
 total_count = src_count + test_count + tests_count
-ctx.require_readme_count("src", r"`src/\*\*/\*\.gd`：`(\d+)` 行", src_count)
-ctx.require_readme_count("test", r"`test/\*\*/\*\.gd`：`(\d+)` 行", test_count)
-ctx.require_readme_count("tests", r"`tests/\*\*/\*\.gd`：`(\d+)` 行", tests_count)
-ctx.require_readme_count("total", r"GDScript 合计：`(\d+)` 行", total_count)
+print(
+    "GDSCRIPT_LINE_STATS: "
+    f"src={src_count} test={test_count} tests={tests_count} total={total_count}"
+)
 
 ctx.require_not_exists("tests/run_all.gd", "legacy manual Godot test entry")
 ctx.require_not_exists("tests/suites", "legacy register_tests suite tree")
@@ -142,8 +142,8 @@ for needle, label in [
     ctx.require_absent("src/battle_core/facades/battle_core_manager.gd", needle, label)
 
 for rel_path in [
-    "test/suites/gojo_manager_smoke_suite.gd",
-    "test/suites/sukuna_manager_smoke_suite.gd",
+    "test/suites/formal_character_manager_public_matrix_suite.gd",
+    "test/suites/formal_character_manager_blackbox_matrix_suite.gd",
     "test/suites/content_snapshot_cache_suite.gd",
     "test/suites/manager_facade_internal_contract_suite.gd",
     "test/suites/manager_log_and_runtime_contract/event_log_suite.gd",

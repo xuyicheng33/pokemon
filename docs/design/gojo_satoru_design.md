@@ -406,8 +406,8 @@
 
 正式交付面说明：
 
-- 五条悟玩法与行为回归由 `gojo_setup_and_markers_suite.gd`、`gojo_murasaki/*_suite.gd`、`gojo_mugen_suite.gd`、`gojo_unlimited_void_suite.gd`、`gojo_misc_runtime_suite.gd`、`gojo_manager_smoke_suite.gd` 与 `gojo_manager_blackbox_suite.gd` 直接承担。
-- `gojo_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死五条悟单位面板、技能资源与关键 effect / field / passive 资源。
+- 五条悟玩法与行为回归由 `gojo_setup_and_markers_suite.gd`、`gojo_murasaki/*_suite.gd`、`gojo_mugen_suite.gd`、`gojo_unlimited_void_suite.gd` 与 `gojo_misc_runtime_suite.gd` 直接承担；manager 公开面由 `formal_character_manager_public_matrix_suite.gd` 与 `formal_character_manager_blackbox_matrix_suite.gd` 覆盖。
+- `formal_character_snapshot_matrix_suite.gd` 统一读取共享 formal baseline，并锁死五条悟单位面板、技能资源与关键 effect / field / passive 资源。
 - `domain_clash_resolution_suite.gd`、`domain_clash_guard_suite.gd`、`field_lifecycle_contract_suite.gd` 与 `ultimate_points_contract_suite.gd` 中登记到注册表的共享回归，同样属于五条悟正式交付面的一部分。
 
 | 编号 | 用例 | 验证点 |

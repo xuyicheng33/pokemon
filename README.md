@@ -305,14 +305,9 @@ tests/run_with_gate.sh
 
 参考：`docs/design/log_and_replay_contract.md`
 
-## 10. 当前代码规模（2026-04-25）
+## 10. 当前代码规模
 
-- `src/**/*.gd`：`22864` 行
-- `test/**/*.gd`：`21953` 行
-- `tests/**/*.gd`：`5223` 行
-- GDScript 合计：`50040` 行
-
-> 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
+代码规模由 `tests/check_repo_consistency.sh` 在运行时输出 `GDSCRIPT_LINE_STATS`，不在 README 固定精确行数，避免仅因测试壳删减或重排造成文档漂移。
 
 ## 11. 后续扩展建议（进入角色设计前）
 

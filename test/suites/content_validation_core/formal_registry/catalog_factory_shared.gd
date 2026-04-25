@@ -1,6 +1,7 @@
 extends "res://test/suites/content_validation_core/formal_registry/shared.gd"
 
 const SetupSharedScript := preload("res://test/suites/content_validation_core/formal_registry/catalog_factory_setup_shared.gd")
+const SetupMismatchSharedScript := preload("res://test/suites/content_validation_core/formal_registry/catalog_factory_setup_mismatch_shared.gd")
 const PairSharedScript := preload("res://test/suites/content_validation_core/formal_registry/catalog_factory_pair_shared.gd")
 const SurfaceSharedScript := preload("res://test/suites/content_validation_core/formal_registry/catalog_factory_surface_shared.gd")
 
@@ -14,7 +15,7 @@ func _test_formal_character_auto_sample_matchup_contract(harness) -> Dictionary:
 	return _call_helper(SetupSharedScript, "_test_formal_character_auto_sample_matchup_contract", [harness])
 
 func _test_formal_character_registry_id_mismatch_contract(harness) -> Dictionary:
-	return _call_helper(SetupSharedScript, "_test_formal_character_registry_id_mismatch_contract", [harness])
+	return _call_helper(SetupMismatchSharedScript, "_test_formal_character_registry_id_mismatch_contract", [harness])
 
 func _test_formal_pair_interaction_catalog_seed_contract(harness) -> Dictionary:
 	return _call_helper(PairSharedScript, "_test_formal_pair_interaction_catalog_seed_contract", [harness])

@@ -54,11 +54,11 @@
       "test/suites/sukuna_teach_love_band_suite.gd",
       "test/suites/sukuna_setup_skill_runtime_suite.gd",
       "test/suites/sukuna_setup_ultimate_window_suite.gd",
-      "test/suites/sukuna_snapshot_suite.gd",
+      "test/suites/formal_character_snapshot_matrix_suite.gd",
       "test/suites/sukuna_kamado_suite.gd",
       "test/suites/sukuna_domain_suite.gd",
-      "test/suites/sukuna_manager_smoke_suite.gd",
-      "test/suites/sukuna_manager_blackbox_suite.gd",
+      "test/suites/formal_character_manager_public_matrix_suite.gd",
+      "test/suites/formal_character_manager_blackbox_matrix_suite.gd",
       "test/suites/formal_character_pair_smoke/surface_suite.gd",
       "test/suites/formal_character_pair_smoke/interaction_suite.gd",
       "test/suites/replay_determinism_suite.gd",
@@ -71,14 +71,14 @@
       "test/suites/field_lifecycle_contract_suite.gd"
     ],
     "required_test_names": [
-      "sukuna_snapshot_contract",
+      "formal_character_snapshot_contract_matrix",
       "sukuna_default_loadout_contract",
       "sukuna_matchup_regen_runtime_path",
       "sukuna_matchup_bst_includes_max_mp_contract",
       "sukuna_teach_love_band_table_contract",
       "sukuna_teach_love_replace_on_matchup_change_contract",
       "sukuna_reverse_ritual_heal_path",
-      "sukuna_manager_public_contracts",
+      "formal_character_manager_public_contract_matrix",
       "sukuna_kai_priority_damage_contract",
       "sukuna_hatsu_mp_diff_contract",
       "sukuna_default_loadout_first_ultimate_window_contract",
@@ -95,7 +95,7 @@
       "formal_sukuna_validator_bad_case_contract",
       "formal_sukuna_validator_reverse_bad_case_contract",
       "formal_sukuna_validator_regen_surface_bad_case_contract",
-      "sukuna_manager_blackbox_contracts"
+      "formal_character_manager_blackbox_contract_matrix"
     ],
     "surface_smoke_skill_id": "sukuna_kai"
   }

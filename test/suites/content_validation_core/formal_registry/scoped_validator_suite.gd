@@ -77,7 +77,7 @@ func _test_formal_character_validator_absent_bad_validator_ignored_contract(harn
 			"gojo_ao",
 			"test/suites/gojo_setup_and_markers_suite.gd",
 			["test/suites/formal_character_pair_smoke/surface_suite.gd"],
-			["gojo_manager_public_contracts"],
+			["formal_character_manager_public_contract_matrix"],
 			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
 			["anchor:gojo.adjust.tests-impacted"]
 		),
@@ -93,7 +93,7 @@ func _test_formal_character_validator_absent_bad_validator_ignored_contract(harn
 			"sukuna_kai",
 			"test/suites/sukuna_setup_loadout_regen_suite.gd",
 			["test/suites/formal_character_pair_smoke/surface_suite.gd"],
-			["sukuna_manager_public_contracts"],
+			["formal_character_manager_public_contract_matrix"],
 			["anchor:sukuna.design.domain-expire-burst-kept"],
 			["anchor:sukuna.adjust.tests-impacted"]
 		),
@@ -132,7 +132,7 @@ func _test_formal_character_validator_present_bad_validator_fail_fast_contract(h
 			"gojo_ao",
 			"test/suites/gojo_setup_and_markers_suite.gd",
 			["test/suites/formal_character_pair_smoke/surface_suite.gd"],
-			["gojo_manager_public_contracts"],
+			["formal_character_manager_public_contract_matrix"],
 			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
 			["anchor:gojo.adjust.tests-impacted"]
 		),

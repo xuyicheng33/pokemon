@@ -306,8 +306,8 @@
 
 正式交付面说明：
 
-- 宿傩玩法与行为回归由 `sukuna_setup_loadout_regen_suite.gd`、`sukuna_teach_love_band_suite.gd`、`sukuna_setup_skill_runtime_suite.gd`、`sukuna_setup_ultimate_window_suite.gd`、`sukuna_kamado_suite.gd`、`sukuna_domain_suite.gd`、`sukuna_manager_smoke_suite.gd` 与 `sukuna_manager_blackbox_suite.gd` 直接承担。
-- `sukuna_snapshot_suite.gd` 统一读取共享 formal baseline，并用显式断言锁死宿傩单位面板、技能资源与关键 effect / field / passive 资源。
+- 宿傩玩法与行为回归由 `sukuna_setup_loadout_regen_suite.gd`、`sukuna_teach_love_band_suite.gd`、`sukuna_setup_skill_runtime_suite.gd`、`sukuna_setup_ultimate_window_suite.gd`、`sukuna_kamado_suite.gd` 与 `sukuna_domain_suite.gd` 直接承担；manager 公开面由 `formal_character_manager_public_matrix_suite.gd` 与 `formal_character_manager_blackbox_matrix_suite.gd` 覆盖。
+- `formal_character_snapshot_matrix_suite.gd` 统一读取共享 formal baseline，并锁死宿傩单位面板、技能资源与关键 effect / field / passive 资源。
 - `domain_clash_resolution_suite.gd`、`domain_clash_guard_suite.gd`、`field_lifecycle_contract_suite.gd` 与 `ultimate_points_contract_suite.gd` 中登记到注册表的共享回归，同样属于宿傩正式交付面的一部分。
 
 | 编号 | 用例 | 验证点 |

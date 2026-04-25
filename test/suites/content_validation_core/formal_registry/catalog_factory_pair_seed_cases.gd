@@ -59,7 +59,7 @@ func _build_two_character_manifest_payload(owned_pair_interaction_specs: Array) 
 			"gojo_ao",
 			"test/suites/gojo_setup_and_markers_suite.gd",
 			["test/suites/formal_character_pair_smoke/surface_suite.gd"],
-			["gojo_manager_public_contracts"],
+			["formal_character_manager_public_contract_matrix"],
 			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
 			["anchor:gojo.adjust.tests-impacted"]
 		),
@@ -75,7 +75,7 @@ func _build_two_character_manifest_payload(owned_pair_interaction_specs: Array) 
 			"sukuna_kai",
 			"test/suites/sukuna_setup_loadout_regen_suite.gd",
 			["test/suites/formal_character_pair_smoke/surface_suite.gd"],
-			["sukuna_manager_public_contracts"],
+			["formal_character_manager_public_contract_matrix"],
 			["anchor:sukuna.design.domain-expire-burst-kept"],
 			["anchor:sukuna.adjust.tests-impacted"],
 			[],

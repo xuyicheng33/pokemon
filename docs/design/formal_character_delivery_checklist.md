@@ -89,10 +89,10 @@
 
 每个新角色至少固定 3 类测试：
 
-### A. Snapshot suite
+### A. Snapshot matrix
 
-- [ ] `test/suites/<character>_snapshot_suite.gd`（优先复用共享 formal baseline，避免 validator / snapshot 双边手抄）
-- [ ] 优先复用共享 snapshot helper / formal character test support，不再为单角色复制 `_build_content_index()` 与 `_run_checks()` 模板
+- [ ] `test/suites/formal_character_snapshot_matrix_suite.gd`（manifest 驱动，复用共享 formal baseline，避免 per-character snapshot 壳）
+- [ ] 不再为单角色复制 `_build_content_index()` 与 `_run_checks()` 模板
 - [ ] 锁 `UnitDefinition` 字面量
 - [ ] 锁技能资源字面量
 - [ ] 锁关键 effect / field / passive 资源字面量
@@ -103,10 +103,11 @@
 - [ ] 大型共享或角色主题直接拆成可发现的子 suite；manifest 与文档引用有 `func test_*` 的真实 suite 路径，不再新增 `register_tests` wrapper 或 `{pair_token}_suite.gd` 空 wrapper
 - [ ] 锁角色主玩法路径，而不是只测通用 contract
 
-### C. Manager smoke suite
+### C. Manager matrix
 
-- [ ] `test/suites/<character>_manager_smoke_suite.gd`
-- [ ] 优先复用共享 manager smoke helper，统一 `build_manager -> create_session -> close_session` 黑盒样板
+- [ ] `test/suites/formal_character_manager_public_matrix_suite.gd`
+- [ ] `test/suites/formal_character_manager_blackbox_matrix_suite.gd`
+- [ ] 统一复用共享 manager smoke helper，按 manifest 覆盖角色公开 facade 主路径
 - [ ] 覆盖 `create_session -> get_legal_actions -> build_command -> run_turn -> get_public_snapshot / get_event_log_snapshot`
 - [ ] 断言公开快照与事件日志不泄漏 runtime private id
 

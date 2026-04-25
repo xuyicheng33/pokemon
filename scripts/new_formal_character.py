@@ -153,10 +153,11 @@ def generate_source_descriptor(
             "design_needles": ["FILL_IN_design_anchor"],
             "adjustment_needles": ["FILL_IN_adjustment_anchor"],
             "shared_capability_ids": [],
-            "suite_path": f"test/suites/{pair_token}_snapshot_suite.gd",
+            "suite_path": "test/suites/formal_character_snapshot_matrix_suite.gd",
             "required_suite_paths": [
-                f"test/suites/{pair_token}_snapshot_suite.gd",
-                f"test/suites/{pair_token}_manager_smoke_suite.gd",
+                "test/suites/formal_character_snapshot_matrix_suite.gd",
+                "test/suites/formal_character_manager_public_matrix_suite.gd",
+                "test/suites/formal_character_manager_blackbox_matrix_suite.gd",
             ],
             "required_test_names": ["FILL_IN_test_name"],
             "surface_smoke_skill_id": "FILL_IN_skill_id",
@@ -275,112 +276,6 @@ func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) ->
 
 func _validate_ultimate_domain(content_index: BattleContentIndex, errors: Array) -> void:
 \terrors.append("FORMAL_DRAFT_VALIDATOR_REPLACE_BEFORE_LIVE: {char_id} ultimate/domain assertions are incomplete")
-'''
-
-
-def generate_snapshot_suite(char_id: str, pair_token: str, display_name: str) -> str:
-    """Generate the snapshot test suite shell."""
-    return f'''\
-extends "res://test/support/gdunit_suite_bridge.gd"
-
-const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
-const FormalCharacterSnapshotTestHelperScript := preload("res://tests/support/formal_character_snapshot_test_helper.gd")
-
-var _helper = FormalCharacterSnapshotTestHelperScript.new()
-
-
-func test_{pair_token}_unit_snapshot_contract() -> void:
-\t_assert_legacy_result(_test_{pair_token}_unit_snapshot_contract(_harness))
-
-func test_{pair_token}_skill_snapshot_contract() -> void:
-\t_assert_legacy_result(_test_{pair_token}_skill_snapshot_contract(_harness))
-
-func test_{pair_token}_effect_snapshot_contract() -> void:
-\t_assert_legacy_result(_test_{pair_token}_effect_snapshot_contract(_harness))
-
-func _test_{pair_token}_unit_snapshot_contract(harness) -> Dictionary:
-\tvar content_index = _helper.build_content_index(harness)
-\tif content_index == null:
-\t\treturn harness.fail_result("failed to load content snapshot for {display_name} unit snapshot")
-\treturn _helper.run_descriptor_checks(
-\t\tharness,
-\t\tcontent_index.units,
-\t\t[FormalCharacterBaselinesScript.unit_contract("{char_id}")],
-\t\t"unit_id",
-\t\t"missing {pair_token} unit definition"
-\t)
-
-func _test_{pair_token}_skill_snapshot_contract(harness) -> Dictionary:
-\tvar content_index = _helper.build_content_index(harness)
-\tif content_index == null:
-\t\treturn harness.fail_result("failed to load content snapshot for {display_name} skill snapshot")
-\treturn _helper.run_descriptor_checks(
-\t\tharness,
-\t\tcontent_index.skills,
-\t\tFormalCharacterBaselinesScript.skill_contracts("{char_id}"),
-\t\t"skill_id",
-\t\t"missing {pair_token} snapshot skill resource"
-\t)
-
-func _test_{pair_token}_effect_snapshot_contract(harness) -> Dictionary:
-\tvar content_index = _helper.build_content_index(harness)
-\tif content_index == null:
-\t\treturn harness.fail_result("failed to load content snapshot for {display_name} effect snapshot")
-\treturn _helper.run_descriptor_checks(
-\t\tharness,
-\t\tcontent_index.effects,
-\t\tFormalCharacterBaselinesScript.effect_contracts("{char_id}"),
-\t\t"effect_id",
-\t\t"missing {pair_token} snapshot effect resource"
-\t)
-'''
-
-
-def generate_manager_smoke_suite(char_id: str, pair_token: str) -> str:
-    """Generate the manager smoke suite shell."""
-    return f'''\
-extends "res://test/support/gdunit_suite_bridge.gd"
-
-const FormalCharacterManagerSmokeHelperScript := preload("res://tests/support/formal_character_manager_smoke_helper.gd")
-
-var _smoke_helper = null
-var _helper = null
-var _case_specs: Array = []
-
-func _ensure_suite_state() -> void:
-\tif _smoke_helper == null or _helper == null:
-\t\t_smoke_helper = FormalCharacterManagerSmokeHelperScript.new()
-\t\t_helper = _smoke_helper.contracts()
-\tif _case_specs.is_empty():
-\t\t_case_specs = [
-\t\t\t{{
-\t\t\t\t"test_name": "test_{pair_token}_manager_smoke_contract",
-\t\t\t\t"battle_seed": 9999,
-\t\t\t\t"build_battle_setup": Callable(self, "_build_{pair_token}_manager_smoke_setup"),
-\t\t\t\t"run_case": Callable(self, "_run_{pair_token}_manager_smoke_case"),
-\t\t\t}},
-\t\t]
-
-func before_test() -> void:
-\t_ensure_suite_state()
-
-func test_{pair_token}_manager_smoke_contract() -> void:
-\t_assert_legacy_result(_test_{pair_token}_manager_smoke_contract(_harness))
-
-func _test_{pair_token}_manager_smoke_contract(harness) -> Dictionary:
-\treturn _smoke_helper.run_named_case(harness, _case_specs, "test_{pair_token}_manager_smoke_contract")
-
-func _build_{pair_token}_manager_smoke_setup(harness, sample_factory, _case_spec: Dictionary):
-\treturn harness.build_setup_by_matchup_id(sample_factory, "{pair_token}_vs_sample")
-
-func _run_{pair_token}_manager_smoke_case(state: Dictionary) -> Dictionary:
-\tvar harness = state["harness"]
-\tvar manager = state["manager"]
-\tvar session_id := String(state["session_id"])
-\tvar legal_actions_unwrap = _smoke_helper.get_legal_actions_result(manager, session_id, "P1", "get_legal_actions")
-\tif not bool(legal_actions_unwrap.get("ok", false)):
-\t\treturn harness.fail_result(str(legal_actions_unwrap.get("error", "manager get_legal_actions failed")))
-\treturn harness.pass_result("{pair_token} manager smoke passed")
 '''
 
 
@@ -558,13 +453,11 @@ def main() -> None:
     write_file(validator_dir / f"content_snapshot_formal_{pair_token}_validator.gd",
                generate_validator(char_id, pair_token))
 
-    # 5. Test suites
-    print("[5/8] Test suite shells (draft)")
-    suites_dir = DRAFTS_DIR / "test" / "suites"
-    write_file(suites_dir / f"{pair_token}_snapshot_suite.gd",
-               generate_snapshot_suite(char_id, pair_token, display_name))
-    write_file(suites_dir / f"{pair_token}_manager_smoke_suite.gd",
-               generate_manager_smoke_suite(char_id, pair_token))
+    # 5. Shared matrix suites
+    print("[5/8] Shared matrix suites")
+    print("  USE: test/suites/formal_character_snapshot_matrix_suite.gd")
+    print("  USE: test/suites/formal_character_manager_public_matrix_suite.gd")
+    print("  USE: test/suites/formal_character_manager_blackbox_matrix_suite.gd")
 
     # 6. Design doc placeholders
     print("[6/8] Design doc placeholders (draft)")
@@ -617,41 +510,36 @@ Next steps:
   3. Fill in validator assertions:
      - scripts/drafts/src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd
 
-  4. Fill in manager smoke suite:
-     - scripts/drafts/test/suites/{pair_token}_manager_smoke_suite.gd
-     - Update battle_seed, skill assertions, etc.
-
-  5. Complete the source descriptor (currently at {sd_location}):
+  4. Complete the source descriptor (currently at {sd_location}):
      - Replace FILL_IN_skill_id with actual surface_smoke_skill_id
      - Replace FILL_IN_test_name entries with actual required_test_names
      - Replace FILL_IN_design_anchor / FILL_IN_adjustment_anchor with actual doc anchors
      - Add shared_capability_ids if the character uses shared capabilities
+     - Keep the shared matrix suite anchors unless this character needs additional private runtime suites
 
-  6. Review shared matchup needs:
+  5. Review shared matchup needs:
      - Default "{pair_token}_vs_sample" is now auto-derived from pair_initiator_bench_unit_ids
      - Only update config/formal_character_sources/00_shared_registry.json if you need:
        a. custom formal_setup_matchup_id
        b. custom sample team composition
        c. extra shared/test_only matchup
 
-  7. Complete pair interaction layer:
+  6. Complete pair interaction layer:
      - Fill in scenario_key values in owned_pair_interaction_specs (replace FILL_IN_* placeholders)
      - Fill in battle_seed values (must be positive integers, unique per directed case)
      - Implement runner methods in {interaction_location if interaction_location else "the generated pair case draft"}
      - Move the finished runner to tests/support/formal_pair_interaction/{pair_token}_cases.gd only when the source descriptor moves into live config
      - scenario_registry.gd auto-discovers live *_cases.gd files; draft files are intentionally not discovered
 
-  8. Move completed draft files into live paths:
+  7. Move completed draft files into live paths:
      - scripts/drafts/src/shared/formal_character_baselines/{char_id}/ -> src/shared/formal_character_baselines/{char_id}/
      - scripts/drafts/src/battle_core/content/formal_validators/{pair_token}/ -> src/battle_core/content/formal_validators/{pair_token}/
-     - scripts/drafts/test/suites/{pair_token}_snapshot_suite.gd -> test/suites/
-     - scripts/drafts/test/suites/{pair_token}_manager_smoke_suite.gd -> test/suites/
      - scripts/drafts/docs/design/{char_id}_*.md -> docs/design/
 
-  9. Run draft readiness check:
+  8. Run draft readiness check:
      bash scripts/check_formal_character_draft_ready.sh
 
-  10. Move source descriptor into live config:
+  9. Move source descriptor into live config:
      mv {sd_location} config/formal_character_sources/{sd_filename}
 
   11. Sync formal registry:
