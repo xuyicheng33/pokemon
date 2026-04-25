@@ -15,7 +15,7 @@
 
 ## 进行中：项目问题收口三阶段（2026-04-25）
 
-- 状态：阶段 1 已完成，阶段 2 待开始
+- 状态：阶段 2 已完成，阶段 3 待开始
 - 目标：先让 Sandbox 可见 matchup 汇总对 formal catalog 错误 fail-fast，再重做 Sandbox UI，最后用 manifest 驱动 matrix suite 删除重复角色测试壳
 - 范围：
   1. `SampleBattleFactory.available_matchups_result()` 遇到 formal catalog 加载失败直接返回错误，baseline setup、legacy demo 与 baseline-only setup snapshot 继续独立
@@ -25,7 +25,7 @@
   - formal catalog 失败会阻断 Sandbox 可选列表加载并暴露错误
   - 窄桌面窗口下选择页和战斗页不空白、不挤压核心操作
   - 删除重复壳后 suite reachability、架构约束、repo consistency、quick gate 和 extended gate 通过
-- 验证结果：阶段 1 已通过 `TEST_PATH=res://test/suites/sample_battle_factory_contract_suite.gd bash tests/run_gdunit.sh`、`bash tests/check_sandbox_smoke_matrix.sh`、`bash tests/check_repo_consistency.sh`
+- 验证结果：阶段 1 已通过 `TEST_PATH=res://test/suites/sample_battle_factory_contract_suite.gd bash tests/run_gdunit.sh`、`bash tests/check_sandbox_smoke_matrix.sh`、`bash tests/check_repo_consistency.sh`；阶段 2 已通过 `TEST_PATH=res://test/suites/manual_battle_scene/manual_flow_suite.gd bash tests/run_gdunit.sh`、`TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`、`bash tests/check_boot_smoke.sh`、`bash tests/check_sandbox_smoke_matrix.sh`
 
 ## 最近完成：项目问题修复与测试分层（2026-04-25）
 

@@ -39,24 +39,25 @@ func _add_header(parent: Node) -> void:
 
 func _add_select_panel(parent: Node) -> void:
 	var panel := _add_panel(parent, "SelectPanel", COLOR_PANEL)
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var content := _add_vbox(panel, "SelectContent", 12)
 	var title := _add_label(content, "SelectTitleLabel", "选择出战角色", 22, COLOR_TEXT)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var subtitle := _add_label(
-		content,
-		"SelectSubtitleLabel",
-		"P1 手动操作，P2 自动行动。每位角色进入一组预设对局。",
-		14,
-		COLOR_MUTED
-	)
+	var subtitle := _add_label(content, "SelectSubtitleLabel", "P1 manual / P2 policy", 13, COLOR_MUTED)
 	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var scroll := ScrollContainer.new()
+	scroll.name = "CharacterScroll"
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	content.add_child(scroll)
 	var cards := GridContainer.new()
 	cards.name = "CharacterCards"
 	cards.columns = 4
 	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cards.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	cards.add_theme_constant_override("h_separation", 12)
 	cards.add_theme_constant_override("v_separation", 12)
-	content.add_child(cards)
+	scroll.add_child(cards)
 
 func _add_battle_body(parent: Node) -> void:
 	var body_row := HBoxContainer.new()
@@ -94,6 +95,7 @@ func _add_result_panel(parent: Node) -> void:
 
 func _add_side_panel(parent: Node, panel_name: String, title_text: String, content_name: String, summary_name: String) -> void:
 	var panel := _add_panel(parent, panel_name, COLOR_PANEL)
+	panel.custom_minimum_size = Vector2(240, 0)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var content := _add_vbox(panel, content_name, 8)
@@ -111,8 +113,9 @@ func _add_side_panel(parent: Node, panel_name: String, title_text: String, conte
 
 func _add_event_panel(parent: Node) -> void:
 	var panel := _add_panel(parent, "EventPanel", COLOR_PANEL_SOFT)
-	panel.custom_minimum_size = Vector2(360, 0)
+	panel.custom_minimum_size = Vector2(320, 0)
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_stretch_ratio = 1.25
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var content := _add_vbox(panel, "EventContent", 8)
 	var header := _add_label(content, "EventHeaderLabel", "战况记录", 18, COLOR_ACCENT)
@@ -133,11 +136,11 @@ func _add_action_panel(parent: Node) -> void:
 	_add_label(content, "ActionHeaderLabel", "等待场景初始化", 16, COLOR_TEXT)
 	var pending := _add_label(content, "PendingLabel", "待提交指令: -", 13, COLOR_MUTED)
 	pending.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_add_hbox(content, "PrimaryButtons", 8)
+	_add_flowbox(content, "PrimaryButtons", 8)
 	var switch_label := _add_label(content, "SwitchLabel", "换人目标", 14, COLOR_ACCENT)
 	switch_label.visible = false
-	_add_hbox(content, "SwitchButtons", 8)
-	_add_hbox(content, "UtilityButtons", 8)
+	_add_flowbox(content, "SwitchButtons", 8)
+	_add_flowbox(content, "UtilityButtons", 8)
 	var controls := _add_hbox(content, "ControlButtons", 8)
 	_add_button(controls, "RestartButton", "重开当前对局")
 	var replay := _add_hbox(controls, "ReplayControls", 8)
@@ -149,10 +152,10 @@ func _add_action_panel(parent: Node) -> void:
 func _add_config_panel(parent: Node) -> void:
 	var panel := _add_panel(parent, "ConfigPanel", COLOR_PANEL_SOFT)
 	var content := _add_vbox(panel, "ConfigContent", 6)
-	_add_label(content, "ConfigTitleLabel", "启动配置", 14, COLOR_ACCENT)
 	var grid := GridContainer.new()
 	grid.name = "ConfigGrid"
 	grid.columns = 8
+	grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid.add_theme_constant_override("h_separation", 8)
 	grid.add_theme_constant_override("v_separation", 4)
 	content.add_child(grid)
@@ -201,6 +204,15 @@ func _add_hbox(parent: Node, node_name: String, separation: int) -> HBoxContaine
 	box.name = node_name
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", separation)
+	parent.add_child(box)
+	return box
+
+func _add_flowbox(parent: Node, node_name: String, separation: int) -> HFlowContainer:
+	var box := HFlowContainer.new()
+	box.name = node_name
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("h_separation", separation)
+	box.add_theme_constant_override("v_separation", separation)
 	parent.add_child(box)
 	return box
 

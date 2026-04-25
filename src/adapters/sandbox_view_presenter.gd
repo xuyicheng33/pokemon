@@ -38,6 +38,7 @@ func configure_static_controls(view_refs: SandboxViewRefs) -> void:
 func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, current_view_model: Dictionary) -> void:
 	if not controller.is_inside_tree() or not view_refs.is_bound():
 		return
+	_update_responsive_layout(controller, view_refs)
 	_sync_launch_controls(state, view_refs)
 	view_refs.status_label.text = _fmt.format_status_text(state, current_view_model)
 	view_refs.error_label.text = state.error_message
@@ -162,8 +163,16 @@ func _render_page_state(controller, state: SandboxSessionState, view_refs: Sandb
 
 func _render_character_cards(controller, state: SandboxSessionState, view_refs: SandboxViewRefs) -> void:
 	_clear_container_children(view_refs.character_cards)
-	for option in _character_options(state.available_matchups):
+	var options := _character_options(state.available_matchups)
+	if options.is_empty():
+		var message := state.error_message.strip_edges()
+		if message.is_empty():
+			message = "当前没有可选角色"
+		_add_select_state_card(view_refs.character_cards, message)
+		return
+	for option in options:
 		var card := PanelContainer.new()
+		card.custom_minimum_size = Vector2(210, 260)
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.add_theme_stylebox_override("panel", _stylebox(COLOR_CARD))
 		view_refs.character_cards.add_child(card)
@@ -193,6 +202,7 @@ func _render_character_cards(controller, state: SandboxSessionState, view_refs: 
 			portrait.add_child(sigil)
 		var name_label := _new_card_label(str(option.get("display_name", "")), 18, COLOR_TEXT)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		content.add_child(name_label)
 		var matchup_id := str(option.get("formal_setup_matchup_id", "")).strip_edges()
 		var matchup_label := _new_card_label(matchup_id, 12, COLOR_ACCENT)
@@ -209,6 +219,24 @@ func _render_character_cards(controller, state: SandboxSessionState, view_refs: 
 			controller.start_player_matchup(matchup_id)
 		)
 		content.add_child(start_button)
+
+func _add_select_state_card(container: Node, message: String) -> void:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(280, 160)
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", _stylebox(COLOR_CARD))
+	container.add_child(card)
+	var content := VBoxContainer.new()
+	content.alignment = BoxContainer.ALIGNMENT_CENTER
+	content.add_theme_constant_override("separation", 10)
+	card.add_child(content)
+	var title := _new_card_label("无法进入角色选择", 18, COLOR_TEXT)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	content.add_child(title)
+	var details := _new_card_label(message, 13, COLOR_MUTED)
+	details.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(details)
 
 func _character_options(available_matchups: Array) -> Array:
 	var available_ids := _available_matchup_ids(available_matchups)
@@ -306,6 +334,17 @@ func _new_card_label(text: String, font_size: int, color: Color) -> Label:
 	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", color)
 	return label
+
+func _update_responsive_layout(controller, view_refs: SandboxViewRefs) -> void:
+	var width := int(controller.size.x)
+	if width <= 0 and controller.get_viewport() != null:
+		width = int(controller.get_viewport().get_visible_rect().size.x)
+	if width >= 1200:
+		view_refs.character_cards.columns = 4
+	elif width >= 900:
+		view_refs.character_cards.columns = 2
+	else:
+		view_refs.character_cards.columns = 1
 
 func _render_replay_controls(view_refs: SandboxViewRefs, current_view_model: Dictionary) -> void:
 	var replay_mode := bool(current_view_model.get("replay_mode", false))

@@ -12,7 +12,7 @@ func test_manual_scene_starts_on_character_selection() -> void:
 	assert_bool(controller.get_node("RootMargin/MainColumn/SelectPanel").visible).is_true()
 	assert_bool(controller.get_node("RootMargin/MainColumn/BodyRow").visible).is_false()
 	assert_bool(controller.get_node("RootMargin/MainColumn/ActionPanel").visible).is_false()
-	var cards: GridContainer = controller.get_node("RootMargin/MainColumn/SelectPanel/SelectContent/CharacterCards")
+	var cards: GridContainer = controller.get_node("RootMargin/MainColumn/SelectPanel/SelectContent/CharacterScroll/CharacterCards")
 	assert_int(cards.get_child_count()).is_equal(_visible_formal_setup_matchup_count(controller.get_state_snapshot().get("available_matchups", [])))
 	var start_result: Dictionary = controller.start_player_matchup("gojo_vs_sample")
 	assert_bool(bool(start_result.get("ok", false))).is_true()
@@ -21,6 +21,21 @@ func test_manual_scene_starts_on_character_selection() -> void:
 	assert_bool(controller.get_node("RootMargin/MainColumn/SelectPanel").visible).is_false()
 	assert_bool(controller.get_node("RootMargin/MainColumn/BodyRow").visible).is_true()
 	assert_bool(controller.get_node("RootMargin/MainColumn/ActionPanel").visible).is_true()
+
+func test_manual_scene_selection_grid_uses_desktop_columns() -> void:
+	var runner := await _create_selection_runner()
+	var controller := runner.scene()
+	var cards: GridContainer = controller.get_node("RootMargin/MainColumn/SelectPanel/SelectContent/CharacterScroll/CharacterCards")
+	controller.size = Vector2(1000, 720)
+	controller.show_matchup_selection()
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	assert_int(cards.columns).is_greater_equal(2)
+	controller.size = Vector2(1280, 720)
+	controller.show_matchup_selection()
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	assert_int(cards.columns).is_greater_equal(4)
 
 func _visible_formal_setup_matchup_count(available_matchups: Array) -> int:
 	var available_ids: Dictionary = {}
