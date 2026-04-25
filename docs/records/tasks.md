@@ -13,6 +13,20 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 进行中：项目问题收口三阶段（2026-04-25）
+
+- 状态：阶段 1 已完成，阶段 2 待开始
+- 目标：先让 Sandbox 可见 matchup 汇总对 formal catalog 错误 fail-fast，再重做 Sandbox UI，最后用 manifest 驱动 matrix suite 删除重复角色测试壳
+- 范围：
+  1. `SampleBattleFactory.available_matchups_result()` 遇到 formal catalog 加载失败直接返回错误，baseline setup、legacy demo 与 baseline-only setup snapshot 继续独立
+  2. Sandbox 选择页改成角色卡网格，战斗页改成双方角色卡、中央战况、底部行动区的稳定布局
+  3. formal 角色 snapshot / manager public / manager blackbox 合并为 manifest 驱动 matrix suite，并清理重复 per-character 壳
+- 验收标准：
+  - formal catalog 失败会阻断 Sandbox 可选列表加载并暴露错误
+  - 窄桌面窗口下选择页和战斗页不空白、不挤压核心操作
+  - 删除重复壳后 suite reachability、架构约束、repo consistency、quick gate 和 extended gate 通过
+- 验证结果：阶段 1 已通过 `TEST_PATH=res://test/suites/sample_battle_factory_contract_suite.gd bash tests/run_gdunit.sh`、`bash tests/check_sandbox_smoke_matrix.sh`、`bash tests/check_repo_consistency.sh`
+
 ## 最近完成：项目问题修复与测试分层（2026-04-25）
 
 - 状态：已完成

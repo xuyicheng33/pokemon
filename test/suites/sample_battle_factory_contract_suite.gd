@@ -137,16 +137,14 @@ func _test_available_matchups_surfaces_formal_catalog_failure(harness) -> Dictio
 	if sample_factory == null:
 		return harness.fail_result("SampleBattleFactory init failed")
 	var available_result: Dictionary = sample_factory.available_matchups_result()
-	if not bool(available_result.get("ok", false)):
-		return harness.fail_result("available_matchups_result() should gracefully degrade when formal catalog fails")
-	var descriptors = available_result.get("data", [])
-	if not (descriptors is Array) or descriptors.is_empty():
-		return harness.fail_result("available_matchups_result() should still return baseline descriptors when formal catalog fails")
-	for raw_descriptor in descriptors:
-		if not (raw_descriptor is Dictionary):
-			continue
-		if String(raw_descriptor.get("source", "")) == "formal":
-			return harness.fail_result("available_matchups_result() should not contain formal descriptors when formal catalog fails")
+	var failure = _helper.expect_failure_code(
+		available_result,
+		"available_matchups_result()",
+		ErrorCodesScript.INVALID_BATTLE_SETUP,
+		"formal"
+	)
+	if not bool(failure.get("ok", false)):
+		return harness.fail_result(str(failure.get("error", "available matchups formal catalog failure contract drifted")))
 	return harness.pass_result()
 
 func _test_baseline_setup_snapshot_ignores_formal_runtime_registry_failure(harness) -> Dictionary:
