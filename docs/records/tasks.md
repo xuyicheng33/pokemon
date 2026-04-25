@@ -426,6 +426,25 @@
   - 不改任何现有角色时，现有 gate 不受影响
 - 用法：`bash scripts/new_formal_character.sh <character_id> <display_name> [--pair-token TOKEN]`
 
+## 最近完成：全项目体量与风险审查（2026-04-25）
+
+- 状态：已完成
+- 目标：审查当前工程实现阶段、测试体量、引擎/技能实现、Sandbox 前端和可精简点。
+- 范围：
+  1. 扫描 `src/`、`content/`、`scenes/`、`test/`、`tests/`、`config/`、`docs/`
+  2. 识别可保留、可删减、可优化与潜在问题
+  3. 不修改业务逻辑，不删除文件
+- 结论记录：`docs/records/project_review_2026-04-25.md`
+- 关键发现：
+  1. Formal catalog 错误在 `available_matchups_result()` 可见 matchup 汇总路径里仍可能被静默吃掉，需要改成显式 fail-fast 或拆出 baseline-only API
+  2. Sandbox 角色选择页对 manifest 读取失败缺少明确错误展示
+  3. Sandbox UI 当前是桌面固定布局，后续需要响应式列数与滚动容器
+  4. 测试/gate 维护面偏重，README 精确行数强校验和多处测试入口列表可继续收窄
+  5. Formal per-character validator 与角色 suite 有重复样板，后续可向 manifest/capability 驱动矩阵收口
+- 验证：
+  - `bash tests/run_with_gate.sh`
+  - `bash tests/run_extended_gate.sh`
+
 ## 最近完成：核心函数参数类型标注补齐（2026-04-20）
 
 - 状态：已完成
