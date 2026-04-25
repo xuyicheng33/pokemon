@@ -222,6 +222,13 @@
 - 单个 formal character validator 文件超过 400 行时，应按验证维度（unit / skill / effect / passive / field）拆分为子 validator。
 - 拆分后各子 validator 由主 validator 组合调用，保持对外接口不变。
 
+### SampleBattleFactory formal failure 容忍边界（2026-04-26）
+
+- `SampleBattleFactory.available_matchups_result()` 必须在 formal matchup catalog 加载失败时直接 fail-fast；这是 sandbox bootstrap 的角色选择入口，不允许静默吞错。`build_formal_character_setup_result()` / `formal_character_ids_result()` / `formal_unit_definition_ids_result()` / `content_snapshot_paths_result()` 同样 fail-fast。
+- 反过来，`build_sample_setup_result()`、`build_demo_replay_input_for_profile_result("legacy")`、以及 `content_snapshot_paths_for_setup_result(baseline_setup)` 三条 baseline-only 入口固定容忍 formal runtime registry / formal matchup catalog 的加载失败。该容忍由 `test/suites/sample_battle_factory_contract_suite.gd` 的 `_test_baseline_setup_ignores_formal_runtime_registry_failure / _test_legacy_demo_ignores_formal_runtime_registry_failure / _test_baseline_flow_ignores_formal_matchup_catalog_failure / _test_baseline_setup_snapshot_ignores_formal_runtime_registry_failure` 锁定。
+- 容忍边界的目的：baseline-only 自动化测试不被 formal manifest 状态拖累；formal API 的 fail-fast 仍由专门的 expectation 锁定。新增 SampleBattleFactory 公开方法时必须显式落入"baseline-only 容忍"或"覆盖 formal 必须 fail-fast"两类之一，不允许出现第三种"formal 失败时静默退化"的行为。
+- Sandbox `_character_options` 在 view 层加载 `FormalCharacterManifest.build_character_entries_result()` 时也必须 fail-fast：失败时把 manifest 错误透传到 `state.error_message`，让选择页直接展示具体错误而非"当前没有可选角色"。
+
 ### SampleBattleFactory 复杂度边界
 
 - `SampleBattleFactory` 内部 helper 文件当前为 10 个（matchup_contracts 61 行、base_snapshot_paths_service 78 行等），各自职责明确，暂不强制合并。后续如新增 matchup 类型导致 helper 继续膨胀，应引入 factory strategy 模式按 matchup 类型分发，而非继续堆叠 helper。软上限调整为 10 个。
@@ -234,9 +241,10 @@
 
 ### has_method 鸭子类型使用约定
 
-- `src/` 当前有约 30 处 `has_method` 调用，多数为防御性 null + capability check（`dispose`、`error_state`、`validate`、`resolve_power_bonus` 等）。
+- `src/` 当前有 20+ 处 `has_method` 调用，多数为防御性 null + capability check（`dispose`、`error_state`、`validate`、`resolve_power_bonus`、`resolve_missing_dependency`、`_compose_post_wire` 等）。
 - 短期保留：这些 duck type 检查是合理的防御性模式，强制替换为接口/基类约束改动面大且无直接收益。
 - 长期方向：新增核心 service 间交互优先使用显式 port 声明（`COMPOSE_DEPS`），避免新增 `has_method` 调用。现有调用在涉及文件重构时顺带收窄。
+- 已确认可直接收窄的低垂果实（对端是定式强类型、方法是契约成员）应一次去掉鸭子检查。2026-04-26 已收窄 `sandbox_session_bootstrap_service.dispose_manager` 中的 `state.manager.has_method("dispose")` / `state.sample_factory.has_method("dispose")` 与 `sandbox_view_presenter._current_player_ui_mode` 中的 `controller.has_method("player_ui_mode")` 三处。
 
 ### -> Variant 收窄方向
 

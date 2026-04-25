@@ -41,9 +41,9 @@ func close_session_if_needed(state: SandboxSessionState) -> Dictionary:
 	return close_result
 
 func dispose_manager(state: SandboxSessionState) -> void:
-	if state.manager != null and state.manager.has_method("dispose"):
+	if state.manager != null:
 		state.manager.dispose()
-	if state.sample_factory != null and state.sample_factory.has_method("dispose"):
+	if state.sample_factory != null:
 		state.sample_factory.dispose()
 	state.manager = null
 	state.composer = null

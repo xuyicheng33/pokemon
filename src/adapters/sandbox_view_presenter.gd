@@ -163,7 +163,7 @@ func _render_page_state(controller, state: SandboxSessionState, view_refs: Sandb
 
 func _render_character_cards(controller, state: SandboxSessionState, view_refs: SandboxViewRefs) -> void:
 	_clear_container_children(view_refs.character_cards)
-	var options := _character_options(state.available_matchups)
+	var options := _character_options(state.available_matchups, state)
 	if options.is_empty():
 		var message := state.error_message.strip_edges()
 		if message.is_empty():
@@ -238,10 +238,13 @@ func _add_select_state_card(container: Node, message: String) -> void:
 	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(details)
 
-func _character_options(available_matchups: Array) -> Array:
+func _character_options(available_matchups: Array, state: SandboxSessionState) -> Array:
 	var available_ids := _available_matchup_ids(available_matchups)
 	var entries_result: Dictionary = _manifest.build_character_entries_result()
 	if not bool(entries_result.get("ok", false)):
+		var manifest_error := String(entries_result.get("error_message", "")).strip_edges()
+		if not manifest_error.is_empty() and state.error_message.strip_edges().is_empty():
+			state.error_message = "Battle sandbox failed to load formal character manifest: %s" % manifest_error
 		return []
 	var options: Array = []
 	var seen_matchup_ids: Dictionary = {}
@@ -320,7 +323,7 @@ func _available_matchup_ids(available_matchups: Array) -> Dictionary:
 	return ids
 
 func _current_player_ui_mode(controller, state: SandboxSessionState) -> String:
-	if controller != null and controller.has_method("player_ui_mode"):
+	if controller != null:
 		var mode := str(controller.player_ui_mode()).strip_edges()
 		if not mode.is_empty():
 			return mode
