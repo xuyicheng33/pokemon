@@ -19,3 +19,11 @@ func group_commands_by_turn(command_stream: Array) -> Dictionary:
 			commands_by_turn[turn_index] = []
 		commands_by_turn[turn_index].append(command)
 	return commands_by_turn
+
+func unconsumed_command_turn_indices(commands_by_turn: Dictionary, consumed_turn_indices: Dictionary) -> Array:
+	var unconsumed: Array = []
+	for turn_index in commands_by_turn.keys():
+		if not consumed_turn_indices.has(int(turn_index)):
+			unconsumed.append(int(turn_index))
+	unconsumed.sort()
+	return unconsumed

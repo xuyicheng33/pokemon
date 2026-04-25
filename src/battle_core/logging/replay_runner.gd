@@ -110,8 +110,10 @@ func run_replay_with_context(replay_input) -> Dictionary:
 		)
 	]
 	var event_from: int = 0
+	var consumed_turn_indices: Dictionary = {}
 	while not battle_state.battle_result.finished and battle_state.turn_index <= max_turn_index:
 		var completed_turn_index: int = battle_state.turn_index
+		consumed_turn_indices[completed_turn_index] = true
 		var turn_commands: Array = commands_by_turn.get(battle_state.turn_index, [])
 		turn_loop_controller.run_turn(battle_state, content_index, turn_commands)
 		var event_to: int = battle_logger.snapshot().size()
@@ -125,6 +127,12 @@ func run_replay_with_context(replay_input) -> Dictionary:
 			)
 		)
 		event_from = event_to
+	var unconsumed_turn_indices: Array = _input_helper.unconsumed_command_turn_indices(commands_by_turn, consumed_turn_indices)
+	if not unconsumed_turn_indices.is_empty():
+		return _fail(
+			"ReplayRunner command_stream has unconsumed command turn_index values: %s" % JSON.stringify(unconsumed_turn_indices),
+			ErrorCodesScript.INVALID_REPLAY_INPUT
+		)
 	var logger_error_state: Dictionary = battle_logger.error_state()
 	var output_result := _output_helper.build_replay_output_result(
 		battle_logger.snapshot(),

@@ -11,3 +11,6 @@ func test_manager_run_replay_null_command_contract() -> void:
 
 func test_manager_run_replay_invalid_side_id_contract() -> void:
 	_assert_legacy_result(_test_manager_run_replay_invalid_side_id_contract(_harness))
+
+func test_manager_run_replay_unconsumed_future_command_contract() -> void:
+	_assert_legacy_result(_test_manager_run_replay_unconsumed_future_command_contract(_harness))

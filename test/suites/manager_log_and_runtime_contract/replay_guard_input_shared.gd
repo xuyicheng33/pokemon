@@ -1,5 +1,7 @@
 extends "res://test/suites/manager_log_and_runtime_contract/replay_guard_shared_base.gd"
 
+const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
+
 func _test_manager_run_replay_empty_snapshot_paths_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
 	if manager_payload.has("error"):
@@ -89,4 +91,52 @@ func _test_manager_run_replay_invalid_side_id_contract(harness) -> Dictionary:
 		)
 		if not bool(failure.get("ok", false)):
 			return harness.fail_result(str(failure.get("error", "manager run_replay invalid side_id contract failed")))
+	return harness.pass_result()
+
+func _test_manager_run_replay_unconsumed_future_command_contract(harness) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return harness.fail_result(str(manager_payload["error"]))
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+	var replay_input = ReplayInputScript.new()
+	replay_input.battle_seed = 3093
+	replay_input.content_snapshot_paths = snapshot_paths_payload.get("paths", PackedStringArray())
+	replay_input.battle_setup = harness.build_sample_setup(sample_factory)
+	replay_input.command_stream = [
+		manager.build_command({
+			"turn_index": 1,
+			"command_type": CommandTypesScript.SURRENDER,
+			"command_source": "manual",
+			"side_id": "P1",
+			"actor_public_id": "P1-A",
+		}).get("data", null),
+		manager.build_command({
+			"turn_index": 1,
+			"command_type": CommandTypesScript.WAIT,
+			"command_source": "manual",
+			"side_id": "P2",
+			"actor_public_id": "P2-A",
+		}).get("data", null),
+		manager.build_command({
+			"turn_index": 2,
+			"command_type": CommandTypesScript.WAIT,
+			"command_source": "manual",
+			"side_id": "P1",
+			"actor_public_id": "P1-A",
+		}).get("data", null),
+	]
+	var failure = _helper.expect_failure_code(
+		manager.run_replay(replay_input),
+		"run_replay",
+		ErrorCodesScript.INVALID_REPLAY_INPUT,
+		"unconsumed command turn_index values"
+	)
+	if not bool(failure.get("ok", false)):
+		return harness.fail_result(str(failure.get("error", "manager run_replay unconsumed future command contract failed")))
 	return harness.pass_result()

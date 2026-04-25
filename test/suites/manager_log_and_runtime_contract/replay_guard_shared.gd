@@ -16,6 +16,9 @@ func _test_manager_run_replay_null_command_contract(harness) -> Dictionary:
 func _test_manager_run_replay_invalid_side_id_contract(harness) -> Dictionary:
 	return _call_helper(ReplayGuardInputSharedScript, "_test_manager_run_replay_invalid_side_id_contract", [harness])
 
+func _test_manager_run_replay_unconsumed_future_command_contract(harness) -> Dictionary:
+	return _call_helper(ReplayGuardInputSharedScript, "_test_manager_run_replay_unconsumed_future_command_contract", [harness])
+
 func _test_manager_container_run_replay_failed_output_contract() -> Dictionary:
 	return _call_helper(ReplayGuardSummarySharedScript, "_test_manager_container_run_replay_failed_output_contract")
 
