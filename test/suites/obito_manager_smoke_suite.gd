@@ -32,17 +32,17 @@ func _ensure_suite_state() -> void:
 func before_test() -> void:
 	_ensure_suite_state()
 
-func test_obito_manager_smoke_contract() -> void:
-	_assert_legacy_result(_test_obito_manager_smoke_contract(_harness))
+func test_obito_manager_public_contracts() -> void:
+	_assert_legacy_result(_test_obito_manager_public_contracts(_harness))
 
-func test_obito_manager_public_contract() -> void:
-	_assert_legacy_result(_test_obito_manager_public_contract(_harness))
-
-func _test_obito_manager_smoke_contract(harness) -> Dictionary:
-	return _smoke_helper.run_named_case(harness, _case_specs, "test_obito_manager_smoke_contract")
-
-func _test_obito_manager_public_contract(harness) -> Dictionary:
-	return _smoke_helper.run_named_case(harness, _case_specs, "test_obito_manager_public_contract")
+func _test_obito_manager_public_contracts(harness) -> Dictionary:
+	_ensure_suite_state()
+	for raw_case_spec in _case_specs:
+		var case_spec: Dictionary = raw_case_spec
+		var result = _smoke_helper.run_case(harness, case_spec)
+		if not bool(result.get("ok", false)):
+			return result
+	return harness.pass_result()
 
 func _build_obito_manager_smoke_setup(harness, sample_factory, _case_spec: Dictionary):
 	return harness.build_setup_by_matchup_id(sample_factory, "obito_vs_sample")

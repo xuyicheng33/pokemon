@@ -218,9 +218,10 @@ def validate_character_entries(
                 )
 
         if validator_script_path:
-            if validator_bad_case_suite_path not in delivery_required_suite_paths_by_character[character_id]:
+            expected_bad_case_suite_path = "%s/%s_bad_cases_suite.gd" % (validator_bad_case_suite_path, pair_token)
+            if expected_bad_case_suite_path not in delivery_required_suite_paths_by_character[character_id]:
                 ctx.failures.append(
-                    f"formal delivery view[{character_id}] validator-backed character must expose {validator_bad_case_suite_path} in required_suite_paths"
+                    f"formal delivery view[{character_id}] validator-backed character must expose {expected_bad_case_suite_path} in required_suite_paths"
                 )
             validator_prefix = validator_test_prefix(validator_script_path)
             if validator_prefix and not any(

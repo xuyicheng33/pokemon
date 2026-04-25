@@ -70,7 +70,7 @@
 - [ ] formal validator 优先复用共享模板 helper；角色 validator 只保留角色差异校验，不再复制 unit / skill / effect / field 的通用断言文案
 - [ ] formal validator 入口固定收口为三桶：`unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts`
 - [ ] entry validator 只负责 preload 这三桶并串联 `validate()`，不再在入口文件内自由追加角色私有校验
-- [ ] 确认 delivery/test 视图会自动并入 `test/suites/extension_validation_contract_suite.gd`
+- [ ] 确认 delivery/test 视图会自动并入 `test/suites/extension_validation_contract/extension_validation_contract_suite.gd`
 - [ ] 至少一个 `formal_<character>_validator_*bad_case_contract` 挂进 `required_test_names`
 - [ ] 角色 source descriptor 补齐 `pair_token / baseline_script_path / owned_pair_interaction_specs`；默认 `<pair_token>_vs_sample` 会从 `pair_initiator_bench_unit_ids` 自动派生，只有额外 shared/custom matchup 才改 `00_shared_registry.json`
 - [ ] 若新增只服务测试或手动 setup 的 matchup（例如 mirror 对局），在对应 `matchups[*]` 上显式标 `test_only: true`
@@ -99,9 +99,8 @@
 
 ### B. Runtime suite
 
-- [ ] `test/suites/<character>_suite.gd` 作为 wrapper
-- [ ] 至少 1 个角色独有 runtime 子 suite
-- [ ] 若共享或角色 wrapper 超过维护阈值，保持原 wrapper 文件名与测试名不变，并把断言本体下沉到 `test/suites/<wrapper_name_without_.gd>/`
+- [ ] 至少 1 个角色独有 runtime suite，按主题直接放在 `test/suites/<character>_*_suite.gd` 或 `test/suites/<character>_runtime/`
+- [ ] 大型共享或角色主题直接拆成可发现的子 suite；manifest 与文档引用真实 suite 路径，不再新增 `register_tests` wrapper
 - [ ] 锁角色主玩法路径，而不是只测通用 contract
 
 ### C. Manager smoke suite

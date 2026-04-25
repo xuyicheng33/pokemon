@@ -62,9 +62,9 @@ func _test_formal_character_delivery_registry_required_field_guard_contract(harn
 			"docs/design/gojo_satoru_design.md",
 			"docs/design/gojo_satoru_adjustments.md",
 			"gojo_ao",
-			"test/suites/gojo_suite.gd",
-			["test/suites/formal_character_pair_smoke_suite.gd"],
-			["gojo_manager_smoke_contract"],
+			"test/suites/gojo_setup_and_markers_suite.gd",
+			["test/suites/formal_character_pair_smoke/surface_suite.gd"],
+			["gojo_manager_public_contracts"],
 			["anchor:gojo.design.success-lock-via-on_success_effect_ids"],
 			["anchor:gojo.adjust.tests-impacted"]
 		)

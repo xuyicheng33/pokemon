@@ -102,7 +102,10 @@
         "docs/rules/06_effect_schema_and_extension.md"
       ],
       "required_suite_paths": [
-        "test/suites/extension_targeting_accuracy_suite.gd"
+        "test/suites/extension_targeting_accuracy/required_target_effects_suite.gd",
+        "test/suites/extension_targeting_accuracy/required_target_same_owner_suite.gd",
+        "test/suites/extension_targeting_accuracy/effect_refresh_suite.gd",
+        "test/suites/extension_targeting_accuracy/incoming_accuracy_suite.gd"
       ],
       "required_fact_ids": [
         "required_target_effects",
@@ -118,7 +121,10 @@
         "docs/design/effect_engine.md"
       ],
       "required_suite_paths": [
-        "test/suites/extension_targeting_accuracy_suite.gd"
+        "test/suites/extension_targeting_accuracy/required_target_effects_suite.gd",
+        "test/suites/extension_targeting_accuracy/required_target_same_owner_suite.gd",
+        "test/suites/extension_targeting_accuracy/effect_refresh_suite.gd",
+        "test/suites/extension_targeting_accuracy/incoming_accuracy_suite.gd"
       ],
       "required_fact_ids": [
         "incoming_accuracy"
@@ -163,7 +169,10 @@
         "docs/design/battle_runtime_model.md"
       ],
       "required_suite_paths": [
-        "test/suites/replay_turn_suite.gd"
+        "test/suites/replay_determinism_suite.gd",
+        "test/suites/selection_timeout_and_wait_suite.gd",
+        "test/suites/replay_content_smoke_suite.gd",
+        "test/suites/init_matchup_lifecycle_suite.gd"
       ],
       "required_fact_ids": [
         "once_per_battle"
@@ -238,7 +247,10 @@
         "docs/rules/03_stats_resources_and_damage.md"
       ],
       "required_suite_paths": [
-        "test/suites/multihit_skill_runtime_suite.gd"
+        "test/suites/multihit_skill_runtime/damage_segments_suite.gd",
+        "test/suites/multihit_skill_runtime/segment_triggers_suite.gd",
+        "test/suites/multihit_skill_runtime/execute_short_circuit_suite.gd",
+        "test/suites/multihit_skill_runtime/validation_suite.gd"
       ],
       "required_fact_ids": [
         "damage_segments"
@@ -254,7 +266,10 @@
         "docs/rules/06_effect_schema_and_extension.md"
       ],
       "required_suite_paths": [
-        "test/suites/multihit_skill_runtime_suite.gd"
+        "test/suites/multihit_skill_runtime/damage_segments_suite.gd",
+        "test/suites/multihit_skill_runtime/segment_triggers_suite.gd",
+        "test/suites/multihit_skill_runtime/execute_short_circuit_suite.gd",
+        "test/suites/multihit_skill_runtime/validation_suite.gd"
       ],
       "required_fact_ids": [
         "on_receive_action_damage_segment"

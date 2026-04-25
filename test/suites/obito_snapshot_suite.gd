@@ -7,19 +7,21 @@ const FormalCharacterSnapshotTestHelperScript := preload("res://tests/support/fo
 var _support = ObitoTestSupportScript.new()
 var _helper = FormalCharacterSnapshotTestHelperScript.new()
 
-
-
-func test_obito_unit_snapshot_contract() -> void:
-	_assert_legacy_result(_test_obito_unit_snapshot_contract(_harness))
-
-func test_obito_skill_snapshot_contract() -> void:
-	_assert_legacy_result(_test_obito_skill_snapshot_contract(_harness))
-
-func test_obito_effect_snapshot_contract() -> void:
-	_assert_legacy_result(_test_obito_effect_snapshot_contract(_harness))
-
-func test_obito_candidate_loadout_contract() -> void:
+func test_obito_snapshot_contract() -> void:
+	var result := _test_obito_unit_snapshot_contract(_harness)
+	if not bool(result.get("ok", false)):
+		_assert_legacy_result(result)
+		return
+	result = _test_obito_skill_snapshot_contract(_harness)
+	if not bool(result.get("ok", false)):
+		_assert_legacy_result(result)
+		return
+	result = _test_obito_effect_snapshot_contract(_harness)
+	if not bool(result.get("ok", false)):
+		_assert_legacy_result(result)
+		return
 	_assert_legacy_result(_test_obito_candidate_loadout_contract(_harness))
+
 func _test_obito_unit_snapshot_contract(harness) -> Dictionary:
 	var content_index = _helper.build_content_index(harness)
 	if content_index == null:

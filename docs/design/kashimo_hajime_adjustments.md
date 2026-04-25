@@ -24,7 +24,7 @@
   - 琥珀的强化、自伤、奥义封锁仍然保留在角色资源里；“整场一次”则收回共享合法性 contract，更适合作为后续扩角复用模板
 - 影响测试：
   - `test/suites/kashimo_amber_suite.gd`
-  - `test/suites/kashimo_runtime_suite.gd`
+  - `test/suites/kashimo_runtime/charge_loop_suite.gd`
 - 是否改变玩家口径：
   - 否
   - 玩家感知仍然是“整场只能开一次”
@@ -54,10 +54,10 @@
   - `effect_stack_sum`、`persistent_stat_stages` 和同回合重上场暂停语义已经变成共享能力，必须落到正式文档与正式回归面，而不是继续留在临时测试口径里
   - formal 角色元数据现在统一收口到 `formal_character_manifest.json` 单真源，鹿紫云不能再靠 `run_all` 的临时直连维持
 - 影响测试：
-  - `test/suites/kashimo_suite.gd`
+  - `test/suites/kashimo_snapshot_suite.gd`
   - `test/suites/kashimo_amber_suite.gd`
   - `test/suites/persistent_stat_stage_suite.gd`
-  - `test/suites/combat_type_suite.gd`
+  - `test/suites/combat_type_runtime_suite.gd`
   - `tests/run_gdunit.sh`
 - 是否改变玩家口径：
   - 否

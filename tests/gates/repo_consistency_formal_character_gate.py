@@ -33,7 +33,7 @@ LEGACY_REGISTRY_PATH = "config/formal_character_registry.json"
 LEGACY_RUNTIME_REGISTRY_PATH = "config/formal_character_runtime_registry.json"
 LEGACY_DELIVERY_REGISTRY_PATH = "config/formal_character_delivery_registry.json"
 LEGACY_MATCHUP_CATALOG_PATH = "config/formal_matchup_catalog.json"
-VALIDATOR_BAD_CASE_SUITE_PATH = "test/suites/extension_validation_contract_suite.gd"
+VALIDATOR_BAD_CASE_SUITE_DIR = "test/suites/extension_validation_contract"
 PAIR_INTERACTION_SUITE_PATH = "test/suites/formal_character_pair_smoke/interaction_suite.gd"
 PAIR_INTERACTION_SUPPORT_PATH = "test/suites/formal_character_pair_smoke/interaction_support.gd"
 PAIR_INTERACTION_SCENARIO_REGISTRY_PATH = "tests/support/formal_pair_interaction/scenario_registry.gd"
@@ -52,15 +52,18 @@ FORMAL_REGISTRY_CONTRACTS_SCRIPT_PATH = "src/shared/formal_registry_contracts.gd
 FORMAL_MANIFEST_SCRIPT_PATH = "src/shared/formal_character_manifest.gd"
 FORMAL_BASELINES_PATH = "src/shared/formal_character_baselines.gd"
 SHARED_SUITE_ROOTS = [
-    "test/suites/formal_character_pair_smoke_suite.gd",
+    "test/suites/formal_character_pair_smoke/surface_suite.gd",
+    "test/suites/formal_character_pair_smoke/interaction_suite.gd",
     "test/suites/ultimate_points_contract_suite.gd",
     "test/suites/domain_clash_resolution_suite.gd",
     "test/suites/domain_clash_guard_suite.gd",
     "test/suites/field_lifecycle_contract_suite.gd",
-    "test/suites/ultimate_field_suite.gd",
     "test/suites/heal_extension_suite.gd",
     "test/suites/skill_execute_contract_suite.gd",
-    "test/suites/multihit_skill_runtime_suite.gd",
+    "test/suites/multihit_skill_runtime/damage_segments_suite.gd",
+    "test/suites/multihit_skill_runtime/segment_triggers_suite.gd",
+    "test/suites/multihit_skill_runtime/execute_short_circuit_suite.gd",
+    "test/suites/multihit_skill_runtime/validation_suite.gd",
     "test/suites/persistent_stat_stage_suite.gd",
     "test/suites/combat_type_definition_suite.gd",
     "test/suites/combat_type_runtime_suite.gd",
@@ -280,7 +283,7 @@ character_validation = validate_character_entries(
     character_runtime_required_array_fields=character_runtime_required_array_fields,
     character_delivery_required_string_fields=character_delivery_required_string_fields,
     character_delivery_required_array_fields=character_delivery_required_array_fields,
-    validator_bad_case_suite_path=VALIDATOR_BAD_CASE_SUITE_PATH,
+    validator_bad_case_suite_path=VALIDATOR_BAD_CASE_SUITE_DIR,
     shared_suite_roots=SHARED_SUITE_ROOTS,
 )
 

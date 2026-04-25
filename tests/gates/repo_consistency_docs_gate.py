@@ -59,7 +59,7 @@ def _run_sandbox_testing_surface(ctx: GateContext) -> None:
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "bash tests/sync_formal_registry.sh", "workflow formal sync command wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "bash scripts/check_formal_character_draft_ready.sh", "workflow formal draft readiness command wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "tests/run_with_gate.sh", "workflow unique total gate wording")
-    ctx.require_contains(CURRENT_WORKFLOW_DOC, "gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix", "workflow fixed total gate order wording")
+    ctx.require_contains(CURRENT_WORKFLOW_DOC, "gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> Python lint -> sandbox smoke matrix", "workflow fixed total gate order wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/design/current_stage_regression_baseline.md", "workflow regression baseline doc wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "gdUnit4 + test/", "workflow gdunit test tree wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/records/tasks.md", "workflow tasks record wording")

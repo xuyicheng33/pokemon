@@ -21,7 +21,7 @@
 - 影响测试：
   - `test/suites/obito_runtime_yinyang_suite.gd`
   - `test/suites/obito_runtime_passive_and_seal_suite.gd`
-  - `test/suites/multihit_skill_runtime_suite.gd`
+  - `test/suites/multihit_skill_runtime/damage_segments_suite.gd`
 
 ## 2026-04-05
 

@@ -88,7 +88,7 @@ headless 复查入口固定为：
 5. 阶段收口：`bash tests/run_with_gate.sh`
 6. 需要清本地旧报告或 scratch 目录时：运行 `bash tests/cleanup_local_artifacts.sh`
 
-当前总 gate 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix`。新增日常 smoke 或 contract 时，先写到 `docs/design/`，再进 gate，再接到总入口。
+当前总 gate 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> Python lint -> sandbox smoke matrix`。新增日常 smoke 或 contract 时，先写到 `docs/design/`，再进 gate，再接到总入口。
 
 CI 当前固定拆成 3 个并行 job：
 
@@ -105,7 +105,7 @@ CI 当前固定拆成 3 个并行 job：
 - `manager_contract`：manager facade、公开快照、事件日志、session guard
 - `replay`：replay input / summary / determinism / 浏览回归
 
-继续沿用“顶层 wrapper + 子目录断言本体”的组织方式；对外稳定引用的顶层 wrapper 文件名不改。
+gdUnit 直接发现 `test/suites/` 下的具体 suite；大型主题可拆到同名子目录，manifest 与文档引用真实 suite 路径，不再新增 `register_tests` wrapper。
 
 本地产物与仓库卫生固定约束：
 

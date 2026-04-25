@@ -7,7 +7,10 @@
         "required_target_same_owner"
       ],
       "required_suite_paths": [
-        "test/suites/extension_targeting_accuracy_suite.gd"
+        "test/suites/extension_targeting_accuracy/required_target_effects_suite.gd",
+        "test/suites/extension_targeting_accuracy/required_target_same_owner_suite.gd",
+        "test/suites/extension_targeting_accuracy/effect_refresh_suite.gd",
+        "test/suites/extension_targeting_accuracy/incoming_accuracy_suite.gd"
       ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
@@ -21,7 +24,10 @@
         "incoming_accuracy"
       ],
       "required_suite_paths": [
-        "test/suites/extension_targeting_accuracy_suite.gd"
+        "test/suites/extension_targeting_accuracy/required_target_effects_suite.gd",
+        "test/suites/extension_targeting_accuracy/required_target_same_owner_suite.gd",
+        "test/suites/extension_targeting_accuracy/effect_refresh_suite.gd",
+        "test/suites/extension_targeting_accuracy/incoming_accuracy_suite.gd"
       ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
@@ -66,7 +72,10 @@
         "once_per_battle"
       ],
       "required_suite_paths": [
-        "test/suites/replay_turn_suite.gd"
+        "test/suites/replay_determinism_suite.gd",
+        "test/suites/selection_timeout_and_wait_suite.gd",
+        "test/suites/replay_content_smoke_suite.gd",
+        "test/suites/init_matchup_lifecycle_suite.gd"
       ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
@@ -141,7 +150,10 @@
         "damage_segments"
       ],
       "required_suite_paths": [
-        "test/suites/multihit_skill_runtime_suite.gd"
+        "test/suites/multihit_skill_runtime/damage_segments_suite.gd",
+        "test/suites/multihit_skill_runtime/segment_triggers_suite.gd",
+        "test/suites/multihit_skill_runtime/execute_short_circuit_suite.gd",
+        "test/suites/multihit_skill_runtime/validation_suite.gd"
       ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",
@@ -156,7 +168,10 @@
         "on_receive_action_damage_segment"
       ],
       "required_suite_paths": [
-        "test/suites/multihit_skill_runtime_suite.gd"
+        "test/suites/multihit_skill_runtime/damage_segments_suite.gd",
+        "test/suites/multihit_skill_runtime/segment_triggers_suite.gd",
+        "test/suites/multihit_skill_runtime/execute_short_circuit_suite.gd",
+        "test/suites/multihit_skill_runtime/validation_suite.gd"
       ],
       "rule_doc_paths": [
         "docs/design/battle_content_schema.md",

@@ -44,8 +44,7 @@ ctx.require_absent("tests/support/formal_character_registry.gd", "build_suite_in
 
 ctx.require_contains_any(
     [
-        "test/suites/content_logging_suite.gd",
-        "test/suites/log_cause_semantics_suite.gd",
+        "test/suites/log_cause_semantics/chain_semantics_suite.gd",
         "test/suites/log_cause_anchor_suite.gd",
     ],
     "direct damage cause_event_id should point to the real action:hit event",
@@ -53,8 +52,7 @@ ctx.require_contains_any(
 )
 ctx.require_contains_any(
     [
-        "test/suites/content_logging_suite.gd",
-        "test/suites/log_cause_semantics_suite.gd",
+        "test/suites/log_cause_semantics/chain_semantics_suite.gd",
         "test/suites/log_cause_anchor_suite.gd",
     ],
     "effect event cause_event_id must not point to itself",
@@ -62,8 +60,7 @@ ctx.require_contains_any(
 )
 ctx.require_contains_any(
     [
-        "test/suites/content_logging_suite.gd",
-        "test/suites/log_cause_semantics_suite.gd",
+        "test/suites/log_cause_semantics/chain_semantics_suite.gd",
         "test/suites/log_cause_anchor_suite.gd",
     ],
     "turn_start regen cause_event_id should point to the real system:turn_start anchor",
@@ -71,8 +68,7 @@ ctx.require_contains_any(
 )
 ctx.require_contains_any(
     [
-        "test/suites/content_logging_suite.gd",
-        "test/suites/log_cause_semantics_suite.gd",
+        "test/suites/log_cause_semantics/chain_semantics_suite.gd",
         "test/suites/log_cause_anchor_suite.gd",
     ],
     "field expire cause_event_id should point to the real system:turn_end anchor",
@@ -83,10 +79,9 @@ ctx.require_regex("test/suites/setup_loadout_suite.gd", gdunit_test_pattern("can
 ctx.require_regex("test/suites/setup_loadout_suite.gd", gdunit_test_pattern("setup_loadout_override_validation"), "setup override dedicated regression")
 ctx.require_regex("test/suites/setup_loadout_suite.gd", gdunit_test_pattern("runtime_regular_skill_loadout_contract"), "runtime loadout dedicated regression")
 ctx.require_regex("test/suites/setup_loadout_suite.gd", gdunit_test_pattern("same_side_duplicate_unit_forbidden"), "same-side duplicate unit regression")
-ctx.require_regex("test/suites/gojo_murasaki_suite.gd", gdunit_test_pattern("gojo_murasaki_double_mark_burst_contract"), "gojo burst regression")
+ctx.require_regex("test/suites/gojo_murasaki/marks_suite.gd", gdunit_test_pattern("gojo_murasaki_double_mark_burst_contract"), "gojo burst regression")
 ctx.require_regex_any(
     [
-        "test/suites/gojo_domain_suite.gd",
         "test/suites/gojo_mugen_suite.gd",
         "test/suites/gojo_unlimited_void_suite.gd",
     ],
@@ -95,7 +90,6 @@ ctx.require_regex_any(
 )
 ctx.require_regex_any(
     [
-        "test/suites/gojo_domain_suite.gd",
         "test/suites/gojo_unlimited_void_suite.gd",
     ],
     gdunit_test_pattern("gojo_unlimited_void_runtime_contract"),
@@ -106,7 +100,6 @@ ctx.require_regex("test/suites/sukuna_domain_suite.gd", gdunit_test_pattern("suk
 ctx.require_regex("test/suites/ultimate_points_contract_suite.gd", gdunit_test_pattern("ultimate_points_regular_skill_gain_contract"), "ultimate point gain regression")
 ctx.require_regex_any(
     [
-        "test/suites/domain_clash_contract_suite.gd",
         "test/suites/domain_clash_resolution_suite.gd",
         "test/suites/domain_clash_guard_suite.gd",
     ],
@@ -152,7 +145,8 @@ for rel_path in [
     "test/suites/sukuna_manager_smoke_suite.gd",
     "test/suites/content_snapshot_cache_suite.gd",
     "test/suites/manager_facade_internal_contract_suite.gd",
-    "test/suites/manager_log_and_runtime_contract_suite.gd",
+    "test/suites/manager_log_and_runtime_contract/event_log_suite.gd",
+    "test/suites/manager_log_and_runtime_contract/session_guard_suite.gd",
 ]:
     for needle, label in [
         ("_debug_session", "manager internal debug access"),

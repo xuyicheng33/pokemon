@@ -356,7 +356,7 @@
 
 正式交付面说明：
 
-- `kashimo_suite.gd` 是 wrapper；当前正式串起 `kashimo_snapshot_suite.gd`、`kashimo_runtime_suite.gd`、`kashimo_charge_lifecycle_suite.gd`、`kashimo_setup_loadout_suite.gd`、`kashimo_amber_suite.gd` 与 `kashimo_manager_smoke_suite.gd`。
+- 鹿紫云玩法与行为回归由 `kashimo_snapshot_suite.gd`、`kashimo_runtime/*_suite.gd`、`kashimo_charge_lifecycle_suite.gd`、`kashimo_setup_loadout_suite.gd`、`kashimo_amber_suite.gd`、`kashimo_manager_smoke_suite.gd` 与 `kashimo_manager_blackbox_suite.gd` 直接承担。
 - `kashimo_snapshot_suite.gd` 统一读取共享 formal baseline，并锁死鹿紫云的单位、技能、effect 与被动资源。
 - `kashimo_manager_smoke_suite.gd` 固定覆盖 `create_session -> get_legal_actions -> build_command -> run_turn -> get_public_snapshot / get_event_log_snapshot`，并校验公开快照与日志不泄漏 runtime private id。
 - `persistent_stat_stage_suite.gd`、`combat_type_definition_suite.gd`、`combat_type_runtime_suite.gd` 与 `ultimate_points_contract_suite.gd` 中登记到 formal registry 的共享回归，同样属于鹿紫云正式交付面的一部分。

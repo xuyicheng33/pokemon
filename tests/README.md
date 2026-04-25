@@ -11,7 +11,7 @@
 - `tests/run_gdunit.sh`：`gdUnit4` CLI 入口；默认跑 `res://test`，并输出 `JUnit XML` 与 `HTML`
 - `tests/check_gdunit_gate.sh`：`gdUnit4` + 引擎日志扫描；供总 gate 与 CI 复用
 - `tests/check_boot_smoke.sh`：headless 启动 smoke；供总 gate 与 CI 复用
-- `tests/run_with_gate.sh`：唯一总入口；按固定顺序串起 `gdUnit4`、boot smoke、suite reachability、架构 gate、repo consistency gate、sandbox smoke matrix
+- `tests/run_with_gate.sh`：唯一总入口；按固定顺序串起 `gdUnit4`、boot smoke、suite reachability、架构 gate、repo consistency gate、Python lint、sandbox smoke matrix
 - `tests/check_suite_reachability.sh`：suite 可达性闸门
 - `tests/check_architecture_constraints.sh`：分层与大文件架构闸门
 - `tests/check_repo_consistency.sh`：仓库一致性闸门总入口
@@ -39,7 +39,7 @@
 - `manager_contract`：manager facade、公开快照、事件日志、session guard
 - `replay`：replay input / summary / determinism / 浏览回归
 
-继续沿用“顶层 wrapper + 子目录断言本体”的组织方式；被 gate、manifest 或文档引用的顶层 wrapper 文件名不改。
+gdUnit 直接发现 `test/suites/` 下的具体 suite；大型主题可拆到同名子目录，但不再用 `register_tests` wrapper 聚合。
 GDScript 前导缩进固定只允许 tab；`test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd` 当前统一纳入 support helper 体量门禁。
 
 ## 4. formal 单源约定

@@ -162,7 +162,7 @@ tests/run_with_gate.sh
 
 闸门通过条件：
 
-- `tests/run_with_gate.sh` 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> sandbox smoke matrix`
+- `tests/run_with_gate.sh` 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> Python lint -> sandbox smoke matrix`
 - 本地与 CI 共用子入口：
   - `bash tests/check_gdunit_gate.sh`
   - `bash tests/check_boot_smoke.sh`
@@ -304,10 +304,10 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-25）
 
-- `src/**/*.gd`：`22789` 行
-- `test/**/*.gd`：`22172` 行
+- `src/**/*.gd`：`22793` 行
+- `test/**/*.gd`：`21901` 行
 - `tests/**/*.gd`：`5223` 行
-- GDScript 合计：`50184` 行
+- GDScript 合计：`49917` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

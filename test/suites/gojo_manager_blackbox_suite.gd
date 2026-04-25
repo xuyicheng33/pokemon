@@ -25,12 +25,18 @@ func before_test() -> void:
 	_ensure_suite_state()
 
 
-func test_gojo_manager_murasaki_combo_public_contract() -> void:
-	_assert_legacy_result(_test_gojo_manager_murasaki_combo_public_contract(_harness))
+func test_gojo_manager_blackbox_contracts() -> void:
+	_assert_legacy_result(_test_gojo_manager_blackbox_contracts(_harness))
 
 
-func _test_gojo_manager_murasaki_combo_public_contract(harness) -> Dictionary:
-	return _smoke_helper.run_named_case(harness, _case_specs, "test_gojo_manager_murasaki_combo_public_contract")
+func _test_gojo_manager_blackbox_contracts(harness) -> Dictionary:
+	_ensure_suite_state()
+	for raw_case_spec in _case_specs:
+		var case_spec: Dictionary = raw_case_spec
+		var result = _smoke_helper.run_case(harness, case_spec)
+		if not bool(result.get("ok", false)):
+			return result
+	return harness.pass_result()
 
 
 func _run_gojo_manager_murasaki_combo_case(state: Dictionary) -> Dictionary:

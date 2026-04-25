@@ -33,17 +33,17 @@ func _ensure_suite_state() -> void:
 func before_test() -> void:
 	_ensure_suite_state()
 
-func test_obito_manager_fenghuo_public_contract() -> void:
-	_assert_legacy_result(_test_obito_manager_fenghuo_public_contract(_harness))
+func test_obito_manager_blackbox_contracts() -> void:
+	_assert_legacy_result(_test_obito_manager_blackbox_contracts(_harness))
 
-func test_obito_manager_yinyang_public_contract() -> void:
-	_assert_legacy_result(_test_obito_manager_yinyang_public_contract(_harness))
-
-func _test_obito_manager_fenghuo_public_contract(harness) -> Dictionary:
-	return _smoke_helper.run_named_case(harness, _case_specs, "test_obito_manager_fenghuo_public_contract")
-
-func _test_obito_manager_yinyang_public_contract(harness) -> Dictionary:
-	return _smoke_helper.run_named_case(harness, _case_specs, "test_obito_manager_yinyang_public_contract")
+func _test_obito_manager_blackbox_contracts(harness) -> Dictionary:
+	_ensure_suite_state()
+	for raw_case_spec in _case_specs:
+		var case_spec: Dictionary = raw_case_spec
+		var result = _smoke_helper.run_case(harness, case_spec)
+		if not bool(result.get("ok", false)):
+			return result
+	return harness.pass_result()
 
 func _build_obito_fenghuo_setup(harness, sample_factory, _case_spec: Dictionary):
 	var override_loadout := {"P1": {0: PackedStringArray(["obito_qiudao_jiaotu", "obito_yinyang_dun", "obito_liudao_shizi_fenghuo"])}}

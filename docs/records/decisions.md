@@ -33,7 +33,7 @@
 2. **Deterministic replay**：同 `seed + content snapshot + command stream` 必须产出同一 `final_state_hash`。
 3. **Fail-fast**：非法输入直接报错，不做静默降级。
 4. **单一运行态真相**：`BattleState` 是唯一运行态对象，其他模块不得各自缓存状态副本。
-5. **`tests/run_with_gate.sh` 作为主 gate 总入口**：内部顺序 `gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → sandbox smoke matrix` 不变。
+5. **`tests/run_with_gate.sh` 作为主 gate 总入口**：内部顺序 `gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → Python lint → sandbox smoke matrix` 不变。
 
 ### 扩角前接入安全线（2026-04-24）
 
@@ -43,6 +43,13 @@
 - Sandbox smoke matrix 默认使用 `SANDBOX_SMOKE_SCOPE=quick` 覆盖推荐与 `<pair>_vs_sample` 主路径；全量可见 matchup 只通过 `SANDBOX_SMOKE_SCOPE=full` 显式触发，避免 formal directed matchup 随角色数二次方拖慢日常 gate。
 - 内容快照缓存签名的显式依赖缺失属于内容快照错误，必须失败并暴露缺失路径，不允许退到 mtime 或空依赖签名。
 - `FormalCharacterManifestViews` 只保留 runtime / delivery / catalog 入口协调；pair interaction case 派生逻辑由 `FormalCharacterPairInteractionCaseBuilder` 承担，后续 manifest 派生继续按职责拆分。
+
+### 测试入口收口（2026-04-25）
+
+- gdUnit suite 入口以真实可发现的 `test/suites/**/*.gd` 文件为准；不再新增只负责 `register_tests` 聚合的 wrapper suite。
+- manifest、文档和 gate 必须引用真实 suite 路径；大型主题直接拆成子目录下的具体 suite。
+- 对同一文件内同类黑盒场景，优先保留一个公开 `test_*` 聚合入口，内部按 case 列表顺序执行原断言，减少测试面噪声。
+- `tests/run_gdunit.sh` 必须把不存在路径、空 suite、缺失报告 XML 和 0 testcase XML 当失败处理，避免删除或重命名 suite 后出现假绿。
 
 ### Stage 1 composition slot 收缩目标图（2026-04-19 冻结）
 
@@ -186,7 +193,7 @@
 - `BattleSandboxController` 继续是当前研发试玩入口；默认路径继续固定为 `gojo_vs_sample + 9101 + manual/policy`。
 - BattleSandbox 可见推荐 matchup 的正式角色段从 `config/formal_character_manifest.json` 的 `characters[*].formal_setup_matchup_id` 派生；新增角色不再手工维护 sandbox 推荐名单或 quick smoke 角色名单。
 - CLI/debug 启动路径默认启用 strict launch config；非法 matchup / mode / seed / control mode 必须暴露为启动错误，只有 UI 控件内的选择归一化可以保留非 strict 行为。
-- `tests/run_with_gate.sh` 继续是唯一总入口，顺序保持：`gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → sandbox smoke matrix`。
+- `tests/run_with_gate.sh` 继续是唯一总入口，顺序保持：`gdUnit4 → boot smoke → suite reachability → architecture constraints → repo consistency → Python lint → sandbox smoke matrix`。
 - `BattleSandbox`、`run_with_gate` 与 `gdUnit4 + test/` 继续构成当前仓库的主研发主线。
 - CI 当前固定拆成 3 个并行 job（`gdunit`、`repo_and_arch_gates`、`boot_and_sandbox_smoke`），并与本地总入口共用同一批子脚本。
 - `tests/check_gdunit_gate.sh` 与 `tests/check_boot_smoke.sh` 当前固定作为本地与 CI 共用的子入口，不允许出现 CI / 本地分叉脚本。

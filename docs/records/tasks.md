@@ -13,6 +13,22 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：测试面压缩与空 suite 防护（2026-04-25）
+
+- 状态：已完成
+- 目标：收口测试代码比例偏高的问题，删除没有真实断言价值的聚合 wrapper，并避免 gdUnit 空跑被误判为通过
+- 范围：
+  1. 删除 39 个仅转发 `register_tests` 的 wrapper suite 及对应 `.gd.uid`
+  2. formal source descriptor、生成 manifest / capability catalog、repo gate 和设计文档全部改为引用真实 suite 路径
+  3. 四名正式角色的 snapshot suite 合并为每个角色 1 个公开测试入口
+  4. 四名正式角色的 manager smoke / blackbox suite 合并为每个文件 1 个公开测试入口，保留原场景断言
+  5. `tests/run_gdunit.sh` 对不存在路径、空 suite、缺失 XML、0 testcase XML 直接失败
+- 验收标准：
+  - 删除 wrapper 后 manifest suite 路径仍可达
+  - 旧 wrapper 路径不能被误判为通过
+  - 全量 gate 通过，且测试数量下降但关键覆盖保留
+- 验证结果：`bash tests/run_with_gate.sh` 通过，`388 test cases / 0 failures`；定向验证 `gojo_manager_smoke_suite.gd`、`sukuna_manager_blackbox_suite.gd`、`obito_snapshot_suite.gd` 通过；`does_not_exist_suite.gd` 与已删除的 `gojo_suite.gd` 均按预期失败
+
 ## 最近完成：玩家战斗 UI 首版（2026-04-25）
 
 - 状态：已完成

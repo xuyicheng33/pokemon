@@ -41,7 +41,7 @@
   - `sukuna_refresh_love_regen` 从 `mp_regen set` 改成 `mp_regen add`
   <!-- anchor:sukuna.adjust.mp_regen-add -->
   - 宿傩基础 `regen_per_turn = 12` 保持不变
-  - `sukuna_setup_regen_suite.gd` 改为同时校验初始化预回蓝与下一回合 `turn_start` 的追加回蓝
+  - `sukuna_setup_loadout_regen_suite.gd` 改为同时校验初始化预回蓝与下一回合 `turn_start` 的追加回蓝
   - 默认装配与反转术式装配的首次奥义窗口，当前都重算为第 `4` 回合
   <!-- anchor:sukuna.adjust.first-ultimate-window-turn-4 -->
 - 为什么改：
@@ -49,7 +49,7 @@
   - 当前主线要保留基础面板数值，又要让被动真的是补强而不是暗削弱，因此改成 `add` 是最直接且与面板语义一致的收口
 - 影响测试：
   <!-- anchor:sukuna.adjust.tests-impacted -->
-  - `test/suites/sukuna_setup_regen_suite.gd`
+  - `test/suites/sukuna_setup_loadout_regen_suite.gd`
 - 是否改变玩家口径：
   - 是
   - 当前宿傩的每回合 MP 回复统一读作“基础 12 + 对位追加”
@@ -69,7 +69,7 @@
   - 这条调整只处理资源窗口，不直接改领域冲突与伤害模型
   - 直接把奥义点改成 2 会过冲成反向碾压，不适合作为主线平衡修法
 - 影响测试：
-  - `test/suites/sukuna_setup_regen_suite.gd`
+  - `test/suites/sukuna_setup_loadout_regen_suite.gd`
 - 是否改变玩家口径：
   - 是
   - 宿傩现在仍是 3 点开大，但对位接近时能更稳定攒出第一次领域窗口
@@ -91,9 +91,9 @@
   - 宿傩需要与全局奥义点/领域对拼规则一致
   - 旧设计存在“领域没了，双攻增幅还留着”的状态风险
 - 影响测试：
-  - `test/suites/sukuna_suite.gd`
-  - `test/suites/ultimate_field_suite.gd`
-  - `test/suites/replay_turn_suite.gd`
+  - `test/suites/sukuna_setup_loadout_regen_suite.gd`
+  - `test/suites/ultimate_points_contract_suite.gd`
+  - `test/suites/replay_determinism_suite.gd`
 - 是否改变玩家口径：
   - 是
   - 领域增幅改成“只有领域成功立住才会获得，领域消失就一起消失”
@@ -112,7 +112,7 @@
 - 为什么改：
   - 旧后摇让宿傩领域语义过重，而且与当前简化原型目标不匹配
 - 影响测试：
-  - `test/suites/sukuna_suite.gd`
+  - `test/suites/sukuna_setup_loadout_regen_suite.gd`
 - 是否改变玩家口径：
   - 是
   - 当前口径固定为“领域自然到期终爆保留，被打断则没有终爆”

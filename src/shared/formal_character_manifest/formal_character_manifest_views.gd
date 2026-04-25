@@ -9,7 +9,7 @@ const PairInteractionBuilderScript := preload("res://src/shared/formal_character
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
 const CHARACTERS_BUCKET := "characters"
-const VALIDATOR_REQUIRED_SUITE_PATH := "test/suites/extension_validation_contract_suite.gd"
+const VALIDATOR_REQUIRED_SUITE_DIR := "test/suites/extension_validation_contract"
 
 var _manifest_loader = ManifestLoaderScript.new()
 var _pair_interaction_builder = PairInteractionBuilderScript.new()
@@ -158,8 +158,12 @@ func _effective_required_suite_paths_result(entry: Dictionary, capability_suite_
 			_append_unique_suite_path(required_suite_paths, seen_suite_paths, String(raw_suite_path))
 	var validator_path := String(entry.get("content_validator_script_path", "")).strip_edges()
 	if not validator_path.is_empty():
-		_append_unique_suite_path(required_suite_paths, seen_suite_paths, VALIDATOR_REQUIRED_SUITE_PATH)
+		_append_unique_suite_path(required_suite_paths, seen_suite_paths, _validator_required_suite_path(entry))
 	return _ok_result(required_suite_paths)
+
+func _validator_required_suite_path(entry: Dictionary) -> String:
+	var pair_token := String(entry.get("pair_token", "")).strip_edges()
+	return "%s/%s_bad_cases_suite.gd" % [VALIDATOR_REQUIRED_SUITE_DIR, pair_token]
 
 func _append_unique_suite_path(required_suite_paths: Array, seen_suite_paths: Dictionary, raw_suite_path: String) -> void:
 	var suite_path := raw_suite_path.strip_edges()
