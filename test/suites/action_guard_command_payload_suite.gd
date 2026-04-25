@@ -10,6 +10,10 @@ func test_invalid_command_payload_hard_failures() -> void:
 
 func test_invalid_command_payload_out_of_legal_set() -> void:
 	_assert_legacy_result(_test_invalid_command_payload_out_of_legal_set(_harness))
+
+func test_surrender_command_payload_still_validates_actor_and_turn() -> void:
+	_assert_legacy_result(_test_surrender_command_payload_still_validates_actor_and_turn(_harness))
+
 func _test_invalid_command_payload_hard_failures(harness) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
@@ -137,4 +141,55 @@ func _test_invalid_command_payload_out_of_legal_set(harness) -> Dictionary:
 		return harness.fail_result("illegal skill submit should end battle in selection phase")
 	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
 		return harness.fail_result("expected invalid_command_payload, got %s" % str(battle_state.battle_result.reason))
+	return harness.pass_result()
+
+func _test_surrender_command_payload_still_validates_actor_and_turn(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var stale_turn_state = harness.build_initialized_battle(core, content_index, sample_factory, 215)
+	core.service("turn_loop_controller").run_turn(stale_turn_state, content_index, [
+		core.service("command_builder").build_command({
+			"turn_index": 2,
+			"command_type": CommandTypesScript.SURRENDER,
+			"command_source": "manual",
+			"side_id": "P1",
+			"actor_public_id": "P1-A",
+		}),
+		core.service("command_builder").build_command({
+			"turn_index": 1,
+			"command_type": CommandTypesScript.WAIT,
+			"command_source": "manual",
+			"side_id": "P2",
+			"actor_public_id": "P2-A",
+		}),
+	])
+	if not stale_turn_state.battle_result.finished or stale_turn_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
+		return harness.fail_result("stale-turn surrender should fail-fast with invalid_command_payload")
+
+	var bench_actor_state = harness.build_initialized_battle(core, content_index, sample_factory, 216)
+	core.service("battle_logger").reset()
+	core.service("turn_loop_controller").run_turn(bench_actor_state, content_index, [
+		core.service("command_builder").build_command({
+			"turn_index": 1,
+			"command_type": CommandTypesScript.SURRENDER,
+			"command_source": "manual",
+			"side_id": "P1",
+			"actor_public_id": "P1-B",
+		}),
+		core.service("command_builder").build_command({
+			"turn_index": 1,
+			"command_type": CommandTypesScript.WAIT,
+			"command_source": "manual",
+			"side_id": "P2",
+			"actor_public_id": "P2-A",
+		}),
+	])
+	if not bench_actor_state.battle_result.finished or bench_actor_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
+		return harness.fail_result("bench-actor surrender should fail-fast with invalid_command_payload")
 	return harness.pass_result()

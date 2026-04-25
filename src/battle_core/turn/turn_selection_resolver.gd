@@ -74,6 +74,8 @@ func resolve_commands_for_turn(battle_state: BattleState, content_index: BattleC
 		var provided_command = commands_by_side.get(side_state.side_id, null)
 		var resolved_command = null
 		if provided_command != null and provided_command.command_type == CommandTypesScript.SURRENDER:
+			if not command_validator.validate_command(provided_command, battle_state, content_index):
+				return _invalid_result(ErrorCodesScript.INVALID_COMMAND_PAYLOAD)
 			resolved_command = provided_command
 		elif not legal_action_set.forced_command_type.is_empty():
 			if provided_command != null:
