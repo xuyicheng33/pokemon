@@ -8,10 +8,11 @@
 ## 1. 主要入口
 
 - `tests/sync_formal_registry.sh`：formal source descriptor -> committed manifest/catalog 的唯一人工同步入口
-- `tests/run_gdunit.sh`：`gdUnit4` CLI 入口；默认跑 `res://test`，并输出 `JUnit XML` 与 `HTML`
+- `tests/run_gdunit.sh`：`gdUnit4` CLI 入口；默认跑 quick profile，显式 `TEST_PROFILE=extended|full` 跑 `res://test`，并输出 `JUnit XML` 与 `HTML`
 - `tests/check_gdunit_gate.sh`：`gdUnit4` + 引擎日志扫描；供总 gate 与 CI 复用
 - `tests/check_boot_smoke.sh`：headless 启动 smoke；供总 gate 与 CI 复用
-- `tests/run_with_gate.sh`：唯一总入口；按固定顺序串起 `gdUnit4`、boot smoke、suite reachability、架构 gate、repo consistency gate、Python lint、sandbox smoke matrix
+- `tests/run_with_gate.sh`：默认 quick 总入口；按固定顺序串起 quick `gdUnit4`、boot smoke、suite reachability、架构 gate、repo consistency gate、Python lint、quick sandbox smoke matrix
+- `tests/run_extended_gate.sh`：显式 extended 入口；覆盖 extended `gdUnit4`、full sandbox smoke 和静态门禁
 - `tests/check_suite_reachability.sh`：suite 可达性闸门
 - `tests/check_architecture_constraints.sh`：分层与大文件架构闸门
 - `tests/check_repo_consistency.sh`：仓库一致性闸门总入口
@@ -40,6 +41,7 @@
 - `replay`：replay input / summary / determinism / 浏览回归
 
 gdUnit 直接发现 `test/suites/` 下的具体 suite；大型主题可拆到同名子目录，但不再用 `register_tests` wrapper 聚合。
+默认测试分层为 `quick -> extended -> full`：quick 保留开发门禁主路径，extended 保留长尾边界和历史回归，full 在 extended 基础上使用 `SANDBOX_SMOKE_SCOPE=full`。
 GDScript 前导缩进固定只允许 tab；`test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd` 当前统一纳入 support helper 体量门禁。
 
 ## 4. formal 单源约定
@@ -66,7 +68,9 @@ formal 交付细节统一看：
 - BattleSandbox headless 整局复查：`godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 - BattleSandbox headless 真实提交流程复查：`godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd`
 - demo replay headless 复查：`DEMO_PROFILE=legacy godot --headless --path . --script tests/helpers/demo_replay_full_run.gd`
-- 阶段总验收：`bash tests/run_with_gate.sh`
+- 日常 quick 验收：`bash tests/run_with_gate.sh`
+- 阶段 extended 验收：`bash tests/run_extended_gate.sh`
+- 完整 full 验收：`TEST_PROFILE=full bash tests/run_with_gate.sh`
 - 清理本地废弃报告与 scratch：`bash tests/cleanup_local_artifacts.sh`
 
 闸门脚本当前显式依赖 `godot`、`python3` 与 `rg`；缺少任一工具时必须直接 fail-fast，不做隐式 fallback。

@@ -5,6 +5,7 @@ const BattleUIViewModelBuilderScript := preload("res://src/adapters/battle_ui_vi
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const FormatHelperScript := preload("res://src/adapters/sandbox_view_format_helper.gd")
+const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 
 const COLOR_CARD := Color(0.13, 0.145, 0.168)
 const COLOR_CARD_HOVER := Color(0.18, 0.195, 0.22)
@@ -12,46 +13,17 @@ const COLOR_LINE := Color(0.38, 0.38, 0.34, 0.75)
 const COLOR_TEXT := Color(0.91, 0.89, 0.84)
 const COLOR_MUTED := Color(0.67, 0.67, 0.62)
 const COLOR_ACCENT := Color(0.77, 0.66, 0.43)
-const CHARACTER_OPTIONS := [
-	{
-		"display_name": "五条悟",
-		"matchup_id": "gojo_vs_sample",
-		"types": "space / psychic",
-		"tagline": "空间压制与精准控制",
-		"sigil": "∞",
-		"portrait_path": "res://assets/ui/portraits/gojo.svg",
-		"color": Color(0.62, 0.9, 0.96),
-	},
-	{
-		"display_name": "宿傩",
-		"matchup_id": "sukuna_setup",
-		"types": "fire / demon",
-		"tagline": "高压斩击与领域爆发",
-		"sigil": "炎",
-		"portrait_path": "res://assets/ui/portraits/sukuna.svg",
-		"color": Color(0.9, 0.18, 0.13),
-	},
-	{
-		"display_name": "鹿紫云一",
-		"matchup_id": "kashimo_vs_sample",
-		"types": "thunder / fighting",
-		"tagline": "雷电节奏与近身进攻",
-		"sigil": "雷",
-		"portrait_path": "res://assets/ui/portraits/kashimo.svg",
-		"color": Color(0.95, 0.82, 0.18),
-	},
-	{
-		"display_name": "宇智波带土",
-		"matchup_id": "obito_vs_sample",
-		"types": "light / dark",
-		"tagline": "光暗轮转与持久压迫",
-		"sigil": "●",
-		"portrait_path": "res://assets/ui/portraits/obito.svg",
-		"color": Color(0.58, 0.45, 0.9),
-	},
+const DEFAULT_CARD_COLORS := [
+	Color(0.62, 0.9, 0.96),
+	Color(0.9, 0.18, 0.13),
+	Color(0.95, 0.82, 0.18),
+	Color(0.58, 0.45, 0.9),
+	Color(0.45, 0.82, 0.55),
+	Color(0.9, 0.58, 0.33),
 ]
 
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
+var _manifest = FormalCharacterManifestScript.new()
 var _view_model_builder = BattleUIViewModelBuilderScript.new()
 var _fmt = FormatHelperScript.new()
 
@@ -190,8 +162,7 @@ func _render_page_state(controller, state: SandboxSessionState, view_refs: Sandb
 
 func _render_character_cards(controller, state: SandboxSessionState, view_refs: SandboxViewRefs) -> void:
 	_clear_container_children(view_refs.character_cards)
-	var available_ids := _available_matchup_ids(state.available_matchups)
-	for option in CHARACTER_OPTIONS:
+	for option in _character_options(state.available_matchups):
 		var card := PanelContainer.new()
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		card.add_theme_stylebox_override("panel", _stylebox(COLOR_CARD))
@@ -203,7 +174,8 @@ func _render_character_cards(controller, state: SandboxSessionState, view_refs: 
 		portrait.custom_minimum_size = Vector2(0, 96)
 		portrait.add_theme_stylebox_override("panel", _stylebox(option.get("color", COLOR_ACCENT)))
 		content.add_child(portrait)
-		var portrait_texture = load(str(option.get("portrait_path", "")))
+		var portrait_path := String(option.get("portrait_path", "")).strip_edges()
+		var portrait_texture = load(portrait_path) if not portrait_path.is_empty() else null
 		if portrait_texture is Texture2D:
 			var texture_rect := TextureRect.new()
 			texture_rect.texture = portrait_texture
@@ -222,17 +194,13 @@ func _render_character_cards(controller, state: SandboxSessionState, view_refs: 
 		var name_label := _new_card_label(str(option.get("display_name", "")), 18, COLOR_TEXT)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		content.add_child(name_label)
-		var type_label := _new_card_label(str(option.get("types", "")), 12, COLOR_ACCENT)
-		type_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		content.add_child(type_label)
-		var tagline := _new_card_label(str(option.get("tagline", "")), 13, COLOR_MUTED)
-		tagline.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		tagline.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		content.add_child(tagline)
-		var matchup_id := str(option.get("matchup_id", "")).strip_edges()
+		var matchup_id := str(option.get("formal_setup_matchup_id", "")).strip_edges()
+		var matchup_label := _new_card_label(matchup_id, 12, COLOR_ACCENT)
+		matchup_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		matchup_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		content.add_child(matchup_label)
 		var start_button := Button.new()
 		start_button.text = "进入战斗"
-		start_button.disabled = not available_ids.has(matchup_id)
 		start_button.custom_minimum_size = Vector2(0, 36)
 		start_button.add_theme_stylebox_override("normal", _stylebox(COLOR_CARD_HOVER))
 		start_button.add_theme_stylebox_override("hover", _stylebox(Color(0.23, 0.21, 0.16)))
@@ -241,6 +209,55 @@ func _render_character_cards(controller, state: SandboxSessionState, view_refs: 
 			controller.start_player_matchup(matchup_id)
 		)
 		content.add_child(start_button)
+
+func _character_options(available_matchups: Array) -> Array:
+	var available_ids := _available_matchup_ids(available_matchups)
+	var entries_result: Dictionary = _manifest.build_character_entries_result()
+	if not bool(entries_result.get("ok", false)):
+		return []
+	var options: Array = []
+	var seen_matchup_ids: Dictionary = {}
+	var color_index := 0
+	for raw_entry in entries_result.get("data", []):
+		if not (raw_entry is Dictionary):
+			continue
+		var entry: Dictionary = raw_entry
+		var matchup_id := String(entry.get("formal_setup_matchup_id", "")).strip_edges()
+		if matchup_id.is_empty() or seen_matchup_ids.has(matchup_id) or not available_ids.has(matchup_id):
+			continue
+		seen_matchup_ids[matchup_id] = true
+		var character_id := String(entry.get("character_id", "")).strip_edges()
+		var pair_token := String(entry.get("pair_token", "")).strip_edges()
+		options.append({
+			"character_id": character_id,
+			"pair_token": pair_token,
+			"display_name": String(entry.get("display_name", character_id)).strip_edges(),
+			"formal_setup_matchup_id": matchup_id,
+			"sigil": _default_sigil(entry, options.size()),
+			"portrait_path": _portrait_path(character_id, pair_token),
+			"color": DEFAULT_CARD_COLORS[color_index % DEFAULT_CARD_COLORS.size()],
+		})
+		color_index += 1
+	return options
+
+func _portrait_path(character_id: String, pair_token: String) -> String:
+	for raw_token in [pair_token, character_id]:
+		var token := String(raw_token).strip_edges()
+		if token.is_empty():
+			continue
+		var path := "res://assets/ui/portraits/%s.svg" % token
+		if ResourceLoader.exists(path):
+			return path
+	return ""
+
+func _default_sigil(entry: Dictionary, index: int) -> String:
+	var display_name := String(entry.get("display_name", "")).strip_edges()
+	if not display_name.is_empty():
+		return display_name.substr(0, 1)
+	var pair_token := String(entry.get("pair_token", "")).strip_edges()
+	if not pair_token.is_empty():
+		return pair_token.substr(0, 1).to_upper()
+	return str(index + 1)
 
 func _format_result_title(state: SandboxSessionState) -> String:
 	var winner := str(state.battle_summary.get("winner_side_id", "")).strip_edges()

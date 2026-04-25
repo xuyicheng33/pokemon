@@ -153,7 +153,7 @@ def generate_source_descriptor(
             "design_needles": ["FILL_IN_design_anchor"],
             "adjustment_needles": ["FILL_IN_adjustment_anchor"],
             "shared_capability_ids": [],
-            "suite_path": f"test/suites/{pair_token}_suite.gd",
+            "suite_path": f"test/suites/{pair_token}_snapshot_suite.gd",
             "required_suite_paths": [
                 f"test/suites/{pair_token}_snapshot_suite.gd",
                 f"test/suites/{pair_token}_manager_smoke_suite.gd",
@@ -333,17 +333,6 @@ func _test_{pair_token}_effect_snapshot_contract(harness) -> Dictionary:
 \t\t"effect_id",
 \t\t"missing {pair_token} snapshot effect resource"
 \t)
-'''
-
-
-def generate_runtime_suite(pair_token: str) -> str:
-    """Generate the runtime suite wrapper shell."""
-    pascal_token = to_pascal_case(pair_token)
-    return f'''\
-extends GdUnitTestSuite
-
-const {pascal_token}SnapshotSuiteScript := preload("res://test/suites/{pair_token}_snapshot_suite.gd")
-const {pascal_token}ManagerSmokeSuiteScript := preload("res://test/suites/{pair_token}_manager_smoke_suite.gd")
 '''
 
 
@@ -574,8 +563,6 @@ def main() -> None:
     suites_dir = DRAFTS_DIR / "test" / "suites"
     write_file(suites_dir / f"{pair_token}_snapshot_suite.gd",
                generate_snapshot_suite(char_id, pair_token, display_name))
-    write_file(suites_dir / f"{pair_token}_suite.gd",
-               generate_runtime_suite(pair_token))
     write_file(suites_dir / f"{pair_token}_manager_smoke_suite.gd",
                generate_manager_smoke_suite(char_id, pair_token))
 
@@ -657,7 +644,8 @@ Next steps:
   8. Move completed draft files into live paths:
      - scripts/drafts/src/shared/formal_character_baselines/{char_id}/ -> src/shared/formal_character_baselines/{char_id}/
      - scripts/drafts/src/battle_core/content/formal_validators/{pair_token}/ -> src/battle_core/content/formal_validators/{pair_token}/
-     - scripts/drafts/test/suites/{pair_token}_*.gd -> test/suites/
+     - scripts/drafts/test/suites/{pair_token}_snapshot_suite.gd -> test/suites/
+     - scripts/drafts/test/suites/{pair_token}_manager_smoke_suite.gd -> test/suites/
      - scripts/drafts/docs/design/{char_id}_*.md -> docs/design/
 
   9. Run draft readiness check:

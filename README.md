@@ -68,7 +68,8 @@ tests/
   gates/                # README/文档/注册表一致性细分 gate
   replay_cases/         # 固定 deterministic 回放 / 复查案例
   run_gdunit.sh         # gdUnit4 CLI 入口（支持单 suite/单目录过滤与报告输出）
-  run_with_gate.sh      # 测试闸门（断言 + 引擎错误 + 架构 + 仓库一致性）
+  run_with_gate.sh      # quick 测试闸门（断言 + 引擎错误 + 架构 + 仓库一致性）
+  run_extended_gate.sh  # extended 测试闸门（长尾 gdUnit + full sandbox smoke）
   check_repo_consistency.sh # README/文档/关键回归一致性闸门聚合入口
   cleanup_local_artifacts.sh # 清理废弃本地报告目录与 scratch 目录
 ```
@@ -154,19 +155,21 @@ bash tests/sync_formal_registry.sh
 
 这两份文件继续提交到仓库，但不再手工维护。
 
-### 5.4 运行完整闸门（推荐）
+### 5.4 运行闸门（推荐）
 
 ```bash
 tests/run_with_gate.sh
 ```
 
+默认 `tests/run_with_gate.sh` 是 quick gate；长尾回归用 `tests/run_extended_gate.sh`，完整收口用 `TEST_PROFILE=full bash tests/run_with_gate.sh`。
+
 闸门通过条件：
 
-- `tests/run_with_gate.sh` 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> Python lint -> sandbox smoke matrix`
+- `tests/run_with_gate.sh` 内部顺序固定为：`gdUnit4 quick -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> Python lint -> sandbox smoke matrix quick`
 - 本地与 CI 共用子入口：
   - `bash tests/check_gdunit_gate.sh`
   - `bash tests/check_boot_smoke.sh`
-- 业务断言全部通过（`tests/run_gdunit.sh` -> `gdUnit4`，默认扫描 `res://test`）
+- 业务断言通过（`tests/run_gdunit.sh` -> `gdUnit4`；默认 `TEST_PROFILE=quick`，显式 `extended|full` 扫描 `res://test`）
 - 产出可消费测试报告（`JUnit XML + HTML`，默认落在 `reports/gdunit`）
 - 废弃本地产物可通过 `bash tests/cleanup_local_artifacts.sh` 清理；当前只认 `reports/gdunit` 为有效报告目录
 - headless 主流程启动 smoke 通过（`bash tests/check_boot_smoke.sh`），且不得出现 `BATTLE_SANDBOX_FAILED:` 应用层失败标记
@@ -304,10 +307,10 @@ tests/run_with_gate.sh
 
 ## 10. 当前代码规模（2026-04-25）
 
-- `src/**/*.gd`：`22793` 行
-- `test/**/*.gd`：`21901` 行
+- `src/**/*.gd`：`22810` 行
+- `test/**/*.gd`：`21940` 行
 - `tests/**/*.gd`：`5223` 行
-- GDScript 合计：`49917` 行
+- GDScript 合计：`49973` 行
 
 > 统计口径：与 repo consistency gate 一致，按 `.gd` 文件中的换行数累计统计。
 

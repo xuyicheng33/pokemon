@@ -43,7 +43,7 @@
 - [ ] manager smoke、pair smoke 与 formal demo replay 默认读取 `content_snapshot_paths_for_setup_result(battle_setup)`，只有全量正式快照 / baseline demo 才走 `content_snapshot_paths_result()`
 - [ ] 更新 `config/formal_character_sources/<character>.json` 对应角色 source descriptor
 - [ ] 若角色复用共享扩展、需要自定义 formal setup matchup、补额外 shared/test_only matchup，或新增共享能力，同时更新 `config/formal_character_sources/00_shared_registry.json`
-- [ ] 若使用脚手架草稿，移动到正式路径前先跑 `bash scripts/check_formal_character_draft_ready.sh`，确认草稿没有占位符、缺文件或 live 目标冲突
+- [ ] 若使用脚手架草稿，移动到正式路径前先跑 `bash scripts/check_formal_character_draft_ready.sh`，确认草稿没有占位符、缺文件、空的非 `fields` content root 或 live 目标冲突
 - [ ] 通过唯一同步入口重新生成并提交产物：`bash tests/sync_formal_registry.sh`
 - [ ] `characters[*]` 继续写在同一个 manifest 条目里，但要按两份消费视图检查：
   - [ ] runtime 视图：只服务 runtime loader / validator / setup
@@ -100,7 +100,7 @@
 ### B. Runtime suite
 
 - [ ] 至少 1 个角色独有 runtime suite，按主题直接放在 `test/suites/<character>_*_suite.gd` 或 `test/suites/<character>_runtime/`
-- [ ] 大型共享或角色主题直接拆成可发现的子 suite；manifest 与文档引用真实 suite 路径，不再新增 `register_tests` wrapper
+- [ ] 大型共享或角色主题直接拆成可发现的子 suite；manifest 与文档引用有 `func test_*` 的真实 suite 路径，不再新增 `register_tests` wrapper 或 `{pair_token}_suite.gd` 空 wrapper
 - [ ] 锁角色主玩法路径，而不是只测通用 contract
 
 ### C. Manager smoke suite

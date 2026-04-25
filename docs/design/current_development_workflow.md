@@ -73,11 +73,19 @@ headless 复查入口固定为：
 
 ## 4. 测试入口与推荐跑法
 
-- `tests/run_with_gate.sh` 是唯一总入口。
+- `tests/run_with_gate.sh` 是默认 quick 总入口。
+- `tests/run_extended_gate.sh` 是显式 extended 入口。
+- `TEST_PROFILE=quick|extended|full` 控制 gdUnit 分层；默认开发门禁为 quick，阶段收口和大改动前跑 extended，完整收口跑 full。
 - `gdUnit4 + test/` 是唯一 Godot 业务测试树。
 - `tests/run_gdunit.sh` 只作为 `gdUnit4` CLI 快跑入口，不替代总 gate。
 - `tests/check_gdunit_gate.sh` 与 `tests/check_boot_smoke.sh` 是总 gate / CI 共享的子入口。
 - 当前阶段回归基线文档固定为 `docs/design/current_stage_regression_baseline.md`。
+
+测试分层固定为 quick -> extended -> full：
+
+- `quick`：默认 `tests/run_with_gate.sh` 跑的集合，覆盖核心合同、启动 smoke、UI 主流程、正式角色 snapshot/manager smoke、repo/arch/python gate 和 quick sandbox smoke。
+- `extended`：长尾边界、角色细节组合、历史回归、全量 gdUnit 业务 suite 和 full sandbox smoke。
+- `full`：全量 gdUnit 业务 suite、quick 静态门禁和 `SANDBOX_SMOKE_SCOPE=full`。
 
 推荐顺序：
 
@@ -85,15 +93,18 @@ headless 复查入口固定为：
 2. 复查 launch-config 与推荐排序：`TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
 3. 复查 BattleSandbox boot：运行 `bash tests/check_boot_smoke.sh`
 4. 复查 BattleSandbox 主路径：运行 `bash tests/check_sandbox_smoke_matrix.sh`
-5. 阶段收口：`bash tests/run_with_gate.sh`
-6. 需要清本地旧报告或 scratch 目录时：运行 `bash tests/cleanup_local_artifacts.sh`
+5. 日常收口：`bash tests/run_with_gate.sh`
+6. 阶段收口：`bash tests/run_extended_gate.sh`
+7. 完整收口：`TEST_PROFILE=full bash tests/run_with_gate.sh`
+8. 需要清本地旧报告或 scratch 目录时：运行 `bash tests/cleanup_local_artifacts.sh`
 
-当前总 gate 内部顺序固定为：`gdUnit4 -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> Python lint -> sandbox smoke matrix`。新增日常 smoke 或 contract 时，先写到 `docs/design/`，再进 gate，再接到总入口。
+当前 quick gate 内部顺序固定为：`gdUnit4 quick -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> Python lint -> sandbox smoke matrix quick`。新增日常 smoke 或 contract 时，先写到 `docs/design/`，再进对应 profile，再接到入口。
 
-CI 当前固定拆成 3 个并行 job：
+CI 当前固定拆成 4 个并行 job：
 
 - `gdunit`
 - `repo_and_arch_gates`
+- `python_lint`
 - `boot_and_sandbox_smoke`
 
 测试分类口径固定为：

@@ -17,6 +17,8 @@ PLACEHOLDER_NEEDLES = [
     "TODO: implement",
     "interaction placeholder",
 ]
+OPTIONAL_EMPTY_CONTENT_ROOTS = {"fields"}
+REQUIRED_CONTENT_ROOTS = {"units", "skills", "effects", "passive_skills"}
 
 
 def main() -> None:
@@ -72,21 +74,24 @@ def _validate_source_draft(drafts_dir: Path, source_path: Path, failures: list[s
     expected_files = [
         drafts_dir / "src" / "shared" / "formal_character_baselines" / character_id / f"{character_id}_formal_character_baseline.gd",
         drafts_dir / "src" / "battle_core" / "content" / "formal_validators" / pair_token / f"content_snapshot_formal_{pair_token}_validator.gd",
-        drafts_dir / "test" / "suites" / f"{pair_token}_snapshot_suite.gd",
-        drafts_dir / "test" / "suites" / f"{pair_token}_suite.gd",
-        drafts_dir / "test" / "suites" / f"{pair_token}_manager_smoke_suite.gd",
         drafts_dir / "docs" / "design" / f"{character_id}_design.md",
         drafts_dir / "docs" / "design" / f"{character_id}_adjustments.md",
     ]
+    for raw_suite_path in _draft_suite_paths(character):
+        expected_files.append(drafts_dir / raw_suite_path)
     owned_specs = character.get("owned_pair_interaction_specs", [])
     if isinstance(owned_specs, list) and owned_specs:
         expected_files.append(drafts_dir / "formal_pair_interaction" / f"{pair_token}_cases.gd")
     for path in expected_files:
         _require_ready_file(path, failures)
+        if path.suffix == ".gd" and "/test/suites/" in path.as_posix():
+            _require_gdunit_tests(path, failures)
     for raw_content_root in character.get("content_roots", []):
         content_root = REPO_ROOT / str(raw_content_root).strip()
         if not content_root.exists():
             failures.append(f"{_rel(source_path)} content_root does not exist: {_rel(content_root)}")
+            continue
+        _validate_content_root_not_empty(source_path, content_root, failures)
     for raw_live_path in _live_target_paths(character, source_path.name):
         live_path = REPO_ROOT / raw_live_path
         if live_path.exists():
@@ -112,6 +117,45 @@ def _require_ready_file(path: Path, failures: list[str]) -> None:
     _scan_file_for_placeholders(path, failures)
 
 
+def _require_gdunit_tests(path: Path, failures: list[str]) -> None:
+    if not path.exists():
+        return
+    text = path.read_text(encoding="utf-8")
+    if not re.search(r"(?m)^\s*func\s+test_[A-Za-z0-9_]*\s*\(", text):
+        failures.append(f"{_rel(path)} must contain at least one func test_*")
+
+
+def _validate_content_root_not_empty(source_path: Path, content_root: Path, failures: list[str]) -> None:
+    root_kind = _content_root_kind(content_root)
+    if root_kind in OPTIONAL_EMPTY_CONTENT_ROOTS:
+        return
+    if root_kind not in REQUIRED_CONTENT_ROOTS:
+        failures.append(f"{_rel(source_path)} content_root has unsupported kind: {_rel(content_root)}")
+        return
+    if not any(content_root.rglob("*.tres")):
+        failures.append(f"{_rel(source_path)} content_root has no .tres resources: {_rel(content_root)}")
+
+
+def _content_root_kind(content_root: Path) -> str:
+    try:
+        relative_parts = content_root.relative_to(REPO_ROOT / "content").parts
+    except ValueError:
+        return ""
+    return relative_parts[0] if relative_parts else ""
+
+
+def _draft_suite_paths(character: dict) -> list[Path]:
+    suite_paths: list[Path] = []
+    seen: set[str] = set()
+    for raw_suite_path in [character.get("suite_path", ""), *character.get("required_suite_paths", [])]:
+        suite_path = str(raw_suite_path).strip()
+        if not suite_path or suite_path in seen:
+            continue
+        seen.add(suite_path)
+        suite_paths.append(Path(suite_path))
+    return suite_paths
+
+
 def _scan_file_for_placeholders(path: Path, failures: list[str]) -> None:
     if path.suffix not in {".gd", ".json", ".md"}:
         return
@@ -128,12 +172,11 @@ def _live_target_paths(character: dict, source_filename: str) -> list[str]:
         f"config/formal_character_sources/{source_filename}",
         f"src/shared/formal_character_baselines/{character_id}/{character_id}_formal_character_baseline.gd",
         f"src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd",
-        f"test/suites/{pair_token}_snapshot_suite.gd",
-        f"test/suites/{pair_token}_suite.gd",
-        f"test/suites/{pair_token}_manager_smoke_suite.gd",
         f"docs/design/{character_id}_design.md",
         f"docs/design/{character_id}_adjustments.md",
     ]
+    for suite_path in _draft_suite_paths(character):
+        paths.append(str(suite_path))
     owned_specs = character.get("owned_pair_interaction_specs", [])
     if isinstance(owned_specs, list) and owned_specs:
         paths.append(f"tests/support/formal_pair_interaction/{pair_token}_cases.gd")

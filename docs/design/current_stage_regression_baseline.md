@@ -10,6 +10,8 @@
 4. `bash tests/check_boot_smoke.sh`
 5. `bash tests/check_sandbox_smoke_matrix.sh`
 6. `bash tests/run_with_gate.sh`
+7. `bash tests/run_extended_gate.sh`
+8. `TEST_PROFILE=full bash tests/run_with_gate.sh`
 
 ## 2. 当前主 smoke matchup
 
@@ -25,7 +27,7 @@
 
 ## 3. 最小可玩性检查
 
-- 可启动：`BattleSandbox` 能进入主流程，`bash tests/run_with_gate.sh` 与 `bash tests/check_boot_smoke.sh` 不报阻断错误
+- 可启动：`BattleSandbox` 能进入主流程，`bash tests/run_with_gate.sh`、`bash tests/run_extended_gate.sh` 与 `bash tests/check_boot_smoke.sh` 不报阻断错误
 - 可操作：默认 `manual/policy` 路径能完成至少一轮人工选指与 policy 自动推进
 - 能跑完一局：动态 smoke matrix 覆盖的主路径都能稳定打到终局
 - 无阻断报错：不得出现 `BATTLE_SANDBOX_FAILED:`、`SCRIPT ERROR:`、`Compile Error:`、`Parse Error:`

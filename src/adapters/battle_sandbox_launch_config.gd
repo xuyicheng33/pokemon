@@ -42,7 +42,7 @@ func build_config_from_user_args(user_args: Array) -> Dictionary:
 			"matchup":
 				config["matchup_id"] = value
 			"battle_seed", "seed":
-				config["battle_seed"] = _parse_positive_int(value, DEFAULT_BATTLE_SEED)
+				config["battle_seed"] = value
 			"p1_mode":
 				config["p1_control_mode"] = value
 			"p2_mode":

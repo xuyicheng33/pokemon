@@ -13,6 +13,23 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：项目问题修复与测试分层（2026-04-25）
+
+- 状态：已完成
+- 目标：修复 strict seed、玩家选角硬编码、脚手架 wrapper、draft readiness 空目录与 CI 文档漂移，并把测试入口分成 quick / extended / full
+- 范围：
+  1. CLI `seed` / `battle_seed` 保留原始字符串进入 strict normalize，非法值触发 `BATTLE_SANDBOX_FAILED`
+  2. 玩家选角页从 formal manifest 与可见 matchup 交集派生角色卡，新增角色不再改硬编码卡片列表
+  3. 新角色脚手架不再生成 `{pair_token}_suite.gd` wrapper，draft readiness 只接受有 `func test_*` 的真实 suite
+  4. draft readiness 要求非 `fields` 的 content root 至少含 `.tres`
+  5. `tests/run_with_gate.sh` 默认 quick gate，新增 `tests/run_extended_gate.sh`，`TEST_PROFILE=quick|extended|full` 统一控制分层
+- 验收标准：
+  - 非法 CLI seed 在 strict 启动路径失败，UI 控件的非 strict 归一化不变
+  - 选角卡数量等于当前可见 formal setup matchup 数
+  - 脚手架和 readiness 不再复活 wrapper suite
+  - quick gate 与 extended gate 都可本地验证
+- 验证结果：`seed=bad / seed=-99 / seed=0` strict CLI 均输出 `BATTLE_SANDBOX_FAILED`；`battle_sandbox_launch_config_contract_suite.gd`、`manual_battle_scene/manual_flow_suite.gd`、`bash scripts/check_formal_character_draft_ready.sh`、`bash tests/run_with_gate.sh` 与 `bash tests/run_extended_gate.sh` 均通过；临时脚手架验证确认不生成 `{pair_token}_suite.gd`，空的非 `fields` content root 会失败
+
 ## 最近完成：测试面压缩与空 suite 防护（2026-04-25）
 
 - 状态：已完成

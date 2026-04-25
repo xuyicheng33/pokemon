@@ -1,5 +1,10 @@
 extends "res://test/suites/manual_battle_scene/base.gd"
 const BaseSuiteScript := preload("res://test/suites/manual_battle_scene/base.gd")
+const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
+const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
+
+var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
+var _manifest = FormalCharacterManifestScript.new()
 
 func test_manual_scene_starts_on_character_selection() -> void:
 	var runner := await _create_selection_runner()
@@ -8,7 +13,7 @@ func test_manual_scene_starts_on_character_selection() -> void:
 	assert_bool(controller.get_node("RootMargin/MainColumn/BodyRow").visible).is_false()
 	assert_bool(controller.get_node("RootMargin/MainColumn/ActionPanel").visible).is_false()
 	var cards: GridContainer = controller.get_node("RootMargin/MainColumn/SelectPanel/SelectContent/CharacterCards")
-	assert_int(cards.get_child_count()).is_equal(4)
+	assert_int(cards.get_child_count()).is_equal(_visible_formal_setup_matchup_count(controller.get_state_snapshot().get("available_matchups", [])))
 	var start_result: Dictionary = controller.start_player_matchup("gojo_vs_sample")
 	assert_bool(bool(start_result.get("ok", false))).is_true()
 	@warning_ignore("redundant_await")
@@ -16,6 +21,26 @@ func test_manual_scene_starts_on_character_selection() -> void:
 	assert_bool(controller.get_node("RootMargin/MainColumn/SelectPanel").visible).is_false()
 	assert_bool(controller.get_node("RootMargin/MainColumn/BodyRow").visible).is_true()
 	assert_bool(controller.get_node("RootMargin/MainColumn/ActionPanel").visible).is_true()
+
+func _visible_formal_setup_matchup_count(available_matchups: Array) -> int:
+	var available_ids: Dictionary = {}
+	for raw_descriptor in _launch_config_helper.visible_matchup_descriptors(available_matchups):
+		if not (raw_descriptor is Dictionary):
+			continue
+		var matchup_id := String(raw_descriptor.get("matchup_id", "")).strip_edges()
+		if not matchup_id.is_empty():
+			available_ids[matchup_id] = true
+	var entries_result: Dictionary = _manifest.build_character_entries_result()
+	assert_bool(bool(entries_result.get("ok", false))).is_true()
+	var seen_matchup_ids: Dictionary = {}
+	for raw_entry in entries_result.get("data", []):
+		if not (raw_entry is Dictionary):
+			continue
+		var matchup_id := String(raw_entry.get("formal_setup_matchup_id", "")).strip_edges()
+		if matchup_id.is_empty() or seen_matchup_ids.has(matchup_id) or not available_ids.has(matchup_id):
+			continue
+		seen_matchup_ids[matchup_id] = true
+	return seen_matchup_ids.size()
 
 func test_manual_scene_initial_hud_stops_on_p1() -> void:
 	var runner := await _create_runner()
