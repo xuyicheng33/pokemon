@@ -88,6 +88,15 @@ func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 			"entity_id",
 		])):
 			return harness.fail_result("public event log snapshot must not leak runtime ids")
+		if _helper.contains_any_key_recursive(event_snapshot, PackedStringArray([
+			"battle_seed",
+			"battle_rng_profile",
+			"speed_tie_roll",
+			"hit_roll",
+			"effect_roll",
+			"rng_stream_index",
+		])):
+			return harness.fail_result("public event log snapshot must not leak private RNG fields")
 		if event_snapshot.has("actor_public_id") and event_snapshot.has("actor_definition_id") and event_snapshot.has("target_public_id") and event_snapshot.has("target_definition_id") and event_snapshot.has("killer_public_id") and event_snapshot.has("killer_definition_id"):
 			if typeof(event_snapshot.get("value_changes", null)) != TYPE_ARRAY:
 				return harness.fail_result("public event log snapshot should keep value_changes as Array")

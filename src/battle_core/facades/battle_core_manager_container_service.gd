@@ -120,6 +120,10 @@ func run_replay_result(replay_input) -> Dictionary:
 		content_index
 	)
 	var replay_output = internal_replay_output.clone_without_runtime_state()
+	replay_output.event_log = _build_public_replay_event_log(
+		internal_replay_output.event_log,
+		final_battle_state
+	)
 	temp_container.dispose()
 	return BattleCoreManagerContractHelperScript.ok({"replay_output": replay_output, "public_snapshot": public_snapshot})
 
@@ -142,6 +146,12 @@ func _describe_replay_failure(replay_output: ReplayOutput) -> String:
 	if (result_type == "draw" or result_type == "no_winner") and battle_result.winner_side_id != null:
 		return "BattleCoreManager replay returned invalid battle_result"
 	return "BattleCoreManager replay log schema validation failed"
+
+func _build_public_replay_event_log(event_log: Array, final_battle_state: BattleState) -> Array:
+	var public_events: Array = []
+	for log_event in event_log:
+		public_events.append(public_snapshot_builder.build_event_public_snapshot(log_event, final_battle_state))
+	return public_events
 
 func _resolve_final_replay_public_snapshot(internal_replay_output: ReplayOutput, final_battle_state: BattleState, content_index: BattleContentIndex) -> Dictionary:
 	if internal_replay_output != null:

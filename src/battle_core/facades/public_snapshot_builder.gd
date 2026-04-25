@@ -5,8 +5,6 @@ const BattleHeaderSnapshotBuilderScript := preload("res://src/battle_core/turn/b
 const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
 
 const SAFE_EVENT_FIELDS := [
-	"battle_seed",
-	"battle_rng_profile",
 	"log_schema_version",
 	"turn_index",
 	"event_type",
@@ -24,10 +22,6 @@ const SAFE_EVENT_FIELDS := [
 	"action_window_passed",
 	"has_acted",
 	"leave_reason",
-	"speed_tie_roll",
-	"hit_roll",
-	"effect_roll",
-	"rng_stream_index",
 	"select_deadline_ms",
 	"select_timeout",
 	"invalid_battle_code",

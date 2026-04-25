@@ -70,12 +70,18 @@ func _test_log_v3_header_contract(harness) -> Dictionary:
 	var first_enter_index: int = -1
 	for i in range(replay_output.event_log.size()):
 		var ev = replay_output.event_log[i]
-		if int(ev.log_schema_version) != 3:
+		if not (ev is Dictionary):
+			return harness.fail_result("manager replay event_log should expose public Dictionary events")
+		if int(ev.get("log_schema_version", 0)) != 3:
 			return harness.fail_result("log_schema_version should be 3 for all events")
-		if ev.event_type == EventTypesScript.SYSTEM_BATTLE_HEADER:
+		if _helper.contains_runtime_id_leak(ev):
+			return harness.fail_result("manager replay event_log should not expose runtime ids")
+		if ev.has("battle_seed") or ev.has("battle_rng_profile") or ev.has("speed_tie_roll") or ev.has("hit_roll") or ev.has("effect_roll") or ev.has("rng_stream_index"):
+			return harness.fail_result("manager replay event_log should not expose private RNG fields")
+		if String(ev.get("event_type", "")) == EventTypesScript.SYSTEM_BATTLE_HEADER:
 			header_count += 1
 			header_index = i
-		if first_enter_index == -1 and ev.event_type == EventTypesScript.STATE_ENTER:
+		if first_enter_index == -1 and String(ev.get("event_type", "")) == EventTypesScript.STATE_ENTER:
 			first_enter_index = i
 	if header_count != 1:
 		return harness.fail_result("system:battle_header should appear exactly once")
@@ -101,12 +107,12 @@ func _test_header_snapshot_private_id_guard(harness) -> Dictionary:
 		return harness.fail_result("run_replay should return replay_output")
 	var header_event = null
 	for ev in replay_output.event_log:
-		if ev.event_type == EventTypesScript.SYSTEM_BATTLE_HEADER:
+		if ev is Dictionary and String(ev.get("event_type", "")) == EventTypesScript.SYSTEM_BATTLE_HEADER:
 			header_event = ev
 			break
 	if header_event == null:
 		return harness.fail_result("missing system:battle_header event")
-	var header_snapshot = header_event.header_snapshot
+	var header_snapshot = header_event.get("header_snapshot", null)
 	if typeof(header_snapshot) != TYPE_DICTIONARY:
 		return harness.fail_result("header_snapshot should be Dictionary")
 	var required_fields: Array[String] = ["visibility_mode", "prebattle_public_teams", "initial_active_public_ids_by_side", "initial_field"]

@@ -86,8 +86,11 @@ func _test_content_snapshot_cache_manager_black_box_contract(harness) -> Diction
 		return harness.fail_result("content snapshot cache must preserve replay public snapshot semantics")
 	if cached_replay_output.final_state_hash != baseline_replay_output.final_state_hash:
 		return harness.fail_result("content snapshot cache must preserve replay final_state_hash")
-	if _stable_log_array(cached_replay_output.event_log) != _stable_log_array(baseline_replay_output.event_log):
-		return harness.fail_result("content snapshot cache must preserve replay event log semantics")
+	var baseline_replay_event_snapshots = _normalize_public_event_snapshots(
+		_build_public_event_snapshots(baseline_replay_output.event_log, baseline_replay_output.final_battle_state)
+	)
+	if _normalize_public_event_snapshots(cached_replay_output.event_log) != baseline_replay_event_snapshots:
+		return harness.fail_result("content snapshot cache must preserve replay public event log semantics")
 	return harness.pass_result()
 
 func _clone_replay_input(replay_input) -> ReplayInputScript:
@@ -141,9 +144,3 @@ func _normalize_public_event_snapshots(event_snapshots: Array) -> Array:
 			normalized_snapshot["action_id"] = "__normalized_action_id__"
 		normalized_events.append(normalized_snapshot)
 	return normalized_events
-
-func _stable_log_array(event_log: Array) -> Array:
-	var stable_events: Array = []
-	for log_event in event_log:
-		stable_events.append(log_event.to_stable_dict())
-	return stable_events
