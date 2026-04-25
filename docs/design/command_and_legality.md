@@ -72,7 +72,7 @@
 - `once_per_battle=true` 的技能 / 奥义在 battle-scoped 消耗记录命中后，也按 `invalid_command_payload` 处理；该记录属于核心内部运行态，不对外单独暴露。
 - `wait` 允许手动提交；超时自动替代时固定 `command_source = timeout_auto`。
 - `resource_forced_default` 只能由合法性服务产出，不接受外部伪造。
-- `surrender` 立即结束，不进入行动队列。
+- `surrender` 立即结束，不进入行动队列；但仍必须通过 `CommandValidator` 的 side、turn_index、actor 当前 active 校验。
 - 外层输入与回放默认只提交 `actor_public_id / target_public_id`；`CommandValidator` 在选择阶段统一映射到运行时 `actor_id / target_unit_id`。
 - `LegalActionSet` 是 manager/UI/测试 的外层契约，不再公开 bench `unit_instance_id`。
 - 若系统自动动作或内部测试直接提交 `actor_id / target_unit_id`，`CommandValidator` 仍会回填对应 `public_id`，但这不是对外推荐入口。

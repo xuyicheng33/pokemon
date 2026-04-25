@@ -125,8 +125,9 @@
 - 返回 manager envelope：`{ ok, data, error_code, error_message }`。
 - 成功时 `data = { replay_output, public_snapshot }`。
 - 其中 `replay_output` 来自 `ReplayOutput.clone_without_runtime_state()`，`final_battle_state` 必须为 `null`。
+- manager 边界外的 `replay_output.event_log` 固定为公开安全投影，口径与 `get_event_log_snapshot()` 一致；内部 `ReplayRunner` 仍保留完整 `LogEvent` 用于确定性校验和诊断。
 - `replay_output.turn_timeline` 保留为公开可浏览数据；BattleSandbox demo replay 只读浏览态直接消费这份时间线。
-- `public_snapshot` 由回放结束后的最终运行态即时构建，但运行态对象本身不得越过 manager 边界。
+- `public_snapshot` 固定与 `turn_timeline` 最后一帧对齐；运行态对象本身不得越过 manager 边界。
 - 失败时 `data = null`，并返回明确的 `error_code / error_message`。
 
 ### 3.4 deterministic 约束
@@ -137,6 +138,7 @@
 - `final_state_hash` 仍基于内部 `final_battle_state.to_stable_dict()` 计算；对外隐藏运行态对象不影响哈希稳定性。
 - 命令解析允许通过 `actor_public_id/target_public_id` 重新映射运行时实例 ID，避免历史 ID 污染。
 - 回放运行必须持续到战斗结束或回合上限触发（不允许半局成功返回）。
+- 回放结束后，`command_stream` 中不得留下未消费的未来回合命令；存在未消费 turn_index 时按 `invalid_replay_input` 失败。
 - 回放结束后必须校验日志符合 V3 字段完整性（`log_schema_version=3`，存在且仅存在一个 `system:battle_header`，effect 事件带 `trigger_name / cause_event_id`，且 `cause_event_id` 不得等于当前日志事件自身 ID）。
 - `run_replay` 使用临时容器隔离执行，不读写活跃会话池；回放完成后释放临时容器。
 - 按回合浏览时间线固定在“初始化完成后 + 每个完整 turn 结束后”记录 frame，不做按事件逐帧快照。

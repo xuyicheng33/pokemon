@@ -188,6 +188,10 @@
 - `battle_core/contracts/*` 与 runtime 类契约继续保留；只有序列化边界、gate/export 边界和 manager facade 外层结果式继续使用 `Dictionary`。
 - `ReplayOutput` 当前正式新增 `turn_timeline`：初始化完成后固定记录 `turn_index = 0` 的初始 frame，每个完整 turn 结束后固定追加一个 frame，final `public_snapshot` 继续与 timeline 最终 frame 对齐。
 - `BattleSandbox` 的 `MODE_DEMO_REPLAY` 当前固定进入只读回放浏览态：允许浏览上一回合 / 下一回合，固定显示当前 frame 的公开快照与事件片段，replay 模式下禁止手动 action 和 policy 推进。
+- 2026-04-26 起，manager 边界外的 `run_replay().data.replay_output.event_log` 固定改为公开安全投影，和 `get_event_log_snapshot()` 同口径；完整内部 `LogEvent` 只保留在核心 `ReplayRunner` 内部。
+- `run_replay().data.public_snapshot` 固定与 `replay_output.turn_timeline` 最后一帧对齐，不再表述为单独从最终运行态即时重建。
+- 回放命令流必须 fail-fast：战斗结束或回合上限后仍有未消费的 `command_stream` turn_index 时，按 `invalid_replay_input` 失败。
+- 投降保持“即时结束、不进入行动队列”，但必须先通过 `CommandValidator` 的 side、turn_index 与当前 active actor 校验。
 
 ## 5. Sandbox 与研发入口（2026-04-13 起，2026-04-18 更新）
 

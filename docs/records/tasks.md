@@ -479,6 +479,24 @@
   - `bash tests/check_repo_consistency.sh`
   - `bash tests/run_with_gate.sh`
 
+## 最近完成：信息可见性边界修复（2026-04-26）
+
+- 状态：已完成
+- 目标：修复公开事件日志、manager replay 输出、投降命令校验、回放多余命令静默忽略与 replay 文档口径漂移。
+- 范围：
+  1. `get_event_log_snapshot()` 公开投影移除私有 RNG 字段：`battle_seed / battle_rng_profile / speed_tie_roll / hit_roll / effect_roll / rng_stream_index`
+  2. `BattleCoreManager.run_replay()` 返回的 `replay_output.event_log` 改为公开安全投影，内部 `ReplayRunner` 完整日志保留给核心校验
+  3. `surrender` 指令在即时结束前仍走 `CommandValidator` 校验当前 side、turn_index 与 active actor
+  4. `ReplayRunner` 对未消费的未来 turn command fail-fast，返回 `invalid_replay_input`
+  5. `run_replay().data.public_snapshot` 文档改为与 `turn_timeline` 最后一帧对齐
+- 验证：
+  - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/event_log_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manager_replay_header_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_snapshot_cache_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/action_guard_command_payload_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/replay_guard_input_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/replay_determinism_suite.gd bash tests/run_gdunit.sh`
+
 ## 最近完成：formal pair interaction 接入面收窄（2026-04-24）
 
 - 状态：已完成

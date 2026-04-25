@@ -228,6 +228,8 @@
 2. manager 出口禁止暴露 `actor_id / source_instance_id / target_instance_id / killer_id` 与 `value_changes[].entity_id`。
 3. 对外事件快照必须改用公开语义：`actor_public_id / actor_definition_id / target_public_id / target_definition_id / killer_public_id / killer_definition_id`。
 4. 对外 `value_changes` 只允许公开实体标识：`entity_public_id / entity_definition_id / resource_name / before_value / after_value / delta`。
+5. 对外事件快照禁止暴露私有 RNG 字段：`battle_seed / battle_rng_profile / speed_tie_roll / hit_roll / effect_roll / rng_stream_index`。
+6. `BattleCoreManager.run_replay()` 返回的 `replay_output.event_log` 也属于 manager 对外快照，必须使用同一公开安全投影；内部 `ReplayRunner` 的完整日志不直接越过 manager 边界。
 
 ### 5.4 `event_type` 枚举（最小集）
 
