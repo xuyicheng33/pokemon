@@ -87,6 +87,11 @@ func _resolve_fainted_units_and_exit(battle_state: BattleState, content_index: B
 		)
 		if action_on_kill_events_result["invalid_code"] != null:
 			return action_on_kill_events_result["invalid_code"]
+		# on_kill 派发沿用主链 chain_context（含 actor_id），不为 effect 链触发的击杀重写
+		# 链上下文：action 自带的 `effects_on_kill_ids` 只有在“actor_id 自身就是真正的
+		# killer”时才补进 extra_effect_events（见 FaintKillerAttributionService），
+		# effect 链（中毒、反伤、领域 tick 等）造成的致命伤害不归到 effect 源头“计 kill”，
+		# 避免被动伤害冒充主动击杀污染 on_kill 语义。
 		var on_kill_invalid_code = _execute_unit_trigger_batch(
 			"on_kill",
 			battle_state,

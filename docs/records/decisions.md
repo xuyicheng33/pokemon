@@ -11,6 +11,21 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 2026-04-27 模块复审 round 1 文档对齐（Batch A3）
+
+- `forced_command_type = resource_forced_default` 触发条件以 `LegalActionService._finalize_wait_and_forced_default` 为单一真相：
+  - 当 `legal_skill_ids / legal_ultimate_ids / legal_switch_target_public_ids` 全空且 `wait_allowed = false` 时一律注入。
+  - 既覆盖“全部仅因 MP 不足”，也覆盖“被 rule_mod / domain / once_per_battle 完全锁死且无可换人”等所有“无任何主动出口”的情形，不再单独区分阻断原因。
+  - 旧版“仅在‘全部仅因 MP 不足’时给出 forced_command_type”的措辞与代码不一致，按代码（更宽松、更稳健）为准统一改写 `docs/design/command_and_legality.md` 与 `docs/rules/05_items_field_input_and_logging.md`。
+- `effect_dedupe_keys` 在 `PayloadExecutor` 是“单链单实例”去重，不等于链深限制：
+  - dedupe key 由 `_build_dedupe_key` 拼出 `source_instance_id / effect_instance_id / trigger_name / effect_definition_id / owner_id / dedupe_discriminator / target_unit_id / action_segment_index` 八元组，命中后整条 effect 二次入栈直接 `INVALID_CHAIN_DEPTH` fail-fast。
+  - 去重表的生命周期跟随 `chain_context` 自身：主链结束时 `chain_context` 被重置或置 null，dedupe 表随之出栈，`_leave_effect_guard` 不再 erase 任何 key。
+  - 链深守卫由独立的 `chain_depth ≤ max_chain_depth` 负责；两条守卫职责独立，不再在文档里混为一谈。
+  - `docs/design/effect_engine.md` 与 `docs/rules/06_effect_schema_and_extension.md` 同步改写。
+- `FaintResolver` `on_kill` 派发归因到当前主链 `actor_id` 是显式语义：
+  - 只读取 `chain_context.actor_id`，effect 链（中毒、反伤、领域 tick）触发的致命伤害不会回到 effect 源头计 kill。
+  - 这条由 `faint_resolver.gd` 的 docstring 锁住，避免后续被解读成“漏归因”。
+
 ## 2026-04-19 长期工程化定位升级
 
 - 项目定位从"概念/原型期"升级为**长期工程**：底层架构稳定规范是第一优先级，后续会长期加入新机制，基础不稳会直接传导到未来扩展。
@@ -62,6 +77,13 @@
 - `SandboxViewCharacterCardsRenderer` 与 `SandboxViewPresenter` 不再写 `state.error_message`：渲染层只返回 `{"manifest_error_message": ...}` 形式的 render result，由 `BattleSandboxController._render_ui` 决定是否写入 session 状态。后续视图层组件保持同样的"返回 render result"边界。
 - `payload_damage_runtime_service` 在公式分支 owner 丢失时报 `INVALID_STATE_CORRUPTION`，不再静默跳过；`payload_rule_mod_handler._resolve_rule_mod_owner` 区分两种语义：`is_effect_target_valid` 失败属于"target 已离场"的合理跳过；`battle_state.get_unit(owner_id)` 找不到 / "target" scope 缺 `chain_context` 属于内部 corruption，必须 fail-fast。
 - `tests/helpers/manual_battle_full_run.gd` 是 BattleSandbox 唯一 headless 整局入口，所有 smoke / 文档 / suite_profiles 不再引用 `manual_battle_submit_full_run.gd`；`ManualBattleSceneSupport` 收回 context / drive helper 到单文件，外部仍以 `ManualBattleSceneSupport` 作为正式入口。`SampleBattleFactoryFormalAccess._normalize_path` 与 `SampleBattleFactoryBaseSnapshotPathsService.normalize_res_path` 统一调用 `ResourcePathHelper.normalize`，避免重复实现。
+
+### 战斗引擎 actions/math 契约一致性（2026-04-27）
+
+- `HitService.roll_hit` 必中分支也消费一次 `rng_service.next_float()`（结果丢弃），确保 `rng_stream_index` 单调；未来若 `rule_mod` 把命中从 100 改到 95，不再因为多消费一个 `next_float` 引入相同 seed 不同 hash 的回放漂移。`accuracy = 100` 仍视为必中、`hit_roll` 字段在日志中保持 `null`。
+- `HitService.roll_hit` / `ActionHitResolutionService.resolve_hit` 入境处对 `accuracy < 0` 直接 `push_error` + `assert(false)`，附 actor / skill / accuracy 上下文，不做静默 clamp。
+- `CombatTypeService.calc_effectiveness` 的空 `defender_type_ids` 校验前移到内容加载期：`ContentSnapshotUnitValidator._validate_unit_combat_types` 强制每个 unit 至少声明 1 个 `combat_type_id`；运行期一旦 defender_type_ids 为空，service 直接 `push_error` + `assert(false)`，不再静默返回 `1.0`。
+- `DamageService.apply_final_mod` 的 `max(1, ...)` 是显式设计选择（"无属性免疫" + "0 伤地板=1"），未来若想用 `final_mod=0` 模拟 0 伤需明确改这一处；docstring 已锁定该 WHY。
 
 ### Stage 1 composition slot 收缩目标图（2026-04-19 冻结）
 
@@ -268,3 +290,17 @@
 - 查当前仍生效的结构与交付规则：先看本文件，再看 `docs/design/`
 - 查 2026-04-10 到 2026-04-18 这轮完整背景：看 `docs/records/archive/decisions_2026-04-10_to_2026-04-18_refactor_wave.md`
 - 查更早 repair wave 或 v0.6.3/v0.6.4 背景：看对应历史 archive
+
+## 2026-04-27 Batch A1：effect/log 契约 + apply_field 时序
+
+- `LogEventBuilder.build_event` 对 `event_type` 以 `effect:` 开头时强校验 `payload.cause_event_id` 必须存在且非空：
+  - 缺失即 `push_error` + `assert(false)` + 走 `_fail` 回到 INVALID_STATE_CORRUPTION，battle 立即收尾。
+  - 决策原因：所有 `effect:*` 写入必须经 `build_effect_event(event_type, battle_state, cause_event_id, payload)` 路径；旧的“在 payload 里塞 cause_event_id 直接调 build_event”绕过点全部收紧，不留 shim。
+- `apply_field` 时序：先 `build_effect_event(EFFECT_APPLY_FIELD)` 落地日志，再用其 `event_id`（chain:step 形式）作为 `field_apply` 子 batch 的 cause anchor：
+  - 实现方式：`field_apply_effect_runner.execute_field_effects` 增加 `cause_event_id_override` 参数；命中时直接覆写子 batch `effect_event.event_id`，让既有 payload handler 自然把 cause 指向 apply_field 日志。
+  - 副作用：失败回滚不再撤掉 apply_field 日志（fail-fast 直接终结战斗，留下日志反而便于排查）；`field_lifecycle_contract_suite._test_field_apply_failure_does_not_commit_field` 删掉“失败时禁止出现 EFFECT_APPLY_FIELD”这条断言，保留 invalid_code + field_state 不落地两条更本质的断言。
+- `EffectQueueService.sort_events` 排序键改为 `priority desc → source_order_speed_snapshot desc → source_kind_order asc → source_instance_id asc → sort_random_roll asc → event_id asc`，与 `docs/design/effect_engine.md` 第 51 行对齐：
+  - 分组键同步加入 `source_instance_id`，只有同一 source 内才滚 `sort_random_roll`，跨 source 直接走 id 决胜。
+  - `effect_queue_service_suite` 拆成两条：cross-source 走 source_instance_id 决胜（不滚 random），same-source 走 random 决胜。
+- `FieldState.to_stable_dict` 追加 `pending_success_*` 全部字段（含 `pending_success_chain_context` 序列化为稳定 dict），保证 replay 哈希在 `defer_field_apply_success` 路径下仍可复现。
+- `replacement_service` 抽出 `ReplacementChangeSet`（`collect_changes` 收集回滚态、`apply_change_set` 原子还原），把 `event_log.resize` 直接截断封装进 helper；`_snapshot_replacement_runtime` / `_restore_replacement_runtime` 整段删除，无兼容 shim。

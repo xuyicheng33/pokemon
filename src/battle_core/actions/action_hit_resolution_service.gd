@@ -34,6 +34,13 @@ func resolve_hit(command: Command, skill_definition, resolved_target, battle_sta
 	if incoming_accuracy_result.get("invalid_battle_code", null) != null:
 		return incoming_accuracy_result
 	resolved_accuracy = int(incoming_accuracy_result.get("accuracy", resolved_accuracy))
+	if resolved_accuracy < 0:
+		push_error("ActionHitResolutionService.resolve_hit: accuracy must be >= 0; actor=%s skill=%s accuracy=%d" % [
+			String(command.actor_id),
+			String(skill_definition.id) if skill_definition != null else "<null>",
+			resolved_accuracy,
+		])
+		assert(false, "ActionHitResolutionService resolved_accuracy < 0")
 	var hit_info: Dictionary = _roll_hit_result(resolved_accuracy)
 	battle_state.rng_stream_index = rng_service.get_stream_index()
 	return hit_info

@@ -301,9 +301,9 @@
 |---|---|
 |`event_chain_id`|每次独立结算链都要建立|
 |`chain_origin`|固定为 `battle_init / action / turn_start / turn_end / system_replace` 之一|
-|去重键|同一链路内使用 `source_instance_id + trigger + event_id`|
-|链深限制|使用可配置项 `max_chain_depth`|
-|fail-fast|链深超限、非法实例、去重保护命中时立即报错|
+|去重键|按“单链单实例”语义构造：同一条主链中，每个 effect_event 由 `source_instance_id / effect_instance_id / trigger_name / effect_definition_id / owner_id / dedupe_discriminator / target_unit_id / action_segment_index` 一起拼成 dedupe key，命中即拒绝二次进入；去重表生命周期跟随 `chain_context`，主链结束时一并出栈，无需显式清理|
+|链深限制|独立守卫 `chain_depth ≤ max_chain_depth`；与去重键各自独立，不能等同看待|
+|fail-fast|链深超限、非法实例、去重保护命中（`INVALID_CHAIN_DEPTH`）时立即报错|
 |终止语义|进入 `invalid_battle` 后，本场立即结束并记为 `no_winner`|
 
 补充规则：

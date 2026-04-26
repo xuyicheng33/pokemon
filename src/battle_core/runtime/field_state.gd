@@ -72,6 +72,9 @@ func to_stable_dict() -> Dictionary:
 			"stat_name": key_parts[1] if key_parts.size() > 1 else "",
 			"delta": int(reversible_stat_mod_totals.get(entry_key, 0)),
 		})
+	var pending_chain_context_dict: Variant = null
+	if pending_success_chain_context != null:
+		pending_chain_context_dict = _chain_context_to_stable_dict(pending_success_chain_context)
 	return {
 		"field_def_id": field_def_id,
 		"instance_id": instance_id,
@@ -81,4 +84,41 @@ func to_stable_dict() -> Dictionary:
 		"source_kind_order": source_kind_order,
 		"source_order_speed_snapshot": source_order_speed_snapshot,
 		"reversible_stat_mod_totals": reversible_entries,
+		"pending_success_chain_context": pending_chain_context_dict,
+		"pending_success_effect_ids": Array(pending_success_effect_ids),
+		"pending_success_source_instance_id": pending_success_source_instance_id,
+		"pending_success_source_kind_order": pending_success_source_kind_order,
+		"pending_success_source_order_speed_snapshot": pending_success_source_order_speed_snapshot,
+	}
+
+func _chain_context_to_stable_dict(chain_context: ChainContext) -> Dictionary:
+	var dedupe_entries: Array = []
+	var dedupe_keys: Array = chain_context.effect_dedupe_keys.keys()
+	dedupe_keys.sort()
+	for dedupe_key in dedupe_keys:
+		dedupe_entries.append({
+			"key": String(dedupe_key),
+			"value": chain_context.effect_dedupe_keys[dedupe_key],
+		})
+	return {
+		"action_actor_id": chain_context.action_actor_id,
+		"action_combat_type_id": chain_context.action_combat_type_id,
+		"action_queue_index": chain_context.action_queue_index,
+		"action_segment_index": chain_context.action_segment_index,
+		"action_segment_total": chain_context.action_segment_total,
+		"actor_id": chain_context.actor_id,
+		"chain_depth": chain_context.chain_depth,
+		"chain_origin": chain_context.chain_origin,
+		"command_source": chain_context.command_source,
+		"command_type": chain_context.command_type,
+		"defer_field_apply_success": chain_context.defer_field_apply_success,
+		"effect_dedupe_keys": dedupe_entries,
+		"event_chain_id": chain_context.event_chain_id,
+		"root_action_id": chain_context.root_action_id,
+		"select_deadline_ms": chain_context.select_deadline_ms,
+		"select_timeout": chain_context.select_timeout,
+		"skill_id": chain_context.skill_id,
+		"step_counter": chain_context.step_counter,
+		"target_slot": chain_context.target_slot,
+		"target_unit_id": chain_context.target_unit_id,
 	}

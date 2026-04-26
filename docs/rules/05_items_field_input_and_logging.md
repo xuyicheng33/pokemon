@@ -147,7 +147,7 @@
 |候选技能池|当前不进入公开快照|
 |合法性职责|引擎先完成合法性判断：要么给出可选的技能 / 手动换人 / 奥义列表，要么直接替代为默认动作|
 |强制动作注入职责|`forced_command_type` 只由合法性层给出，`TurnSelectionResolver` 统一注入 `resource_forced_default`|
-|空列表处理|若技能、手动换人、奥义都不合法：仅在“全部仅因 MP 不足”时强制 `resource_forced_default`；存在任一非 MP 阻断时允许 `wait`|
+|空列表处理|若技能、手动换人、奥义都不合法：存在任一非 MP 阻断（rule_mod / domain / once_per_battle）时允许 `wait`；否则——即没有任何合法主动出口且 `wait_allowed = false`——一律强制 `resource_forced_default`，不再单独区分阻断原因（含“全部仅因 MP 不足”与“被 rule_mod 完全锁死且无可换人”等情形）|
 |超时处理|当前只保留 `timeout_auto -> wait` 与引擎侧 `resource_forced_default` 注入语义|
 
 补充规则：

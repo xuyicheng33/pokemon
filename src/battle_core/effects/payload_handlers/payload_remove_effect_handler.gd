@@ -61,15 +61,15 @@ func execute(payload, effect_definition, effect_event: EffectEvent, battle_state
 		var removed_instances: Array = effect_instance_service.remove_all_instances(target_unit.unit_instance_id, payload.effect_definition_id, battle_state)
 		if removed_instances.is_empty():
 			return
-		battle_logger.append_event(log_event_builder.build_event(
+		battle_logger.append_event(log_event_builder.build_effect_event(
 			EventTypesScript.EFFECT_REMOVE_EFFECT,
 			battle_state,
+			String(effect_event.event_id),
 			{
 				"source_instance_id": effect_event.source_instance_id,
 				"target_instance_id": target_unit.unit_instance_id,
 				"priority": effect_event.priority,
 				"trigger_name": effect_event.trigger_name,
-				"cause_event_id": effect_event.event_id,
 				"effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
 				"payload_summary": "remove all effect %s x%d" % [payload.effect_definition_id, removed_instances.size()],
 			}
@@ -79,15 +79,15 @@ func execute(payload, effect_definition, effect_event: EffectEvent, battle_state
 	if removed_instance == null:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_REMOVE_AMBIGUOUS
 		return
-	battle_logger.append_event(log_event_builder.build_event(
+	battle_logger.append_event(log_event_builder.build_effect_event(
 		EventTypesScript.EFFECT_REMOVE_EFFECT,
 		battle_state,
+		String(effect_event.event_id),
 		{
 			"source_instance_id": effect_event.source_instance_id,
 			"target_instance_id": target_unit.unit_instance_id,
 			"priority": effect_event.priority,
 			"trigger_name": effect_event.trigger_name,
-			"cause_event_id": effect_event.event_id,
 			"effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
 			"payload_summary": "remove effect %s" % payload.effect_definition_id,
 		}

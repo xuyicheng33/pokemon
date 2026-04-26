@@ -77,15 +77,15 @@ func execute(payload, effect_definition, effect_event: EffectEvent, battle_state
 		return
 	if effect_instance_service.last_apply_skipped:
 		return
-	battle_logger.append_event(log_event_builder.build_event(
+	battle_logger.append_event(log_event_builder.build_effect_event(
 		EventTypesScript.EFFECT_APPLY_EFFECT,
 		battle_state,
+		String(effect_event.event_id),
 		{
 			"source_instance_id": effect_event.source_instance_id,
 			"target_instance_id": target_unit.unit_instance_id,
 			"priority": effect_event.priority,
 			"trigger_name": effect_event.trigger_name,
-			"cause_event_id": effect_event.event_id,
 			"effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
 			"payload_summary": "apply effect %s (%s)" % [payload.effect_definition_id, created_instance.instance_id],
 		}

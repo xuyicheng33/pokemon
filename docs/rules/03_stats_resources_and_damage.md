@@ -166,7 +166,7 @@
 |命中来源|先取技能自身 `accuracy`，再按当前已接线读取点修正|
 |内部换算|`hit_rate = clamp(accuracy / 100, 0, 1)`|
 |判定方式|抽 `hit_roll`；若 `hit_roll < hit_rate` 则命中|
-|`accuracy = 100`|视为必中，不需要再判 miss|
+|`accuracy = 100`|视为必中，不需要再判 miss；但仍消费一个 `hit_roll`（结果丢弃），确保 `rng_stream_index` 单调|
 |闪避率|当前没有该属性|
 |field 命中覆盖|若当前 field 的 `creator_accuracy_override >= 0`，且行动者正是该 field creator，则本次命中直接改用这个覆盖值|
 |目标侧命中干扰|若 `resolved_accuracy < 100`，且本次是敌方来袭 `skill / ultimate`、`targeting = enemy_active_slot`、目标为敌方 active，则再读取目标侧 `incoming_accuracy`，整轮结束后 clamp 到 `0..99`|

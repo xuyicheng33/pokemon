@@ -58,20 +58,24 @@ func log_field_blocked_by_active_domain(before_field, payload, effect_event: Eff
 		}
 	))
 
-func log_apply_field(before_field, field_state, effect_event: EffectEvent, battle_state: BattleState) -> void:
-	battle_logger.append_event(log_event_builder.build_event(
+func log_apply_field(before_field, field_state, effect_event: EffectEvent, battle_state: BattleState) -> String:
+	var log_event = log_event_builder.build_effect_event(
 		EventTypesScript.EFFECT_APPLY_FIELD,
 		battle_state,
+		String(effect_event.event_id),
 		{
 			"source_instance_id": effect_event.source_instance_id,
 			"priority": effect_event.priority,
 			"trigger_name": effect_event.trigger_name,
-			"cause_event_id": effect_event.event_id,
 			"effect_roll": effect_event.sort_random_roll,
 			"field_change": _build_apply_field_change(before_field, field_state),
 			"payload_summary": "field -> %s" % field_state.field_def_id,
 		}
-	))
+	)
+	if log_event == null:
+		return ""
+	battle_logger.append_event(log_event)
+	return log_event_builder.resolve_event_id(log_event)
 
 func _build_apply_field_change(before_field, field_state) -> Variant:
 	var field_change = FieldChangeScript.new()

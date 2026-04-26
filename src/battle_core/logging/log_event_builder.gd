@@ -14,6 +14,13 @@ func error_state() -> Dictionary:
 
 func build_event(event_type: String, battle_state: BattleState, payload: Dictionary = {}) -> Variant:
 	_clear_error()
+	if event_type.begins_with("effect:"):
+		var raw_cause_event_id = payload.get("cause_event_id", null)
+		if raw_cause_event_id == null or String(raw_cause_event_id).strip_edges().is_empty():
+			var contract_message := "LogEventBuilder.build_event refuses effect:* without cause_event_id; use build_effect_event for %s" % event_type
+			push_error(contract_message)
+			assert(false, contract_message)
+			return _fail(contract_message, battle_state)
 	if battle_state == null:
 		return _fail("LogEventBuilder.build_event requires battle_state")
 	var chain_context = battle_state.chain_context

@@ -36,7 +36,8 @@ func execute_field_effects(
 	battle_state: BattleState,
 	content_index: BattleContentIndex,
 	chain_context: ChainContext,
-	execute_trigger_batch: Callable = Callable()
+	execute_trigger_batch: Callable = Callable(),
+	cause_event_id_override: String = ""
 ) -> Variant:
 	var field_definition = field_service.get_field_definition_for_state(field_state, content_index)
 	if field_definition == null:
@@ -59,6 +60,9 @@ func execute_field_effects(
 	var effect_events: Array = effect_result.get("events", [])
 	if effect_events.is_empty():
 		return null
+	if not cause_event_id_override.is_empty():
+		for effect_event in effect_events:
+			effect_event.event_id = cause_event_id_override
 	if not execute_trigger_batch.is_valid():
 		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
 		return ErrorCodesScript.INVALID_STATE_CORRUPTION

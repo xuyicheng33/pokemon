@@ -22,6 +22,8 @@ func _validate_unit_ultimate_config(errors: Array, unit_id: String, unit_definit
 		errors.append("unit[%s].ultimate_points_cap must be >= ultimate_points_required" % unit_id)
 
 func _validate_unit_combat_types(content_index: BattleContentIndex, errors: Array, unit_id: String, unit_definition) -> void:
+	if unit_definition.combat_type_ids.is_empty():
+		errors.append("unit[%s].combat_type_ids must contain at least 1 entry" % unit_id)
 	if unit_definition.combat_type_ids.size() > 2:
 		errors.append("unit[%s].combat_type_ids must contain at most 2 entries, got %d" % [unit_id, unit_definition.combat_type_ids.size()])
 	var seen_unit_types: Dictionary = {}

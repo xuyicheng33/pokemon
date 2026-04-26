@@ -134,8 +134,6 @@ func _test_combat_type_chart_math(harness) -> Dictionary:
 		return harness.fail_result("fire -> poison should be 2.0")
 	if not is_equal_approx(service.calc_effectiveness("", PackedStringArray(["wood"])), 1.0):
 		return harness.fail_result("empty skill type should be neutral")
-	if not is_equal_approx(service.calc_effectiveness("fire", PackedStringArray()), 1.0):
-		return harness.fail_result("empty defender type should be neutral")
 	return harness.pass_result()
 
 func _validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:

@@ -145,15 +145,15 @@ func _apply_hp_change(battle_state: BattleState, effect_event: EffectEvent, targ
 	if before_value == target_unit.current_hp:
 		return
 	var value_change = _build_value_change(target_unit.unit_instance_id, "hp", before_value, target_unit.current_hp)
-	var log_event = log_event_builder.build_event(
+	var log_event = log_event_builder.build_effect_event(
 		event_type,
 		battle_state,
+		String(effect_event.event_id),
 		{
 			"source_instance_id": effect_event.source_instance_id,
 			"target_instance_id": target_unit.unit_instance_id,
 			"priority": effect_event.priority,
 			"trigger_name": effect_event.trigger_name,
-			"cause_event_id": effect_event.event_id,
 			"effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
 			"type_effectiveness": type_effectiveness if is_damage_event else null,
 			"value_changes": [value_change],

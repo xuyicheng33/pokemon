@@ -101,13 +101,19 @@ func apply_field(
 		var field_invalid_code = field_apply_effect_runner.invalid_battle_code()
 		return field_invalid_code if field_invalid_code != null else ErrorCodesScript.INVALID_STATE_CORRUPTION
 	battle_state.field_state = field_state
+	var apply_field_log_event_id: String = field_apply_log_service.log_apply_field(before_field, field_state, effect_event, battle_state)
+	if apply_field_log_event_id.is_empty():
+		battle_state.field_state = before_field
+		battle_state.field_rule_mod_instances = before_field_rule_mod_instances
+		return ErrorCodesScript.INVALID_STATE_CORRUPTION
 	var field_apply_invalid_code = field_apply_effect_runner.execute_field_effects(
 		"field_apply",
 		field_state,
 		battle_state,
 		content_index,
 		effect_event.chain_context,
-		execute_trigger_batch
+		execute_trigger_batch,
+		apply_field_log_event_id
 	)
 	if field_apply_invalid_code != null:
 		battle_state.field_state = before_field
@@ -115,7 +121,6 @@ func apply_field(
 		return field_apply_invalid_code
 	if _should_defer_success_effects(challenger_field_definition, payload, effect_event):
 		field_apply_effect_runner.defer_success_effects(field_state, payload.on_success_effect_ids, effect_event)
-		field_apply_log_service.log_apply_field(before_field, field_state, effect_event, battle_state)
 		return null
 	var success_invalid_code = field_apply_effect_runner.execute_success_effects(
 		payload.on_success_effect_ids,
@@ -128,7 +133,6 @@ func apply_field(
 		battle_state.field_state = before_field
 		battle_state.field_rule_mod_instances = before_field_rule_mod_instances
 		return success_invalid_code
-	field_apply_log_service.log_apply_field(before_field, field_state, effect_event, battle_state)
 	return null
 
 func _should_defer_success_effects(field_definition, payload, effect_event: EffectEvent) -> bool:

@@ -117,6 +117,10 @@ func _record_result_or_fail(result: Dictionary) -> bool:
 	ErrorStateHelperScript.capture_envelope(self, result, ErrorCodesScript.INVALID_STATE_CORRUPTION)
 	return false
 
+# 触发条件以本函数为单一真相：当不存在任何合法主动出口（skill / ultimate / switch
+# 三个集合全空）且也没有非 MP 阻断撑起 wait 时，统一注入 resource_forced_default。
+# 既覆盖“仅 MP 不足”，也覆盖“被 rule_mod / domain / once_per_battle 完全锁死且无可
+# 换人”等所有“无任何主动出口”的情形，不再按阻断原因二次分类。
 func _finalize_wait_and_forced_default(
 	legal_action_set,
 	has_any_skill_or_ultimate_option: bool,

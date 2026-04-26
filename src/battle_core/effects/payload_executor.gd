@@ -121,10 +121,12 @@ func _enter_effect_guard(effect_event: EffectEvent, battle_state: BattleState) -
 		return false
 	return true
 
-# Dedupe keys are intentionally kept for the entire action segment lifetime.
-# The key includes trigger_name, so the same effect under different triggers
-# produces distinct keys and won't be blocked. Only identical
-# (effect + trigger + segment) combinations are prevented from re-entering.
+# `effect_dedupe_keys` 实现的是“单链单实例”去重，不是链深限制：同一条主链中，每个完整
+# dedupe key（source_instance_id / effect_instance_id / trigger_name / effect_definition_id /
+# owner_id / dedupe_discriminator / target_unit_id / action_segment_index）只允许进入一次。
+# 去重表的生命周期与 `chain_context` 绑定——主链结束时 `chain_context` 被重置或置 null，
+# 去重表随之出栈，因此 `_leave_effect_guard` 不需要显式 erase 任何 key；只回退 `chain_depth`。
+# 链深限制由 `chain_depth ≤ max_chain_depth` 单独守卫，不要把这两条混成一回事。
 func _leave_effect_guard(battle_state: BattleState) -> void:
 	if battle_state.chain_context == null:
 		return

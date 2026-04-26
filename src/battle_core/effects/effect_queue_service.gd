@@ -5,10 +5,11 @@ func sort_events(effect_events: Array, rng_service: RngService) -> Array:
 	assert(rng_service != null, "EffectQueueService.rng_service is required")
 	var grouped_events: Dictionary = {}
 	for effect_event in effect_events:
-		var group_key: String = "%d|%d|%d" % [
+		var group_key: String = "%d|%d|%d|%s" % [
 			effect_event.priority,
 			effect_event.source_order_speed_snapshot,
 			effect_event.source_kind_order,
+			effect_event.source_instance_id,
 		]
 		if not grouped_events.has(group_key):
 			grouped_events[group_key] = []
@@ -30,8 +31,8 @@ func _sort_effect_events(left, right) -> bool:
 		return left.source_order_speed_snapshot > right.source_order_speed_snapshot
 	if left.source_kind_order != right.source_kind_order:
 		return left.source_kind_order < right.source_kind_order
-	if left.sort_random_roll != null and right.sort_random_roll != null and left.sort_random_roll != right.sort_random_roll:
-		return left.sort_random_roll < right.sort_random_roll
 	if left.source_instance_id != right.source_instance_id:
 		return left.source_instance_id < right.source_instance_id
+	if left.sort_random_roll != null and right.sort_random_roll != null and left.sort_random_roll != right.sort_random_roll:
+		return left.sort_random_roll < right.sort_random_roll
 	return left.event_id < right.event_id

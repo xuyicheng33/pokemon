@@ -12,7 +12,11 @@ func build_chart(chart_entries: Array) -> void:
 		_chart[key] = float(entry.mul)
 
 func calc_effectiveness(skill_type_id: String, defender_type_ids: PackedStringArray) -> float:
-	if skill_type_id.is_empty() or defender_type_ids.is_empty():
+	if defender_type_ids.is_empty():
+		push_error("CombatTypeService.calc_effectiveness: defender_type_ids must not be empty (skill_type_id=%s); enforce at content load time" % skill_type_id)
+		assert(false, "CombatTypeService defender_type_ids empty at runtime")
+		return 1.0
+	if skill_type_id.is_empty():
 		return 1.0
 	var result: float = 1.0
 	for defender_type_id in defender_type_ids:

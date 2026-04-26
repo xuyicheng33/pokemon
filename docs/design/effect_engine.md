@@ -74,6 +74,11 @@
   - effect dedupe / chain depth / missing dependency hard-stop
   - 调用 `EffectPreconditionService`
   - 按 `PayloadHandlerRegistry` 分派到单 payload handler
+- `effect_dedupe_keys` 当前是“单链单实例”去重，不是链深限制：
+  - 去重粒度由 `_build_dedupe_key` 决定，覆盖 `source_instance_id / effect_instance_id / trigger_name / effect_definition_id / owner_id / dedupe_discriminator / target_unit_id / action_segment_index`。
+  - 同一条主链中，同一组 key 命中的 effect_event 只允许进 `_enter_effect_guard` 一次；二次进入直接 `INVALID_CHAIN_DEPTH` fail-fast。
+  - 去重表的生命周期就是 `chain_context` 自身：主链结束时 `chain_context` 被重置或置 null，`effect_dedupe_keys` 一并出栈，不需要在 `_leave_effect_guard` 显式 erase。
+  - 链深限制是独立的 `chain_depth ≤ max_chain_depth` 守卫；两条守卫各管各，不能混淆。
 - registry 当前固定一对一路由：
   - `damage -> PayloadDamageHandler`
   - `heal -> PayloadHealHandler`

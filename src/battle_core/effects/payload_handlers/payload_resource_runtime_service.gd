@@ -107,15 +107,15 @@ func _apply_resource_like_change(battle_state: BattleState, effect_event: Effect
 		return
 	_write_resource_value(target_unit, resource_name, after_value)
 	var value_change = _build_value_change(target_unit.unit_instance_id, resource_name, before_value, after_value)
-	battle_logger.append_event(log_event_builder.build_event(
+	battle_logger.append_event(log_event_builder.build_effect_event(
 		event_type,
 		battle_state,
+		String(effect_event.event_id),
 		{
 			"source_instance_id": effect_event.source_instance_id,
 			"target_instance_id": target_unit.unit_instance_id,
 			"priority": effect_event.priority,
 			"trigger_name": effect_event.trigger_name,
-			"cause_event_id": effect_event.event_id,
 			"effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
 			"value_changes": [value_change],
 			"payload_summary": "%s %s %+d" % [target_unit.public_id, summary_tag, value_change.delta],

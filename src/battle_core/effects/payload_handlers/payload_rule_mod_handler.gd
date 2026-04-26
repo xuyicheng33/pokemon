@@ -84,15 +84,15 @@ func execute(payload, _effect_definition, effect_event: EffectEvent, battle_stat
 		return
 	if rule_mod_service.last_apply_skipped:
 		return
-	battle_logger.append_event(log_event_builder.build_event(
+	battle_logger.append_event(log_event_builder.build_effect_event(
 		EventTypesScript.EFFECT_RULE_MOD_APPLY,
 		battle_state,
+		String(effect_event.event_id),
 		{
 			"source_instance_id": effect_event.source_instance_id,
 			"target_instance_id": owner_ref["id"],
 			"priority": effect_event.priority,
 			"trigger_name": effect_event.trigger_name,
-			"cause_event_id": effect_event.event_id,
 			"effect_roll": effect_event_helper.resolve_effect_roll(effect_event),
 			"payload_summary": "rule mod %s (%s)" % [created_instance.mod_kind, created_instance.instance_id],
 		}

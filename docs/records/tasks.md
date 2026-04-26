@@ -13,6 +13,8 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+- Batch A3: forced_command 对齐 + faint/dedupe 文档化
+
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 
 - 状态：已完成
@@ -701,6 +703,8 @@
   3. `replay_runner_execution_context_builder.gd` — `build_context` 的 5 个参数全部补显式类型（`ReplayInput / ContentSnapshotCache / IdFactory / RngService / BattleInitializer`）
 - 验证：`bash tests/run_with_gate.sh` 全通过
 
+- Batch A2: hit RNG 一致性 + 入境约束 + 加载期校验
+
 ## 当前验证基线
 
 - 最小可玩性检查：
@@ -743,3 +747,6 @@
   - `bash tests/check_suite_reachability.sh && bash tests/check_architecture_constraints.sh`
   - `bash tests/check_repo_consistency.sh` 当前受本机 Godot 日志轮转崩溃影响未完成；前置 uid / surface gate 已通过
   - `git push origin main` 当前受网络 DNS/SSH 解析失败阻断：`Could not resolve hostname github.com`
+
+
+Batch A1: effect/log 契约 + apply_field 时序

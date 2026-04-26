@@ -59,7 +59,7 @@
   - 若技能或奥义声明 `SkillDefinition.once_per_battle=true`，合法性必须额外读取 battle-scoped 消耗记录；同一单位本场消耗后不再放出第二次。
   - 计算所有合法主动方案，并区分“MP 不足”与“非 MP 阻断”。
   - 当存在合法主动方案或存在非 MP 阻断时，允许 `wait`。
-  - 仅在“无合法主动方案且全部仅因 MP 不足”时给出 `forced_command_type`。
+  - `forced_command_type = resource_forced_default` 的触发条件统一为：`legal_skill_ids / legal_ultimate_ids / legal_switch_target_public_ids` 全部为空且 `wait_allowed = false`，即“当前没有任何合法主动技能 / 奥义、没有可换人，且非 MP 阻断也未撑起 wait”。这覆盖“仅 MP 不足”与“被 rule_mod / domain / once_per_battle 完全锁死且无可换人”等所有无任何主动出口的情形，不再单独区分阻断原因。
 - `CommandBuilder`
   - 只做结构化，不做规则判断。
 - `CommandValidator`

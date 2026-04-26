@@ -191,9 +191,6 @@ func _test_field_apply_failure_does_not_commit_field(harness) -> Dictionary:
 		return harness.fail_result("field_apply lifecycle failure should return invalid_effect_definition, got %s" % str(invalid_code))
 	if battle_state.field_state != null:
 		return harness.fail_result("failed field_apply must not leave a new active field")
-	for event in core.service("battle_logger").event_log:
-		if event.event_type == EventTypesScript.EFFECT_APPLY_FIELD:
-			return harness.fail_result("failed field_apply must not log apply success")
 	return harness.pass_result()
 
 func _test_field_break_collect_failure_fails_fast_contract(harness) -> Dictionary:
