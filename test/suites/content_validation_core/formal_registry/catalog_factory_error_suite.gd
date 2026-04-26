@@ -1,5 +1,7 @@
 extends "res://test/suites/content_validation_core/formal_registry/shared.gd"
 
+const MISSING_FORMAL_MATCHUP_CATALOG_PATH := "res://tests/fixtures/missing_formal_matchup_catalog.json"
+
 
 
 func test_sample_battle_factory_result_error_contract() -> void:
@@ -7,6 +9,9 @@ func test_sample_battle_factory_result_error_contract() -> void:
 
 func test_formal_setup_matchup_id_baseline_collision_fails_fast() -> void:
 	_assert_legacy_result(_test_formal_setup_matchup_id_baseline_collision_fails_fast(_harness))
+
+func test_build_setup_by_matchup_id_surfaces_formal_catalog_load_failure() -> void:
+	_assert_legacy_result(_test_build_setup_by_matchup_id_surfaces_formal_catalog_load_failure(_harness))
 
 func _test_sample_battle_factory_result_error_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
@@ -60,4 +65,19 @@ func _test_formal_setup_matchup_id_baseline_collision_fails_fast(harness) -> Dic
 	var error_message := String(setup_result.get("error_message", ""))
 	if error_message.find("collides with baseline matchup_id") == -1:
 		return harness.fail_result("baseline collision error should be explicit, got: %s" % error_message)
+	return harness.pass_result()
+
+func _test_build_setup_by_matchup_id_surfaces_formal_catalog_load_failure(harness) -> Dictionary:
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	sample_factory.configure_matchup_catalog_path_override(MISSING_FORMAL_MATCHUP_CATALOG_PATH)
+	var setup_result: Dictionary = sample_factory.build_setup_by_matchup_id_result("gojo_vs_sukuna")
+	if bool(setup_result.get("ok", true)):
+		return harness.fail_result("formal matchup lookup should fail when formal catalog cannot load")
+	if String(setup_result.get("error_code", "")) != ErrorCodesScript.INVALID_BATTLE_SETUP:
+		return harness.fail_result("formal matchup lookup failure should report invalid_battle_setup")
+	var error_message := String(setup_result.get("error_message", ""))
+	if error_message.find("failed to load formal matchup catalog") == -1:
+		return harness.fail_result("formal matchup lookup failure should preserve catalog load context, got: %s" % error_message)
 	return harness.pass_result()

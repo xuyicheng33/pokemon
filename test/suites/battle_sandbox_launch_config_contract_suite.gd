@@ -3,6 +3,23 @@ extends GdUnitTestSuite
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_factory.gd")
+const SandboxSessionStateScript := preload("res://src/adapters/sandbox_session_state.gd")
+
+const MISSING_FORMAL_MATCHUP_CATALOG_PATH := "res://tests/fixtures/missing_formal_matchup_catalog.json"
+
+class BootstrapServiceProbe:
+	extends "res://src/adapters/sandbox_session_bootstrap_service.gd"
+
+	var sample_factory_override = null
+	var load_available_matchups_calls: int = 0
+
+	func _compose_dependencies(state) -> String:
+		state.sample_factory = sample_factory_override
+		return ""
+
+	func _load_available_matchups(state) -> String:
+		load_available_matchups_calls += 1
+		return super._load_available_matchups(state)
 
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 var _manifest = FormalCharacterManifestScript.new()
@@ -68,6 +85,35 @@ func test_launch_config_strict_invalid_config_contract() -> void:
 	assert_str(error_message).contains("unknown sandbox matchup_id")
 	assert_str(error_message).contains("invalid sandbox battle_seed")
 	assert_str(error_message).contains("invalid sandbox control mode")
+
+func test_launch_config_strict_demo_replay_ignores_matchup_id_contract() -> void:
+	var result: Dictionary = _launch_config_helper.normalize_config_result({
+		"mode": BattleSandboxLaunchConfigScript.MODE_DEMO_REPLAY,
+		"demo_profile_id": "legacy",
+		"matchup_id": "missing_matchup",
+	}, [], true)
+	assert_bool(bool(result.get("ok", false))).is_true()
+	assert_str(String(result.get("data", {}).get("mode", ""))).is_equal(BattleSandboxLaunchConfigScript.MODE_DEMO_REPLAY)
+	assert_str(String(result.get("error_message", ""))).is_empty()
+
+func test_bootstrap_demo_replay_skips_available_matchup_preload_contract() -> void:
+	var sample_factory = SampleBattleFactoryScript.new()
+	assert_object(sample_factory).is_not_null()
+	sample_factory.configure_matchup_catalog_path_override(MISSING_FORMAL_MATCHUP_CATALOG_PATH)
+	var bootstrap_service = BootstrapServiceProbe.new()
+	bootstrap_service.launch_config_helper = BattleSandboxLaunchConfigScript.new()
+	bootstrap_service.sample_factory_override = sample_factory
+	var state = SandboxSessionStateScript.new()
+	var prepare_error: String = bootstrap_service.prepare_scene(state, {
+		"mode": BattleSandboxLaunchConfigScript.MODE_DEMO_REPLAY,
+		"demo_profile_id": "legacy",
+		BattleSandboxLaunchConfigScript.STRICT_CONFIG_KEY: true,
+	})
+	assert_str(prepare_error).is_empty()
+	assert_bool(state.is_demo_mode).is_true()
+	assert_str(String(state.demo_profile)).is_equal("legacy")
+	assert_int(bootstrap_service.load_available_matchups_calls).is_equal(0)
+	sample_factory.dispose()
 
 func test_launch_config_visible_matchup_recommended_order_contract() -> void:
 	var visible_matchups: Array = _launch_config_helper.visible_matchup_descriptors(_available_matchups())

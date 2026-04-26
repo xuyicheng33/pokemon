@@ -84,7 +84,10 @@ func normalize_config_result(raw_config: Dictionary, available_matchups: Array =
 			errors.append("invalid sandbox mode: %s" % mode)
 		mode = MODE_MANUAL_MATCHUP
 	var matchup_id := str(normalized.get("matchup_id", fallback_matchup_id)).strip_edges()
-	if matchup_id.is_empty() or not allowed_matchups.has(matchup_id):
+	if mode == MODE_DEMO_REPLAY:
+		if matchup_id.is_empty():
+			matchup_id = fallback_matchup_id
+	elif matchup_id.is_empty() or not allowed_matchups.has(matchup_id):
 		if strict:
 			errors.append("unknown sandbox matchup_id: %s" % matchup_id)
 		matchup_id = fallback_matchup_id

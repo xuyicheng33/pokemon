@@ -39,15 +39,19 @@ func build_setup_from_side_specs_result(p1_side_spec: Dictionary, p2_side_spec: 
 	return ResultEnvelopeHelperScript.ok(battle_setup)
 
 func build_setup_by_matchup_id_result(matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	var has_baseline_matchup := baseline_matchup_catalog.has_matchup(matchup_id)
-	var has_formal_matchup := formal_matchup_catalog.has_matchup(matchup_id)
-	if has_baseline_matchup and has_formal_matchup:
+	var baseline_owner_result := _matchup_owner_result(baseline_matchup_catalog.load_matchups_result(), matchup_id, "baseline")
+	if not bool(baseline_owner_result.get("ok", false)):
+		return baseline_owner_result
+	if bool(baseline_owner_result.get("data", {}).get("found", false)):
+		return baseline_matchup_catalog.build_setup_result(self, matchup_id, side_regular_skill_overrides)
+	var formal_owner_result := _matchup_owner_result(formal_matchup_catalog.load_matchups_result(), matchup_id, "formal")
+	if not bool(formal_owner_result.get("ok", false)):
+		return formal_owner_result
+	if not bool(formal_owner_result.get("data", {}).get("found", false)):
 		return _error_result(
 			ErrorCodesScript.INVALID_BATTLE_SETUP,
-			"SampleBattleFactory matchup_id collides between baseline and formal catalogs: %s" % matchup_id
+			"SampleBattleFactory unknown matchup_id: %s" % matchup_id
 		)
-	if has_baseline_matchup:
-		return baseline_matchup_catalog.build_setup_result(self, matchup_id, side_regular_skill_overrides)
 	return formal_matchup_catalog.build_setup_result(self, matchup_id, side_regular_skill_overrides)
 
 func build_matchup_setup(
@@ -108,3 +112,24 @@ func _build_side_setup_from_spec(side_id: String, side_spec: Dictionary) -> Vari
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.error(error_code, error_message)
+
+func _matchup_owner_result(catalog_result: Dictionary, matchup_id: String, source_label: String) -> Dictionary:
+	if not bool(catalog_result.get("ok", false)):
+		return _error_result(
+			str(catalog_result.get("error_code", ErrorCodesScript.INVALID_BATTLE_SETUP)),
+			"SampleBattleFactory failed to load %s matchup catalog while resolving %s: %s" % [
+				source_label,
+				matchup_id,
+				String(catalog_result.get("error_message", "unknown error")),
+			]
+		)
+	var matchups = catalog_result.get("data", {}).get("matchups", {})
+	if not (matchups is Dictionary):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory %s matchup catalog missing matchups dictionary while resolving %s" % [
+				source_label,
+				matchup_id,
+			]
+		)
+	return ResultEnvelopeHelperScript.ok({"found": matchups.has(matchup_id)})

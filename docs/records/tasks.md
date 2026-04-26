@@ -617,6 +617,31 @@
   - `git push origin main`
   - `bash tests/check_repo_consistency.sh`
 
+## 最近完成：review round 1 实修（2026-04-26）
+
+- 状态：已完成
+- 目标：核查并修复 2026-04-26 模块复审里记录的高影响真实问题，补齐最小回归。
+- 范围：
+  1. battle 核心：同速 trigger tie-break、field 生命周期 fail-fast、replacement 失败回滚
+  2. composition / adapters / shared：matchup owner 查询、demo replay bootstrap、capability catalog 缓存分桶
+  3. 补对应 gdUnit 回归，不改无关规范
+- 修复内容：
+  1. `effect_queue_service.gd` 把随机 tie-break 提升到跨来源完全同层事件，避免同速 trigger 被 `source_instance_id` 固定排序
+  2. `field_service.gd` / `turn_field_lifecycle_service.gd` / `field_apply_effect_runner.gd` 把 field lifecycle 收口成结构化结果，`on_break / on_expire / field_apply` 收集失败立即 fail-fast
+  3. `replacement_service.gd` 为换人链补最小回滚，覆盖 `leave_unit / field_break / on_enter` 失败后的 roster、field 与日志半提交
+  4. `sample_battle_factory_setup_access.gd` 改成结构化 matchup owner 查询，formal catalog 加载错误不再被吞成 unknown matchup
+  5. `battle_sandbox_launch_config.gd` / `sandbox_session_bootstrap_service.gd` 提前 demo 分流，strict demo 不再校验无关 `matchup_id`，demo bootstrap 不再先吃 `available_matchups`
+  6. `formal_character_capability_catalog.gd` 改为按 resolved path 分桶缓存，避免多目录能力定义串读
+- 验证：
+  - `TEST_PATH=res://test/suites/effect_queue_service_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/field_lifecycle_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/forced_replace_lifecycle_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/catalog_factory_error_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/capability_catalog_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/battle_sandbox_launch_config_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/sample_battle_factory_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manual_battle_scene/demo_replay_suite.gd bash tests/run_gdunit.sh`
+
 ## 最近完成：核心函数参数类型标注补齐（2026-04-20）
 
 - 状态：已完成

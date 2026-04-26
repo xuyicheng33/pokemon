@@ -12,6 +12,10 @@ func test_formal_character_capability_catalog_manifest_alignment_contract() -> v
 
 func test_formal_character_capability_collectors_cover_non_skill_effect_resources_contract() -> void:
 	_assert_legacy_result(_test_formal_character_capability_collectors_cover_non_skill_effect_resources_contract(_harness))
+
+func test_formal_character_capability_catalog_caches_by_resolved_path_contract() -> void:
+	_assert_legacy_result(_test_formal_character_capability_catalog_caches_by_resolved_path_contract(_harness))
+
 func _test_formal_character_capability_catalog_manifest_alignment_contract(harness) -> Dictionary:
 	var catalog = FormalCharacterCapabilityCatalogScript.new()
 	var catalog_result: Dictionary = catalog.load_entries_result()
@@ -78,6 +82,27 @@ func _test_formal_character_capability_collectors_cover_non_skill_effect_resourc
 		return harness.fail_result(String(unit_result.get("error_message", "unit collector contract failed")))
 	return harness.pass_result()
 
+func _test_formal_character_capability_catalog_caches_by_resolved_path_contract(harness) -> Dictionary:
+	var first_path := "user://capability_catalog_cache_a.json"
+	var second_path := "user://capability_catalog_cache_b.json"
+	if not _write_capability_catalog_fixture(first_path, ["capability_alpha"]):
+		return harness.fail_result("failed to write first capability catalog fixture")
+	if not _write_capability_catalog_fixture(second_path, ["capability_beta"]):
+		return harness.fail_result("failed to write second capability catalog fixture")
+	var catalog = FormalCharacterCapabilityCatalogScript.new()
+	var first_ids_result: Dictionary = catalog.capability_ids_result(first_path)
+	if not bool(first_ids_result.get("ok", false)):
+		return harness.fail_result("first capability fixture should load: %s" % String(first_ids_result.get("error_message", "unknown error")))
+	if PackedStringArray(first_ids_result.get("data", PackedStringArray())) != PackedStringArray(["capability_alpha"]):
+		return harness.fail_result("first capability fixture returned unexpected ids")
+	catalog.catalog_path_override = second_path
+	var second_ids_result: Dictionary = catalog.capability_ids_result()
+	if not bool(second_ids_result.get("ok", false)):
+		return harness.fail_result("second capability fixture should load through catalog_path_override: %s" % String(second_ids_result.get("error_message", "unknown error")))
+	if PackedStringArray(second_ids_result.get("data", PackedStringArray())) != PackedStringArray(["capability_beta"]):
+		return harness.fail_result("capability catalog cache should be bucketed by resolved path")
+	return harness.pass_result()
+
 func _collect_facts_result(collector, rel_path: String, required_fact_ids: Array) -> Dictionary:
 	var resource = load("res://%s" % rel_path)
 	if resource == null:
@@ -110,3 +135,21 @@ func harness_fail_result(error_message: String) -> Dictionary:
 		"ok": false,
 		"error_message": error_message,
 	}
+
+func _write_capability_catalog_fixture(path: String, capability_ids: Array) -> bool:
+	var entries: Array = []
+	for capability_id in capability_ids:
+		entries.append({
+			"capability_id": String(capability_id),
+			"stop_and_specialize_when": "test only",
+			"rule_doc_paths": ["docs/test_rule.md"],
+			"required_suite_paths": ["test/suites/sample_battle_factory_contract_suite.gd"],
+			"required_fact_ids": ["test_fact"],
+		})
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_string(JSON.stringify({"capabilities": entries}, "  "))
+	file.flush()
+	file.close()
+	return true
