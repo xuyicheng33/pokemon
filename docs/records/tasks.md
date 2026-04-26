@@ -13,6 +13,34 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：项目复审三阶段（2026-04-26）
+
+- 状态：已完成
+- 目标：基于全项目复审，按"快赢 → 中等重构 → 长期方向"三阶段收口
+- 范围：
+  1. 阶段 A：`SandboxViewPresenter._character_options` manifest 错误透传到 `state.error_message`；`SandboxSessionBootstrapService.dispose` 与 `BattleSandboxController.player_ui_mode` 三处 `has_method` 冗余收窄；`decisions.md` 补 baseline-only API 容忍 formal failure 的边界条款
+  2. 阶段 B1：拆 `sandbox_view_presenter.gd`，提取 `sandbox_view_palette.gd` / `sandbox_view_character_cards_renderer.gd` / `sandbox_view_action_buttons_renderer.gd` 三个适配器，主 presenter 只剩调度、布局、replay 控件、结果格式化
+  3. 阶段 B2：在 `content_snapshot_formal_character_validator_base.gd` 加 `_validate_single_payload_effect` 共享 helper，gojo / sukuna / kashimo / obito 共 9 处「require_effect → effect_contract → extract_single_payload → expect_payload_shape」重复 pattern 收口；validator 文件净减 102 行
+- 验收标准：
+  - quick gate（gdunit + 架构 + repo + boot smoke + sandbox smoke matrix）全通过
+  - bad_cases 测试不破坏（4 个角色 19 cases）
+  - `has_method` 出现次数（架构闸门口径）按预期下降
+- 验证结果：`bash tests/check_gdunit_gate.sh`（73 cases / 0 failures）、`bash tests/check_architecture_constraints.sh`、`bash tests/check_repo_consistency.sh`、`bash tests/check_boot_smoke.sh`、`bash tests/check_sandbox_smoke_matrix.sh`、4 个 bad_cases suite 全过
+- 提交：`93ed78d fix: surface manifest errors on character select page`、`333b43d refactor: split sandbox view presenter into renderers`、`f82fb0c refactor: extract single payload effect helper for formal validators`
+
+## 后续方向：项目复审 C 阶段（2026-04-26）
+
+- 状态：未开始
+- 目标：在主线稳定基础上，把本次复审里"长期"维度的事项按节奏推进，不做一次性大改
+- 候选项（按优先级，影响越大越靠前）：
+  1. validator 共享 helper 二期：除了 `_validate_single_payload_effect`，把「effect_contract + 多 payload」「passive_skill_contract + effect」「unit_skill 完整 baseline」三类高频 pattern 也抽到 base，目标再砍 100+ 行
+  2. sandbox UI 响应式：窄桌面/竖屏下选择页和战斗页用 `GridContainer` 列数自适配 + `ScrollContainer` 兜底，避免靠 1280 宽假设
+  3. README 行数强校验放宽：`docs/records/decisions.md` 已记的"精确行数"模式改成阈值/区间形式，避免每次小幅调整都触发 repo gate 失败
+  4. Formal 角色 suite 进一步往 capability 驱动矩阵收口：以 `formal_character_capability_catalog` 输出的 capability 列表反推抽样 suite，进一步压缩重复样板
+  5. macOS 26.4.1 + Godot 4.6.1 兼容性观察：当前依赖 godot 默认 server (-s) 模式不卡 NSApplication 事件循环；如出现回退迹象，再评估给 `tests/run_gdunit.sh` 加 macOS-only `--ignoreHeadlessMode` 分支（注意 UI 测试必须保留输入事件）
+- 节奏：每个候选项独立小阶段（目标 / 范围 / 验收 / 验证一组），中间接入新角色或新功能不阻断
+- 暂不做：删除现有 fail-fast 路径、删除现有测试 suite、更换 godot 版本
+
 ## 最近完成：项目问题收口三阶段（2026-04-25）
 
 - 状态：已完成
