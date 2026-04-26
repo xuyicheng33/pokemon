@@ -25,7 +25,11 @@ func _init() -> void:
 func bootstrap_scene(state: SandboxSessionState, requested_config: Dictionary, policy_driver) -> Dictionary:
 	state.startup_failed = false
 	state.error_message = ""
-	close_runtime(state)
+	var close_result: Dictionary = close_runtime(state)
+	if not bool(close_result.get("ok", true)):
+		var close_error_message := "Battle sandbox close prior session failed: %s" % str(close_result.get("error_message", "unknown error"))
+		fail_runtime(state, close_error_message)
+		return _envelope.error_result(close_error_message)
 	reset_state(state)
 	var bootstrap_error = _bootstrap_service.prepare_scene(state, requested_config)
 	if not bootstrap_error.is_empty():

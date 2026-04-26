@@ -7,19 +7,22 @@ const PaletteScript := preload("res://src/adapters/sandbox_view_palette.gd")
 var _manifest = FormalCharacterManifestScript.new()
 var _last_render_signature: String = ""
 
-func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, visible_matchups: Array) -> void:
+func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, visible_matchups: Array) -> Dictionary:
+	var options_result := _character_options(visible_matchups)
+	var options: Array = options_result.get("options", [])
+	var manifest_error_message := String(options_result.get("manifest_error_message", "")).strip_edges()
+	var render_result := {"manifest_error_message": manifest_error_message}
 	var signature := _render_signature(state, visible_matchups)
 	if signature == _last_render_signature and view_refs.character_cards.get_child_count() > 0:
-		return
+		return render_result
 	_last_render_signature = signature
 	_clear_container_children(view_refs.character_cards)
-	var options := _character_options(visible_matchups, state)
 	if options.is_empty():
 		var message := state.error_message.strip_edges()
 		if message.is_empty():
-			message = "当前没有可选角色"
+			message = manifest_error_message if not manifest_error_message.is_empty() else "当前没有可选角色"
 		_add_select_state_card(view_refs.character_cards, message)
-		return
+		return render_result
 	for option in options:
 		var card := PanelContainer.new()
 		card.custom_minimum_size = Vector2(210, 260)
@@ -69,6 +72,7 @@ func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, 
 			controller.start_player_matchup(matchup_id)
 		)
 		content.add_child(start_button)
+	return render_result
 
 func _add_select_state_card(container: Node, message: String) -> void:
 	var card := PanelContainer.new()
@@ -88,14 +92,15 @@ func _add_select_state_card(container: Node, message: String) -> void:
 	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(details)
 
-func _character_options(visible_matchups: Array, state: SandboxSessionState) -> Array:
+func _character_options(visible_matchups: Array) -> Dictionary:
 	var available_ids := _available_matchup_ids(visible_matchups)
 	var entries_result: Dictionary = _manifest.build_character_entries_result()
 	if not bool(entries_result.get("ok", false)):
 		var manifest_error := String(entries_result.get("error_message", "")).strip_edges()
-		if not manifest_error.is_empty() and state.error_message.strip_edges().is_empty():
-			state.error_message = "Battle sandbox failed to load formal character manifest: %s" % manifest_error
-		return []
+		var manifest_error_message := ""
+		if not manifest_error.is_empty():
+			manifest_error_message = "Battle sandbox failed to load formal character manifest: %s" % manifest_error
+		return {"options": [], "manifest_error_message": manifest_error_message}
 	var options: Array = []
 	var seen_matchup_ids: Dictionary = {}
 	var color_index := 0
@@ -119,7 +124,7 @@ func _character_options(visible_matchups: Array, state: SandboxSessionState) -> 
 			"color": PaletteScript.DEFAULT_CARD_COLORS[color_index % PaletteScript.DEFAULT_CARD_COLORS.size()],
 		})
 		color_index += 1
-	return options
+	return {"options": options, "manifest_error_message": ""}
 
 func _portrait_path(character_id: String, pair_token: String) -> String:
 	for raw_token in [pair_token, character_id]:

@@ -22,9 +22,10 @@ func configure_static_controls(view_refs: SandboxViewRefs) -> void:
 	_configure_mode_select(view_refs.p2_mode_select)
 	view_refs.battle_seed_input.placeholder_text = str(BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)
 
-func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, current_view_model: Dictionary) -> void:
+func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, current_view_model: Dictionary) -> Dictionary:
+	var render_result := {"manifest_error_message": ""}
 	if not controller.is_inside_tree() or not view_refs.is_bound():
-		return
+		return render_result
 	_update_responsive_layout(controller, view_refs)
 	var visible_matchups: Array = state.visible_matchups
 	var current_player_ui_mode := _resolved_player_ui_mode(controller, state)
@@ -43,9 +44,11 @@ func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, 
 	view_refs.action_header_label.text = _fmt.format_action_header(state, current_view_model)
 	_set_rich_text(view_refs.result_summary, _format_result_text(state, current_view_model))
 	if current_player_ui_mode == "select":
-		_character_cards_renderer.render(controller, state, view_refs, visible_matchups)
+		var cards_render_result: Dictionary = _character_cards_renderer.render(controller, state, view_refs, visible_matchups)
+		render_result["manifest_error_message"] = String(cards_render_result.get("manifest_error_message", "")).strip_edges()
 	_render_replay_controls(view_refs, current_view_model)
 	_action_buttons_renderer.render(controller, state, view_refs, current_view_model, current_player_ui_mode)
+	return render_result
 
 func battle_finished(public_snapshot: Dictionary) -> bool:
 	return _fmt.has_battle_result(public_snapshot)

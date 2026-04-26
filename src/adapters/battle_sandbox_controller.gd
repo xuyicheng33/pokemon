@@ -31,7 +31,9 @@ func _ready() -> void:
 	bootstrap_from_environment()
 
 func _exit_tree() -> void:
-	close_runtime()
+	var close_result: Dictionary = close_runtime()
+	if not bool(close_result.get("ok", true)):
+		printerr("BattleSandboxController._exit_tree close_runtime failed: %s" % str(close_result.get("error_message", "unknown error")))
 
 func close_runtime() -> Dictionary:
 	return _session_coordinator.close_runtime(_state)
@@ -89,7 +91,6 @@ func get_state_snapshot() -> Dictionary:
 	_state.sync_event_log_state()
 	return {
 		"session_id": _state.session_id,
-		"battle_setup": _state.battle_setup,
 		"public_snapshot": _state.public_snapshot.duplicate(true),
 		"event_log_cursor": _state.event_log_cursor,
 		"current_side_to_select": _state.current_side_to_select,
@@ -134,7 +135,10 @@ func submit_action(selected_action: Dictionary) -> Dictionary:
 func _render_ui() -> void:
 	_state.sync_event_log_state()
 	_state.view_model = build_view_model()
-	_view_presenter.render(self, _state, _view_refs, _state.view_model)
+	var render_result: Dictionary = _view_presenter.render(self, _state, _view_refs, _state.view_model)
+	var manifest_error_message := String(render_result.get("manifest_error_message", "")).strip_edges()
+	if not manifest_error_message.is_empty() and _state.error_message.strip_edges().is_empty():
+		_state.error_message = manifest_error_message
 
 func _on_restart_pressed() -> void:
 	_player_ui_mode = "battle"
