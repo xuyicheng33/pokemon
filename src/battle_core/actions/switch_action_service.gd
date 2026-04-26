@@ -23,7 +23,6 @@ func execute_switch_action(queued_action: QueuedAction, battle_state: BattleStat
 		result.result_type = "invalid_battle"
 		result.invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
 		return result
-	action_log_service.log_switch_state(queued_action, battle_state, actor, target_unit)
 	var replace_result: Dictionary = replacement_service.execute_replacement_lifecycle(
 		battle_state,
 		content_index,
@@ -37,5 +36,6 @@ func execute_switch_action(queued_action: QueuedAction, battle_state: BattleStat
 		result.result_type = "invalid_battle"
 		result.invalid_battle_code = invalid_code
 		return result
+	action_log_service.log_switch_state(queued_action, battle_state, actor, target_unit)
 	result.result_type = "resolved"
 	return result

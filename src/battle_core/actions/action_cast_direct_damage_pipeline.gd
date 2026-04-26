@@ -36,6 +36,12 @@ func apply_direct_damage(queued_action: QueuedAction, actor, target, skill_defin
 		)
 		return {"invalid_battle_code": null, "resolved_segments": 0}
 	var final_multiplier: float = rule_mod_service.get_final_multiplier(battle_state, actor.unit_instance_id)
+	var final_multiplier_error: Dictionary = rule_mod_service.error_state()
+	if final_multiplier_error.get("code", null) != null:
+		return {
+			"invalid_battle_code": final_multiplier_error.get("code", null),
+			"resolved_segments": 0,
+		}
 	var damage_segments: Array = _segment_resolution_service.resolve_damage_segments(
 		skill_definition,
 		actor,
@@ -59,6 +65,11 @@ func apply_direct_damage(queued_action: QueuedAction, actor, target, skill_defin
 			rule_mod_service,
 			final_multiplier
 		)
+		if segment_result.get("invalid_battle_code", null) != null:
+			return {
+				"invalid_battle_code": segment_result.get("invalid_battle_code", null),
+				"resolved_segments": resolved_segments,
+			}
 		_damage_log_service.log_damage_segment(
 			queued_action,
 			battle_state,

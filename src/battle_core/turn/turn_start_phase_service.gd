@@ -70,9 +70,9 @@ var _regen_service = TurnStartRegenServiceScript.new()
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
-func apply_turn_start_regen(battle_state: BattleState, cause_event_id: String) -> void:
+func apply_turn_start_regen(battle_state: BattleState, cause_event_id: String) -> Variant:
 	_sync_helper_dependencies()
-	_regen_service.apply_turn_start_regen(battle_state, cause_event_id)
+	return _regen_service.apply_turn_start_regen(battle_state, cause_event_id)
 
 func execute_phase(battle_state: BattleState, content_index: BattleContentIndex, cause_event_id: String) -> bool:
 	_sync_helper_dependencies()

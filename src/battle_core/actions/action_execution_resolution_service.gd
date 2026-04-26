@@ -17,6 +17,9 @@ func resolve_started_action(queued_action: QueuedAction, actor, command: Command
 		result.result_type = "action_failed_post_start"
 		return
 	var hit_info: Dictionary = action_cast_service.resolve_hit(command, skill_definition, resolved_target, battle_state, content_index)
+	if hit_info.get("invalid_battle_code", null) != null:
+		result.invalid_battle_code = hit_info.get("invalid_battle_code", null)
+		return
 	if not bool(hit_info["hit"]):
 		_resolve_miss(queued_action, actor, command, skill_definition, resolved_target, hit_info, battle_state, content_index, result)
 		return

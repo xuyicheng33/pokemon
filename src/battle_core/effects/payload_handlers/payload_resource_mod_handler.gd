@@ -28,3 +28,5 @@ func execute(payload, effect_definition, effect_event: EffectEvent, battle_state
 	if not payload is ResourceModPayloadScript:
 		return
 	payload_resource_runtime_service.apply_resource_mod_payload(payload, effect_definition, effect_event, battle_state)
+	if payload_resource_runtime_service != null and payload_resource_runtime_service.has_method("invalid_battle_code"):
+		last_invalid_battle_code = payload_resource_runtime_service.invalid_battle_code()

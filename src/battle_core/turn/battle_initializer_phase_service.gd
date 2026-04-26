@@ -153,7 +153,7 @@ func run_battle_init_phase(battle_state: BattleState, content_index: BattleConte
 		return INIT_PHASE_FAIL
 	return INIT_PHASE_STOP if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index) else INIT_PHASE_CONTINUE
 
-func apply_initial_turn_start_regen(battle_state: BattleState) -> void:
+func apply_initial_turn_start_regen(battle_state: BattleState) -> Variant:
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
 		if active_unit == null or active_unit.current_hp <= 0:
@@ -163,12 +163,16 @@ func apply_initial_turn_start_regen(battle_state: BattleState) -> void:
 			active_unit.unit_instance_id,
 			active_unit.regen_per_turn
 		)
+		var rule_error: Dictionary = rule_mod_service.error_state()
+		if rule_error.get("code", null) != null:
+			return rule_error.get("code", null)
 		active_unit.current_mp = mp_service.apply_turn_start_regen(
 			active_unit.current_mp,
 			regen_value,
 			active_unit.max_mp
 		)
 	battle_state.pre_applied_turn_start_regen_turn_index = battle_state.turn_index
+	return null
 
 func _execute_trigger_batch(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex, owner_unit_ids: Array) -> Variant:
 	return trigger_batch_runner.execute_trigger_batch(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context)

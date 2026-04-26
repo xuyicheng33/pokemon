@@ -2,6 +2,7 @@ extends "res://test/support/gdunit_suite_bridge.gd"
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ManagerContractTestHelperScript := preload("res://tests/support/manager_contract_test_helper.gd")
 
 var _helper = ManagerContractTestHelperScript.new()
@@ -13,6 +14,12 @@ func test_event_log_snapshot_public_contract() -> void:
 
 func test_event_log_snapshot_readonly_detached_contract() -> void:
 	_assert_legacy_result(_test_event_log_snapshot_readonly_detached_contract(_harness))
+
+func test_event_log_snapshot_readable_after_invalid_battle() -> void:
+	_assert_legacy_result(_test_event_log_snapshot_readable_after_invalid_battle(_harness))
+
+func test_run_turn_rejects_finished_battle() -> void:
+	_assert_legacy_result(_test_run_turn_rejects_finished_battle(_harness))
 func _test_event_log_snapshot_public_contract(harness) -> Dictionary:
 	var manager_payload = harness.build_manager()
 	if manager_payload.has("error"):
@@ -177,8 +184,70 @@ func _test_event_log_snapshot_readonly_detached_contract(harness) -> Dictionary:
 		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
 	return harness.pass_result()
 
+func _test_event_log_snapshot_readable_after_invalid_battle(harness) -> Dictionary:
+	var setup = _build_manager_session(harness, 3042)
+	if setup.has("error"):
+		return harness.fail_result(str(setup.get("error", "")))
+	var manager = setup["manager"]
+	var session_id: String = setup["session_id"]
+	var session = manager._sessions.get(session_id, null)
+	if session == null:
+		return harness.fail_result("missing manager session internals for invalid battle diagnostic test")
+	var battle_state = session.current_battle_state()
+	battle_state.runtime_fault_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
+	battle_state.runtime_fault_message = "test invalid runtime"
+	var event_log_unwrap = _helper.unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot after invalid")
+	if not bool(event_log_unwrap.get("ok", false)):
+		return harness.fail_result(str(event_log_unwrap.get("error", "event log should remain readable after invalid battle")))
+	var events: Array = event_log_unwrap.get("data", {}).get("events", [])
+	if events.is_empty():
+		return harness.fail_result("event log after invalid battle should still expose diagnostic events")
+	return harness.pass_result()
+
+func _test_run_turn_rejects_finished_battle(harness) -> Dictionary:
+	var setup = _build_manager_session(harness, 3043)
+	if setup.has("error"):
+		return harness.fail_result(str(setup.get("error", "")))
+	var manager = setup["manager"]
+	var session_id: String = setup["session_id"]
+	var session = manager._sessions.get(session_id, null)
+	if session == null:
+		return harness.fail_result("missing manager session internals for finished battle test")
+	var battle_state = session.current_battle_state()
+	battle_state.battle_result.finished = true
+	battle_state.battle_result.reason = "test_finished"
+	var run_result: Dictionary = manager.run_turn(session_id, [])
+	if bool(run_result.get("ok", false)):
+		return harness.fail_result("run_turn should reject an already finished battle")
+	if String(run_result.get("error_code", "")) != ErrorCodesScript.INVALID_MANAGER_REQUEST:
+		return harness.fail_result("finished battle run_turn should return invalid_manager_request, got %s" % String(run_result.get("error_code", "")))
+	return harness.pass_result()
+
 func _find_header_event_snapshot(events: Array) -> Dictionary:
 	for event_snapshot in events:
 		if String(event_snapshot.get("event_type", "")) == EventTypesScript.SYSTEM_BATTLE_HEADER:
 			return event_snapshot
 	return {}
+
+func _build_manager_session(harness, battle_seed: int) -> Dictionary:
+	var manager_payload = harness.build_manager()
+	if manager_payload.has("error"):
+		return {"error": str(manager_payload["error"])}
+	var manager = manager_payload["manager"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return {"error": "SampleBattleFactory init failed"}
+	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	if snapshot_paths_payload.has("error"):
+		return {"error": str(snapshot_paths_payload.get("error", "content snapshot path build failed"))}
+	var init_unwrap = _helper.unwrap_ok(manager.create_session({
+		"battle_seed": battle_seed,
+		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
+		"battle_setup": harness.build_sample_setup(sample_factory),
+	}), "create_session")
+	if not bool(init_unwrap.get("ok", false)):
+		return {"error": str(init_unwrap.get("error", "manager create_session failed"))}
+	return {
+		"manager": manager,
+		"session_id": String(init_unwrap.get("data", {}).get("session_id", "")),
+	}

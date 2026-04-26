@@ -50,10 +50,14 @@ func create_instance(rule_mod_payload, owner_ref: Dictionary, battle_state: Batt
 	return created_instance
 
 func get_final_multiplier(battle_state: BattleState, owner_id: String) -> float:
-	return _read_service.get_final_multiplier(battle_state, owner_id)
+	var value := _read_service.get_final_multiplier(battle_state, owner_id)
+	_capture_read_error()
+	return value
 
 func resolve_mp_regen_value(battle_state: BattleState, owner_id: String, base_regen: int) -> int:
-	return _read_service.resolve_mp_regen_value(battle_state, owner_id, base_regen)
+	var value := _read_service.resolve_mp_regen_value(battle_state, owner_id, base_regen)
+	_capture_read_error()
+	return value
 
 func is_action_allowed(battle_state: BattleState, owner_id: String, action_type: String, skill_id: String = "") -> bool:
 	var is_allowed := _read_service.is_action_allowed(battle_state, owner_id, action_type, skill_id)
@@ -62,16 +66,28 @@ func is_action_allowed(battle_state: BattleState, owner_id: String, action_type:
 	return is_allowed
 
 func resolve_incoming_accuracy(battle_state: BattleState, owner_id: String, base_accuracy: int) -> int:
-	return _read_service.resolve_incoming_accuracy(battle_state, owner_id, base_accuracy)
+	var value := _read_service.resolve_incoming_accuracy(battle_state, owner_id, base_accuracy)
+	_capture_read_error()
+	return value
 
 func has_nullify_field_accuracy(battle_state: BattleState, owner_id: String) -> bool:
-	return _read_service.has_nullify_field_accuracy(battle_state, owner_id)
+	var value := _read_service.has_nullify_field_accuracy(battle_state, owner_id)
+	_capture_read_error()
+	return value
 
 func resolve_incoming_heal_final_multiplier(battle_state: BattleState, owner_id: String) -> float:
-	return _read_service.resolve_incoming_heal_final_multiplier(battle_state, owner_id)
+	var value := _read_service.resolve_incoming_heal_final_multiplier(battle_state, owner_id)
+	_capture_read_error()
+	return value
 
 func resolve_incoming_action_final_multiplier(battle_state: BattleState, owner_id: String, command_type: String, combat_type_id: String) -> float:
-	return _read_service.resolve_incoming_action_final_multiplier(battle_state, owner_id, command_type, combat_type_id)
+	var value := _read_service.resolve_incoming_action_final_multiplier(battle_state, owner_id, command_type, combat_type_id)
+	_capture_read_error()
+	return value
 
 func decrement_for_trigger(battle_state: BattleState, trigger_name: String) -> Array:
 	return _write_service.decrement_for_trigger(battle_state, trigger_name)
+
+func _capture_read_error() -> void:
+	var read_error_state: Dictionary = _read_service.error_state()
+	last_error_code = read_error_state.get("code", null)

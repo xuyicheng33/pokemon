@@ -43,6 +43,9 @@ func apply_damage_segment(
 			String(queued_action.command.command_type),
 			segment_combat_type_id
 		)
+		var rule_error: Dictionary = rule_mod_service.error_state()
+		if rule_error.get("code", null) != null:
+			return {"invalid_battle_code": rule_error.get("code", null)}
 	var type_effectiveness: float = combat_type_service.calc_effectiveness(
 		segment_combat_type_id,
 		ActionCastDamageSegmentHelperScript.resolve_unit_combat_types(target)
@@ -64,4 +67,5 @@ func apply_damage_segment(
 		"damage_amount": damage_amount,
 		"segment_combat_type_id": segment_combat_type_id,
 		"type_effectiveness": type_effectiveness,
+		"invalid_battle_code": null,
 	}

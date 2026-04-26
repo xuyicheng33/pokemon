@@ -2,6 +2,8 @@ extends "res://test/support/gdunit_suite_bridge.gd"
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
+const RuleModInstanceScript := preload("res://src/battle_core/runtime/rule_mod_instance.gd")
+const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 
 
 
@@ -16,6 +18,9 @@ func test_missing_chain_context_hard_fail() -> void:
 
 func test_missing_core_dependency_hard_fail() -> void:
 	_assert_legacy_result(_test_missing_core_dependency_hard_fail(_harness))
+
+func test_rule_mod_numeric_read_error_hard_fails_action() -> void:
+	_assert_legacy_result(_test_rule_mod_numeric_read_error_hard_fails_action(_harness))
 func _test_invalid_state_corruption_guard(harness) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
@@ -99,3 +104,41 @@ func _test_missing_core_dependency_hard_fail(harness) -> Dictionary:
 		if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_STATE_CORRUPTION:
 			return harness.pass_result()
 	return harness.fail_result("missing invalid_battle log for dependency hard-fail")
+
+func _test_rule_mod_numeric_read_error_hard_fails_action(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	content_index.skills["sample_strike"].accuracy = 95
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 224)
+	var target = battle_state.get_side("P2").get_active_unit()
+	if target == null:
+		return harness.fail_result("missing P2 active target")
+	var broken_rule_mod = RuleModInstanceScript.new()
+	broken_rule_mod.instance_id = "test_broken_incoming_accuracy"
+	broken_rule_mod.mod_kind = ContentSchemaScript.RULE_MOD_INCOMING_ACCURACY
+	broken_rule_mod.mod_op = "broken"
+	broken_rule_mod.value = 0
+	broken_rule_mod.duration_mode = ContentSchemaScript.DURATION_PERMANENT
+	broken_rule_mod.owner_id = target.unit_instance_id
+	target.rule_mod_instances.append(broken_rule_mod)
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		core.service("command_builder").build_command({
+			"turn_index": 1,
+			"command_type": "skill",
+			"command_source": "manual",
+			"side_id": "P1",
+			"actor_public_id": "P1-A",
+			"skill_id": "sample_strike",
+		}),
+	])
+	if not battle_state.battle_result.finished:
+		return harness.fail_result("broken rule_mod numeric read should terminate battle")
+	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_RULE_MOD_DEFINITION:
+		return harness.fail_result("expected invalid_rule_mod_definition, got %s" % str(battle_state.battle_result.reason))
+	return harness.pass_result()

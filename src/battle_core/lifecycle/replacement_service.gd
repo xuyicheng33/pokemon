@@ -153,19 +153,7 @@ func execute_forced_replace(
 	var selected_unit = battle_state.get_unit(selected_unit_id)
 	if selected_unit == null or selected_unit.current_hp <= 0 or not side_state.has_bench_unit(selected_unit_id):
 		return _replacement_result(false, null, ErrorCodesScript.INVALID_REPLACEMENT_SELECTION)
-	battle_logger.append_event(log_event_builder.build_event(
-		EventTypesScript.STATE_SWITCH,
-		battle_state,
-		{
-			"source_instance_id": target_unit.unit_instance_id,
-			"target_instance_id": selected_unit.unit_instance_id,
-			"target_slot": active_slot_id,
-			"leave_reason": "forced_replace",
-			"trigger_name": "on_switch",
-			"payload_summary": "%s forced replaced to %s" % [target_unit.public_id, selected_unit.public_id],
-		}
-	))
-	return execute_replacement_lifecycle(
+	var replace_result: Dictionary = execute_replacement_lifecycle(
 		battle_state,
 		content_index,
 		target_unit_id,
@@ -173,6 +161,20 @@ func execute_forced_replace(
 		"forced_replace",
 		execute_trigger_batch
 	)
+	if replace_result.get("invalid_code", null) == null and bool(replace_result.get("replaced", false)):
+		battle_logger.append_event(log_event_builder.build_event(
+			EventTypesScript.STATE_SWITCH,
+			battle_state,
+			{
+				"source_instance_id": target_unit.unit_instance_id,
+				"target_instance_id": selected_unit.unit_instance_id,
+				"target_slot": active_slot_id,
+				"leave_reason": "forced_replace",
+				"trigger_name": "on_switch",
+				"payload_summary": "%s forced replaced to %s" % [target_unit.public_id, selected_unit.public_id],
+			}
+		))
+	return replace_result
 
 func _execute_lifecycle_trigger_batch(
 	trigger_name: String,

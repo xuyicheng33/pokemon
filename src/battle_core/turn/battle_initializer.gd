@@ -146,7 +146,10 @@ func initialize_battle(battle_state: BattleState, content_index: BattleContentIn
 		return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires mp_service for initial turn_start regen")
 	if rule_mod_service == null:
 		return _fail(ErrorCodesScript.INVALID_COMPOSITION, "BattleInitializer requires rule_mod_service for initial turn_start regen")
-	_phase_service.apply_initial_turn_start_regen(battle_state)
+	var initial_regen_invalid_code = _phase_service.apply_initial_turn_start_regen(battle_state)
+	if initial_regen_invalid_code != null:
+		battle_result_service.terminate_invalid_battle(battle_state, str(initial_regen_invalid_code))
+		return false
 	if battle_state.pre_applied_turn_start_regen_turn_index != battle_state.turn_index:
 		return false
 	battle_state.phase = BattlePhasesScript.SELECTION

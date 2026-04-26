@@ -111,6 +111,10 @@ func apply_damage_payload(payload, effect_definition, effect_event: EffectEvent,
 			),
 			rule_mod_service.get_final_multiplier(battle_state, effect_event.owner_id) * type_effectiveness
 		)
+		var rule_error: Dictionary = rule_mod_service.error_state()
+		if rule_error.get("code", null) != null:
+			last_invalid_battle_code = rule_error.get("code", null)
+			return
 	elif not String(payload.combat_type_id).is_empty():
 		type_effectiveness = combat_type_service.calc_effectiveness(
 			String(payload.combat_type_id),

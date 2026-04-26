@@ -39,12 +39,17 @@ var log_event_builder: LogEventBuilder
 var target_helper: PayloadUnitTargetHelper
 var effect_event_helper: PayloadEffectEventHelper
 var rule_mod_service: RuleModService
+var last_invalid_battle_code: Variant = null
+
+func invalid_battle_code() -> Variant:
+	return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
 	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func apply_heal_payload(payload, effect_definition, effect_event: EffectEvent, battle_state: BattleState) -> void:
+	last_invalid_battle_code = null
 	var target_unit = target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
 	if not target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
 		return
@@ -61,6 +66,10 @@ func apply_heal_payload(payload, effect_definition, effect_event: EffectEvent, b
 		battle_state,
 		target_unit.unit_instance_id
 	)
+	var rule_error: Dictionary = rule_mod_service.error_state()
+	if rule_error.get("code", null) != null:
+		last_invalid_battle_code = rule_error.get("code", null)
+		return
 	resolved_amount = max(0, int(floor(float(resolved_amount) * incoming_heal_multiplier)))
 	_apply_resource_like_change(
 		battle_state,
@@ -74,6 +83,7 @@ func apply_heal_payload(payload, effect_definition, effect_event: EffectEvent, b
 	)
 
 func apply_resource_mod_payload(payload, effect_definition, effect_event: EffectEvent, battle_state: BattleState) -> void:
+	last_invalid_battle_code = null
 	var target_unit = target_helper.resolve_target_unit(effect_definition.scope, effect_event, battle_state)
 	if not target_helper.is_effect_target_valid(target_unit, effect_definition.scope, effect_event):
 		return

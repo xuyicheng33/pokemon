@@ -109,9 +109,6 @@ func get_event_log_snapshot_result(session_id: String, from_index: int = 0) -> D
 	if not bool(session_result.get("ok", false)):
 		return session_result
 	var session = session_result.get("data", null)
-	var runtime_error = BattleCoreManagerContractHelperScript.validate_session_runtime_result(session)
-	if runtime_error != null:
-		return runtime_error
 	var event_log_result = session.get_event_log_snapshot_result()
 	if not bool(event_log_result.get("ok", false)):
 		return event_log_result

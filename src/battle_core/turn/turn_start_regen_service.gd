@@ -9,7 +9,7 @@ var rule_mod_service: RuleModService
 var battle_logger: BattleLogger
 var log_event_builder: LogEventBuilder
 
-func apply_turn_start_regen(battle_state: BattleState, cause_event_id: String) -> void:
+func apply_turn_start_regen(battle_state: BattleState, cause_event_id: String) -> Variant:
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
 		if active_unit == null or active_unit.current_hp <= 0:
@@ -20,6 +20,9 @@ func apply_turn_start_regen(battle_state: BattleState, cause_event_id: String) -
 			active_unit.unit_instance_id,
 			active_unit.regen_per_turn
 		)
+		var rule_error: Dictionary = rule_mod_service.error_state()
+		if rule_error.get("code", null) != null:
+			return rule_error.get("code", null)
 		active_unit.current_mp = mp_service.apply_turn_start_regen(
 			active_unit.current_mp,
 			regen_value,
@@ -46,3 +49,4 @@ func apply_turn_start_regen(battle_state: BattleState, cause_event_id: String) -
 			}
 		)
 		battle_logger.append_event(log_event)
+	return null

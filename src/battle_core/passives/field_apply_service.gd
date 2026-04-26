@@ -57,6 +57,7 @@ func apply_field(
 	if challenger_field_definition == null:
 		return ErrorCodesScript.INVALID_STATE_CORRUPTION
 	var before_field = battle_state.field_state
+	var before_field_rule_mod_instances: Array = battle_state.field_rule_mod_instances.duplicate()
 	var resolves_replacing_field_lifecycle := before_field != null and _is_replacing_current_field_from_its_lifecycle(effect_event, before_field)
 	if before_field != null and not resolves_replacing_field_lifecycle:
 		var conflict_result: Dictionary = domain_clash_orchestrator.resolve_field_conflict(
@@ -100,7 +101,6 @@ func apply_field(
 		var field_invalid_code = field_apply_effect_runner.invalid_battle_code()
 		return field_invalid_code if field_invalid_code != null else ErrorCodesScript.INVALID_STATE_CORRUPTION
 	battle_state.field_state = field_state
-	field_apply_log_service.log_apply_field(before_field, field_state, effect_event, battle_state)
 	var field_apply_invalid_code = field_apply_effect_runner.execute_field_effects(
 		"field_apply",
 		field_state,
@@ -110,17 +110,26 @@ func apply_field(
 		execute_trigger_batch
 	)
 	if field_apply_invalid_code != null:
+		battle_state.field_state = before_field
+		battle_state.field_rule_mod_instances = before_field_rule_mod_instances
 		return field_apply_invalid_code
 	if _should_defer_success_effects(challenger_field_definition, payload, effect_event):
 		field_apply_effect_runner.defer_success_effects(field_state, payload.on_success_effect_ids, effect_event)
+		field_apply_log_service.log_apply_field(before_field, field_state, effect_event, battle_state)
 		return null
-	return field_apply_effect_runner.execute_success_effects(
+	var success_invalid_code = field_apply_effect_runner.execute_success_effects(
 		payload.on_success_effect_ids,
 		effect_event,
 		battle_state,
 		content_index,
 		execute_trigger_batch
 	)
+	if success_invalid_code != null:
+		battle_state.field_state = before_field
+		battle_state.field_rule_mod_instances = before_field_rule_mod_instances
+		return success_invalid_code
+	field_apply_log_service.log_apply_field(before_field, field_state, effect_event, battle_state)
+	return null
 
 func _should_defer_success_effects(field_definition, payload, effect_event: EffectEvent) -> bool:
 	if field_definition == null or payload == null or effect_event == null or effect_event.chain_context == null:

@@ -65,6 +65,11 @@ func get_legal_actions_result(side_id: String) -> Dictionary:
 func run_turn_result(commands: Array) -> Dictionary:
 	if not _is_ready():
 		return BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
+	if _battle_state.battle_result != null and bool(_battle_state.battle_result.finished):
+		return BattleCoreManagerContractHelperScript.error(
+			ErrorCodesScript.INVALID_MANAGER_REQUEST,
+			"BattleCoreManager.run_turn cannot advance a finished battle"
+		)
 	var turn_loop_controller = _get_container_service("turn_loop_controller")
 	if turn_loop_controller == null:
 		return BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_COMPOSITION, "BattleCoreManager missing dependency: turn_loop_controller")

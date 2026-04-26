@@ -7,6 +7,8 @@ const FieldDefinitionScript := preload("res://src/battle_core/content/field_defi
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
+const EffectEventScript := preload("res://src/battle_core/contracts/effect_event.gd")
+const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const UltimateFieldTestHelperScript := preload("res://tests/support/ultimate_field_test_helper.gd")
 
 class CaptureFieldTriggerDispatcher:
@@ -47,6 +49,21 @@ class CaptureFieldTriggerBatchRunner:
 		captured_chain_context = chain_context
 		return null
 
+class FailingFieldTriggerBatchRunner:
+	extends RefCounted
+
+	func execute_trigger_batch(
+		trigger_name: String,
+		_battle_state,
+		_content_index,
+		_owner_unit_ids: Array,
+		_chain_context,
+		_extra_effect_events: Array = []
+	):
+		if trigger_name == "__field_field_apply__":
+			return ErrorCodesScript.INVALID_EFFECT_DEFINITION
+		return null
+
 var _helper = UltimateFieldTestHelperScript.new()
 
 
@@ -65,6 +82,9 @@ func test_field_break_transition_preserves_new_field_contract() -> void:
 
 func test_field_expire_transition_preserves_new_field_contract() -> void:
 	_assert_legacy_result(_test_field_expire_transition_preserves_new_field_contract(_harness))
+
+func test_field_apply_failure_does_not_commit_field() -> void:
+	_assert_legacy_result(_test_field_apply_failure_does_not_commit_field(_harness))
 func _test_field_bound_stat_mod_restore_contract(harness) -> Dictionary:
 	var gojo_payload = _helper.build_gojo_vs_sample_state(harness, 2212)
 	if gojo_payload.has("error"):
@@ -112,6 +132,62 @@ func _test_field_bound_stat_mod_restore_contract(harness) -> Dictionary:
 	_helper.run_turn(sukuna_core, sukuna_state, sukuna_content, _helper.build_wait_command(sukuna_core, 4, "P1", "P1-A"), _helper.build_wait_command(sukuna_core, 4, "P2", "P2-A"))
 	if int(sukuna.stat_stages.get("attack", -99)) != 2 or int(sukuna.stat_stages.get("sp_attack", -99)) != 2:
 		return harness.fail_result("宿傩领域结束后必须回到开领域前的双攻阶段")
+	return harness.pass_result()
+
+func _test_field_apply_failure_does_not_commit_field(harness) -> Dictionary:
+	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2218)
+	if state_payload.has("error"):
+		return harness.fail_result(str(state_payload["error"]))
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var field_definition = FieldDefinitionScript.new()
+	field_definition.id = "test_failed_apply_field"
+	field_definition.display_name = "Failed Apply Field"
+	field_definition.effect_ids = PackedStringArray(["test_failed_apply_lifecycle_effect"])
+	content_index.register_resource(field_definition)
+	var lifecycle_effect = EffectDefinitionScript.new()
+	lifecycle_effect.id = "test_failed_apply_lifecycle_effect"
+	lifecycle_effect.display_name = "Failed Apply Lifecycle"
+	lifecycle_effect.scope = "field"
+	lifecycle_effect.trigger_names = PackedStringArray(["field_apply"])
+	content_index.register_resource(lifecycle_effect)
+	var apply_payload = ApplyFieldPayloadScript.new()
+	apply_payload.payload_type = "apply_field"
+	apply_payload.field_definition_id = field_definition.id
+	var apply_effect = EffectDefinitionScript.new()
+	apply_effect.id = "test_failed_apply_effect"
+	apply_effect.display_name = "Failed Apply Effect"
+	apply_effect.scope = "self"
+	apply_effect.duration_mode = "turns"
+	apply_effect.duration = 2
+	var effect_event = EffectEventScript.new()
+	effect_event.event_id = "test_field_apply_failure"
+	effect_event.trigger_name = "on_hit"
+	effect_event.source_instance_id = "test_field_apply_failure_source"
+	effect_event.source_kind_order = 2
+	effect_event.source_order_speed_snapshot = actor.base_speed
+	effect_event.effect_definition_id = apply_effect.id
+	effect_event.owner_id = actor.unit_instance_id
+	effect_event.chain_context = battle_state.chain_context
+	core.service("battle_logger").reset()
+	var failing_runner = FailingFieldTriggerBatchRunner.new()
+	var invalid_code = core.service("field_apply_service").apply_field(
+		apply_effect,
+		apply_payload,
+		effect_event,
+		battle_state,
+		content_index,
+		Callable(failing_runner, "execute_trigger_batch")
+	)
+	if invalid_code != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
+		return harness.fail_result("field_apply lifecycle failure should return invalid_effect_definition, got %s" % str(invalid_code))
+	if battle_state.field_state != null:
+		return harness.fail_result("failed field_apply must not leave a new active field")
+	for event in core.service("battle_logger").event_log:
+		if event.event_type == EventTypesScript.EFFECT_APPLY_FIELD:
+			return harness.fail_result("failed field_apply must not log apply success")
 	return harness.pass_result()
 
 func _test_field_break_self_owner_contract(harness) -> Dictionary:

@@ -171,9 +171,6 @@ func _test_forced_replace_success_chain(harness) -> Dictionary:
 		var ev = core.service("battle_logger").event_log[i]
 		if switch_idx == -1 and ev.event_type == EventTypesScript.STATE_SWITCH and ev.leave_reason == "forced_replace" and ev.source_instance_id == p2_active.unit_instance_id:
 			switch_idx = i
-			continue
-		if switch_idx == -1:
-			continue
 		if on_switch_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.trigger_name == "on_switch" and ev.target_instance_id == p2_active.unit_instance_id:
 			on_switch_effect_idx = i
 		if on_exit_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.trigger_name == "on_exit" and ev.target_instance_id == p2_active.unit_instance_id:
@@ -188,7 +185,7 @@ func _test_forced_replace_success_chain(harness) -> Dictionary:
 			on_enter_effect_idx = i
 	if switch_idx == -1 or on_switch_effect_idx == -1 or on_exit_effect_idx == -1 or state_exit_idx == -1 or state_replace_idx == -1 or state_enter_idx == -1 or on_enter_effect_idx == -1:
 		return harness.fail_result("missing forced_replace lifecycle events")
-	if not (switch_idx < on_switch_effect_idx and on_switch_effect_idx < on_exit_effect_idx and on_exit_effect_idx < state_exit_idx and state_exit_idx < state_replace_idx and state_replace_idx < state_enter_idx and state_enter_idx < on_enter_effect_idx):
+	if not (on_switch_effect_idx < on_exit_effect_idx and on_exit_effect_idx < state_exit_idx and state_exit_idx < state_replace_idx and state_replace_idx < state_enter_idx and state_enter_idx < on_enter_effect_idx and on_enter_effect_idx < switch_idx):
 		return harness.fail_result("forced_replace lifecycle ordering mismatch")
 	return harness.pass_result()
 

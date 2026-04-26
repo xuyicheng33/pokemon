@@ -468,6 +468,31 @@
   - 不改任何现有角色时，现有 gate 不受影响
 - 用法：`bash scripts/new_formal_character.sh <character_id> <display_name> [--pair-token TOKEN]`
 
+## 最近完成：全面修复与瘦身重构阶段 1 - 核心稳定（2026-04-26）
+
+- 状态：已完成
+- 目标：修复执行期 fail-fast 与核心状态一致性问题，先补稳定行为和替代覆盖，再进入 schema/formal/门禁瘦身。
+- 范围：
+  1. rule_mod 数值读取统一传播 `error_state()`，命中、伤害倍率、回蓝、治疗倍率与入站伤害倍率读错时直接终止对局
+  2. `ActionDomainGuard` 从 bool 结果升级为结构化结果，执行期领域/规则查询错误向 `ActionResult.invalid_battle_code` 传播
+  3. field apply 在生命周期与 success effects 成功后才写成功日志；失败恢复 active field 与 field rule_mod 状态
+  4. 手动换人与 forced replace 的 `STATE_SWITCH` 改为生命周期成功后记录；失败路径不写成功换人日志
+  5. invalid runtime 后允许 `get_event_log_snapshot()` 只读诊断；已结束对局再次 `run_turn` 返回明确 manager error
+- 新增回归：
+  - rule_mod 数值读取错误终止对局
+  - field apply 生命周期失败不提交 field、不写 apply 成功日志
+  - manual switch 生命周期失败不写 `STATE_SWITCH`
+  - invalid battle 后仍可读取 event log snapshot
+  - finished battle 再次 `run_turn` 返回 `invalid_manager_request`
+- 验证：
+  - `TEST_PATH=res://test/suites/action_guard_invalid_runtime_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/lifecycle_replacement_flow/manual_switch_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/forced_replace_lifecycle_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/field_lifecycle_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manager_log_and_runtime_contract/event_log_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+
 ## 最近完成：全项目体量与风险审查（2026-04-25）
 
 - 状态：已完成

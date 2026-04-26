@@ -117,7 +117,10 @@ func _run_turn_start_phase(battle_state: BattleState, content_index: BattleConte
 	var turn_start_event_id: String = log_event_builder.resolve_event_id(turn_start_event)
 	var skip_turn_start_regen: bool = battle_state.pre_applied_turn_start_regen_turn_index == battle_state.turn_index
 	if not skip_turn_start_regen:
-		turn_start_phase_service.apply_turn_start_regen(battle_state, turn_start_event_id)
+		var regen_invalid_code = turn_start_phase_service.apply_turn_start_regen(battle_state, turn_start_event_id)
+		if regen_invalid_code != null:
+			battle_result_service.terminate_invalid_battle(battle_state, str(regen_invalid_code))
+			return true
 	battle_state.pre_applied_turn_start_regen_turn_index = 0
 	return turn_start_phase_service.execute_phase(battle_state, content_index, turn_start_event_id)
 

@@ -69,7 +69,11 @@ func execute_action(queued_action: QueuedAction, battle_state: BattleState, cont
 		if skill_definition == null:
 			result.invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
 			return result
-	if not _can_start_and_stay_legal(queued_action, command, actor, battle_state, content_index):
+	var start_guard: Dictionary = _can_start_and_stay_legal_result(queued_action, command, actor, battle_state, content_index)
+	if start_guard.get("invalid_battle_code", null) != null:
+		result.invalid_battle_code = start_guard.get("invalid_battle_code", null)
+		return result
+	if not bool(start_guard.get("allowed", false)):
 		_log_cancelled_pre_start(queued_action, battle_state, command, result)
 		return result
 	var start_phase: Dictionary = action_start_phase_service.apply_action_start_phase(
@@ -109,10 +113,10 @@ func _resolve_skill_definition(command: Command, content_index: BattleContentInd
 func _uses_skill_definition(command_type: String) -> bool:
 	return command_type == CommandTypesScript.SKILL or command_type == CommandTypesScript.ULTIMATE
 
-func _can_start_and_stay_legal(queued_action: QueuedAction, command: Command, actor, battle_state: BattleState, content_index: BattleContentIndex) -> bool:
+func _can_start_and_stay_legal_result(queued_action: QueuedAction, command: Command, actor, battle_state: BattleState, content_index: BattleContentIndex) -> Dictionary:
 	if not _can_start_action(actor, command, battle_state):
-		return false
-	return action_domain_guard.is_action_still_allowed(queued_action, command, actor, battle_state, content_index)
+		return {"allowed": false, "invalid_battle_code": null}
+	return action_domain_guard.is_action_still_allowed_result(queued_action, command, actor, battle_state, content_index)
 
 func _log_cancelled_pre_start(queued_action: QueuedAction, battle_state: BattleState, command: Command, result) -> void:
 	action_log_service.log_action_cancelled_pre_start(queued_action, battle_state, command)
