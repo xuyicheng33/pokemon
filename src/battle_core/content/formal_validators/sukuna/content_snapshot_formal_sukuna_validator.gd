@@ -95,27 +95,10 @@ func _validate_kamado_contract(content_index: BattleContentIndex, errors: Array)
 
 func _validate_reverse_ritual_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[sukuna].reverse_ritual"
-	var effect_definition = _require_effect(content_index, errors, label, "sukuna_reverse_heal")
-	if effect_definition == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("sukuna", "sukuna_reverse_heal", "%s effect" % label)]
-	)
-	var heal_payload = _extract_single_payload(
-		errors,
-		label,
-		"sukuna_reverse_heal",
-		effect_definition,
-		HealPayloadScript,
-		"heal"
-	)
-	_expect_payload_shape(
-		errors,
-		"%s effect" % label,
-		heal_payload,
+	_validate_single_payload_effect(
+		content_index, errors,
+		"sukuna", label, "sukuna_reverse_heal",
+		HealPayloadScript, "heal",
 		{
 			"use_percent": true,
 			"percent": 25,

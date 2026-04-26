@@ -88,17 +88,12 @@ func _validate_apply_water_leak_listeners(content_index: BattleContentIndex, err
 
 func _validate_water_leak_self(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].water_leak_self"
-	var effect_definition = _require_effect(content_index, errors, label, "kashimo_water_leak_self_listener")
-	if effect_definition == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_water_leak_self_listener", label)]
+	_validate_single_payload_effect(
+		content_index, errors,
+		"kashimo_hajime", label, "kashimo_water_leak_self_listener",
+		ResourceModPayloadScript, "resource_mod",
+		{"resource_key": "mp", "amount": -15}
 	)
-	var payload = _extract_single_payload(errors, label, "kashimo_water_leak_self_listener", effect_definition, ResourceModPayloadScript, "resource_mod")
-	_expect_payload_shape(errors, "%s effect" % label, payload, {"resource_key": "mp", "amount": -15})
 
 func _validate_water_leak_counter(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].water_leak_counter"
@@ -136,20 +131,10 @@ func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) ->
 
 func _validate_kyokyo_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].kyokyo"
-	var effect_definition = _require_effect(content_index, errors, label, "kashimo_kyokyo_nullify")
-	if effect_definition == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_kyokyo_nullify", label)]
-	)
-	var payload = _extract_single_payload(errors, label, "kashimo_kyokyo_nullify", effect_definition, RuleModPayloadScript, "rule_mod")
-	_expect_payload_shape(
-		errors,
-		"%s effect" % label,
-		payload,
+	_validate_single_payload_effect(
+		content_index, errors,
+		"kashimo_hajime", label, "kashimo_kyokyo_nullify",
+		RuleModPayloadScript, "rule_mod",
 		{
 			"mod_kind": "nullify_field_accuracy",
 			"mod_op": "set",
@@ -231,53 +216,19 @@ func _validate_apply_charge(
 
 func _validate_negative_charge_mark(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].negative_charge_mark"
-	var effect_definition = _require_effect(content_index, errors, label, "kashimo_negative_charge_mark")
-	if effect_definition == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_negative_charge_mark", label)]
-	)
-	var damage_payload = _extract_single_payload(
-		errors,
-		label,
-		"kashimo_negative_charge_mark",
-		effect_definition,
-		DamagePayloadScript,
-		"damage"
-	)
-	_expect_payload_shape(
-		errors,
-		"%s payload" % label,
-		damage_payload,
+	_validate_single_payload_effect(
+		content_index, errors,
+		"kashimo_hajime", label, "kashimo_negative_charge_mark",
+		DamagePayloadScript, "damage",
 		{"amount": 8, "use_formula": false, "combat_type_id": "thunder"}
 	)
 
 func _validate_positive_charge_mark(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[kashimo_hajime].positive_charge_mark"
-	var effect_definition = _require_effect(content_index, errors, label, "kashimo_positive_charge_mark")
-	if effect_definition == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("kashimo_hajime", "kashimo_positive_charge_mark", label)]
-	)
-	var resource_payload = _extract_single_payload(
-		errors,
-		label,
-		"kashimo_positive_charge_mark",
-		effect_definition,
-		ResourceModPayloadScript,
-		"resource_mod"
-	)
-	_expect_payload_shape(
-		errors,
-		"%s payload" % label,
-		resource_payload,
+	_validate_single_payload_effect(
+		content_index, errors,
+		"kashimo_hajime", label, "kashimo_positive_charge_mark",
+		ResourceModPayloadScript, "resource_mod",
 		{"resource_key": "mp", "amount": 5}
 	)
 

@@ -2,6 +2,33 @@ extends RefCounted
 class_name ContentSnapshotFormalCharacterValidatorBase
 
 const BaselineErrorRegistryScript := preload("res://src/shared/formal_character_baselines.gd")
+const SharedContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
+
+var _shared_contract_helper = SharedContractHelperScript.new()
+
+func _validate_single_payload_effect(
+	content_index: BattleContentIndex,
+	errors: Array,
+	character_id: String,
+	label: String,
+	effect_id: String,
+	payload_script,
+	payload_name: String,
+	expected_payload_fields: Dictionary
+) -> Variant:
+	var effect_definition = _require_effect(content_index, errors, label, effect_id)
+	if effect_definition == null:
+		return null
+	_shared_contract_helper.validate_effect_contracts(
+		self,
+		content_index,
+		errors,
+		[BaselineErrorRegistryScript.effect_contract(character_id, effect_id, label)]
+	)
+	var payload = _extract_single_payload(errors, label, effect_id, effect_definition, payload_script, payload_name)
+	if payload != null:
+		_expect_payload_shape(errors, label, payload, expected_payload_fields)
+	return payload
 
 func _consume_formal_baseline_error(errors: Array, descriptor) -> bool:
 	var error_message := BaselineErrorRegistryScript.descriptor_error_message(descriptor)

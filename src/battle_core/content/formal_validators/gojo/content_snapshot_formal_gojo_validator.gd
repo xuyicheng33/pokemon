@@ -35,22 +35,10 @@ func _validate_mugen_contract(content_index: BattleContentIndex, errors: Array) 
 		errors,
 		[FormalCharacterBaselinesScript.passive_contract("gojo_satoru", "gojo_mugen", label)]
 	)
-	var effect_definition = _require_effect(content_index, errors, label, "gojo_mugen_incoming_accuracy_down")
-	if effect_definition == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("gojo_satoru", "gojo_mugen_incoming_accuracy_down", "%s effect" % label)]
-	)
-	var payload = _extract_single_payload(errors, label, "gojo_mugen_incoming_accuracy_down", effect_definition, RuleModPayloadScript, "rule_mod")
-	if payload == null:
-		return
-	_expect_payload_shape(
-		errors,
-		"%s effect" % label,
-		payload,
+	_validate_single_payload_effect(
+		content_index, errors,
+		"gojo_satoru", label, "gojo_mugen_incoming_accuracy_down",
+		RuleModPayloadScript, "rule_mod",
 		{
 			"mod_kind": "incoming_accuracy",
 			"mod_op": "add",
@@ -119,27 +107,10 @@ func _validate_marker_effect(
 
 func _validate_reverse_ritual_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[gojo_satoru].reverse_ritual"
-	var effect_definition = _require_effect(content_index, errors, label, "gojo_reverse_heal")
-	if effect_definition == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("gojo_satoru", "gojo_reverse_heal", "%s effect" % label)]
-	)
-	var heal_payload = _extract_single_payload(
-		errors,
-		label,
-		"gojo_reverse_heal",
-		effect_definition,
-		HealPayloadScript,
-		"heal"
-	)
-	_expect_payload_shape(
-		errors,
-		"%s effect" % label,
-		heal_payload,
+	_validate_single_payload_effect(
+		content_index, errors,
+		"gojo_satoru", label, "gojo_reverse_heal",
+		HealPayloadScript, "heal",
 		{
 			"use_percent": true,
 			"percent": 25,

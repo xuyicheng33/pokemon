@@ -35,27 +35,10 @@ func _validate_passive_contract(content_index: BattleContentIndex, errors: Array
 		errors,
 		[FormalCharacterBaselinesScript.passive_contract("obito_juubi_jinchuriki", "obito_xianren_zhili", label)]
 	)
-	var effect_definition = _require_effect(content_index, errors, label, "obito_xianren_zhili_heal")
-	if effect_definition == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_xianren_zhili_heal", "%s effect" % label)]
-	)
-	var heal_payload = _extract_single_payload(
-		errors,
-		label,
-		"obito_xianren_zhili_heal",
-		effect_definition,
-		HealPayloadScript,
-		"heal"
-	)
-	_expect_payload_shape(
-		errors,
-		"%s effect" % label,
-		heal_payload,
+	_validate_single_payload_effect(
+		content_index, errors,
+		"obito_juubi_jinchuriki", label, "obito_xianren_zhili_heal",
+		HealPayloadScript, "heal",
 		{
 			"use_percent": true,
 			"percent": 10,
@@ -217,27 +200,10 @@ func _validate_yinyang_dun_contracts(content_index: BattleContentIndex, errors: 
 
 func _validate_qiudaoyu_contracts(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[obito_juubi_jinchuriki].qiudao_yu"
-	var clear_effect = _require_effect(content_index, errors, label, "obito_qiudao_yu_clear_yinyang")
-	if clear_effect == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_qiudao_yu_clear_yinyang", "%s clear" % label)]
-	)
-	var clear_payload = _extract_single_payload(
-		errors,
-		label,
-		"obito_qiudao_yu_clear_yinyang",
-		clear_effect,
-		RemoveEffectPayloadScript,
-		"remove_effect"
-	)
-	_expect_payload_shape(
-		errors,
-		"%s clear.payload" % label,
-		clear_payload,
+	_validate_single_payload_effect(
+		content_index, errors,
+		"obito_juubi_jinchuriki", label, "obito_qiudao_yu_clear_yinyang",
+		RemoveEffectPayloadScript, "remove_effect",
 		{"effect_definition_id": "obito_yinyang_zhili", "remove_mode": "all"}
 	)
 
