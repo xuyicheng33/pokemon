@@ -84,6 +84,7 @@ func apply_damage_payload(payload, effect_definition, effect_event: EffectEvent,
 	if payload.use_formula:
 		var actor_unit = battle_state.get_unit(effect_event.owner_id)
 		if actor_unit == null:
+			last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
 			return
 		var formula_skill_definition = _resolve_chain_skill_definition(effect_event, content_index)
 		var damage_kind := _resolve_formula_damage_kind(payload, formula_skill_definition)
