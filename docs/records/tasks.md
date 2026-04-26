@@ -594,6 +594,29 @@
   - `bash tests/run_with_gate.sh`
   - `bash tests/run_extended_gate.sh`
 
+## 最近完成：模块化复审第一轮（2026-04-26）
+
+- 状态：已完成
+- 目标：在上一轮稳定性修复与瘦身收口之后，按模块重新审查 `composition / adapters / shared / test / tests / docs`，继续收集下一轮修复与瘦身入口。
+- 范围：
+  1. 重点检查 `SampleBattleFactory`、Sandbox、formal suite / gate、docs gate、BattleSandbox headless helper
+  2. 只做审查与记录，不改业务逻辑
+  3. 输出明确的下一轮修复顺序，避免再次做散点清理
+- 结论记录：`docs/records/project_review_2026-04-26_module_round_1.md`
+- 关键发现：
+  1. `effect_queue_service.gd` 的跨来源同速 trigger tie-break 没有真正走随机决胜，会稳定按实例 ID 顺序执行
+  2. field break / expire 在事件收集阶段失败时，没有把 invalid 往上传，仍可能继续清掉 field
+  3. `replacement_service.gd` 在后半段失败时可能留下半提交 roster 状态
+  4. `SampleBattleFactorySetupAccess.build_setup_by_matchup_id_result()` 仍可能通过 `has_matchup()` 把 catalog 加载错误吞成 unknown matchup，需要改成结构化 owner 查询
+  5. demo replay 启动链仍会先吃 `available_matchups` 与 strict `matchup_id` 校验，导致 formal catalog 坏掉时回放入口一起被堵
+  6. `FormalCharacterCapabilityCatalog` 的实例缓存没有按 `catalog_path` 分桶，存在多目录读取串数据风险
+  7. `tests/check_suite_reachability.sh` 与 formal suite gate 组合后，仍允许 manifest 指向空壳 suite 入口，和现行决策冲突
+  8. `repo_consistency_docs_gate.py` / `repo_consistency_surface_gate.py` 对同一套测试入口事实做了过多硬编码，维护噪声偏高
+  9. BattleSandbox quick 主路径与 headless helper 仍有可合并的重复覆盖
+- 验证：
+  - `git push origin main`
+  - `bash tests/check_repo_consistency.sh`
+
 ## 最近完成：核心函数参数类型标注补齐（2026-04-20）
 
 - 状态：已完成
