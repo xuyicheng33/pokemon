@@ -7,15 +7,12 @@ const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_he
 const DEFAULT_CATALOG_PATH := "res://config/sample_matchup_catalog.json"
 const OVERRIDE_REGISTRY_PATH := "registry_path_override"
 const OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH := "baseline_matchup_catalog_path_override"
-const OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH := "formal_matchup_catalog_path_override"
 const OVERRIDE_DEMO_CATALOG_PATH := "demo_catalog_path_override"
 
 var catalog_path_override: String = ""
 var override_config: Dictionary = {}
 var snapshot_access: SampleBattleFactoryContentPathsHelper = null
 var demo_catalog: SampleBattleFactoryDemoCatalog = null
-var formal_access: SampleBattleFactoryFormalAccess = null
-var formal_matchup_catalog: SampleBattleFactoryFormalMatchupCatalog = null
 
 func has_matchup(matchup_id: String) -> bool:
 	var catalog_result := _load_catalog_result()
@@ -75,9 +72,6 @@ func configure_baseline_matchup_catalog_path_override(path: String) -> void:
 	else:
 		_set_config_override(OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH, path)
 	refresh_baseline_unit_definition_ids()
-
-func configure_matchup_catalog_path_override(path: String) -> void:
-	_set_config_override(OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH, path)
 
 func configure_delivery_registry_path_override(path: String) -> void:
 	_set_config_override(OVERRIDE_REGISTRY_PATH, path)
@@ -147,18 +141,12 @@ func _set_config_override(key: String, path: String) -> void:
 	if override_config.is_empty():
 		if key == OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH:
 			catalog_path_override = path
-		elif key == OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH and formal_matchup_catalog != null:
-			formal_matchup_catalog.catalog_path_override = path
 		elif key == OVERRIDE_DEMO_CATALOG_PATH and demo_catalog != null:
 			demo_catalog.catalog_path_override = path
 		elif key == OVERRIDE_REGISTRY_PATH:
 			if snapshot_access != null:
 				snapshot_access.registry_path_override = path
-			if formal_access != null:
-				formal_access.registry_path_override = path
-			if formal_matchup_catalog != null:
-				formal_matchup_catalog.runtime_registry_path_override = path
-		return
+			return
 	override_config[key] = path
 
 func _config_override(key: String, fallback: String = "") -> String:

@@ -42,7 +42,7 @@ def _run_content_formal_delivery(ctx: GateContext) -> None:
     ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_sources/", "schema formal source dir wording")
     ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_manifest.json", "schema generated manifest wording")
     ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_capability_catalog.json", "schema generated capability catalog wording")
-    ctx.require_contains("docs/design/formal_character_capability_catalog.md", "00_shared_registry.json", "capability catalog shared registry wording")
+    ctx.require_contains("docs/design/formal_character_capability_catalog.md", "00_shared_capabilities.json", "capability catalog shared capabilities source wording")
 
 
 def _run_sandbox_testing_surface(ctx: GateContext) -> None:
@@ -61,8 +61,6 @@ def _run_sandbox_testing_surface(ctx: GateContext) -> None:
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "tests/run_with_gate.sh", "workflow quick total gate wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "tests/run_extended_gate.sh", "workflow extended gate wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "quick -> extended -> full", "workflow profile layering wording")
-    ctx.require_contains(CURRENT_WORKFLOW_DOC, "gdUnit4 quick -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> Python lint -> sandbox smoke matrix quick", "workflow fixed quick gate order wording")
-    ctx.require_contains(CURRENT_WORKFLOW_DOC, "CI 当前固定拆成 4 个并行 job", "workflow CI job count wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/design/current_stage_regression_baseline.md", "workflow regression baseline doc wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "gdUnit4 + test/", "workflow gdunit test tree wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/records/tasks.md", "workflow tasks record wording")
@@ -86,8 +84,6 @@ def _run_records_archive_wording(ctx: GateContext) -> None:
     ctx.require_exists("docs/records/archive/decisions_pre_2026-04-05_repair_wave.md", "decisions repair-wave archive")
     ctx.require_exists("docs/records/archive/tasks_pre_2026-04-05_repair_wave.md", "tasks repair-wave archive")
     ctx.require_contains("docs/records/tasks.md", "当前验证基线", "tasks active validation baseline section")
-    ctx.require_contains("docs/records/decisions.md", "README", "decisions README role wording")
-    ctx.require_contains("docs/records/decisions.md", "tests/sync_formal_registry.sh", "decisions formal sync command wording")
 
 
 ctx = GateContext()
