@@ -10,6 +10,10 @@ const FormalAccessScript := preload("res://src/composition/sample_battle_factory
 const MatchupCatalogScript := preload("res://src/composition/sample_battle_factory_matchup_catalog.gd")
 const BaselineLoaderScript := preload("res://src/shared/formal_character_baselines/formal_character_baseline_loader.gd")
 const SetupAccessScript := preload("res://src/composition/sample_battle_factory_setup_access.gd")
+const OVERRIDE_REGISTRY_PATH := "registry_path_override"
+const OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH := "baseline_matchup_catalog_path_override"
+const OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH := "formal_matchup_catalog_path_override"
+const OVERRIDE_DEMO_CATALOG_PATH := "demo_catalog_path_override"
 
 var _catalog_access: SampleBattleFactoryBaselineMatchupCatalog = BaselineMatchupCatalogScript.new()
 var _snapshot_access: SampleBattleFactoryContentPathsHelper = ContentPathsHelperScript.new()
@@ -18,11 +22,22 @@ var _demo_catalog: SampleBattleFactoryDemoCatalog = DemoCatalogScript.new()
 var _formal_access: SampleBattleFactoryFormalAccess = FormalAccessScript.new()
 var _formal_matchup_catalog: SampleBattleFactoryFormalMatchupCatalog = MatchupCatalogScript.new()
 var _setup_access: SampleBattleFactorySetupAccess = SetupAccessScript.new()
+var _override_config: Dictionary = {
+	OVERRIDE_REGISTRY_PATH: "",
+	OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH: "",
+	OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH: "",
+	OVERRIDE_DEMO_CATALOG_PATH: "",
+}
 var last_error_code: Variant = null
 var last_error_message: String = ""
 var _disposed: bool = false
 
 func _init() -> void:
+	_catalog_access.override_config = _override_config
+	_snapshot_access.override_config = _override_config
+	_demo_catalog.override_config = _override_config
+	_formal_access.override_config = _override_config
+	_formal_matchup_catalog.override_config = _override_config
 	_setup_access.baseline_matchup_catalog = _catalog_access
 	_setup_access.formal_matchup_catalog = _formal_matchup_catalog
 	_snapshot_access.formal_access = _formal_access
@@ -48,6 +63,7 @@ func dispose() -> void:
 	_nullify_links(_demo_input_builder, ["baseline_matchup_catalog", "content_paths_helper", "demo_catalog", "setup_access"])
 	_nullify_links(_formal_access, ["formal_matchup_catalog", "setup_access"])
 	_nullify_links(_catalog_access, ["snapshot_access", "demo_catalog", "formal_access", "formal_matchup_catalog"])
+	_nullify_override_config([_catalog_access, _snapshot_access, _demo_catalog, _formal_access, _formal_matchup_catalog])
 	_catalog_access = null
 	_snapshot_access = null
 	_demo_input_builder = null
@@ -63,23 +79,29 @@ static func _nullify_links(target, property_names: Array) -> void:
 	for prop_name in property_names:
 		target.set(prop_name, null)
 
+static func _nullify_override_config(targets: Array) -> void:
+	for target in targets:
+		if target != null:
+			target.override_config = {}
+
 func configure_registry_path_override(path: String) -> void:
-	_catalog_access.configure_registry_path_override(path)
+	_override_config[OVERRIDE_REGISTRY_PATH] = path
 
 func configure_baseline_matchup_catalog_path_override(path: String) -> void:
-	_catalog_access.configure_baseline_matchup_catalog_path_override(path)
+	_override_config[OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH] = path
+	_catalog_access.refresh_baseline_unit_definition_ids()
 
 func configure_matchup_catalog_path_override(path: String) -> void:
-	_catalog_access.configure_matchup_catalog_path_override(path)
+	_override_config[OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH] = path
 
 func configure_delivery_registry_path_override(path: String) -> void:
-	_catalog_access.configure_delivery_registry_path_override(path)
+	_override_config[OVERRIDE_REGISTRY_PATH] = path
 
 func configure_formal_manifest_path_override(path: String) -> void:
-	_catalog_access.configure_formal_manifest_path_override(path)
+	_override_config[OVERRIDE_REGISTRY_PATH] = path
 
 func configure_demo_catalog_path_override(path: String) -> void:
-	_catalog_access.configure_demo_catalog_path_override(path)
+	_override_config[OVERRIDE_DEMO_CATALOG_PATH] = path
 
 func default_demo_profile_id() -> String:
 	var result := default_demo_profile_id_result()

@@ -7,9 +7,12 @@ const MatchupContractsScript := preload("res://src/composition/sample_battle_fac
 const SurfaceBuilderScript := preload("res://src/composition/sample_battle_factory_surface_case_builder.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
+const OVERRIDE_REGISTRY_PATH := "registry_path_override"
+const OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH := "formal_matchup_catalog_path_override"
 
 var catalog_path_override: String = ""
 var runtime_registry_path_override: String = ""
+var override_config: Dictionary = {}
 var _contracts = MatchupContractsScript.new()
 var _manifest = FormalCharacterManifestScript.new()
 var _runtime_access: SampleBattleFactoryFormalAccess = FormalAccessScript.new()
@@ -74,7 +77,9 @@ func _load_catalog_result() -> Dictionary:
 	var matchups_validation_result := _contracts.validate_matchups_result(matchups, "formal matchup catalog")
 	if not bool(matchups_validation_result.get("ok", false)):
 		return matchups_validation_result
-	_runtime_access.registry_path_override = runtime_registry_path_override
+	_runtime_access.override_config = override_config
+	if override_config.is_empty():
+		_runtime_access.registry_path_override = runtime_registry_path_override
 	var runtime_entries_result: Dictionary = _runtime_access.load_runtime_entries_result()
 	if not bool(runtime_entries_result.get("ok", false)):
 		return _error_result(
@@ -167,10 +172,17 @@ func _load_manifest_catalog_result() -> Dictionary:
 	)
 
 func _resolve_manifest_path() -> String:
-	var trimmed_catalog_path := String(catalog_path_override).strip_edges()
+	var trimmed_catalog_path := _config_override(OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH, catalog_path_override)
 	if not trimmed_catalog_path.is_empty():
 		return trimmed_catalog_path
-	return String(runtime_registry_path_override).strip_edges()
+	return _config_override(OVERRIDE_REGISTRY_PATH, runtime_registry_path_override)
+
+func _config_override(key: String, fallback: String = "") -> String:
+	if override_config.has(key):
+		var value := String(override_config.get(key, "")).strip_edges()
+		if not value.is_empty():
+			return value
+	return String(fallback).strip_edges()
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.error(error_code, error_message)

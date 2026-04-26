@@ -5,8 +5,10 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const DEFAULT_CATALOG_PATH := "res://config/demo_replay_catalog.json"
+const OVERRIDE_DEMO_CATALOG_PATH := "demo_catalog_path_override"
 
 var catalog_path_override: String = ""
+var override_config: Dictionary = {}
 
 func default_profile_id() -> String:
 	var catalog_result := default_profile_id_result()
@@ -175,7 +177,17 @@ func _validate_command_payload(profile_id: String, catalog_path: String, command
 	return ""
 
 func _resolve_catalog_path() -> String:
-	return ResourcePathHelperScript.resolve(catalog_path_override, DEFAULT_CATALOG_PATH)
+	return ResourcePathHelperScript.resolve(
+		_config_override(OVERRIDE_DEMO_CATALOG_PATH, catalog_path_override),
+		DEFAULT_CATALOG_PATH
+	)
+
+func _config_override(key: String, fallback: String = "") -> String:
+	if override_config.has(key):
+		var value := String(override_config.get(key, "")).strip_edges()
+		if not value.is_empty():
+			return value
+	return String(fallback).strip_edges()
 
 func _parse_positive_int_result(value, error_message: String) -> Dictionary:
 	if typeof(value) == TYPE_INT:

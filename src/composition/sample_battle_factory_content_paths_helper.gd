@@ -7,8 +7,10 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const BASE_CONTENT_SNAPSHOT_DIRS = BaseSnapshotPathsServiceScript.BASE_CONTENT_SNAPSHOT_DIRS
 const PropertyAccessHelperScript := preload("res://src/shared/property_access_helper.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
+const OVERRIDE_REGISTRY_PATH := "registry_path_override"
 
 var registry_path_override: String = ""
+var override_config: Dictionary = {}
 var baseline_unit_definition_ids: PackedStringArray = PackedStringArray()
 var formal_access: SampleBattleFactoryFormalAccess = null
 var _base_snapshot_paths_service: SampleBattleFactoryBaseSnapshotPathsService = BaseSnapshotPathsServiceScript.new()
@@ -152,8 +154,16 @@ func _load_runtime_entries_for_snapshot_result() -> Dictionary:
 			ErrorCodesScript.INVALID_COMPOSITION,
 			"SampleBattleFactory content snapshot helper requires formal_access"
 		)
-	formal_access.registry_path_override = registry_path_override
+	if formal_access.override_config.is_empty():
+		formal_access.registry_path_override = _registry_path_override()
 	return formal_access.load_runtime_entries_for_snapshot_result()
+
+func _registry_path_override() -> String:
+	if override_config.has(OVERRIDE_REGISTRY_PATH):
+		var path := String(override_config.get(OVERRIDE_REGISTRY_PATH, "")).strip_edges()
+		if not path.is_empty():
+			return path
+	return String(registry_path_override).strip_edges()
 
 func _has_property(value, property_name: String) -> bool:
 	return PropertyAccessHelperScript.has_property(value, property_name)

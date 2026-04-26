@@ -26,12 +26,14 @@ func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, 
 	if not controller.is_inside_tree() or not view_refs.is_bound():
 		return
 	_update_responsive_layout(controller, view_refs)
-	_sync_launch_controls(state, view_refs)
+	var visible_matchups: Array = _launch_config_helper.visible_matchup_descriptors(state.available_matchups)
+	var current_player_ui_mode := _resolved_player_ui_mode(controller, state)
+	_sync_launch_controls(state, view_refs, visible_matchups)
 	view_refs.status_label.text = _fmt.format_status_text(state, current_view_model)
 	view_refs.error_label.text = state.error_message
 	view_refs.error_label.visible = not state.error_message.is_empty()
 	view_refs.battle_summary_label.text = _fmt.format_battle_summary_text(state.battle_summary)
-	_render_page_state(controller, state, view_refs, current_view_model)
+	_render_page_state(state, view_refs, current_view_model, current_player_ui_mode)
 	view_refs.config_status_label.text = _fmt.format_config_status_text(state)
 	view_refs.event_header_label.text = _fmt.format_event_header_text(state, current_view_model)
 	_set_rich_text(view_refs.p1_summary, _fmt.format_side_text(current_view_model, "P1", state.side_control_modes))
@@ -40,9 +42,10 @@ func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, 
 	view_refs.pending_label.text = _fmt.format_pending_text(current_view_model, state.battle_summary)
 	view_refs.action_header_label.text = _fmt.format_action_header(state, current_view_model)
 	_set_rich_text(view_refs.result_summary, _format_result_text(state, current_view_model))
-	_character_cards_renderer.render(controller, state, view_refs)
+	if current_player_ui_mode == "select":
+		_character_cards_renderer.render(controller, state, view_refs, visible_matchups)
 	_render_replay_controls(view_refs, current_view_model)
-	_action_buttons_renderer.render(controller, state, view_refs, current_view_model, _current_player_ui_mode(controller, state))
+	_action_buttons_renderer.render(controller, state, view_refs, current_view_model, current_player_ui_mode)
 
 func battle_finished(public_snapshot: Dictionary) -> bool:
 	return _fmt.has_battle_result(public_snapshot)
@@ -57,22 +60,19 @@ func build_launch_config_from_controls(state: SandboxSessionState, view_refs: Sa
 	next_config["p2_control_mode"] = _selected_option_value(view_refs.p2_mode_select)
 	return _launch_config_helper.normalize_config(next_config, state.available_matchups)
 
-func _sync_launch_controls(state: SandboxSessionState, view_refs: SandboxViewRefs) -> void:
-	_populate_matchup_select(state, view_refs)
+func _sync_launch_controls(state: SandboxSessionState, view_refs: SandboxViewRefs, visible_matchups: Array) -> void:
+	_populate_matchup_select(state, view_refs, visible_matchups)
 	_select_option_by_value(view_refs.p1_mode_select, _fmt.control_mode_for_side(state.side_control_modes, "P1"))
 	_select_option_by_value(view_refs.p2_mode_select, _fmt.control_mode_for_side(state.side_control_modes, "P2"))
 	view_refs.battle_seed_input.text = str(int(state.launch_config.get("battle_seed", BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)))
-	var controls_disabled: bool = state.is_demo_mode or _launch_config_helper.visible_matchup_descriptors(state.available_matchups).is_empty()
+	var controls_disabled: bool = state.is_demo_mode or visible_matchups.is_empty()
 	view_refs.matchup_select.disabled = controls_disabled
 	view_refs.battle_seed_input.editable = not controls_disabled
 	view_refs.p1_mode_select.disabled = controls_disabled
 	view_refs.p2_mode_select.disabled = controls_disabled
 	view_refs.restart_button.disabled = state.startup_failed or (controls_disabled and not state.is_demo_mode)
 
-func _render_page_state(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, current_view_model: Dictionary) -> void:
-	var mode := _current_player_ui_mode(controller, state)
-	if mode != "select" and _fmt.has_battle_result(state.public_snapshot):
-		mode = "result"
+func _render_page_state(state: SandboxSessionState, view_refs: SandboxViewRefs, current_view_model: Dictionary, mode: String) -> void:
 	view_refs.select_panel.visible = mode == "select"
 	view_refs.body_row.visible = mode == "battle"
 	view_refs.action_panel.visible = mode == "battle"
@@ -109,9 +109,14 @@ func _format_result_text(state: SandboxSessionState, current_view_model: Diction
 	return "\n".join(lines)
 
 func _current_player_ui_mode(controller, state: SandboxSessionState) -> String:
+	return _resolved_player_ui_mode(controller, state)
+
+func _resolved_player_ui_mode(controller, state: SandboxSessionState) -> String:
 	if controller != null:
 		var mode := str(controller.player_ui_mode()).strip_edges()
 		if not mode.is_empty():
+			if mode != "select" and _fmt.has_battle_result(state.public_snapshot):
+				return "result"
 			return mode
 	if _fmt.has_battle_result(state.public_snapshot):
 		return "result"
@@ -140,8 +145,7 @@ func _render_replay_controls(view_refs: SandboxViewRefs, current_view_model: Dic
 	view_refs.replay_prev_button.disabled = replay_frame_count <= 1 or replay_frame_index <= 0
 	view_refs.replay_next_button.disabled = replay_frame_count <= 1 or replay_frame_index >= replay_frame_count - 1
 
-func _populate_matchup_select(state: SandboxSessionState, view_refs: SandboxViewRefs) -> void:
-	var visible_matchups: Array = _launch_config_helper.visible_matchup_descriptors(state.available_matchups)
+func _populate_matchup_select(state: SandboxSessionState, view_refs: SandboxViewRefs, visible_matchups: Array) -> void:
 	view_refs.matchup_select.clear()
 	for descriptor in visible_matchups:
 		if not (descriptor is Dictionary):

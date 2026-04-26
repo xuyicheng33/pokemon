@@ -5,8 +5,13 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const DEFAULT_CATALOG_PATH := "res://config/sample_matchup_catalog.json"
+const OVERRIDE_REGISTRY_PATH := "registry_path_override"
+const OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH := "baseline_matchup_catalog_path_override"
+const OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH := "formal_matchup_catalog_path_override"
+const OVERRIDE_DEMO_CATALOG_PATH := "demo_catalog_path_override"
 
 var catalog_path_override: String = ""
+var override_config: Dictionary = {}
 var snapshot_access: SampleBattleFactoryContentPathsHelper = null
 var demo_catalog: SampleBattleFactoryDemoCatalog = null
 var formal_access: SampleBattleFactoryFormalAccess = null
@@ -98,26 +103,26 @@ func _first_matchup_collision(left_matchups: Dictionary, right_matchups: Diction
 	return ""
 
 func configure_registry_path_override(path: String) -> void:
-	_broadcast_shared_registry_override(path)
+	_set_config_override(OVERRIDE_REGISTRY_PATH, path)
 
 func configure_baseline_matchup_catalog_path_override(path: String) -> void:
-	catalog_path_override = path
+	if override_config.is_empty():
+		catalog_path_override = path
+	else:
+		_set_config_override(OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH, path)
 	refresh_baseline_unit_definition_ids()
 
 func configure_matchup_catalog_path_override(path: String) -> void:
-	if formal_matchup_catalog == null:
-		return
-	formal_matchup_catalog.catalog_path_override = path
+	_set_config_override(OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH, path)
 
 func configure_delivery_registry_path_override(path: String) -> void:
-	_broadcast_shared_registry_override(path)
+	_set_config_override(OVERRIDE_REGISTRY_PATH, path)
 
 func configure_formal_manifest_path_override(path: String) -> void:
-	_broadcast_shared_registry_override(path)
+	_set_config_override(OVERRIDE_REGISTRY_PATH, path)
 
 func configure_demo_catalog_path_override(path: String) -> void:
-	if demo_catalog != null:
-		demo_catalog.catalog_path_override = path
+	_set_config_override(OVERRIDE_DEMO_CATALOG_PATH, path)
 
 func refresh_baseline_unit_definition_ids() -> void:
 	if snapshot_access == null:
@@ -170,7 +175,10 @@ func _load_catalog_result() -> Dictionary:
 	return ResultEnvelopeHelperScript.ok(parsed)
 
 func _resolve_catalog_path() -> String:
-	return ResourcePathHelperScript.resolve(catalog_path_override, DEFAULT_CATALOG_PATH)
+	return ResourcePathHelperScript.resolve(
+		_config_override(OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH, catalog_path_override),
+		DEFAULT_CATALOG_PATH
+	)
 
 func _append_available_matchup_descriptors(descriptors: Array, raw_matchups, source: String) -> void:
 	if not (raw_matchups is Dictionary):
@@ -188,13 +196,30 @@ func _append_available_matchup_descriptors(descriptors: Array, raw_matchups, sou
 			"test_only": bool(matchup_spec.get("test_only", false)),
 		})
 
-func _broadcast_shared_registry_override(path: String) -> void:
-	if snapshot_access != null:
-		snapshot_access.registry_path_override = path
-	if formal_access != null:
-		formal_access.registry_path_override = path
-	if formal_matchup_catalog != null:
-		formal_matchup_catalog.runtime_registry_path_override = path
+func _set_config_override(key: String, path: String) -> void:
+	if override_config.is_empty():
+		if key == OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH:
+			catalog_path_override = path
+		elif key == OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH and formal_matchup_catalog != null:
+			formal_matchup_catalog.catalog_path_override = path
+		elif key == OVERRIDE_DEMO_CATALOG_PATH and demo_catalog != null:
+			demo_catalog.catalog_path_override = path
+		elif key == OVERRIDE_REGISTRY_PATH:
+			if snapshot_access != null:
+				snapshot_access.registry_path_override = path
+			if formal_access != null:
+				formal_access.registry_path_override = path
+			if formal_matchup_catalog != null:
+				formal_matchup_catalog.runtime_registry_path_override = path
+		return
+	override_config[key] = path
+
+func _config_override(key: String, fallback: String = "") -> String:
+	if override_config.has(key):
+		var value := String(override_config.get(key, "")).strip_edges()
+		if not value.is_empty():
+			return value
+	return String(fallback).strip_edges()
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.error(error_code, error_message)

@@ -468,6 +468,28 @@
   - 不改任何现有角色时，现有 gate 不受影响
 - 用法：`bash scripts/new_formal_character.sh <character_id> <display_name> [--pair-token TOKEN]`
 
+## 最近完成：全面修复与瘦身重构阶段 3 - composition 与 Sandbox 低风险瘦身（2026-04-26）
+
+- 状态：已完成
+- 目标：收敛 `SampleBattleFactory` override 配置归属，并降低 Sandbox 角色选择页重复构建开销。
+- 范围：
+  1. `SampleBattleFactory` 持有共享 override 配置，baseline/formal/demo/snapshot helper 改为读取同一个配置对象
+  2. 保留现有 facade 方法，不改变外部调用形状
+  3. `SandboxViewPresenter` 单次渲染只派生一次 visible matchup 列表
+  4. 角色卡只在选择页渲染，并按 visible matchup 与错误信息签名缓存，避免战斗页/结算页重复清空重建
+  5. `SandboxViewRefs` 集中声明节点路径常量，减少路径字符串散落
+- 验收标准：
+  - baseline setup/demo/baseline-only snapshot 仍不依赖 formal manifest
+  - formal matchup/角色选择仍能 fail-fast 暴露 manifest/catalog 错误
+  - manual scene 与 demo replay smoke 保持可启动、可操作
+- 验证：
+  - `TEST_PATH=res://test/suites/sample_battle_factory_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manual_battle_scene/manual_flow_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manual_battle_scene/demo_replay_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/catalog_factory_error_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+
 ## 最近完成：全面修复与瘦身重构阶段 2 - schema 与 formal 唯一性（2026-04-26）
 
 - 状态：已完成

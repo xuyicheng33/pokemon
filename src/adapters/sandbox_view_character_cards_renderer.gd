@@ -1,16 +1,19 @@
 extends RefCounted
 class_name SandboxViewCharacterCardsRenderer
 
-const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 const PaletteScript := preload("res://src/adapters/sandbox_view_palette.gd")
 
-var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 var _manifest = FormalCharacterManifestScript.new()
+var _last_render_signature: String = ""
 
-func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs) -> void:
+func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, visible_matchups: Array) -> void:
+	var signature := _render_signature(state, visible_matchups)
+	if signature == _last_render_signature and view_refs.character_cards.get_child_count() > 0:
+		return
+	_last_render_signature = signature
 	_clear_container_children(view_refs.character_cards)
-	var options := _character_options(state.available_matchups, state)
+	var options := _character_options(visible_matchups, state)
 	if options.is_empty():
 		var message := state.error_message.strip_edges()
 		if message.is_empty():
@@ -85,8 +88,8 @@ func _add_select_state_card(container: Node, message: String) -> void:
 	details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(details)
 
-func _character_options(available_matchups: Array, state: SandboxSessionState) -> Array:
-	var available_ids := _available_matchup_ids(available_matchups)
+func _character_options(visible_matchups: Array, state: SandboxSessionState) -> Array:
+	var available_ids := _available_matchup_ids(visible_matchups)
 	var entries_result: Dictionary = _manifest.build_character_entries_result()
 	if not bool(entries_result.get("ok", false)):
 		var manifest_error := String(entries_result.get("error_message", "")).strip_edges()
@@ -139,13 +142,27 @@ func _default_sigil(entry: Dictionary, index: int) -> String:
 
 func _available_matchup_ids(available_matchups: Array) -> Dictionary:
 	var ids := {}
-	for raw_descriptor in _launch_config_helper.visible_matchup_descriptors(available_matchups):
+	for raw_descriptor in available_matchups:
 		if not (raw_descriptor is Dictionary):
 			continue
 		var matchup_id := str(raw_descriptor.get("matchup_id", "")).strip_edges()
 		if not matchup_id.is_empty():
 			ids[matchup_id] = true
 	return ids
+
+func _render_signature(state: SandboxSessionState, visible_matchups: Array) -> String:
+	var visible_ids: Array = []
+	for raw_descriptor in visible_matchups:
+		if not (raw_descriptor is Dictionary):
+			continue
+		var matchup_id := str(raw_descriptor.get("matchup_id", "")).strip_edges()
+		if not matchup_id.is_empty():
+			visible_ids.append(matchup_id)
+	visible_ids.sort()
+	return "%s|%s" % [
+		",".join(visible_ids),
+		state.error_message.strip_edges(),
+	]
 
 func _new_card_label(text: String, font_size: int, color: Color) -> Label:
 	var label := Label.new()

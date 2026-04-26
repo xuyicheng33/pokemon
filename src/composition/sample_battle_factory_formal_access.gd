@@ -4,8 +4,10 @@ class_name SampleBattleFactoryFormalAccess
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
+const OVERRIDE_REGISTRY_PATH := "registry_path_override"
 
 var registry_path_override: String = ""
+var override_config: Dictionary = {}
 var formal_matchup_catalog: SampleBattleFactoryFormalMatchupCatalog = null
 var setup_access: SampleBattleFactorySetupAccess = null
 var _manifest = FormalCharacterManifestScript.new()
@@ -83,7 +85,7 @@ func formal_pair_interaction_cases_result() -> Dictionary:
 	return formal_matchup_catalog.formal_pair_interaction_cases_result()
 
 func load_runtime_entries_result() -> Dictionary:
-	_manifest.manifest_path_override = registry_path_override
+	_manifest.manifest_path_override = _registry_path_override()
 	var entries_result := _manifest.build_runtime_entries_result()
 	if bool(entries_result.get("ok", false)):
 		return ResultEnvelopeHelperScript.ok(entries_result.get("data", []))
@@ -93,7 +95,7 @@ func load_runtime_entries_result() -> Dictionary:
 	)
 
 func load_delivery_entries_result() -> Dictionary:
-	_manifest.manifest_path_override = registry_path_override
+	_manifest.manifest_path_override = _registry_path_override()
 	var entries_result := _manifest.build_delivery_entries_result()
 	if bool(entries_result.get("ok", false)):
 		return ResultEnvelopeHelperScript.ok(entries_result.get("data", []))
@@ -161,6 +163,13 @@ func _normalize_path(raw_path: String) -> String:
 	if trimmed_path.is_empty():
 		return ""
 	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+
+func _registry_path_override() -> String:
+	if override_config.has(OVERRIDE_REGISTRY_PATH):
+		var path := String(override_config.get(OVERRIDE_REGISTRY_PATH, "")).strip_edges()
+		if not path.is_empty():
+			return path
+	return String(registry_path_override).strip_edges()
 
 func _error_result(error_code: String, error_message: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.error(error_code, error_message)
