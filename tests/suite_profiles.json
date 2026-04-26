@@ -89,7 +89,7 @@
     "test/suites/manager_snapshot_public_contract/public_id_suite.gd": "extended",
     "test/suites/manager_snapshot_public_contract/snapshot_shape_suite.gd": "extended",
     "test/suites/manager_snapshot_public_contract/visibility_runtime_suite.gd": "extended",
-    "test/suites/manual_battle_scene/demo_replay_suite.gd": "quick",
+    "test/suites/manual_battle_scene/demo_replay_suite.gd": "extended",
     "test/suites/manual_battle_scene/manual_flow_suite.gd": "quick",
     "test/suites/multihit_skill_runtime/damage_segments_suite.gd": "extended",
     "test/suites/multihit_skill_runtime/execute_short_circuit_suite.gd": "extended",

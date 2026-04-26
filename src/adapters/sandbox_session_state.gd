@@ -21,6 +21,8 @@ var view_model: Dictionary = {}
 var launch_config: Dictionary = {}
 var side_control_modes: Dictionary = {}
 var available_matchups: Array = []
+var visible_matchups: Array = []
+var last_rendered_matchup_signature: String = ""
 var battle_summary: Dictionary = {}
 var command_steps: int = 0
 var replay_event_log: Array = []
@@ -48,6 +50,8 @@ func reset(default_launch_config: Dictionary, default_side_control_modes: Dictio
 	launch_config = default_launch_config.duplicate(true)
 	side_control_modes = default_side_control_modes.duplicate(true)
 	available_matchups.clear()
+	visible_matchups.clear()
+	last_rendered_matchup_signature = ""
 	battle_summary.clear()
 	command_steps = 0
 	replay_event_log.clear()

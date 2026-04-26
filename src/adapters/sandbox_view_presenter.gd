@@ -26,7 +26,7 @@ func render(controller, state: SandboxSessionState, view_refs: SandboxViewRefs, 
 	if not controller.is_inside_tree() or not view_refs.is_bound():
 		return
 	_update_responsive_layout(controller, view_refs)
-	var visible_matchups: Array = _launch_config_helper.visible_matchup_descriptors(state.available_matchups)
+	var visible_matchups: Array = state.visible_matchups
 	var current_player_ui_mode := _resolved_player_ui_mode(controller, state)
 	_sync_launch_controls(state, view_refs, visible_matchups)
 	view_refs.status_label.text = _fmt.format_status_text(state, current_view_model)
@@ -146,20 +146,34 @@ func _render_replay_controls(view_refs: SandboxViewRefs, current_view_model: Dic
 	view_refs.replay_next_button.disabled = replay_frame_count <= 1 or replay_frame_index >= replay_frame_count - 1
 
 func _populate_matchup_select(state: SandboxSessionState, view_refs: SandboxViewRefs, visible_matchups: Array) -> void:
-	view_refs.matchup_select.clear()
+	var signature := _build_matchup_signature(visible_matchups)
+	if signature != state.last_rendered_matchup_signature:
+		view_refs.matchup_select.clear()
+		for descriptor in visible_matchups:
+			if not (descriptor is Dictionary):
+				continue
+			var matchup_id = str(descriptor.get("matchup_id", "")).strip_edges()
+			if matchup_id.is_empty():
+				continue
+			_add_option_item(view_refs.matchup_select, matchup_id)
+		if view_refs.matchup_select.item_count == 0:
+			_add_option_item(view_refs.matchup_select, "no_available_matchups")
+			view_refs.matchup_select.disabled = true
+		else:
+			view_refs.matchup_select.disabled = false
+		state.last_rendered_matchup_signature = signature
+	_select_option_by_value(view_refs.matchup_select, str(state.launch_config.get("matchup_id", "")))
+
+func _build_matchup_signature(visible_matchups: Array) -> String:
+	var tokens: Array = []
 	for descriptor in visible_matchups:
 		if not (descriptor is Dictionary):
 			continue
 		var matchup_id = str(descriptor.get("matchup_id", "")).strip_edges()
 		if matchup_id.is_empty():
 			continue
-		_add_option_item(view_refs.matchup_select, matchup_id)
-	if view_refs.matchup_select.item_count == 0:
-		_add_option_item(view_refs.matchup_select, "no_available_matchups")
-		view_refs.matchup_select.disabled = true
-	else:
-		view_refs.matchup_select.disabled = false
-	_select_option_by_value(view_refs.matchup_select, str(state.launch_config.get("matchup_id", "")))
+		tokens.append(matchup_id)
+	return "|".join(tokens)
 
 func _configure_mode_select(option_button: OptionButton) -> void:
 	option_button.clear()

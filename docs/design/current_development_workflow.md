@@ -73,19 +73,21 @@ headless 复查入口固定为：
 
 ## 4. 测试入口与推荐跑法
 
-- `tests/run_with_gate.sh` 是默认 quick 总入口。
-- `tests/run_extended_gate.sh` 是显式 extended 入口。
-- `TEST_PROFILE=quick|extended|full` 控制 gdUnit 分层；默认开发门禁为 quick，阶段收口和大改动前跑 extended，完整收口跑 full。
+- `tests/run_with_gate.sh` 是唯一总入口；`TEST_PROFILE` 决定 gdUnit profile 与 sandbox smoke scope。
+- `tests/run_extended_gate.sh` 是 CI 入口的薄 wrapper，等价于 `TEST_PROFILE=extended bash tests/run_with_gate.sh`。
+- `TEST_PROFILE=quick|extended|full` 控制 gdUnit 分层与 sandbox smoke scope（默认 quick；显式覆写仍可用 `SANDBOX_SMOKE_SCOPE=...`）。
 - `gdUnit4 + test/` 是唯一 Godot 业务测试树。
 - `tests/run_gdunit.sh` 只作为 `gdUnit4` CLI 快跑入口，不替代总 gate。
 - `tests/check_gdunit_gate.sh` 与 `tests/check_boot_smoke.sh` 是总 gate / CI 共享的子入口。
 - 当前阶段回归基线文档固定为 `docs/design/current_stage_regression_baseline.md`。
 
-测试分层固定为 quick -> extended -> full：
+测试分层固定为 quick -> extended -> full，三档互不重叠（仅约束 quick 与 extended）；`full` 是独立执行时的全集 superset：
 
-- `quick`：默认 `tests/run_with_gate.sh` 跑的集合，覆盖核心合同、启动 smoke、UI 主流程、正式角色 snapshot/manager smoke、repo/arch/python gate 和 quick sandbox smoke。
-- `extended`：长尾边界、角色细节组合、历史回归、全量 gdUnit 业务 suite 和 full sandbox smoke。
-- `full`：全量 gdUnit 业务 suite、quick 静态门禁和 `SANDBOX_SMOKE_SCOPE=full`。
+- `quick`：默认 `tests/run_with_gate.sh` 跑的集合，覆盖核心合同、启动 smoke、UI 主流程、正式角色 snapshot/manager smoke、repo/arch/python gate 和 quick sandbox smoke（每 formal 角色 1 条 manual/policy + 默认 demo replay）。
+- `extended`：quick 之外的余量——长尾边界、角色细节组合、历史回归、其余 gdUnit 业务 suite，以及 extended sandbox smoke（推荐 / 其余 visible matchup × manual/policy + default 的 policy/policy / manual/manual / submit_*  + 其余 demo profile）。
+- `full`：全量 gdUnit 业务 suite + 全集 sandbox smoke（所有 visible matchup × 全控制模式 + 全 demo profile）。
+
+quick sandbox smoke 锚点由 `FormalCharacterManifest` 自动派生：每个 formal runtime 角色提供 1 个 quick anchor matchup（`formal_setup_matchup_id`），新增 formal 角色时 quick scope 自动 +1 个 manual/policy case，无需人工维护清单。
 
 推荐顺序：
 
