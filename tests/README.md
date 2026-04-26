@@ -8,7 +8,7 @@
 ## 1. 主要入口
 
 - `tests/sync_formal_registry.sh`：formal source descriptor -> committed manifest/catalog 的唯一人工同步入口
-- `tests/run_gdunit.sh`：`gdUnit4` CLI 入口；默认跑 quick profile，显式 `TEST_PROFILE=extended|full` 跑 `res://test`，并输出 `JUnit XML` 与 `HTML`
+- `tests/run_gdunit.sh`：`gdUnit4` CLI 入口；默认按 `tests/suite_profiles.json` 跑 quick profile，显式 `TEST_PROFILE=extended|full` 跑 `res://test`，并输出 `JUnit XML` 与 `HTML`
 - `tests/check_gdunit_gate.sh`：`gdUnit4` + 引擎日志扫描；供总 gate 与 CI 复用
 - `tests/check_boot_smoke.sh`：headless 启动 smoke；供总 gate 与 CI 复用
 - `tests/run_with_gate.sh`：默认 quick 总入口；按固定顺序串起 quick `gdUnit4`、boot smoke、suite reachability、架构 gate、repo consistency gate、Python lint、quick sandbox smoke matrix
@@ -17,7 +17,7 @@
 - `tests/check_architecture_constraints.sh`：分层与大文件架构闸门
 - `tests/check_repo_consistency.sh`：仓库一致性闸门总入口
 - `tests/check_sandbox_smoke_matrix.sh`：`BattleSandbox` 研发主路径 smoke matrix
-- `tests/cleanup_local_artifacts.sh`：清理废弃本地报告目录与 scratch 目录；保留 `reports/gdunit`
+- `tests/cleanup_local_artifacts.sh`：清理本地 `gdUnit` 报告、scratch 目录与 Python 缓存；保留 `reports/gdunit` 根目录
 
 ## 2. 目录职责
 
@@ -41,7 +41,7 @@
 - `replay`：replay input / summary / determinism / 浏览回归
 
 gdUnit 直接发现 `test/suites/` 下的具体 suite；大型主题可拆到同名子目录，但不再用 `register_tests` wrapper 聚合。
-默认测试分层为 `quick -> extended -> full`：quick 保留开发门禁主路径，extended 保留长尾边界和历史回归，full 在 extended 基础上使用 `SANDBOX_SMOKE_SCOPE=full`。
+默认测试分层为 `quick -> extended -> full`：suite 归属记录在 `tests/suite_profiles.json`，quick 保留开发门禁主路径，extended 保留长尾边界和历史回归，full 在 extended 基础上使用 `SANDBOX_SMOKE_SCOPE=full`。`manual` 当前保留给显式人工复查脚本，不默认接入总 gate。
 GDScript 前导缩进固定只允许 tab；`test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd` 当前统一纳入 support helper 体量门禁。
 
 ## 4. formal 单源约定

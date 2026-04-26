@@ -13,27 +13,7 @@ trap 'rm -f "$LOG_FILE"; cleanup_godot_headless_home' EXIT
 REPORT_DIR="${REPORT_DIR:-reports/gdunit}"
 TEST_PROFILE="${TEST_PROFILE:-quick}"
 GODOT_BIN_PATH="${GODOT_BIN:-$(command -v godot)}"
-
-QUICK_TEST_PATHS=(
-  "res://test/suites/battle_sandbox_launch_config_contract_suite.gd"
-  "res://test/suites/manual_battle_scene/manual_flow_suite.gd"
-  "res://test/suites/manual_battle_scene/demo_replay_suite.gd"
-  "res://test/suites/formal_character_snapshot_matrix_suite.gd"
-  "res://test/suites/formal_character_manager_public_matrix_suite.gd"
-  "res://test/suites/formal_character_manager_blackbox_matrix_suite.gd"
-  "res://test/suites/sample_battle_factory_contract_suite.gd"
-  "res://test/suites/content_validation_core/formal_registry/runtime_registry_suite.gd"
-  "res://test/suites/content_validation_core/formal_registry/catalog_factory_setup_suite.gd"
-  "res://test/suites/content_validation_core/formal_registry/catalog_factory_surface_suite.gd"
-  "res://test/suites/content_validation_core/formal_registry/catalog_factory_delivery_alignment_suite.gd"
-  "res://test/suites/formal_character_pair_smoke/surface_suite.gd"
-  "res://test/suites/formal_character_pair_smoke/interaction_suite.gd"
-  "res://test/suites/manager_replay_header_contract_suite.gd"
-  "res://test/suites/replay_content_smoke_suite.gd"
-  "res://test/suites/init_matchup_lifecycle_suite.gd"
-  "res://test/suites/ultimate_points_contract_suite.gd"
-  "res://test/suites/domain_clash_guard_suite.gd"
-)
+SUITE_PROFILE_MANIFEST="tests/suite_profiles.json"
 
 TEST_PATHS=()
 if [[ -n "${TEST_PATH:-}" ]]; then
@@ -41,13 +21,58 @@ if [[ -n "${TEST_PATH:-}" ]]; then
 else
   case "$TEST_PROFILE" in
     quick)
-      TEST_PATHS=("${QUICK_TEST_PATHS[@]}")
+      while IFS= read -r test_path; do
+        TEST_PATHS+=("$test_path")
+      done < <(python3 - "$SUITE_PROFILE_MANIFEST" quick <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+manifest_path = Path(sys.argv[1])
+requested_profile = sys.argv[2]
+payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+suite_profiles = payload.get("suite_profiles", {})
+if not isinstance(suite_profiles, dict):
+    raise SystemExit(f"TEST_PREREQ_MISSING: {manifest_path} missing suite_profiles object")
+suite_paths = sorted(path for path, profile in suite_profiles.items() if profile == requested_profile)
+if not suite_paths:
+    raise SystemExit(f"TEST_PREREQ_MISSING: no suites declared for TEST_PROFILE={requested_profile} in {manifest_path}")
+for path in suite_paths:
+    print("res://%s" % path)
+PY
+      )
       ;;
     extended|full)
       TEST_PATHS=("res://test")
       ;;
+    manual)
+      while IFS= read -r test_path; do
+        TEST_PATHS+=("$test_path")
+      done < <(python3 - "$SUITE_PROFILE_MANIFEST" manual <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+manifest_path = Path(sys.argv[1])
+requested_profile = sys.argv[2]
+payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+suite_profiles = payload.get("suite_profiles", {})
+if not isinstance(suite_profiles, dict):
+    raise SystemExit(f"TEST_PREREQ_MISSING: {manifest_path} missing suite_profiles object")
+suite_paths = sorted(path for path, profile in suite_profiles.items() if profile == requested_profile)
+if not suite_paths:
+    raise SystemExit(f"TEST_GATE_FAILED: no gdUnit suites are marked manual in {manifest_path}")
+for path in suite_paths:
+    print("res://%s" % path)
+PY
+      )
+      ;;
     *)
-      echo "TEST_PREREQ_MISSING: TEST_PROFILE must be quick, extended, or full: $TEST_PROFILE" >&2
+      echo "TEST_PREREQ_MISSING: TEST_PROFILE must be quick, extended, full, or manual: $TEST_PROFILE" >&2
       exit 1
       ;;
   esac

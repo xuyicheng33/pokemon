@@ -468,6 +468,26 @@
   - 不改任何现有角色时，现有 gate 不受影响
 - 用法：`bash scripts/new_formal_character.sh <character_id> <display_name> [--pair-token TOKEN]`
 
+## 最近完成：全面修复与瘦身重构阶段 4 - 测试门禁瘦身（2026-04-26）
+
+- 状态：已完成
+- 目标：把 quick/extended 门禁入口改成可声明、可校验的 profile 清单，并清理本地测试产物策略。
+- 范围：
+  1. 新增 `tests/suite_profiles.json`，显式记录每个 `gdUnit` suite 属于 `quick` 或 `extended`；`manual` 保留给人工复查脚本
+  2. `tests/run_gdunit.sh` 改为读取 suite profile 清单，不再内嵌 quick suite 列表
+  3. `tests/check_suite_reachability.sh` 增加 suite profile 完整性校验，阻止未分配 profile 的新 suite 混入
+  4. formal registry 中偏数据一致性的 `catalog_factory_surface_suite`、`catalog_factory_delivery_alignment_suite` 从 quick 移出，保留在 extended/full
+  5. `tests/cleanup_local_artifacts.sh` 覆盖 `reports/gdunit/report_1`、`tmp/`、`__pycache__`、`.ruff_cache`
+- 验收标准：
+  - quick 仍覆盖 BattleSandbox 主路径、formal runtime、pair smoke、sample factory、replay header 与 domain guard
+  - extended/full 仍能跑完整 `res://test` 与 full sandbox smoke
+  - suite profile 漂移会被静态 gate 直接拦下
+- 验证：
+  - `bash tests/check_suite_reachability.sh`
+  - `bash tests/check_gdunit_gate.sh`
+  - `bash tests/cleanup_local_artifacts.sh`
+  - `bash tests/run_extended_gate.sh`
+
 ## 最近完成：全面修复与瘦身重构阶段 3 - composition 与 Sandbox 低风险瘦身（2026-04-26）
 
 - 状态：已完成
