@@ -7,6 +7,8 @@ const ALLOWED_MOD_KINDS := ["final_mod", "mp_regen", "action_legality", "incomin
 const ALLOWED_SCOPES := ["self", "target", "field"]
 const ALLOWED_STACKING := ["none", "refresh", "replace"]
 const ACTION_LEGALITY_VALUES := ["all", "skill", "ultimate", "switch"]
+const MIN_PRIORITY := -10
+const MAX_PRIORITY := 10
 const STACKING_KEY_SCHEMA_BY_KIND := {
 	"final_mod": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op"],
 	"mp_regen": ["mod_kind", "scope", "owner_scope", "owner_id", "mod_op", "source_stacking_key"],
@@ -33,6 +35,8 @@ func validate_payload(rule_mod_payload, content_index: BattleContentIndex = null
 		errors.append("persists_on_switch is not allowed for field scope")
 	if rule_mod_payload.duration_mode == ContentSchemaScript.DURATION_TURNS and int(rule_mod_payload.duration) <= 0:
 		errors.append("duration %s" % rule_mod_payload.duration)
+	if int(rule_mod_payload.priority) < MIN_PRIORITY or int(rule_mod_payload.priority) > MAX_PRIORITY:
+		errors.append("priority %s" % rule_mod_payload.priority)
 	match String(rule_mod_payload.mod_kind):
 		ContentSchemaScript.RULE_MOD_FINAL_MOD:
 			if rule_mod_payload.mod_op != "mul" and rule_mod_payload.mod_op != "add" and rule_mod_payload.mod_op != "set":

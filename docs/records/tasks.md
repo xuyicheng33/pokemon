@@ -468,6 +468,29 @@
   - 不改任何现有角色时，现有 gate 不受影响
 - 用法：`bash scripts/new_formal_character.sh <character_id> <display_name> [--pair-token TOKEN]`
 
+## 最近完成：全面修复与瘦身重构阶段 2 - schema 与 formal 唯一性（2026-04-26）
+
+- 状态：已完成
+- 目标：把内容 schema 中会导致运行时漂移的隐式约束前移到快照校验，并补 formal setup matchup id 的唯一性与撞名保护。
+- 范围：
+  1. `apply_field` payload 强制承载 effect 使用 `duration_mode="turns"` 且 `duration > 0`
+  2. `rule_mod.priority` 增加 `-10..10` 范围校验，覆盖当前内容中合法的高优先级需求
+  3. `remove_mode="single"` 禁止直接指向 `stacking="stack"` 的 effect
+  4. `stat_mod.stage_delta` 增加 `-2..2` 范围校验，与运行时 clamp 保持一致
+  5. formal manifest runtime entry 禁止重复 `formal_setup_matchup_id`
+  6. formal 角色 setup id 禁止与 baseline matchup id 撞名，避免 baseline 路由静默抢先
+- 新增回归：
+  - extension validation 覆盖 apply_field duration、rule_mod priority、stat_delta、stack single remove
+  - formal runtime registry 覆盖重复 `formal_setup_matchup_id`
+  - sample factory 覆盖 formal setup id 与 baseline matchup id 撞名 fail-fast
+- 验证：
+  - `TEST_PATH=res://test/suites/extension_validation_contract/extension_validation_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/runtime_registry_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/catalog_factory_error_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_gdunit_gate.sh`
+
 ## 最近完成：全面修复与瘦身重构阶段 1 - 核心稳定（2026-04-26）
 
 - 状态：已完成

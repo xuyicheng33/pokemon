@@ -33,6 +33,16 @@ func build_formal_character_setup_result(character_id: String, side_regular_skil
 			ErrorCodesScript.INVALID_CONTENT_SNAPSHOT,
 			"SampleBattleFactory registry[%s] missing formal_setup_matchup_id" % character_id
 		)
+	if setup_access != null \
+	and setup_access.baseline_matchup_catalog != null \
+	and setup_access.baseline_matchup_catalog.has_matchup(matchup_id):
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory registry[%s] formal_setup_matchup_id collides with baseline matchup_id: %s" % [
+				character_id,
+				matchup_id,
+			]
+		)
 	var setup_result: Dictionary = formal_matchup_catalog.build_setup_result(
 		setup_access,
 		matchup_id,

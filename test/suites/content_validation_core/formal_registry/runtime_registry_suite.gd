@@ -18,6 +18,9 @@ func test_formal_character_baseline_descriptor_error_contract() -> void:
 func test_formal_character_runtime_registry_duplicate_unit_definition_guard_contract() -> void:
 	_assert_legacy_result(_test_formal_character_runtime_registry_duplicate_unit_definition_guard_contract(_harness))
 
+func test_formal_character_runtime_registry_duplicate_setup_matchup_guard_contract() -> void:
+	_assert_legacy_result(_test_formal_character_runtime_registry_duplicate_setup_matchup_guard_contract(_harness))
+
 func test_formal_character_runtime_registry_required_field_guard_contract() -> void:
 	_assert_legacy_result(_test_formal_character_runtime_registry_required_field_guard_contract(_harness))
 
@@ -118,6 +121,34 @@ func _test_formal_character_runtime_registry_duplicate_unit_definition_guard_con
 	var error_message := String(load_result.get("error_message", ""))
 	if error_message.find("duplicated unit_definition_id") == -1:
 		return harness.fail_result("runtime registry should fail fast on duplicated unit_definition_id")
+	return harness.pass_result()
+
+func _test_formal_character_runtime_registry_duplicate_setup_matchup_guard_contract(harness) -> Dictionary:
+	var manifest_path := "user://formal_character_manifest_duplicate_setup_matchup_fixture.json"
+	var manifest_payload := JSON.stringify(_build_manifest_payload([
+		_build_runtime_registry_entry(
+			"gojo_alias",
+			"gojo_satoru",
+			"gojo_vs_sample",
+			["content/units/gojo/gojo_satoru.tres"],
+			"",
+			"gojoalias"
+		),
+		_build_runtime_registry_entry(
+			"sukuna_alias",
+			"sukuna",
+			"gojo_vs_sample",
+			["content/units/sukuna/sukuna.tres"],
+			"",
+			"sukunaalias"
+		),
+	]), "  ")
+	if not _write_json_fixture(manifest_path, manifest_payload):
+		return harness.fail_result("failed to write duplicate setup matchup manifest fixture")
+	var load_result: Dictionary = FormalCharacterValidatorRegistryScript.load_entries_from_path(manifest_path)
+	var error_message := String(load_result.get("error_message", ""))
+	if error_message.find("duplicated formal_setup_matchup_id") == -1:
+		return harness.fail_result("runtime registry should fail fast on duplicated formal_setup_matchup_id, got: %s" % error_message)
 	return harness.pass_result()
 
 func _test_formal_character_runtime_registry_required_field_guard_contract(harness) -> Dictionary:

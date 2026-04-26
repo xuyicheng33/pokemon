@@ -5,6 +5,9 @@ extends "res://test/suites/content_validation_core/formal_registry/shared.gd"
 func test_sample_battle_factory_result_error_contract() -> void:
 	_assert_legacy_result(_test_sample_battle_factory_result_error_contract(_harness))
 
+func test_formal_setup_matchup_id_baseline_collision_fails_fast() -> void:
+	_assert_legacy_result(_test_formal_setup_matchup_id_baseline_collision_fails_fast(_harness))
+
 func _test_sample_battle_factory_result_error_contract(harness) -> Dictionary:
 	var sample_factory = harness.build_sample_factory()
 	if sample_factory == null:
@@ -31,4 +34,30 @@ func _test_sample_battle_factory_result_error_contract(harness) -> Dictionary:
 		return harness.fail_result("missing demo replay profile should report invalid_replay_input")
 	if String(missing_demo_profile_result.get("error_message", "")).find("unknown demo replay profile") == -1:
 		return harness.fail_result("missing demo replay profile should preserve lookup error_message")
+	return harness.pass_result()
+
+func _test_formal_setup_matchup_id_baseline_collision_fails_fast(harness) -> Dictionary:
+	var manifest_path := "user://formal_character_manifest_baseline_collision_fixture.json"
+	var manifest_payload := JSON.stringify(_build_manifest_payload([
+		_build_runtime_registry_entry(
+			"gojo_alias",
+			"gojo_satoru",
+			"sample_default",
+			["content/units/gojo/gojo_satoru.tres"],
+			"",
+			"gojoalias"
+		),
+	]), "  ")
+	if not _write_json_fixture(manifest_path, manifest_payload):
+		return harness.fail_result("failed to write baseline collision manifest fixture")
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	sample_factory.configure_formal_manifest_path_override(manifest_path)
+	var setup_result: Dictionary = sample_factory.build_formal_character_setup_result("gojo_alias")
+	if bool(setup_result.get("ok", false)):
+		return harness.fail_result("formal_setup_matchup_id colliding with baseline should fail")
+	var error_message := String(setup_result.get("error_message", ""))
+	if error_message.find("collides with baseline matchup_id") == -1:
+		return harness.fail_result("baseline collision error should be explicit, got: %s" % error_message)
 	return harness.pass_result()

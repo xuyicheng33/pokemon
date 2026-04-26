@@ -16,6 +16,12 @@ func _test_extension_validation_contract(harness) -> Dictionary:
 	marker_effect.display_name = "Required Marker"
 	marker_effect.scope = "self"
 	content_index.register_resource(marker_effect)
+	var stacked_marker_effect = EffectDefinitionScript.new()
+	stacked_marker_effect.id = "test_stacked_marker"
+	stacked_marker_effect.display_name = "Stacked Marker"
+	stacked_marker_effect.scope = "self"
+	stacked_marker_effect.stacking = "stack"
+	content_index.register_resource(stacked_marker_effect)
 
 	var bad_action_payload = RuleModPayloadScript.new()
 	bad_action_payload.payload_type = "rule_mod"
@@ -27,6 +33,7 @@ func _test_extension_validation_contract(harness) -> Dictionary:
 	bad_action_payload.duration = 1
 	bad_action_payload.decrement_on = "turn_start"
 	bad_action_payload.stacking = "replace"
+	bad_action_payload.priority = 11
 	var bad_action_effect = EffectDefinitionScript.new()
 	bad_action_effect.id = "test_bad_action_legality"
 	bad_action_effect.display_name = "Bad Action Legality"
@@ -217,6 +224,19 @@ func _test_extension_validation_contract(harness) -> Dictionary:
 	bad_field_stat_effect.payloads.append(bad_field_stat_payload)
 	content_index.register_resource(bad_field_stat_effect)
 
+	var bad_stage_delta_payload = StatModPayloadScript.new()
+	bad_stage_delta_payload.payload_type = "stat_mod"
+	bad_stage_delta_payload.stat_name = "speed"
+	bad_stage_delta_payload.stage_delta = 3
+	bad_stage_delta_payload.retention_mode = "normal"
+	var bad_stage_delta_effect = EffectDefinitionScript.new()
+	bad_stage_delta_effect.id = "test_bad_stage_delta"
+	bad_stage_delta_effect.display_name = "Bad Stage Delta"
+	bad_stage_delta_effect.scope = "self"
+	bad_stage_delta_effect.trigger_names = PackedStringArray(["on_hit"])
+	bad_stage_delta_effect.payloads.append(bad_stage_delta_payload)
+	content_index.register_resource(bad_stage_delta_effect)
+
 	var bad_field_apply_effect_payload = ApplyEffectPayloadScript.new()
 	bad_field_apply_effect_payload.payload_type = "apply_effect"
 	bad_field_apply_effect_payload.effect_definition_id = marker_effect.id
@@ -240,6 +260,18 @@ func _test_extension_validation_contract(harness) -> Dictionary:
 	bad_field_remove_effect.payloads.append(bad_field_remove_effect_payload)
 	content_index.register_resource(bad_field_remove_effect)
 
+	var bad_stack_single_remove_payload = RemoveEffectPayloadScript.new()
+	bad_stack_single_remove_payload.payload_type = "remove_effect"
+	bad_stack_single_remove_payload.effect_definition_id = stacked_marker_effect.id
+	bad_stack_single_remove_payload.remove_mode = "single"
+	var bad_stack_single_remove_effect = EffectDefinitionScript.new()
+	bad_stack_single_remove_effect.id = "test_bad_stack_single_remove"
+	bad_stack_single_remove_effect.display_name = "Bad Stack Single Remove"
+	bad_stack_single_remove_effect.scope = "self"
+	bad_stack_single_remove_effect.trigger_names = PackedStringArray(["on_hit"])
+	bad_stack_single_remove_effect.payloads.append(bad_stack_single_remove_payload)
+	content_index.register_resource(bad_stack_single_remove_effect)
+
 	var bad_non_field_apply_field_payload = ApplyFieldPayloadScript.new()
 	bad_non_field_apply_field_payload.payload_type = "apply_field"
 	bad_non_field_apply_field_payload.field_definition_id = "sample_focus_field"
@@ -254,6 +286,7 @@ func _test_extension_validation_contract(harness) -> Dictionary:
 	var errors: Array = content_index.validate_snapshot()
 	var needles := [
 		"effect[test_bad_action_legality].rule_mod invalid: action_legality value missing skill: missing_skill_id",
+		"effect[test_bad_action_legality].rule_mod invalid: priority 11",
 		"effect[test_bad_incoming_accuracy].rule_mod invalid: incoming_accuracy value must be int",
 		"effect[test_bad_nullify_field_accuracy].rule_mod invalid: mod_op add",
 		"effect[test_bad_nullify_field_accuracy].rule_mod invalid: nullify_field_accuracy value must be bool",
@@ -273,9 +306,13 @@ func _test_extension_validation_contract(harness) -> Dictionary:
 		"effect[test_bad_field_heal].heal requires scope=self/target/action_actor",
 		"effect[test_bad_field_resource_mod].resource_mod requires scope=self/target/action_actor",
 		"effect[test_bad_field_stat_mod].stat_mod requires scope=self/target/action_actor",
+		"effect[test_bad_stage_delta].stat_mod stage_delta out of range: 3",
 		"effect[test_bad_field_apply_effect].apply_effect requires scope=self/target/action_actor",
 		"effect[test_bad_field_remove_effect].remove_effect requires scope=self/target/action_actor",
+		"effect[test_bad_stack_single_remove].remove_effect single cannot target stacking effect: test_stacked_marker",
 		"effect[test_bad_non_field_apply_field].apply_field requires scope=field",
+		"effect[test_bad_non_field_apply_field].apply_field carrier duration_mode must be turns",
+		"effect[test_bad_non_field_apply_field].apply_field carrier duration must be > 0",
 	]
 	for needle in needles:
 		if not _has_error(errors, needle):

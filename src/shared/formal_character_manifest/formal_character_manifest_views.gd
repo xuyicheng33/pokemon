@@ -19,6 +19,7 @@ func validate_runtime_characters_result(characters: Array, manifest_path: String
 	var seen_character_ids: Dictionary = {}
 	var seen_unit_definition_ids: Dictionary = {}
 	var seen_pair_tokens: Dictionary = {}
+	var seen_formal_setup_matchup_ids: Dictionary = {}
 	var entries: Array = []
 	for entry_index in range(characters.size()):
 		var raw_entry = characters[entry_index]
@@ -56,6 +57,13 @@ func validate_runtime_characters_result(characters: Array, manifest_path: String
 				"FormalCharacterManifest duplicated pair_token: %s" % pair_token
 			)
 		seen_pair_tokens[pair_token] = true
+		var formal_setup_matchup_id := String(entry.get("formal_setup_matchup_id", "")).strip_edges()
+		if seen_formal_setup_matchup_ids.has(formal_setup_matchup_id):
+			return _error_result(
+				ErrorCodesScript.INVALID_BATTLE_SETUP,
+				"FormalCharacterManifest duplicated formal_setup_matchup_id: %s" % formal_setup_matchup_id
+			)
+		seen_formal_setup_matchup_ids[formal_setup_matchup_id] = true
 		var normalized_entry_result := _manifest_loader.normalize_entry_result(entry, character_id)
 		if not bool(normalized_entry_result.get("ok", false)):
 			return normalized_entry_result

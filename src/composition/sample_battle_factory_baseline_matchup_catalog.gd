@@ -74,12 +74,28 @@ func available_matchups_result() -> Dictionary:
 	var formal_result: Dictionary = formal_matchup_catalog.load_matchups_result()
 	if not bool(formal_result.get("ok", false)):
 		return formal_result
+	var collision_id := _first_matchup_collision(
+		baseline_result.get("data", {}).get("matchups", {}),
+		formal_result.get("data", {}).get("matchups", {})
+	)
+	if not collision_id.is_empty():
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory matchup_id collides between baseline and formal catalogs: %s" % collision_id
+		)
 	_append_available_matchup_descriptors(
 		descriptors,
 		formal_result.get("data", {}).get("matchups", {}),
 		"formal"
 	)
 	return ResultEnvelopeHelperScript.ok(descriptors)
+
+func _first_matchup_collision(left_matchups: Dictionary, right_matchups: Dictionary) -> String:
+	for raw_matchup_id in left_matchups.keys():
+		var matchup_id := String(raw_matchup_id).strip_edges()
+		if not matchup_id.is_empty() and right_matchups.has(matchup_id):
+			return matchup_id
+	return ""
 
 func configure_registry_path_override(path: String) -> void:
 	_broadcast_shared_registry_override(path)

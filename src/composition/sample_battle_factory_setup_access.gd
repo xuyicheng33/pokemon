@@ -39,7 +39,14 @@ func build_setup_from_side_specs_result(p1_side_spec: Dictionary, p2_side_spec: 
 	return ResultEnvelopeHelperScript.ok(battle_setup)
 
 func build_setup_by_matchup_id_result(matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	if baseline_matchup_catalog.has_matchup(matchup_id):
+	var has_baseline_matchup := baseline_matchup_catalog.has_matchup(matchup_id)
+	var has_formal_matchup := formal_matchup_catalog.has_matchup(matchup_id)
+	if has_baseline_matchup and has_formal_matchup:
+		return _error_result(
+			ErrorCodesScript.INVALID_BATTLE_SETUP,
+			"SampleBattleFactory matchup_id collides between baseline and formal catalogs: %s" % matchup_id
+		)
+	if has_baseline_matchup:
 		return baseline_matchup_catalog.build_setup_result(self, matchup_id, side_regular_skill_overrides)
 	return formal_matchup_catalog.build_setup_result(self, matchup_id, side_regular_skill_overrides)
 
