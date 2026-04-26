@@ -31,7 +31,8 @@
   - `repo_consistency_uid_gate.py`
   - `architecture_gdscript_style_gate.py`
 - 哪些 gate 不再负责措辞镜像：
-  - docs gate 不再要求 `README / tests README / design` 三处重复维护同一 formal 字段正文
+  - docs gate 当前只校验三类东西：规范源（`docs/design/current_development_workflow.md` 与 `docs/design/current_stage_regression_baseline.md`）自身的结构性章节 wording、`README.md` 与 `tests/README.md` 是否链向规范源、跨域文档（rules / 项目结构 / 决策 / formal 交付清单）必含的反向引用
+  - docs gate 不再要求 README / tests README / regression baseline 三处重复维护同一命令字符串、入口名或术语口径——这些只在规范源里收口
 
 ## 2. 代码分层与允许改动边界
 
