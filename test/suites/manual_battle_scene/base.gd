@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const BATTLE_SANDBOX_SCENE_PATH := "res://scenes/sandbox/BattleSandbox.tscn"
 

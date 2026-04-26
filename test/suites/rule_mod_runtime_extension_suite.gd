@@ -1,28 +1,21 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
 
-
 func test_nullify_field_accuracy_runtime_contract() -> void:
-	_assert_legacy_result(_test_nullify_field_accuracy_runtime_contract(_harness))
-
-func test_incoming_action_final_mod_runtime_contract() -> void:
-	_assert_legacy_result(_test_incoming_action_final_mod_runtime_contract(_harness))
-
-func test_mp_regen_runtime_value_must_be_int_contract() -> void:
-	_assert_legacy_result(_test_mp_regen_runtime_value_must_be_int_contract(_harness))
-func _test_nullify_field_accuracy_runtime_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var guaranteed_skill = _build_direct_skill("test_field_override_zero_accuracy", 0, "")
 	content_index.register_resource(guaranteed_skill)
@@ -32,7 +25,7 @@ func _test_nullify_field_accuracy_runtime_contract(harness) -> Dictionary:
 	content_index.register_resource(harmless_skill)
 	content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
 
-	var baseline_state = harness.build_initialized_battle(core, content_index, sample_factory, 731)
+	var baseline_state = _harness.build_initialized_battle(core, content_index, sample_factory, 731)
 	var baseline_actor = baseline_state.get_side("P1").get_active_unit()
 	baseline_state.field_state = _build_override_field_state("gojo_unlimited_void_field", baseline_actor.unit_instance_id)
 	core.service("battle_logger").reset()
@@ -54,10 +47,11 @@ func _test_nullify_field_accuracy_runtime_contract(harness) -> Dictionary:
 			"skill_id": harmless_skill.id,
 		}),
 	])
-	if harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A") <= 0:
-		return harness.fail_result("field override should force 0-accuracy skill to hit without nullify")
+	if _harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A") <= 0:
+		fail("field override should force 0-accuracy skill to hit without nullify")
+		return
 
-	var nullify_state = harness.build_initialized_battle(core, content_index, sample_factory, 731)
+	var nullify_state = _harness.build_initialized_battle(core, content_index, sample_factory, 731)
 	var nullify_actor = nullify_state.get_side("P1").get_active_unit()
 	var nullify_target = nullify_state.get_side("P2").get_active_unit()
 	nullify_state.field_state = _build_override_field_state("gojo_unlimited_void_field", nullify_actor.unit_instance_id)
@@ -73,7 +67,8 @@ func _test_nullify_field_accuracy_runtime_contract(harness) -> Dictionary:
 	nullify_payload.stacking = "replace"
 	nullify_payload.priority = 10
 	if core.service("rule_mod_service").create_instance(nullify_payload, {"scope": "unit", "id": nullify_target.unit_instance_id}, nullify_state, "test_nullify_field_accuracy", 0, nullify_target.base_speed) == null:
-		return harness.fail_result("failed to create nullify_field_accuracy rule_mod")
+		fail("failed to create nullify_field_accuracy rule_mod")
+		return
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(nullify_state, content_index, [
 		core.service("command_builder").build_command({
@@ -93,19 +88,21 @@ func _test_nullify_field_accuracy_runtime_contract(harness) -> Dictionary:
 			"skill_id": harmless_skill.id,
 		}),
 	])
-	if harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A") != 0:
-		return harness.fail_result("nullify_field_accuracy should restore original miss rate")
-	return harness.pass_result()
+	if _harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A") != 0:
+		fail("nullify_field_accuracy should restore original miss rate")
+		return
 
-func _test_incoming_action_final_mod_runtime_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_incoming_action_final_mod_runtime_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var thunder_skill = _build_direct_skill("test_incoming_action_thunder", 100, "thunder")
 	thunder_skill.power = 50
@@ -116,7 +113,7 @@ func _test_incoming_action_final_mod_runtime_contract(harness) -> Dictionary:
 	content_index.register_resource(harmless_skill)
 	content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
 
-	var baseline_state = harness.build_initialized_battle(core, content_index, sample_factory, 732)
+	var baseline_state = _harness.build_initialized_battle(core, content_index, sample_factory, 732)
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(baseline_state, content_index, [
 		core.service("command_builder").build_command({
@@ -136,11 +133,12 @@ func _test_incoming_action_final_mod_runtime_contract(harness) -> Dictionary:
 			"skill_id": harmless_skill.id,
 		}),
 	])
-	var baseline_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
+	var baseline_damage: int = _harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
 	if baseline_damage <= 0:
-		return harness.fail_result("missing baseline thunder damage for incoming_action_final_mod contract")
+		fail("missing baseline thunder damage for incoming_action_final_mod contract")
+		return
 
-	var modded_state = harness.build_initialized_battle(core, content_index, sample_factory, 732)
+	var modded_state = _harness.build_initialized_battle(core, content_index, sample_factory, 732)
 	var target = modded_state.get_side("P2").get_active_unit()
 	var incoming_payload = RuleModPayloadScript.new()
 	incoming_payload.payload_type = "rule_mod"
@@ -156,7 +154,8 @@ func _test_incoming_action_final_mod_runtime_contract(harness) -> Dictionary:
 	incoming_payload.required_incoming_command_types = PackedStringArray(["skill"])
 	incoming_payload.required_incoming_combat_type_ids = PackedStringArray(["thunder"])
 	if core.service("rule_mod_service").create_instance(incoming_payload, {"scope": "unit", "id": target.unit_instance_id}, modded_state, "test_incoming_action_final_mod", 0, target.base_speed) == null:
-		return harness.fail_result("failed to create incoming_action_final_mod rule_mod")
+		fail("failed to create incoming_action_final_mod rule_mod")
+		return
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(modded_state, content_index, [
 		core.service("command_builder").build_command({
@@ -176,19 +175,21 @@ func _test_incoming_action_final_mod_runtime_contract(harness) -> Dictionary:
 			"skill_id": harmless_skill.id,
 		}),
 	])
-	var modded_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
+	var modded_damage: int = _harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
 	if modded_damage >= baseline_damage:
-		return harness.fail_result("incoming_action_final_mod should reduce matching thunder skill damage")
+		fail("incoming_action_final_mod should reduce matching thunder skill damage")
+		return
 
 	var fire_skill = _build_direct_skill("test_incoming_action_fire", 100, "fire")
 	fire_skill.power = 50
 	content_index.register_resource(fire_skill)
 	content_index.units["sample_pyron"].skill_ids[0] = fire_skill.id
 
-	var fire_state = harness.build_initialized_battle(core, content_index, sample_factory, 733)
+	var fire_state = _harness.build_initialized_battle(core, content_index, sample_factory, 733)
 	var fire_target = fire_state.get_side("P2").get_active_unit()
 	if core.service("rule_mod_service").create_instance(incoming_payload, {"scope": "unit", "id": fire_target.unit_instance_id}, fire_state, "test_incoming_action_final_mod_fire", 0, fire_target.base_speed) == null:
-		return harness.fail_result("failed to create incoming_action_final_mod rule_mod for fire mismatch case")
+		fail("failed to create incoming_action_final_mod rule_mod for fire mismatch case")
+		return
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(fire_state, content_index, [
 		core.service("command_builder").build_command({
@@ -208,24 +209,27 @@ func _test_incoming_action_final_mod_runtime_contract(harness) -> Dictionary:
 			"skill_id": harmless_skill.id,
 		}),
 	])
-	var fire_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
+	var fire_damage: int = _harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
 	if fire_damage <= 0:
-		return harness.fail_result("missing fire damage for incoming_action_final_mod mismatch case")
-	return harness.pass_result()
+		fail("missing fire damage for incoming_action_final_mod mismatch case")
+		return
 
-func _test_mp_regen_runtime_value_must_be_int_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_mp_regen_runtime_value_must_be_int_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 734)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 734)
 	var target = battle_state.get_side("P1").get_active_unit()
 	if target == null:
-		return harness.fail_result("missing active unit for mp_regen int contract")
+		fail("missing active unit for mp_regen int contract")
+		return
 	var mp_regen_payload = RuleModPayloadScript.new()
 	mp_regen_payload.payload_type = "rule_mod"
 	mp_regen_payload.mod_kind = "mp_regen"
@@ -246,11 +250,13 @@ func _test_mp_regen_runtime_value_must_be_int_contract(harness) -> Dictionary:
 		7.5
 	)
 	if created_instance != null:
-		return harness.fail_result("mp_regen runtime value should fail-fast on fractional value")
+		fail("mp_regen runtime value should fail-fast on fractional value")
+		return
 	var error_state: Dictionary = core.service("rule_mod_service").error_state()
 	if String(error_state.get("code", "")) != "invalid_rule_mod_definition":
-		return harness.fail_result("fractional mp_regen runtime value should report invalid_rule_mod_definition")
-	return harness.pass_result()
+		fail("fractional mp_regen runtime value should report invalid_rule_mod_definition")
+		return
+
 
 func _build_direct_skill(skill_id: String, accuracy: int, combat_type_id: String):
 	var skill = SkillDefinitionScript.new()

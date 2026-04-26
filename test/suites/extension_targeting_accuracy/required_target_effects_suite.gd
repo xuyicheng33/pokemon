@@ -1,19 +1,16 @@
 extends "res://test/suites/extension_targeting_accuracy/base.gd"
-const BaseSuiteScript := preload("res://test/suites/extension_targeting_accuracy/base.gd")
-
-
 
 func test_required_target_effects_contract() -> void:
-	_assert_legacy_result(_test_required_target_effects_contract(_harness))
-func _test_required_target_effects_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var marker_effect = EffectDefinitionScript.new()
 	marker_effect.id = "test_required_runtime_marker"
@@ -50,7 +47,7 @@ func _test_required_target_effects_contract(harness) -> Dictionary:
 	conditional_skill.effects_on_hit_ids = PackedStringArray([conditional_effect.id])
 	content_index.register_resource(conditional_skill)
 
-	var skipped_state = harness.build_initialized_battle(core, content_index, sample_factory, 907)
+	var skipped_state = _harness.build_initialized_battle(core, content_index, sample_factory, 907)
 	var skipped_p1 = skipped_state.get_side("P1").get_active_unit()
 	var skipped_p2 = skipped_state.get_side("P2").get_active_unit()
 	skipped_p1.regular_skill_ids[0] = conditional_skill.id
@@ -74,14 +71,16 @@ func _test_required_target_effects_contract(harness) -> Dictionary:
 		}),
 	])
 	if int(skipped_p2.stat_stages.get("speed", 0)) != 0:
-		return harness.fail_result("required_target_effects should skip payloads when target marker is missing")
+		fail("required_target_effects should skip payloads when target marker is missing")
+		return
 	if _has_event(core.service("battle_logger").event_log, func(ev):
 		return ev.event_type == EventTypesScript.EFFECT_STAT_MOD \
 			and ev.target_instance_id == skipped_p2.unit_instance_id
 	):
-		return harness.fail_result("required_target_effects skip path must not emit payload logs")
+		fail("required_target_effects skip path must not emit payload logs")
+		return
 
-	var applied_state = harness.build_initialized_battle(core, content_index, sample_factory, 908)
+	var applied_state = _harness.build_initialized_battle(core, content_index, sample_factory, 908)
 	var applied_p1 = applied_state.get_side("P1").get_active_unit()
 	var applied_p2 = applied_state.get_side("P2").get_active_unit()
 	applied_p1.regular_skill_ids[0] = conditional_skill.id
@@ -106,5 +105,5 @@ func _test_required_target_effects_contract(harness) -> Dictionary:
 		}),
 	])
 	if int(applied_p2.stat_stages.get("speed", 0)) != -1:
-		return harness.fail_result("required_target_effects should allow payloads once target marker exists")
-	return harness.pass_result()
+		fail("required_target_effects should allow payloads once target marker exists")
+		return

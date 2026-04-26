@@ -20,6 +20,11 @@
 - Batch B2c: payload_handlers 三对折叠
 - Batch B3a: action_cast_service 拆分为 4 owner
 - Batch B3b: EffectInstanceService 查询 API
+- Batch C-A: test/suites 精简（双层桩 + before fixture + 角色参数化 + replay_guard 合并 + 命名）
+- Batch C-B: gate 减负（surface 字面量删、architecture 下沉 .py、sandbox heredoc 合一、cleanup 白名单反转）
+- Batch C-C: profile 重划分 + double support 合一 + 行数硬警
+- Batch D-Layout: BattleScreen tscn + controller（重启）
+- Batch D-Session: player_battle_session + event_log_streamer + default_policy（重启）
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 

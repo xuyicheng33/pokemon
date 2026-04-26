@@ -1,69 +1,69 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const ObitoTestSupportScript := preload("res://tests/support/obito_test_support.gd")
 
 var _support = ObitoTestSupportScript.new()
 
 
-
 func test_obito_qiudaoyu_power_bonus_contract() -> void:
-	_assert_legacy_result(_test_obito_qiudaoyu_power_bonus_contract(_harness))
+	var baseline = _run_qiudaoyu_damage_case(_harness, 0, 1530, false)
+	if not bool(baseline.get("ok", false)):
+		fail(str(baseline.get("error", "baseline qiudaoyu case failed")))
+		return
+	var charged = _run_qiudaoyu_damage_case(_harness, 3, 1531, false)
+	if not bool(charged.get("ok", false)):
+		fail(str(charged.get("error", "charged qiudaoyu case failed")))
+		return
+	if int(charged.get("damage", -1)) <= int(baseline.get("damage", -1)):
+		fail("obito_qiudaoyu should deal more damage when yinyang stacks are present")
+		return
+	if int(charged.get("remaining_stacks", -1)) != 0:
+		fail("obito_qiudaoyu should clear all yinyang stacks on hit")
+		return
 
 func test_obito_qiudaoyu_execute_contract() -> void:
-	_assert_legacy_result(_test_obito_qiudaoyu_execute_contract(_harness))
+	var result = _run_qiudaoyu_execute_case(_harness, 1532)
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "obito qiudaoyu execute case failed")))
+		return
+	if int(result.get("target_hp", -1)) != 0:
+		fail("obito_qiudaoyu should execute target at <= 30% hp with 5 stacks")
+		return
+	if not bool(result.get("execute_log", false)):
+		fail("obito_qiudaoyu execute path should emit [execute] damage log")
+		return
+	if int(result.get("remaining_stacks", -1)) != 0:
+		fail("obito_qiudaoyu execute path should still clear all yinyang stacks")
+		return
 
 func test_obito_qiudaoyu_execute_short_circuit_contract() -> void:
-	_assert_legacy_result(_test_obito_qiudaoyu_execute_short_circuit_contract(_harness))
+	var result = _run_qiudaoyu_execute_case(_harness, 1535)
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "obito qiudaoyu execute short-circuit case failed")))
+		return
+	if int(result.get("damage_event_count", -1)) != 1:
+		fail("obito_qiudaoyu execute path should emit exactly one execute damage event")
+		return
+	if int(result.get("non_execute_damage_event_count", -1)) != 0:
+		fail("obito_qiudaoyu execute path should not continue into formula damage after execute")
+		return
 
 func test_obito_qiudaoyu_hit_and_miss_clear_contract() -> void:
-	_assert_legacy_result(_test_obito_qiudaoyu_hit_and_miss_clear_contract(_harness))
-func _test_obito_qiudaoyu_power_bonus_contract(harness) -> Dictionary:
-	var baseline = _run_qiudaoyu_damage_case(harness, 0, 1530, false)
-	if not bool(baseline.get("ok", false)):
-		return harness.fail_result(str(baseline.get("error", "baseline qiudaoyu case failed")))
-	var charged = _run_qiudaoyu_damage_case(harness, 3, 1531, false)
-	if not bool(charged.get("ok", false)):
-		return harness.fail_result(str(charged.get("error", "charged qiudaoyu case failed")))
-	if int(charged.get("damage", -1)) <= int(baseline.get("damage", -1)):
-		return harness.fail_result("obito_qiudaoyu should deal more damage when yinyang stacks are present")
-	if int(charged.get("remaining_stacks", -1)) != 0:
-		return harness.fail_result("obito_qiudaoyu should clear all yinyang stacks on hit")
-	return harness.pass_result()
-
-func _test_obito_qiudaoyu_execute_contract(harness) -> Dictionary:
-	var result = _run_qiudaoyu_execute_case(harness, 1532)
-	if not bool(result.get("ok", false)):
-		return harness.fail_result(str(result.get("error", "obito qiudaoyu execute case failed")))
-	if int(result.get("target_hp", -1)) != 0:
-		return harness.fail_result("obito_qiudaoyu should execute target at <= 30% hp with 5 stacks")
-	if not bool(result.get("execute_log", false)):
-		return harness.fail_result("obito_qiudaoyu execute path should emit [execute] damage log")
-	if int(result.get("remaining_stacks", -1)) != 0:
-		return harness.fail_result("obito_qiudaoyu execute path should still clear all yinyang stacks")
-	return harness.pass_result()
-
-func _test_obito_qiudaoyu_execute_short_circuit_contract(harness) -> Dictionary:
-	var result = _run_qiudaoyu_execute_case(harness, 1535)
-	if not bool(result.get("ok", false)):
-		return harness.fail_result(str(result.get("error", "obito qiudaoyu execute short-circuit case failed")))
-	if int(result.get("damage_event_count", -1)) != 1:
-		return harness.fail_result("obito_qiudaoyu execute path should emit exactly one execute damage event")
-	if int(result.get("non_execute_damage_event_count", -1)) != 0:
-		return harness.fail_result("obito_qiudaoyu execute path should not continue into formula damage after execute")
-	return harness.pass_result()
-
-func _test_obito_qiudaoyu_hit_and_miss_clear_contract(harness) -> Dictionary:
-	var hit_result = _run_qiudaoyu_damage_case(harness, 2, 1533, false)
+	var hit_result = _run_qiudaoyu_damage_case(_harness, 2, 1533, false)
 	if not bool(hit_result.get("ok", false)):
-		return harness.fail_result(str(hit_result.get("error", "obito qiudaoyu hit clear case failed")))
+		fail(str(hit_result.get("error", "obito qiudaoyu hit clear case failed")))
+		return
 	if int(hit_result.get("remaining_stacks", -1)) != 0:
-		return harness.fail_result("obito_qiudaoyu should clear all yinyang stacks on hit")
-	var miss_result = _run_qiudaoyu_damage_case(harness, 2, 1534, true)
+		fail("obito_qiudaoyu should clear all yinyang stacks on hit")
+		return
+	var miss_result = _run_qiudaoyu_damage_case(_harness, 2, 1534, true)
 	if not bool(miss_result.get("ok", false)):
-		return harness.fail_result(str(miss_result.get("error", "obito qiudaoyu miss clear case failed")))
+		fail(str(miss_result.get("error", "obito qiudaoyu miss clear case failed")))
+		return
 	if int(miss_result.get("remaining_stacks", -1)) != 0:
-		return harness.fail_result("obito_qiudaoyu should clear all yinyang stacks on miss")
-	return harness.pass_result()
+		fail("obito_qiudaoyu should clear all yinyang stacks on miss")
+		return
+
 
 @warning_ignore("shadowed_global_identifier")
 func _run_qiudaoyu_damage_case(harness, preseed_stacks: int, seed: int, force_miss: bool) -> Dictionary:

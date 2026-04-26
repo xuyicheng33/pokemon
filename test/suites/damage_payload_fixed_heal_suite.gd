@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
@@ -13,24 +13,23 @@ var _helper = DamagePayloadContractTestHelperScript.new()
 
 
 func test_damage_payload_fixed_type_resolution() -> void:
-	_assert_legacy_result(_test_fixed_type_resolution(_harness))
-
-func test_heal_payload_percent_resolution() -> void:
-	_assert_legacy_result(_test_heal_percent_resolution(_harness))
-func _test_fixed_type_resolution(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var content_index = BattleContentIndexScript.new()
 	if not content_index.load_snapshot(snapshot_paths_payload.get("paths", PackedStringArray())):
-		return harness.fail_result("content snapshot load failed: %s" % content_index.last_error_message)
+		fail("content snapshot load failed: %s" % content_index.last_error_message)
+		return
 
 	var payload = DamagePayloadScript.new()
 	payload.payload_type = "damage"
@@ -70,7 +69,7 @@ func _test_fixed_type_resolution(harness) -> Dictionary:
 	content_index.register_resource(harmless_skill)
 	content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
 
-	var battle_setup = harness.build_sample_setup(sample_factory)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
 	var battle_state = _build_initialized_battle(core, content_index, battle_setup, 610)
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
@@ -93,27 +92,33 @@ func _test_fixed_type_resolution(harness) -> Dictionary:
 	])
 	var effect_damage_event = _find_effect_damage_event(core.service("battle_logger").event_log)
 	if effect_damage_event == null or effect_damage_event.value_changes.is_empty():
-		return harness.fail_result("missing fixed damage event")
+		fail("missing fixed damage event")
+		return
 	if abs(int(effect_damage_event.value_changes[0].delta)) != 10:
-		return harness.fail_result("fixed fire damage against water should be halved to 10")
+		fail("fixed fire damage against water should be halved to 10")
+		return
 	if not is_equal_approx(float(effect_damage_event.type_effectiveness), 0.5):
-		return harness.fail_result("fixed damage should apply fire type effectiveness")
-	return harness.pass_result()
+		fail("fixed damage should apply fire type effectiveness")
+		return
 
-func _test_heal_percent_resolution(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_heal_payload_percent_resolution() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var content_index = BattleContentIndexScript.new()
 	if not content_index.load_snapshot(snapshot_paths_payload.get("paths", PackedStringArray())):
-		return harness.fail_result("content snapshot load failed: %s" % content_index.last_error_message)
+		fail("content snapshot load failed: %s" % content_index.last_error_message)
+		return
 
 	var heal_payload = HealPayloadScript.new()
 	heal_payload.payload_type = "heal"
@@ -152,7 +157,7 @@ func _test_heal_percent_resolution(harness) -> Dictionary:
 	content_index.register_resource(harmless_skill)
 	content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
 
-	var battle_setup = harness.build_sample_setup(sample_factory)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
 	var battle_state = _build_initialized_battle(core, content_index, battle_setup, 611)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	actor.current_hp = max(1, int(floor(float(actor.max_hp) / 2.0)))
@@ -179,9 +184,10 @@ func _test_heal_percent_resolution(harness) -> Dictionary:
 	for log_event in core.service("battle_logger").event_log:
 		if log_event.event_type == EventTypesScript.EFFECT_HEAL and not log_event.value_changes.is_empty():
 			if int(log_event.value_changes[0].delta) != expected_gain:
-				return harness.fail_result("heal percent delta mismatch")
-			return harness.pass_result()
-	return harness.fail_result("missing heal percent event")
+				fail("heal percent delta mismatch")
+				return
+			return
+	fail("missing heal percent event")
 
 
 @warning_ignore("shadowed_global_identifier")

@@ -1,5 +1,4 @@
 extends "res://test/suites/manual_battle_scene/base.gd"
-const BaseSuiteScript := preload("res://test/suites/manual_battle_scene/base.gd")
 
 func test_demo_replay_scene_enters_turn_browser_contract() -> void:
 	var runner := await _create_runner()

@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
@@ -9,29 +9,21 @@ const PowerBonusResolverScript := preload("res://src/battle_core/actions/power_b
 const PowerBonusSourceRegistryScript := preload("res://src/battle_core/content/power_bonus_source_registry.gd")
 
 
-
 func test_power_bonus_registered_source_coverage_contract() -> void:
-	_assert_legacy_result(_test_power_bonus_registered_source_coverage_contract(_harness))
-
-func test_power_bonus_contract_validator_dispatch_contract() -> void:
-	_assert_legacy_result(_test_power_bonus_contract_validator_dispatch_contract(_harness))
-
-func test_effect_stack_sum_and_remove_all_runtime_contract() -> void:
-	_assert_legacy_result(_test_effect_stack_sum_and_remove_all_runtime_contract(_harness))
-func _test_power_bonus_registered_source_coverage_contract(harness) -> Dictionary:
 	var unresolved_sources := PowerBonusResolverScript.unresolved_registered_sources()
 	if not unresolved_sources.is_empty():
-		return harness.fail_result(
+		fail(
 			"PowerBonusResolver missing registered source coverage: %s" % ", ".join(unresolved_sources)
 		)
+		return
 	var unresolved_validator_sources := PowerBonusSourceRegistryScript.unresolved_validator_sources()
 	if not unresolved_validator_sources.is_empty():
-		return harness.fail_result(
+		fail(
 			"PowerBonusSourceRegistry missing validator coverage: %s" % ", ".join(unresolved_validator_sources)
 		)
-	return harness.pass_result()
+		return
 
-func _test_power_bonus_contract_validator_dispatch_contract(harness) -> Dictionary:
+func test_power_bonus_contract_validator_dispatch_contract() -> void:
 	var content_index = BattleContentIndexScript.new()
 	var bad_skill = SkillDefinitionScript.new()
 	bad_skill.id = "power_bonus_dispatch_bad_skill"
@@ -48,18 +40,20 @@ func _test_power_bonus_contract_validator_dispatch_contract(harness) -> Dictiona
 		has_missing_effect_error = has_missing_effect_error or msg.find("power_bonus_self_effect_ids missing effect") != -1
 		has_per_stack_error = has_per_stack_error or msg.find("power_bonus_per_stack must be > 0") != -1
 	if not (has_missing_effect_error and has_per_stack_error):
-		return harness.fail_result("PowerBonusSourceRegistry validator dispatch drifted")
-	return harness.pass_result()
+		fail("PowerBonusSourceRegistry validator dispatch drifted")
+		return
 
-func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_effect_stack_sum_and_remove_all_runtime_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var self_mark = EffectDefinitionScript.new()
 	self_mark.id = "test_effect_stack_sum_self_mark"
@@ -133,19 +127,22 @@ func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictiona
 	content_index.register_resource(harmless_skill)
 	content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
 
-	var battle_setup = harness.build_sample_setup(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 710, battle_setup)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 710, battle_setup)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if actor == null or target == null:
-		return harness.fail_result("missing active units for effect_stack_sum runtime contract")
+		fail("missing active units for effect_stack_sum runtime contract")
+		return
 
 	for _i in range(2):
 		if core.service("effect_instance_service").create_instance(self_mark, actor.unit_instance_id, battle_state, "test_self_mark", 0, actor.base_speed) == null:
-			return harness.fail_result("failed to create self mark instance")
+			fail("failed to create self mark instance")
+			return
 	for _i in range(3):
 		if core.service("effect_instance_service").create_instance(target_mark, target.unit_instance_id, battle_state, "test_target_mark", 0, actor.base_speed) == null:
-			return harness.fail_result("failed to create target mark instance")
+			fail("failed to create target mark instance")
+			return
 
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
@@ -176,14 +173,17 @@ func _test_effect_stack_sum_and_remove_all_runtime_contract(harness) -> Dictiona
 		),
 		1.0
 	)
-	var actual_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
+	var actual_damage: int = _harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
 	if actual_damage != expected_damage:
-		return harness.fail_result("effect_stack_sum damage mismatch: expected=%d actual=%d" % [expected_damage, actual_damage])
+		fail("effect_stack_sum damage mismatch: expected=%d actual=%d" % [expected_damage, actual_damage])
+		return
 	if _count_effect_instances(actor, self_mark.id) != 0:
-		return harness.fail_result("remove_mode=all should clear all self marks on hit")
+		fail("remove_mode=all should clear all self marks on hit")
+		return
 	if _count_effect_instances(target, target_mark.id) != 0:
-		return harness.fail_result("remove_mode=all should clear all target marks on hit")
-	return harness.pass_result()
+		fail("remove_mode=all should clear all target marks on hit")
+		return
+
 
 func _count_effect_instances(unit_state, effect_id: String) -> int:
 	var count := 0

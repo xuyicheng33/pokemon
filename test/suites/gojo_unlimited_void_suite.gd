@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const GojoTestSupportScript := preload("res://tests/support/gojo_test_support.gd")
@@ -8,28 +8,11 @@ var _support = GojoTestSupportScript.new()
 var _contract_support = GojoUnlimitedVoidContractSupportScript.new()
 
 
-
 func test_gojo_unlimited_void_runtime_contract() -> void:
-	_assert_legacy_result(_test_gojo_unlimited_void_runtime_contract(_harness))
-
-func test_gojo_unlimited_void_action_lock_wait_contract() -> void:
-	_assert_legacy_result(_test_gojo_unlimited_void_action_lock_wait_contract(_harness))
-
-func test_gojo_unlimited_void_cancelled_pre_start_contract() -> void:
-	_assert_legacy_result(_test_gojo_unlimited_void_cancelled_pre_start_contract(_harness))
-
-func test_gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract() -> void:
-	_assert_legacy_result(_test_gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract(_harness))
-
-func test_gojo_unlimited_void_expire_removes_field_buff_contract() -> void:
-	_assert_legacy_result(_test_gojo_unlimited_void_expire_removes_field_buff_contract(_harness))
-
-func test_gojo_unlimited_void_break_removes_field_buff_contract() -> void:
-	_assert_legacy_result(_test_gojo_unlimited_void_break_removes_field_buff_contract(_harness))
-func _test_gojo_unlimited_void_runtime_contract(harness) -> Dictionary:
-	var state_payload = _support.build_gojo_vs_sample_state(harness, 1212)
+	var state_payload = _support.build_gojo_vs_sample_state(_harness, 1212)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -43,40 +26,47 @@ func _test_gojo_unlimited_void_runtime_contract(harness) -> Dictionary:
 		_support.build_wait_command(core, 1, "P2", "P2-A"),
 	])
 	if battle_state.field_state == null or battle_state.field_state.field_def_id != "gojo_unlimited_void_field":
-		return harness.fail_result("无量空处命中后应施加无量空处领域")
+		fail("无量空处命中后应施加无量空处领域")
+		return
 	if int(gojo_unit.stat_stages.get("sp_attack", 0)) != 1:
-		return harness.fail_result("无量空处领域成功立住时应给自己 sp_attack +1")
+		fail("无量空处领域成功立住时应给自己 sp_attack +1")
+		return
 	if not _support.has_event(core.service("battle_logger").event_log, func(ev):
 		return ev.event_type == EventTypesScript.EFFECT_APPLY_FIELD \
 			and ev.field_change != null \
 			and ev.field_change.after_field_id == "gojo_unlimited_void_field"
 	):
-		return harness.fail_result("无量空处命中后应写出领域施加日志")
+		fail("无量空处命中后应写出领域施加日志")
+		return
 	if not _support.has_event(core.service("battle_logger").event_log, func(ev):
 		return ev.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and ev.target_instance_id == target_unit.unit_instance_id
 	):
-		return harness.fail_result("无量空处命中后应对目标写出 deny all rule_mod 施加日志")
+		fail("无量空处命中后应对目标写出 deny all rule_mod 施加日志")
+		return
 	content_index.skills["gojo_ao"].accuracy = 1
 	var hit_command = _support.build_resolved_skill_command(core, 2, "P1", "P1-A", gojo_unit.unit_instance_id, "gojo_ao")
 	var hit_info = core.service("action_cast_service").resolve_hit(hit_command, content_index.skills["gojo_ao"], target_unit, battle_state, content_index)
 	if hit_info.get("hit_roll", "not-null") != null or abs(float(hit_info.get("hit_rate", -1.0)) - 1.0) > 0.0001:
-		return harness.fail_result("无量空处领域内 creator_accuracy_override 应让 Gojo 的技能必中")
-	return harness.pass_result()
+		fail("无量空处领域内 creator_accuracy_override 应让 Gojo 的技能必中")
+		return
 
-func _test_gojo_unlimited_void_action_lock_wait_contract(harness) -> Dictionary:
-	var state_payload = _support.build_gojo_vs_sample_state(harness, 1217)
+func test_gojo_unlimited_void_action_lock_wait_contract() -> void:
+	var state_payload = _support.build_gojo_vs_sample_state(_harness, 1217)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
 	var gojo_unit = battle_state.get_side("P1").get_active_unit()
 	var target_unit = battle_state.get_side("P2").get_active_unit()
 	if gojo_unit == null or target_unit == null:
-		return harness.fail_result("missing active units for unlimited void wait contract")
+		fail("missing active units for unlimited void wait contract")
+		return
 	var lock_effect = content_index.effects.get("gojo_domain_action_lock", null)
 	if lock_effect == null or lock_effect.payloads.is_empty():
-		return harness.fail_result("missing gojo_domain_action_lock effect definition")
+		fail("missing gojo_domain_action_lock effect definition")
+		return
 	var lock_payload = lock_effect.payloads[0]
 	if core.service("rule_mod_service").create_instance(
 		lock_payload,
@@ -86,17 +76,20 @@ func _test_gojo_unlimited_void_action_lock_wait_contract(harness) -> Dictionary:
 		0,
 		gojo_unit.base_speed
 	) == null:
-		return harness.fail_result("failed to apply gojo domain action lock payload directly")
+		fail("failed to apply gojo domain action lock payload directly")
+		return
 	var legal_actions = core.service("legal_action_service").get_legal_actions(battle_state, "P2", content_index)
 	if legal_actions == null:
-		return harness.fail_result("failed to resolve legal actions under gojo domain action lock")
+		fail("failed to resolve legal actions under gojo domain action lock")
+		return
 	if not legal_actions.wait_allowed or legal_actions.forced_command_type != "":
-		return harness.fail_result("gojo domain action lock should still leave wait available")
+		fail("gojo domain action lock should still leave wait available")
+		return
 	if not legal_actions.legal_skill_ids.is_empty() or not legal_actions.legal_ultimate_ids.is_empty() or not legal_actions.legal_switch_target_public_ids.is_empty():
-		return harness.fail_result("gojo domain action lock should deny skills, ultimates, and switches while keeping wait")
-	return harness.pass_result()
+		fail("gojo domain action lock should deny skills, ultimates, and switches while keeping wait")
+		return
 
-func _test_gojo_unlimited_void_cancelled_pre_start_contract(harness) -> Dictionary:
+func test_gojo_unlimited_void_cancelled_pre_start_contract() -> void:
 	var cases: Array = [
 		{
 			"name": "skill",
@@ -117,9 +110,10 @@ func _test_gojo_unlimited_void_cancelled_pre_start_contract(harness) -> Dictiona
 	]
 	for i in range(cases.size()):
 		var use_sukuna: bool = String(cases[i].get("opponent", "sample")) == "sukuna"
-		var state_payload = _support.build_gojo_battle_state(harness, 1213 + i, use_sukuna, true)
+		var state_payload = _support.build_gojo_battle_state(_harness, 1213 + i, use_sukuna, true)
 		if state_payload.has("error"):
-			return harness.fail_result(str(state_payload["error"]))
+			fail(str(state_payload["error"]))
+			return
 		var core = state_payload["core"]
 		var content_index = state_payload["content_index"]
 		var battle_state = state_payload["battle_state"]
@@ -137,32 +131,43 @@ func _test_gojo_unlimited_void_cancelled_pre_start_contract(harness) -> Dictiona
 		])
 		var opponent = _support.find_unit_on_side(battle_state, "P2", "sukuna" if use_sukuna else "sample_pyron")
 		if opponent == null:
-			return harness.fail_result("missing opponent unit for unlimited void cancel test")
+			fail("missing opponent unit for unlimited void cancel test")
+			return
 		if bool(cases[i]["expect_cancelled"]):
 			if not _support.has_event(core.service("battle_logger").event_log, func(ev):
 				return ev.event_type == EventTypesScript.ACTION_CANCELLED_PRE_START and ev.target_instance_id == opponent.unit_instance_id
 			):
-				return harness.fail_result("无量空处先手命中后应把对方未开始的 %s 动作标记为 cancelled_pre_start" % cases[i]["name"])
+				fail("无量空处先手命中后应把对方未开始的 %s 动作标记为 cancelled_pre_start" % cases[i]["name"])
+				return
 			if _support.has_event(core.service("battle_logger").event_log, func(ev):
 				return ev.event_type == EventTypesScript.ACTION_CAST and ev.actor_id == opponent.unit_instance_id
 			):
-				return harness.fail_result("被无量空处锁住的 %s 动作不应走到 ACTION_CAST" % cases[i]["name"])
+				fail("被无量空处锁住的 %s 动作不应走到 ACTION_CAST" % cases[i]["name"])
+				return
 			continue
 		if not _support.has_event(core.service("battle_logger").event_log, func(ev):
 			return ev.event_type == EventTypesScript.ACTION_CAST and ev.actor_id == opponent.unit_instance_id
 		):
-			return harness.fail_result("双方同回合开领域时，对手 %s 动作不应被 action_lock 抢先取消" % cases[i]["name"])
+			fail("双方同回合开领域时，对手 %s 动作不应被 action_lock 抢先取消" % cases[i]["name"])
+			return
 		if not _support.has_event(core.service("battle_logger").event_log, func(ev):
 			return ev.event_type == EventTypesScript.EFFECT_FIELD_CLASH
 		):
-			return harness.fail_result("双方同回合开领域时必须写出领域对拼日志")
-	return harness.pass_result()
+			fail("双方同回合开领域时必须写出领域对拼日志")
+			return
 
-func _test_gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract(harness) -> Dictionary:
-	return _contract_support.run_failed_clash_does_not_revive_action_lock_contract(harness)
+func test_gojo_unlimited_void_failed_clash_does_not_revive_action_lock_contract() -> void:
+	var __legacy_result = _contract_support.run_failed_clash_does_not_revive_action_lock_contract(_harness)
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
 
-func _test_gojo_unlimited_void_expire_removes_field_buff_contract(harness) -> Dictionary:
-	return _contract_support.run_expire_removes_field_buff_contract(harness)
+func test_gojo_unlimited_void_expire_removes_field_buff_contract() -> void:
+	var __legacy_result = _contract_support.run_expire_removes_field_buff_contract(_harness)
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
 
-func _test_gojo_unlimited_void_break_removes_field_buff_contract(harness) -> Dictionary:
-	return _contract_support.run_break_removes_field_buff_contract(harness)
+func test_gojo_unlimited_void_break_removes_field_buff_contract() -> void:
+	var __legacy_result = _contract_support.run_break_removes_field_buff_contract(_harness)
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
+

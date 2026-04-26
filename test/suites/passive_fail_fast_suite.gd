@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
@@ -8,32 +8,33 @@ const PassiveFailFastTestSupportScript := preload("res://tests/support/passive_f
 var _support = PassiveFailFastTestSupportScript.new()
 
 
-
 func test_invalid_passive_skill_trigger_source_fails_fast() -> void:
-	_assert_legacy_result(_test_invalid_passive_skill_trigger_source_fails_fast(_harness))
+	var payload = _build_invalid_passive_battle(_harness, "skill")
+	if payload.has("error"):
+		fail(str(payload["error"]))
+		return
+	var __legacy_result = _run_invalid_trigger_source_turn_and_assert(_harness, payload["core"], payload["content_index"], payload["battle_state"], "passive skill")
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
 
 func test_invalid_passive_item_trigger_source_fails_fast() -> void:
-	_assert_legacy_result(_test_invalid_passive_item_trigger_source_fails_fast(_harness))
+	var payload = _build_invalid_passive_battle(_harness, "item")
+	if payload.has("error"):
+		fail(str(payload["error"]))
+		return
+	var __legacy_result = _run_invalid_trigger_source_turn_and_assert(_harness, payload["core"], payload["content_index"], payload["battle_state"], "passive item")
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
 
 func test_invalid_field_trigger_source_fails_fast() -> void:
-	_assert_legacy_result(_test_invalid_field_trigger_source_fails_fast(_harness))
-func _test_invalid_passive_skill_trigger_source_fails_fast(harness) -> Dictionary:
-	var payload = _build_invalid_passive_battle(harness, "skill")
+	var payload = _build_invalid_field_battle(_harness)
 	if payload.has("error"):
-		return harness.fail_result(str(payload["error"]))
-	return _run_invalid_trigger_source_turn_and_assert(harness, payload["core"], payload["content_index"], payload["battle_state"], "passive skill")
+		fail(str(payload["error"]))
+		return
+	var __legacy_result = _run_invalid_trigger_source_turn_and_assert(_harness, payload["core"], payload["content_index"], payload["battle_state"], "field")
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
 
-func _test_invalid_passive_item_trigger_source_fails_fast(harness) -> Dictionary:
-	var payload = _build_invalid_passive_battle(harness, "item")
-	if payload.has("error"):
-		return harness.fail_result(str(payload["error"]))
-	return _run_invalid_trigger_source_turn_and_assert(harness, payload["core"], payload["content_index"], payload["battle_state"], "passive item")
-
-func _test_invalid_field_trigger_source_fails_fast(harness) -> Dictionary:
-	var payload = _build_invalid_field_battle(harness)
-	if payload.has("error"):
-		return harness.fail_result(str(payload["error"]))
-	return _run_invalid_trigger_source_turn_and_assert(harness, payload["core"], payload["content_index"], payload["battle_state"], "field")
 
 func _build_invalid_passive_battle(harness, passive_kind: String) -> Dictionary:
 	var core_payload = harness.build_core()

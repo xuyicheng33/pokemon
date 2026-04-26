@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -9,19 +9,16 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 
 func test_invalid_battle_rule_mod_definition() -> void:
-	_assert_legacy_result(_test_invalid_battle_rule_mod_definition(_harness))
-
-func test_rule_mod_action_legality_enforced() -> void:
-	_assert_legacy_result(_test_rule_mod_action_legality_enforced(_harness))
-func _test_invalid_battle_rule_mod_definition(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var invalid_payload = RuleModPayloadScript.new()
 	invalid_payload.payload_type = "rule_mod"
@@ -56,7 +53,7 @@ func _test_invalid_battle_rule_mod_definition(harness) -> Dictionary:
 	if not p1_def.skill_ids.has(invalid_skill.id):
 		p1_def.skill_ids[0] = invalid_skill.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 106)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 106)
 	var commands: Array = [
 		core.service("command_builder").build_command({
 			"turn_index": 1,
@@ -77,27 +74,32 @@ func _test_invalid_battle_rule_mod_definition(harness) -> Dictionary:
 	]
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
 	if not battle_state.battle_result.finished:
-		return harness.fail_result("invalid_battle should finish battle immediately")
+		fail("invalid_battle should finish battle immediately")
+		return
 	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_RULE_MOD_DEFINITION:
-		return harness.fail_result("invalid_battle reason mismatch: %s" % str(battle_state.battle_result.reason))
+		fail("invalid_battle reason mismatch: %s" % str(battle_state.battle_result.reason))
+		return
 	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_RULE_MOD_DEFINITION:
-			return harness.pass_result()
-	return harness.fail_result("invalid_battle log event missing")
+			return
+	fail("invalid_battle log event missing")
 
-func _test_rule_mod_action_legality_enforced(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_rule_mod_action_legality_enforced() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 107)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 107)
 	var p1_active = battle_state.get_side("P1").get_active_unit()
 	if p1_active == null:
-		return harness.fail_result("P1 active unit missing")
+		fail("P1 active unit missing")
+		return
 
 	var deny_payload = RuleModPayloadScript.new()
 	deny_payload.payload_type = "rule_mod"
@@ -111,7 +113,8 @@ func _test_rule_mod_action_legality_enforced(harness) -> Dictionary:
 	deny_payload.stacking = "replace"
 	deny_payload.priority = 10
 	if core.service("rule_mod_service").create_instance(deny_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_action_legality_gate", 0, p1_active.base_speed) == null:
-		return harness.fail_result("failed to create action_legality deny instance")
+		fail("failed to create action_legality deny instance")
+		return
 
 	var commands: Array = [
 		core.service("command_builder").build_command({
@@ -133,10 +136,13 @@ func _test_rule_mod_action_legality_enforced(harness) -> Dictionary:
 	]
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, commands)
 	if not battle_state.battle_result.finished:
-		return harness.fail_result("illegal manual command should fail-fast")
+		fail("illegal manual command should fail-fast")
+		return
 	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
-		return harness.fail_result("expected invalid_command_payload, got %s" % str(battle_state.battle_result.reason))
+		fail("expected invalid_command_payload, got %s" % str(battle_state.battle_result.reason))
+		return
 	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_COMMAND_PAYLOAD:
-			return harness.pass_result()
-	return harness.fail_result("missing invalid_battle log for illegal command")
+			return
+	fail("missing invalid_battle log for illegal command")
+

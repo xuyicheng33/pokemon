@@ -1,18 +1,17 @@
 extends "res://test/suites/lifecycle_replacement_flow/base.gd"
 
 
-
 func test_lifecycle_faint_replace_chain() -> void:
-	_assert_legacy_result(_test_lifecycle_faint_replace_chain(_harness))
-func _test_lifecycle_faint_replace_chain(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var kill_payload = StatModPayloadScript.new()
 	kill_payload.payload_type = "stat_mod"
@@ -34,7 +33,7 @@ func _test_lifecycle_faint_replace_chain(harness) -> Dictionary:
 	content_index.register_resource(kill_passive)
 	content_index.units["sample_pyron"].passive_skill_id = kill_passive.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 103)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 103)
 	var p2_active = battle_state.get_side("P2").get_active_unit()
 	p2_active.current_hp = 1
 	var commands: Array = [
@@ -76,9 +75,11 @@ func _test_lifecycle_faint_replace_chain(harness) -> Dictionary:
 			enter_idx = i
 			break
 	if faint_idx == -1 or exit_idx == -1 or replace_idx == -1 or enter_idx == -1:
-		return harness.fail_result("missing lifecycle events in faint window")
+		fail("missing lifecycle events in faint window")
+		return
 	if kill_effect_idx == -1:
-		return harness.fail_result("on_kill trigger effect missing")
+		fail("on_kill trigger effect missing")
+		return
 	if not (faint_idx < kill_effect_idx and kill_effect_idx < exit_idx and exit_idx < replace_idx and replace_idx < enter_idx):
-		return harness.fail_result("faint lifecycle ordering mismatch")
-	return harness.pass_result()
+		fail("faint lifecycle ordering mismatch")
+		return

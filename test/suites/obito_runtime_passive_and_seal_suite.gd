@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ObitoTestSupportScript := preload("res://tests/support/obito_test_support.gd")
@@ -8,32 +8,23 @@ var _support = ObitoTestSupportScript.new()
 var _contract_support = ObitoRuntimeContractSupportScript.new()
 
 
-
 func test_obito_passive_missing_hp_heal_contract() -> void:
-	_assert_legacy_result(_test_obito_passive_missing_hp_heal_contract(_harness))
-
-func test_obito_qiudao_jiaotu_heal_block_contract() -> void:
-	_assert_legacy_result(_test_obito_qiudao_jiaotu_heal_block_contract(_harness))
-
-func test_obito_qiudao_jiaotu_expire_sync_contract() -> void:
-	_assert_legacy_result(_test_obito_qiudao_jiaotu_expire_sync_contract(_harness))
-
-func test_obito_qiudao_jiaotu_switch_persist_contract() -> void:
-	_assert_legacy_result(_test_obito_qiudao_jiaotu_switch_persist_contract(_harness))
-func _test_obito_passive_missing_hp_heal_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var battle_state = _support.build_battle_state(core, content_index, _support.build_obito_setup(sample_factory), 1510)
 	var obito = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if obito == null or target == null:
-		return harness.fail_result("missing active units for obito passive contract")
+		fail("missing active units for obito passive contract")
+		return
 	obito.current_hp = obito.max_hp - 1
 
 	core.service("battle_logger").reset()
@@ -42,7 +33,8 @@ func _test_obito_passive_missing_hp_heal_contract(harness) -> Dictionary:
 		_support.build_manual_wait_command(core, 1, "P2", "P2-A"),
 	])
 	if int(obito.current_hp) != int(obito.max_hp):
-		return harness.fail_result("obito passive should heal 1 when missing_hp is 1 under current shared contract")
+		fail("obito passive should heal 1 when missing_hp is 1 under current shared contract")
+		return
 
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
@@ -50,14 +42,21 @@ func _test_obito_passive_missing_hp_heal_contract(harness) -> Dictionary:
 		_support.build_manual_wait_command(core, 2, "P2", "P2-A"),
 	])
 	if _support.collect_target_heal_events(core.service("battle_logger").event_log, obito.unit_instance_id).size() != 0:
-		return harness.fail_result("obito passive should not write heal event while already at full hp")
-	return harness.pass_result()
+		fail("obito passive should not write heal event while already at full hp")
+		return
 
-func _test_obito_qiudao_jiaotu_heal_block_contract(harness) -> Dictionary:
-	return _contract_support.run_qiudao_jiaotu_heal_block_contract(harness)
+func test_obito_qiudao_jiaotu_heal_block_contract() -> void:
+	var __legacy_result = _contract_support.run_qiudao_jiaotu_heal_block_contract(_harness)
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
 
-func _test_obito_qiudao_jiaotu_switch_persist_contract(harness) -> Dictionary:
-	return _contract_support.run_qiudao_jiaotu_switch_persist_contract(harness)
+func test_obito_qiudao_jiaotu_expire_sync_contract() -> void:
+	var __legacy_result = _contract_support.run_qiudao_jiaotu_expire_sync_contract(_harness)
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
 
-func _test_obito_qiudao_jiaotu_expire_sync_contract(harness) -> Dictionary:
-	return _contract_support.run_qiudao_jiaotu_expire_sync_contract(harness)
+func test_obito_qiudao_jiaotu_switch_persist_contract() -> void:
+	var __legacy_result = _contract_support.run_qiudao_jiaotu_switch_persist_contract(_harness)
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
+

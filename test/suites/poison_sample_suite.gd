@@ -1,32 +1,34 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 
-
 func test_poison_sample_fixed_damage_type_effectiveness_contract() -> void:
-	_assert_legacy_result(_test_poison_sample_fixed_damage_type_effectiveness_contract(_harness))
-func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+		fail("SampleBattleFactory init failed")
+		return
 
-	var content_index_a = harness.build_loaded_content_index(sample_factory)
+	var content_index_a = _harness.build_loaded_content_index(sample_factory)
 	if content_index_a.skills.get("sample_poison_sting", null) == null:
-		return harness.fail_result("missing sample_poison_sting skill content")
+		fail("missing sample_poison_sting skill content")
+		return
 	if content_index_a.effects.get("sample_poison_sting_burst", null) == null:
-		return harness.fail_result("missing sample_poison_sting_burst effect content")
+		fail("missing sample_poison_sting_burst effect content")
+		return
 	content_index_a.units["sample_pyron"].skill_ids[0] = "sample_poison_sting"
-	var state_a = harness.build_initialized_battle(core, content_index_a, sample_factory, 3101, harness.build_sample_setup(sample_factory))
+	var state_a = _harness.build_initialized_battle(core, content_index_a, sample_factory, 3101, _harness.build_sample_setup(sample_factory))
 	var attacker_a = state_a.get_side("P1").get_active_unit()
 	var target_a = state_a.get_side("P2").get_active_unit()
 	if attacker_a == null or target_a == null:
-		return harness.fail_result("missing active units for poison sample case A")
+		fail("missing active units for poison sample case A")
+		return
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(state_a, content_index_a, [
 		core.service("command_builder").build_command({
@@ -47,29 +49,34 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
 	])
 	var expected_mul_a: float = core.service("combat_type_service").calc_effectiveness("poison", target_a.combat_type_ids)
 	if not is_equal_approx(expected_mul_a, 2.0):
-		return harness.fail_result("poison -> water baseline should be 2.0, got %s" % var_to_str(expected_mul_a))
+		fail("poison -> water baseline should be 2.0, got %s" % var_to_str(expected_mul_a))
+		return
 	var expected_damage_a: int = core.service("damage_service").apply_final_mod(15, expected_mul_a)
 	var actual_damage_a: Dictionary = _extract_single_poison_burst_damage(core.service("battle_logger").event_log, target_a.unit_instance_id)
 	if actual_damage_a.has("error"):
-		return harness.fail_result(str(actual_damage_a["error"]))
+		fail(str(actual_damage_a["error"]))
+		return
 	if not is_equal_approx(float(actual_damage_a["type_effectiveness"]), expected_mul_a):
-		return harness.fail_result("poison sample type_effectiveness mismatch: expected=%s actual=%s" % [
+		fail("poison sample type_effectiveness mismatch: expected=%s actual=%s" % [
 			var_to_str(expected_mul_a),
 			var_to_str(actual_damage_a["type_effectiveness"]),
 		])
+		return
 	if int(actual_damage_a["damage"]) != expected_damage_a:
-		return harness.fail_result("poison sample damage mismatch (water): expected=%d actual=%d" % [
+		fail("poison sample damage mismatch (water): expected=%d actual=%d" % [
 			expected_damage_a,
 			int(actual_damage_a["damage"]),
 		])
+		return
 
-	var content_index_b = harness.build_loaded_content_index(sample_factory)
+	var content_index_b = _harness.build_loaded_content_index(sample_factory)
 	content_index_b.units["sample_pyron"].skill_ids[0] = "sample_poison_sting"
 	content_index_b.units["sample_tidekit"].combat_type_ids = PackedStringArray(["steel"])
-	var state_b = harness.build_initialized_battle(core, content_index_b, sample_factory, 3102, harness.build_sample_setup(sample_factory))
+	var state_b = _harness.build_initialized_battle(core, content_index_b, sample_factory, 3102, _harness.build_sample_setup(sample_factory))
 	var target_b = state_b.get_side("P2").get_active_unit()
 	if target_b == null:
-		return harness.fail_result("missing target unit for poison sample case B")
+		fail("missing target unit for poison sample case B")
+		return
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(state_b, content_index_b, [
 		core.service("command_builder").build_command({
@@ -90,22 +97,25 @@ func _test_poison_sample_fixed_damage_type_effectiveness_contract(harness) -> Di
 	])
 	var expected_mul_b: float = core.service("combat_type_service").calc_effectiveness("poison", target_b.combat_type_ids)
 	if not is_equal_approx(expected_mul_b, 0.5):
-		return harness.fail_result("poison -> steel baseline should be 0.5, got %s" % var_to_str(expected_mul_b))
+		fail("poison -> steel baseline should be 0.5, got %s" % var_to_str(expected_mul_b))
+		return
 	var expected_damage_b: int = core.service("damage_service").apply_final_mod(15, expected_mul_b)
 	var actual_damage_b: Dictionary = _extract_single_poison_burst_damage(core.service("battle_logger").event_log, target_b.unit_instance_id)
 	if actual_damage_b.has("error"):
-		return harness.fail_result(str(actual_damage_b["error"]))
+		fail(str(actual_damage_b["error"]))
+		return
 	if not is_equal_approx(float(actual_damage_b["type_effectiveness"]), expected_mul_b):
-		return harness.fail_result("poison sample type_effectiveness mismatch (steel): expected=%s actual=%s" % [
+		fail("poison sample type_effectiveness mismatch (steel): expected=%s actual=%s" % [
 			var_to_str(expected_mul_b),
 			var_to_str(actual_damage_b["type_effectiveness"]),
 		])
+		return
 	if int(actual_damage_b["damage"]) != expected_damage_b:
-		return harness.fail_result("poison sample damage mismatch (steel): expected=%d actual=%d" % [
+		fail("poison sample damage mismatch (steel): expected=%d actual=%d" % [
 			expected_damage_b,
 			int(actual_damage_b["damage"]),
 		])
-	return harness.pass_result()
+		return
 
 func _extract_single_poison_burst_damage(event_log: Array, target_unit_id: String) -> Dictionary:
 	var matched: Array = []

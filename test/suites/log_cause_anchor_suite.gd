@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/passive_skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -13,24 +13,22 @@ var _helper = LogCauseTestHelperScript.new()
 
 
 func test_system_anchor_effect_cause_contract() -> void:
-	_assert_legacy_result(_test_system_anchor_effect_cause_contract(_harness))
-
-func test_apply_field_creator_non_action_chain() -> void:
-	_assert_legacy_result(_test_apply_field_creator_non_action_chain(_harness))
-func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 219)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 219)
 	var p1_active = battle_state.get_side("P1").get_active_unit()
 	var p2_active = battle_state.get_side("P2").get_active_unit()
 	if p1_active == null or p2_active == null:
-		return harness.fail_result("missing active units")
+		fail("missing active units")
+		return
 
 	var expire_payload = RuleModPayloadScript.new()
 	expire_payload.payload_type = "rule_mod"
@@ -44,7 +42,8 @@ func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
 	expire_payload.stacking = "replace"
 	expire_payload.priority = 5
 	if core.service("rule_mod_service").create_instance(expire_payload, {"scope": "unit", "id": p1_active.unit_instance_id}, battle_state, "test_turn_start_expire_rule_mod", 0, p1_active.base_speed) == null:
-		return harness.fail_result("failed to create turn_start expiring rule_mod")
+		fail("failed to create turn_start expiring rule_mod")
+		return
 
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		core.service("command_builder").build_command({
@@ -82,7 +81,8 @@ func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
 	var turn_start_events := _find_events(core.service("battle_logger").event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_START)
 	var turn_end_events := _find_events(core.service("battle_logger").event_log, func(ev): return ev.event_type == EventTypesScript.SYSTEM_TURN_END)
 	if turn_start_events.size() < 2 or turn_end_events.size() < 2:
-		return harness.fail_result("missing turn anchor events for cause contract checks")
+		fail("missing turn anchor events for cause contract checks")
+		return
 	var first_turn_start = turn_start_events[0]
 	var second_turn_start = turn_start_events[1]
 	var second_turn_end = turn_end_events[1]
@@ -97,28 +97,34 @@ func _test_system_anchor_effect_cause_contract(harness) -> Dictionary:
 	)
 	var field_expire_event = _find_event(core.service("battle_logger").event_log, func(ev): return ev.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE)
 	if regen_event == null or rule_mod_remove_event == null or field_expire_event == null:
-		return harness.fail_result("missing turn_start/turn_end effect logs for cause contract checks")
+		fail("missing turn_start/turn_end effect logs for cause contract checks")
+		return
 	if regen_event.cause_event_id != _event_id(second_turn_start):
-		return harness.fail_result("turn_start regen cause_event_id should point to the real system:turn_start anchor")
+		fail("turn_start regen cause_event_id should point to the real system:turn_start anchor")
+		return
 	if rule_mod_remove_event.cause_event_id != _event_id(first_turn_start):
-		return harness.fail_result("rule_mod remove cause_event_id should point to the real system:turn_start anchor")
+		fail("rule_mod remove cause_event_id should point to the real system:turn_start anchor")
+		return
 	if field_expire_event.cause_event_id != _event_id(second_turn_end):
-		return harness.fail_result("field expire cause_event_id should point to the real system:turn_end anchor")
+		fail("field expire cause_event_id should point to the real system:turn_end anchor")
+		return
 	if regen_event.cause_event_id == _event_id(regen_event) \
 	or rule_mod_remove_event.cause_event_id == _event_id(rule_mod_remove_event) \
 	or field_expire_event.cause_event_id == _event_id(field_expire_event):
-		return harness.fail_result("system-anchor effect events must not point cause_event_id to themselves")
-	return harness.pass_result()
+		fail("system-anchor effect events must not point cause_event_id to themselves")
+		return
 
-func _test_apply_field_creator_non_action_chain(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_apply_field_creator_non_action_chain() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var field_def = FieldDefinitionScript.new()
 	field_def.id = "test_non_action_field"
@@ -148,17 +154,21 @@ func _test_apply_field_creator_non_action_chain(harness) -> Dictionary:
 	content_index.register_resource(apply_field_passive)
 	content_index.units["sample_pyron"].passive_skill_id = apply_field_passive.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 218)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 218)
 	if battle_state.field_state == null:
-		return harness.fail_result("on_enter apply_field should create field_state")
+		fail("on_enter apply_field should create field_state")
+		return
 	var p1_active = battle_state.get_side("P1").get_active_unit()
 	if p1_active == null:
-		return harness.fail_result("missing P1 active unit")
+		fail("missing P1 active unit")
+		return
 	if battle_state.field_state.creator != p1_active.unit_instance_id:
-		return harness.fail_result("field creator should use effect owner in non-action chain")
+		fail("field creator should use effect owner in non-action chain")
+		return
 	if battle_state.field_state.source_instance_id.is_empty():
-		return harness.fail_result("field source_instance_id should not be empty")
-	return harness.pass_result()
+		fail("field source_instance_id should not be empty")
+		return
+
 
 func _event_id(log_event) -> String:
 	return _helper.event_id(log_event)

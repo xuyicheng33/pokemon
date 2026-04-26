@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -9,13 +9,7 @@ const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_fi
 const FieldDefinitionScript := preload("res://src/battle_core/content/field_definition.gd")
 
 
-
 func test_nested_domain_skill_validation() -> void:
-	_assert_legacy_result(_test_nested_domain_skill_validation(_harness))
-
-func test_domain_field_contract_validation() -> void:
-	_assert_legacy_result(_test_domain_field_contract_validation(_harness))
-func _test_nested_domain_skill_validation(harness) -> Dictionary:
 	var content_index = BattleContentIndexScript.new()
 	var domain_field = FieldDefinitionScript.new()
 	domain_field.id = "test_nested_domain_field"
@@ -66,10 +60,10 @@ func _test_nested_domain_skill_validation(harness) -> Dictionary:
 	var errors: Array = content_index.validate_snapshot()
 	for error_msg in errors:
 		if str(error_msg).find("skill[%s] applies domain field and must set is_domain_skill=true" % bad_skill.id) != -1:
-			return harness.pass_result()
-	return harness.fail_result("nested apply_effect -> apply_field(domain) should require is_domain_skill=true")
+			return
+	fail("nested apply_effect -> apply_field(domain) should require is_domain_skill=true")
 
-func _test_domain_field_contract_validation(harness) -> Dictionary:
+func test_domain_field_contract_validation() -> void:
 	var content_index = BattleContentIndexScript.new()
 	var missing_cleanup_domain = FieldDefinitionScript.new()
 	missing_cleanup_domain.id = "test_domain_missing_cleanup"
@@ -106,7 +100,8 @@ func _test_domain_field_contract_validation(harness) -> Dictionary:
 
 	var errors: Array = content_index.validate_snapshot()
 	if errors.is_empty():
-		return harness.fail_result("domain field contract validation should fail-fast")
+		fail("domain field contract validation should fail-fast")
+		return
 	var has_missing_effect_ids := false
 	var has_missing_break_cleanup := false
 	var has_missing_expire_cleanup := false
@@ -120,5 +115,6 @@ func _test_domain_field_contract_validation(harness) -> Dictionary:
 		has_break_trigger_error = has_break_trigger_error or msg.find("field[test_domain_trigger_mismatch].on_break_effect_ids effect[test_domain_wrong_break_effect] must declare trigger_names including field_break") != -1
 		has_expire_trigger_error = has_expire_trigger_error or msg.find("field[test_domain_trigger_mismatch].on_expire_effect_ids effect[test_domain_wrong_expire_effect] must declare trigger_names including field_expire") != -1
 	if not (has_missing_effect_ids and has_missing_break_cleanup and has_missing_expire_cleanup and has_break_trigger_error and has_expire_trigger_error):
-		return harness.fail_result("domain field contract validation errors missing expected categories")
-	return harness.pass_result()
+		fail("domain field contract validation errors missing expected categories")
+		return
+

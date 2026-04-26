@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -17,16 +17,16 @@ class TestReplacementSelector:
 
 
 func test_forced_replace_invalid_selection() -> void:
-	_assert_legacy_result(_test_forced_replace_invalid_selection(_harness))
-func _test_forced_replace_invalid_selection(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var forced_payload = ForcedReplacePayloadScript.new()
 	forced_payload.payload_type = "forced_replace"
@@ -55,10 +55,11 @@ func _test_forced_replace_invalid_selection(harness) -> Dictionary:
 	if not content_index.units["sample_pyron"].skill_ids.has(forced_skill.id):
 		content_index.units["sample_pyron"].skill_ids[0] = forced_skill.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 221)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 221)
 	var p1_active = battle_state.get_side("P1").get_active_unit()
 	if p1_active == null:
-		return harness.fail_result("missing P1 active unit for forced_replace invalid test")
+		fail("missing P1 active unit for forced_replace invalid test")
+		return
 	p1_active.base_speed = 999
 
 	var selector := TestReplacementSelector.new()
@@ -84,10 +85,12 @@ func _test_forced_replace_invalid_selection(harness) -> Dictionary:
 		}),
 	])
 	if not battle_state.battle_result.finished:
-		return harness.fail_result("invalid replacement selection should end battle immediately")
+		fail("invalid replacement selection should end battle immediately")
+		return
 	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
-		return harness.fail_result("expected invalid_replacement_selection, got %s" % str(battle_state.battle_result.reason))
+		fail("expected invalid_replacement_selection, got %s" % str(battle_state.battle_result.reason))
+		return
 	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE and ev.invalid_battle_code == ErrorCodesScript.INVALID_REPLACEMENT_SELECTION:
-			return harness.pass_result()
-	return harness.fail_result("missing invalid_battle log for invalid replacement selection")
+			return
+	fail("missing invalid_battle log for invalid replacement selection")

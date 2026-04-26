@@ -1,14 +1,6 @@
 extends "res://test/suites/content_validation_core/base.gd"
-const BaseSuiteScript := preload("res://test/suites/content_validation_core/base.gd")
-
-
 
 func test_content_validation_failures() -> void:
-	_assert_legacy_result(_test_content_validation_failures(_harness))
-
-func test_content_validation_new_constraints() -> void:
-	_assert_legacy_result(_test_content_validation_new_constraints(_harness))
-func _test_content_validation_failures(harness) -> Dictionary:
 	var content_index = BattleContentIndexScript.new()
 	var bad_skill = SkillDefinitionScript.new()
 	bad_skill.id = "bad_skill"
@@ -97,7 +89,8 @@ func _test_content_validation_failures(harness) -> Dictionary:
 	content_index.register_resource(bad_stat_effect)
 	var errors: Array = content_index.validate_snapshot()
 	if errors.is_empty():
-		return harness.fail_result("content validator did not report failures")
+		fail("content validator did not report failures")
+		return
 	var has_priority_error := false
 	var has_rule_mod_error := false
 	var has_missing_ref := false
@@ -131,10 +124,10 @@ func _test_content_validation_failures(harness) -> Dictionary:
 		if msg.find("effect_stack_sum requires at least one power bonus effect id") != -1 or msg.find("power_bonus_self_effect_ids missing effect") != -1 or msg.find("power_bonus_per_stack must be > 0") != -1:
 			has_effect_stack_bonus_error = true
 	if not (has_priority_error and has_rule_mod_error and has_missing_ref and has_accuracy_error and has_mp_cost_error and has_duplicate_id_error and has_resource_key_error and has_stat_name_error and has_power_bonus_source_error and has_effect_stack_bonus_error):
-		return harness.fail_result("content validation errors missing expected categories")
-	return harness.pass_result()
+		fail("content validation errors missing expected categories")
+		return
 
-func _test_content_validation_new_constraints(harness) -> Dictionary:
+func test_content_validation_new_constraints() -> void:
 	var content_index = BattleContentIndexScript.new()
 	var regular_ok = SkillDefinitionScript.new()
 	regular_ok.id = "regular_ok"
@@ -177,7 +170,8 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
 	content_index.register_resource(_build_dynamic_formula_effect("invalid_mp_regen_fractional_dynamic_effect", "self", PackedInt32Array([20]), PackedFloat32Array([5.5]), 1.5))
 	var snapshot_errors: Array = content_index.validate_snapshot()
 	if snapshot_errors.is_empty():
-		return harness.fail_result("new content constraints should report validation failures")
+		fail("new content constraints should report validation failures")
+		return
 	var has_regular_priority_error := false
 	var has_ultimate_priority_error := false
 	var has_slot_error := false
@@ -195,18 +189,20 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
 		has_dynamic_formula_scope_error = has_dynamic_formula_scope_error or msg.find("dynamic value formula is not allowed for field scope") != -1
 		has_mp_regen_integral_error = has_mp_regen_integral_error or msg.find("mp_regen dynamic_value_outputs must be int-valued") != -1 or msg.find("mp_regen dynamic_value_default must be int-valued") != -1
 	if not (has_regular_priority_error and has_ultimate_priority_error and has_slot_error and has_ultimate_in_regular_error and has_dynamic_formula_error and has_dynamic_formula_scope_error and has_mp_regen_integral_error):
-		return harness.fail_result("new content validation constraints missing expected failures")
-	var sample_factory = harness.build_sample_factory()
+		fail("new content validation constraints missing expected failures")
+		return
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var runtime_content = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var runtime_content = _harness.build_loaded_content_index(sample_factory)
 	var duplicate_item = PassiveItemDefinitionScript.new()
 	duplicate_item.id = "duplicate_item_for_setup_validation"
 	duplicate_item.display_name = "Duplicate Item"
 	runtime_content.register_resource(duplicate_item)
 	runtime_content.units["sample_pyron"].passive_item_id = duplicate_item.id
 	runtime_content.units["sample_mossaur"].passive_item_id = duplicate_item.id
-	var battle_setup = harness.build_sample_setup(sample_factory)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
 	var setup_errors: Array = runtime_content.validate_setup(battle_setup)
 	var has_duplicate_item_error := false
 	for error_msg in setup_errors:
@@ -214,5 +210,6 @@ func _test_content_validation_new_constraints(harness) -> Dictionary:
 			has_duplicate_item_error = true
 			break
 	if not has_duplicate_item_error:
-		return harness.fail_result("battle setup should reject duplicate passive items on same side")
-	return harness.pass_result()
+		fail("battle setup should reject duplicate passive items on same side")
+		return
+

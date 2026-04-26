@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const EffectPayloadScript := preload("res://src/battle_core/content/effect_payload.gd")
@@ -13,52 +13,39 @@ const ActionGuardStateIntegrityTestSupportScript := preload("res://tests/support
 var _support = ActionGuardStateIntegrityTestSupportScript.new()
 
 
-
 func test_payload_handler_registry_completeness_contract() -> void:
-	_assert_legacy_result(_test_payload_handler_registry_completeness_contract(_harness))
-
-func test_payload_executor_unknown_payload_fail_fast_contract() -> void:
-	_assert_legacy_result(_test_payload_executor_unknown_payload_fail_fast_contract(_harness))
-
-func test_payload_executor_handler_missing_dependency_propagation_contract() -> void:
-	_assert_legacy_result(_test_payload_executor_handler_missing_dependency_propagation_contract(_harness))
-
-func test_payload_damage_handler_formula_owner_missing_fail_fast_contract() -> void:
-	_assert_legacy_result(_test_payload_damage_handler_formula_owner_missing_fail_fast_contract(_harness))
-
-func test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract() -> void:
-	_assert_legacy_result(_test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract(_harness))
-
-func test_payload_rule_mod_handler_target_chain_context_missing_fail_fast_contract() -> void:
-	_assert_legacy_result(_test_payload_rule_mod_handler_target_chain_context_missing_fail_fast_contract(_harness))
-func _test_payload_handler_registry_completeness_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
 	var registry = core.service("payload_handler_registry")
 	if registry == null:
-		return harness.fail_result("payload_handler_registry should be composed")
+		fail("payload_handler_registry should be composed")
+		return
 	var expected_paths := PayloadContractRegistryScript.registered_payload_script_paths()
 	if registry.registered_payload_script_paths() != expected_paths:
-		return harness.fail_result("payload handler registry drifted: expected=%s actual=%s" % [
+		fail("payload handler registry drifted: expected=%s actual=%s" % [
 			var_to_str(expected_paths),
 			var_to_str(registry.registered_payload_script_paths()),
 		])
+		return
 	if not str(registry.resolve_missing_dependency()).is_empty():
-		return harness.fail_result("payload handler registry should be dependency-complete, got %s" % str(registry.resolve_missing_dependency()))
-	return harness.pass_result()
+		fail("payload handler registry should be dependency-complete, got %s" % str(registry.resolve_missing_dependency()))
+		return
 
-func _test_payload_executor_unknown_payload_fail_fast_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_payload_executor_unknown_payload_fail_fast_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1317)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 1317)
 
 	var unknown_payload = EffectPayloadScript.new()
 	unknown_payload.payload_type = "unknown"
@@ -85,30 +72,34 @@ func _test_payload_executor_unknown_payload_fail_fast_contract(harness) -> Dicti
 		battle_state.current_chain_context()
 	)
 	if effect_events.is_empty():
-		return harness.fail_result("failed to build unknown payload effect event")
+		fail("failed to build unknown payload effect event")
+		return
 	core.service("payload_executor").execute_effect_event(effect_events[0], battle_state, content_index)
 	if core.service("payload_executor").last_invalid_battle_code != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
-		return harness.fail_result("unknown payload should fail-fast with invalid_effect_definition, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
-	return harness.pass_result()
+		fail("unknown payload should fail-fast with invalid_effect_definition, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
+		return
 
-func _test_payload_executor_handler_missing_dependency_propagation_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_payload_executor_handler_missing_dependency_propagation_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1318)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 1318)
 
 	core.service("payload_handler_registry").handler_by_slot("payload_damage_handler").faint_killer_attribution_service = null
 	var expected_missing := "payload_handler_registry.payload_damage_handler.faint_killer_attribution_service"
 	if core.service("payload_executor").resolve_missing_dependency() != expected_missing:
-		return harness.fail_result("payload executor missing dependency path mismatch: expected=%s actual=%s" % [
+		fail("payload executor missing dependency path mismatch: expected=%s actual=%s" % [
 			expected_missing,
 			str(core.service("payload_executor").resolve_missing_dependency()),
 		])
+		return
 
 	var damage_payload = DamagePayloadScript.new()
 	damage_payload.payload_type = "damage"
@@ -136,22 +127,25 @@ func _test_payload_executor_handler_missing_dependency_propagation_contract(harn
 		battle_state.current_chain_context()
 	)
 	if effect_events.is_empty():
-		return harness.fail_result("failed to build payload dependency effect event")
+		fail("failed to build payload dependency effect event")
+		return
 	core.service("payload_executor").execute_effect_event(effect_events[0], battle_state, content_index)
 	if core.service("payload_executor").last_invalid_battle_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
-		return harness.fail_result("payload executor should hard-stop on handler dependency drift, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
-	return harness.pass_result()
+		fail("payload executor should hard-stop on handler dependency drift, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
+		return
 
-func _test_payload_damage_handler_formula_owner_missing_fail_fast_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_payload_damage_handler_formula_owner_missing_fail_fast_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1421)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 1421)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	battle_state.set_phase_chain_context(_support.build_chain_context("test_formula_ghost_owner_chain", actor.unit_instance_id, target.unit_instance_id))
@@ -180,19 +174,21 @@ func _test_payload_damage_handler_formula_owner_missing_fail_fast_contract(harne
 	var damage_handler = core.service("payload_handler_registry").handler_by_slot("payload_damage_handler")
 	damage_handler.execute(damage_payload, damage_effect, effect_event, battle_state, content_index)
 	if damage_handler.last_invalid_battle_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
-		return harness.fail_result("formula damage with missing owner must fail-fast as INVALID_STATE_CORRUPTION, got %s" % str(damage_handler.last_invalid_battle_code))
-	return harness.pass_result()
+		fail("formula damage with missing owner must fail-fast as INVALID_STATE_CORRUPTION, got %s" % str(damage_handler.last_invalid_battle_code))
+		return
 
-func _test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1422)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 1422)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	battle_state.set_phase_chain_context(_support.build_chain_context("test_rule_mod_self_ghost_chain", actor.unit_instance_id, target.unit_instance_id))
@@ -222,22 +218,25 @@ func _test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract(harnes
 
 	var rule_mod_handler = core.service("payload_handler_registry").handler_by_slot("payload_rule_mod_handler")
 	if rule_mod_handler == null:
-		return harness.fail_result("payload_rule_mod_handler should be composed")
+		fail("payload_rule_mod_handler should be composed")
+		return
 	rule_mod_handler.execute(rule_mod_payload, rule_mod_effect, effect_event, battle_state, content_index)
 	if rule_mod_handler.last_invalid_battle_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
-		return harness.fail_result("rule_mod self scope with missing owner must fail-fast as INVALID_STATE_CORRUPTION, got %s" % str(rule_mod_handler.last_invalid_battle_code))
-	return harness.pass_result()
+		fail("rule_mod self scope with missing owner must fail-fast as INVALID_STATE_CORRUPTION, got %s" % str(rule_mod_handler.last_invalid_battle_code))
+		return
 
-func _test_payload_rule_mod_handler_target_chain_context_missing_fail_fast_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_payload_rule_mod_handler_target_chain_context_missing_fail_fast_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1423)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 1423)
 	var actor = battle_state.get_side("P1").get_active_unit()
 
 	var rule_mod_payload = RuleModPayloadScript.new()
@@ -265,8 +264,10 @@ func _test_payload_rule_mod_handler_target_chain_context_missing_fail_fast_contr
 
 	var rule_mod_handler = core.service("payload_handler_registry").handler_by_slot("payload_rule_mod_handler")
 	if rule_mod_handler == null:
-		return harness.fail_result("payload_rule_mod_handler should be composed")
+		fail("payload_rule_mod_handler should be composed")
+		return
 	rule_mod_handler.execute(rule_mod_payload, rule_mod_effect, effect_event, battle_state, content_index)
 	if rule_mod_handler.last_invalid_battle_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
-		return harness.fail_result("rule_mod target scope with missing chain_context must fail-fast as INVALID_STATE_CORRUPTION, got %s" % str(rule_mod_handler.last_invalid_battle_code))
-	return harness.pass_result()
+		fail("rule_mod target scope with missing chain_context must fail-fast as INVALID_STATE_CORRUPTION, got %s" % str(rule_mod_handler.last_invalid_battle_code))
+		return
+

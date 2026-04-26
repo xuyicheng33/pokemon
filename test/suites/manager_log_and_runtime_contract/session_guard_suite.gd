@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_core_manager.gd")
 const BattleCoreManagerContainerServiceScript := preload("res://src/battle_core/facades/battle_core_manager_container_service.gd")
@@ -51,56 +51,34 @@ class RecordingPublicSnapshotBuilder:
 		return {"should_not_escape": true}
 
 
-
 func test_manager_invalid_session_read_contract() -> void:
-	_assert_legacy_result(_test_manager_invalid_session_read_contract(_harness))
-
-func test_manager_run_turn_invalid_envelope_contract() -> void:
-	_assert_legacy_result(_test_manager_run_turn_invalid_envelope_contract(_harness))
-
-func test_manager_unconfigured_dependency_guard_contract() -> void:
-	_assert_legacy_result(_test_manager_unconfigured_dependency_guard_contract(_harness))
-
-func test_manager_create_session_empty_snapshot_paths_contract() -> void:
-	_assert_legacy_result(_test_manager_create_session_empty_snapshot_paths_contract(_harness))
-
-func test_manager_create_session_invalid_battle_setup_type_contract() -> void:
-	_assert_legacy_result(_test_manager_create_session_invalid_battle_setup_type_contract(_harness))
-
-func test_manager_create_session_invalid_side_id_contract() -> void:
-	_assert_legacy_result(_test_manager_create_session_invalid_side_id_contract(_harness))
-
-func test_manager_event_log_negative_from_index_contract() -> void:
-	_assert_legacy_result(_test_manager_event_log_negative_from_index_contract(_harness))
-
-func test_manager_disposed_request_guard_contract() -> void:
-	_assert_legacy_result(_test_manager_disposed_request_guard_contract(_harness))
-
-func test_manager_create_session_runtime_guard_contract() -> void:
-	_assert_legacy_result(_test_manager_create_session_runtime_guard_contract(_harness))
-func _test_manager_invalid_session_read_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var init_result = manager.create_session({
 		"battle_seed": 307,
 		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-		"battle_setup": harness.build_sample_setup(sample_factory),
+		"battle_setup": _harness.build_sample_setup(sample_factory),
 	})
 	var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
 	if not bool(init_unwrap.get("ok", false)):
-		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+		fail(str(init_unwrap.get("error", "manager create_session failed")))
+		return
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
 	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
 	if not bool(close_unwrap.get("ok", false)):
-		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
+		fail(str(close_unwrap.get("error", "manager close_session failed")))
+		return
 	var checks := [
 		{"label": "get_legal_actions", "envelope": manager.get_legal_actions(session_id, "P1")},
 		{"label": "get_public_snapshot", "envelope": manager.get_public_snapshot(session_id)},
@@ -115,28 +93,32 @@ func _test_manager_invalid_session_read_contract(harness) -> Dictionary:
 			"unknown battle session"
 		)
 		if not bool(failure.get("ok", false)):
-			return harness.fail_result(str(failure.get("error", "manager invalid session read contract failed")))
-	return harness.pass_result()
+			fail(str(failure.get("error", "manager invalid session read contract failed")))
+			return
 
-func _test_manager_run_turn_invalid_envelope_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+func test_manager_run_turn_invalid_envelope_contract() -> void:
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var init_result = manager.create_session({
 		"battle_seed": 308,
 		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-		"battle_setup": harness.build_sample_setup(sample_factory),
+		"battle_setup": _harness.build_sample_setup(sample_factory),
 	})
 	var init_unwrap = _helper.unwrap_ok(init_result, "create_session")
 	if not bool(init_unwrap.get("ok", false)):
-		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+		fail(str(init_unwrap.get("error", "manager create_session failed")))
+		return
 	var session_id: String = str(init_unwrap.get("data", {}).get("session_id", ""))
 	var failure = _helper.expect_failure_code(
 		manager.run_turn(session_id, [
@@ -160,64 +142,71 @@ func _test_manager_run_turn_invalid_envelope_contract(harness) -> Dictionary:
 		ErrorCodesScript.INVALID_COMMAND_PAYLOAD
 	)
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "manager run_turn invalid envelope contract failed")))
-	return harness.pass_result()
+		fail(str(failure.get("error", "manager run_turn invalid envelope contract failed")))
+		return
 
-func _test_manager_unconfigured_dependency_guard_contract(harness) -> Dictionary:
+func test_manager_unconfigured_dependency_guard_contract() -> void:
 	var manager = BattleCoreManagerScript.new()
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var failure = _helper.expect_failure_code(
 		manager.create_session({
 			"battle_seed": 309,
 			"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-			"battle_setup": harness.build_sample_setup(sample_factory),
+			"battle_setup": _harness.build_sample_setup(sample_factory),
 		}),
 		"create_session",
 		ErrorCodesScript.INVALID_COMPOSITION,
 		"missing dependency"
 	)
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "manager unconfigured dependency guard contract failed")))
-	return harness.pass_result()
+		fail(str(failure.get("error", "manager unconfigured dependency guard contract failed")))
+		return
 
-func _test_manager_create_session_empty_snapshot_paths_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+func test_manager_create_session_empty_snapshot_paths_contract() -> void:
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+		fail("SampleBattleFactory init failed")
+		return
 	var failure = _helper.expect_failure_code(
 		manager.create_session({
 			"battle_seed": 3091,
 			"content_snapshot_paths": PackedStringArray(),
-			"battle_setup": harness.build_sample_setup(sample_factory),
+			"battle_setup": _harness.build_sample_setup(sample_factory),
 		}),
 		"create_session",
 		ErrorCodesScript.INVALID_MANAGER_REQUEST,
 		"non-empty content_snapshot_paths"
 	)
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "manager create_session empty snapshot paths contract failed")))
-	return harness.pass_result()
+		fail(str(failure.get("error", "manager create_session empty snapshot paths contract failed")))
+		return
 
-func _test_manager_create_session_invalid_battle_setup_type_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+func test_manager_create_session_invalid_battle_setup_type_contract() -> void:
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var failure = _helper.expect_failure_code(
 		manager.create_session({
 			"battle_seed": 30915,
@@ -229,26 +218,29 @@ func _test_manager_create_session_invalid_battle_setup_type_contract(harness) ->
 		"requires battle_setup.sides"
 	)
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "manager create_session invalid battle_setup type contract failed")))
-	return harness.pass_result()
+		fail(str(failure.get("error", "manager create_session invalid battle_setup type contract failed")))
+		return
 
-func _test_manager_create_session_invalid_side_id_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+func test_manager_create_session_invalid_side_id_contract() -> void:
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var cases: Array = [
 		{"p1_side_id": "", "p2_side_id": "P2", "needle": "battle_setup.sides[0].side_id to be non-empty"},
 		{"p1_side_id": "P1", "p2_side_id": "P1", "needle": "duplicated battle_setup side_id: P1"},
 	]
 	for test_case in cases:
-		var battle_setup = harness.build_sample_setup(sample_factory)
+		var battle_setup = _harness.build_sample_setup(sample_factory)
 		battle_setup.sides[0].side_id = String(test_case["p1_side_id"])
 		battle_setup.sides[1].side_id = String(test_case["p2_side_id"])
 		var failure = _helper.expect_failure_code(
@@ -262,27 +254,31 @@ func _test_manager_create_session_invalid_side_id_contract(harness) -> Dictionar
 			String(test_case["needle"])
 		)
 		if not bool(failure.get("ok", false)):
-			return harness.fail_result(str(failure.get("error", "manager create_session invalid side_id contract failed")))
-	return harness.pass_result()
+			fail(str(failure.get("error", "manager create_session invalid side_id contract failed")))
+			return
 
-func _test_manager_event_log_negative_from_index_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+func test_manager_event_log_negative_from_index_contract() -> void:
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var init_unwrap = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": 310,
 		"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-		"battle_setup": harness.build_sample_setup(sample_factory),
+		"battle_setup": _harness.build_sample_setup(sample_factory),
 	}), "create_session")
 	if not bool(init_unwrap.get("ok", false)):
-		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+		fail(str(init_unwrap.get("error", "manager create_session failed")))
+		return
 	var session_id := String(init_unwrap.get("data", {}).get("session_id", ""))
 	var failure = _helper.expect_failure_code(
 		manager.get_event_log_snapshot(session_id, -1),
@@ -292,48 +288,55 @@ func _test_manager_event_log_negative_from_index_contract(harness) -> Dictionary
 	)
 	var close_unwrap = _helper.unwrap_ok(manager.close_session(session_id), "close_session")
 	if not bool(close_unwrap.get("ok", false)):
-		return harness.fail_result(str(close_unwrap.get("error", "manager close_session failed")))
+		fail(str(close_unwrap.get("error", "manager close_session failed")))
+		return
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "manager event log negative from_index contract failed")))
-	return harness.pass_result()
+		fail(str(failure.get("error", "manager event log negative from_index contract failed")))
+		return
 
-func _test_manager_disposed_request_guard_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+func test_manager_disposed_request_guard_contract() -> void:
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+		fail("SampleBattleFactory init failed")
+		return
 	manager.dispose()
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var failure = _helper.expect_failure_code(
 		manager.create_session({
 			"battle_seed": 311,
 			"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-			"battle_setup": harness.build_sample_setup(sample_factory),
+			"battle_setup": _harness.build_sample_setup(sample_factory),
 		}),
 		"create_session_after_dispose",
 		ErrorCodesScript.INVALID_MANAGER_REQUEST,
 		"BattleCoreManager is disposed"
 	)
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "disposed manager guard contract failed")))
-	return harness.pass_result()
+		fail(str(failure.get("error", "disposed manager guard contract failed")))
+		return
 
-func _test_manager_create_session_runtime_guard_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+func test_manager_create_session_runtime_guard_contract() -> void:
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 	var stub_container_service := InvalidRuntimeContainerService.new()
 	var stub_public_snapshot_builder := RecordingPublicSnapshotBuilder.new()
 	manager._container_service = stub_container_service
@@ -342,21 +345,26 @@ func _test_manager_create_session_runtime_guard_contract(harness) -> Dictionary:
 		manager.create_session({
 			"battle_seed": 312,
 			"content_snapshot_paths": snapshot_paths_payload.get("paths", PackedStringArray()),
-			"battle_setup": harness.build_sample_setup(sample_factory),
+			"battle_setup": _harness.build_sample_setup(sample_factory),
 		}),
 		"create_session",
 		ErrorCodesScript.INVALID_STATE_CORRUPTION,
 		"runtime state invalid"
 	)
 	if not bool(failure.get("ok", false)):
-		return harness.fail_result(str(failure.get("error", "create_session runtime guard contract failed")))
+		fail(str(failure.get("error", "create_session runtime guard contract failed")))
+		return
 	var active_count_unwrap = _helper.unwrap_ok(manager.active_session_count(), "active_session_count")
 	if not bool(active_count_unwrap.get("ok", false)):
-		return harness.fail_result(str(active_count_unwrap.get("error", "manager active_session_count failed")))
+		fail(str(active_count_unwrap.get("error", "manager active_session_count failed")))
+		return
 	if int(active_count_unwrap.get("data", {}).get("count", -1)) != 0:
-		return harness.fail_result("create_session runtime guard should not retain invalid session")
+		fail("create_session runtime guard should not retain invalid session")
+		return
 	if not stub_container_service.invalid_session.disposed:
-		return harness.fail_result("create_session runtime guard should dispose the invalid session before returning")
+		fail("create_session runtime guard should dispose the invalid session before returning")
+		return
 	if stub_public_snapshot_builder.build_calls != 0:
-		return harness.fail_result("create_session runtime guard must fail before manager projects the first public snapshot")
-	return harness.pass_result()
+		fail("create_session runtime guard must fail before manager projects the first public snapshot")
+		return
+

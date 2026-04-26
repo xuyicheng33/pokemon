@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -6,24 +6,17 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 
-
 func test_skill_execute_runtime_contract() -> void:
-	_assert_legacy_result(_test_skill_execute_runtime_contract(_harness))
-
-func test_skill_execute_fallback_runtime_contract() -> void:
-	_assert_legacy_result(_test_skill_execute_fallback_runtime_contract(_harness))
-
-func test_skill_execute_validation_contract() -> void:
-	_assert_legacy_result(_test_skill_execute_validation_contract(_harness))
-func _test_skill_execute_runtime_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var execute_mark = _build_stack_mark_effect("test_execute_mark")
 	content_index.register_resource(execute_mark)
@@ -31,16 +24,18 @@ func _test_skill_execute_runtime_contract(harness) -> Dictionary:
 	content_index.register_resource(execute_skill)
 	content_index.units["sample_pyron"].skill_ids[0] = execute_skill.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 830)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 830)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if actor == null or target == null:
-		return harness.fail_result("missing active units for execute runtime contract")
+		fail("missing active units for execute runtime contract")
+		return
 	var before_hp: int = max(1, int(floor(float(target.max_hp) * 0.3)))
 	target.current_hp = before_hp
 	for _i in range(5):
 		if core.service("effect_instance_service").create_instance(execute_mark, actor.unit_instance_id, battle_state, "test_execute_mark", 0, actor.base_speed) == null:
-			return harness.fail_result("failed to seed execute mark stack")
+			fail("failed to seed execute mark stack")
+			return
 
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
@@ -62,26 +57,31 @@ func _test_skill_execute_runtime_contract(harness) -> Dictionary:
 	])
 
 	if int(target.current_hp) != 0:
-		return harness.fail_result("execute contract should set target hp to 0")
+		fail("execute contract should set target hp to 0")
+		return
 	var damage_events: Array = _collect_actor_damage_events(core.service("battle_logger").event_log, actor.public_id)
 	if damage_events.size() != 1:
-		return harness.fail_result("execute contract should only emit one damage event")
+		fail("execute contract should only emit one damage event")
+		return
 	var damage_delta: int = abs(int(damage_events[0].value_changes[0].delta))
 	if damage_delta != before_hp:
-		return harness.fail_result("execute contract should log remaining hp as damage: expected=%d actual=%d" % [before_hp, damage_delta])
+		fail("execute contract should log remaining hp as damage: expected=%d actual=%d" % [before_hp, damage_delta])
+		return
 	if String(damage_events[0].payload_summary).find("[execute]") == -1:
-		return harness.fail_result("execute damage log should carry execute marker")
-	return harness.pass_result()
+		fail("execute damage log should carry execute marker")
+		return
 
-func _test_skill_execute_fallback_runtime_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_skill_execute_fallback_runtime_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var execute_mark = _build_stack_mark_effect("test_execute_mark_fallback")
 	content_index.register_resource(execute_mark)
@@ -89,15 +89,17 @@ func _test_skill_execute_fallback_runtime_contract(harness) -> Dictionary:
 	content_index.register_resource(execute_skill)
 	content_index.units["sample_pyron"].skill_ids[0] = execute_skill.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 831)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 831)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if actor == null or target == null:
-		return harness.fail_result("missing active units for execute fallback contract")
+		fail("missing active units for execute fallback contract")
+		return
 	var before_hp: int = int(target.current_hp)
 	for _i in range(5):
 		if core.service("effect_instance_service").create_instance(execute_mark, actor.unit_instance_id, battle_state, "test_execute_mark_fallback", 0, actor.base_speed) == null:
-			return harness.fail_result("failed to seed execute fallback mark stack")
+			fail("failed to seed execute fallback mark stack")
+			return
 
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
@@ -121,19 +123,22 @@ func _test_skill_execute_fallback_runtime_contract(harness) -> Dictionary:
 	var expected_damage: int = _calc_expected_damage(core, battle_state, actor, target, 24, "light")
 	var actual_damage: int = before_hp - int(target.current_hp)
 	if actual_damage != expected_damage:
-		return harness.fail_result("execute fallback should use normal damage path: expected=%d actual=%d" % [expected_damage, actual_damage])
+		fail("execute fallback should use normal damage path: expected=%d actual=%d" % [expected_damage, actual_damage])
+		return
 	if int(target.current_hp) <= 0:
-		return harness.fail_result("execute fallback should not kill full-hp target")
+		fail("execute fallback should not kill full-hp target")
+		return
 	var damage_events: Array = _collect_actor_damage_events(core.service("battle_logger").event_log, actor.public_id)
 	if damage_events.size() != 1 or String(damage_events[0].payload_summary).find("[execute]") != -1:
-		return harness.fail_result("fallback damage path should not emit execute-tagged log")
-	return harness.pass_result()
+		fail("fallback damage path should not emit execute-tagged log")
+		return
 
-func _test_skill_execute_validation_contract(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+func test_skill_execute_validation_contract() -> void:
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var bad_skill = SkillDefinitionScript.new()
 	bad_skill.id = "test_bad_execute_skill"
@@ -150,10 +155,12 @@ func _test_skill_execute_validation_contract(harness) -> Dictionary:
 
 	var errors: Array = content_index.validate_snapshot()
 	if not _has_error(errors, "skill[test_bad_execute_skill].execute_target_hp_ratio_lte out of range: 1.2"):
-		return harness.fail_result("execute validation should reject ratio out of range")
+		fail("execute validation should reject ratio out of range")
+		return
 	if not _has_error(errors, "skill[test_bad_execute_skill].execute_required_total_stacks requires execute effect ids"):
-		return harness.fail_result("execute validation should reject missing execute effect ids")
-	return harness.pass_result()
+		fail("execute validation should reject missing execute effect ids")
+		return
+
 
 func _build_stack_mark_effect(effect_id: String):
 	var effect = EffectDefinitionScript.new()

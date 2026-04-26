@@ -1,23 +1,21 @@
 extends "res://test/suites/extension_targeting_accuracy/base.gd"
-const BaseSuiteScript := preload("res://test/suites/extension_targeting_accuracy/base.gd")
-
-
 
 func test_effect_refresh_updates_source_metadata_contract() -> void:
-	_assert_legacy_result(_test_effect_refresh_updates_source_metadata_contract(_harness))
-func _test_effect_refresh_updates_source_metadata_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 913)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 913)
 	var target = battle_state.get_side("P2").get_active_unit()
 	if target == null:
-		return harness.fail_result("missing target unit for effect refresh metadata contract")
+		fail("missing target unit for effect refresh metadata contract")
+		return
 
 	var refresh_effect = EffectDefinitionScript.new()
 	refresh_effect.id = "test_effect_refresh_metadata"
@@ -40,7 +38,8 @@ func _test_effect_refresh_updates_source_metadata_contract(harness) -> Dictionar
 		first_meta
 	)
 	if first_instance == null:
-		return harness.fail_result("failed to create first refreshable effect instance")
+		fail("failed to create first refreshable effect instance")
+		return
 	first_instance.remaining = 1
 	var refreshed_instance = effect_instance_service.create_instance(
 		refresh_effect,
@@ -52,15 +51,20 @@ func _test_effect_refresh_updates_source_metadata_contract(harness) -> Dictionar
 		EffectSourceMetaHelperScript.build_meta("owner_b", {"tag": "second"})
 	)
 	if refreshed_instance == null:
-		return harness.fail_result("failed to refresh effect instance")
+		fail("failed to refresh effect instance")
+		return
 	if refreshed_instance != first_instance:
-		return harness.fail_result("effect refresh should keep the same runtime instance")
+		fail("effect refresh should keep the same runtime instance")
+		return
 	if effect_instance_service.last_apply_skipped:
-		return harness.fail_result("effect refresh should not be marked as skipped")
+		fail("effect refresh should not be marked as skipped")
+		return
 	if refreshed_instance.remaining != 3:
-		return harness.fail_result("effect refresh should reset remaining turns")
+		fail("effect refresh should reset remaining turns")
+		return
 	if refreshed_instance.source_instance_id != "second_source" or refreshed_instance.source_kind_order != 2 or refreshed_instance.source_order_speed_snapshot != 120:
-		return harness.fail_result("effect refresh should update source identity and order metadata")
+		fail("effect refresh should update source identity and order metadata")
+		return
 	if String(refreshed_instance.meta.get("source_owner_id", "")) != "owner_b" or String(refreshed_instance.meta.get("tag", "")) != "second":
-		return harness.fail_result("effect refresh should replace source owner and meta payload")
-	return harness.pass_result()
+		fail("effect refresh should replace source owner and meta payload")
+		return

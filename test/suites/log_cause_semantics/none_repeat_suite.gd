@@ -1,20 +1,16 @@
 extends "res://test/suites/log_cause_semantics/shared.gd"
 
 func test_apply_effect_none_repeat_skips_log() -> void:
-	_assert_legacy_result(_test_apply_effect_none_repeat_skips_log(_harness))
-
-func test_rule_mod_none_repeat_skips_log() -> void:
-	_assert_legacy_result(_test_rule_mod_none_repeat_skips_log(_harness))
-
-func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var marker_effect = EffectDefinitionScript.new()
 	marker_effect.id = "test_none_marker"
 	marker_effect.display_name = "None Marker"
@@ -48,7 +44,7 @@ func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
 	mark_skill.effects_on_cast_ids = PackedStringArray([apply_effect.id])
 	content_index.register_resource(mark_skill)
 	content_index.units["sample_pyron"].skill_ids[0] = mark_skill.id
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 244)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 244)
 	var commands_turn_1: Array = [
 		core.service("command_builder").build_command({
 			"turn_index": 1,
@@ -93,24 +89,27 @@ func _test_apply_effect_none_repeat_skips_log(harness) -> Dictionary:
 		if ev.event_type == EventTypesScript.EFFECT_APPLY_EFFECT and String(ev.payload_summary).find(marker_effect.id) != -1:
 			apply_events += 1
 	if apply_events != 1:
-		return harness.fail_result("stacking=none effect should emit exactly one apply log while the instance remains active")
+		fail("stacking=none effect should emit exactly one apply log while the instance remains active")
+		return
 	var marker_count := 0
 	for effect_instance in target_unit.effect_instances:
 		if effect_instance.def_id == marker_effect.id:
 			marker_count += 1
 	if marker_count != 1:
-		return harness.fail_result("stacking=none effect should keep exactly one runtime instance after repeated apply")
-	return harness.pass_result()
+		fail("stacking=none effect should keep exactly one runtime instance after repeated apply")
+		return
 
-func _test_rule_mod_none_repeat_skips_log(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_rule_mod_none_repeat_skips_log() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var rule_mod_payload = RuleModPayloadScript.new()
 	rule_mod_payload.payload_type = "rule_mod"
 	rule_mod_payload.mod_kind = "mp_regen"
@@ -141,7 +140,7 @@ func _test_rule_mod_none_repeat_skips_log(harness) -> Dictionary:
 	mark_skill.effects_on_cast_ids = PackedStringArray([apply_effect.id])
 	content_index.register_resource(mark_skill)
 	content_index.units["sample_pyron"].skill_ids[0] = mark_skill.id
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 245)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 245)
 	var commands_turn_1: Array = [
 		core.service("command_builder").build_command({
 			"turn_index": 1,
@@ -186,11 +185,13 @@ func _test_rule_mod_none_repeat_skips_log(harness) -> Dictionary:
 		if ev.event_type == EventTypesScript.EFFECT_RULE_MOD_APPLY and String(ev.payload_summary).find("mp_regen") != -1:
 			apply_events += 1
 	if apply_events != 1:
-		return harness.fail_result("stacking=none rule_mod should emit exactly one apply log while the instance remains active")
+		fail("stacking=none rule_mod should emit exactly one apply log while the instance remains active")
+		return
 	var rule_mod_count := 0
 	for rule_mod_instance in target_unit.rule_mod_instances:
 		if String(rule_mod_instance.mod_kind) == "mp_regen":
 			rule_mod_count += 1
 	if rule_mod_count != 1:
-		return harness.fail_result("stacking=none rule_mod should keep exactly one runtime instance after repeated apply")
-	return harness.pass_result()
+		fail("stacking=none rule_mod should keep exactly one runtime instance after repeated apply")
+		return
+

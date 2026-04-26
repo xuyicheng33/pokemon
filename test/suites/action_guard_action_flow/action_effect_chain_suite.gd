@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
@@ -8,20 +8,16 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 func test_action_effects_on_kill_dispatch() -> void:
-	_assert_legacy_result(_test_action_effects_on_kill_dispatch(_harness))
-
-func test_on_cast_self_faint_keeps_action_chain() -> void:
-	_assert_legacy_result(_test_on_cast_self_faint_keeps_action_chain(_harness))
-
-func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var kill_effect_payload = StatModPayloadScript.new()
 	kill_effect_payload.payload_type = "stat_mod"
 	kill_effect_payload.stat_name = "attack"
@@ -47,7 +43,7 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
 	content_index.register_resource(kill_skill)
 	if not content_index.units["sample_pyron"].skill_ids.has(kill_skill.id):
 		content_index.units["sample_pyron"].skill_ids[0] = kill_skill.id
-	var kill_state = harness.build_initialized_battle(core, content_index, sample_factory, 109)
+	var kill_state = _harness.build_initialized_battle(core, content_index, sample_factory, 109)
 	var kill_p1_active = kill_state.get_side("P1").get_active_unit()
 	kill_p1_active.base_speed = 999
 	var kill_p2_active = kill_state.get_side("P2").get_active_unit()
@@ -76,8 +72,9 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
 			has_kill_effect_log = true
 			break
 	if not has_kill_effect_log:
-		return harness.fail_result("effects_on_kill did not trigger on kill")
-	var non_kill_state = harness.build_initialized_battle(core, content_index, sample_factory, 110)
+		fail("effects_on_kill did not trigger on kill")
+		return
+	var non_kill_state = _harness.build_initialized_battle(core, content_index, sample_factory, 110)
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(non_kill_state, content_index, [
 		core.service("command_builder").build_command({
@@ -99,18 +96,20 @@ func _test_action_effects_on_kill_dispatch(harness) -> Dictionary:
 	])
 	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("action_"):
-			return harness.fail_result("effects_on_kill should not trigger without kill")
-	return harness.pass_result()
+			fail("effects_on_kill should not trigger without kill")
+			return
 
-func _test_on_cast_self_faint_keeps_action_chain(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_on_cast_self_faint_keeps_action_chain() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var self_damage_payload = DamagePayloadScript.new()
 	self_damage_payload.payload_type = "damage"
 	self_damage_payload.amount = 999
@@ -136,10 +135,11 @@ func _test_on_cast_self_faint_keeps_action_chain(harness) -> Dictionary:
 	content_index.register_resource(self_faint_skill)
 	if not content_index.units["sample_pyron"].skill_ids.has(self_faint_skill.id):
 		content_index.units["sample_pyron"].skill_ids[0] = self_faint_skill.id
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 312)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 312)
 	var p1_active = battle_state.get_side("P1").get_active_unit()
 	if p1_active == null:
-		return harness.fail_result("missing P1 active unit")
+		fail("missing P1 active unit")
+		return
 	p1_active.base_speed = 999
 	var actor_unit_id: String = p1_active.unit_instance_id
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
@@ -178,13 +178,18 @@ func _test_on_cast_self_faint_keeps_action_chain(harness) -> Dictionary:
 		if replace_idx == -1 and ev.event_type == EventTypesScript.STATE_REPLACE and faint_idx != -1 and i > faint_idx:
 			replace_idx = i
 	if self_damage_idx == -1:
-		return harness.fail_result("on_cast self damage event missing")
+		fail("on_cast self damage event missing")
+		return
 	if action_hit_idx == -1:
-		return harness.fail_result("action hit missing after on_cast self damage")
+		fail("action hit missing after on_cast self damage")
+		return
 	if faint_idx == -1:
-		return harness.fail_result("state_faint missing for self-fainted actor")
+		fail("state_faint missing for self-fainted actor")
+		return
 	if not (self_damage_idx < action_hit_idx and action_hit_idx < faint_idx):
-		return harness.fail_result("on_cast self faint ordering mismatch")
+		fail("on_cast self faint ordering mismatch")
+		return
 	if replace_idx == -1:
-		return harness.fail_result("state_replace missing after self-faint window")
-	return harness.pass_result()
+		fail("state_replace missing after self-faint window")
+		return
+

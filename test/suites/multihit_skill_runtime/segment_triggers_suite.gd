@@ -1,27 +1,19 @@
 extends "res://test/suites/multihit_skill_runtime/base.gd"
-const BaseSuiteScript := preload("res://test/suites/multihit_skill_runtime/base.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 
-
 func test_multihit_skill_segment_trigger_contract() -> void:
-	_assert_legacy_result(_test_multihit_skill_segment_trigger_contract(_harness))
-
-func test_multihit_skill_segment_context_restore_contract() -> void:
-	_assert_legacy_result(_test_multihit_skill_segment_context_restore_contract(_harness))
-
-func test_on_receive_action_damage_segment_missing_action_actor_fails_fast_contract() -> void:
-	_assert_legacy_result(_test_on_receive_action_damage_segment_missing_action_actor_fails_fast_contract(_harness))
-func _test_multihit_skill_segment_trigger_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var skill = _build_multihit_skill(
 		"test_multihit_trigger_skill",
@@ -37,16 +29,19 @@ func _test_multihit_skill_segment_trigger_contract(harness) -> Dictionary:
 	content_index.register_resource(on_hit_effect)
 	content_index.register_resource(on_segment_effect)
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 842)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 842)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if actor == null or target == null:
-		return harness.fail_result("missing active units for multihit trigger contract")
+		fail("missing active units for multihit trigger contract")
+		return
 	var before_mp: int = int(target.current_mp)
 	if core.service("effect_instance_service").create_instance(on_hit_effect, target.unit_instance_id, battle_state, "test_receive_once", 0, target.base_speed) == null:
-		return harness.fail_result("failed to seed on_receive_action_hit effect instance")
+		fail("failed to seed on_receive_action_hit effect instance")
+		return
 	if core.service("effect_instance_service").create_instance(on_segment_effect, target.unit_instance_id, battle_state, "test_receive_segment", 0, target.base_speed) == null:
-		return harness.fail_result("failed to seed on_receive_action_damage_segment effect instance")
+		fail("failed to seed on_receive_action_damage_segment effect instance")
+		return
 
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
@@ -68,18 +63,20 @@ func _test_multihit_skill_segment_trigger_contract(harness) -> Dictionary:
 	])
 
 	if before_mp - int(target.current_mp) != 8:
-		return harness.fail_result("multihit should trigger on_receive_action_hit once and segment trigger three times")
-	return harness.pass_result()
+		fail("multihit should trigger on_receive_action_hit once and segment trigger three times")
+		return
 
-func _test_multihit_skill_segment_context_restore_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_multihit_skill_segment_context_restore_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var skill = _build_multihit_skill(
 		"test_multihit_context_restore_skill",
@@ -98,14 +95,16 @@ func _test_multihit_skill_segment_context_restore_contract(harness) -> Dictionar
 	)
 	content_index.register_resource(filtered_on_hit_effect)
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 843)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 843)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if actor == null or target == null:
-		return harness.fail_result("missing active units for multihit context-restore contract")
+		fail("missing active units for multihit context-restore contract")
+		return
 	var before_mp: int = int(target.current_mp)
 	if core.service("effect_instance_service").create_instance(filtered_on_hit_effect, target.unit_instance_id, battle_state, "test_multihit_on_hit_filter", 0, target.base_speed) == null:
-		return harness.fail_result("failed to seed on_receive_action_hit filter effect instance")
+		fail("failed to seed on_receive_action_hit filter effect instance")
+		return
 
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		core.service("command_builder").build_command({
@@ -126,26 +125,30 @@ func _test_multihit_skill_segment_context_restore_contract(harness) -> Dictionar
 	])
 
 	if int(target.current_mp) != before_mp:
-		return harness.fail_result("multihit should restore action_combat_type_id before on_receive_action_hit filters run")
-	return harness.pass_result()
+		fail("multihit should restore action_combat_type_id before on_receive_action_hit filters run")
+		return
 
-func _test_on_receive_action_damage_segment_missing_action_actor_fails_fast_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_on_receive_action_damage_segment_missing_action_actor_fails_fast_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var on_segment_effect = _build_mp_loss_effect("test_segment_missing_actor", "on_receive_action_damage_segment", -1)
 	content_index.register_resource(on_segment_effect)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 844)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 844)
 	var target = battle_state.get_side("P2").get_active_unit()
 	if target == null:
-		return harness.fail_result("missing active target for segment missing-action-actor contract")
+		fail("missing active target for segment missing-action-actor contract")
+		return
 	if core.service("effect_instance_service").create_instance(on_segment_effect, target.unit_instance_id, battle_state, "test_segment_missing_actor_source", 0, target.base_speed) == null:
-		return harness.fail_result("failed to seed on_receive_action_damage_segment effect instance")
+		fail("failed to seed on_receive_action_damage_segment effect instance")
+		return
 	var chain_context = ChainContextScript.new()
 	chain_context.event_chain_id = "test_on_receive_action_damage_segment_missing_action_actor"
 	chain_context.chain_origin = "action"
@@ -160,5 +163,6 @@ func _test_on_receive_action_damage_segment_missing_action_actor_fails_fast_cont
 		chain_context
 	)
 	if invalid_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
-		return harness.fail_result("missing on_receive_action_damage_segment action actor should fail-fast as invalid_state_corruption")
-	return harness.pass_result()
+		fail("missing on_receive_action_damage_segment action actor should fail-fast as invalid_state_corruption")
+		return
+

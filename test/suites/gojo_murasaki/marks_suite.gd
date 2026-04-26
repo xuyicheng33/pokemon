@@ -1,18 +1,10 @@
 extends "res://test/suites/gojo_murasaki/shared.gd"
 
 func test_gojo_murasaki_no_marks_contract() -> void:
-	_assert_legacy_result(_test_gojo_murasaki_no_marks_contract(_harness))
-
-func test_gojo_murasaki_double_mark_burst_contract() -> void:
-	_assert_legacy_result(_test_gojo_murasaki_double_mark_burst_contract(_harness))
-
-func test_gojo_murasaki_same_owner_contract() -> void:
-	_assert_legacy_result(_test_gojo_murasaki_same_owner_contract(_harness))
-
-func _test_gojo_murasaki_no_marks_contract(harness) -> Dictionary:
-	var state_payload = _build_gojo_vs_sample_state(harness, 1205)
+	var state_payload = _build_gojo_vs_sample_state(_harness, 1205)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -24,15 +16,17 @@ func _test_gojo_murasaki_no_marks_contract(harness) -> Dictionary:
 		_build_wait_command(core, 1, "P2", "P2-A"),
 	])
 	if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 1:
-		return harness.fail_result("茈在无双标记时只能命中一次本体伤害")
+		fail("茈在无双标记时只能命中一次本体伤害")
+		return
 	if _count_effect_instances(target_unit, "gojo_ao_mark") != 0 or _count_effect_instances(target_unit, "gojo_aka_mark") != 0:
-		return harness.fail_result("茈在无双标记时不应误清或误造标记")
-	return harness.pass_result()
+		fail("茈在无双标记时不应误清或误造标记")
+		return
 
-func _test_gojo_murasaki_double_mark_burst_contract(harness) -> Dictionary:
-	var state_payload = _build_gojo_vs_sample_state(harness, 1206)
+func test_gojo_murasaki_double_mark_burst_contract() -> void:
+	var state_payload = _build_gojo_vs_sample_state(_harness, 1206)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -42,16 +36,21 @@ func _test_gojo_murasaki_double_mark_burst_contract(harness) -> Dictionary:
 	var murasaki_skill = content_index.skills["gojo_murasaki"]
 	var burst_effect = content_index.effects.get("gojo_murasaki_conditional_burst", null)
 	if burst_effect == null or burst_effect.payloads.is_empty():
-		return harness.fail_result("茈追加段资源缺失：gojo_murasaki_conditional_burst")
+		fail("茈追加段资源缺失：gojo_murasaki_conditional_burst")
+		return
 	var burst_damage_payload = burst_effect.payloads[0]
 	if not bool(burst_damage_payload.use_formula):
-		return harness.fail_result("茈追加段伤害必须走公式结算（use_formula=true）")
+		fail("茈追加段伤害必须走公式结算（use_formula=true）")
+		return
 	if str(burst_damage_payload.damage_kind) != "special":
-		return harness.fail_result("茈追加段伤害类型必须为 special")
+		fail("茈追加段伤害类型必须为 special")
+		return
 	if int(burst_damage_payload.amount) != 32:
-		return harness.fail_result("茈追加段公式威力必须固定为 32")
+		fail("茈追加段公式威力必须固定为 32")
+		return
 	if str(murasaki_skill.combat_type_id) != "space":
-		return harness.fail_result("茈追加段在 use_formula 链路下应继承技能 combat_type_id=space")
+		fail("茈追加段在 use_formula 链路下应继承技能 combat_type_id=space")
+		return
 	var expected_burst_damage = _calc_formula_damage(
 		core,
 		battle_state,
@@ -72,25 +71,31 @@ func _test_gojo_murasaki_double_mark_burst_contract(harness) -> Dictionary:
 		_build_wait_command(core, 1, "P2", "P2-A"),
 	])
 	if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 2:
-		return harness.fail_result("茈在双标记时应追加第二段伤害")
+		fail("茈在双标记时应追加第二段伤害")
+		return
 	var burst_event = _find_burst_damage_event(core.service("battle_logger").event_log, target_unit.unit_instance_id, target_unit.public_id)
 	if burst_event == null:
-		return harness.fail_result("茈双标记时应写出追加段 payload_damage 的 EFFECT_DAMAGE")
+		fail("茈双标记时应写出追加段 payload_damage 的 EFFECT_DAMAGE")
+		return
 	var burst_change = _first_value_change(burst_event)
 	if burst_change == null:
-		return harness.fail_result("茈追加段日志必须带 value_changes")
+		fail("茈追加段日志必须带 value_changes")
+		return
 	if int(burst_change.delta) != -expected_burst_damage:
-		return harness.fail_result("茈追加段伤害值应匹配 power=32 的公式结算")
+		fail("茈追加段伤害值应匹配 power=32 的公式结算")
+		return
 	if abs(float(burst_event.type_effectiveness) - float(expected_type_effectiveness)) > 0.0001:
-		return harness.fail_result("茈追加段应继承技能 combat_type_id=space 的克制倍率")
+		fail("茈追加段应继承技能 combat_type_id=space 的克制倍率")
+		return
 	if _count_effect_instances(target_unit, "gojo_ao_mark") != 0 or _count_effect_instances(target_unit, "gojo_aka_mark") != 0:
-		return harness.fail_result("茈在双标记追加后应清掉双标记")
-	return harness.pass_result()
+		fail("茈在双标记追加后应清掉双标记")
+		return
 
-func _test_gojo_murasaki_same_owner_contract(harness) -> Dictionary:
-	var state_payload = _build_gojo_vs_sample_state(harness, 1230)
+func test_gojo_murasaki_same_owner_contract() -> void:
+	var state_payload = _build_gojo_vs_sample_state(_harness, 1230)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -112,7 +117,9 @@ func _test_gojo_murasaki_same_owner_contract(harness) -> Dictionary:
 		_build_wait_command(core, 1, "P2", "P2-A"),
 	])
 	if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 1:
-		return harness.fail_result("茈只应消耗自己来源的双标记，异来源标记不应触发追加段")
+		fail("茈只应消耗自己来源的双标记，异来源标记不应触发追加段")
+		return
 	if _count_effect_instances(target_unit, "gojo_ao_mark") != 1 or _count_effect_instances(target_unit, "gojo_aka_mark") != 1:
-		return harness.fail_result("异来源双标记未命中前置时不应被误清理")
-	return harness.pass_result()
+		fail("异来源双标记未命中前置时不应被误清理")
+		return
+

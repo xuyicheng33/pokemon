@@ -1,79 +1,85 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const ObitoTestSupportScript := preload("res://tests/support/obito_test_support.gd")
 
 var _support = ObitoTestSupportScript.new()
 
 
-
 func test_obito_shiwei_weishouyu_segment_order_contract() -> void:
-	_assert_legacy_result(_test_obito_shiwei_weishouyu_segment_order_contract(_harness))
-
-func test_obito_shiwei_weishouyu_segment_damage_log_contract() -> void:
-	_assert_legacy_result(_test_obito_shiwei_weishouyu_segment_damage_log_contract(_harness))
-
-func test_obito_shiwei_weishouyu_mid_kill_stop_contract() -> void:
-	_assert_legacy_result(_test_obito_shiwei_weishouyu_mid_kill_stop_contract(_harness))
-func _test_obito_shiwei_weishouyu_segment_order_contract(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var ultimate = content_index.skills.get("obito_shiwei_weishouyu", null)
 	if ultimate == null:
-		return harness.fail_result("missing obito ultimate definition")
+		fail("missing obito ultimate definition")
+		return
 	if int(ultimate.power) != 0:
-		return harness.fail_result("obito ultimate top-level power should stay at 0 because damage_segments carry the real damage")
+		fail("obito ultimate top-level power should stay at 0 because damage_segments carry the real damage")
+		return
 	if ultimate.damage_segments.size() != 2:
-		return harness.fail_result("obito ultimate should define exactly 2 segment resources")
+		fail("obito ultimate should define exactly 2 segment resources")
+		return
 	var dark_segment = ultimate.damage_segments[0]
 	var light_segment = ultimate.damage_segments[1]
 	if int(dark_segment.repeat_count) != 2 or int(dark_segment.power) != 12 or String(dark_segment.combat_type_id) != "dark":
-		return harness.fail_result("obito ultimate first segment resource should be 2x dark power 12")
+		fail("obito ultimate first segment resource should be 2x dark power 12")
+		return
 	if int(light_segment.repeat_count) != 8 or int(light_segment.power) != 12 or String(light_segment.combat_type_id) != "light":
-		return harness.fail_result("obito ultimate second segment resource should be 8x light power 12")
-	return harness.pass_result()
+		fail("obito ultimate second segment resource should be 8x light power 12")
+		return
 
-func _test_obito_shiwei_weishouyu_segment_damage_log_contract(harness) -> Dictionary:
-	var result = _run_shiwei_weishouyu_case(harness, 1540)
+func test_obito_shiwei_weishouyu_segment_damage_log_contract() -> void:
+	var result = _run_shiwei_weishouyu_case(_harness, 1540)
 	if not bool(result.get("ok", false)):
-		return harness.fail_result(str(result.get("error", "obito ultimate segment log case failed")))
+		fail(str(result.get("error", "obito ultimate segment log case failed")))
+		return
 	var damage_events: Array = result.get("damage_events", [])
 	if damage_events.size() != 10:
-		return harness.fail_result("obito ultimate should emit 10 damage events")
+		fail("obito ultimate should emit 10 damage events")
+		return
 	for segment_index in range(10):
 		var expected_marker := "segment %d/10" % [segment_index + 1]
 		if String(damage_events[segment_index].payload_summary).find(expected_marker) == -1:
-			return harness.fail_result("obito ultimate damage log missing %s marker" % expected_marker)
+			fail("obito ultimate damage log missing %s marker" % expected_marker)
+			return
 		var expected_mul := 0.5 if segment_index < 2 else 2.0
 		if not is_equal_approx(float(damage_events[segment_index].type_effectiveness), expected_mul):
-			return harness.fail_result("obito ultimate segment %d should have type_effectiveness=%s" % [segment_index + 1, var_to_str(expected_mul)])
-	return harness.pass_result()
+			fail("obito ultimate segment %d should have type_effectiveness=%s" % [segment_index + 1, var_to_str(expected_mul)])
+			return
 
-func _test_obito_shiwei_weishouyu_mid_kill_stop_contract(harness) -> Dictionary:
-	var baseline_result = _run_shiwei_weishouyu_case(harness, 1541, -1, false)
+func test_obito_shiwei_weishouyu_mid_kill_stop_contract() -> void:
+	var baseline_result = _run_shiwei_weishouyu_case(_harness, 1541, -1, false)
 	if not bool(baseline_result.get("ok", false)):
-		return harness.fail_result(str(baseline_result.get("error", "obito ultimate baseline case failed")))
+		fail(str(baseline_result.get("error", "obito ultimate baseline case failed")))
+		return
 	var baseline_events: Array = baseline_result.get("damage_events", [])
 	if baseline_events.size() < 2:
-		return harness.fail_result("obito ultimate baseline case should expose at least 2 damage segments")
+		fail("obito ultimate baseline case should expose at least 2 damage segments")
+		return
 	var lethal_hp := 0
 	for segment_index in range(2):
 		lethal_hp += abs(int(baseline_events[segment_index].value_changes[0].delta))
 	lethal_hp -= 1
 	if lethal_hp <= 0:
-		return harness.fail_result("obito ultimate mid-kill case computed invalid lethal hp")
-	var kill_result = _run_shiwei_weishouyu_case(harness, 1542, lethal_hp, false)
+		fail("obito ultimate mid-kill case computed invalid lethal hp")
+		return
+	var kill_result = _run_shiwei_weishouyu_case(_harness, 1542, lethal_hp, false)
 	if not bool(kill_result.get("ok", false)):
-		return harness.fail_result(str(kill_result.get("error", "obito ultimate mid-kill case failed")))
+		fail(str(kill_result.get("error", "obito ultimate mid-kill case failed")))
+		return
 	var damage_events: Array = kill_result.get("damage_events", [])
 	if damage_events.size() != 2:
-		return harness.fail_result("obito ultimate should stop remaining segments immediately after target faints")
+		fail("obito ultimate should stop remaining segments immediately after target faints")
+		return
 	if int(kill_result.get("target_hp", -1)) != 0:
-		return harness.fail_result("obito ultimate mid-kill case should still KO the target")
+		fail("obito ultimate mid-kill case should still KO the target")
+		return
 	if String(damage_events[1].payload_summary).find("segment 2/10") == -1:
-		return harness.fail_result("obito ultimate mid-kill case should stop on the lethal second segment")
-	return harness.pass_result()
+		fail("obito ultimate mid-kill case should stop on the lethal second segment")
+		return
+
 
 @warning_ignore("shadowed_global_identifier")
 func _run_shiwei_weishouyu_case(harness, seed: int, target_hp_override: int = -1, use_mirror: bool = true) -> Dictionary:

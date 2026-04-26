@@ -1,5 +1,4 @@
 extends "res://test/suites/manual_battle_scene/base.gd"
-const BaseSuiteScript := preload("res://test/suites/manual_battle_scene/base.gd")
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 

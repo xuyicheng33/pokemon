@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const SkillDamageSegmentScript := preload("res://src/battle_core/content/skill_damage_segment.gd")

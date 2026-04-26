@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const SukunaSetupRegenTestSupportScript := preload("res://tests/support/sukuna_setup_regen_test_support.gd")
 
@@ -7,13 +7,7 @@ const SUKUNA_BST_TOTAL := 586
 var _support = SukunaSetupRegenTestSupportScript.new()
 
 
-
 func test_sukuna_teach_love_band_table_contract() -> void:
-	_assert_legacy_result(_test_sukuna_teach_love_band_table_contract(_harness))
-
-func test_sukuna_teach_love_replace_on_matchup_change_contract() -> void:
-	_assert_legacy_result(_test_sukuna_teach_love_replace_on_matchup_change_contract(_harness))
-func _test_sukuna_teach_love_band_table_contract(harness) -> Dictionary:
 	var cases: Array[Dictionary] = [
 		{"gap": 0, "expected_bonus": 9},
 		{"gap": 20, "expected_bonus": 9},
@@ -29,10 +23,75 @@ func _test_sukuna_teach_love_band_table_contract(harness) -> Dictionary:
 	]
 	for index in range(cases.size()):
 		var case_data: Dictionary = cases[index]
-		var result: Dictionary = _run_gap_case(harness, int(case_data["gap"]), int(case_data["expected_bonus"]), 8200 + index)
+		var result: Dictionary = _run_gap_case(_harness, int(case_data["gap"]), int(case_data["expected_bonus"]), 8200 + index)
 		if not bool(result.get("ok", false)):
-			return result
-	return harness.pass_result()
+			var __legacy_result = result
+			if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+				fail(str(__legacy_result.get("error", "unknown error")))
+			return
+
+func test_sukuna_teach_love_replace_on_matchup_change_contract() -> void:
+	var core_payload = _harness.build_core()
+	if core_payload.has("error"):
+		fail(str(core_payload["error"]))
+		return
+	var core = core_payload["core"]
+	var sample_factory = _harness.build_sample_factory()
+	if sample_factory == null:
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	_override_unit_total_for_gap(content_index.units["sample_tidekit"], 20)
+	_override_unit_total_for_gap(content_index.units["sample_pyron"], 111)
+	var battle_state = _support.build_battle_state(core, content_index, _support.build_sukuna_setup(sample_factory), 8215)
+	var sukuna_unit = battle_state.get_side("P1").get_active_unit()
+	var initial_opponent = battle_state.get_side("P2").get_active_unit()
+	if sukuna_unit == null or initial_opponent == null:
+		fail("missing active units for sukuna matchup replace contract")
+		return
+	var initial_regen = _find_regen_instances(sukuna_unit)
+	if initial_regen.size() != 1:
+		fail("teach love init path should keep exactly one mp_regen instance")
+		return
+	var initial_expected_bonus: int = _support.resolve_matchup_gap_value(
+		_support.sum_unit_bst(sukuna_unit),
+		_support.sum_unit_bst(initial_opponent),
+		_band_thresholds(),
+		_band_outputs(),
+		0
+	)
+	if int(initial_regen[0].value) != initial_expected_bonus:
+		fail("teach love init path should use the current matchup band value")
+		return
+	var initial_source_key := String(initial_regen[0].source_stacking_key)
+	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
+		_support.build_manual_wait_command(core, 1, "P1", "P1-A"),
+		_support.build_manual_switch_command(core, 1, "P2", "P2-A", "P2-B"),
+	])
+	var updated_opponent = battle_state.get_side("P2").get_active_unit()
+	if updated_opponent == null or updated_opponent.public_id != "P2-B":
+		fail("teach love replace contract should switch opponent to P2-B")
+		return
+	var updated_regen = _find_regen_instances(sukuna_unit)
+	if updated_regen.size() != 1:
+		fail("teach love matchup change should still keep exactly one mp_regen instance")
+		return
+	var updated_expected_bonus: int = _support.resolve_matchup_gap_value(
+		_support.sum_unit_bst(sukuna_unit),
+		_support.sum_unit_bst(updated_opponent),
+		_band_thresholds(),
+		_band_outputs(),
+		0
+	)
+	if int(updated_regen[0].value) != updated_expected_bonus:
+		fail("teach love matchup change should replace regen value with the new matchup band")
+		return
+	if initial_expected_bonus == updated_expected_bonus:
+		fail("teach love replace contract fixture should produce a different matchup band after switch")
+		return
+	if initial_source_key.is_empty() or String(updated_regen[0].source_stacking_key) != initial_source_key:
+		fail("teach love replace contract should stay inside the same source stacking group across matchup changes")
+		return
 
 @warning_ignore("shadowed_global_identifier")
 func _run_gap_case(harness, gap: int, expected_bonus: int, seed: int) -> Dictionary:
@@ -88,59 +147,6 @@ func _run_gap_case(harness, gap: int, expected_bonus: int, seed: int) -> Diction
 		return harness.fail_result("teach love helper mismatch at gap=%d: expected=%d actual=%d" % [gap, expected_bonus, resolved_bonus])
 	return harness.pass_result()
 
-func _test_sukuna_teach_love_replace_on_matchup_change_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
-	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
-	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
-	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	_override_unit_total_for_gap(content_index.units["sample_tidekit"], 20)
-	_override_unit_total_for_gap(content_index.units["sample_pyron"], 111)
-	var battle_state = _support.build_battle_state(core, content_index, _support.build_sukuna_setup(sample_factory), 8215)
-	var sukuna_unit = battle_state.get_side("P1").get_active_unit()
-	var initial_opponent = battle_state.get_side("P2").get_active_unit()
-	if sukuna_unit == null or initial_opponent == null:
-		return harness.fail_result("missing active units for sukuna matchup replace contract")
-	var initial_regen = _find_regen_instances(sukuna_unit)
-	if initial_regen.size() != 1:
-		return harness.fail_result("teach love init path should keep exactly one mp_regen instance")
-	var initial_expected_bonus: int = _support.resolve_matchup_gap_value(
-		_support.sum_unit_bst(sukuna_unit),
-		_support.sum_unit_bst(initial_opponent),
-		_band_thresholds(),
-		_band_outputs(),
-		0
-	)
-	if int(initial_regen[0].value) != initial_expected_bonus:
-		return harness.fail_result("teach love init path should use the current matchup band value")
-	var initial_source_key := String(initial_regen[0].source_stacking_key)
-	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
-		_support.build_manual_wait_command(core, 1, "P1", "P1-A"),
-		_support.build_manual_switch_command(core, 1, "P2", "P2-A", "P2-B"),
-	])
-	var updated_opponent = battle_state.get_side("P2").get_active_unit()
-	if updated_opponent == null or updated_opponent.public_id != "P2-B":
-		return harness.fail_result("teach love replace contract should switch opponent to P2-B")
-	var updated_regen = _find_regen_instances(sukuna_unit)
-	if updated_regen.size() != 1:
-		return harness.fail_result("teach love matchup change should still keep exactly one mp_regen instance")
-	var updated_expected_bonus: int = _support.resolve_matchup_gap_value(
-		_support.sum_unit_bst(sukuna_unit),
-		_support.sum_unit_bst(updated_opponent),
-		_band_thresholds(),
-		_band_outputs(),
-		0
-	)
-	if int(updated_regen[0].value) != updated_expected_bonus:
-		return harness.fail_result("teach love matchup change should replace regen value with the new matchup band")
-	if initial_expected_bonus == updated_expected_bonus:
-		return harness.fail_result("teach love replace contract fixture should produce a different matchup band after switch")
-	if initial_source_key.is_empty() or String(updated_regen[0].source_stacking_key) != initial_source_key:
-		return harness.fail_result("teach love replace contract should stay inside the same source stacking group across matchup changes")
-	return harness.pass_result()
 
 func _override_unit_total_for_gap(unit_definition, gap: int) -> void:
 	var target_total: int = SUKUNA_BST_TOTAL - gap

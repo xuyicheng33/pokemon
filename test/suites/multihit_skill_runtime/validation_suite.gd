@@ -1,15 +1,11 @@
 extends "res://test/suites/multihit_skill_runtime/base.gd"
-const BaseSuiteScript := preload("res://test/suites/multihit_skill_runtime/base.gd")
-
-
 
 func test_multihit_skill_validation_contract() -> void:
-	_assert_legacy_result(_test_multihit_skill_validation_contract(_harness))
-func _test_multihit_skill_validation_contract(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var bad_skill = SkillDefinitionScript.new()
 	bad_skill.id = "test_bad_multihit_skill"
@@ -57,16 +53,21 @@ func _test_multihit_skill_validation_contract(harness) -> Dictionary:
 
 	var errors: Array = content_index.validate_snapshot()
 	if not _has_error(errors, "skill[test_bad_multihit_skill].damage_segments[0].repeat_count must be > 0, got 0"):
-		return harness.fail_result("multihit validation should reject non-positive repeat_count")
+		fail("multihit validation should reject non-positive repeat_count")
+		return
 	if not _has_error(errors, "skill[test_bad_multihit_skill].damage_segments[0].combat_type_id missing combat type: missing_combat_type"):
-		return harness.fail_result("multihit validation should reject missing segment combat type")
+		fail("multihit validation should reject missing segment combat type")
+		return
 	if _has_error(errors, "skill[test_bad_multihit_skill].power must be > 0 for damage skills, got 0") \
 	or _has_error(errors, "skill[test_bad_multihit_skill].power must be > 0 for non-segment damage skills, got 0"):
-		return harness.fail_result("multihit validation should allow top-level power=0 when damage_segments carry the damage truth")
+		fail("multihit validation should allow top-level power=0 when damage_segments carry the damage truth")
+		return
 	if not _has_error(errors, "skill[test_bad_multihit_truth_skill].power must be 0 when damage_segments is present, got 5"):
-		return harness.fail_result("multihit validation should reject non-zero top-level power when damage_segments is present")
+		fail("multihit validation should reject non-zero top-level power when damage_segments is present")
+		return
 	if _has_error(errors, "effect[test_allowed_segment_filter_effect].required_incoming_command_types only allowed for on_receive_action_hit/on_receive_action_damage_segment"):
-		return harness.fail_result("multihit validation should allow command filters on on_receive_action_damage_segment")
+		fail("multihit validation should allow command filters on on_receive_action_damage_segment")
+		return
 	if _has_error(errors, "effect[test_allowed_segment_filter_effect].required_incoming_combat_type_ids only allowed for on_receive_action_hit/on_receive_action_damage_segment"):
-		return harness.fail_result("multihit validation should allow combat filters on on_receive_action_damage_segment")
-	return harness.pass_result()
+		fail("multihit validation should allow combat filters on on_receive_action_damage_segment")
+		return

@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -17,16 +17,16 @@ class TestReplacementSelector:
 
 
 func test_forced_replace_breaks_field_before_replacement_enter() -> void:
-	_assert_legacy_result(_test_forced_replace_breaks_field_before_replacement_enter(_harness))
-func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	_configure_sample_focus_field_break_test(content_index, "test_forced_replace_break")
 	if not content_index.units["sample_tidekit"].skill_ids.has("sample_field_call"):
 		content_index.units["sample_tidekit"].skill_ids[0] = "sample_field_call"
@@ -58,11 +58,12 @@ func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dict
 	if not content_index.units["sample_pyron"].skill_ids.has(forced_skill.id):
 		content_index.units["sample_pyron"].skill_ids[0] = forced_skill.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 222)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 222)
 	var p1_active = battle_state.get_side("P1").get_active_unit()
 	var selected_unit = battle_state.get_unit_by_public_id("P2-C")
 	if p1_active == null or selected_unit == null:
-		return harness.fail_result("forced_replace break test missing units")
+		fail("forced_replace break test missing units")
+		return
 	p1_active.base_speed = 999
 	var selector := TestReplacementSelector.new()
 	selector.next_selection = selected_unit.unit_instance_id
@@ -86,7 +87,8 @@ func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dict
 		}),
 	])
 	if battle_state.field_state == null or battle_state.field_state.field_def_id != "sample_focus_field":
-		return harness.fail_result("forced_replace break test should start with active sample_focus_field")
+		fail("forced_replace break test should start with active sample_focus_field")
+		return
 	var field_instance_id: String = battle_state.field_state.instance_id
 	var log_start: int = core.service("battle_logger").event_log.size()
 
@@ -108,7 +110,8 @@ func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dict
 		}),
 	])
 	if battle_state.field_state != null:
-		return harness.fail_result("creator forced replace should break active field before replacement enter")
+		fail("creator forced replace should break active field before replacement enter")
+		return
 	var break_idx := -1
 	var replace_idx := -1
 	var enter_idx := -1
@@ -121,12 +124,14 @@ func _test_forced_replace_breaks_field_before_replacement_enter(harness) -> Dict
 		if enter_idx == -1 and ev.event_type == EventTypesScript.STATE_ENTER and ev.target_instance_id == selected_unit.unit_instance_id:
 			enter_idx = i
 		if ev.event_type == EventTypesScript.EFFECT_STAT_MOD and ev.source_instance_id == field_instance_id and ev.trigger_name == "on_enter" and ev.target_instance_id == selected_unit.unit_instance_id:
-			return harness.fail_result("forced replacement on_enter should not see a field already broken by creator exit")
+			fail("forced replacement on_enter should not see a field already broken by creator exit")
+			return
 	if break_idx == -1 or replace_idx == -1 or enter_idx == -1:
-		return harness.fail_result("forced_replace field break ordering logs missing")
+		fail("forced_replace field break ordering logs missing")
+		return
 	if break_idx >= replace_idx or break_idx >= enter_idx:
-		return harness.fail_result("field_break must happen before replacement/enter on forced_replace")
-	return harness.pass_result()
+		fail("field_break must happen before replacement/enter on forced_replace")
+		return
 
 func _configure_sample_focus_field_break_test(content_index, prefix: String) -> void:
 	var field_enter_payload = StatModPayloadScript.new()

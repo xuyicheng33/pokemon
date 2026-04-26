@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/passive_skill_definition.gd")
 const PassiveItemDefinitionScript := preload("res://src/battle_core/content/passive_item_definition.gd")

@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const GojoTestSupportScript := preload("res://tests/support/gojo_test_support.gd")

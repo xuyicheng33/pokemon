@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
@@ -8,15 +8,11 @@ var _helper = DamagePayloadContractTestHelperScript.new()
 
 
 func test_damage_payload_formula_kind_validation() -> void:
-	_assert_legacy_result(_test_formula_damage_kind_validation(_harness))
-
-func test_damage_payload_fixed_type_validation() -> void:
-	_assert_legacy_result(_test_fixed_type_validation(_harness))
-func _test_formula_damage_kind_validation(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var errors = _validate_with_sample_mutation(harness, sample_factory, func(content_index):
+		fail("SampleBattleFactory init failed")
+		return
+	var errors = _validate_with_sample_mutation(_harness, sample_factory, func(content_index):
 		var payload = DamagePayloadScript.new()
 		payload.payload_type = "damage"
 		payload.amount = 20
@@ -33,15 +29,15 @@ func _test_formula_damage_kind_validation(harness) -> Dictionary:
 		content_index.register_resource(effect)
 	)
 	if not _errors_contain(errors, "effect[test_invalid_formula_damage_kind_effect].damage invalid damage_kind for formula: none"):
-		return harness.fail_result("missing formula damage_kind validation")
-	return harness.pass_result()
+		fail("missing formula damage_kind validation")
+		return
 
-
-func _test_fixed_type_validation(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+func test_damage_payload_fixed_type_validation() -> void:
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var errors = _validate_with_sample_mutation(harness, sample_factory, func(content_index):
+		fail("SampleBattleFactory init failed")
+		return
+	var errors = _validate_with_sample_mutation(_harness, sample_factory, func(content_index):
 		var payload = DamagePayloadScript.new()
 		payload.payload_type = "damage"
 		payload.amount = 10
@@ -58,8 +54,8 @@ func _test_fixed_type_validation(harness) -> Dictionary:
 		content_index.register_resource(effect)
 	)
 	if not _errors_contain(errors, "effect[test_fixed_type_validation_effect].damage combat_type_id missing combat type: unknown_type"):
-		return harness.fail_result("missing fixed damage combat_type validation")
-	return harness.pass_result()
+		fail("missing fixed damage combat_type validation")
+		return
 
 
 func _validate_with_sample_mutation(harness, sample_factory, mutate: Callable) -> Array:

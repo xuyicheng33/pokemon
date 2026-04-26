@@ -1,22 +1,19 @@
 extends "res://test/suites/log_cause_semantics/shared.gd"
 
 func test_log_contract_semantics() -> void:
-	_assert_legacy_result(_test_log_contract_semantics(_harness))
-
-func test_apply_effect_lifecycle_chain() -> void:
-	_assert_legacy_result(_test_apply_effect_lifecycle_chain(_harness))
-
-func _test_log_contract_semantics(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_output = core.service("replay_runner").run_replay(harness.build_demo_replay_input(sample_factory, core.service("command_builder")))
+		fail("SampleBattleFactory init failed")
+		return
+	var replay_output = core.service("replay_runner").run_replay(_harness.build_demo_replay_input(sample_factory, core.service("command_builder")))
 	if replay_output == null:
-		return harness.fail_result("replay output is null")
+		fail("replay output is null")
+		return
 	var system_turn_start_event = null
 	var action_cast_event = null
 	var effect_damage_event = null
@@ -28,47 +25,63 @@ func _test_log_contract_semantics(harness) -> Dictionary:
 		if effect_damage_event == null and ev.event_type == EventTypesScript.EFFECT_DAMAGE:
 			effect_damage_event = ev
 	if system_turn_start_event == null or action_cast_event == null:
-		return harness.fail_result("missing system/action events for log contract checks")
+		fail("missing system/action events for log contract checks")
+		return
 	if effect_damage_event == null:
-		return harness.fail_result("missing effect event for log contract checks")
+		fail("missing effect event for log contract checks")
+		return
 	if system_turn_start_event.log_schema_version != 3 or action_cast_event.log_schema_version != 3:
-		return harness.fail_result("log_schema_version should be 3 for all events")
+		fail("log_schema_version should be 3 for all events")
+		return
 	if system_turn_start_event.chain_origin != "turn_start":
-		return harness.fail_result("system event chain_origin mismatch")
+		fail("system event chain_origin mismatch")
+		return
 	if action_cast_event.chain_origin != "action":
-		return harness.fail_result("action event chain_origin mismatch")
+		fail("action event chain_origin mismatch")
+		return
 	if system_turn_start_event.action_id != null or system_turn_start_event.action_queue_index != null or system_turn_start_event.actor_id != null:
-		return harness.fail_result("system event action fields must be null")
+		fail("system event action fields must be null")
+		return
 	if system_turn_start_event.command_type != EventTypesScript.SYSTEM_TURN_START or system_turn_start_event.command_source != "system":
-		return harness.fail_result("system event command fields mismatch")
+		fail("system event command fields mismatch")
+		return
 	if system_turn_start_event.select_timeout != null:
-		return harness.fail_result("system event select_timeout must be null")
+		fail("system event select_timeout must be null")
+		return
 	if action_cast_event.action_id == null or action_cast_event.actor_id == null:
-		return harness.fail_result("action event should inherit root action fields")
+		fail("action event should inherit root action fields")
+		return
 	if action_cast_event.command_source != "manual":
-		return harness.fail_result("action event command_source should be manual")
+		fail("action event command_source should be manual")
+		return
 	if action_cast_event.select_timeout != false:
-		return harness.fail_result("manual action chain select_timeout should be false")
+		fail("manual action chain select_timeout should be false")
+		return
 	if effect_damage_event.trigger_name == null or effect_damage_event.cause_event_id == null:
-		return harness.fail_result("effect event should include trigger_name and cause_event_id")
+		fail("effect event should include trigger_name and cause_event_id")
+		return
 	var source_action_hit_event = _find_event(replay_output.event_log, func(ev): return ev.event_type == EventTypesScript.ACTION_HIT and ev.source_instance_id == effect_damage_event.source_instance_id)
 	if source_action_hit_event == null:
-		return harness.fail_result("direct damage should retain its action:hit source event")
+		fail("direct damage should retain its action:hit source event")
+		return
 	if effect_damage_event.cause_event_id != _event_id(source_action_hit_event):
-		return harness.fail_result("direct damage cause_event_id should point to the real action:hit event")
+		fail("direct damage cause_event_id should point to the real action:hit event")
+		return
 	if effect_damage_event.cause_event_id == _event_id(effect_damage_event):
-		return harness.fail_result("effect event cause_event_id must not point to itself")
-	return harness.pass_result()
+		fail("effect event cause_event_id must not point to itself")
+		return
 
-func _test_apply_effect_lifecycle_chain(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_apply_effect_lifecycle_chain() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var dot_payload = DamagePayloadScript.new()
 	dot_payload.payload_type = "dot"
 	dot_payload.amount = 5
@@ -111,7 +124,7 @@ func _test_apply_effect_lifecycle_chain(harness) -> Dictionary:
 	content_index.register_resource(dot_skill)
 	if not content_index.units["sample_pyron"].skill_ids.has(dot_skill.id):
 		content_index.units["sample_pyron"].skill_ids[0] = dot_skill.id
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 211)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 211)
 	var p2_active = battle_state.get_side("P2").get_active_unit()
 	p2_active.current_hp = min(p2_active.max_hp, max(20, p2_active.current_hp))
 	var commands: Array = [
@@ -145,15 +158,21 @@ func _test_apply_effect_lifecycle_chain(harness) -> Dictionary:
 		if remove_event == null and ev.event_type == EventTypesScript.EFFECT_REMOVE_EFFECT and String(ev.payload_summary).find("effect expired: %s" % dot_effect.id) != -1:
 			remove_event = ev
 	if apply_event == null or tick_event == null or remove_event == null:
-		return harness.fail_result("apply_effect lifecycle events missing")
+		fail("apply_effect lifecycle events missing")
+		return
 	if turn_end_event == null:
-		return harness.fail_result("missing system turn_end event for expire checks")
+		fail("missing system turn_end event for expire checks")
+		return
 	if not String(apply_event.cause_event_id).begins_with("effect_event_"):
-		return harness.fail_result("apply_effect cause_event_id should point to the upstream effect event")
+		fail("apply_effect cause_event_id should point to the upstream effect event")
+		return
 	if not String(tick_event.cause_event_id).begins_with("effect_event_"):
-		return harness.fail_result("tick damage cause_event_id should point to the upstream effect event")
+		fail("tick damage cause_event_id should point to the upstream effect event")
+		return
 	if remove_event.cause_event_id != _event_id(turn_end_event):
-		return harness.fail_result("effect expiration remove log should point to the real system:turn_end anchor")
+		fail("effect expiration remove log should point to the real system:turn_end anchor")
+		return
 	if tick_event.cause_event_id == _event_id(tick_event) or remove_event.cause_event_id == _event_id(remove_event):
-		return harness.fail_result("effect lifecycle cause_event_id must not point to itself")
-	return harness.pass_result()
+		fail("effect lifecycle cause_event_id must not point to itself")
+		return
+

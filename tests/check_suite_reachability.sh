@@ -68,7 +68,7 @@ if not isinstance(suite_profiles, dict):
     print("SUITE_REACHABILITY_FAILED: tests/suite_profiles.json expects suite_profiles object", file=sys.stderr)
     sys.exit(1)
 
-allowed_profiles = {"quick", "extended", "manual"}
+allowed_profiles = {"quick", "extended"}
 seen_quick = 0
 for rel_path, profile in sorted(suite_profiles.items()):
     if not isinstance(rel_path, str) or not isinstance(profile, str):

@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const TriggerDispatcherScript := preload("res://src/battle_core/effects/trigger_dispatcher.gd")
@@ -67,34 +67,11 @@ class FailingFieldTriggerBatchRunner:
 var _helper = UltimateFieldTestHelperScript.new()
 
 
-
 func test_field_bound_stat_mod_restore_contract() -> void:
-	_assert_legacy_result(_test_field_bound_stat_mod_restore_contract(_harness))
-
-func test_field_break_self_owner_contract() -> void:
-	_assert_legacy_result(_test_field_break_self_owner_contract(_harness))
-
-func test_field_break_uses_explicit_chain_context_contract() -> void:
-	_assert_legacy_result(_test_field_break_uses_explicit_chain_context_contract(_harness))
-
-func test_field_break_transition_preserves_new_field_contract() -> void:
-	_assert_legacy_result(_test_field_break_transition_preserves_new_field_contract(_harness))
-
-func test_field_expire_transition_preserves_new_field_contract() -> void:
-	_assert_legacy_result(_test_field_expire_transition_preserves_new_field_contract(_harness))
-
-func test_field_apply_failure_does_not_commit_field() -> void:
-	_assert_legacy_result(_test_field_apply_failure_does_not_commit_field(_harness))
-
-func test_field_break_collect_failure_fails_fast_contract() -> void:
-	_assert_legacy_result(_test_field_break_collect_failure_fails_fast_contract(_harness))
-
-func test_field_expire_collect_failure_fails_fast_contract() -> void:
-	_assert_legacy_result(_test_field_expire_collect_failure_fails_fast_contract(_harness))
-func _test_field_bound_stat_mod_restore_contract(harness) -> Dictionary:
-	var gojo_payload = _helper.build_gojo_vs_sample_state(harness, 2212)
+	var gojo_payload = _helper.build_gojo_vs_sample_state(_harness, 2212)
 	if gojo_payload.has("error"):
-		return harness.fail_result(str(gojo_payload["error"]))
+		fail(str(gojo_payload["error"]))
+		return
 	var gojo_core = gojo_payload["core"]
 	var gojo_content = gojo_payload["content_index"]
 	var gojo_state = gojo_payload["battle_state"]
@@ -113,11 +90,13 @@ func _test_field_bound_stat_mod_restore_contract(harness) -> Dictionary:
 	_helper.run_turn(gojo_core, gojo_state, gojo_content, _helper.build_wait_command(gojo_core, 3, "P1", "P1-A"), _helper.build_wait_command(gojo_core, 3, "P2", "P2-A"))
 	_helper.run_turn(gojo_core, gojo_state, gojo_content, _helper.build_wait_command(gojo_core, 4, "P1", "P1-A"), _helper.build_wait_command(gojo_core, 4, "P2", "P2-A"))
 	if int(gojo.stat_stages.get("sp_attack", -99)) != 2:
-		return harness.fail_result("Gojo 领域结束后必须回到开领域前的 sp_attack 阶段")
+		fail("Gojo 领域结束后必须回到开领域前的 sp_attack 阶段")
+		return
 
-	var sukuna_payload = _helper.build_sukuna_vs_sample_state(harness, 2213)
+	var sukuna_payload = _helper.build_sukuna_vs_sample_state(_harness, 2213)
 	if sukuna_payload.has("error"):
-		return harness.fail_result(str(sukuna_payload["error"]))
+		fail(str(sukuna_payload["error"]))
+		return
 	var sukuna_core = sukuna_payload["core"]
 	var sukuna_content = sukuna_payload["content_index"]
 	var sukuna_state = sukuna_payload["battle_state"]
@@ -137,13 +116,178 @@ func _test_field_bound_stat_mod_restore_contract(harness) -> Dictionary:
 	_helper.run_turn(sukuna_core, sukuna_state, sukuna_content, _helper.build_wait_command(sukuna_core, 3, "P1", "P1-A"), _helper.build_wait_command(sukuna_core, 3, "P2", "P2-A"))
 	_helper.run_turn(sukuna_core, sukuna_state, sukuna_content, _helper.build_wait_command(sukuna_core, 4, "P1", "P1-A"), _helper.build_wait_command(sukuna_core, 4, "P2", "P2-A"))
 	if int(sukuna.stat_stages.get("attack", -99)) != 2 or int(sukuna.stat_stages.get("sp_attack", -99)) != 2:
-		return harness.fail_result("宿傩领域结束后必须回到开领域前的双攻阶段")
-	return harness.pass_result()
+		fail("宿傩领域结束后必须回到开领域前的双攻阶段")
+		return
 
-func _test_field_apply_failure_does_not_commit_field(harness) -> Dictionary:
-	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2218)
+func test_field_break_self_owner_contract() -> void:
+	var state_payload = _helper.build_gojo_vs_sample_state(_harness, 2214)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var actor = battle_state.get_side("P1").get_active_unit()
+	actor.current_mp = 40
+	_helper.register_self_break_field_test_content(content_index)
+	actor.regular_skill_ids[0] = "test_self_break_field_call"
+	_helper.run_turn(
+		core,
+		battle_state,
+		content_index,
+		_helper.build_skill_command(core, 1, "P1", "P1-A", "test_self_break_field_call"),
+		_helper.build_wait_command(core, 1, "P2", "P2-A")
+	)
+	if battle_state.field_state == null or battle_state.field_state.field_def_id != "test_self_break_field":
+		fail("自定义 field 应在测试里成功立场")
+		return
+	core.service("battle_logger").reset()
+	_helper.run_turn(
+		core,
+		battle_state,
+		content_index,
+		_helper.build_switch_command(core, 2, "P1", "P1-A", "P1-B"),
+		_helper.build_wait_command(core, 2, "P2", "P2-A")
+	)
+	var break_after := -1
+	for log_event in core.service("battle_logger").event_log:
+		if log_event.event_type != EventTypesScript.EFFECT_RESOURCE_MOD or log_event.value_changes.is_empty():
+			continue
+		var value_change = log_event.value_changes[0]
+		if log_event.trigger_name == "field_break" and log_event.target_instance_id == actor.unit_instance_id and String(value_change.resource_name) == "mp" and int(value_change.delta) == 5:
+			break_after = int(value_change.after_value)
+			break
+	if break_after < 0:
+		fail("field_break 的 self 效果应能作用到已离场但仍存活的领域创建者")
+		return
+	if actor.current_mp != break_after:
+		fail("field_break 的资源变化必须真实落到已离场创建者运行态上")
+		return
+
+func test_field_break_uses_explicit_chain_context_contract() -> void:
+	var state_payload = _helper.build_gojo_vs_sample_state(_harness, 2217)
+	if state_payload.has("error"):
+		fail(str(state_payload["error"]))
+		return
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var ids = _register_transition_field_test_content(content_index, "test_break_chain_context", "field_break")
+	var old_field = FieldStateScript.new()
+	old_field.field_def_id = ids["base_field_id"]
+	old_field.instance_id = "test_break_chain_context_base_instance"
+	old_field.creator = actor.unit_instance_id
+	old_field.remaining_turns = 2
+	battle_state.field_state = old_field
+	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END))
+	var explicit_chain_context = core.service("battle_result_service").build_system_chain("system:test_field_break_override")
+	var capture_dispatcher = CaptureFieldTriggerDispatcher.new()
+	var capture_runner = CaptureFieldTriggerBatchRunner.new()
+	core.service("field_service").trigger_dispatcher = capture_dispatcher
+	var invalid_code = core.service("field_service").break_active_field(
+		battle_state,
+		content_index,
+		"field_break",
+		explicit_chain_context,
+		Callable(capture_runner, "execute_trigger_batch")
+	)
+	if invalid_code != null:
+		fail("field_break explicit chain_context should stay valid, got %s" % str(invalid_code))
+		return
+	if capture_dispatcher.captured_chain_context == null:
+		fail("field_break lifecycle collect should receive a derived lifecycle chain_context")
+		return
+	if String(capture_dispatcher.captured_chain_context.event_chain_id) != String(explicit_chain_context.event_chain_id):
+		fail("field_break lifecycle collect should inherit the explicit chain_context event_chain_id")
+		return
+	if String(capture_dispatcher.captured_chain_context.actor_id) != String(actor.unit_instance_id):
+		fail("field_break lifecycle collect should retarget actor_id to the field creator")
+		return
+	if capture_runner.captured_chain_context != explicit_chain_context:
+		fail("field_break trigger batch should use the explicit chain_context parameter")
+		return
+
+func test_field_break_transition_preserves_new_field_contract() -> void:
+	var state_payload = _helper.build_gojo_vs_sample_state(_harness, 2215)
+	if state_payload.has("error"):
+		fail(str(state_payload["error"]))
+		return
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var ids = _register_transition_field_test_content(content_index, "test_break_transition", "field_break")
+	var old_field = FieldStateScript.new()
+	old_field.field_def_id = ids["base_field_id"]
+	old_field.instance_id = "test_break_transition_base_instance"
+	old_field.creator = actor.unit_instance_id
+	old_field.remaining_turns = 2
+	battle_state.field_state = old_field
+	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END))
+	var invalid_code = core.service("field_service").break_active_field(
+		battle_state,
+		content_index,
+		"field_break",
+		battle_state.current_chain_context(),
+		Callable(core.service("trigger_batch_runner"), "execute_trigger_batch")
+	)
+	if invalid_code != null:
+		fail("field_break transition should stay valid, got %s" % str(invalid_code))
+		return
+	if battle_state.field_state == null or battle_state.field_state.field_def_id != ids["next_field_id"]:
+		fail("field_break hook created field must remain active after old field cleanup")
+		return
+	if battle_state.field_rule_mod_instances.size() != 1:
+		fail("new field's field rule_mod must survive field_break cleanup")
+		return
+	if String(battle_state.field_rule_mod_instances[0].field_instance_id) != String(battle_state.field_state.instance_id):
+		fail("field_break transition should keep the new field-bound rule_mod attached to the new field instance")
+		return
+
+func test_field_expire_transition_preserves_new_field_contract() -> void:
+	var state_payload = _helper.build_gojo_vs_sample_state(_harness, 2216)
+	if state_payload.has("error"):
+		fail(str(state_payload["error"]))
+		return
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var ids = _register_transition_field_test_content(content_index, "test_expire_transition", "field_expire")
+	var old_field = FieldStateScript.new()
+	old_field.field_def_id = ids["base_field_id"]
+	old_field.instance_id = "test_expire_transition_base_instance"
+	old_field.creator = actor.unit_instance_id
+	old_field.remaining_turns = 1
+	battle_state.field_state = old_field
+	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END))
+	var field_tick_result = core.service("turn_field_lifecycle_service").apply_turn_end_field_tick(
+		battle_state,
+		content_index,
+		"test_expire_transition_cause"
+	)
+	if bool(field_tick_result.get("terminated", false)):
+		fail("field_expire transition should stay valid")
+		return
+	if battle_state.field_state == null or battle_state.field_state.field_def_id != ids["next_field_id"]:
+		fail("field_expire hook created field must remain active after old field cleanup")
+		return
+	if field_tick_result.get("field_change", null) == null or String(field_tick_result["field_change"].after_field_id) != ids["next_field_id"]:
+		fail("field_change should record the replacement field produced by field_expire")
+		return
+	if battle_state.field_rule_mod_instances.size() != 1:
+		fail("new field's field rule_mod must survive field_expire cleanup")
+		return
+	if String(battle_state.field_rule_mod_instances[0].field_instance_id) != String(battle_state.field_state.instance_id):
+		fail("field_expire transition should keep the new field-bound rule_mod attached to the new field instance")
+		return
+
+func test_field_apply_failure_does_not_commit_field() -> void:
+	var state_payload = _helper.build_gojo_vs_sample_state(_harness, 2218)
+	if state_payload.has("error"):
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -188,15 +332,17 @@ func _test_field_apply_failure_does_not_commit_field(harness) -> Dictionary:
 		Callable(failing_runner, "execute_trigger_batch")
 	)
 	if invalid_code != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
-		return harness.fail_result("field_apply lifecycle failure should return invalid_effect_definition, got %s" % str(invalid_code))
+		fail("field_apply lifecycle failure should return invalid_effect_definition, got %s" % str(invalid_code))
+		return
 	if battle_state.field_state != null:
-		return harness.fail_result("failed field_apply must not leave a new active field")
-	return harness.pass_result()
+		fail("failed field_apply must not leave a new active field")
+		return
 
-func _test_field_break_collect_failure_fails_fast_contract(harness) -> Dictionary:
-	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2219)
+func test_field_break_collect_failure_fails_fast_contract() -> void:
+	var state_payload = _helper.build_gojo_vs_sample_state(_harness, 2219)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -221,17 +367,20 @@ func _test_field_break_collect_failure_fails_fast_contract(harness) -> Dictionar
 		"field_break"
 	)
 	if not terminated:
-		return harness.fail_result("field_break collect invalid should terminate battle immediately")
+		fail("field_break collect invalid should terminate battle immediately")
+		return
 	if not battle_state.battle_result.finished or battle_state.battle_result.reason != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
-		return harness.fail_result("field_break collect invalid should preserve invalid_effect_definition")
+		fail("field_break collect invalid should preserve invalid_effect_definition")
+		return
 	if battle_state.field_state == null or String(battle_state.field_state.instance_id) != field_state.instance_id:
-		return harness.fail_result("field_break collect invalid must keep the active field for diagnosis")
-	return harness.pass_result()
+		fail("field_break collect invalid must keep the active field for diagnosis")
+		return
 
-func _test_field_expire_collect_failure_fails_fast_contract(harness) -> Dictionary:
-	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2220)
+func test_field_expire_collect_failure_fails_fast_contract() -> void:
+	var state_payload = _helper.build_gojo_vs_sample_state(_harness, 2220)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -256,159 +405,15 @@ func _test_field_expire_collect_failure_fails_fast_contract(harness) -> Dictiona
 		"test_field_expire_collect_failure"
 	)
 	if not bool(tick_result.get("terminated", false)):
-		return harness.fail_result("field_expire collect invalid should terminate battle immediately")
+		fail("field_expire collect invalid should terminate battle immediately")
+		return
 	if not battle_state.battle_result.finished or battle_state.battle_result.reason != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
-		return harness.fail_result("field_expire collect invalid should preserve invalid_effect_definition")
+		fail("field_expire collect invalid should preserve invalid_effect_definition")
+		return
 	if battle_state.field_state == null or String(battle_state.field_state.instance_id) != field_state.instance_id:
-		return harness.fail_result("field_expire collect invalid must keep the active field for diagnosis")
-	return harness.pass_result()
+		fail("field_expire collect invalid must keep the active field for diagnosis")
+		return
 
-func _test_field_break_self_owner_contract(harness) -> Dictionary:
-	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2214)
-	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
-	var core = state_payload["core"]
-	var content_index = state_payload["content_index"]
-	var battle_state = state_payload["battle_state"]
-	var actor = battle_state.get_side("P1").get_active_unit()
-	actor.current_mp = 40
-	_helper.register_self_break_field_test_content(content_index)
-	actor.regular_skill_ids[0] = "test_self_break_field_call"
-	_helper.run_turn(
-		core,
-		battle_state,
-		content_index,
-		_helper.build_skill_command(core, 1, "P1", "P1-A", "test_self_break_field_call"),
-		_helper.build_wait_command(core, 1, "P2", "P2-A")
-	)
-	if battle_state.field_state == null or battle_state.field_state.field_def_id != "test_self_break_field":
-		return harness.fail_result("自定义 field 应在测试里成功立场")
-	core.service("battle_logger").reset()
-	_helper.run_turn(
-		core,
-		battle_state,
-		content_index,
-		_helper.build_switch_command(core, 2, "P1", "P1-A", "P1-B"),
-		_helper.build_wait_command(core, 2, "P2", "P2-A")
-	)
-	var break_after := -1
-	for log_event in core.service("battle_logger").event_log:
-		if log_event.event_type != EventTypesScript.EFFECT_RESOURCE_MOD or log_event.value_changes.is_empty():
-			continue
-		var value_change = log_event.value_changes[0]
-		if log_event.trigger_name == "field_break" and log_event.target_instance_id == actor.unit_instance_id and String(value_change.resource_name) == "mp" and int(value_change.delta) == 5:
-			break_after = int(value_change.after_value)
-			break
-	if break_after < 0:
-		return harness.fail_result("field_break 的 self 效果应能作用到已离场但仍存活的领域创建者")
-	if actor.current_mp != break_after:
-		return harness.fail_result("field_break 的资源变化必须真实落到已离场创建者运行态上")
-	return harness.pass_result()
-
-func _test_field_break_transition_preserves_new_field_contract(harness) -> Dictionary:
-	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2215)
-	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
-	var core = state_payload["core"]
-	var content_index = state_payload["content_index"]
-	var battle_state = state_payload["battle_state"]
-	var actor = battle_state.get_side("P1").get_active_unit()
-	var ids = _register_transition_field_test_content(content_index, "test_break_transition", "field_break")
-	var old_field = FieldStateScript.new()
-	old_field.field_def_id = ids["base_field_id"]
-	old_field.instance_id = "test_break_transition_base_instance"
-	old_field.creator = actor.unit_instance_id
-	old_field.remaining_turns = 2
-	battle_state.field_state = old_field
-	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END))
-	var invalid_code = core.service("field_service").break_active_field(
-		battle_state,
-		content_index,
-		"field_break",
-		battle_state.current_chain_context(),
-		Callable(core.service("trigger_batch_runner"), "execute_trigger_batch")
-	)
-	if invalid_code != null:
-		return harness.fail_result("field_break transition should stay valid, got %s" % str(invalid_code))
-	if battle_state.field_state == null or battle_state.field_state.field_def_id != ids["next_field_id"]:
-		return harness.fail_result("field_break hook created field must remain active after old field cleanup")
-	if battle_state.field_rule_mod_instances.size() != 1:
-		return harness.fail_result("new field's field rule_mod must survive field_break cleanup")
-	if String(battle_state.field_rule_mod_instances[0].field_instance_id) != String(battle_state.field_state.instance_id):
-		return harness.fail_result("field_break transition should keep the new field-bound rule_mod attached to the new field instance")
-	return harness.pass_result()
-
-func _test_field_break_uses_explicit_chain_context_contract(harness) -> Dictionary:
-	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2217)
-	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
-	var core = state_payload["core"]
-	var content_index = state_payload["content_index"]
-	var battle_state = state_payload["battle_state"]
-	var actor = battle_state.get_side("P1").get_active_unit()
-	var ids = _register_transition_field_test_content(content_index, "test_break_chain_context", "field_break")
-	var old_field = FieldStateScript.new()
-	old_field.field_def_id = ids["base_field_id"]
-	old_field.instance_id = "test_break_chain_context_base_instance"
-	old_field.creator = actor.unit_instance_id
-	old_field.remaining_turns = 2
-	battle_state.field_state = old_field
-	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END))
-	var explicit_chain_context = core.service("battle_result_service").build_system_chain("system:test_field_break_override")
-	var capture_dispatcher = CaptureFieldTriggerDispatcher.new()
-	var capture_runner = CaptureFieldTriggerBatchRunner.new()
-	core.service("field_service").trigger_dispatcher = capture_dispatcher
-	var invalid_code = core.service("field_service").break_active_field(
-		battle_state,
-		content_index,
-		"field_break",
-		explicit_chain_context,
-		Callable(capture_runner, "execute_trigger_batch")
-	)
-	if invalid_code != null:
-		return harness.fail_result("field_break explicit chain_context should stay valid, got %s" % str(invalid_code))
-	if capture_dispatcher.captured_chain_context == null:
-		return harness.fail_result("field_break lifecycle collect should receive a derived lifecycle chain_context")
-	if String(capture_dispatcher.captured_chain_context.event_chain_id) != String(explicit_chain_context.event_chain_id):
-		return harness.fail_result("field_break lifecycle collect should inherit the explicit chain_context event_chain_id")
-	if String(capture_dispatcher.captured_chain_context.actor_id) != String(actor.unit_instance_id):
-		return harness.fail_result("field_break lifecycle collect should retarget actor_id to the field creator")
-	if capture_runner.captured_chain_context != explicit_chain_context:
-		return harness.fail_result("field_break trigger batch should use the explicit chain_context parameter")
-	return harness.pass_result()
-
-func _test_field_expire_transition_preserves_new_field_contract(harness) -> Dictionary:
-	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2216)
-	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
-	var core = state_payload["core"]
-	var content_index = state_payload["content_index"]
-	var battle_state = state_payload["battle_state"]
-	var actor = battle_state.get_side("P1").get_active_unit()
-	var ids = _register_transition_field_test_content(content_index, "test_expire_transition", "field_expire")
-	var old_field = FieldStateScript.new()
-	old_field.field_def_id = ids["base_field_id"]
-	old_field.instance_id = "test_expire_transition_base_instance"
-	old_field.creator = actor.unit_instance_id
-	old_field.remaining_turns = 1
-	battle_state.field_state = old_field
-	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END))
-	var field_tick_result = core.service("turn_field_lifecycle_service").apply_turn_end_field_tick(
-		battle_state,
-		content_index,
-		"test_expire_transition_cause"
-	)
-	if bool(field_tick_result.get("terminated", false)):
-		return harness.fail_result("field_expire transition should stay valid")
-	if battle_state.field_state == null or battle_state.field_state.field_def_id != ids["next_field_id"]:
-		return harness.fail_result("field_expire hook created field must remain active after old field cleanup")
-	if field_tick_result.get("field_change", null) == null or String(field_tick_result["field_change"].after_field_id) != ids["next_field_id"]:
-		return harness.fail_result("field_change should record the replacement field produced by field_expire")
-	if battle_state.field_rule_mod_instances.size() != 1:
-		return harness.fail_result("new field's field rule_mod must survive field_expire cleanup")
-	if String(battle_state.field_rule_mod_instances[0].field_instance_id) != String(battle_state.field_state.instance_id):
-		return harness.fail_result("field_expire transition should keep the new field-bound rule_mod attached to the new field instance")
-	return harness.pass_result()
 
 func _register_transition_field_test_content(content_index, prefix: String, trigger_name: String) -> Dictionary:
 	var field_rule_mod_payload = RuleModPayloadScript.new()

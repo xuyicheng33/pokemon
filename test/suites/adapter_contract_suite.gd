@@ -1,29 +1,31 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
-
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 
 func test_manager_replay_output_runtime_boundary() -> void:
-	_assert_legacy_result(_test_manager_replay_output_runtime_boundary(_harness))
-func _test_manager_replay_output_runtime_boundary(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var replay_unwrap = _unwrap_ok(manager.run_replay(harness.build_demo_replay_input(sample_factory, manager)), "run_replay")
+		fail("SampleBattleFactory init failed")
+		return
+	var replay_unwrap = _unwrap_ok(manager.run_replay(_harness.build_demo_replay_input(sample_factory, manager)), "run_replay")
 	if not bool(replay_unwrap.get("ok", false)):
-		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
+		fail(str(replay_unwrap.get("error", "manager run_replay failed")))
+		return
 	var replay_result: Dictionary = replay_unwrap.get("data", {})
 	var replay_output = replay_result.get("replay_output", null)
 	if replay_output == null:
-		return harness.fail_result("run_replay should return replay_output")
+		fail("run_replay should return replay_output")
+		return
 	if replay_output.final_battle_state != null:
-		return harness.fail_result("manager.run_replay must not expose internal final_battle_state")
+		fail("manager.run_replay must not expose internal final_battle_state")
+		return
 	if typeof(replay_result.get("public_snapshot", null)) != TYPE_DICTIONARY:
-		return harness.fail_result("manager.run_replay should still expose public_snapshot")
-	return harness.pass_result()
+		fail("manager.run_replay should still expose public_snapshot")
+		return
 
 func _unwrap_ok(envelope: Dictionary, label: String) -> Dictionary:
 	if envelope == null:

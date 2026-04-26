@@ -22,8 +22,7 @@
 ## 2. 目录职责
 
 - `test/suites/`：Godot 业务回归 suite 唯一目录；`gdUnit4` 会直接发现 `test/` 下的业务 suite
-- `test/support/`：`gdUnit4` suite 公共基类与少量桥接资源
-- `tests/support/`：共享 harness、构局 helper、固定案例 support；供 `gdUnit4` suite、导出脚本与诊断 runner 复用
+- `tests/support/`：`gdUnit4` suite 公共基类、桥接资源、共享 harness、构局 helper、固定案例 support；供 `gdUnit4` suite、导出脚本与诊断 runner 复用
 - `tests/helpers/`：辅助脚本目录
 - `tests/gates/`：仓库一致性细分 gate；当前按 `surface / formal_character / docs` 三类拆开维护
 - `tests/fixtures/`：样例输入与内容快照
@@ -41,7 +40,7 @@
 - `replay`：replay input / summary / determinism / 浏览回归
 
 gdUnit 直接发现 `test/suites/` 下的具体 suite；大型主题可拆到同名子目录，但不再用 `register_tests` wrapper 聚合。
-默认测试分层为 `quick -> extended -> full`：suite 归属记录在 `tests/suite_profiles.json`，quick 保留开发门禁主路径，extended 保留长尾边界和历史回归，full 在 extended 基础上使用 `SANDBOX_SMOKE_SCOPE=full`。`manual` 当前保留给显式人工复查脚本，不默认接入总 gate。
+默认测试分层为 `quick -> extended -> full`：suite 归属记录在 `tests/suite_profiles.json`，quick 保留开发门禁主路径并按"每模块至少一条 quick"原则铺开，extended 保留长尾边界和历史回归，full 在 extended 基础上使用 `SANDBOX_SMOKE_SCOPE=full`。manual 档已废弃；显式人工复查脚本走 `godot --headless --path . --script tests/helpers/<runner>.gd` 直接执行，不再进入 `tests/run_gdunit.sh` 的 profile 选择。
 GDScript 前导缩进固定只允许 tab；`test/**/shared*.gd`、`test/**/*_shared.gd`、`tests/support/**/*.gd` 当前统一纳入 support helper 体量门禁。
 
 ## 4. formal 单源约定

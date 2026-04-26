@@ -6,25 +6,17 @@ const PassiveCollectorScript := preload("res://tests/helpers/formal_capability_f
 const UnitCollectorScript := preload("res://tests/helpers/formal_capability_fact_collectors/unit_collector.gd")
 
 
-
 func test_formal_character_capability_catalog_manifest_alignment_contract() -> void:
-	_assert_legacy_result(_test_formal_character_capability_catalog_manifest_alignment_contract(_harness))
-
-func test_formal_character_capability_collectors_cover_non_skill_effect_resources_contract() -> void:
-	_assert_legacy_result(_test_formal_character_capability_collectors_cover_non_skill_effect_resources_contract(_harness))
-
-func test_formal_character_capability_catalog_caches_by_resolved_path_contract() -> void:
-	_assert_legacy_result(_test_formal_character_capability_catalog_caches_by_resolved_path_contract(_harness))
-
-func _test_formal_character_capability_catalog_manifest_alignment_contract(harness) -> Dictionary:
 	var catalog = FormalCharacterCapabilityCatalogScript.new()
 	var catalog_result: Dictionary = catalog.load_entries_result()
 	if not bool(catalog_result.get("ok", false)):
-		return harness.fail_result("formal character capability catalog should load cleanly: %s" % String(catalog_result.get("error_message", "unknown error")))
+		fail("formal character capability catalog should load cleanly: %s" % String(catalog_result.get("error_message", "unknown error")))
+		return
 	var delivery_registry := FormalCharacterRegistryScript.new()
 	var delivery_result: Dictionary = delivery_registry.load_entries_result()
 	if not bool(delivery_result.get("ok", false)):
-		return harness.fail_result("formal delivery registry should load for capability alignment: %s" % String(delivery_result.get("error", "unknown error")))
+		fail("formal delivery registry should load for capability alignment: %s" % String(delivery_result.get("error", "unknown error")))
+		return
 	var manifest_capabilities_by_character: Dictionary = {}
 	for raw_entry in delivery_result.get("entries", []):
 		var entry: Dictionary = raw_entry
@@ -45,63 +37,72 @@ func _test_formal_character_capability_catalog_manifest_alignment_contract(harne
 			var required_suite_paths_actual: PackedStringArray = PackedStringArray(delivery_entry.get("required_suite_paths", []))
 			for required_suite_path in required_suite_paths:
 				if required_suite_paths_actual.find(required_suite_path) == -1:
-					return harness.fail_result("manifest[%s] capability[%s] missing required suite: %s" % [
+					fail("manifest[%s] capability[%s] missing required suite: %s" % [
 						character_id,
 						capability_id,
 							required_suite_path,
 						])
+					return
 		observed_consumer_count[capability_id] = observed_consumers
 	for raw_entry in catalog_result.get("data", []):
 		var entry: Dictionary = raw_entry
 		var capability_id := String(entry.get("capability_id", "")).strip_edges()
 		if int(observed_consumer_count.get(capability_id, 0)) <= 0:
-			return harness.fail_result("capability catalog entry must have at least one manifest consumer: %s" % capability_id)
-	return harness.pass_result()
+			fail("capability catalog entry must have at least one manifest consumer: %s" % capability_id)
+			return
 
-func _test_formal_character_capability_collectors_cover_non_skill_effect_resources_contract(harness) -> Dictionary:
+func test_formal_character_capability_collectors_cover_non_skill_effect_resources_contract() -> void:
 	var field_result := _collect_facts_result(
 		FieldCollectorScript.new(),
 		"content/fields/gojo/gojo_unlimited_void_field.tres",
 		["field_creator_accuracy_override", "field_expire_effects", "field_break_effects"]
 	)
 	if not bool(field_result.get("ok", false)):
-		return harness.fail_result(String(field_result.get("error_message", "field collector contract failed")))
+		fail(String(field_result.get("error_message", "field collector contract failed")))
+		return
 	var passive_result := _collect_facts_result(
 		PassiveCollectorScript.new(),
 		"content/passive_skills/gojo/gojo_mugen.tres",
 		["passive_trigger_binding", "passive_effect_binding"]
 	)
 	if not bool(passive_result.get("ok", false)):
-		return harness.fail_result(String(passive_result.get("error_message", "passive collector contract failed")))
+		fail(String(passive_result.get("error_message", "passive collector contract failed")))
+		return
 	var unit_result := _collect_facts_result(
 		UnitCollectorScript.new(),
 		"content/units/gojo/gojo_satoru.tres",
 		["unit_passive_skill_binding", "unit_ultimate_skill_binding", "unit_candidate_skill_pool"]
 	)
 	if not bool(unit_result.get("ok", false)):
-		return harness.fail_result(String(unit_result.get("error_message", "unit collector contract failed")))
-	return harness.pass_result()
+		fail(String(unit_result.get("error_message", "unit collector contract failed")))
+		return
 
-func _test_formal_character_capability_catalog_caches_by_resolved_path_contract(harness) -> Dictionary:
+func test_formal_character_capability_catalog_caches_by_resolved_path_contract() -> void:
 	var first_path := "user://capability_catalog_cache_a.json"
 	var second_path := "user://capability_catalog_cache_b.json"
 	if not _write_capability_catalog_fixture(first_path, ["capability_alpha"]):
-		return harness.fail_result("failed to write first capability catalog fixture")
+		fail("failed to write first capability catalog fixture")
+		return
 	if not _write_capability_catalog_fixture(second_path, ["capability_beta"]):
-		return harness.fail_result("failed to write second capability catalog fixture")
+		fail("failed to write second capability catalog fixture")
+		return
 	var catalog = FormalCharacterCapabilityCatalogScript.new()
 	var first_ids_result: Dictionary = catalog.capability_ids_result(first_path)
 	if not bool(first_ids_result.get("ok", false)):
-		return harness.fail_result("first capability fixture should load: %s" % String(first_ids_result.get("error_message", "unknown error")))
+		fail("first capability fixture should load: %s" % String(first_ids_result.get("error_message", "unknown error")))
+		return
 	if PackedStringArray(first_ids_result.get("data", PackedStringArray())) != PackedStringArray(["capability_alpha"]):
-		return harness.fail_result("first capability fixture returned unexpected ids")
+		fail("first capability fixture returned unexpected ids")
+		return
 	catalog.catalog_path_override = second_path
 	var second_ids_result: Dictionary = catalog.capability_ids_result()
 	if not bool(second_ids_result.get("ok", false)):
-		return harness.fail_result("second capability fixture should load through catalog_path_override: %s" % String(second_ids_result.get("error_message", "unknown error")))
+		fail("second capability fixture should load through catalog_path_override: %s" % String(second_ids_result.get("error_message", "unknown error")))
+		return
 	if PackedStringArray(second_ids_result.get("data", PackedStringArray())) != PackedStringArray(["capability_beta"]):
-		return harness.fail_result("capability catalog cache should be bucketed by resolved path")
-	return harness.pass_result()
+		fail("capability catalog cache should be bucketed by resolved path")
+		return
+
 
 func _collect_facts_result(collector, rel_path: String, required_fact_ids: Array) -> Dictionary:
 	var resource = load("res://%s" % rel_path)

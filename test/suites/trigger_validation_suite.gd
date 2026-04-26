@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -6,17 +6,8 @@ const FieldDefinitionScript := preload("res://src/battle_core/content/field_defi
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 
 
-
 func test_skill_effect_trigger_validation() -> void:
-	_assert_legacy_result(_test_skill_effect_trigger_validation(_harness))
-
-func test_field_lifecycle_trigger_validation() -> void:
-	_assert_legacy_result(_test_field_lifecycle_trigger_validation(_harness))
-
-func test_apply_field_success_trigger_validation() -> void:
-	_assert_legacy_result(_test_apply_field_success_trigger_validation(_harness))
-func _test_skill_effect_trigger_validation(harness) -> Dictionary:
-	var content_index = _build_content_index(harness)
+	var content_index = _build_content_index(_harness)
 	var effect = EffectDefinitionScript.new()
 	effect.id = "test_skill_trigger_mismatch_effect"
 	effect.display_name = "Skill Trigger Mismatch"
@@ -38,11 +29,11 @@ func _test_skill_effect_trigger_validation(harness) -> Dictionary:
 
 	var errors: Array = content_index.validate_snapshot()
 	if not _has_error(errors, "effects_on_cast_ids effect[%s] must declare trigger_names including on_cast" % effect.id):
-		return harness.fail_result("skill direct effect trigger mismatch must fail validation")
-	return harness.pass_result()
+		fail("skill direct effect trigger mismatch must fail validation")
+		return
 
-func _test_field_lifecycle_trigger_validation(harness) -> Dictionary:
-	var content_index = _build_content_index(harness)
+func test_field_lifecycle_trigger_validation() -> void:
+	var content_index = _build_content_index(_harness)
 	var effect = EffectDefinitionScript.new()
 	effect.id = "test_field_break_mismatch_effect"
 	effect.display_name = "Field Break Trigger Mismatch"
@@ -58,11 +49,11 @@ func _test_field_lifecycle_trigger_validation(harness) -> Dictionary:
 
 	var errors: Array = content_index.validate_snapshot()
 	if not _has_error(errors, "on_break_effect_ids effect[%s] must declare trigger_names including field_break" % effect.id):
-		return harness.fail_result("field lifecycle effect trigger mismatch must fail validation")
-	return harness.pass_result()
+		fail("field lifecycle effect trigger mismatch must fail validation")
+		return
 
-func _test_apply_field_success_trigger_validation(harness) -> Dictionary:
-	var content_index = _build_content_index(harness)
+func test_apply_field_success_trigger_validation() -> void:
+	var content_index = _build_content_index(_harness)
 	var success_effect = EffectDefinitionScript.new()
 	success_effect.id = "test_field_success_mismatch_effect"
 	success_effect.display_name = "Field Success Trigger Mismatch"
@@ -94,8 +85,9 @@ func _test_apply_field_success_trigger_validation(harness) -> Dictionary:
 
 	var errors: Array = content_index.validate_snapshot()
 	if not _has_error(errors, "apply_field.on_success_effect_ids effect[%s] must declare trigger_names including field_apply_success" % success_effect.id):
-		return harness.fail_result("apply_field on_success trigger mismatch must fail validation")
-	return harness.pass_result()
+		fail("apply_field on_success trigger mismatch must fail validation")
+		return
+
 
 func _build_content_index(harness):
 	var sample_factory = harness.build_sample_factory()

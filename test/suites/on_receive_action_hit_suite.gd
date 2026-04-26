@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
@@ -12,27 +12,17 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 
-
 func test_on_receive_action_hit_lethal_counter_contract() -> void:
-	_assert_legacy_result(_test_on_receive_action_hit_lethal_counter_contract(_harness))
-
-func test_on_receive_action_hit_ignores_persistent_damage_contract() -> void:
-	_assert_legacy_result(_test_on_receive_action_hit_ignores_persistent_damage_contract(_harness))
-
-func test_on_receive_action_hit_same_side_skill_ignored_contract() -> void:
-	_assert_legacy_result(_test_on_receive_action_hit_same_side_skill_ignored_contract(_harness))
-
-func test_on_receive_action_hit_missing_chain_context_fails_fast_contract() -> void:
-	_assert_legacy_result(_test_on_receive_action_hit_missing_chain_context_fails_fast_contract(_harness))
-func _test_on_receive_action_hit_lethal_counter_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	_register_receive_counter_resources(content_index)
 
 	var water_skill = SkillDefinitionScript.new()
@@ -59,15 +49,16 @@ func _test_on_receive_action_hit_lethal_counter_contract(harness) -> Dictionary:
 
 	content_index.units["sample_mossaur"].skill_ids[0] = water_skill.id
 	content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
-	var battle_setup = harness.build_sample_setup(sample_factory)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
 	battle_setup.sides[0].starting_index = 1
 	battle_setup.sides[1].starting_index = 0
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 720, battle_setup)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 720, battle_setup)
 	var attacker = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if attacker == null or target == null:
-		return harness.fail_result("missing active units for on_receive_action_hit lethal contract")
+		fail("missing active units for on_receive_action_hit lethal contract")
+		return
 	target.current_hp = 1
 	target.current_mp = 20
 	target.definition_id = "sample_tidekit"
@@ -94,27 +85,32 @@ func _test_on_receive_action_hit_lethal_counter_contract(harness) -> Dictionary:
 	])
 
 	if target.current_mp != 5:
-		return harness.fail_result("lethal on_receive_action_hit should still apply self mp loss: expected=5 actual=%d" % target.current_mp)
+		fail("lethal on_receive_action_hit should still apply self mp loss: expected=5 actual=%d" % target.current_mp)
+		return
 	var expected_counter_damage: int = 30
 	var counter_event = _find_counter_damage_event(core.service("battle_logger").event_log, attacker.unit_instance_id)
 	if counter_event == null or counter_event.value_changes.is_empty():
-		return harness.fail_result("missing poison counter damage event")
+		fail("missing poison counter damage event")
+		return
 	var actual_counter_damage: int = abs(int(counter_event.value_changes[0].delta))
 	if actual_counter_damage != expected_counter_damage:
-		return harness.fail_result("poison counter damage mismatch: expected=%d actual=%d" % [expected_counter_damage, actual_counter_damage])
+		fail("poison counter damage mismatch: expected=%d actual=%d" % [expected_counter_damage, actual_counter_damage])
+		return
 	if not is_equal_approx(float(counter_event.type_effectiveness), 2.0):
-		return harness.fail_result("poison counter damage should apply poison effectiveness against wood attacker")
-	return harness.pass_result()
+		fail("poison counter damage should apply poison effectiveness against wood attacker")
+		return
 
-func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_on_receive_action_hit_ignores_persistent_damage_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	_register_receive_counter_resources(content_index)
 
 	var harmless_skill = SkillDefinitionScript.new()
@@ -146,15 +142,16 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
 
 	content_index.units["sample_pyron"].skill_ids[0] = harmless_skill.id
 	content_index.units["sample_tidekit"].skill_ids[0] = harmless_skill.id
-	var battle_setup = harness.build_sample_setup(sample_factory)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
 	battle_setup.sides[0].starting_index = 0
 	battle_setup.sides[1].starting_index = 0
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 721, battle_setup)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 721, battle_setup)
 	var source_actor = battle_state.get_side("P1").get_active_unit()
 	var passive_holder = battle_state.get_side("P2").get_active_unit()
 	if source_actor == null or passive_holder == null:
-		return harness.fail_result("missing active units for persistent damage contract")
+		fail("missing active units for persistent damage contract")
+		return
 	if core.service("effect_instance_service").create_instance(
 		water_dot_effect,
 		passive_holder.unit_instance_id,
@@ -164,7 +161,8 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
 		source_actor.base_speed,
 		EffectSourceMetaHelperScript.build_meta(source_actor.unit_instance_id)
 	) == null:
-		return harness.fail_result("failed to seed water dot effect instance")
+		fail("failed to seed water dot effect instance")
+		return
 	var attacker_hp_before: int = source_actor.current_hp
 
 	core.service("battle_logger").reset()
@@ -188,30 +186,34 @@ func _test_on_receive_action_hit_ignores_persistent_damage_contract(harness) -> 
 	])
 
 	if source_actor.current_hp != attacker_hp_before:
-		return harness.fail_result("persistent water damage should not trigger on_receive_action_hit counter damage")
+		fail("persistent water damage should not trigger on_receive_action_hit counter damage")
+		return
 	if _find_counter_damage_event(core.service("battle_logger").event_log, source_actor.unit_instance_id) != null:
-		return harness.fail_result("persistent water damage should not emit poison counter damage event")
-	return harness.pass_result()
+		fail("persistent water damage should not emit poison counter damage event")
+		return
 
-func _test_on_receive_action_hit_same_side_skill_ignored_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_on_receive_action_hit_same_side_skill_ignored_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	_register_receive_counter_resources(content_index)
 	content_index.units["sample_tidekit"].passive_skill_id = "test_receive_counter_passive"
 
-	var battle_setup = harness.build_sample_setup(sample_factory)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
 	battle_setup.sides[0].starting_index = 0
 	battle_setup.sides[1].starting_index = 0
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 722, battle_setup)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 722, battle_setup)
 	var passive_holder = battle_state.get_side("P2").get_active_unit()
 	if passive_holder == null:
-		return harness.fail_result("missing passive holder for same-side on_receive_action_hit contract")
+		fail("missing passive holder for same-side on_receive_action_hit contract")
+		return
 	passive_holder.definition_id = "sample_tidekit"
 	passive_holder.current_hp = passive_holder.max_hp
 	passive_holder.current_mp = 20
@@ -235,30 +237,36 @@ func _test_on_receive_action_hit_same_side_skill_ignored_contract(harness) -> Di
 		chain_context
 	)
 	if invalid_code != null:
-		return harness.fail_result("same-side on_receive_action_hit trigger probe should not invalidate battle: %s" % str(invalid_code))
+		fail("same-side on_receive_action_hit trigger probe should not invalidate battle: %s" % str(invalid_code))
+		return
 	if passive_holder.current_mp != 20:
-		return harness.fail_result("same-side on_receive_action_hit should not apply self mp loss")
+		fail("same-side on_receive_action_hit should not apply self mp loss")
+		return
 	if passive_holder.current_hp != passive_holder.max_hp:
-		return harness.fail_result("same-side on_receive_action_hit should not apply counter damage")
+		fail("same-side on_receive_action_hit should not apply counter damage")
+		return
 	if _find_counter_damage_event(core.service("battle_logger").event_log, passive_holder.unit_instance_id) != null:
-		return harness.fail_result("same-side on_receive_action_hit should not emit counter damage event")
-	return harness.pass_result()
+		fail("same-side on_receive_action_hit should not emit counter damage event")
+		return
 
-func _test_on_receive_action_hit_missing_chain_context_fails_fast_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_on_receive_action_hit_missing_chain_context_fails_fast_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	_register_receive_counter_resources(content_index)
 	content_index.units["sample_tidekit"].passive_skill_id = "test_receive_counter_passive"
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 723)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 723)
 	var passive_holder = battle_state.get_side("P2").get_active_unit()
 	if passive_holder == null:
-		return harness.fail_result("missing passive holder for missing-chain-context contract")
+		fail("missing passive holder for missing-chain-context contract")
+		return
 	passive_holder.definition_id = "sample_tidekit"
 	var invalid_code = core.service("trigger_batch_runner").execute_trigger_batch(
 		"on_receive_action_hit",
@@ -268,8 +276,9 @@ func _test_on_receive_action_hit_missing_chain_context_fails_fast_contract(harne
 		null
 	)
 	if invalid_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
-		return harness.fail_result("missing on_receive_action_hit chain_context should fail-fast as invalid_state_corruption")
-	return harness.pass_result()
+		fail("missing on_receive_action_hit chain_context should fail-fast as invalid_state_corruption")
+		return
+
 
 func _register_receive_counter_resources(content_index) -> void:
 	if content_index.effects.has("test_receive_leak_self"):

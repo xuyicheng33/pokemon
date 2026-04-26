@@ -29,17 +29,6 @@ print(
 ctx.require_not_exists("tests/run_all.gd", "legacy manual Godot test entry")
 ctx.require_not_exists("tests/suites", "legacy register_tests suite tree")
 
-ctx.require_contains("tests/run_gdunit.sh", "GdUnitCmdTool.gd", "gdUnit CLI runner wiring")
-ctx.require_contains("tests/run_gdunit.sh", "GdUnitCopyLog.gd", "gdUnit report log copier")
-ctx.require_contains("tests/run_gdunit.sh", 'REPORT_DIR="${REPORT_DIR:-reports/gdunit}"', "gdUnit report dir default")
-ctx.require_contains("tests/run_gdunit.sh", 'TEST_PROFILE="${TEST_PROFILE:-quick}"', "gdUnit profile default")
-ctx.require_contains("tests/run_gdunit.sh", 'TEST_PATHS=("res://test")', "gdUnit extended test root")
-ctx.require_contains("tests/run_with_gate.sh", "check_gdunit_gate.sh", "gdUnit gate wiring")
-ctx.require_contains("tests/run_with_gate.sh", "check_boot_smoke.sh", "boot smoke gate wiring")
-ctx.require_contains("tests/run_with_gate.sh", "check_suite_reachability.sh", "suite reachability gate wiring")
-ctx.require_contains("tests/run_with_gate.sh", "check_repo_consistency.sh", "repo consistency gate wiring")
-ctx.require_contains("tests/run_with_gate.sh", "check_sandbox_smoke_matrix.sh", "sandbox smoke matrix gate wiring")
-ctx.require_contains("tests/run_with_gate.sh", 'echo "GATE PASSED: ${TEST_PROFILE} gdUnit', "gdUnit gate success wording")
 ctx.require_contains("tests/support/formal_character_registry.gd", 'const REGISTRY_PATH := "res://config/formal_character_manifest.json"', "formal character manifest path")
 ctx.require_absent("tests/support/formal_character_registry.gd", "build_suite_instances(", "legacy suite instance expansion")
 
@@ -156,7 +145,6 @@ ctx.require_absent("tests/README.md", "run_all.gd", "removed legacy tests README
 ctx.require_absent("tests/README.md", "policy_decision_suite.gd", "removed auto-selection suite doc")
 ctx.require_absent("tests/README.md", "gojo_sukuna_batch_probe.gd", "removed batch simulation doc")
 ctx.require_contains("tests/replay_cases/domain_cases.md", "CASE=all godot --headless --path . --script tests/helpers/domain_case_runner.gd", "domain case runner command")
-ctx.require_contains("tests/check_architecture_constraints.sh", "architecture_wiring_graph_gate.py", "runtime wiring DAG gate wiring")
 
 baseline_matchup_catalog = ctx.load_json_object(BASELINE_MATCHUP_CATALOG_PATH, "baseline matchup catalog")
 formal_manifest = ctx.load_json_object(FORMAL_MANIFEST_PATH, "formal character manifest")

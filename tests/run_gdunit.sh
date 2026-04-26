@@ -47,32 +47,8 @@ PY
     extended|full)
       TEST_PATHS=("res://test")
       ;;
-    manual)
-      while IFS= read -r test_path; do
-        TEST_PATHS+=("$test_path")
-      done < <(python3 - "$SUITE_PROFILE_MANIFEST" manual <<'PY'
-from __future__ import annotations
-
-import json
-import sys
-from pathlib import Path
-
-manifest_path = Path(sys.argv[1])
-requested_profile = sys.argv[2]
-payload = json.loads(manifest_path.read_text(encoding="utf-8"))
-suite_profiles = payload.get("suite_profiles", {})
-if not isinstance(suite_profiles, dict):
-    raise SystemExit(f"TEST_PREREQ_MISSING: {manifest_path} missing suite_profiles object")
-suite_paths = sorted(path for path, profile in suite_profiles.items() if profile == requested_profile)
-if not suite_paths:
-    raise SystemExit(f"TEST_GATE_FAILED: no gdUnit suites are marked manual in {manifest_path}")
-for path in suite_paths:
-    print("res://%s" % path)
-PY
-      )
-      ;;
     *)
-      echo "TEST_PREREQ_MISSING: TEST_PROFILE must be quick, extended, full, or manual: $TEST_PROFILE" >&2
+      echo "TEST_PREREQ_MISSING: TEST_PROFILE must be quick, extended, or full: $TEST_PROFILE" >&2
       exit 1
       ;;
   esac

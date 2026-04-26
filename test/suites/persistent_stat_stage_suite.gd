@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -9,21 +9,17 @@ const DomainRoleTestSupportScript := preload("res://tests/support/domain_role_te
 var _support = DomainRoleTestSupportScript.new()
 
 
-
 func test_persistent_stat_stage_switch_and_faint_contract() -> void:
-	_assert_legacy_result(_test_persistent_stat_stage_switch_and_faint_contract(_harness))
-
-func test_persistent_stat_stage_effective_read_contract() -> void:
-	_assert_legacy_result(_test_persistent_stat_stage_effective_read_contract(_harness))
-func _test_persistent_stat_stage_switch_and_faint_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var stat_payload = StatModPayloadScript.new()
 	stat_payload.payload_type = "stat_mod"
@@ -51,47 +47,55 @@ func _test_persistent_stat_stage_switch_and_faint_contract(harness) -> Dictionar
 	content_index.register_resource(buff_skill)
 	content_index.units["sample_pyron"].skill_ids[0] = buff_skill.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 901)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 901)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	if actor == null:
-		return harness.fail_result("missing actor for persistent stat switch contract")
+		fail("missing actor for persistent stat switch contract")
+		return
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_skill_command(core, 1, "P1", "P1-A", buff_skill.id),
 		_support.build_manual_wait_command(core, 1, "P2", "P2-A"),
 	])
 	if int(actor.persistent_stat_stages.get("attack", 0)) != 2:
-		return harness.fail_result("persist_on_switch stat mod should write into persistent_stat_stages")
+		fail("persist_on_switch stat mod should write into persistent_stat_stages")
+		return
 	if actor.get_effective_stage("attack") != 2:
-		return harness.fail_result("effective attack stage should include persistent bucket")
+		fail("effective attack stage should include persistent bucket")
+		return
 
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_switch_command(core, 2, "P1", "P1-A", "P1-B"),
 		_support.build_manual_wait_command(core, 2, "P2", "P2-A"),
 	])
 	if int(actor.stat_stages.get("attack", 0)) != 0:
-		return harness.fail_result("temporary stat stages should still clear on switch")
+		fail("temporary stat stages should still clear on switch")
+		return
 	if int(actor.persistent_stat_stages.get("attack", 0)) != 2:
-		return harness.fail_result("persistent stat stages should survive manual switch")
+		fail("persistent stat stages should survive manual switch")
+		return
 
 	core.service("leave_service").leave_unit(battle_state, actor, "faint", content_index)
 	if int(actor.persistent_stat_stages.get("attack", 0)) != 0:
-		return harness.fail_result("persistent stat stages should clear on faint")
-	return harness.pass_result()
+		fail("persistent stat stages should clear on faint")
+		return
 
-func _test_persistent_stat_stage_effective_read_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_persistent_stat_stage_effective_read_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 902)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 902)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if actor == null or target == null:
-		return harness.fail_result("missing active units for persistent stat effective read contract")
+		fail("missing active units for persistent stat effective read contract")
+		return
 	actor.persistent_stat_stages["speed"] = 1
 	actor.persistent_stat_stages["sp_attack"] = 2
 
@@ -102,7 +106,8 @@ func _test_persistent_stat_stage_effective_read_contract(harness) -> Dictionary:
 	])
 	var first_action_actor_id := _find_first_action_actor_id(core.service("battle_logger").event_log)
 	if first_action_actor_id != actor.unit_instance_id:
-		return harness.fail_result("persistent speed stage should affect queue order, first actor_id=%s" % first_action_actor_id)
+		fail("persistent speed stage should affect queue order, first actor_id=%s" % first_action_actor_id)
+		return
 	var expected_damage: int = core.service("damage_service").apply_final_mod(
 		core.service("damage_service").calc_base_damage(
 			battle_state.battle_level,
@@ -112,10 +117,11 @@ func _test_persistent_stat_stage_effective_read_contract(harness) -> Dictionary:
 		),
 		core.service("combat_type_service").calc_effectiveness("fire", target.combat_type_ids)
 	)
-	var actual_damage: int = harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
+	var actual_damage: int = _harness.extract_damage_from_log(core.service("battle_logger").event_log, "P1-A")
 	if actual_damage != expected_damage:
-		return harness.fail_result("persistent sp_attack stage should affect direct damage: expected=%d actual=%d" % [expected_damage, actual_damage])
-	return harness.pass_result()
+		fail("persistent sp_attack stage should affect direct damage: expected=%d actual=%d" % [expected_damage, actual_damage])
+		return
+
 
 func _find_first_action_actor_id(event_log: Array) -> String:
 	for event in event_log:

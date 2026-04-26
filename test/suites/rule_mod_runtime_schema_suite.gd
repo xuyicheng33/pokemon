@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
@@ -16,41 +16,34 @@ class UnknownFieldRuleModWriteService:
 		return ["mod_kind", "mystery_field"]
 
 
-
 func test_rule_mod_missing_stacking_schema_fails_fast() -> void:
-	_assert_legacy_result(_test_rule_mod_missing_stacking_schema_fails_fast(_harness))
-
-func test_rule_mod_unknown_stacking_key_field_fails_fast() -> void:
-	_assert_legacy_result(_test_rule_mod_unknown_stacking_key_field_fails_fast(_harness))
-func _test_rule_mod_missing_stacking_schema_fails_fast(harness) -> Dictionary:
-	var service = MissingSchemaRuleModWriteService.new()
-	return _assert_custom_stacking_schema_failure(
-		harness,
-		service,
+	_run_custom_stacking_schema_failure(
+		MissingSchemaRuleModWriteService.new(),
 		"Missing stacking key schema for rule_mod kind"
 	)
 
-func _test_rule_mod_unknown_stacking_key_field_fails_fast(harness) -> Dictionary:
-	var service = UnknownFieldRuleModWriteService.new()
-	return _assert_custom_stacking_schema_failure(
-		harness,
-		service,
+func test_rule_mod_unknown_stacking_key_field_fails_fast() -> void:
+	_run_custom_stacking_schema_failure(
+		UnknownFieldRuleModWriteService.new(),
 		"Unknown stacking key field"
 	)
 
-func _assert_custom_stacking_schema_failure(harness, write_service, expected_message: String) -> Dictionary:
-	var core_payload = harness.build_core()
+func _run_custom_stacking_schema_failure(write_service, expected_message: String) -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 118)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 118)
 	var p1_active = battle_state.get_side("P1").get_active_unit()
 	if p1_active == null:
-		return harness.fail_result("P1 active unit missing")
+		fail("P1 active unit missing")
+		return
 
 	var payload = RuleModPayloadScript.new()
 	payload.payload_type = "rule_mod"
@@ -73,9 +66,11 @@ func _assert_custom_stacking_schema_failure(harness, write_service, expected_mes
 		p1_active.base_speed
 	)
 	if created != null:
-		return harness.fail_result("custom stacking schema failure should not create instance")
+		fail("custom stacking schema failure should not create instance")
+		return
 	if write_service.last_error_code != ErrorCodesScript.INVALID_RULE_MOD_DEFINITION:
-		return harness.fail_result("custom stacking schema failure should report invalid_rule_mod_definition")
+		fail("custom stacking schema failure should report invalid_rule_mod_definition")
+		return
 	if write_service.last_error_message.find(expected_message) == -1:
-		return harness.fail_result("custom stacking schema failure missing expected message: %s" % expected_message)
-	return harness.pass_result()
+		fail("custom stacking schema failure missing expected message: %s" % expected_message)
+		return

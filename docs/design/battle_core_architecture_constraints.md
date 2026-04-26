@@ -111,10 +111,11 @@ Composition 补充约束：
 - 核心服务文件（`src/battle_core/**.gd`、`src/composition/**.gd`、`src/shared/formal_character_baselines/**.gd`、`src/shared/formal_character_manifest/**.gd`）：
   - `500..800` 行：输出非阻断预警，纳入下一轮职责复核观察名单
   - `> 800` 行：必须触发职责复核并拆分
-- 测试 support（`test/support/**.gd`、`tests/support/**.gd`、`test/**/shared*.gd`、`test/**/*_shared.gd`）：
+- 测试 support（`tests/support/**.gd`、`test/**/shared*.gd`、`test/**/*_shared.gd`）：
   - `220..250` 行：预警
   - `> 250` 行：必须拆分
-- 单测试文件：`> 1200` 行：必须按子域拆分
+- 单测试文件：`> 600` 行：必须按子域拆分
+- 壳子 suite：`< 13` 行且无 `func test_*` 入口的 gdUnit suite 一律拒收
 - Gate py 文件（`tests/gates/*.py`）：
   - `800..1200` 行：预警
   - `> 1200` 行：必须拆分

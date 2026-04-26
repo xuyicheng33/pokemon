@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input.gd")
 const CommandScript := preload("res://src/battle_core/contracts/command.gd")
@@ -9,30 +9,31 @@ var _helper = ManagerContractTestHelperScript.new()
 var _public_snapshot_builder = PublicSnapshotBuilderScript.new()
 
 
-
 func test_content_snapshot_cache_manager_black_box_contract() -> void:
-	_assert_legacy_result(_test_content_snapshot_cache_manager_black_box_contract(_harness))
-func _test_content_snapshot_cache_manager_black_box_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var snapshot_paths_payload: Dictionary = harness.build_content_snapshot_paths(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var snapshot_paths_payload: Dictionary = _harness.build_content_snapshot_paths(sample_factory)
 	if snapshot_paths_payload.has("error"):
-		return harness.fail_result(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		fail(str(snapshot_paths_payload.get("error", "content snapshot path build failed")))
+		return
 
 	var content_snapshot_paths: PackedStringArray = snapshot_paths_payload.get("paths", PackedStringArray())
-	var battle_setup = harness.build_sample_setup(sample_factory)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
 	var battle_seed := 509
-	var baseline_content_index = harness.build_loaded_content_index(sample_factory)
-	var baseline_battle_state = harness.build_initialized_battle(core, baseline_content_index, sample_factory, battle_seed, battle_setup)
+	var baseline_content_index = _harness.build_loaded_content_index(sample_factory)
+	var baseline_battle_state = _harness.build_initialized_battle(core, baseline_content_index, sample_factory, battle_seed, battle_setup)
 	var baseline_public_snapshot = _normalize_battle_id(core.service("public_snapshot_builder").build_public_snapshot(baseline_battle_state, baseline_content_index))
 	var baseline_event_snapshots = _normalize_public_event_snapshots(
 		_build_public_event_snapshots(core.service("battle_logger").snapshot(), baseline_battle_state)
@@ -41,57 +42,69 @@ func _test_content_snapshot_cache_manager_black_box_contract(harness) -> Diction
 	var init_unwrap = _helper.unwrap_ok(manager.create_session({
 		"battle_seed": battle_seed,
 		"content_snapshot_paths": content_snapshot_paths,
-		"battle_setup": harness.build_sample_setup(sample_factory),
+		"battle_setup": _harness.build_sample_setup(sample_factory),
 	}), "create_session")
 	if not bool(init_unwrap.get("ok", false)):
-		return harness.fail_result(str(init_unwrap.get("error", "manager create_session failed")))
+		fail(str(init_unwrap.get("error", "manager create_session failed")))
+		return
 	var init_data: Dictionary = init_unwrap.get("data", {})
 	var session_id := String(init_data.get("session_id", ""))
 	if session_id.is_empty():
-		return harness.fail_result("create_session should return session_id")
+		fail("create_session should return session_id")
+		return
 	var cached_public_snapshot = _normalize_battle_id(init_data.get("public_snapshot", {}))
 	if cached_public_snapshot != baseline_public_snapshot:
-		return harness.fail_result("content snapshot cache must preserve create_session public snapshot semantics")
+		fail("content snapshot cache must preserve create_session public snapshot semantics")
+		return
 	var event_log_unwrap = _helper.unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot")
 	if not bool(event_log_unwrap.get("ok", false)):
-		return harness.fail_result(str(event_log_unwrap.get("error", "manager get_event_log_snapshot failed")))
+		fail(str(event_log_unwrap.get("error", "manager get_event_log_snapshot failed")))
+		return
 	var event_log_snapshot: Dictionary = event_log_unwrap.get("data", {})
 	if _normalize_public_event_snapshots(event_log_snapshot.get("events", [])) != baseline_event_snapshots:
-		return harness.fail_result("content snapshot cache must preserve initial event log snapshot semantics")
+		fail("content snapshot cache must preserve initial event log snapshot semantics")
+		return
 	if int(event_log_snapshot.get("total_size", -1)) != baseline_event_snapshots.size():
-		return harness.fail_result("initial event log snapshot total_size must match baseline")
+		fail("initial event log snapshot total_size must match baseline")
+		return
 
-	var baseline_replay_input = harness.build_demo_replay_input(sample_factory, core.service("command_builder"))
+	var baseline_replay_input = _harness.build_demo_replay_input(sample_factory, core.service("command_builder"))
 	if baseline_replay_input == null:
-		return harness.fail_result("baseline replay input build failed")
+		fail("baseline replay input build failed")
+		return
 	var baseline_replay_copy = _clone_replay_input(baseline_replay_input)
 	var cached_replay_copy = _clone_replay_input(baseline_replay_input)
 	var baseline_replay_result: Dictionary = core.service("replay_runner").run_replay_with_context(baseline_replay_copy)
 	var baseline_replay_output = baseline_replay_result.get("replay_output", null)
 	var baseline_replay_content_index = baseline_replay_result.get("content_index", null)
 	if baseline_replay_output == null or baseline_replay_content_index == null or not baseline_replay_output.succeeded:
-		return harness.fail_result("baseline replay should succeed")
+		fail("baseline replay should succeed")
+		return
 	var baseline_replay_snapshot = core.service("public_snapshot_builder").build_public_snapshot(
 		baseline_replay_output.final_battle_state,
 		baseline_replay_content_index
 	)
 	var replay_unwrap = _helper.unwrap_ok(manager.run_replay(cached_replay_copy), "run_replay")
 	if not bool(replay_unwrap.get("ok", false)):
-		return harness.fail_result(str(replay_unwrap.get("error", "manager run_replay failed")))
+		fail(str(replay_unwrap.get("error", "manager run_replay failed")))
+		return
 	var replay_data: Dictionary = replay_unwrap.get("data", {})
 	var cached_replay_output = replay_data.get("replay_output", null)
 	if cached_replay_output == null or not cached_replay_output.succeeded:
-		return harness.fail_result("cached replay should succeed")
+		fail("cached replay should succeed")
+		return
 	if replay_data.get("public_snapshot", {}) != baseline_replay_snapshot:
-		return harness.fail_result("content snapshot cache must preserve replay public snapshot semantics")
+		fail("content snapshot cache must preserve replay public snapshot semantics")
+		return
 	if cached_replay_output.final_state_hash != baseline_replay_output.final_state_hash:
-		return harness.fail_result("content snapshot cache must preserve replay final_state_hash")
+		fail("content snapshot cache must preserve replay final_state_hash")
+		return
 	var baseline_replay_event_snapshots = _normalize_public_event_snapshots(
 		_build_public_event_snapshots(baseline_replay_output.event_log, baseline_replay_output.final_battle_state)
 	)
 	if _normalize_public_event_snapshots(cached_replay_output.event_log) != baseline_replay_event_snapshots:
-		return harness.fail_result("content snapshot cache must preserve replay public event log semantics")
-	return harness.pass_result()
+		fail("content snapshot cache must preserve replay public event log semantics")
+		return
 
 func _clone_replay_input(replay_input) -> ReplayInputScript:
 	var clone = ReplayInputScript.new()

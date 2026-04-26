@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const PlayerSelectionAdapterScript := preload("res://src/adapters/player_selection_adapter.gd")

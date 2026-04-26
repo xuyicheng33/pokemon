@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
@@ -12,65 +12,52 @@ var _support = ObitoTestSupportScript.new()
 var _contract_support = ObitoRuntimeContractSupportScript.new()
 
 
-
 func test_obito_yinyang_dun_segment_mitigation_and_stack_contract() -> void:
-	_assert_legacy_result(_test_obito_yinyang_dun_segment_mitigation_and_stack_contract(_harness))
+	var baseline_result = _run_yinyang_guard_case(_harness, false, 1521, 0)
+	if not bool(baseline_result.get("ok", false)):
+		fail(str(baseline_result.get("error", "baseline yinyang guard case failed")))
+		return
+	var guarded_result = _run_yinyang_guard_case(_harness, true, 1522, 0)
+	if not bool(guarded_result.get("ok", false)):
+		fail(str(guarded_result.get("error", "guarded yinyang guard case failed")))
+		return
+	if int(guarded_result.get("hp_loss", -1)) >= int(baseline_result.get("hp_loss", -1)):
+		fail("obito_yinyang_dun should reduce incoming multihit damage")
+		return
+	if int(guarded_result.get("yinyang_count", -1)) != 3:
+		fail("obito_yinyang_dun should leave obito at 3 stacks after cast + 2 received segments")
+		return
 
 func test_obito_yinyang_dun_non_skill_segment_ignored_contract() -> void:
-	_assert_legacy_result(_test_obito_yinyang_dun_non_skill_segment_ignored_contract(_harness))
+	var __legacy_result = _contract_support.run_yinyang_dun_non_skill_segment_ignored_contract(_harness)
+	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+		fail(str(__legacy_result.get("error", "unknown error")))
 
 func test_obito_yinyang_dun_same_side_segment_ignored_contract() -> void:
-	_assert_legacy_result(_test_obito_yinyang_dun_same_side_segment_ignored_contract(_harness))
-
-func test_obito_yinyang_dun_stack_cap_contract() -> void:
-	_assert_legacy_result(_test_obito_yinyang_dun_stack_cap_contract(_harness))
-func _test_obito_yinyang_dun_segment_mitigation_and_stack_contract(harness) -> Dictionary:
-	var baseline_result = _run_yinyang_guard_case(harness, false, 1521, 0)
-	if not bool(baseline_result.get("ok", false)):
-		return harness.fail_result(str(baseline_result.get("error", "baseline yinyang guard case failed")))
-	var guarded_result = _run_yinyang_guard_case(harness, true, 1522, 0)
-	if not bool(guarded_result.get("ok", false)):
-		return harness.fail_result(str(guarded_result.get("error", "guarded yinyang guard case failed")))
-	if int(guarded_result.get("hp_loss", -1)) >= int(baseline_result.get("hp_loss", -1)):
-		return harness.fail_result("obito_yinyang_dun should reduce incoming multihit damage")
-	if int(guarded_result.get("yinyang_count", -1)) != 3:
-		return harness.fail_result("obito_yinyang_dun should leave obito at 3 stacks after cast + 2 received segments")
-	return harness.pass_result()
-
-func _test_obito_yinyang_dun_stack_cap_contract(harness) -> Dictionary:
-	var capped_result = _run_yinyang_guard_case(harness, true, 1523, 5)
-	if not bool(capped_result.get("ok", false)):
-		return harness.fail_result(str(capped_result.get("error", "capped yinyang guard case failed")))
-	if int(capped_result.get("yinyang_count", -1)) != 5:
-		return harness.fail_result("obito_yinyang_dun should respect the 5-stack cap during multihit guard")
-	if int(capped_result.get("defense_stage", -1)) != 1 or int(capped_result.get("sp_defense_stage", -1)) != 1:
-		return harness.fail_result("obito_yinyang_dun should still grant stat stages even when yinyang stacks are capped")
-	return harness.pass_result()
-
-func _test_obito_yinyang_dun_non_skill_segment_ignored_contract(harness) -> Dictionary:
-	return _contract_support.run_yinyang_dun_non_skill_segment_ignored_contract(harness)
-
-func _test_obito_yinyang_dun_same_side_segment_ignored_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var battle_state = _support.build_battle_state(core, content_index, _support.build_obito_setup(sample_factory), 1525)
 	var obito_side = battle_state.get_side("P1")
 	var obito = obito_side.get_active_unit() if obito_side != null else null
 	if obito == null or obito_side == null or obito_side.team_units.size() < 2:
-		return harness.fail_result("missing obito side context for same-side segment contract")
+		fail("missing obito side context for same-side segment contract")
+		return
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		_support.build_manual_skill_command(core, 1, "P1", "P1-A", "obito_yinyang_dun"),
 		_support.build_manual_wait_command(core, 1, "P2", "P2-A"),
 	])
 	var baseline_count := _support.count_effect_instances(obito, "obito_yinyang_zhili")
 	if baseline_count != 1:
-		return harness.fail_result("obito_yinyang_dun should seed exactly one initial stack before same-side trigger probe")
+		fail("obito_yinyang_dun should seed exactly one initial stack before same-side trigger probe")
+		return
 	var ally = obito_side.team_units[1]
 	var probe_command = _support.build_manual_skill_command(core, 1, "P1", "P1-A", "obito_qiudao_jiaotu")
 	probe_command.actor_id = obito.unit_instance_id
@@ -86,10 +73,24 @@ func _test_obito_yinyang_dun_same_side_segment_ignored_contract(harness) -> Dict
 		"fire"
 	)
 	if invalid_code != null:
-		return harness.fail_result("same-side segment trigger probe should not invalidate battle: %s" % str(invalid_code))
+		fail("same-side segment trigger probe should not invalidate battle: %s" % str(invalid_code))
+		return
 	if _support.count_effect_instances(obito, "obito_yinyang_zhili") != baseline_count:
-		return harness.fail_result("obito_yinyang_dun should ignore same-side damage segment triggers")
-	return harness.pass_result()
+		fail("obito_yinyang_dun should ignore same-side damage segment triggers")
+		return
+
+func test_obito_yinyang_dun_stack_cap_contract() -> void:
+	var capped_result = _run_yinyang_guard_case(_harness, true, 1523, 5)
+	if not bool(capped_result.get("ok", false)):
+		fail(str(capped_result.get("error", "capped yinyang guard case failed")))
+		return
+	if int(capped_result.get("yinyang_count", -1)) != 5:
+		fail("obito_yinyang_dun should respect the 5-stack cap during multihit guard")
+		return
+	if int(capped_result.get("defense_stage", -1)) != 1 or int(capped_result.get("sp_defense_stage", -1)) != 1:
+		fail("obito_yinyang_dun should still grant stat stages even when yinyang stacks are capped")
+		return
+
 
 @warning_ignore("shadowed_global_identifier")
 func _run_yinyang_guard_case(harness, use_guard: bool, seed: int, preseed_stacks: int) -> Dictionary:

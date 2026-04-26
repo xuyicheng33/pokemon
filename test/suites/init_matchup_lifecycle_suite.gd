@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/passive_skill_definition.gd")
 const PassiveItemDefinitionScript := preload("res://src/battle_core/content/passive_item_definition.gd")
@@ -10,24 +10,17 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 
-
 func test_on_matchup_changed_dedup_path() -> void:
-	_assert_legacy_result(_test_on_matchup_changed_dedup_path(_harness))
-
-func test_battle_init_replacement_retriggers_matchup_changed() -> void:
-	_assert_legacy_result(_test_battle_init_replacement_retriggers_matchup_changed(_harness))
-
-func test_init_chain_order() -> void:
-	_assert_legacy_result(_test_init_chain_order(_harness))
-func _test_on_matchup_changed_dedup_path(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var payload = ResourceModPayloadScript.new()
 	payload.payload_type = "resource_mod"
 	payload.resource_key = "mp"
@@ -49,13 +42,14 @@ func _test_on_matchup_changed_dedup_path(harness) -> Dictionary:
 	content_index.units["sample_pyron"].passive_skill_id = passive.id
 	content_index.units["sample_tidekit"].passive_skill_id = passive.id
 	content_index.units["sample_mossaur"].passive_skill_id = passive.id
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 37)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 37)
 	var pre_turn_matchup_events: int = 0
 	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD and ev.trigger_name == "on_matchup_changed" and str(ev.source_instance_id).begins_with("passive_skill:"):
 			pre_turn_matchup_events += 1
 	if pre_turn_matchup_events != 2:
-		return harness.fail_result("initial matchup_changed should trigger exactly once for each active unit")
+		fail("initial matchup_changed should trigger exactly once for each active unit")
+		return
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		core.service("command_builder").build_command({"turn_index": 1, "command_type": CommandTypesScript.SWITCH, "command_source": "manual", "side_id": "P1", "actor_public_id": "P1-A", "target_public_id": "P1-B"}),
 		core.service("command_builder").build_command({"turn_index": 1, "command_type": CommandTypesScript.WAIT, "command_source": "manual", "side_id": "P2", "actor_public_id": "P2-A"}),
@@ -65,18 +59,20 @@ func _test_on_matchup_changed_dedup_path(harness) -> Dictionary:
 		if ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD and ev.trigger_name == "on_matchup_changed" and str(ev.source_instance_id).begins_with("passive_skill:"):
 			total_matchup_events += 1
 	if total_matchup_events != 4:
-		return harness.fail_result("matchup_changed should trigger exactly once after the stable switch matchup")
-	return harness.pass_result()
+		fail("matchup_changed should trigger exactly once after the stable switch matchup")
+		return
 
-func _test_battle_init_replacement_retriggers_matchup_changed(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_battle_init_replacement_retriggers_matchup_changed() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var matchup_payload = ResourceModPayloadScript.new()
 	matchup_payload.payload_type = "resource_mod"
 	matchup_payload.resource_key = "mp"
@@ -117,27 +113,30 @@ func _test_battle_init_replacement_retriggers_matchup_changed(harness) -> Dictio
 	self_faint_item.effect_ids = PackedStringArray([self_faint_effect.id])
 	content_index.register_resource(self_faint_item)
 	content_index.units["sample_pyron"].passive_item_id = self_faint_item.id
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 43)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 43)
 	var active_unit = battle_state.get_side("P1").get_active_unit()
 	if active_unit == null or active_unit.public_id != "P1-B":
-		return harness.fail_result("battle_init faint window should replace P1 active with bench unit before selection")
+		fail("battle_init faint window should replace P1 active with bench unit before selection")
+		return
 	var matchup_events: int = 0
 	for ev in core.service("battle_logger").event_log:
 		if ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD and ev.trigger_name == "on_matchup_changed" and str(ev.source_instance_id).begins_with("passive_skill:"):
 			matchup_events += 1
 	if matchup_events != 4:
-		return harness.fail_result("battle_init replacement should retrigger matchup_changed for the new stable matchup")
-	return harness.pass_result()
+		fail("battle_init replacement should retrigger matchup_changed for the new stable matchup")
+		return
 
-func _test_init_chain_order(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_init_chain_order() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var enter_payload = StatModPayloadScript.new()
 	enter_payload.payload_type = "stat_mod"
 	enter_payload.stat_name = "attack"
@@ -176,9 +175,10 @@ func _test_init_chain_order(harness) -> Dictionary:
 	content_index.register_resource(init_item)
 	content_index.units["sample_pyron"].passive_skill_id = enter_passive.id
 	content_index.units["sample_pyron"].passive_item_id = init_item.id
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 101)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 101)
 	if battle_state.battle_result.finished:
-		return harness.fail_result("battle finished during initialization")
+		fail("battle finished during initialization")
+		return
 	var enter_effect_idx := -1
 	var battle_init_idx := -1
 	var init_effect_idx := -1
@@ -191,7 +191,9 @@ func _test_init_chain_order(harness) -> Dictionary:
 		if init_effect_idx == -1 and ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD and str(ev.source_instance_id).begins_with("passive_item:"):
 			init_effect_idx = i
 	if enter_effect_idx == -1 or battle_init_idx == -1 or init_effect_idx == -1:
-		return harness.fail_result("missing init-chain events")
+		fail("missing init-chain events")
+		return
 	if not (enter_effect_idx < battle_init_idx and battle_init_idx < init_effect_idx):
-		return harness.fail_result("on_enter -> battle_init ordering mismatch")
-	return harness.pass_result()
+		fail("on_enter -> battle_init ordering mismatch")
+		return
+

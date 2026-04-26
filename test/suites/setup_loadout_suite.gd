@@ -1,27 +1,13 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 
 
-
 func test_candidate_skill_pool_validation() -> void:
-	_assert_legacy_result(_test_candidate_skill_pool_validation(_harness))
-
-func test_setup_loadout_override_validation() -> void:
-	_assert_legacy_result(_test_setup_loadout_override_validation(_harness))
-
-func test_runtime_regular_skill_loadout_contract() -> void:
-	_assert_legacy_result(_test_runtime_regular_skill_loadout_contract(_harness))
-
-func test_same_side_duplicate_unit_forbidden() -> void:
-	_assert_legacy_result(_test_same_side_duplicate_unit_forbidden(_harness))
-
-func test_battle_setup_side_id_validation() -> void:
-	_assert_legacy_result(_test_battle_setup_side_id_validation(_harness))
-func _test_candidate_skill_pool_validation(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+		fail("SampleBattleFactory init failed")
+		return
 	var cases: Array = [
 		{
 			"candidate_skill_ids": PackedStringArray(["sample_field_call", "sample_pyro_blast", "sample_whiff"]),
@@ -41,18 +27,19 @@ func _test_candidate_skill_pool_validation(harness) -> Dictionary:
 		},
 	]
 	for test_case in cases:
-		var content_index = harness.build_loaded_content_index(sample_factory)
+		var content_index = _harness.build_loaded_content_index(sample_factory)
 		var unit_definition = content_index.units["sample_pyron"]
 		unit_definition.candidate_skill_ids = test_case["candidate_skill_ids"]
 		var errors: Array = content_index.validate_snapshot()
 		if not _has_error(errors, test_case["needle"]):
-			return harness.fail_result("candidate skill validation missing error: %s" % test_case["needle"])
-	return harness.pass_result()
+			fail("candidate skill validation missing error: %s" % test_case["needle"])
+			return
 
-func _test_setup_loadout_override_validation(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+func test_setup_loadout_override_validation() -> void:
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+		fail("SampleBattleFactory init failed")
+		return
 	var candidate_pool := PackedStringArray(["sample_strike", "sample_whiff", "sample_tide_surge", "sample_field_call"])
 	var cases: Array = [
 		{
@@ -77,54 +64,65 @@ func _test_setup_loadout_override_validation(harness) -> Dictionary:
 		},
 	]
 	for test_case in cases:
-		var content_index = harness.build_loaded_content_index(sample_factory)
+		var content_index = _harness.build_loaded_content_index(sample_factory)
 		content_index.units["sample_tidekit"].candidate_skill_ids = candidate_pool
-		var battle_setup = harness.build_sample_setup(sample_factory, {"P1": test_case["overrides"]})
+		var battle_setup = _harness.build_sample_setup(sample_factory, {"P1": test_case["overrides"]})
 		battle_setup.sides[0].unit_definition_ids[0] = "sample_tidekit"
 		var errors: Array = content_index.validate_setup(battle_setup)
 		if not _has_error(errors, test_case["needle"]):
-			return harness.fail_result("setup override validation missing error: %s" % test_case["needle"])
-	return harness.pass_result()
+			fail("setup override validation missing error: %s" % test_case["needle"])
+			return
 
-func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_runtime_regular_skill_loadout_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	content_index.units["sample_pyron"].candidate_skill_ids = PackedStringArray(["sample_strike", "sample_field_call", "sample_pyro_blast", "sample_whiff"])
 	var override_loadout := PackedStringArray(["sample_strike", "sample_field_call", "sample_whiff"])
-	var battle_setup = harness.build_sample_setup(sample_factory, {"P1": {0: override_loadout}})
+	var battle_setup = _harness.build_sample_setup(sample_factory, {"P1": {0: override_loadout}})
 	battle_setup.sides[0].starting_index = 0
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 901, battle_setup)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 901, battle_setup)
 	var p1_active = battle_state.get_side("P1").get_active_unit()
 	var p2_active = battle_state.get_side("P2").get_active_unit()
 	if p1_active == null or p2_active == null:
-		return harness.fail_result("missing active units for runtime loadout contract")
+		fail("missing active units for runtime loadout contract")
+		return
 	if p1_active.regular_skill_ids != override_loadout:
-		return harness.fail_result("P1 runtime regular_skill_ids should use setup override")
+		fail("P1 runtime regular_skill_ids should use setup override")
+		return
 	if p2_active.regular_skill_ids != content_index.units["sample_tidekit"].skill_ids:
-		return harness.fail_result("units without override should keep default loadout")
+		fail("units without override should keep default loadout")
+		return
 	var legal_action_set = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
 	if not legal_action_set.legal_skill_ids.has("sample_whiff"):
-		return harness.fail_result("override loadout should expose swapped-in skill")
+		fail("override loadout should expose swapped-in skill")
+		return
 	if legal_action_set.legal_skill_ids.has("sample_pyro_blast"):
-		return harness.fail_result("override loadout should hide swapped-out default skill")
+		fail("override loadout should hide swapped-out default skill")
+		return
 	var public_snapshot = core.service("public_snapshot_builder").build_public_snapshot(battle_state, content_index)
 	var prebattle_teams: Array = public_snapshot.get("prebattle_public_teams", [])
 	if prebattle_teams.size() != 2:
-		return harness.fail_result("prebattle_public_teams should expose both sides")
+		fail("prebattle_public_teams should expose both sides")
+		return
 	var p1_units: Array = prebattle_teams[0].get("units", [])
 	var p2_units: Array = prebattle_teams[1].get("units", [])
 	if p1_units.is_empty() or p2_units.is_empty():
-		return harness.fail_result("prebattle_public_teams should expose unit payloads")
+		fail("prebattle_public_teams should expose unit payloads")
+		return
 	if p1_units[0].get("skill_ids", PackedStringArray()) != override_loadout:
-		return harness.fail_result("public snapshot should expose battle-specific equipped skills")
+		fail("public snapshot should expose battle-specific equipped skills")
+		return
 	if p2_units[0].get("skill_ids", PackedStringArray()) != content_index.units["sample_tidekit"].skill_ids:
-		return harness.fail_result("public snapshot should keep default skills for slots without override")
+		fail("public snapshot should keep default skills for slots without override")
+		return
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		core.service("command_builder").build_command({
 			"turn_index": 1,
@@ -143,25 +141,27 @@ func _test_runtime_regular_skill_loadout_contract(harness) -> Dictionary:
 		}),
 	])
 	if battle_state.field_state == null or battle_state.field_state.field_def_id != "sample_focus_field":
-		return harness.fail_result("swapped-in skill should remain executable at runtime")
-	return harness.pass_result()
+		fail("swapped-in skill should remain executable at runtime")
+		return
 
-func _test_same_side_duplicate_unit_forbidden(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+func test_same_side_duplicate_unit_forbidden() -> void:
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_setup = harness.build_sample_setup(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sample_pyron", "sample_pyron", "sample_tidekit"])
 	var errors: Array = content_index.validate_setup(battle_setup)
 	if not _has_error(errors, "duplicated unit_definition_id: sample_pyron"):
-		return harness.fail_result("same-side duplicate units should fail fast once duplicate-role ban is live")
-	return harness.pass_result()
+		fail("same-side duplicate units should fail fast once duplicate-role ban is live")
+		return
 
-func _test_battle_setup_side_id_validation(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+func test_battle_setup_side_id_validation() -> void:
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+		fail("SampleBattleFactory init failed")
+		return
 	var cases: Array = [
 		{
 			"p1_side_id": "",
@@ -175,14 +175,15 @@ func _test_battle_setup_side_id_validation(harness) -> Dictionary:
 		},
 	]
 	for test_case in cases:
-		var content_index = harness.build_loaded_content_index(sample_factory)
-		var battle_setup = harness.build_sample_setup(sample_factory)
+		var content_index = _harness.build_loaded_content_index(sample_factory)
+		var battle_setup = _harness.build_sample_setup(sample_factory)
 		battle_setup.sides[0].side_id = String(test_case["p1_side_id"])
 		battle_setup.sides[1].side_id = String(test_case["p2_side_id"])
 		var errors: Array = content_index.validate_setup(battle_setup)
 		if not _has_error(errors, String(test_case["needle"])):
-			return harness.fail_result("battle_setup side_id validation missing error: %s" % String(test_case["needle"]))
-	return harness.pass_result()
+			fail("battle_setup side_id validation missing error: %s" % String(test_case["needle"]))
+			return
+
 
 func _has_error(errors: Array, needle: String) -> bool:
 	for error_msg in errors:

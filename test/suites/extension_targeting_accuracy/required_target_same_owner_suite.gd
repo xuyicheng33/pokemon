@@ -1,22 +1,16 @@
 extends "res://test/suites/extension_targeting_accuracy/base.gd"
-const BaseSuiteScript := preload("res://test/suites/extension_targeting_accuracy/base.gd")
-
-
 
 func test_required_target_same_owner_contract() -> void:
-	_assert_legacy_result(_test_required_target_same_owner_contract(_harness))
-
-func test_required_target_same_owner_missing_owner_contract() -> void:
-	_assert_legacy_result(_test_required_target_same_owner_missing_owner_contract(_harness))
-func _test_required_target_same_owner_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var marker_effect = EffectDefinitionScript.new()
 	marker_effect.id = "test_required_same_owner_marker"
@@ -54,7 +48,7 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
 	conditional_skill.effects_on_hit_ids = PackedStringArray([conditional_effect.id])
 	content_index.register_resource(conditional_skill)
 
-	var mismatched_state = harness.build_initialized_battle(core, content_index, sample_factory, 910)
+	var mismatched_state = _harness.build_initialized_battle(core, content_index, sample_factory, 910)
 	var mismatched_p1 = mismatched_state.get_side("P1").get_active_unit()
 	var mismatched_p2 = mismatched_state.get_side("P2").get_active_unit()
 	mismatched_p1.regular_skill_ids[0] = conditional_skill.id
@@ -87,9 +81,10 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
 		}),
 	])
 	if int(mismatched_p2.stat_stages.get("speed", 0)) != 0:
-		return harness.fail_result("required_target_same_owner should skip payloads when marker source owner mismatches")
+		fail("required_target_same_owner should skip payloads when marker source owner mismatches")
+		return
 
-	var matched_state = harness.build_initialized_battle(core, content_index, sample_factory, 911)
+	var matched_state = _harness.build_initialized_battle(core, content_index, sample_factory, 911)
 	var matched_p1 = matched_state.get_side("P1").get_active_unit()
 	var matched_p2 = matched_state.get_side("P2").get_active_unit()
 	matched_p1.regular_skill_ids[0] = conditional_skill.id
@@ -122,23 +117,26 @@ func _test_required_target_same_owner_contract(harness) -> Dictionary:
 		}),
 	])
 	if int(matched_p2.stat_stages.get("speed", 0)) != -1:
-		return harness.fail_result("required_target_same_owner should allow payloads once marker source owner matches current effect owner")
-	return harness.pass_result()
+		fail("required_target_same_owner should allow payloads once marker source owner matches current effect owner")
+		return
 
-func _test_required_target_same_owner_missing_owner_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_required_target_same_owner_missing_owner_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 912)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 912)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if actor == null or target == null:
-		return harness.fail_result("missing active units for same-owner missing owner contract")
+		fail("missing active units for same-owner missing owner contract")
+		return
 
 	var marker_effect = EffectDefinitionScript.new()
 	marker_effect.id = "test_required_same_owner_missing_marker"
@@ -164,7 +162,8 @@ func _test_required_target_same_owner_missing_owner_contract(harness) -> Diction
 		0,
 		actor.base_speed
 	) == null:
-		return harness.fail_result("failed to seed same-owner marker without owner meta")
+		fail("failed to seed same-owner marker without owner meta")
+		return
 
 	var effect_event = EffectEventScript.new()
 	effect_event.owner_id = actor.unit_instance_id
@@ -174,7 +173,9 @@ func _test_required_target_same_owner_missing_owner_contract(harness) -> Diction
 
 	var precondition_service = core.service("effect_precondition_service")
 	if precondition_service.passes_effect_preconditions(conditional_effect, effect_event, battle_state):
-		return harness.fail_result("required_target_same_owner should not silently pass when marker owner meta is missing")
+		fail("required_target_same_owner should not silently pass when marker owner meta is missing")
+		return
 	if precondition_service.invalid_battle_code() != ErrorCodesScript.INVALID_STATE_CORRUPTION:
-		return harness.fail_result("required_target_same_owner missing owner meta should report invalid_state_corruption")
-	return harness.pass_result()
+		fail("required_target_same_owner missing owner meta should report invalid_state_corruption")
+		return
+

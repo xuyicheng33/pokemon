@@ -1,10 +1,7 @@
 extends "res://test/suites/content_validation_core/formal_registry/shared.gd"
 
 
-
 func test_formal_character_delivery_registry_required_field_guard_contract() -> void:
-	_assert_legacy_result(_test_formal_character_delivery_registry_required_field_guard_contract(_harness))
-func _test_formal_character_delivery_registry_required_field_guard_contract(harness) -> Dictionary:
 	var delivery_registry := FormalCharacterRegistryScript.new()
 	var bad_cases: Array = [
 		{
@@ -59,12 +56,14 @@ func _test_formal_character_delivery_registry_required_field_guard_contract(harn
 		entry.erase(missing_key)
 		var manifest_payload := JSON.stringify(_build_manifest_payload([entry]), "  ")
 		if not _write_json_fixture(manifest_path, manifest_payload):
-			return harness.fail_result("failed to write missing-field manifest fixture")
+			fail("failed to write missing-field manifest fixture")
+			return
 		var load_result: Dictionary = delivery_registry.load_entries_from_path_result(manifest_path)
 		if bool(load_result.get("ok", false)):
-			return harness.fail_result("formal manifest should fail fast on %s" % String(bad_case.get("expected_error", "")))
+			fail("formal manifest should fail fast on %s" % String(bad_case.get("expected_error", "")))
+			return
 		var error_message := String(load_result.get("error", ""))
 		var expected_error := String(bad_case.get("expected_error", ""))
 		if error_message.find(expected_error) == -1:
-			return harness.fail_result("formal manifest should report %s, got: %s" % [expected_error, error_message])
-	return harness.pass_result()
+			fail("formal manifest should report %s, got: %s" % [expected_error, error_message])
+			return

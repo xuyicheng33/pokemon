@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const BattleCoreComposerScript := preload("res://src/composition/battle_core_composer.gd")
 const BattleCoreContainerScript := preload("res://src/composition/battle_core_container.gd")
@@ -10,19 +10,11 @@ class DummyService:
 	var reset_value = "dirty"
 
 
-
 func test_battle_core_container_api_contract() -> void:
-	_assert_legacy_result(_test_battle_core_container_api_contract())
-
-func test_composer_build_core_container_contract() -> void:
-	_assert_legacy_result(_test_composer_build_core_container_contract())
-
-func test_composer_build_manager_contract() -> void:
-	_assert_legacy_result(_test_composer_build_manager_contract(_harness))
-func _test_battle_core_container_api_contract() -> Dictionary:
 	var dummy_container = BattleCoreContainerScript.new()
 	if dummy_container == null:
-		return {"ok": false, "error": "BattleCoreContainer init failed"}
+		fail("BattleCoreContainer init failed")
+		return
 	var owner_service = DummyService.new()
 	var dependency = DummyService.new()
 	var owner_slot := "owner"
@@ -30,12 +22,15 @@ func _test_battle_core_container_api_contract() -> Dictionary:
 	dummy_container.set_service(owner_slot, owner_service)
 	dummy_container.set_service(dependency_slot, dependency)
 	if dummy_container.service(owner_slot) != owner_service:
-		return {"ok": false, "error": "BattleCoreContainer.service should return the registered instance"}
+		fail("BattleCoreContainer.service should return the registered instance")
+		return
 	if not dummy_container.has_service(dependency_slot):
-		return {"ok": false, "error": "BattleCoreContainer.has_service should reflect registered instances"}
+		fail("BattleCoreContainer.has_service should reflect registered instances")
+		return
 	dummy_container.clear_service(dependency_slot)
 	if dummy_container.has_service(dependency_slot):
-		return {"ok": false, "error": "BattleCoreContainer.clear_service should remove the slot"}
+		fail("BattleCoreContainer.clear_service should remove the slot")
+		return
 	dummy_container.set_service(dependency_slot, dependency)
 	dummy_container.configure_dispose_specs(
 		PackedStringArray([owner_slot, dependency_slot]),
@@ -44,38 +39,47 @@ func _test_battle_core_container_api_contract() -> Dictionary:
 	)
 	dummy_container.dispose()
 	if owner_service.dependency != null:
-		return {"ok": false, "error": "BattleCoreContainer.dispose should null injected dependencies"}
+		fail("BattleCoreContainer.dispose should null injected dependencies")
+		return
 	if owner_service.reset_value != "clean":
-		return {"ok": false, "error": "BattleCoreContainer.dispose should apply reset specs"}
+		fail("BattleCoreContainer.dispose should apply reset specs")
+		return
 	if dummy_container.has_service(owner_slot) or dummy_container.has_service(dependency_slot):
-		return {"ok": false, "error": "BattleCoreContainer.dispose should clear registered services"}
-	return {"ok": true}
+		fail("BattleCoreContainer.dispose should clear registered services")
+		return
 
-func _test_composer_build_core_container_contract() -> Dictionary:
+func test_composer_build_core_container_contract() -> void:
 	var composer = BattleCoreComposerScript.new()
 	if composer == null:
-		return {"ok": false, "error": "BattleCoreComposer init failed"}
+		fail("BattleCoreComposer init failed")
+		return
 	var core = composer.compose()
 	if core == null:
-		return {"ok": false, "error": composer.last_error_message if not composer.last_error_message.is_empty() else "compose returned null"}
+		fail(composer.last_error_message if not composer.last_error_message.is_empty() else "compose returned null")
+		return
 	if not core.has_method("service") or not core.has_method("set_service") or not core.has_method("clear_service"):
-		return {"ok": false, "error": "BattleCoreContainer public API must stay dictionary-backed"}
+		fail("BattleCoreContainer public API must stay dictionary-backed")
+		return
 	if not core.has_service("turn_loop_controller"):
-		return {"ok": false, "error": "compose should expose turn_loop_controller via has_service"}
+		fail("compose should expose turn_loop_controller via has_service")
+		return
 	if core.service("turn_loop_controller") == null:
-		return {"ok": false, "error": "compose should wire turn_loop_controller"}
+		fail("compose should wire turn_loop_controller")
+		return
 	core.dispose()
-	return {"ok": true}
 
-func _test_composer_build_manager_contract(harness) -> Dictionary:
-	var manager_payload = harness.build_manager()
+func test_composer_build_manager_contract() -> void:
+	var manager_payload = _harness.build_manager()
 	if manager_payload.has("error"):
-		return harness.fail_result(str(manager_payload["error"]))
+		fail(str(manager_payload["error"]))
+		return
 	var manager = manager_payload["manager"]
 	if not String(manager.resolve_missing_dependency()).is_empty():
-		return harness.fail_result("compose_manager should keep manager ports wired")
+		fail("compose_manager should keep manager ports wired")
+		return
 	for property_info in manager.get_property_list():
 		var property_name := String(property_info.get("name", ""))
 		if property_name == "container_factory" or property_name == "command_builder" or property_name == "command_id_factory" or property_name == "public_snapshot_builder":
-			return harness.fail_result("compose_manager should keep raw manager ports private")
-	return harness.pass_result()
+			fail("compose_manager should keep raw manager ports private")
+			return
+

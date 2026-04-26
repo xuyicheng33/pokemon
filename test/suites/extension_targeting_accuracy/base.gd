@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const ChainContextScript := preload("res://src/battle_core/contracts/chain_context.gd")

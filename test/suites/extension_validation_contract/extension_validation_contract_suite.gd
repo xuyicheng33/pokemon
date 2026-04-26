@@ -1,15 +1,11 @@
 extends "res://test/suites/extension_validation_contract/base.gd"
-const BaseSuiteScript := preload("res://test/suites/extension_validation_contract/base.gd")
-
-
 
 func test_extension_validation_contract() -> void:
-	_assert_legacy_result(_test_extension_validation_contract(_harness))
-func _test_extension_validation_contract(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var marker_effect = EffectDefinitionScript.new()
 	marker_effect.id = "test_required_marker"
@@ -316,5 +312,5 @@ func _test_extension_validation_contract(harness) -> Dictionary:
 	]
 	for needle in needles:
 		if not _has_error(errors, needle):
-			return harness.fail_result("extension validation missing error: %s" % needle)
-	return harness.pass_result()
+			fail("extension validation missing error: %s" % needle)
+			return

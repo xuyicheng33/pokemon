@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/passive_skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -10,16 +10,16 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 
 func test_turn_scope_active_and_field() -> void:
-	_assert_legacy_result(_test_turn_scope_active_and_field(_harness))
-func _test_turn_scope_active_and_field(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var turn_payload = StatModPayloadScript.new()
 	turn_payload.payload_type = "stat_mod"
@@ -61,7 +61,7 @@ func _test_turn_scope_active_and_field(harness) -> Dictionary:
 	content_index.register_resource(field_effect)
 	content_index.register_resource(field_def)
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 102)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 102)
 	var bench_ids: Array = []
 	for side_state in battle_state.sides:
 		for bench_unit_id in side_state.bench_order:
@@ -85,11 +85,13 @@ func _test_turn_scope_active_and_field(harness) -> Dictionary:
 		if ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("passive_skill:"):
 			passive_event_count += 1
 			if bench_ids.has(ev.target_instance_id):
-				return harness.fail_result("bench unit triggered turn_start passive")
+				fail("bench unit triggered turn_start passive")
+				return
 		if ev.event_type == EventTypesScript.EFFECT_RESOURCE_MOD and ev.source_instance_id == "test_field_instance":
 			field_event_count += 1
 	if passive_event_count != 2:
-		return harness.fail_result("turn_start passive should trigger exactly for active units")
+		fail("turn_start passive should trigger exactly for active units")
+		return
 	if field_event_count < 1:
-		return harness.fail_result("field turn_start effect missing")
-	return harness.pass_result()
+		fail("field turn_start effect missing")
+		return

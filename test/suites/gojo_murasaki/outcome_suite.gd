@@ -1,21 +1,10 @@
 extends "res://test/suites/gojo_murasaki/shared.gd"
 
 func test_gojo_murasaki_no_recoil_contract() -> void:
-	_assert_legacy_result(_test_gojo_murasaki_no_recoil_contract(_harness))
-
-func test_gojo_murasaki_base_kill_contract() -> void:
-	_assert_legacy_result(_test_gojo_murasaki_base_kill_contract(_harness))
-
-func test_gojo_murasaki_burst_kill_contract() -> void:
-	_assert_legacy_result(_test_gojo_murasaki_burst_kill_contract(_harness))
-
-func test_gojo_murasaki_retargeted_switch_contract() -> void:
-	_assert_legacy_result(_test_gojo_murasaki_retargeted_switch_contract(_harness))
-
-func _test_gojo_murasaki_no_recoil_contract(harness) -> Dictionary:
-	var state_payload = _build_gojo_vs_sample_state(harness, 1229)
+	var state_payload = _build_gojo_vs_sample_state(_harness, 1229)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -30,15 +19,17 @@ func _test_gojo_murasaki_no_recoil_contract(harness) -> Dictionary:
 		_build_wait_command(core, 1, "P2", "P2-A"),
 	])
 	if gojo_unit.current_hp != before_hp:
-		return harness.fail_result("茈触发追加段后不应对五条悟造成反噬伤害")
+		fail("茈触发追加段后不应对五条悟造成反噬伤害")
+		return
 	if _count_target_damage_events(core.service("battle_logger").event_log, gojo_unit.unit_instance_id) != 0:
-		return harness.fail_result("茈结算后不应给五条悟自己写入伤害事件")
-	return harness.pass_result()
+		fail("茈结算后不应给五条悟自己写入伤害事件")
+		return
 
-func _test_gojo_murasaki_base_kill_contract(harness) -> Dictionary:
-	var state_payload = _build_gojo_vs_sample_state(harness, 1207)
+func test_gojo_murasaki_base_kill_contract() -> void:
+	var state_payload = _build_gojo_vs_sample_state(_harness, 1207)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -53,13 +44,14 @@ func _test_gojo_murasaki_base_kill_contract(harness) -> Dictionary:
 		_build_wait_command(core, 1, "P2", "P2-A"),
 	])
 	if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 1:
-		return harness.fail_result("茈本体先击杀时不应再触发追加段")
-	return harness.pass_result()
+		fail("茈本体先击杀时不应再触发追加段")
+		return
 
-func _test_gojo_murasaki_burst_kill_contract(harness) -> Dictionary:
-	var state_payload = _build_gojo_vs_sample_state(harness, 1208)
+func test_gojo_murasaki_burst_kill_contract() -> void:
+	var state_payload = _build_gojo_vs_sample_state(_harness, 1208)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -74,17 +66,19 @@ func _test_gojo_murasaki_burst_kill_contract(harness) -> Dictionary:
 		_build_wait_command(core, 1, "P2", "P2-A"),
 	])
 	if _count_target_damage_events(core.service("battle_logger").event_log, target_unit.unit_instance_id) != 2:
-		return harness.fail_result("茈追加段击杀时仍应保留第二段伤害结算")
+		fail("茈追加段击杀时仍应保留第二段伤害结算")
+		return
 	if _has_event(core.service("battle_logger").event_log, func(ev):
 		return ev.event_type == EventTypesScript.SYSTEM_INVALID_BATTLE
 	):
-		return harness.fail_result("茈追加段击杀后清标记应静默跳过，不能报 invalid_battle")
-	return harness.pass_result()
+		fail("茈追加段击杀后清标记应静默跳过，不能报 invalid_battle")
+		return
 
-func _test_gojo_murasaki_retargeted_switch_contract(harness) -> Dictionary:
-	var state_payload = _build_gojo_vs_sample_state(harness, 1209)
+func test_gojo_murasaki_retargeted_switch_contract() -> void:
+	var state_payload = _build_gojo_vs_sample_state(_harness, 1209)
 	if state_payload.has("error"):
-		return harness.fail_result(str(state_payload["error"]))
+		fail(str(state_payload["error"]))
+		return
 	var core = state_payload["core"]
 	var content_index = state_payload["content_index"]
 	var battle_state = state_payload["battle_state"]
@@ -99,9 +93,12 @@ func _test_gojo_murasaki_retargeted_switch_contract(harness) -> Dictionary:
 	])
 	var new_target = battle_state.get_side("P2").get_active_unit()
 	if new_target == null or new_target.public_id != "P2-B":
-		return harness.fail_result("target switch should complete before priority -1 茈")
+		fail("target switch should complete before priority -1 茈")
+		return
 	if _count_target_damage_events(core.service("battle_logger").event_log, new_target.unit_instance_id) != 1:
-		return harness.fail_result("原目标先换下时，茈应命中新 active 且只打本体")
+		fail("原目标先换下时，茈应命中新 active 且只打本体")
+		return
 	if _count_target_damage_events(core.service("battle_logger").event_log, original_target.unit_instance_id) != 0:
-		return harness.fail_result("原目标离场后不应继续承受茈伤害")
-	return harness.pass_result()
+		fail("原目标离场后不应继续承受茈伤害")
+		return
+

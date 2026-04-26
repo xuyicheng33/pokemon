@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
@@ -9,21 +9,23 @@ var _smoke_helper = FormalCharacterManagerSmokeHelperScript.new()
 var _contract_helper = _smoke_helper.contracts()
 
 func test_formal_character_manager_blackbox_contract_matrix() -> void:
-	_assert_legacy_result(_test_formal_character_manager_blackbox_contract_matrix(_harness))
-
-func _test_formal_character_manager_blackbox_contract_matrix(harness) -> Dictionary:
 	var entries_result: Dictionary = _manifest.build_runtime_entries_result()
 	if not bool(entries_result.get("ok", false)):
-		return harness.fail_result(str(entries_result.get("error_message", "formal manager blackbox matrix failed to load manifest")))
+		fail(str(entries_result.get("error_message", "formal manager blackbox matrix failed to load manifest")))
+		return
 	var entries: Array = entries_result.get("data", [])
 	if entries.is_empty():
-		return harness.fail_result("formal manager blackbox matrix requires at least one character")
+		fail("formal manager blackbox matrix requires at least one character")
+		return
 	for entry_index in range(entries.size()):
 		var entry: Dictionary = entries[entry_index]
-		var result := _run_character_blackbox_contract(harness, entry, 1801 + entry_index)
+		var result := _run_character_blackbox_contract(_harness, entry, 1801 + entry_index)
 		if not bool(result.get("ok", false)):
-			return result
-	return harness.pass_result()
+			var __legacy_result = result
+			if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+				fail(str(__legacy_result.get("error", "unknown error")))
+			return
+
 
 func _run_character_blackbox_contract(harness, entry: Dictionary, battle_seed: int) -> Dictionary:
 	var character_id := String(entry.get("character_id", "")).strip_edges()

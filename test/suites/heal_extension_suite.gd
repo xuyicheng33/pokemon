@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
@@ -8,24 +8,17 @@ const CommandTypesScript := preload("res://src/battle_core/commands/command_type
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 
-
 func test_missing_hp_percent_heal_runtime_contract() -> void:
-	_assert_legacy_result(_test_missing_hp_percent_heal_runtime_contract(_harness))
-
-func test_incoming_heal_final_mod_blocks_heal_contract() -> void:
-	_assert_legacy_result(_test_incoming_heal_final_mod_blocks_heal_contract(_harness))
-
-func test_heal_extension_validation_contract() -> void:
-	_assert_legacy_result(_test_heal_extension_validation_contract(_harness))
-func _test_missing_hp_percent_heal_runtime_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var heal_effect = _build_heal_effect("test_missing_hp_heal_effect", 10, "missing_hp")
 	content_index.register_resource(heal_effect)
@@ -33,11 +26,12 @@ func _test_missing_hp_percent_heal_runtime_contract(harness) -> Dictionary:
 	content_index.register_resource(heal_skill)
 	content_index.units["sample_pyron"].skill_ids[0] = heal_skill.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 820)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 820)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if actor == null or target == null:
-		return harness.fail_result("missing active units for missing_hp heal contract")
+		fail("missing active units for missing_hp heal contract")
+		return
 	actor.current_hp = max(1, int(floor(float(actor.max_hp) * 0.5)))
 	var before_hp: int = int(actor.current_hp)
 	var missing_hp: int = int(actor.max_hp) - before_hp
@@ -63,20 +57,23 @@ func _test_missing_hp_percent_heal_runtime_contract(harness) -> Dictionary:
 	])
 
 	if int(actor.current_hp) - before_hp != expected_gain:
-		return harness.fail_result("missing_hp percent heal mismatch: expected=%d actual=%d" % [expected_gain, int(actor.current_hp) - before_hp])
+		fail("missing_hp percent heal mismatch: expected=%d actual=%d" % [expected_gain, int(actor.current_hp) - before_hp])
+		return
 	if not _has_public_heal_event(core.service("battle_logger").event_log, actor.public_id):
-		return harness.fail_result("missing_hp heal should write effect:heal event")
-	return harness.pass_result()
+		fail("missing_hp heal should write effect:heal event")
+		return
 
-func _test_incoming_heal_final_mod_blocks_heal_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_incoming_heal_final_mod_blocks_heal_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var heal_effect = _build_fixed_heal_effect("test_blocked_heal_effect", 20)
 	content_index.register_resource(heal_effect)
@@ -84,11 +81,12 @@ func _test_incoming_heal_final_mod_blocks_heal_contract(harness) -> Dictionary:
 	content_index.register_resource(heal_skill)
 	content_index.units["sample_pyron"].skill_ids[0] = heal_skill.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 821)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 821)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
 	if actor == null or target == null:
-		return harness.fail_result("missing active units for incoming_heal_final_mod contract")
+		fail("missing active units for incoming_heal_final_mod contract")
+		return
 	actor.current_hp = max(1, int(floor(float(actor.max_hp) * 0.5)))
 	var before_hp: int = int(actor.current_hp)
 
@@ -111,7 +109,8 @@ func _test_incoming_heal_final_mod_blocks_heal_contract(harness) -> Dictionary:
 		0,
 		actor.base_speed
 	) == null:
-		return harness.fail_result("failed to create incoming_heal_final_mod rule_mod")
+		fail("failed to create incoming_heal_final_mod rule_mod")
+		return
 
 	core.service("battle_logger").reset()
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
@@ -133,16 +132,18 @@ func _test_incoming_heal_final_mod_blocks_heal_contract(harness) -> Dictionary:
 	])
 
 	if int(actor.current_hp) != before_hp:
-		return harness.fail_result("incoming_heal_final_mod=set0 should fully block heal")
+		fail("incoming_heal_final_mod=set0 should fully block heal")
+		return
 	if _has_public_heal_event(core.service("battle_logger").event_log, actor.public_id):
-		return harness.fail_result("blocked heal should not write effect:heal event")
-	return harness.pass_result()
+		fail("blocked heal should not write effect:heal event")
+		return
 
-func _test_heal_extension_validation_contract(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+func test_heal_extension_validation_contract() -> void:
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var bad_percent_heal_payload = HealPayloadScript.new()
 	bad_percent_heal_payload.payload_type = "heal"
@@ -176,10 +177,12 @@ func _test_heal_extension_validation_contract(harness) -> Dictionary:
 
 	var errors: Array = content_index.validate_snapshot()
 	if not _has_error(errors, "effect[test_bad_percent_heal_base].heal invalid percent_base: bad_base"):
-		return harness.fail_result("heal extension validation should reject invalid percent_base")
+		fail("heal extension validation should reject invalid percent_base")
+		return
 	if not _has_error(errors, "effect[test_bad_incoming_heal_final_mod].rule_mod invalid: incoming_heal_final_mod value must be number"):
-		return harness.fail_result("heal extension validation should reject non-number incoming_heal_final_mod")
-	return harness.pass_result()
+		fail("heal extension validation should reject non-number incoming_heal_final_mod")
+		return
+
 
 func _build_heal_effect(effect_id: String, percent: int, percent_base: String):
 	var effect = EffectDefinitionScript.new()

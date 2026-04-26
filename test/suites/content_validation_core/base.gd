@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
 const BattleFormatConfigScript := preload("res://src/battle_core/content/battle_format_config.gd")

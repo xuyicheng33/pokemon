@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const PowerBonusResolverScript := preload("res://src/battle_core/actions/power_bonus_resolver.gd")
@@ -18,39 +18,33 @@ class FlatBonusPowerBonusResolver:
 		return 0
 
 
-
 func test_sukuna_reverse_ritual_heal_path() -> void:
-	_assert_legacy_result(_test_sukuna_reverse_ritual_heal_path(_harness))
-
-func test_sukuna_kai_priority_damage_contract() -> void:
-	_assert_legacy_result(_test_sukuna_kai_priority_damage_contract(_harness))
-
-func test_sukuna_hatsu_mp_diff_contract() -> void:
-	_assert_legacy_result(_test_sukuna_hatsu_mp_diff_contract(_harness))
-
-func test_power_bonus_resolver_delegation_contract() -> void:
-	_assert_legacy_result(_test_power_bonus_resolver_delegation_contract(_harness))
-func _test_sukuna_reverse_ritual_heal_path(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var ritual_loadout := PackedStringArray(["sukuna_kai", "sukuna_hatsu", "sukuna_reverse_ritual"])
 	var battle_state = _support.build_battle_state(core, content_index, _support.build_sukuna_setup(sample_factory, {0: ritual_loadout}), 702)
 	var sukuna_unit = battle_state.get_side("P1").get_active_unit()
 	if sukuna_unit == null:
-		return harness.fail_result("missing sukuna active unit")
+		fail("missing sukuna active unit")
+		return
 	if sukuna_unit.regular_skill_ids != ritual_loadout:
-		return harness.fail_result("sukuna runtime loadout should mirror setup override")
+		fail("sukuna runtime loadout should mirror setup override")
+		return
 	var legal_action_set = core.service("legal_action_service").get_legal_actions(battle_state, "P1", content_index)
 	if not legal_action_set.legal_skill_ids.has("sukuna_reverse_ritual"):
-		return harness.fail_result("setup override should expose 反转术式 as legal action")
+		fail("setup override should expose 反转术式 as legal action")
+		return
 	if legal_action_set.legal_skill_ids.has("sukuna_hiraku"):
-		return harness.fail_result("setup override should remove 开 from this battle loadout")
+		fail("setup override should remove 开 from this battle loadout")
+		return
 	sukuna_unit.current_hp = max(1, int(floor(float(sukuna_unit.max_hp) * 0.5)))
 	var before_hp: int = sukuna_unit.current_hp
 	var expected_gain: int = min(sukuna_unit.max_hp - before_hp, max(1, int(floor(float(sukuna_unit.max_hp) * 0.25))))
@@ -72,26 +66,30 @@ func _test_sukuna_reverse_ritual_heal_path(harness) -> Dictionary:
 		}),
 	])
 	if sukuna_unit.current_hp - before_hp != expected_gain:
-		return harness.fail_result("reverse ritual heal delta mismatch")
+		fail("reverse ritual heal delta mismatch")
+		return
 	for log_event in core.service("battle_logger").event_log:
 		if log_event.event_type == EventTypesScript.EFFECT_HEAL and String(log_event.payload_summary).find("heal") != -1:
-			return harness.pass_result()
-	return harness.fail_result("reverse ritual heal log missing")
+			return
+	fail("reverse ritual heal log missing")
 
-func _test_sukuna_kai_priority_damage_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_sukuna_kai_priority_damage_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var battle_state = _support.build_battle_state(core, content_index, _support.build_sukuna_setup(sample_factory), 707)
 	var sukuna_unit = battle_state.get_side("P1").get_active_unit()
 	var target_unit = battle_state.get_side("P2").get_active_unit()
 	if sukuna_unit == null or target_unit == null:
-		return harness.fail_result("missing active units for sukuna kai contract")
+		fail("missing active units for sukuna kai contract")
+		return
 	target_unit.base_speed = 999
 	var skill_definition = content_index.skills["sukuna_kai"]
 	var expected_damage = _support.calc_expected_damage(core, battle_state, sukuna_unit, target_unit, skill_definition, sukuna_unit.current_mp - skill_definition.mp_cost, target_unit.current_mp)
@@ -106,44 +104,54 @@ func _test_sukuna_kai_priority_damage_contract(harness) -> Dictionary:
 			first_cast_actor_id = String(log_event.actor_id)
 			break
 	if first_cast_actor_id != sukuna_unit.unit_instance_id:
-		return harness.fail_result("解应凭 priority=1 在更慢时仍先于普通技能行动")
+		fail("解应凭 priority=1 在更慢时仍先于普通技能行动")
+		return
 	if target_unit.max_hp - target_unit.current_hp != expected_damage:
-		return harness.fail_result("解的基础伤害口径漂移：expected=%d actual=%d" % [expected_damage, target_unit.max_hp - target_unit.current_hp])
-	return harness.pass_result()
+		fail("解的基础伤害口径漂移：expected=%d actual=%d" % [expected_damage, target_unit.max_hp - target_unit.current_hp])
+		return
 
-func _test_sukuna_hatsu_mp_diff_contract(harness) -> Dictionary:
-	var low_result = _support.run_sukuna_hatsu_damage_case(harness, 708, 40, 40)
+func test_sukuna_hatsu_mp_diff_contract() -> void:
+	var low_result = _support.run_sukuna_hatsu_damage_case(_harness, 708, 40, 40)
 	if low_result.has("error"):
-		return harness.fail_result(str(low_result["error"]))
+		fail(str(low_result["error"]))
+		return
 	if int(low_result["damage"]) != int(low_result["expected_damage"]):
-		return harness.fail_result("低 mp 差的 捌 伤害口径漂移：expected=%d actual=%d" % [int(low_result["expected_damage"]), int(low_result["damage"])])
+		fail("低 mp 差的 捌 伤害口径漂移：expected=%d actual=%d" % [int(low_result["expected_damage"]), int(low_result["damage"])])
+		return
 	if int(low_result["power_bonus"]) != 0:
-		return harness.fail_result("低 mp 差场景下，捌不应获得额外 power bonus")
-	var high_result = _support.run_sukuna_hatsu_damage_case(harness, 709, 90, 20)
+		fail("低 mp 差场景下，捌不应获得额外 power bonus")
+		return
+	var high_result = _support.run_sukuna_hatsu_damage_case(_harness, 709, 90, 20)
 	if high_result.has("error"):
-		return harness.fail_result(str(high_result["error"]))
+		fail(str(high_result["error"]))
+		return
 	if int(high_result["damage"]) != int(high_result["expected_damage"]):
-		return harness.fail_result("高 mp 差的 捌 伤害口径漂移：expected=%d actual=%d" % [int(high_result["expected_damage"]), int(high_result["damage"])])
+		fail("高 mp 差的 捌 伤害口径漂移：expected=%d actual=%d" % [int(high_result["expected_damage"]), int(high_result["damage"])])
+		return
 	if int(high_result["power_bonus"]) <= 0:
-		return harness.fail_result("高 mp 差场景下，捌应获得正的 power bonus")
+		fail("高 mp 差场景下，捌应获得正的 power bonus")
+		return
 	if int(high_result["damage"]) <= int(low_result["damage"]):
-		return harness.fail_result("更高的 mp 差应让 捌 造成更高伤害")
-	return harness.pass_result()
+		fail("更高的 mp 差应让 捌 造成更高伤害")
+		return
 
-func _test_power_bonus_resolver_delegation_contract(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_power_bonus_resolver_delegation_contract() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var battle_state = _support.build_battle_state(core, content_index, _support.build_sukuna_setup(sample_factory), 710)
 	var sukuna_unit = battle_state.get_side("P1").get_active_unit()
 	var target_unit = battle_state.get_side("P2").get_active_unit()
 	if sukuna_unit == null or target_unit == null:
-		return harness.fail_result("missing active units for power bonus resolver delegation contract")
+		fail("missing active units for power bonus resolver delegation contract")
+		return
 	var fake_resolver = FlatBonusPowerBonusResolver.new()
 	core.service("action_cast_segment_service").power_bonus_resolver = fake_resolver
 	var skill_definition = content_index.skills["sukuna_hatsu"]
@@ -164,5 +172,6 @@ func _test_power_bonus_resolver_delegation_contract(harness) -> Dictionary:
 	])
 	var actual_damage: int = target_unit.max_hp - target_unit.current_hp
 	if actual_damage != expected_damage:
-		return harness.fail_result("direct damage pipeline should delegate power bonus resolution: expected=%d actual=%d" % [expected_damage, actual_damage])
-	return harness.pass_result()
+		fail("direct damage pipeline should delegate power bonus resolution: expected=%d actual=%d" % [expected_damage, actual_damage])
+		return
+

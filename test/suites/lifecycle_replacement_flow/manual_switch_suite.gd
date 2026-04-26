@@ -4,19 +4,16 @@ const EffectPayloadScript := preload("res://src/battle_core/content/effect_paylo
 
 
 func test_manual_switch_lifecycle_chain() -> void:
-	_assert_legacy_result(_test_manual_switch_lifecycle_chain(_harness))
-
-func test_manual_switch_failure_does_not_log_success_switch() -> void:
-	_assert_legacy_result(_test_manual_switch_failure_does_not_log_success_switch(_harness))
-func _test_manual_switch_lifecycle_chain(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 
 	var switch_payload = StatModPayloadScript.new()
 	switch_payload.payload_type = "stat_mod"
@@ -79,7 +76,7 @@ func _test_manual_switch_lifecycle_chain(harness) -> Dictionary:
 	content_index.units["sample_pyron"].passive_item_id = exit_item.id
 	content_index.units["sample_mossaur"].passive_skill_id = enter_passive.id
 
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 108)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 108)
 	var commands: Array = [
 		core.service("command_builder").build_command({
 			"turn_index": 1,
@@ -125,28 +122,35 @@ func _test_manual_switch_lifecycle_chain(harness) -> Dictionary:
 		if on_enter_effect_idx == -1 and state_enter_idx != -1 and ev.event_type == EventTypesScript.EFFECT_STAT_MOD and str(ev.source_instance_id).begins_with("passive_skill:") and i > state_enter_idx:
 			on_enter_effect_idx = i
 	if switch_idx == -1 or on_switch_effect_idx == -1 or on_exit_effect_idx == -1 or state_exit_idx == -1 or state_replace_idx == -1 or state_enter_idx == -1 or on_enter_effect_idx == -1:
-		return harness.fail_result("missing manual switch lifecycle events")
+		fail("missing manual switch lifecycle events")
+		return
 	if enter_unit == null:
-		return harness.fail_result("missing manual switch replacement unit")
+		fail("missing manual switch replacement unit")
+		return
 	if enter_unit.reentered_turn_index != 1:
-		return harness.fail_result("manual switch entered unit should stamp current turn as reentered_turn_index")
+		fail("manual switch entered unit should stamp current turn as reentered_turn_index")
+		return
 	if enter_unit.has_acted:
-		return harness.fail_result("manual switch entered unit should reset has_acted=false")
+		fail("manual switch entered unit should reset has_acted=false")
+		return
 	if enter_unit.action_window_passed:
-		return harness.fail_result("manual switch entered unit should reset action_window_passed=false")
+		fail("manual switch entered unit should reset action_window_passed=false")
+		return
 	if not (on_switch_effect_idx < on_exit_effect_idx and on_exit_effect_idx < state_exit_idx and state_exit_idx < state_replace_idx and state_replace_idx < state_enter_idx and state_enter_idx < on_enter_effect_idx and on_enter_effect_idx < switch_idx):
-		return harness.fail_result("manual switch lifecycle ordering mismatch (%d,%d,%d,%d,%d,%d,%d)" % [switch_idx, on_switch_effect_idx, on_exit_effect_idx, state_exit_idx, state_replace_idx, state_enter_idx, on_enter_effect_idx])
-	return harness.pass_result()
+		fail("manual switch lifecycle ordering mismatch (%d,%d,%d,%d,%d,%d,%d)" % [switch_idx, on_switch_effect_idx, on_exit_effect_idx, state_exit_idx, state_replace_idx, state_enter_idx, on_enter_effect_idx])
+		return
 
-func _test_manual_switch_failure_does_not_log_success_switch(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_manual_switch_failure_does_not_log_success_switch() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	var unknown_payload = EffectPayloadScript.new()
 	unknown_payload.payload_type = "unknown"
 	var switch_effect = EffectDefinitionScript.new()
@@ -163,7 +167,7 @@ func _test_manual_switch_failure_does_not_log_success_switch(harness) -> Diction
 	content_index.register_resource(switch_effect)
 	content_index.register_resource(switch_passive)
 	content_index.units["sample_pyron"].passive_skill_id = switch_passive.id
-	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 109)
+	var battle_state = _harness.build_initialized_battle(core, content_index, sample_factory, 109)
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [
 		core.service("command_builder").build_command({
 			"turn_index": 1,
@@ -182,10 +186,13 @@ func _test_manual_switch_failure_does_not_log_success_switch(harness) -> Diction
 		}),
 	])
 	if not battle_state.battle_result.finished:
-		return harness.fail_result("manual switch lifecycle failure should terminate battle")
+		fail("manual switch lifecycle failure should terminate battle")
+		return
 	if battle_state.battle_result.reason != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
-		return harness.fail_result("expected invalid_effect_definition, got %s" % str(battle_state.battle_result.reason))
+		fail("expected invalid_effect_definition, got %s" % str(battle_state.battle_result.reason))
+		return
 	for event in core.service("battle_logger").event_log:
 		if event.event_type == EventTypesScript.STATE_SWITCH:
-			return harness.fail_result("failed manual switch must not log STATE_SWITCH success")
-	return harness.pass_result()
+			fail("failed manual switch must not log STATE_SWITCH success")
+			return
+

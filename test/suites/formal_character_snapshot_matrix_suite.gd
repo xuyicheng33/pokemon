@@ -1,4 +1,4 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const FormalCharacterBaselinesScript := preload("res://src/shared/formal_character_baselines.gd")
 const FormalCharacterSnapshotTestHelperScript := preload("res://tests/support/formal_character_snapshot_test_helper.gd")
@@ -6,23 +6,26 @@ const FormalCharacterSnapshotTestHelperScript := preload("res://tests/support/fo
 var _helper = FormalCharacterSnapshotTestHelperScript.new()
 
 func test_formal_character_snapshot_contract_matrix() -> void:
-	_assert_legacy_result(_test_formal_character_snapshot_contract_matrix(_harness))
-
-func _test_formal_character_snapshot_contract_matrix(harness) -> Dictionary:
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var character_ids: PackedStringArray = harness.build_formal_character_ids(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var character_ids: PackedStringArray = _harness.build_formal_character_ids(sample_factory)
 	if character_ids.is_empty():
-		return harness.fail_result("formal character snapshot matrix requires at least one character")
-	var content_index = harness.build_loaded_content_index(sample_factory)
+		fail("formal character snapshot matrix requires at least one character")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
 	if content_index == null:
-		return harness.fail_result("formal character snapshot matrix failed to load content snapshot")
+		fail("formal character snapshot matrix failed to load content snapshot")
+		return
 	for character_id in character_ids:
-		var result := _run_character_snapshot_contract(harness, content_index, String(character_id))
+		var result := _run_character_snapshot_contract(_harness, content_index, String(character_id))
 		if not bool(result.get("ok", false)):
-			return result
-	return harness.pass_result()
+			var __legacy_result = result
+			if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
+				fail(str(__legacy_result.get("error", "unknown error")))
+			return
+
 
 func _run_character_snapshot_contract(harness, content_index, character_id: String) -> Dictionary:
 	var checks := [

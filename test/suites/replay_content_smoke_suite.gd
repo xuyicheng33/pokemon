@@ -1,26 +1,22 @@
-extends "res://test/support/gdunit_suite_bridge.gd"
+extends "res://tests/support/gdunit_suite_bridge.gd"
 
 const BattleStateScript := preload("res://src/battle_core/runtime/battle_state.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 
-
 func test_sukuna_content_pack_smoke() -> void:
-	_assert_legacy_result(_test_sukuna_content_pack_smoke(_harness))
-
-func test_field_expire_path() -> void:
-	_assert_legacy_result(_test_field_expire_path(_harness))
-func _test_sukuna_content_pack_smoke(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
-	var content_index = harness.build_loaded_content_index(sample_factory)
-	var battle_setup = harness.build_sample_setup(sample_factory)
+		fail("SampleBattleFactory init failed")
+		return
+	var content_index = _harness.build_loaded_content_index(sample_factory)
+	var battle_setup = _harness.build_sample_setup(sample_factory)
 	battle_setup.sides[0].unit_definition_ids = PackedStringArray(["sukuna", "sample_mossaur", "sample_tidekit"])
 	battle_setup.sides[0].starting_index = 0
 	battle_setup.sides[1].unit_definition_ids = PackedStringArray(["sample_tidekit", "sample_pyron", "sample_mossaur"])
@@ -34,7 +30,8 @@ func _test_sukuna_content_pack_smoke(harness) -> Dictionary:
 	core.service("battle_initializer").initialize_battle(battle_state, content_index, battle_setup)
 	var p1_active = battle_state.get_side("P1").get_active_unit()
 	if p1_active == null:
-		return harness.fail_result("missing P1 active unit for sukuna smoke")
+		fail("missing P1 active unit for sukuna smoke")
+		return
 	p1_active.current_mp = p1_active.max_mp
 	p1_active.ultimate_points = p1_active.ultimate_points_cap
 	core.service("battle_logger").reset()
@@ -43,33 +40,42 @@ func _test_sukuna_content_pack_smoke(harness) -> Dictionary:
 		core.service("command_builder").build_command({"turn_index": 1, "command_type": CommandTypesScript.WAIT, "command_source": "manual", "side_id": "P2", "actor_public_id": "P2-A"}),
 	])
 	if battle_state.battle_result.finished:
-		return harness.fail_result("sukuna smoke battle should continue")
+		fail("sukuna smoke battle should continue")
+		return
 	if battle_state.field_state == null or battle_state.field_state.field_def_id != "sukuna_malevolent_shrine_field":
-		return harness.fail_result("sukuna ultimate should apply malevolent shrine field")
+		fail("sukuna ultimate should apply malevolent shrine field")
+		return
 	if battle_state.field_state.remaining_turns != 2:
-		return harness.fail_result("malevolent shrine should count current turn as turn 1 and tick to 2 remaining")
+		fail("malevolent shrine should count current turn as turn 1 and tick to 2 remaining")
+		return
 	for log_event in core.service("battle_logger").event_log:
 		if log_event.event_type == EventTypesScript.EFFECT_APPLY_FIELD and String(log_event.payload_summary).find("sukuna_malevolent_shrine_field") != -1:
-			return harness.pass_result()
-	return harness.fail_result("malevolent shrine apply event missing")
+			return
+	fail("malevolent shrine apply event missing")
 
-func _test_field_expire_path(harness) -> Dictionary:
-	var core_payload = harness.build_core()
+func test_field_expire_path() -> void:
+	var core_payload = _harness.build_core()
 	if core_payload.has("error"):
-		return harness.fail_result(str(core_payload["error"]))
+		fail(str(core_payload["error"]))
+		return
 	var core = core_payload["core"]
-	var sample_factory = harness.build_sample_factory()
+	var sample_factory = _harness.build_sample_factory()
 	if sample_factory == null:
-		return harness.fail_result("SampleBattleFactory init failed")
+		fail("SampleBattleFactory init failed")
+		return
 	var replay_input_result: Dictionary = sample_factory.build_demo_replay_input_for_profile_result(core.service("command_builder"), "legacy")
 	if not bool(replay_input_result.get("ok", false)):
-		return harness.fail_result("legacy replay input build failed: %s" % String(replay_input_result.get("error_message", "unknown error")))
+		fail("legacy replay input build failed: %s" % String(replay_input_result.get("error_message", "unknown error")))
+		return
 	var replay_output = core.service("replay_runner").run_replay(replay_input_result.get("data", null))
 	if replay_output == null:
-		return harness.fail_result("replay output is null")
+		fail("replay output is null")
+		return
 	if replay_output.final_battle_state.field_state != null:
-		return harness.fail_result("field_state should expire after turn 2")
+		fail("field_state should expire after turn 2")
+		return
 	for log_event in replay_output.event_log:
 		if log_event.event_type == EventTypesScript.EFFECT_FIELD_EXPIRE:
-			return harness.pass_result()
-	return harness.fail_result("field expire event missing")
+			return
+	fail("field expire event missing")
+
