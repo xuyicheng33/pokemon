@@ -4,6 +4,7 @@ class_name SampleBattleFactoryFormalAccess
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
+const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 const OVERRIDE_REGISTRY_PATH := "registry_path_override"
 
 var registry_path_override: String = ""
@@ -159,10 +160,7 @@ func _load_runtime_and_delivery_entries_result() -> Dictionary:
 	})
 
 func _normalize_path(raw_path: String) -> String:
-	var trimmed_path := String(raw_path).strip_edges()
-	if trimmed_path.is_empty():
-		return ""
-	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+	return ResourcePathHelperScript.normalize(raw_path)
 
 func _registry_path_override() -> String:
 	if override_config.has(OVERRIDE_REGISTRY_PATH):

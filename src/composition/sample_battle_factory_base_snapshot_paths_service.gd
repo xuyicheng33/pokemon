@@ -3,6 +3,7 @@ class_name SampleBattleFactoryBaseSnapshotPathsService
 
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
+const ResourcePathHelperScript := preload("res://src/shared/resource_path_helper.gd")
 
 const BASE_CONTENT_SNAPSHOT_DIRS = [
 	"res://content/battle_formats",
@@ -69,10 +70,7 @@ func append_unique_path(paths: Array[String], seen: Dictionary, path: String) ->
 	paths.append(path)
 
 func normalize_res_path(raw_path: String) -> String:
-	var trimmed_path := raw_path.strip_edges()
-	if trimmed_path.is_empty():
-		return ""
-	return trimmed_path if trimmed_path.begins_with("res://") or trimmed_path.begins_with("user://") else "res://%s" % trimmed_path
+	return ResourcePathHelperScript.normalize(raw_path)
 
 func _error_result(message: String) -> Dictionary:
 	return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, message)

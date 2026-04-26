@@ -135,7 +135,6 @@
     "bash tests/check_sandbox_smoke_matrix.sh",
     "SANDBOX_SMOKE_SCOPE=full bash tests/check_sandbox_smoke_matrix.sh",
     "godot --headless --path . --script tests/helpers/manual_battle_full_run.gd",
-    "godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd",
     "DEMO_PROFILE=legacy godot --headless --path . --script tests/helpers/demo_replay_full_run.gd"
   ]
 }

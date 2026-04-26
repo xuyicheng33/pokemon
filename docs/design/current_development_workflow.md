@@ -64,11 +64,10 @@
 headless 复查入口固定为：
 
 - `godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
-- `godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd`
 - `MATCHUP_ID=kashimo_vs_sample P1_MODE=manual P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 - `P1_MODE=policy P2_MODE=policy godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 
-`manual_battle_full_run.gd` 当前统一输出稳定的 `battle_summary` JSON，固定字段至少包含 `matchup_id / battle_seed / p1_control_mode / p2_control_mode / winner_side_id / reason / result_type / turn_index / event_log_cursor / command_steps`。`manual_battle_submit_full_run.gd` 继续复用同一份摘要契约，作为 submit 链路的显式命令入口；当前两者都通过 `BattleSandboxController.submit_action()` 推进。
+`manual_battle_full_run.gd` 是 BattleSandbox 唯一 headless 整局入口，统一输出稳定的 `battle_summary` JSON，固定字段至少包含 `matchup_id / battle_seed / p1_control_mode / p2_control_mode / winner_side_id / reason / result_type / turn_index / event_log_cursor / command_steps`，整局通过 `BattleSandboxController.submit_action()` 推进。
 
 若要复查 demo replay，继续显式走 `demo=<profile>` CLI 路径；`BattleSandbox` 会进入只读回放浏览态，固定展示 `turn_timeline`，并只允许用“上一回合 / 下一回合”浏览 frame。
 

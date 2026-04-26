@@ -129,8 +129,6 @@ RUN_QUICK_ANCHOR_MANUAL_POLICY=false
 RUN_OTHER_VISIBLE_MANUAL_POLICY=false
 RUN_DEFAULT_POLICY_POLICY=false
 RUN_DEFAULT_MANUAL_MANUAL=false
-RUN_DEFAULT_SUBMIT_MANUAL_POLICY=false
-RUN_DEFAULT_SUBMIT_MANUAL_MANUAL=false
 RUN_DEFAULT_DEMO=false
 RUN_OTHER_DEMO=false
 
@@ -143,8 +141,6 @@ case "$SANDBOX_SMOKE_SCOPE" in
     RUN_OTHER_VISIBLE_MANUAL_POLICY=true
     RUN_DEFAULT_POLICY_POLICY=true
     RUN_DEFAULT_MANUAL_MANUAL=true
-    RUN_DEFAULT_SUBMIT_MANUAL_POLICY=true
-    RUN_DEFAULT_SUBMIT_MANUAL_MANUAL=true
     RUN_OTHER_DEMO=true
     ;;
   full)
@@ -152,8 +148,6 @@ case "$SANDBOX_SMOKE_SCOPE" in
     RUN_OTHER_VISIBLE_MANUAL_POLICY=true
     RUN_DEFAULT_POLICY_POLICY=true
     RUN_DEFAULT_MANUAL_MANUAL=true
-    RUN_DEFAULT_SUBMIT_MANUAL_POLICY=true
-    RUN_DEFAULT_SUBMIT_MANUAL_MANUAL=true
     RUN_DEFAULT_DEMO=true
     RUN_OTHER_DEMO=true
     ;;
@@ -411,26 +405,6 @@ if $RUN_DEFAULT_MANUAL_MANUAL; then
     "manual" \
     env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=manual \
     godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
-fi
-
-if $RUN_DEFAULT_SUBMIT_MANUAL_POLICY; then
-  run_case \
-    "case_label=${SANDBOX_SMOKE_SCOPE}:default_submit_manual_policy:${DEFAULT_MATCHUP_ID}" \
-    "$DEFAULT_MATCHUP_ID" \
-    "manual" \
-    "policy" \
-    env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=policy \
-    godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd
-fi
-
-if $RUN_DEFAULT_SUBMIT_MANUAL_MANUAL; then
-  run_case \
-    "case_label=${SANDBOX_SMOKE_SCOPE}:default_submit_manual_manual:${DEFAULT_MATCHUP_ID}" \
-    "$DEFAULT_MATCHUP_ID" \
-    "manual" \
-    "manual" \
-    env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=manual \
-    godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd
 fi
 
 DEFAULT_DEMO_PROFILE_ID=""
