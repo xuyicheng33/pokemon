@@ -121,10 +121,7 @@ func build_delivery_entries_result(characters: Array) -> Dictionary:
 			"surface_smoke_skill_id": String(entry.get("surface_smoke_skill_id", "")).strip_edges(),
 			"suite_path": String(entry.get("suite_path", "")).strip_edges(),
 			"required_suite_paths": required_suite_paths_result.get("data", []).duplicate(true),
-			"required_test_names": entry.get("required_test_names", []).duplicate(true),
 			"shared_capability_ids": entry.get("shared_capability_ids", []).duplicate(true),
-			"design_needles": entry.get("design_needles", []).duplicate(true),
-			"adjustment_needles": entry.get("adjustment_needles", []).duplicate(true),
 		})
 	return _ok_result(delivery_entries)
 

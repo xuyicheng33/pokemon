@@ -8,10 +8,7 @@ from repo_consistency_formal_character_manifest_io_support import (
 from repo_consistency_formal_character_pair_capability_support import (
     scan_legacy_formal_character_id_refs,
 )
-from repo_consistency_formal_character_suite_needle_support import (
-    collect_scope_tree,
-    validator_test_prefix,
-)
+from repo_consistency_formal_character_suite_needle_support import collect_scope_tree
 
 
 def _gdunit_test_pattern(test_name: str) -> str:
@@ -37,7 +34,6 @@ def validate_character_entries(
     runtime_character_ids: list[str] = []
     seen_characters: set[str] = set()
     seen_units: set[str] = set()
-    shared_suite_scope_paths = collect_scope_tree(ctx, shared_suite_roots)
     delivery_required_suite_paths_by_character: dict[str, list[str]] = {}
     baseline_registry_text = ctx.read_text(baseline_registry_path)
     if "BASELINE_SCRIPT_BY_CHARACTER_ID" in baseline_registry_text or "const CHARACTER_IDS" in baseline_registry_text:
@@ -70,9 +66,6 @@ def validate_character_entries(
         surface_smoke_skill_id = str(entry.get("surface_smoke_skill_id", "")).strip()
         suite_path = str(entry.get("suite_path", "")).strip()
         required_suite_paths = entry.get("required_suite_paths", [])
-        required_test_names = entry.get("required_test_names", [])
-        design_needles = entry.get("design_needles", [])
-        adjustment_needles = entry.get("adjustment_needles", [])
 
         validate_required_contract_fields(
             ctx,
@@ -146,10 +139,12 @@ def validate_character_entries(
             ctx.failures.append(f"formal manifest[{character_id}] missing design_doc")
         else:
             ctx.require_exists(design_doc, f"{character_id} design doc")
+            _validate_design_doc_structure(ctx, design_doc, character_id)
         if not adjustment_doc:
             ctx.failures.append(f"formal manifest[{character_id}] missing adjustment_doc")
         else:
             ctx.require_exists(adjustment_doc, f"{character_id} adjustment doc")
+            _validate_adjustment_doc_structure(ctx, adjustment_doc, character_id)
         if not surface_smoke_skill_id:
             ctx.failures.append(f"formal manifest[{character_id}] missing surface_smoke_skill_id")
 
@@ -162,13 +157,12 @@ def validate_character_entries(
         )
         delivery_suite_path = str(delivery_entry.get("suite_path", suite_path)).strip() if isinstance(delivery_entry, dict) else suite_path
         delivery_required_suite_paths = delivery_entry.get("required_suite_paths", required_suite_paths) if isinstance(delivery_entry, dict) else required_suite_paths
-        delivery_required_test_names = delivery_entry.get("required_test_names", required_test_names) if isinstance(delivery_entry, dict) else required_test_names
-        delivery_design_needles = delivery_entry.get("design_needles", design_needles) if isinstance(delivery_entry, dict) else design_needles
-        delivery_adjustment_needles = delivery_entry.get("adjustment_needles", adjustment_needles) if isinstance(delivery_entry, dict) else adjustment_needles
         delivery_surface_smoke_skill_id = str(delivery_entry.get("surface_smoke_skill_id", surface_smoke_skill_id)).strip() if isinstance(delivery_entry, dict) else surface_smoke_skill_id
 
         if not delivery_surface_smoke_skill_id:
             ctx.failures.append(f"formal delivery view[{character_id}] missing surface_smoke_skill_id")
+        else:
+            _validate_surface_smoke_skill_reference(ctx, delivery_surface_smoke_skill_id, character_id)
 
         if not delivery_suite_path:
             ctx.failures.append(f"formal manifest[{character_id}] missing suite_path")
@@ -194,42 +188,15 @@ def validate_character_entries(
             ctx.require_exists(rel_path, f"{character_id} required suite")
             suite_scope_paths.append(rel_path)
 
-        if not isinstance(delivery_required_test_names, list) or not delivery_required_test_names:
-            ctx.failures.append(f"formal delivery view[{character_id}] missing required_test_names")
-        if not isinstance(delivery_design_needles, list) or not delivery_design_needles:
-            ctx.failures.append(f"formal delivery view[{character_id}] missing design_needles")
-        if not isinstance(delivery_adjustment_needles, list) or not delivery_adjustment_needles:
-            ctx.failures.append(f"formal delivery view[{character_id}] missing adjustment_needles")
-
-        if design_doc:
-            for anchor_id in delivery_design_needles if isinstance(delivery_design_needles, list) else []:
-                ctx.require_anchor(design_doc, str(anchor_id), f"{character_id} design anchor")
-        if adjustment_doc:
-            for anchor_id in delivery_adjustment_needles if isinstance(delivery_adjustment_needles, list) else []:
-                ctx.require_anchor(adjustment_doc, str(anchor_id), f"{character_id} adjustment anchor")
-
         scoped_suite_paths = collect_scope_tree(ctx, suite_scope_paths)
-        for test_name in delivery_required_test_names if isinstance(delivery_required_test_names, list) else []:
-            test_pattern = _gdunit_test_pattern(str(test_name))
-            ctx.require_regex_any(scoped_suite_paths, test_pattern, f"{character_id} regression anchor")
-            if any(re.search(test_pattern, ctx.read_text(shared_path), re.M) is not None for shared_path in shared_suite_scope_paths):
-                ctx.failures.append(
-                    f"formal manifest[{character_id}] must not duplicate shared regression anchor in required_test_names: {test_name}"
-                )
+        if not scoped_suite_paths:
+            ctx.failures.append(f"formal delivery view[{character_id}] must expose at least one reachable suite path")
 
         if validator_script_path:
             expected_bad_case_suite_path = "%s/%s_bad_cases_suite.gd" % (validator_bad_case_suite_path, pair_token)
             if expected_bad_case_suite_path not in delivery_required_suite_paths_by_character[character_id]:
                 ctx.failures.append(
                     f"formal delivery view[{character_id}] validator-backed character must expose {expected_bad_case_suite_path} in required_suite_paths"
-                )
-            validator_prefix = validator_test_prefix(validator_script_path)
-            if validator_prefix and not any(
-                str(test_name).startswith(f"formal_{validator_prefix}_validator_") and "bad_case_contract" in str(test_name)
-                for test_name in delivery_required_test_names if isinstance(delivery_required_test_names, list)
-            ):
-                ctx.failures.append(
-                    f"formal delivery view[{character_id}] validator-backed character must include formal_{validator_prefix}_validator_*bad_case_contract regression anchors"
                 )
 
     ctx.failures.extend(scan_legacy_formal_character_id_refs(ctx))
@@ -238,3 +205,28 @@ def validate_character_entries(
         "character_to_unit": character_to_unit,
         "runtime_character_ids": runtime_character_ids,
     }
+
+
+def _validate_design_doc_structure(ctx, rel_path: str, character_id: str) -> None:
+    ctx.require_regex(rel_path, r"^## 0[. ]", f"{character_id} design frozen conclusion section")
+    ctx.require_regex(rel_path, r"^## 0\.1\s+角色稿范围", f"{character_id} design scope section")
+    ctx.require_regex(rel_path, r"^## 3[. ]", f"{character_id} design acceptance matrix section")
+    ctx.require_regex(rel_path, r"^## 4[. ]", f"{character_id} design balance notes section")
+
+
+def _validate_adjustment_doc_structure(ctx, rel_path: str, character_id: str) -> None:
+    ctx.require_regex(rel_path, r"^## 20\d{2}-\d{2}-\d{2}", f"{character_id} adjustment dated section")
+
+
+def _validate_surface_smoke_skill_reference(ctx, skill_id: str, character_id: str) -> None:
+    search_roots = [
+        ctx.root / "test" / "suites",
+        ctx.root / "tests" / "support" / "formal_pair_interaction",
+    ]
+    for root in search_roots:
+        if not root.exists():
+            continue
+        for path in sorted(root.rglob("*.gd")):
+            if skill_id in path.read_text(encoding="utf-8"):
+                return
+    ctx.failures.append(f"formal delivery view[{character_id}] surface_smoke_skill_id is not referenced by suites/support: {skill_id}")

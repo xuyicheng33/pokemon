@@ -41,8 +41,8 @@ def validate_safe_id(value: str, label: str) -> None:
 
 
 def next_source_index() -> int:
-    """Scan existing 0N_*.json and return max+1."""
-    pattern = re.compile(r"^(\d+)_.+\.json$")
+    """Scan existing formal source descriptors and return max+1."""
+    pattern = re.compile(r"^(\d+)_.+(?:\.runtime|\.delivery)?\.json$")
     max_index = 0
     for search_dir in [SOURCE_DIR, DRAFTS_DIR]:
         if not search_dir.exists():
@@ -55,26 +55,26 @@ def next_source_index() -> int:
 
 
 def _iter_source_descriptors():
-    """Yield (path, parsed_data) for every source descriptor JSON."""
+    """Yield (path, parsed runtime descriptor) for every formal runtime descriptor JSON."""
     for search_dir in [SOURCE_DIR, DRAFTS_DIR]:
         if not search_dir.exists():
             continue
         for f in search_dir.iterdir():
-            if not f.name.endswith(".json") or f.name == "00_shared_registry.json":
+            if not f.name.endswith(".json"):
                 continue
             try:
                 data = json.loads(f.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError) as exc:
                 print(f"ERROR: failed to read source descriptor {f.relative_to(REPO_ROOT)}: {exc}", file=sys.stderr)
                 sys.exit(1)
-            if data.get("descriptor_kind") == "formal_character_source":
+            if data.get("descriptor_kind") == "formal_character_runtime":
                 yield f, data
 
 
 def find_existing_source_descriptor(char_id: str) -> Path | None:
     """Return existing source descriptor path for char_id, or None."""
     for f, data in _iter_source_descriptors():
-        if data.get("character", {}).get("character_id") == char_id:
+        if data.get("character_id") == char_id:
             return f
     return None
 
@@ -82,22 +82,20 @@ def find_existing_source_descriptor(char_id: str) -> Path | None:
 def find_pair_token_owner(pair_token: str) -> str | None:
     """Return character_id that already owns this pair_token, or None."""
     for _f, data in _iter_source_descriptors():
-        char = data.get("character", {})
-        if char.get("pair_token") == pair_token:
-            return str(char.get("character_id", ""))
+        if data.get("pair_token") == pair_token:
+            return str(data.get("character_id", ""))
     return None
 
 
 def collect_existing_characters() -> list[dict]:
     """Return list of {character_id, pair_token} for all existing formal characters, sorted by source index."""
     entries: list[tuple[int, dict]] = []
-    pattern = re.compile(r"^(\d+)_.+\.json$")
+    pattern = re.compile(r"^(\d+)_.+(?:\.runtime)?\.json$")
     for f, data in _iter_source_descriptors():
         m = pattern.match(f.name)
         idx = int(m.group(1)) if m else 999
-        char = data.get("character", {})
-        character_id = str(char.get("character_id", "")).strip()
-        pair_token = str(char.get("pair_token", "")).strip()
+        character_id = str(data.get("character_id", "")).strip()
+        pair_token = str(data.get("pair_token", "")).strip()
         if character_id and pair_token:
             entries.append((idx, {"character_id": character_id, "pair_token": pair_token}))
     entries.sort(key=lambda x: x[0])
@@ -108,70 +106,62 @@ def collect_existing_characters() -> list[dict]:
 # Template generators
 # ---------------------------------------------------------------------------
 
-def generate_source_descriptor(
+def generate_source_descriptors(
     char_id: str,
     display_name: str,
     pair_token: str,
     unit_definition_id: str,
     index: int,
-) -> tuple[str, str]:
-    """Return (filename, json_content) for the source descriptor.
+) -> tuple[str, str, str, str]:
+    """Return filenames and JSON content for runtime/delivery descriptors.
 
     Generated as a draft — delivery-required fields are left with
     placeholder markers so the user fills them before moving the file
     into config/formal_character_sources/.
     """
-    filename = f"{index:02d}_{char_id}.json"
-    data = {
-        "descriptor_kind": "formal_character_source",
-        "character": {
-            "character_id": char_id,
-            "display_name": display_name,
-            "unit_definition_id": unit_definition_id,
-            "formal_setup_matchup_id": f"{pair_token}_vs_sample",
-            "pair_token": pair_token,
-            "baseline_script_path": f"src/shared/formal_character_baselines/{char_id}/{char_id}_formal_character_baseline.gd",
-            "pair_initiator_bench_unit_ids": [
-                "sample_mossaur",
-                "sample_pyron"
-            ],
-            "pair_responder_bench_unit_ids": [
-                "sample_tidekit",
-                "sample_mossaur"
-            ],
-            "owned_pair_interaction_specs": _build_interaction_spec_placeholders(pair_token),
-            "content_roots": [
-                f"content/units/{pair_token}",
-                f"content/skills/{pair_token}",
-                f"content/effects/{pair_token}",
-                f"content/passive_skills/{pair_token}",
-                f"content/fields/{pair_token}",
-            ],
-            "content_validator_script_path": f"src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd",
-            "design_doc": f"docs/design/{char_id}_design.md",
-            "adjustment_doc": f"docs/design/{char_id}_adjustments.md",
-            "design_needles": ["FILL_IN_design_anchor"],
-            "adjustment_needles": ["FILL_IN_adjustment_anchor"],
-            "shared_capability_ids": [],
-            "suite_path": "test/suites/formal_character_snapshot_matrix_suite.gd",
-            "required_suite_paths": [
-                "test/suites/formal_character_snapshot_matrix_suite.gd",
-                "test/suites/formal_character_manager_public_matrix_suite.gd",
-                "test/suites/formal_character_manager_blackbox_matrix_suite.gd",
-            ],
-            "required_test_names": ["FILL_IN_test_name"],
-            "surface_smoke_skill_id": "FILL_IN_skill_id",
-        },
+    basename = f"{index:02d}_{char_id}"
+    runtime_filename = f"{basename}.runtime.json"
+    delivery_filename = f"{basename}.delivery.json"
+    runtime_data = {
+        "descriptor_kind": "formal_character_runtime",
+        "character_id": char_id,
+        "display_name": display_name,
+        "unit_definition_id": unit_definition_id,
+        "formal_setup_matchup_id": f"{pair_token}_vs_sample",
+        "pair_token": pair_token,
+        "baseline_script_path": f"src/shared/formal_character_baselines/{char_id}/{char_id}_formal_character_baseline.gd",
+        "pair_initiator_bench_unit_ids": ["sample_mossaur", "sample_pyron"],
+        "pair_responder_bench_unit_ids": ["sample_tidekit", "sample_mossaur"],
+        "owned_pair_interaction_specs": _build_interaction_spec_placeholders(pair_token),
+        "content_roots": [
+            f"content/units/{pair_token}",
+            f"content/skills/{pair_token}",
+            f"content/effects/{pair_token}",
+            f"content/passive_skills/{pair_token}",
+            f"content/fields/{pair_token}",
+        ],
+        "content_validator_script_path": f"src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd",
+        "shared_capability_ids": [],
+        "surface_smoke_skill_id": "FILL_IN_skill_id",
     }
-    content = json.dumps(data, indent=2, ensure_ascii=False) + "\n"
-    return filename, content
+    delivery_data = {
+        "descriptor_kind": "formal_character_delivery",
+        "character_id": char_id,
+        "design_doc": f"docs/design/{char_id}_design.md",
+        "adjustment_doc": f"docs/design/{char_id}_adjustments.md",
+        "suite_path": "test/suites/formal_character_snapshot_matrix_suite.gd",
+        "required_suite_paths": ["test/suites/formal_character_snapshot_matrix_suite.gd"],
+    }
+    runtime_content = json.dumps(runtime_data, indent=2, ensure_ascii=False) + "\n"
+    delivery_content = json.dumps(delivery_data, indent=2, ensure_ascii=False) + "\n"
+    return runtime_filename, runtime_content, delivery_filename, delivery_content
 
 
 def _scan_max_interaction_seed() -> int:
     """Scan all source descriptors and return the largest battle_seed found in owned_pair_interaction_specs."""
     max_seed = 0
     for _f, data in _iter_source_descriptors():
-        for spec in data.get("character", {}).get("owned_pair_interaction_specs", []):
+        for spec in data.get("owned_pair_interaction_specs", []):
             for key in ("owner_as_initiator_battle_seed", "owner_as_responder_battle_seed"):
                 val = spec.get(key, 0)
                 if isinstance(val, int) and val > max_seed:
@@ -400,41 +390,57 @@ def main() -> None:
     print(f"  source index   = {index:02d}")
     print()
 
-    # 1. Source descriptor (staged to scripts/drafts/, NOT live config)
-    print("[1/8] Source descriptor (draft)")
-    existing_sd = find_existing_source_descriptor(char_id)
-    if existing_sd:
-        sd_filename = existing_sd.name
-        sd_location = str(existing_sd.relative_to(REPO_ROOT))
-        # Verify current args match the existing descriptor
-        existing_data = json.loads(existing_sd.read_text(encoding="utf-8"))
-        existing_char = existing_data.get("character", {})
-        existing_token = str(existing_char.get("pair_token", "")).strip()
-        existing_unit_def = str(existing_char.get("unit_definition_id", "")).strip()
-        mismatches: list[str] = []
-        if existing_token and existing_token != pair_token:
-            mismatches.append(
-                f"pair_token: descriptor has '{existing_token}', args say '{pair_token}'"
-            )
-        if existing_unit_def and existing_unit_def != unit_def_id:
-            mismatches.append(
-                f"unit_definition_id: descriptor has '{existing_unit_def}', args say '{unit_def_id}'"
-            )
-        if mismatches:
+    # 1. Source descriptors (staged to scripts/drafts/, NOT live config)
+    print("[1/8] Source descriptors (draft)")
+    existing_runtime = find_existing_source_descriptor(char_id)
+    if existing_runtime:
+        runtime_filename = existing_runtime.name
+        delivery_filename = runtime_filename.removesuffix(".runtime.json") + ".delivery.json"
+        runtime_location = str(existing_runtime.relative_to(REPO_ROOT))
+        delivery_path = existing_runtime.with_name(delivery_filename)
+        delivery_location = str(delivery_path.relative_to(REPO_ROOT))
+        if not delivery_path.exists():
             print(
-                f"ERROR: existing descriptor at {sd_location} conflicts with current args:\n  "
-                + "\n  ".join(mismatches)
-                + "\nDelete or manually update the existing descriptor first.",
+                f"ERROR: existing runtime descriptor at {runtime_location} is missing paired delivery descriptor: {delivery_location}",
                 file=sys.stderr,
             )
             sys.exit(1)
-        print(f"  SKIP (exists): {sd_location}")
+        # Verify current args match the existing descriptor.
+        existing_data = json.loads(existing_runtime.read_text(encoding="utf-8"))
+        existing_token = str(existing_data.get("pair_token", "")).strip()
+        existing_unit_def = str(existing_data.get("unit_definition_id", "")).strip()
+        existing_display_name = str(existing_data.get("display_name", "")).strip()
+        mismatches: list[str] = []
+        if existing_token and existing_token != pair_token:
+            mismatches.append(
+                f"pair_token: runtime descriptor has '{existing_token}', args say '{pair_token}'"
+            )
+        if existing_unit_def and existing_unit_def != unit_def_id:
+            mismatches.append(
+                f"unit_definition_id: runtime descriptor has '{existing_unit_def}', args say '{unit_def_id}'"
+            )
+        if existing_display_name and existing_display_name != display_name:
+            mismatches.append(
+                f"display_name: runtime descriptor has '{existing_display_name}', args say '{display_name}'"
+            )
+        if mismatches:
+            print(
+                f"ERROR: existing runtime descriptor at {runtime_location} conflicts with current args:\n  "
+                + "\n  ".join(mismatches)
+                + "\nDelete or manually update the existing descriptors first.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        print(f"  SKIP (exists): {runtime_location}")
+        print(f"  SKIP (exists): {delivery_location}")
     else:
-        sd_filename, sd_content = generate_source_descriptor(
+        runtime_filename, runtime_content, delivery_filename, delivery_content = generate_source_descriptors(
             char_id, display_name, pair_token, unit_def_id, index,
         )
-        write_file(DRAFTS_DIR / sd_filename, sd_content)
-        sd_location = f"scripts/drafts/{sd_filename}"
+        write_file(DRAFTS_DIR / runtime_filename, runtime_content)
+        write_file(DRAFTS_DIR / delivery_filename, delivery_content)
+        runtime_location = f"scripts/drafts/{runtime_filename}"
+        delivery_location = f"scripts/drafts/{delivery_filename}"
 
     # 2. Content directories
     print("[2/8] Content directories")
@@ -492,7 +498,7 @@ def main() -> None:
     print(f"""
 === Scaffold complete ===
 
-!! Source descriptor is in scripts/drafts/, NOT in config/.
+!! Source descriptors are in scripts/drafts/, NOT in config/.
 !! DO NOT run sync_formal_registry.sh until you complete steps 1-7 below.
 
 Next steps:
@@ -510,25 +516,26 @@ Next steps:
   3. Fill in validator assertions:
      - scripts/drafts/src/battle_core/content/formal_validators/{pair_token}/content_snapshot_formal_{pair_token}_validator.gd
 
-  4. Complete the source descriptor (currently at {sd_location}):
+  4. Complete the source descriptors:
+     - Runtime descriptor: {runtime_location}
+     - Delivery descriptor: {delivery_location}
      - Replace FILL_IN_skill_id with actual surface_smoke_skill_id
-     - Replace FILL_IN_test_name entries with actual required_test_names
-     - Replace FILL_IN_design_anchor / FILL_IN_adjustment_anchor with actual doc anchors
      - Add shared_capability_ids if the character uses shared capabilities
-     - Keep the shared matrix suite anchors unless this character needs additional private runtime suites
+     - Keep required_suite_paths to character-private suites; shared capability and validator suites are derived
 
-  5. Review shared matchup needs:
+  5. Review shared matchup / capability needs:
      - Default "{pair_token}_vs_sample" is now auto-derived from pair_initiator_bench_unit_ids
-     - Only update config/formal_character_sources/00_shared_registry.json if you need:
+     - Only update config/formal_character_sources/00_shared_matchups.json if you need:
        a. custom formal_setup_matchup_id
        b. custom sample team composition
        c. extra shared/test_only matchup
+     - Only update config/formal_character_sources/00_shared_capabilities.json if you need a new shared capability
 
   6. Complete pair interaction layer:
      - Fill in scenario_key values in owned_pair_interaction_specs (replace FILL_IN_* placeholders)
      - Fill in battle_seed values (must be positive integers, unique per directed case)
      - Implement runner methods in {interaction_location if interaction_location else "the generated pair case draft"}
-     - Move the finished runner to tests/support/formal_pair_interaction/{pair_token}_cases.gd only when the source descriptor moves into live config
+     - Move the finished runner to tests/support/formal_pair_interaction/{pair_token}_cases.gd only when both source descriptors move into live config
      - scenario_registry.gd auto-discovers live *_cases.gd files; draft files are intentionally not discovered
 
   7. Move completed draft files into live paths:
@@ -539,8 +546,9 @@ Next steps:
   8. Run draft readiness check:
      bash scripts/check_formal_character_draft_ready.sh
 
-  9. Move source descriptor into live config:
-     mv {sd_location} config/formal_character_sources/{sd_filename}
+  9. Move source descriptors into live config:
+     mv {runtime_location} config/formal_character_sources/{runtime_filename}
+     mv {delivery_location} config/formal_character_sources/{delivery_filename}
 
   11. Sync formal registry:
      bash tests/sync_formal_registry.sh

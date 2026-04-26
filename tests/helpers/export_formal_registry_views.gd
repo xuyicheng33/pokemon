@@ -1,8 +1,10 @@
 extends SceneTree
 
 const DEFAULT_SOURCE_DIR := "res://config/formal_character_sources"
-const CHARACTER_DESCRIPTOR_KIND := "formal_character_source"
-const SHARED_DESCRIPTOR_KIND := "formal_registry_shared"
+const CHARACTER_RUNTIME_DESCRIPTOR_KIND := "formal_character_runtime"
+const CHARACTER_DELIVERY_DESCRIPTOR_KIND := "formal_character_delivery"
+const SHARED_MATCHUPS_DESCRIPTOR_KIND := "formal_registry_shared_matchups"
+const SHARED_CAPABILITIES_DESCRIPTOR_KIND := "formal_registry_shared_capabilities"
 const RESOURCE_FILE_EXTENSIONS := {
 	"res": true,
 	"tres": true,
@@ -42,14 +44,18 @@ func _build_views_result(source_dir: String) -> Dictionary:
 	if not bool(descriptors_result.get("ok", false)):
 		return descriptors_result
 	var descriptors: Dictionary = descriptors_result.get("data", {})
-	var characters_result := _build_character_entries_result(descriptors.get("character_entries", []))
+	var characters_result := _build_character_entries_result(
+		descriptors.get("runtime_entries", []),
+		descriptors.get("delivery_entries_by_character", {})
+	)
 	if not bool(characters_result.get("ok", false)):
 		return characters_result
-	var shared_descriptor: Dictionary = descriptors.get("shared_descriptor", {})
-	var matchups_result := _build_matchups_result(shared_descriptor.get("matchups", null))
+	var shared_matchups_descriptor: Dictionary = descriptors.get("shared_matchups_descriptor", {})
+	var matchups_result := _build_matchups_result(shared_matchups_descriptor.get("matchups", null))
 	if not bool(matchups_result.get("ok", false)):
 		return matchups_result
-	var capabilities_result := _build_capability_entries_result(shared_descriptor.get("capabilities", null))
+	var shared_capabilities_descriptor: Dictionary = descriptors.get("shared_capabilities_descriptor", {})
+	var capabilities_result := _build_capability_entries_result(shared_capabilities_descriptor.get("capabilities", null))
 	if not bool(capabilities_result.get("ok", false)):
 		return capabilities_result
 	return _ok_result({
@@ -77,8 +83,10 @@ func _load_descriptors_result(source_dir: String) -> Dictionary:
 	descriptor_paths.sort()
 	if descriptor_paths.is_empty():
 		return _error_result("no source descriptors found under: %s" % source_dir)
-	var shared_descriptor: Dictionary = {}
-	var character_entries: Array = []
+	var shared_matchups_descriptor: Dictionary = {}
+	var shared_capabilities_descriptor: Dictionary = {}
+	var runtime_entries: Array = []
+	var delivery_entries_by_character: Dictionary = {}
 	for descriptor_path in descriptor_paths:
 		var descriptor_result := _load_json_descriptor_result(descriptor_path)
 		if not bool(descriptor_result.get("ok", false)):
@@ -86,22 +94,37 @@ func _load_descriptors_result(source_dir: String) -> Dictionary:
 		var descriptor: Dictionary = descriptor_result.get("data", {})
 		var descriptor_kind := String(descriptor.get("descriptor_kind", "")).strip_edges()
 		match descriptor_kind:
-			SHARED_DESCRIPTOR_KIND:
-				if not shared_descriptor.is_empty():
-					return _error_result("duplicate shared descriptor: %s" % descriptor_path)
-				shared_descriptor = descriptor.duplicate(true)
-			CHARACTER_DESCRIPTOR_KIND:
-				var character = descriptor.get("character", null)
-				if not (character is Dictionary):
-					return _error_result("character descriptor missing character object: %s" % descriptor_path)
-				character_entries.append(character.duplicate(true))
+			SHARED_MATCHUPS_DESCRIPTOR_KIND:
+				if not shared_matchups_descriptor.is_empty():
+					return _error_result("duplicate shared matchups descriptor: %s" % descriptor_path)
+				shared_matchups_descriptor = descriptor.duplicate(true)
+			SHARED_CAPABILITIES_DESCRIPTOR_KIND:
+				if not shared_capabilities_descriptor.is_empty():
+					return _error_result("duplicate shared capabilities descriptor: %s" % descriptor_path)
+				shared_capabilities_descriptor = descriptor.duplicate(true)
+			CHARACTER_RUNTIME_DESCRIPTOR_KIND:
+				var runtime_character_id := String(descriptor.get("character_id", "")).strip_edges()
+				if runtime_character_id.is_empty():
+					return _error_result("runtime descriptor missing character_id: %s" % descriptor_path)
+				runtime_entries.append(descriptor.duplicate(true))
+			CHARACTER_DELIVERY_DESCRIPTOR_KIND:
+				var delivery_character_id := String(descriptor.get("character_id", "")).strip_edges()
+				if delivery_character_id.is_empty():
+					return _error_result("delivery descriptor missing character_id: %s" % descriptor_path)
+				if delivery_entries_by_character.has(delivery_character_id):
+					return _error_result("duplicate delivery descriptor for %s: %s" % [delivery_character_id, descriptor_path])
+				delivery_entries_by_character[delivery_character_id] = descriptor.duplicate(true)
 			_:
 				return _error_result("unknown descriptor_kind in %s: %s" % [descriptor_path, descriptor_kind])
-	if shared_descriptor.is_empty():
-		return _error_result("missing shared descriptor under: %s" % source_dir)
+	if shared_matchups_descriptor.is_empty():
+		return _error_result("missing shared matchups descriptor under: %s" % source_dir)
+	if shared_capabilities_descriptor.is_empty():
+		return _error_result("missing shared capabilities descriptor under: %s" % source_dir)
 	return _ok_result({
-		"shared_descriptor": shared_descriptor,
-		"character_entries": character_entries,
+		"shared_matchups_descriptor": shared_matchups_descriptor,
+		"shared_capabilities_descriptor": shared_capabilities_descriptor,
+		"runtime_entries": runtime_entries,
+		"delivery_entries_by_character": delivery_entries_by_character,
 	})
 
 func _load_json_descriptor_result(descriptor_path: String) -> Dictionary:
@@ -113,36 +136,49 @@ func _load_json_descriptor_result(descriptor_path: String) -> Dictionary:
 		return _error_result("descriptor must be top-level dictionary: %s" % descriptor_path)
 	return _ok_result(parsed)
 
-func _build_character_entries_result(raw_character_entries: Array) -> Dictionary:
-	if raw_character_entries.is_empty():
-		return _error_result("shared registry must define at least one character descriptor")
+func _build_character_entries_result(raw_runtime_entries: Array, delivery_entries_by_character: Dictionary) -> Dictionary:
+	if raw_runtime_entries.is_empty():
+		return _error_result("formal source must define at least one runtime descriptor")
 	var character_entries: Array = []
 	var seen_character_ids: Dictionary = {}
-	for raw_entry in raw_character_entries:
+	for raw_entry in raw_runtime_entries:
 		if not (raw_entry is Dictionary):
-			return _error_result("character descriptor entry must be dictionary")
+			return _error_result("runtime descriptor entry must be dictionary")
 		var entry: Dictionary = raw_entry.duplicate(true)
 		if entry.has("required_content_paths"):
-			return _error_result("character source must not declare required_content_paths directly: %s" % String(entry.get("character_id", "")))
+			return _error_result("runtime descriptor must not declare required_content_paths directly: %s" % String(entry.get("character_id", "")))
+		entry.erase("descriptor_kind")
 		var character_id := String(entry.get("character_id", "")).strip_edges()
 		if character_id.is_empty():
-			return _error_result("character source missing character_id")
+			return _error_result("runtime descriptor missing character_id")
 		if seen_character_ids.has(character_id):
-			return _error_result("duplicate character source: %s" % character_id)
+			return _error_result("duplicate runtime descriptor: %s" % character_id)
 		seen_character_ids[character_id] = true
+		var delivery_entry = delivery_entries_by_character.get(character_id, null)
+		if not (delivery_entry is Dictionary):
+			return _error_result("missing delivery descriptor for runtime character: %s" % character_id)
+		var merged_entry: Dictionary = entry.duplicate(true)
+		for raw_key in delivery_entry.keys():
+			var key := String(raw_key)
+			if key == "descriptor_kind" or key == "character_id":
+				continue
+			merged_entry[key] = delivery_entry.get(raw_key)
 		var content_roots_result := _expand_content_roots_result(entry.get("content_roots", null), character_id)
 		if not bool(content_roots_result.get("ok", false)):
 			return content_roots_result
-		entry.erase("content_roots")
-		entry["required_content_paths"] = content_roots_result.get("data", []).duplicate(true)
+		merged_entry.erase("content_roots")
+		merged_entry["required_content_paths"] = content_roots_result.get("data", []).duplicate(true)
 		var owned_pair_specs_result := _normalize_owned_pair_interaction_specs_result(entry.get("owned_pair_interaction_specs", null), character_id)
 		if not bool(owned_pair_specs_result.get("ok", false)):
 			return owned_pair_specs_result
-		entry["owned_pair_interaction_specs"] = owned_pair_specs_result.get("data", []).duplicate(true)
-		var validator_script_path := String(entry.get("content_validator_script_path", "")).strip_edges()
+		merged_entry["owned_pair_interaction_specs"] = owned_pair_specs_result.get("data", []).duplicate(true)
+		var validator_script_path := String(merged_entry.get("content_validator_script_path", "")).strip_edges()
 		if validator_script_path.is_empty():
-			return _error_result("formal character source missing content_validator_script_path: %s" % character_id)
-		character_entries.append(entry)
+			return _error_result("runtime descriptor missing content_validator_script_path: %s" % character_id)
+		character_entries.append(merged_entry)
+	for character_id in delivery_entries_by_character.keys():
+		if not seen_character_ids.has(character_id):
+			return _error_result("delivery descriptor has no matching runtime descriptor: %s" % character_id)
 	return _ok_result(character_entries)
 
 func _normalize_owned_pair_interaction_specs_result(raw_specs, character_id: String) -> Dictionary:

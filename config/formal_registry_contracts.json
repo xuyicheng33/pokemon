@@ -28,10 +28,7 @@
     ],
     "required_array_fields": [
       "required_suite_paths",
-      "required_test_names",
-      "shared_capability_ids",
-      "design_needles",
-      "adjustment_needles"
+      "shared_capability_ids"
     ],
     "required_positive_int_fields": [],
     "optional_string_fields": []
