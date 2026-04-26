@@ -13,6 +13,30 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
+
+- 状态：已完成
+- 目标：按 `docs/records/project_review_2026-04-26_module_round_1.md` 的四阶段计划，先 fail-fast 与 sandbox 边界，再测试基建与 helper 模块化，避免遗留无声跳过与跨层耦合
+- 范围：
+  1. 阶段 1：`payload_damage_runtime_service` 公式分支 owner 丢失改为 `INVALID_STATE_CORRUPTION` fail-fast；`payload_rule_mod_handler._resolve_rule_mod_owner` 区分"target invalid 合理跳过"与"unit/chain_context 缺失 corruption"两种路径，后者 fail-fast；补 `payload_execution_contract_suite` 三条负路径回归
+  2. 阶段 2：`BattleSandboxController.get_state_snapshot` 移除 live `BattleSetup` 引用泄露；`SandboxSessionCoordinator.bootstrap_scene` 在 close 失败时显式 fail-fast；`_exit_tree` 在 close_runtime 失败时 printerr；`SandboxViewCharacterCardsRenderer.render` / `_character_options` 改为 pure 渲染，错误以 render result 形式上抛，由 controller 写 state
+  3. 阶段 3：`tests/check_suite_reachability.sh` 增 `func test_*` 正则检查，禁止哑 suite 默默通过；评估 `manual_flow_suite` 与 `sandbox_smoke_matrix`，结论是 GUI 真点击与 headless full run 双轨覆盖不同维度，保留现状
+  4. 阶段 4：`manual_battle_scene_support` 收回 context / drive 转发壳到单文件；删除 `manual_battle_submit_full_run.gd`，`manual_battle_full_run.gd` 成为唯一 headless 整局入口；`SampleBattleFactoryFormalAccess._normalize_path` 与 `SampleBattleFactoryBaseSnapshotPathsService.normalize_res_path` 统一调用 `ResourcePathHelper.normalize`
+- 验收标准：
+  - quick / extended sandbox smoke 与 gate 均通过
+  - `payload_execution_contract_suite` 新增 fail-fast 用例 PASSED
+  - `manual_flow_suite` / `demo_replay_suite` PASSED，验证 helper 合并未破坏 GUI 路径
+- 验证结果：
+  - `TEST_PATH=res://test/suites/payload_execution_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manual_battle_scene/manual_flow_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/manual_battle_scene/demo_replay_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_boot_smoke.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `bash tests/check_sandbox_smoke_matrix.sh`
+  - `bash tests/run_with_gate.sh`
+  - `bash tests/run_extended_gate.sh`
+- 提交：`0b80aa7 fix: fail-fast on missing owner in damage formula and rule_mod payloads`、`0103362 refactor: tighten sandbox boundary on snapshot, close, and view rendering`、`a30caec test: forbid empty gdunit suites with no func test_*`、`853adcb refactor: collapse helper layers and unify resource path normalization`
+
 ## 最近完成：codex follow-up refactor v5 收口（2026-04-26）
 
 - 状态：已完成

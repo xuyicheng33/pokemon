@@ -53,6 +53,15 @@
 - 测试分层固定为 `quick / extended / full`：quick 是默认开发门禁；extended 保留长尾边界、角色细节组合与历史回归；full 在 extended 基础上固定启用 full sandbox smoke。
 - 新正式角色脚手架不得生成 `{pair_token}_suite.gd` 空 wrapper；`suite_path` 和 `required_suite_paths` 必须指向包含 `func test_*` 的真实 suite。
 - draft readiness 对列入 `content_roots` 的 `units / skills / effects / passive_skills` 要求至少存在一个 `.tres`；只有 `fields` 可为空。
+- `tests/check_suite_reachability.sh` 必须扫描所有 `*suite.gd` 文件，要求至少存在一个 `^func\s+test_\w+\s*\(` 入口，禁止哑 suite 通过 manifest / profile 校验后混过 gate（2026-04-26 起）。
+
+### Sandbox 边界与 fail-fast（2026-04-26）
+
+- `BattleSandboxController.get_state_snapshot()` 不再暴露 live `BattleSetup` 引用：sandbox 对外快照只承载 dict / 标量字段，外部调用方不得绕过它直接读取运行态对象。
+- `SandboxSessionCoordinator.bootstrap_scene` 在 `close_runtime` 失败时直接 fail-fast，并把上一次会话的关闭错误显式抛出来；`BattleSandboxController._exit_tree` 同样会把 close 失败用 `printerr` 暴露，避免生命周期吞错。
+- `SandboxViewCharacterCardsRenderer` 与 `SandboxViewPresenter` 不再写 `state.error_message`：渲染层只返回 `{"manifest_error_message": ...}` 形式的 render result，由 `BattleSandboxController._render_ui` 决定是否写入 session 状态。后续视图层组件保持同样的"返回 render result"边界。
+- `payload_damage_runtime_service` 在公式分支 owner 丢失时报 `INVALID_STATE_CORRUPTION`，不再静默跳过；`payload_rule_mod_handler._resolve_rule_mod_owner` 区分两种语义：`is_effect_target_valid` 失败属于"target 已离场"的合理跳过；`battle_state.get_unit(owner_id)` 找不到 / "target" scope 缺 `chain_context` 属于内部 corruption，必须 fail-fast。
+- `tests/helpers/manual_battle_full_run.gd` 是 BattleSandbox 唯一 headless 整局入口，所有 smoke / 文档 / suite_profiles 不再引用 `manual_battle_submit_full_run.gd`；`ManualBattleSceneSupport` 收回 context / drive helper 到单文件，外部仍以 `ManualBattleSceneSupport` 作为正式入口。`SampleBattleFactoryFormalAccess._normalize_path` 与 `SampleBattleFactoryBaseSnapshotPathsService.normalize_res_path` 统一调用 `ResourcePathHelper.normalize`，避免重复实现。
 
 ### Stage 1 composition slot 收缩目标图（2026-04-19 冻结）
 
