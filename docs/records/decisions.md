@@ -158,12 +158,14 @@
 ### Registry 单源与 validator 硬约束
 
 - `config/formal_character_sources/` 现在是 formal 角色 registry 的唯一人工维护入口：
-  - `00_shared_registry.json` 负责共享 `matchups/capabilities`
-  - 每个角色一份 `0N_<character>.json` 负责 runtime + delivery + `content_roots`
+  - `00_shared_matchups.json` 负责共享 `matchups`（含显式 setup / `test_only` 对局）
+  - `00_shared_capabilities.json` 负责共享 `capabilities`
+  - 每个角色拆成 `0N_<character>.runtime.json` 与 `0N_<character>.delivery.json`；runtime 负责运行时字段、`content_roots`、pair interaction 与共享能力声明，delivery 负责文档和私有 suite 路径
 - `config/formal_character_manifest.json` 与 `config/formal_character_capability_catalog.json` 继续提交到仓库，但已经退成生成产物，不再手工维护。
 - `content_roots` 允许目录与单文件资源混用，导出时统一递归展开成稳定排序的 `required_content_paths`。
 - `content_validator_script_path` 现在是 formal 角色 runtime 合同的必填字段，不再写成"按需"。
 - formal gate 当前固定校验：source descriptors 可导出、导出结果与 committed manifest/catalog 完全一致、同一轮里不允许 source 与产物漂移。
+- formal delivery 治理不再要求逐角色维护测试名和文档 anchor 清单，改为校验设计稿统一章节结构、调整记录日期章节、suite 可达性和 surface smoke 技能引用。
 - 人工同步 committed artifacts 的唯一入口固定为：`bash tests/sync_formal_registry.sh`。
 
 ### Manager smoke/blackbox 与 suite 模板化

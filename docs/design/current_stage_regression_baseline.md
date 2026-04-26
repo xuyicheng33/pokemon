@@ -16,11 +16,10 @@
 ## 2. 当前主 smoke matchup
 
 - 默认主路径：`gojo_vs_sample + 9101 + manual/policy`
-- 可见 matchup 变体：`tests/check_sandbox_smoke_matrix.sh` 默认 `SANDBOX_SMOKE_SCOPE=quick`，动态覆盖推荐 matchup 与所有 `<pair>_vs_sample` 主路径的 `manual/policy`
-- 全量 matchup 变体：`SANDBOX_SMOKE_SCOPE=full bash tests/check_sandbox_smoke_matrix.sh` 覆盖当前全部非 `test_only` matchup 的 `manual/policy`
-- 默认模式变体：默认可见 matchup 额外覆盖 `policy/policy` 与 `manual/manual`
-- submit 命令入口变体：默认可见 matchup 额外覆盖 `tests/helpers/manual_battle_submit_full_run.gd`
-- demo 变体：动态覆盖 `config/demo_replay_catalog.json` 中全部 demo profile
+- quick scope（`tests/check_sandbox_smoke_matrix.sh` 默认 `SANDBOX_SMOKE_SCOPE=quick`）：每个 formal 角色 1 条 quick anchor matchup × `manual/policy`（由 `FormalCharacterManifest` 自动派生 `formal_setup_matchup_id`）+ 默认 demo profile 的 demo replay
+- extended scope（`SANDBOX_SMOKE_SCOPE=extended bash tests/check_sandbox_smoke_matrix.sh`，由 `tests/run_extended_gate.sh` 自动调用）：quick 之外的余量——推荐 matchup 与其余 visible matchup 的 `manual/policy` + 默认 matchup 的 `policy/policy`、`manual/manual`、`submit_manual_policy`、`submit_manual_manual` + 其余 demo profile 的 demo replay
+- full scope（`SANDBOX_SMOKE_SCOPE=full bash tests/check_sandbox_smoke_matrix.sh` 或 `TEST_PROFILE=full bash tests/run_with_gate.sh`）：全集 superset，覆盖全部 visible matchup × 全控制模式 + 全 demo profile
+- 三档互不重叠（仅约束 quick 与 extended）；`full` 是独立执行的全集
 - headless 统一入口：`godot --headless --path . --script tests/helpers/manual_battle_full_run.gd`
 - submit 入口：`godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd`
 - demo replay 入口：`DEMO_PROFILE=legacy godot --headless --path . --script tests/helpers/demo_replay_full_run.gd`

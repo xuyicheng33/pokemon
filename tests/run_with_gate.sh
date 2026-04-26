@@ -16,6 +16,8 @@ fi
 
 if [[ "$TEST_PROFILE" == "full" ]]; then
   export SANDBOX_SMOKE_SCOPE="${SANDBOX_SMOKE_SCOPE:-full}"
+elif [[ "$TEST_PROFILE" == "extended" ]]; then
+  export SANDBOX_SMOKE_SCOPE="${SANDBOX_SMOKE_SCOPE:-extended}"
 else
   export SANDBOX_SMOKE_SCOPE="${SANDBOX_SMOKE_SCOPE:-quick}"
 fi

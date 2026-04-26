@@ -84,28 +84,82 @@ if [[ ${#RECOMMENDED_MATCHUP_IDS[@]} -eq 0 ]]; then
   exit 1
 fi
 
+QUICK_ANCHOR_MATCHUP_IDS=()
+while IFS= read -r matchup_id; do
+  if [[ -n "$matchup_id" ]]; then
+    QUICK_ANCHOR_MATCHUP_IDS+=("$matchup_id")
+  fi
+done < <(python3 - "$SMOKE_CATALOG_FILE" <<'PY'
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+payload = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+for raw_matchup_id in payload.get("quick_anchor_matchup_ids", []):
+    matchup_id = str(raw_matchup_id).strip()
+    if matchup_id:
+        print(matchup_id)
+PY
+)
+
+if [[ ${#QUICK_ANCHOR_MATCHUP_IDS[@]} -eq 0 ]]; then
+  echo "SANDBOX_SMOKE_FAILED: sandbox smoke catalog exported no quick_anchor_matchup_ids" >&2
+  exit 1
+fi
+
+VISIBLE_MATCHUP_LOOKUP=" ${VISIBLE_MATCHUP_IDS[*]} "
+for anchor_id in "${QUICK_ANCHOR_MATCHUP_IDS[@]}"; do
+  if [[ "$VISIBLE_MATCHUP_LOOKUP" != *" $anchor_id "* ]]; then
+    echo "SANDBOX_SMOKE_FAILED: quick anchor matchup not visible: $anchor_id" >&2
+    exit 1
+  fi
+done
+
 SANDBOX_SMOKE_SCOPE="${SANDBOX_SMOKE_SCOPE:-quick}"
-if [[ "$SANDBOX_SMOKE_SCOPE" != "quick" && "$SANDBOX_SMOKE_SCOPE" != "full" ]]; then
-  echo "SANDBOX_SMOKE_FAILED: SANDBOX_SMOKE_SCOPE must be quick or full: $SANDBOX_SMOKE_SCOPE" >&2
+if [[ "$SANDBOX_SMOKE_SCOPE" != "quick" \
+   && "$SANDBOX_SMOKE_SCOPE" != "extended" \
+   && "$SANDBOX_SMOKE_SCOPE" != "full" ]]; then
+  echo "SANDBOX_SMOKE_FAILED: SANDBOX_SMOKE_SCOPE must be quick, extended, or full: $SANDBOX_SMOKE_SCOPE" >&2
   exit 1
 fi
 
-SMOKE_MATCHUP_IDS=()
-if [[ "$SANDBOX_SMOKE_SCOPE" == "full" ]]; then
-  SMOKE_MATCHUP_IDS=("${VISIBLE_MATCHUP_IDS[@]}")
-else
-  RECOMMENDED_MATCHUP_LOOKUP=" ${RECOMMENDED_MATCHUP_IDS[*]} "
-  for matchup_id in "${VISIBLE_MATCHUP_IDS[@]}"; do
-    if [[ "$matchup_id" == "$DEFAULT_MATCHUP_ID" || "$RECOMMENDED_MATCHUP_LOOKUP" == *" $matchup_id "* || "$matchup_id" == *_vs_sample ]]; then
-      SMOKE_MATCHUP_IDS+=("$matchup_id")
-    fi
-  done
-fi
+RUN_QUICK_ANCHOR_MANUAL_POLICY=false
+RUN_OTHER_VISIBLE_MANUAL_POLICY=false
+RUN_DEFAULT_POLICY_POLICY=false
+RUN_DEFAULT_MANUAL_MANUAL=false
+RUN_DEFAULT_SUBMIT_MANUAL_POLICY=false
+RUN_DEFAULT_SUBMIT_MANUAL_MANUAL=false
+RUN_DEFAULT_DEMO=false
+RUN_OTHER_DEMO=false
 
-if [[ ${#SMOKE_MATCHUP_IDS[@]} -eq 0 ]]; then
-  echo "SANDBOX_SMOKE_FAILED: sandbox smoke scope selected no matchups: $SANDBOX_SMOKE_SCOPE" >&2
-  exit 1
-fi
+case "$SANDBOX_SMOKE_SCOPE" in
+  quick)
+    RUN_QUICK_ANCHOR_MANUAL_POLICY=true
+    RUN_DEFAULT_DEMO=true
+    ;;
+  extended)
+    RUN_OTHER_VISIBLE_MANUAL_POLICY=true
+    RUN_DEFAULT_POLICY_POLICY=true
+    RUN_DEFAULT_MANUAL_MANUAL=true
+    RUN_DEFAULT_SUBMIT_MANUAL_POLICY=true
+    RUN_DEFAULT_SUBMIT_MANUAL_MANUAL=true
+    RUN_OTHER_DEMO=true
+    ;;
+  full)
+    RUN_QUICK_ANCHOR_MANUAL_POLICY=true
+    RUN_OTHER_VISIBLE_MANUAL_POLICY=true
+    RUN_DEFAULT_POLICY_POLICY=true
+    RUN_DEFAULT_MANUAL_MANUAL=true
+    RUN_DEFAULT_SUBMIT_MANUAL_POLICY=true
+    RUN_DEFAULT_SUBMIT_MANUAL_MANUAL=true
+    RUN_DEFAULT_DEMO=true
+    RUN_OTHER_DEMO=true
+    ;;
+esac
+
+QUICK_ANCHOR_LOOKUP=" ${QUICK_ANCHOR_MATCHUP_IDS[*]} "
 
 DEMO_PROFILE_ROWS=()
 while IFS= read -r demo_row; do
@@ -312,52 +366,93 @@ PY
   rm -f "$log_file"
 }
 
-for matchup_id in "${SMOKE_MATCHUP_IDS[@]}"; do
+if $RUN_QUICK_ANCHOR_MANUAL_POLICY; then
+  for matchup_id in "${QUICK_ANCHOR_MATCHUP_IDS[@]}"; do
+    run_case \
+      "case_label=${SANDBOX_SMOKE_SCOPE}:quick_anchor_manual_policy:${matchup_id}" \
+      "$matchup_id" \
+      "manual" \
+      "policy" \
+      env MATCHUP_ID="$matchup_id" P1_MODE=manual P2_MODE=policy \
+      godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+  done
+fi
+
+if $RUN_OTHER_VISIBLE_MANUAL_POLICY; then
+  for matchup_id in "${VISIBLE_MATCHUP_IDS[@]}"; do
+    if [[ "$QUICK_ANCHOR_LOOKUP" == *" $matchup_id "* ]]; then
+      continue
+    fi
+    run_case \
+      "case_label=${SANDBOX_SMOKE_SCOPE}:other_visible_manual_policy:${matchup_id}" \
+      "$matchup_id" \
+      "manual" \
+      "policy" \
+      env MATCHUP_ID="$matchup_id" P1_MODE=manual P2_MODE=policy \
+      godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+  done
+fi
+
+if $RUN_DEFAULT_POLICY_POLICY; then
   run_case \
-    "${matchup_id}_manual_policy" \
-    "$matchup_id" \
+    "case_label=${SANDBOX_SMOKE_SCOPE}:default_policy_policy:${DEFAULT_MATCHUP_ID}" \
+    "$DEFAULT_MATCHUP_ID" \
+    "policy" \
+    "policy" \
+    env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=policy P2_MODE=policy \
+    godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+fi
+
+if $RUN_DEFAULT_MANUAL_MANUAL; then
+  run_case \
+    "case_label=${SANDBOX_SMOKE_SCOPE}:default_manual_manual:${DEFAULT_MATCHUP_ID}" \
+    "$DEFAULT_MATCHUP_ID" \
+    "manual" \
+    "manual" \
+    env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=manual \
+    godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+fi
+
+if $RUN_DEFAULT_SUBMIT_MANUAL_POLICY; then
+  run_case \
+    "case_label=${SANDBOX_SMOKE_SCOPE}:default_submit_manual_policy:${DEFAULT_MATCHUP_ID}" \
+    "$DEFAULT_MATCHUP_ID" \
     "manual" \
     "policy" \
-    env MATCHUP_ID="$matchup_id" P1_MODE=manual P2_MODE=policy \
-    godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
-done
+    env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=policy \
+    godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd
+fi
 
-run_case \
-  "${DEFAULT_MATCHUP_ID}_policy_policy" \
-  "$DEFAULT_MATCHUP_ID" \
-  "policy" \
-  "policy" \
-  env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=policy P2_MODE=policy \
-  godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
+if $RUN_DEFAULT_SUBMIT_MANUAL_MANUAL; then
+  run_case \
+    "case_label=${SANDBOX_SMOKE_SCOPE}:default_submit_manual_manual:${DEFAULT_MATCHUP_ID}" \
+    "$DEFAULT_MATCHUP_ID" \
+    "manual" \
+    "manual" \
+    env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=manual \
+    godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd
+fi
 
-run_case \
-  "${DEFAULT_MATCHUP_ID}_manual_manual" \
-  "$DEFAULT_MATCHUP_ID" \
-  "manual" \
-  "manual" \
-  env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=manual \
-  godot --headless --path . --script tests/helpers/manual_battle_full_run.gd
-
-run_case \
-  "${DEFAULT_MATCHUP_ID}_submit_manual_policy" \
-  "$DEFAULT_MATCHUP_ID" \
-  "manual" \
-  "policy" \
-  env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=policy \
-  godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd
-
-run_case \
-  "${DEFAULT_MATCHUP_ID}_submit_manual_manual" \
-  "$DEFAULT_MATCHUP_ID" \
-  "manual" \
-  "manual" \
-  env MATCHUP_ID="$DEFAULT_MATCHUP_ID" P1_MODE=manual P2_MODE=manual \
-  godot --headless --path . --script tests/helpers/manual_battle_submit_full_run.gd
+DEFAULT_DEMO_PROFILE_ID=""
+if [[ ${#DEMO_PROFILE_ROWS[@]} -gt 0 ]]; then
+  IFS=$'\t' read -r DEFAULT_DEMO_PROFILE_ID _ _ <<<"${DEMO_PROFILE_ROWS[0]}"
+fi
 
 for demo_row in "${DEMO_PROFILE_ROWS[@]}"; do
   IFS=$'\t' read -r demo_profile_id demo_matchup_id demo_battle_seed <<<"$demo_row"
+  if [[ "$demo_profile_id" == "$DEFAULT_DEMO_PROFILE_ID" ]]; then
+    if ! $RUN_DEFAULT_DEMO; then
+      continue
+    fi
+    case_kind="default_demo"
+  else
+    if ! $RUN_OTHER_DEMO; then
+      continue
+    fi
+    case_kind="other_demo"
+  fi
   run_demo_case \
-    "${demo_profile_id}_demo_replay" \
+    "case_label=${SANDBOX_SMOKE_SCOPE}:${case_kind}_demo_replay:${demo_profile_id}" \
     "$demo_profile_id" \
     "$demo_matchup_id" \
     "$demo_battle_seed" \
@@ -365,6 +460,6 @@ for demo_row in "${DEMO_PROFILE_ROWS[@]}"; do
     godot --headless --path . --script tests/helpers/demo_replay_full_run.gd
 done
 
-echo "SANDBOX_SMOKE_MATRIX_PASSED: ${SANDBOX_SMOKE_SCOPE} manual/policy matchups, default policy/manual-submit paths, and demo replays are stable"
-echo "NOTE: manual smoke now covers BattleSandboxController.submit_action on visible matchups; deterministic action choice still uses BattleSandboxFirstLegalPolicy"
-echo "NOTE: set SANDBOX_SMOKE_SCOPE=full to cover every visible matchup."
+echo "SANDBOX_SMOKE_MATRIX_PASSED: ${SANDBOX_SMOKE_SCOPE} scope smoke cases (quick anchors=${#QUICK_ANCHOR_MATCHUP_IDS[@]}, visible=${#VISIBLE_MATCHUP_IDS[@]}, demos=${#DEMO_PROFILE_ROWS[@]}) are stable"
+echo "NOTE: manual smoke covers BattleSandboxController.submit_action on visible matchups; deterministic action choice still uses BattleSandboxFirstLegalPolicy"
+echo "NOTE: scope semantics — quick=每 formal 角色 1 个 manual/policy + 默认 demo replay; extended=quick 之外的余量; full=全集 superset."

@@ -114,4 +114,5 @@ func _load_available_matchups(state: SandboxSessionState) -> String:
 	if not (descriptors is Array):
 		return "Battle sandbox available matchups result must be array"
 	state.available_matchups = descriptors.duplicate(true)
+	state.visible_matchups = launch_config_helper.visible_matchup_descriptors(state.available_matchups)
 	return ""

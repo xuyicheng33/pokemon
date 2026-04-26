@@ -1,6 +1,6 @@
 # 正式角色共享能力目录
 
-本文件只定义共享能力目录的职责、字段和接入方式，不复制具体角色条目。当前开放入口的唯一人工维护真相固定在 `config/formal_character_sources/00_shared_registry.json` 的 `capabilities`；`config/formal_character_capability_catalog.json` 是生成并提交的产物。
+本文件只定义共享能力目录的职责、字段和接入方式，不复制具体角色条目。当前开放入口的唯一人工维护真相固定在 `config/formal_character_sources/00_shared_capabilities.json` 的 `capabilities`；`config/formal_character_capability_catalog.json` 是生成并提交的产物。
 
 ## 1. 目标
 
@@ -10,8 +10,8 @@
 
 ## 2. 单一真相
 
-- 角色级声明：`config/formal_character_sources/<character>.json.character.shared_capability_ids`
-- 共享能力目录：`config/formal_character_sources/00_shared_registry.json`
+- 角色级声明：`config/formal_character_sources/0N_<character>.runtime.json.shared_capability_ids`
+- 共享能力目录：`config/formal_character_sources/00_shared_capabilities.json`
 - 角色接入模板：`docs/design/formal_character_delivery_checklist.md`
 - 角色稿引用方式：`docs/design/formal_character_design_template.md`
 
@@ -39,7 +39,7 @@
 
 - `tests/helpers/export_formal_capability_facts.gd` 只负责编排与聚合，不再内嵌所有事实词表。
 - 固定 collector 维度为 `unit / skill / effect / field / passive / payload`。
-- 新增共享 capability 时，优先只改 `config/formal_character_sources/00_shared_registry.json`；只有出现全新事实类型时，才额外补一个局部 collector 文件。
+- 新增共享 capability 时，优先只改 `config/formal_character_sources/00_shared_capabilities.json`；只有出现全新事实类型时，才额外补一个局部 collector 文件。
 
 ## 4. 角色接入规则
 
@@ -64,4 +64,4 @@ repo consistency gate 当前固定检查：
 
 - 共享能力目录只登记“共享入口”和“边界”，不抄角色玩法细节。
 - 具体资源字段、payload、触发链和运行时读写路径，仍以 `docs/design/battle_content_schema.md`、`docs/design/effect_engine.md` 与 `docs/rules/*.md` 为准。
-- 当前开放的 capability entry 列表以 `config/formal_character_sources/00_shared_registry.json` 导出的 committed catalog 为准；如果这里只再抄一遍名单，很快又会漂。
+- 当前开放的 capability entry 列表以 `config/formal_character_sources/00_shared_capabilities.json` 导出的 committed catalog 为准；如果这里只再抄一遍名单，很快又会漂。

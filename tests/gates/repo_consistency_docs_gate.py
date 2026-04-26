@@ -42,7 +42,7 @@ def _run_content_formal_delivery(ctx: GateContext) -> None:
     ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_sources/", "schema formal source dir wording")
     ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_manifest.json", "schema generated manifest wording")
     ctx.require_contains("docs/design/battle_content_schema.md", "config/formal_character_capability_catalog.json", "schema generated capability catalog wording")
-    ctx.require_contains("docs/design/formal_character_capability_catalog.md", "00_shared_registry.json", "capability catalog shared registry wording")
+    ctx.require_contains("docs/design/formal_character_capability_catalog.md", "00_shared_capabilities.json", "capability catalog shared capabilities source wording")
 
 
 def _run_sandbox_testing_surface(ctx: GateContext) -> None:
@@ -61,29 +61,16 @@ def _run_sandbox_testing_surface(ctx: GateContext) -> None:
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "tests/run_with_gate.sh", "workflow quick total gate wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "tests/run_extended_gate.sh", "workflow extended gate wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "quick -> extended -> full", "workflow profile layering wording")
-    ctx.require_contains(CURRENT_WORKFLOW_DOC, "gdUnit4 quick -> boot smoke -> suite reachability -> architecture constraints -> repo consistency -> Python lint -> sandbox smoke matrix quick", "workflow fixed quick gate order wording")
-    ctx.require_contains(CURRENT_WORKFLOW_DOC, "CI 当前固定拆成 4 个并行 job", "workflow CI job count wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/design/current_stage_regression_baseline.md", "workflow regression baseline doc wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "gdUnit4 + test/", "workflow gdunit test tree wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/records/tasks.md", "workflow tasks record wording")
     ctx.require_contains(CURRENT_WORKFLOW_DOC, "docs/records/decisions.md", "workflow decisions record wording")
-    ctx.require_contains("README.md", "docs/design/current_development_workflow.md", "README workflow entry doc")
-    ctx.require_contains("README.md", "docs/design/current_stage_regression_baseline.md", "README regression baseline doc")
-    ctx.require_contains("README.md", "tests/check_sandbox_smoke_matrix.sh", "README sandbox smoke matrix doc")
-    ctx.require_contains("README.md", "BattleSandbox", "README sandbox main entry wording")
-    ctx.require_contains("README.md", "tests/run_with_gate.sh", "README unique total gate wording")
-    ctx.require_contains("README.md", "tests/sync_formal_registry.sh", "README formal sync command doc")
-    ctx.require_contains("tests/README.md", "docs/design/current_development_workflow.md", "tests README workflow entry doc")
-    ctx.require_contains("tests/README.md", "docs/design/current_stage_regression_baseline.md", "tests README regression baseline doc")
-    ctx.require_contains("tests/README.md", "tests/check_sandbox_smoke_matrix.sh", "tests README sandbox smoke matrix doc")
-    ctx.require_contains("tests/README.md", "tests/sync_formal_registry.sh", "tests README formal sync command doc")
-    ctx.require_contains("tests/README.md", "测试分类口径", "tests README test taxonomy wording")
-    ctx.require_contains("tests/README.md", "tests/run_with_gate.sh", "tests README quick total gate wording")
-    ctx.require_contains("tests/README.md", "tests/run_extended_gate.sh", "tests README extended gate wording")
-    ctx.require_contains("tests/README.md", "BattleSandbox", "tests README sandbox wording")
-    ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "tests/run_with_gate.sh", "regression baseline total gate command")
-    ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "tests/check_sandbox_smoke_matrix.sh", "regression baseline smoke matrix command")
-    ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "manual_battle_full_run.gd", "regression baseline headless helper command")
+    # README / tests/README 只校验"指向规范源"的链接收口，不再镜像具体命令名与术语
+    ctx.require_contains("README.md", CURRENT_WORKFLOW_DOC, "README workflow entry link")
+    ctx.require_contains("README.md", CURRENT_REGRESSION_BASELINE_DOC, "README regression baseline link")
+    ctx.require_contains("tests/README.md", CURRENT_WORKFLOW_DOC, "tests README workflow entry link")
+    ctx.require_contains("tests/README.md", CURRENT_REGRESSION_BASELINE_DOC, "tests README regression baseline link")
+    # regression baseline 只保留它本职的最小可玩性检查语义；具体命令名归 workflow 统一管
     ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "可启动", "regression baseline playability launch check")
     ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "能跑完一局", "regression baseline playability finish check")
     ctx.require_contains(CURRENT_REGRESSION_BASELINE_DOC, "统一终局摘要", "regression baseline summary wording")
@@ -97,8 +84,6 @@ def _run_records_archive_wording(ctx: GateContext) -> None:
     ctx.require_exists("docs/records/archive/decisions_pre_2026-04-05_repair_wave.md", "decisions repair-wave archive")
     ctx.require_exists("docs/records/archive/tasks_pre_2026-04-05_repair_wave.md", "tasks repair-wave archive")
     ctx.require_contains("docs/records/tasks.md", "当前验证基线", "tasks active validation baseline section")
-    ctx.require_contains("docs/records/decisions.md", "README", "decisions README role wording")
-    ctx.require_contains("docs/records/decisions.md", "tests/sync_formal_registry.sh", "decisions formal sync command wording")
 
 
 ctx = GateContext()

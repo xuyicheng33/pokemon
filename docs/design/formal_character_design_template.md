@@ -5,8 +5,8 @@
 使用方式：
 
 1. 先按本模板写角色稿。
-2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、source descriptor、suite 和记录；正式角色元数据的唯一人工维护入口固定为 `config/formal_character_sources/`，其中角色 source 收口角色条目与 `owned_pair_interaction_specs`，`00_shared_registry.json` 收口显式 setup / `test_only` 对局与共享 capability，非 `test_only` 的 formal-vs-formal directed matchup 与 interaction case 都由 loader 从这些原始输入自动派生。
-3. 若角色复用共享机制，先对齐 `config/formal_character_sources/00_shared_registry.json` 里的 `capabilities`，确认现有入口是否能承接；不满足时先补共享能力描述，再继续扩内容。
+2. 再按 `docs/design/formal_character_delivery_checklist.md` 补齐资源、source descriptor、suite 和记录；正式角色元数据的唯一人工维护入口固定为 `config/formal_character_sources/`，其中角色 source 收口角色条目与 `owned_pair_interaction_specs`，`00_shared_matchups.json` 收口显式 setup / `test_only` 对局，`00_shared_capabilities.json` 收口共享 capability，非 `test_only` 的 formal-vs-formal directed matchup 与 interaction case 都由 loader 从这些原始输入自动派生。
+3. 若角色复用共享机制，先对齐 `config/formal_character_sources/00_shared_capabilities.json` 里的 `capabilities`，确认现有入口是否能承接；不满足时先补共享能力描述，再继续扩内容。
 4. 若角色带领域机制，只在本稿末尾追加“领域角色差异附录”，公共规则继续引用 `docs/design/domain_field_template.md`。
 5. 正式角色必须提供 `content_validator_script_path`，entry validator 固定按 `unit_passive_contracts / skill_effect_contracts / ultimate_domain_contracts` 三桶模板落地。
 

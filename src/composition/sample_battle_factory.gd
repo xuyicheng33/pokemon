@@ -1,205 +1,58 @@
 extends RefCounted
 class_name SampleBattleFactory
 
-const BaselineMatchupCatalogScript := preload("res://src/composition/sample_battle_factory_baseline_matchup_catalog.gd")
-const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
-const DemoInputBuilderScript := preload("res://src/composition/sample_battle_factory_demo_input_builder.gd")
-const DemoCatalogScript := preload("res://src/composition/sample_battle_factory_demo_catalog.gd")
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
-const MatchupCatalogScript := preload("res://src/composition/sample_battle_factory_matchup_catalog.gd")
-const BaselineLoaderScript := preload("res://src/shared/formal_character_baselines/formal_character_baseline_loader.gd")
-const SetupAccessScript := preload("res://src/composition/sample_battle_factory_setup_access.gd")
-const OVERRIDE_REGISTRY_PATH := "registry_path_override"
-const OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH := "baseline_matchup_catalog_path_override"
-const OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH := "formal_matchup_catalog_path_override"
-const OVERRIDE_DEMO_CATALOG_PATH := "demo_catalog_path_override"
+const RuntimeGraphScript := preload("res://src/composition/sample_battle_factory_runtime_graph.gd")
 
-var _catalog_access: SampleBattleFactoryBaselineMatchupCatalog = BaselineMatchupCatalogScript.new()
-var _snapshot_access: SampleBattleFactoryContentPathsHelper = ContentPathsHelperScript.new()
-var _demo_input_builder: SampleBattleFactoryDemoInputBuilder = DemoInputBuilderScript.new()
-var _demo_catalog: SampleBattleFactoryDemoCatalog = DemoCatalogScript.new()
-var _formal_access: SampleBattleFactoryFormalAccess = FormalAccessScript.new()
-var _formal_matchup_catalog: SampleBattleFactoryFormalMatchupCatalog = MatchupCatalogScript.new()
-var _setup_access: SampleBattleFactorySetupAccess = SetupAccessScript.new()
-var _override_config: Dictionary = {
-	OVERRIDE_REGISTRY_PATH: "",
-	OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH: "",
-	OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH: "",
-	OVERRIDE_DEMO_CATALOG_PATH: "",
-}
+var _graph: SampleBattleFactoryRuntimeGraph = RuntimeGraphScript.new()
 var last_error_code: Variant = null
 var last_error_message: String = ""
 var _disposed: bool = false
-
-func _init() -> void:
-	_catalog_access.override_config = _override_config
-	_snapshot_access.override_config = _override_config
-	_demo_catalog.override_config = _override_config
-	_formal_access.override_config = _override_config
-	_formal_matchup_catalog.override_config = _override_config
-	_setup_access.baseline_matchup_catalog = _catalog_access
-	_setup_access.formal_matchup_catalog = _formal_matchup_catalog
-	_snapshot_access.formal_access = _formal_access
-	_demo_input_builder.baseline_matchup_catalog = _catalog_access
-	_demo_input_builder.content_paths_helper = _snapshot_access
-	_demo_input_builder.demo_catalog = _demo_catalog
-	_demo_input_builder.setup_access = _setup_access
-	_formal_access.formal_matchup_catalog = _formal_matchup_catalog
-	_formal_access.setup_access = _setup_access
-	_catalog_access.snapshot_access = _snapshot_access
-	_catalog_access.demo_catalog = _demo_catalog
-	_catalog_access.formal_access = _formal_access
-	_catalog_access.formal_matchup_catalog = _formal_matchup_catalog
-	_catalog_access.refresh_baseline_unit_definition_ids()
-	BaselineLoaderScript.invalidate_cache()
 
 func dispose() -> void:
 	if _disposed:
 		return
 	_disposed = true
-	_nullify_links(_setup_access, ["baseline_matchup_catalog", "formal_matchup_catalog"])
-	_nullify_links(_snapshot_access, ["formal_access"])
-	_nullify_links(_demo_input_builder, ["baseline_matchup_catalog", "content_paths_helper", "demo_catalog", "setup_access"])
-	_nullify_links(_formal_access, ["formal_matchup_catalog", "setup_access"])
-	_nullify_links(_catalog_access, ["snapshot_access", "demo_catalog", "formal_access", "formal_matchup_catalog"])
-	_nullify_override_config([_catalog_access, _snapshot_access, _demo_catalog, _formal_access, _formal_matchup_catalog])
-	_catalog_access = null
-	_snapshot_access = null
-	_demo_input_builder = null
-	_demo_catalog = null
-	_formal_access = null
-	_formal_matchup_catalog = null
-	_setup_access = null
+	if _graph != null:
+		_graph.dispose()
+	_graph = null
 	ErrorStateHelperScript.clear(self)
 
-static func _nullify_links(target, property_names: Array) -> void:
-	if target == null:
-		return
-	for prop_name in property_names:
-		target.set(prop_name, null)
-
-static func _nullify_override_config(targets: Array) -> void:
-	for target in targets:
-		if target != null:
-			target.override_config = {}
-
-func configure_registry_path_override(path: String) -> void:
-	_override_config[OVERRIDE_REGISTRY_PATH] = path
-
-func configure_baseline_matchup_catalog_path_override(path: String) -> void:
-	_override_config[OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH] = path
-	_catalog_access.refresh_baseline_unit_definition_ids()
-
-func configure_matchup_catalog_path_override(path: String) -> void:
-	_override_config[OVERRIDE_FORMAL_MATCHUP_CATALOG_PATH] = path
-
-func configure_delivery_registry_path_override(path: String) -> void:
-	_override_config[OVERRIDE_REGISTRY_PATH] = path
-
-func configure_formal_manifest_path_override(path: String) -> void:
-	_override_config[OVERRIDE_REGISTRY_PATH] = path
-
-func configure_demo_catalog_path_override(path: String) -> void:
-	_override_config[OVERRIDE_DEMO_CATALOG_PATH] = path
+func configure_registry_path_override(path: String) -> void: _graph.configure_registry_path_override(path)
+func configure_baseline_matchup_catalog_path_override(path: String) -> void: _graph.configure_baseline_matchup_catalog_path_override(path)
+func configure_matchup_catalog_path_override(path: String) -> void: _graph.configure_matchup_catalog_path_override(path)
+func configure_delivery_registry_path_override(path: String) -> void: _graph.configure_registry_path_override(path)
+func configure_formal_manifest_path_override(path: String) -> void: _graph.configure_registry_path_override(path)
+func configure_demo_catalog_path_override(path: String) -> void: _graph.configure_demo_catalog_path_override(path)
 
 func default_demo_profile_id() -> String:
 	var result := default_demo_profile_id_result()
-	if not bool(result.get("ok", false)):
-		return ""
-	return String(result.get("data", "")).strip_edges()
+	return String(result.get("data", "")).strip_edges() if bool(result.get("ok", false)) else ""
 
-func default_demo_profile_id_result() -> Dictionary:
-	return _record_result(_demo_catalog.default_profile_id_result())
-
-func demo_profile_result(profile_id: String) -> Dictionary:
-	return _record_result(_demo_catalog.profile_result(profile_id))
-
-func demo_profile_ids_result() -> Dictionary:
-	return _record_result(_demo_catalog.profile_ids_result())
-
-func error_state() -> Dictionary:
-	return ErrorStateHelperScript.error_state(self)
-
-func build_side_spec(
-	unit_definition_ids: PackedStringArray,
-	starting_index: int = 0,
-	regular_skill_loadout_overrides: Dictionary = {}
-) -> Dictionary:
-	return _setup_access.build_side_spec(unit_definition_ids, starting_index, regular_skill_loadout_overrides)
-
-func build_setup_from_side_specs_result(p1_side_spec: Dictionary, p2_side_spec: Dictionary) -> Dictionary:
-	return _record_result(_setup_access.build_setup_from_side_specs_result(p1_side_spec, p2_side_spec))
-
-func content_snapshot_paths_result() -> Dictionary:
-	return _record_result(_snapshot_access.build_snapshot_paths(ContentPathsHelperScript.BASE_CONTENT_SNAPSHOT_DIRS))
-
-func content_snapshot_paths_for_setup_result(battle_setup) -> Dictionary:
-	return _record_result(_snapshot_access.build_snapshot_paths_for_setup(ContentPathsHelperScript.BASE_CONTENT_SNAPSHOT_DIRS, battle_setup))
-
-func collect_tres_paths_result(dir_path: String) -> Dictionary:
-	return _record_result(_snapshot_access.collect_tres_paths_result(dir_path))
-
-func collect_tres_paths_recursive_result(dir_path: String) -> Dictionary:
-	return _record_result(_snapshot_access.collect_tres_paths_recursive_result(dir_path))
-
-func build_setup_by_matchup_id_result(matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	return _record_result(_setup_access.build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides))
-
-func available_matchups_result() -> Dictionary:
-	return _record_result(_catalog_access.available_matchups_result())
-
-func build_matchup_setup_result(
-	p1_unit_definition_ids: PackedStringArray,
-	p2_unit_definition_ids: PackedStringArray,
-	side_regular_skill_overrides: Dictionary = {},
-	p1_starting_index: int = 0,
-	p2_starting_index: int = 0
-) -> Dictionary:
-	return _record_result(_setup_access.build_matchup_setup_result(
-		p1_unit_definition_ids,
-		p2_unit_definition_ids,
-		side_regular_skill_overrides,
-		p1_starting_index,
-		p2_starting_index
-	))
-
-func formal_character_ids_result() -> Dictionary:
-	return _record_result(_formal_access.formal_ids_result("character_id"))
-
-func formal_unit_definition_ids_result() -> Dictionary:
-	return _record_result(_formal_access.formal_ids_result("unit_definition_id"))
-
-func build_formal_character_setup_result(character_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	return _record_result(_formal_access.build_formal_character_setup_result(character_id, side_regular_skill_overrides))
-
-func formal_pair_smoke_cases_result() -> Dictionary:
-	return _record_result(_formal_access.formal_pair_smoke_cases_result())
-
-func formal_pair_surface_cases_result() -> Dictionary:
-	return _record_result(_formal_access.formal_pair_surface_cases_result())
-
-func formal_pair_interaction_cases_result() -> Dictionary:
-	return _record_result(_formal_access.formal_pair_interaction_cases_result())
-
-func build_sample_setup_result(side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	return _record_result(_setup_access.build_sample_setup_result(side_regular_skill_overrides))
-
-func build_demo_replay_input_result(command_port, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	return _record_result(_demo_input_builder.build_demo_replay_input_result(
-		command_port,
-		side_regular_skill_overrides
-	))
-
-func build_demo_replay_input_for_profile_result(command_port, demo_profile_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary:
-	return _record_result(_demo_input_builder.build_demo_replay_input_for_profile_result(
-		command_port,
-		demo_profile_id,
-		side_regular_skill_overrides
-	))
-
-func build_passive_item_demo_replay_input_result(command_port) -> Dictionary:
-	return _record_result(_demo_input_builder.build_passive_item_demo_replay_input_result(command_port))
+func default_demo_profile_id_result() -> Dictionary: return _record_result(_graph.demo_facade.default_demo_profile_id_result())
+func demo_profile_result(profile_id: String) -> Dictionary: return _record_result(_graph.demo_facade.demo_profile_result(profile_id))
+func demo_profile_ids_result() -> Dictionary: return _record_result(_graph.demo_facade.demo_profile_ids_result())
+func error_state() -> Dictionary: return ErrorStateHelperScript.error_state(self)
+func build_side_spec(unit_definition_ids: PackedStringArray, starting_index: int = 0, regular_skill_loadout_overrides: Dictionary = {}) -> Dictionary: return _graph.setup_facade.build_side_spec(unit_definition_ids, starting_index, regular_skill_loadout_overrides)
+func build_setup_from_side_specs_result(p1_side_spec: Dictionary, p2_side_spec: Dictionary) -> Dictionary: return _record_result(_graph.setup_facade.build_setup_from_side_specs_result(p1_side_spec, p2_side_spec))
+func content_snapshot_paths_result() -> Dictionary: return _record_result(_graph.snapshot_facade.content_snapshot_paths_result())
+func content_snapshot_paths_for_setup_result(battle_setup) -> Dictionary: return _record_result(_graph.snapshot_facade.content_snapshot_paths_for_setup_result(battle_setup))
+func collect_tres_paths_result(dir_path: String) -> Dictionary: return _record_result(_graph.snapshot_facade.collect_tres_paths_result(dir_path))
+func collect_tres_paths_recursive_result(dir_path: String) -> Dictionary: return _record_result(_graph.snapshot_facade.collect_tres_paths_recursive_result(dir_path))
+func build_setup_by_matchup_id_result(matchup_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary: return _record_result(_graph.setup_facade.build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides))
+func available_matchups_result() -> Dictionary: return _record_result(_graph.catalog_facade.available_matchups_result())
+func build_matchup_setup_result(p1_unit_definition_ids: PackedStringArray, p2_unit_definition_ids: PackedStringArray, side_regular_skill_overrides: Dictionary = {}, p1_starting_index: int = 0, p2_starting_index: int = 0) -> Dictionary: return _record_result(_graph.setup_facade.build_matchup_setup_result(p1_unit_definition_ids, p2_unit_definition_ids, side_regular_skill_overrides, p1_starting_index, p2_starting_index))
+func formal_character_ids_result() -> Dictionary: return _record_result(_graph.catalog_facade.formal_character_ids_result())
+func formal_unit_definition_ids_result() -> Dictionary: return _record_result(_graph.catalog_facade.formal_unit_definition_ids_result())
+func build_formal_character_setup_result(character_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary: return _record_result(_graph.setup_facade.build_formal_character_setup_result(character_id, side_regular_skill_overrides))
+func formal_pair_smoke_cases_result() -> Dictionary: return _record_result(_graph.catalog_facade.formal_pair_smoke_cases_result())
+func formal_pair_surface_cases_result() -> Dictionary: return _record_result(_graph.catalog_facade.formal_pair_surface_cases_result())
+func formal_pair_interaction_cases_result() -> Dictionary: return _record_result(_graph.catalog_facade.formal_pair_interaction_cases_result())
+func build_sample_setup_result(side_regular_skill_overrides: Dictionary = {}) -> Dictionary: return _record_result(_graph.setup_facade.build_sample_setup_result(side_regular_skill_overrides))
+func build_demo_replay_input_result(command_port, side_regular_skill_overrides: Dictionary = {}) -> Dictionary: return _record_result(_graph.demo_facade.build_demo_replay_input_result(command_port, side_regular_skill_overrides))
+func build_demo_replay_input_for_profile_result(command_port, demo_profile_id: String, side_regular_skill_overrides: Dictionary = {}) -> Dictionary: return _record_result(_graph.demo_facade.build_demo_replay_input_for_profile_result(command_port, demo_profile_id, side_regular_skill_overrides))
+func build_passive_item_demo_replay_input_result(command_port) -> Dictionary: return _record_result(_graph.demo_facade.build_passive_item_demo_replay_input_result(command_port))
 
 func _record_result(result: Dictionary) -> Dictionary:
 	ErrorStateHelperScript.capture_envelope(self, result)

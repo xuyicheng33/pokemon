@@ -13,6 +13,31 @@
 当前生效规则以 `docs/rules/` 为准；工程结构与交付模板以 `docs/design/` 为准。
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
+## 最近完成：codex follow-up refactor v5 收口（2026-04-26）
+
+- 状态：已完成
+- 目标：落实 `/Users/xuyicheng/.windsurf/plans/codex-followup-refactor-v5-19c179.md` 剩余优化，按批次提交推送，并保持 quick / extended / full 验收入口可用。
+- 范围：
+  1. B/C/D 收口：精简 docs gate wording 镜像、拆 formal baseline catalog 污染面、把 `SampleBattleFactory` 主入口拆到 runtime graph 与 facade，保留外部 API 签名。
+  2. E 收口：formal source 由单文件拆为 runtime / delivery descriptor，`00_shared_registry.json` 拆为 shared matchups / capabilities；移除 per-character `required_test_names / design_needles / adjustment_needles` 治理字段，改用设计稿结构章节、调整记录日期章节、suite 可达性和 surface smoke 技能引用校验。
+  3. 同步脚手架、draft readiness、registry export、delivery registry fixture、schema/checklist/decision 文档。
+- 验收标准：
+  - `SampleBattleFactory` 主文件保持 ≤ 100 行，公开 API 不变。
+  - 单条 formal runtime/delivery descriptor 保持小文件，manifest / capability catalog 只由 source 导出。
+  - quick / extended / full sandbox smoke 与默认/extended gate 均通过。
+- 验证结果：
+  - `bash tests/sync_formal_registry.sh`
+  - `bash scripts/check_formal_character_draft_ready.sh <temp-draft-dir>`（临时草稿模拟通过）
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_suite_reachability.sh`
+  - `bash tests/check_python_lint.sh`
+  - `git diff --check`
+  - `bash tests/run_with_gate.sh`
+  - `SANDBOX_SMOKE_SCOPE=extended bash tests/check_sandbox_smoke_matrix.sh`
+  - `SANDBOX_SMOKE_SCOPE=full bash tests/check_sandbox_smoke_matrix.sh`
+  - `bash tests/run_extended_gate.sh`
+- 提交：`37e40cc refactor: slim factory facades and docs gates`、`06a1ed2 refactor: split formal source into runtime and delivery descriptors`、`0e7a300 test: align formal delivery fixtures with split descriptors`
+
 ## 最近完成：项目复审三阶段（2026-04-26）
 
 - 状态：已完成

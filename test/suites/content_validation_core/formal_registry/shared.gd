@@ -91,15 +91,15 @@ func _build_manifest_character_entry(
 	validator_path: String,
 	design_doc: String,
 	adjustment_doc: String,
-	surface_smoke_skill_id: String,
-	suite_path: String,
-	required_suite_paths: Array,
-	required_test_names: Array,
-	design_needles: Array,
-	adjustment_needles: Array,
-	shared_capability_ids: Array = [],
-	pair_token: String = "",
-	baseline_script_path: String = "",
+		surface_smoke_skill_id: String,
+		suite_path: String,
+		required_suite_paths: Array,
+		_legacy_test_markers: Array,
+		_legacy_design_markers: Array,
+		_legacy_adjustment_markers: Array,
+		shared_capability_ids: Array = [],
+		pair_token: String = "",
+		baseline_script_path: String = "",
 	owned_pair_interaction_specs: Array = []
 ) -> Dictionary:
 	var entry := {
@@ -115,14 +115,11 @@ func _build_manifest_character_entry(
 		"owned_pair_interaction_specs": owned_pair_interaction_specs.duplicate(true),
 		"design_doc": design_doc,
 		"adjustment_doc": adjustment_doc,
-		"surface_smoke_skill_id": surface_smoke_skill_id,
-		"suite_path": suite_path,
-		"required_suite_paths": required_suite_paths,
-		"required_test_names": required_test_names,
-		"shared_capability_ids": shared_capability_ids,
-		"design_needles": design_needles,
-		"adjustment_needles": adjustment_needles,
-	}
+			"surface_smoke_skill_id": surface_smoke_skill_id,
+			"suite_path": suite_path,
+			"required_suite_paths": required_suite_paths,
+			"shared_capability_ids": shared_capability_ids,
+		}
 	var resolved_validator_path := validator_path if not validator_path.is_empty() else _default_validator_script_path_for_unit_id(unit_definition_id)
 	if not resolved_validator_path.is_empty():
 		entry["content_validator_script_path"] = resolved_validator_path
