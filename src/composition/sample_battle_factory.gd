@@ -1,6 +1,7 @@
 extends RefCounted
 class_name SampleBattleFactory
 
+const AvailableMatchupAggregatorScript := preload("res://src/composition/sample_battle_factory_available_matchup_aggregator.gd")
 const BaselineMatchupCatalogScript := preload("res://src/composition/sample_battle_factory_baseline_matchup_catalog.gd")
 const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
 const DemoInputBuilderScript := preload("res://src/composition/sample_battle_factory_demo_input_builder.gd")
@@ -22,6 +23,7 @@ var _demo_catalog: SampleBattleFactoryDemoCatalog = DemoCatalogScript.new()
 var _formal_access: SampleBattleFactoryFormalAccess = FormalAccessScript.new()
 var _formal_matchup_catalog: SampleBattleFactoryFormalMatchupCatalog = MatchupCatalogScript.new()
 var _setup_access: SampleBattleFactorySetupAccess = SetupAccessScript.new()
+var _available_matchup_aggregator: SampleBattleFactoryAvailableMatchupAggregator = AvailableMatchupAggregatorScript.new()
 var _override_config: Dictionary = {
 	OVERRIDE_REGISTRY_PATH: "",
 	OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH: "",
@@ -52,6 +54,8 @@ func _init() -> void:
 	_catalog_access.formal_access = _formal_access
 	_catalog_access.formal_matchup_catalog = _formal_matchup_catalog
 	_catalog_access.refresh_baseline_unit_definition_ids()
+	_available_matchup_aggregator.baseline_matchup_catalog = _catalog_access
+	_available_matchup_aggregator.formal_matchup_catalog = _formal_matchup_catalog
 	BaselineLoaderScript.invalidate_cache()
 
 func dispose() -> void:
@@ -63,6 +67,7 @@ func dispose() -> void:
 	_nullify_links(_demo_input_builder, ["baseline_matchup_catalog", "content_paths_helper", "demo_catalog", "setup_access"])
 	_nullify_links(_formal_access, ["formal_matchup_catalog", "setup_access"])
 	_nullify_links(_catalog_access, ["snapshot_access", "demo_catalog", "formal_access", "formal_matchup_catalog"])
+	_nullify_links(_available_matchup_aggregator, ["baseline_matchup_catalog", "formal_matchup_catalog"])
 	_nullify_override_config([_catalog_access, _snapshot_access, _demo_catalog, _formal_access, _formal_matchup_catalog])
 	_catalog_access = null
 	_snapshot_access = null
@@ -71,6 +76,7 @@ func dispose() -> void:
 	_formal_access = null
 	_formal_matchup_catalog = null
 	_setup_access = null
+	_available_matchup_aggregator = null
 	ErrorStateHelperScript.clear(self)
 
 static func _nullify_links(target, property_names: Array) -> void:
@@ -147,7 +153,7 @@ func build_setup_by_matchup_id_result(matchup_id: String, side_regular_skill_ove
 	return _record_result(_setup_access.build_setup_by_matchup_id_result(matchup_id, side_regular_skill_overrides))
 
 func available_matchups_result() -> Dictionary:
-	return _record_result(_catalog_access.available_matchups_result())
+	return _record_result(_available_matchup_aggregator.available_matchups_result())
 
 func build_matchup_setup_result(
 	p1_unit_definition_ids: PackedStringArray,
