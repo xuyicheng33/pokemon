@@ -105,6 +105,19 @@ if legacy_style:
         print(f"  - {rel_path}", file=sys.stderr)
     sys.exit(1)
 
+import re
+func_test_pattern = re.compile(r"^func\s+test_\w+\s*\(", re.MULTILINE)
+empty_suites = []
+for rel_path in sorted(gdunit_suite_paths):
+    text = (root / rel_path).read_text(encoding="utf-8")
+    if not func_test_pattern.search(text):
+        empty_suites.append(rel_path)
+if empty_suites:
+    print("SUITE_REACHABILITY_FAILED: gdUnit suites missing any func test_* entry:", file=sys.stderr)
+    for rel_path in empty_suites:
+        print(f"  - {rel_path}", file=sys.stderr)
+    sys.exit(1)
+
 missing_required = sorted(required_suite_paths - all_suite_paths)
 if missing_required:
     print("SUITE_REACHABILITY_FAILED: manifest required suite paths are missing from gdUnit tree:", file=sys.stderr)
