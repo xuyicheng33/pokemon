@@ -141,6 +141,10 @@ func runtime_fault_message() -> String:
 
 # Omitted from stable dict (transient per-turn state, reset between turns):
 #   pending_effect_queue, _chain_context_stack, fatal_damage_records_by_target.
+# Included as `runtime_fault_code` / `runtime_fault_message` keys (sourced from
+# the private `_runtime_fault_code` / `_runtime_fault_message` fields via the
+# `record_runtime_fault` single-writer): once a runtime fault is recorded the
+# battle is considered terminated, so the fields participate in the stable hash.
 func to_stable_dict() -> Dictionary:
 	var side_dicts: Array = []
 	var sorted_sides = sides.duplicate()

@@ -122,17 +122,16 @@
 
 ## 8. Facade 稳定入口
 
-`battle_core` 对外围公开稳定 facade 的当前实现是 `BattleCoreManager`。
-`BattleCoreSession` 只是 manager 内部会话壳，不属于外围稳定入口。
+`battle_core` 对外围公开稳定 facade 的当前实现包含两层：`BattleCoreManager` 是 manager 级 facade（多 session 注册、envelope 出口、replay 入口）；`BattleCoreSession` 是 session 级稳定 facade（stable session facade），承载单局 runtime 句柄并对外暴露 `current_battle_state()` / `current_content_index()` / `get_legal_actions_result()` / `run_turn_result()` / `validate_runtime_result()` / `get_event_log_snapshot_result()` / `dispose()` 这套公开方法。manager 自身的 `BattleCoreManagerSessionService` 与 `BattleCorePublicSnapshotBuilder` 通过该 session facade 读取 runtime；外围 manager / adapter 在持有 session 句柄时同样可调用这些公开方法，包括依赖 `current_battle_state()` / `current_content_index()` 的 runtime 引用。
 
 `battle_core/facades/` 当前包含：
 
-- `battle_core_manager.gd`
+- `battle_core_manager.gd`（manager 级稳定 facade）
+- `battle_core_session.gd`（session 级稳定 facade）
 - `public_snapshot_builder.gd`（同时承担战斗公开快照与事件日志公开快照构建）
 - `battle_core_manager_contract_helper.gd`（manager 内部 helper）
 - `battle_core_manager_container_service.gd`（manager 内部 helper）
 - `battle_core_manager_session_service.gd`（manager 内部 helper）
-- `battle_core_session.gd`（manager 内部会话壳）
 
 对外围稳定开放的最小接口为：
 
@@ -154,6 +153,7 @@
 补充说明：
 
 - `initialize_battle` 与 `build_public_snapshot` 仍然存在于核心内部服务图中，但属于 `composition + facades` 内部装配细节，不作为外围稳定入口。
+- `BattleCoreSession` 公开的 `current_battle_state()` / `current_content_index()` 直接返回内部 runtime 引用，是 production 层稳定 API；外围 manager / adapter 在持有 session 句柄期间允许只读访问，但禁止把这些引用缓存到脱离 session 生命周期的位置。
 - facade 若需要装配核心容器，只能依赖 build-container callable / factory port，不应直接持有完整 composition root。
 - `BattleCoreManager` 的公开返回当前统一使用严格 envelope：
   - 成功：`{"ok": true, "data": ... , "error_code": null, "error_message": null}`

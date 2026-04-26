@@ -1,6 +1,21 @@
 extends RefCounted
 class_name EffectInstanceDispatcher
 
+# Active-effect query boundary (Batch E3):
+# This dispatcher is the only place in `src/battle_core/effects/` that iterates
+# `owner_unit.effect_instances` for trigger fan-out / decrement. The "what counts as an active
+# effect" judgment composes:
+#   1) the raw `unit_state.effect_instances` collection (write owners are
+#      `EffectInstanceService` / this dispatcher's `decrement_for_trigger` / `LeaveService`),
+#   2) `effect_definition.trigger_names.has(trigger_name)` filtering, and
+#   3) `_should_skip_reentered_persistent_turn_trigger` (persistent effect on a unit that
+#      re-entered this turn skips its `turn_start` / `turn_end` trigger this turn).
+# `_is_unit_currently_active` is a different concept: it tests "is this unit currently sitting in
+# any of its side's active_slots" (multi-slot aware, no alive check) and gates `on_expire` fan-out
+# only. It does NOT match `TurnStartRegenService`'s "primary active slot + alive" semantics, so the
+# two services cannot share a single active-unit predicate either. See decisions.md
+# (2026-04-27 Batch E3) for the divergence record.
+
 const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [

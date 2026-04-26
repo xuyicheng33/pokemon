@@ -97,6 +97,24 @@
 - payload handler 的具体 script 当前不再单独维护映射表；`BattleCorePayloadServiceSpecs` 会按 `handler_slot -> src/battle_core/effects/payload_handlers/<handler_slot>.gd` 的命名约定解析，静态 gate 同时校验 registry slot 与目录下实际 handler 文件一一对应
 - `payload_resource_runtime_service` 是 heal/resource_mod 共享的数值执行层（两个 handler 复用同一份 `_apply_resource_like_change` 逻辑）；damage / stat_mod 已折叠回各自 handler，handler 直接持有数值逻辑而无单独 runtime_service 文件。
 
+### 4.1 payload_handlers 二级拆分保留情形
+
+当前 payload handler 的默认形态是“自包含”：每个 handler 直接持有数值与日志逻辑，不再为单 owner 维护独立的 runtime_service 文件（B2c 已把 `damage` / `stat_mod` 两对二级拆分折叠回 handler 本体）。
+
+二级拆分（handler + runtime_service）当前唯一保留下来的情形是 `payload_resource_runtime_service`：
+
+- 它由 `PayloadHealHandler` 与 `PayloadResourceModHandler` 两个 handler 共享。
+- 两个 handler 都需要走同一份 `_apply_resource_like_change` 数值变更逻辑（HP / MP / UP 三资源的 clamp、增减、日志构造）。
+- 这是真正的 1:N 共享 helper 关系（一个 runtime_service 同时服务于两个 handler），不属于 audit 当时遗留的“1:1 单 owner 隔离”形态，因此不能折叠回任一 handler。
+
+新增 payload 时的判断顺序：
+
+1. 若新 payload 的数值逻辑与 `heal` / `resource_mod` 完全独立 → 默认 handler 自包含，不引入 runtime_service。
+2. 若新 payload 与 heal / resource_mod 复用资源变更语义 → 走 `payload_resource_runtime_service`，不再拆出第三个 runtime_service。
+3. 若两个以上 handler 真的共享一段非资源类的执行逻辑 → 这条规则才允许新建第二个 runtime_service，并必须在本节同步登记保留理由。
+
+不允许出现的情形：单 handler 单 runtime_service 的"二级拆分"（已在 B2c 一次性折叠完毕，新增 payload 时不得回退到这种形态）。
+
 fail-fast 约束：
 
 - 缺失效果定义或 payload 类型非法：`last_invalid_battle_code = invalid_effect_definition`。

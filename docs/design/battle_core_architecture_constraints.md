@@ -141,7 +141,7 @@ Composition 补充约束：
 
 外围层只允许调用 facade，不允许直连内部容器和 runtime。
 
-当前核心稳定 facade 只有 `BattleCoreManager`；`BattleCoreSession` 只是内部会话壳。
+当前核心对外稳定 facade 包含两层：`BattleCoreManager` 是 manager 级 facade（envelope 出口、session 注册、replay 入口）；`BattleCoreSession` 是 session 级稳定 facade（stable session facade），manager 内部和外围 manager / adapter 都可依赖其公开方法（`current_battle_state()` / `current_content_index()` / `get_legal_actions_result()` / `run_turn_result()` / `validate_runtime_result()` / `get_event_log_snapshot_result()` / `dispose()`）。其中 `current_battle_state()` 与 `current_content_index()` 直接返回 runtime 引用，定位为 production 层稳定 API：在 manager 内部由 `BattleCoreManagerSessionService` 与 `BattleCorePublicSnapshotBuilder` 消费，外围 manager / adapter 也允许在持有该 session 句柄时按只读方式读取。但仍不得绕过 session facade 直接操作内部容器或独立持有 runtime 引用使其逃逸出 session 生命周期。
 
 当前核心 facade 最小职责：
 
@@ -160,7 +160,7 @@ Composition 补充约束：
 补充约束：
 
 - facade 若需要装配容器，只能依赖 build-container callable / factory port，不得直接持有完整 composition root。
-- 外围不得绕过 facade 直接操作 `BattleCoreSession`、内部容器或 runtime。
+- 外围不得绕过 `BattleCoreManager` / `BattleCoreSession` 这两层 facade 直接操作内部容器或 runtime；可以通过 session facade 公开方法读取 runtime 引用，但禁止把这些引用缓存为脱离 session 生命周期的独立长寿状态。
 
 输出契约分离：
 

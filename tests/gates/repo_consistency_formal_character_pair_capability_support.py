@@ -88,10 +88,10 @@ def scan_legacy_registry_refs(ctx: GateContext, legacy_registry_path: str) -> li
     return failures
 
 
-def scan_pair_interaction_support_regressions(ctx: GateContext) -> list[str]:
+def scan_pair_interaction_shared_regressions(ctx: GateContext) -> list[str]:
     failures: list[str] = []
     support_scope_paths = collect_support_scope_tree(ctx, [
-        "test/suites/formal_character_pair_smoke/interaction_support.gd",
+        "test/suites/formal_character_pair_smoke/interaction_shared.gd",
         "tests/support/formal_pair_interaction_test_support.gd",
     ])
     sample_only_tokens = [

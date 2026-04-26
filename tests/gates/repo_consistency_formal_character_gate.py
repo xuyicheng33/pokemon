@@ -35,7 +35,7 @@ LEGACY_DELIVERY_REGISTRY_PATH = "config/formal_character_delivery_registry.json"
 LEGACY_MATCHUP_CATALOG_PATH = "config/formal_matchup_catalog.json"
 VALIDATOR_BAD_CASE_SUITE_DIR = "test/suites/extension_validation_contract"
 PAIR_INTERACTION_SUITE_PATH = "test/suites/formal_character_pair_smoke/interaction_suite.gd"
-PAIR_INTERACTION_SUPPORT_PATH = "test/suites/formal_character_pair_smoke/interaction_support.gd"
+PAIR_INTERACTION_SHARED_PATH = "test/suites/formal_character_pair_smoke/interaction_shared.gd"
 PAIR_INTERACTION_SCENARIO_REGISTRY_PATH = "tests/support/formal_pair_interaction/scenario_registry.gd"
 PAIR_INTERACTION_SCENARIO_EXPORT_SCRIPT_PATH = "tests/helpers/export_formal_pair_interaction_runner_keys.gd"
 PAIR_INTERACTION_CASE_BUILDER_PATH = "src/shared/formal_character_manifest/formal_character_pair_interaction_case_builder.gd"
@@ -269,7 +269,7 @@ validate_manifest_cutover(
     formal_manifest_script_path=FORMAL_MANIFEST_SCRIPT_PATH,
     formal_access_script_path=FORMAL_ACCESS_SCRIPT_PATH,
     pair_interaction_suite_path=PAIR_INTERACTION_SUITE_PATH,
-    pair_interaction_support_path=PAIR_INTERACTION_SUPPORT_PATH,
+    pair_interaction_shared_path=PAIR_INTERACTION_SHARED_PATH,
 )
 
 character_validation = validate_character_entries(

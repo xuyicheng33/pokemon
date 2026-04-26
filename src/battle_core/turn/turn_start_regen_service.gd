@@ -1,6 +1,15 @@
 extends RefCounted
 class_name TurnStartRegenService
 
+# Active-effect query boundary (Batch E3):
+# This service does NOT iterate `unit_state.effect_instances`. The only "active" judgment here is
+# "the side's primary active slot resolves to a unit and that unit is alive" (`get_active_unit()` +
+# `current_hp > 0`). The MP regen amount is driven by `rule_mod_instances` (a separate runtime
+# collection from `effect_instances`) via `RuleModService.resolve_mp_regen_value`.
+# `EffectInstanceService.unit_has_persistent_effect` / `build_active_effect_public_summaries` are
+# the canonical "what counts as an active effect" queries; intentionally NOT used here because this
+# service has no effect-instance read site to collapse. See decisions.md (2026-04-27 Batch E3).
+
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const ValueChangeFactoryScript := preload("res://src/battle_core/contracts/value_change_factory.gd")
 

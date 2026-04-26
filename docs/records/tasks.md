@@ -26,6 +26,10 @@
 - Batch D-Layout: BattleScreen tscn + controller（重启）
 - Batch D-Session: player_battle_session + event_log_streamer + default_policy（重启）
 - Batch D-Lex: PlayerContentLexicon 中文索引器（重启）
+- Batch E3: active 判定统一
+- Batch E1: BattleCoreSession facade 文档对齐
+- Batch E2: payload_service_specs 静态 preload 绑定
+- Batch E4: battle_state 注释 + interaction 重命名 + payload 文档
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 
@@ -762,3 +766,13 @@
 
 
 Batch A1: effect/log 契约 + apply_field 时序
+
+## Batch E2: payload_service_specs 静态 preload 绑定（2026-04-27）
+
+- 状态：已完成
+- 目标：把 `BattleCorePayloadServiceSpecs` 的 payload handler script 绑定从「文件名约定 + `ResourceLoader.load(path_string)`」改为静态 `preload` 常量，让重命名 handler 文件触发编译期硬错。
+- 范围：
+  - `src/composition/battle_core_payload_service_specs.gd`：新增 9 个 handler script `const ... := preload(...)`，新增 `HANDLER_SERVICE_DESCRIPTORS` 静态映射；`service_descriptors()` 改为按 `PayloadContractRegistry` 的 `handler_slot` 在静态 dict 中查表，未命中触发 `assert` fail-fast；删除 `PAYLOAD_HANDLER_SCRIPT_ROOT`、`handler_script_path_for_slot`、`_handler_service_descriptor`、`_load_handler_script` 这条「字符串拼接 + 运行期 load」链路。
+  - `HANDLER_SERVICE_DESCRIPTORS` 放在 `SHARED_SERVICE_DESCRIPTORS` 之前，以保 architecture composition consistency gate 的 `r"const SHARED_SERVICE_DESCRIPTORS := \[(.*?)\]\n\nstatic func service_descriptors"` 正则匹配不变。
+- 验收：`bash tests/check_architecture_constraints.sh` 全 PASS（composition consistency / wiring DAG / layering / 缩进）。
+- 不做：未触动 `effects/payload_handlers/` 下任何 handler 实现文件，未触动 adapters/scenes/tests/test 任何测试。

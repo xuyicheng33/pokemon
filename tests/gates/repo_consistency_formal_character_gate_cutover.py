@@ -3,7 +3,7 @@ from __future__ import annotations
 from repo_consistency_formal_character_pair_capability_support import (
     scan_legacy_registry_refs,
     scan_legacy_sample_factory_calls,
-    scan_pair_interaction_support_regressions,
+    scan_pair_interaction_shared_regressions,
 )
 
 
@@ -22,7 +22,7 @@ def validate_manifest_cutover(
     formal_manifest_script_path: str,
     formal_access_script_path: str,
     pair_interaction_suite_path: str,
-    pair_interaction_support_path: str,
+    pair_interaction_shared_path: str,
 ) -> None:
     for legacy_path in [
         legacy_registry_path,
@@ -78,8 +78,8 @@ def validate_manifest_cutover(
             ctx.failures.append(f"SampleBattleFactory still exposes removed legacy wrapper: {legacy_wrapper}")
 
     pair_interaction_text = ctx.read_text(pair_interaction_suite_path)
-    if f'preload("res://{pair_interaction_support_path}")' not in pair_interaction_text:
-        ctx.failures.append("formal pair interaction wrapper must preload test/suites/formal_character_pair_smoke/interaction_support.gd")
+    if f'preload("res://{pair_interaction_shared_path}")' not in pair_interaction_text:
+        ctx.failures.append("formal pair interaction wrapper must preload test/suites/formal_character_pair_smoke/interaction_shared.gd")
     for stale_needle, label in [
         ("EXPECTED_SCENARIO_IDS", "local scenario list"),
         ("match scenario_", "local scenario dispatch"),
@@ -88,11 +88,11 @@ def validate_manifest_cutover(
         if stale_needle in pair_interaction_text:
             ctx.failures.append(f"{pair_interaction_suite_path} must not keep stale {label}")
 
-    pair_interaction_support_text = ctx.read_text(pair_interaction_support_path)
-    if 'preload("res://test/suites/' in pair_interaction_support_text:
-        ctx.failures.append(f"{pair_interaction_support_path} must not preload suite files directly")
-    if "._test_" in pair_interaction_support_text:
-        ctx.failures.append(f"{pair_interaction_support_path} must not call suite private _test_* helpers")
+    pair_interaction_shared_text = ctx.read_text(pair_interaction_shared_path)
+    if 'preload("res://test/suites/' in pair_interaction_shared_text:
+        ctx.failures.append(f"{pair_interaction_shared_path} must not preload suite files directly")
+    if "._test_" in pair_interaction_shared_text:
+        ctx.failures.append(f"{pair_interaction_shared_path} must not call suite private _test_* helpers")
 
     for rel_path in [
         runtime_registry_helper_path,
@@ -119,5 +119,5 @@ def validate_manifest_cutover(
         ctx.failures.append(failure)
     for failure in scan_legacy_registry_refs(ctx, legacy_registry_path):
         ctx.failures.append(failure)
-    for failure in scan_pair_interaction_support_regressions(ctx):
+    for failure in scan_pair_interaction_shared_regressions(ctx):
         ctx.failures.append(failure)
