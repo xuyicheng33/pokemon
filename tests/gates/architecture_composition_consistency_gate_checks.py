@@ -18,8 +18,6 @@ from architecture_composition_consistency_gate_support import (
 def validate_wiring_specs_entry_points(texts: CompositionTexts) -> None:
     required_helper_entry_points = [
         "static func resolve_missing_dependency(",
-        "static func dependency_edges(",
-        "static func compose_reset_specs(",
         "static func compose_deps(",
         "static func compose_reset_fields(",
     ]
@@ -27,7 +25,7 @@ def validate_wiring_specs_entry_points(texts: CompositionTexts) -> None:
         helper for helper in required_helper_entry_points if helper not in texts.helper_text
     ]
     if missing_helper_entry_points:
-        fail("service dependency helper must expose compose contract helpers", missing_helper_entry_points)
+        fail("dependency contract helper must expose compose contract helpers", missing_helper_entry_points)
     if "runtime_service_slots" not in texts.payload_contract_registry_text:
         fail("payload contract registry must expose runtime service slots", ["src/battle_core/content/payload_contract_registry.gd"])
     if "PayloadRuntimeServiceRegistryScript" not in texts.payload_service_specs_text:
@@ -237,9 +235,9 @@ def validate_composer_api(texts: CompositionTexts) -> None:
         "_owner_declares_dependency(": "composer must validate dependency fields before wiring dynamic specs",
         "ServiceSpecsScript.service_slots()": "composer must iterate ServiceSpecsScript.service_slots()",
         "ServiceSpecsScript.script_by_slot(": "composer must resolve scripts via ServiceSpecsScript.script_by_slot()",
-        "ServiceDependencyContractHelperScript.dependency_edges(": "composer must resolve dependency edges via service dependency helper",
-        "ServiceDependencyContractHelperScript.compose_reset_specs(": "composer must resolve reset specs via service dependency helper",
-        "ServiceDependencyContractHelperScript.resolve_missing_dependency(": "composer must validate compose dependencies via service dependency helper",
+        "DependencyContractHelperScript.compose_deps(": "composer must read compose dependency specs via dependency contract helper",
+        "DependencyContractHelperScript.compose_reset_fields(": "composer must read compose reset fields via dependency contract helper",
+        "DependencyContractHelperScript.resolve_missing_dependency(": "composer must validate compose dependencies via dependency contract helper",
     }
     for snippet, issue in expected_snippets.items():
         if snippet not in texts.composer_text:

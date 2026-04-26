@@ -21,15 +21,28 @@ var phase: String = BattlePhasesScript.BATTLE_INIT
 var sides: Array = []
 var field_state: FieldState = null
 var pending_effect_queue: Array = []
-var chain_context: ChainContext = null
 var battle_result: BattleResult = null
 var rng_stream_index: int = 0
 var fatal_damage_records_by_target: Dictionary = {}
 var field_rule_mod_instances: Array = []
 var last_matchup_signature: String = ""
 var pre_applied_turn_start_regen_turn_index: int = 0
-var runtime_fault_code: String = ""
-var runtime_fault_message: String = ""
+
+# Phase-scope chain context stack. Direct field access is forbidden; use the
+# push / pop / replace_phase / current API below. Any new ChainContext entered
+# during a phase is replaced via `set_phase_chain_context`; nested scopes
+# (effect chains triggering effect chains) must be wrapped in
+# push_chain_context / pop_chain_context pairs and may not leak across phases.
+var _chain_context_stack: Array = []
+
+# runtime_fault_code / runtime_fault_message are written through one
+# canonical method, `BattleState.record_runtime_fault`. The underscore prefix
+# on the storage fields is a grep gate: direct assignment from outside this
+# script is forbidden. Callers route through the public method
+# (`BattleResultService` for coordinated terminate flow, `LogEventBuilder`
+# and `TurnSelectionResolver` from their fail paths).
+var _runtime_fault_code: String = ""
+var _runtime_fault_message: String = ""
 
 func get_side(side_id: String) -> Variant:
 	return _find_side_by_id(side_id)
@@ -61,8 +74,73 @@ func get_active_unit(side_id: String, slot_id: String = ContentSchemaScript.ACTI
 		return null
 	return side_state.get_active_unit(slot_id)
 
+# Chain context phase-scope stack API. ----------------------------------------
+# `current_chain_context()` peeks the active chain (read).
+# `set_phase_chain_context(ctx)` is the canonical writer for turn / battle
+#   phase boundaries. It tolerates an empty stack (push) or a depth-1 stack
+#   (replace bottom) but fail-fasts when nested scopes from a previous phase
+#   leaked. Pass `null` only for fail-fast hard-terminate paths via
+#   `clear_chain_context_stack()`.
+# `push_chain_context(ctx)` enters a nested chain scope (e.g. effect chain
+#   triggering another effect chain). Must be paired with pop_chain_context().
+# `pop_chain_context()` exits a nested scope and returns the popped chain.
+# `clear_chain_context_stack()` resets the stack — used only by hard-terminate
+#   paths after the runtime is already considered invalid.
+
+func current_chain_context() -> Variant:
+	if _chain_context_stack.is_empty():
+		return null
+	return _chain_context_stack[_chain_context_stack.size() - 1]
+
+func chain_context_stack_depth() -> int:
+	return _chain_context_stack.size()
+
+func set_phase_chain_context(chain_context) -> void:
+	# Phase services replace the active phase chain. If a previous phase left
+	# nested scopes on the stack we fail-fast: that means a push_chain_context
+	# was never paired with pop_chain_context.
+	if _chain_context_stack.size() > 1:
+		var leak_message := "BattleState.set_phase_chain_context detected leaked nested chain scopes (depth=%d)" % _chain_context_stack.size()
+		push_error(leak_message)
+		assert(false, leak_message)
+		_chain_context_stack.clear()
+	if _chain_context_stack.is_empty():
+		_chain_context_stack.append(chain_context)
+	else:
+		_chain_context_stack[0] = chain_context
+
+func push_chain_context(chain_context) -> void:
+	_chain_context_stack.append(chain_context)
+
+func pop_chain_context() -> Variant:
+	if _chain_context_stack.is_empty():
+		var underflow_message := "BattleState.pop_chain_context called with empty stack"
+		push_error(underflow_message)
+		assert(false, underflow_message)
+		return null
+	return _chain_context_stack.pop_back()
+
+func clear_chain_context_stack() -> void:
+	_chain_context_stack.clear()
+
+# runtime_fault recorder. -----------------------------------------------------
+# Canonical single writer for `_runtime_fault_*`. Readers call
+# `runtime_fault_code()` / `runtime_fault_message()`. All writers (the
+# coordinated terminate flow in BattleResultService, LogEventBuilder._fail,
+# TurnSelectionResolver._fail_invalid_result) route through this method;
+# direct field assignment from outside this script is forbidden.
+func record_runtime_fault(code: String, message: String) -> void:
+	_runtime_fault_code = code
+	_runtime_fault_message = message
+
+func runtime_fault_code() -> String:
+	return _runtime_fault_code
+
+func runtime_fault_message() -> String:
+	return _runtime_fault_message
+
 # Omitted from stable dict (transient per-turn state, reset between turns):
-#   pending_effect_queue, chain_context, fatal_damage_records_by_target.
+#   pending_effect_queue, _chain_context_stack, fatal_damage_records_by_target.
 func to_stable_dict() -> Dictionary:
 	var side_dicts: Array = []
 	var sorted_sides = sides.duplicate()
@@ -99,8 +177,8 @@ func to_stable_dict() -> Dictionary:
 		"field_rule_mod_instances": field_rule_mod_dicts,
 		"last_matchup_signature": last_matchup_signature,
 		"pre_applied_turn_start_regen_turn_index": pre_applied_turn_start_regen_turn_index,
-		"runtime_fault_code": runtime_fault_code,
-		"runtime_fault_message": runtime_fault_message,
+		"runtime_fault_code": _runtime_fault_code,
+		"runtime_fault_message": _runtime_fault_message,
 		"battle_result": battle_result_dict,
 		"rng_stream_index": rng_stream_index,
 	}

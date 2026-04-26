@@ -1,12 +1,13 @@
 extends RefCounted
 class_name LeaveService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const LifecycleRetentionPolicyScript := preload("res://src/battle_core/lifecycle/lifecycle_retention_policy.gd")
 
 const COMPOSE_DEPS := [
 	{"field": "battle_logger", "source": "battle_logger", "nested": true},
 	{"field": "log_event_builder", "source": "log_event_builder", "nested": true},
+	{"field": "effect_instance_service", "source": "effect_instance_service", "nested": true},
 ]
 
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
@@ -15,6 +16,7 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_logger: BattleLogger
 var log_event_builder: LogEventBuilder
+var effect_instance_service: EffectInstanceService
 var lifecycle_retention_policy = LifecycleRetentionPolicyScript.new()
 var last_invalid_battle_code: Variant = null
 
@@ -22,7 +24,7 @@ func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func leave_unit(battle_state: BattleState, unit_state, reason: String, content_index: BattleContentIndex) -> void:
@@ -37,14 +39,10 @@ func leave_unit(battle_state: BattleState, unit_state, reason: String, content_i
 	for slot_id in side_state.active_slots.keys():
 		if side_state.active_slots[slot_id] == unit_state.unit_instance_id:
 			side_state.clear_active_unit(slot_id)
-	var kept_effects: Array = []
-	var removed_effects: Array = []
+	var effect_partition: Dictionary = effect_instance_service.partition_effects_on_leave(unit_state, reason)
+	var kept_effects: Array = effect_partition.get("kept_effects", [])
+	var removed_effects: Array = effect_partition.get("removed_effects", [])
 	var kept_rule_mods: Array = []
-	for effect_instance in unit_state.effect_instances:
-		if lifecycle_retention_policy.should_keep_effect_instance(effect_instance, reason):
-			kept_effects.append(effect_instance)
-		else:
-			removed_effects.append(effect_instance)
 	for rule_mod_instance in unit_state.rule_mod_instances:
 		if lifecycle_retention_policy.should_keep_rule_mod_instance(rule_mod_instance, reason):
 			kept_rule_mods.append(rule_mod_instance)
@@ -72,21 +70,21 @@ func leave_unit(battle_state: BattleState, unit_state, reason: String, content_i
 	)
 	battle_logger.append_event(state_exit_event)
 	var state_exit_event_id: String = log_event_builder.resolve_event_id(state_exit_event)
-	for effect_instance in removed_effects:
-		var effect_definition = content_index.effects.get(effect_instance.def_id) if content_index != null else null
-		if effect_definition == null:
-			last_invalid_battle_code = ErrorCodesScript.INVALID_EFFECT_DEFINITION
-			return
+	var descriptor_result: Dictionary = effect_instance_service.removed_effect_log_descriptors(removed_effects, content_index)
+	if descriptor_result.get("invalid_battle_code", null) != null:
+		last_invalid_battle_code = descriptor_result.get("invalid_battle_code", null)
+		return
+	for descriptor in descriptor_result.get("descriptors", []):
 		var log_event = log_event_builder.build_effect_event(
 			EventTypesScript.EFFECT_REMOVE_EFFECT,
 			battle_state,
 			state_exit_event_id,
 			{
-				"source_instance_id": effect_instance.source_instance_id,
+				"source_instance_id": descriptor.get("source_instance_id", ""),
 				"target_instance_id": unit_state.unit_instance_id,
-				"priority": effect_definition.priority,
+				"priority": descriptor.get("priority", 0),
 				"trigger_name": "on_exit",
-				"payload_summary": "effect removed on exit: %s" % effect_definition.id,
+				"payload_summary": "effect removed on exit: %s" % String(descriptor.get("def_id", "")),
 			}
 		)
 		battle_logger.append_event(log_event)

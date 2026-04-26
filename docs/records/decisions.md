@@ -11,6 +11,61 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 2026-04-27 Batch B3a：action_cast_service 拆分为 4 个 owner
+
+- `action_cast_service.gd` 从 14 deps / 170 行（"上帝服务"）退化为 6 deps / 93 行 thin orchestrator：仅按 phase 路由到 4 个新建 owner + `action_cast_effect_dispatch_service` + `trigger_batch_runner.execute_trigger_batch` Callable。对外 `execute_lifecycle_trigger_batch` 入口删除，唯一的内部使用点（`_dispatch_on_receive_action_hit_if_needed`）改走新 `dispatch_receive_action_hit_trigger(target, battle_state, content_index)`，把 trigger 名 / chain_context 收口在 segment service 内。
+- 4 个新 owner（均带 `COMPOSE_DEPS` + `resolve_missing_dependency()`，均为顶层 service slot）：
+  - `ActionCastMpService`（2 deps：mp_service / action_log_service）：`resolve_mp_cost / consume_mp / apply_action_start_resource_changes / mark_once_per_battle_usage`。把原本散在 `action_start_phase_service.gd` 内联实现的奥义点累加 / 清空与 `_mark_once_per_battle_usage` 一并归一到 MP service，开始阶段对外只暴露这 4 个语义动作。
+  - `ActionCastTargetService`（1 dep：target_resolver）：`resolve_target / is_action_target_valid / resolve_target_instance_id`。
+  - `ActionCastHitService`（3 deps：hit_service / rule_mod_service / rng_service）：从原 `action_hit_resolution_service.gd` rename 而来；`RESOURCE_FORCED_DEFAULT` 必中分支与领域必中 / 来袭命中修正全部留在该 owner 内部。
+  - `ActionCastSegmentService`（7 deps：damage_service / combat_type_service / stat_calculator / rule_mod_service / faint_killer_attribution_service / action_log_service / trigger_batch_runner）：从原 `action_cast_direct_damage_pipeline.gd` rename 而来；`is_damage_action / apply_direct_damage / apply_default_recoil` 之外新增 `dispatch_receive_action_hit_trigger`，把段级 `on_receive_action_damage_segment` 与 action 级 `on_receive_action_hit` 归到同一 segment owner。
+- 第 5 个 owner：`ActionCastEffectDispatchService`（5 deps：trigger_dispatcher / effect_queue_service / payload_executor / rng_service / trigger_batch_runner）从原 `action_cast_skill_effect_dispatch_pipeline.gd` rename 而来；`on_cast / on_hit / on_miss` 三个 trigger 的 effect 收集 + 排序 + 执行均落在它身上。orchestrator 不再持有 `_compose_post_wire` 私有 helper，全部 owner 走标准 composer 装配路径。
+- 旧文件 `action_cast_direct_damage_pipeline.gd / action_cast_skill_effect_dispatch_pipeline.gd / action_hit_resolution_service.gd` 连同对应 `.gd.uid` 一并 `git rm`，不留 fallback / shim。`docs/records/decisions.md` 老的"slot 下沉"清单（编号 135 / 136 / 137）即时生效——`action_cast_direct_damage_pipeline / action_cast_skill_effect_dispatch_pipeline / action_hit_resolution_service` 不再下沉到 owner 私有，而是各自被 1:1 替换成顶层 service slot；`power_bonus_resolver` 仍是 `action_cast_segment_service` 私有（在 `_compose_post_wire` 中实例化）。
+- 装配端：`battle_core_service_specs.gd` 新增 5 个 slot（`action_cast_mp_service / action_cast_target_service / action_cast_hit_service / action_cast_segment_service / action_cast_effect_dispatch_service`）。`action_cast_service` 的 COMPOSE_DEPS 收缩为 6 条（5 个 cast owner + trigger_batch_runner，全部 `nested: true`）；`architecture_wiring_graph_gate` 验证装配图仍无环。
+- 调用端联动：`action_executor / action_start_phase_service / action_execution_resolution_service / switch_action_service` 仍只通过 `action_cast_service` 入口调用；测试侧仅 `test/suites/sukuna_setup_skill_runtime_suite.gd` 的 `power_bonus_resolver` 替换路径从 `core.service("action_cast_service").action_cast_direct_damage_pipeline.power_bonus_resolver` 改为 `core.service("action_cast_segment_service").power_bonus_resolver`。
+
+## 2026-04-27 Batch B3b：EffectInstanceService 查询 API 收口
+
+- `EffectInstanceService` 新增 4 个查询 API（其中 2 个走 instance、2 个走 static），把原本散在 6 个域的 effect_instance 字段穿透读统一收口：
+  - `unit_has_persistent_effect(unit_state) -> bool`（instance）：覆盖 `turn_expiry_decrement_helper._unit_has_persistent_effect`。
+  - `target_satisfies_required_effect(target_unit, def_id, require_same_owner, required_owner_id) -> {has_match, invalid_battle_code}`（instance）：覆盖 `effect_precondition_service._target_has_required_effect`，meta 缺 `source_owner_id` 时直接返回 `INVALID_STATE_CORRUPTION`，调用方按 fail-fast 处理。
+  - `partition_effects_on_leave(unit_state, leave_reason) -> {kept_effects, removed_effects}` + `removed_effect_log_descriptors(removed, content_index) -> {descriptors, invalid_battle_code}`（instance）：覆盖 `leave_service.leave_unit` 内的离场过滤 + log descriptor 构造（descriptor 按 `{source_instance_id, def_id, priority}` 三元组返回，`def_id → effect_definition` 解析失败直接 `INVALID_EFFECT_DEFINITION` fail-fast）；`lifecycle_retention_policy.should_keep_effect_instance` 整段删除（rule_mod 那一份保留，因为 leave_service 还在用）。
+  - `count_matching_effect_instances(unit_state, allowed_def_ids: PackedStringArray) -> int`（static）：覆盖 `action_cast_execute_contract_helper.count_matching_effect_instances` 与原 `power_bonus_resolver_strategy_effect_stack_sum._count_matching_effect_instances` 这两条几乎重复实现；其中 `power_bonus_resolver_strategy_effect_stack_sum.gd` 因仍在 `src/battle_core/content/`（受 L1 purity gate 约束，不允许 import effects/）保留私有 `_count_matching_effect_instances` 内联实现，未走 static helper。这是本批次唯一未收口的穿透读，理由是收口需要把 strategy 文件搬出 content/，与 B3b 范围分离；audit 单独留作"content 层运行态读取"未决项。
+  - `build_active_effect_public_summaries(unit_state) -> Array`（static）：覆盖 `public_snapshot_builder._build_public_unit_snapshot` 内的 effect_instances 直读循环；schema_version 不动，输出字段集合与原循环一致（`effect_definition_id / remaining / persists_on_switch / __sort_instance_id`），public_snapshot_builder 排序逻辑保持原有路径。public_snapshot_builder 不在 container 内（compose_manager 路径单独实例化），所以走 static helper 而非 COMPOSE_DEPS 注入。
+- 收口的穿透读点：原 6 域共 7 个站点，B3b 收口 6 个（剩 `content/power_bonus_resolver_strategy_effect_stack_sum.gd` 1 个保留私有副本，理由如上）：actions=1（execute_contract_helper）、turn=1（expiry_decrement_helper）、effects=1（precondition_service）、lifecycle=2（leave_service partition + log）、facades=1（public_snapshot_builder）、content=0（保留）。`unit_state.effect_instances` 写入仅在合法 owner 中：`effect_instance_service` / `effect_instance_dispatcher` / `leave_service` 写 `unit_state.effect_instances = kept` / `replacement_change_set.duplicate()`（rollback 语义）。
+- 装配联动：
+  - `effect_precondition_service` 新增 `effect_instance_service` 依赖（COMPOSE_DEPS 1 条，原本声明为空）。
+  - `leave_service` 新增 `effect_instance_service` 依赖（COMPOSE_DEPS 从 2 条扩到 3 条）。
+  - `turn_expiry_decrement_helper` 不是顶层 service slot，新增字段 `effect_instance_service`，由两个真实 owner（`turn_end_phase_service / turn_start_expiry_service`）在 `_sync_decrement_helper` 中同步注入；两个 owner 的 COMPOSE_DEPS 同时增加 `effect_instance_service` slot，`turn_start_expiry_service` 的字段拼接通过 `turn_start_phase_service` 转传。
+
+## 2026-04-27 Batch B2c：payload_handlers 三对折叠
+
+- 调查 `damage / resource_mod / stat_mod` 三对 handler+runtime_service 二级拆分后，确认实际 owner-helper 1:1 关系仅成立于 `damage` 与 `stat_mod`：
+  - `payload_damage_runtime_service` 仅由 `payload_damage_handler` 一处 `apply_damage_payload` 调用（外加 contract_suite 一条单元测试）。
+  - `payload_stat_mod_runtime_service` 仅由 `payload_stat_mod_handler` 一处 `apply_stat_mod_payload` 调用。
+  - `payload_resource_runtime_service` 同时承载 `apply_heal_payload`（heal_handler 用）与 `apply_resource_mod_payload`（resource_mod_handler 用），两个 handler 共享私有 `_apply_resource_like_change`，1:1 owner 关系不成立 → 跳过这对，保持原状。
+- 折叠后两个 handler 自包含逻辑：
+  - `payload_damage_handler.gd` 从 33 行扩为 211 行（吸收原 runtime_service 209 行），COMPOSE_DEPS 由 1 条间接依赖（`payload_damage_runtime_service`）展开为 9 条直接依赖（battle_logger / log_event_builder / damage_service / combat_type_service / stat_calculator / rule_mod_service / faint_killer_attribution_service / target_helper / effect_event_helper）。
+  - `payload_stat_mod_handler.gd` 从 31 行扩为 117 行（吸收原 runtime_service 110 行），COMPOSE_DEPS 由 1 条展开为 4 条直接依赖（battle_logger / log_event_builder / target_helper / effect_event_helper）。
+  - 两个 runtime_service 文件总计删除 209 + 110 = 319 行 GDScript（外加 4 个 .gd / .gd.uid 文件 git rm）。`battle_core_payload_runtime_service_registry.gd` 从 78 行收缩到 50 行。
+- 装配端联动：
+  - `BattleCorePayloadRuntimeServiceRegistry.RUNTIME_SERVICE_DESCRIPTORS` 仅保留 `payload_resource_runtime_service` 一条；damage/stat_mod 的 descriptor 与 preload 引用一并删除。
+  - `PayloadContractRegistry.PAYLOAD_DESCRIPTORS` 中 damage/stat_mod 的 `runtime_service_slots` 改为 `[]`，并把对应依赖清单平移到 `handler_dependencies`，与 apply_effect / rule_mod 等已自包含的 handler 形态对齐。
+  - `payload_execution_contract_suite` 两个用例改用 `payload_handler_registry.handler_by_slot("payload_damage_handler")` 而非 `core.service("payload_damage_runtime_service")`：包括 missing dependency propagation 测试期望路径从 `payload_handler_registry.payload_damage_handler.payload_damage_runtime_service.faint_killer_attribution_service` 收紧为 `payload_handler_registry.payload_damage_handler.faint_killer_attribution_service`，以及 formula owner missing 用例直接调用 handler.execute。
+  - 设计文档 `docs/design/effect_engine.md` 中"三件 runtime_service 保留"那段改写为"resource_runtime_service 是 heal/resource_mod 共享层；damage/stat_mod 已折叠回 handler"。
+- 跨闸结果：`architecture_composition_consistency_gate / architecture_wiring_graph_gate / architecture_gdscript_style_gate / repo_consistency_uid_gate / repo_consistency_docs_gate` 均通过（runtime_service_registry 文件保留，gate 仍要求其存在；只是描述符表收缩到 1 条）。
+
+## 2026-04-27 Batch B1：chain_context phase-scope + runtime_fault 单写者
+
+- `BattleState.chain_context` 字段下沉为内部 `_chain_context_stack: Array`，外部一律通过 `current_chain_context()` / `set_phase_chain_context(ctx)` / `push_chain_context(ctx)` / `pop_chain_context()` / `clear_chain_context_stack()` 访问；旧的 `battle_state.chain_context = X` / `battle_state.chain_context = null` 直接改名为新 API，不留兼容 shim。
+- 栈深守卫：`set_phase_chain_context` 仅容忍 depth ∈ {0, 1}，否则 `push_error + assert(false)` 并清栈，意味着上一阶段遗留了未配对的 `push_chain_context`；`pop_chain_context` 在空栈上同样 fail-fast。这把"阶段链直接覆盖"和"嵌套链入栈"两种语义在 API 上分离，既保留当前 codebase 的覆盖语义，又为将来真正的嵌套 effect 链留出栈底座。
+- 现有所有阶段切换点（`turn_loop_controller`、`turn_start/end_phase_service`、`battle_initializer_phase_service`、`action_executor`、`battle_result_service*`、`turn_loop_validation_helper`、`log_event_builder._fail`、新加的 `set_phase_chain_context`/`clear_chain_context_stack` 调用）都属于 phase-scope replacement，不再产生嵌套；嵌套场景由 `ActionDamageSegmentTriggerContextService` 通过 `current_chain_context()` 拿到当前 ChainContext 后局部 mutate + `_capture/_restore`，不上栈。
+- `BattleState.runtime_fault_code` / `runtime_fault_message` 字段重命名为 `_runtime_fault_code` / `_runtime_fault_message`（grep gate 标记"私有"），公开 API 仅有 `record_runtime_fault(code, message)` 写入与 `runtime_fault_code()` / `runtime_fault_message()` 读取。
+- 单写者入口 `BattleResultService.record_runtime_fault(battle_state, code, message)` 是 service 层唯一允许写入的方法；原本直接写字段的 `LogEventBuilder._fail` 与 `TurnSelectionResolver._fail_invalid_result` 都注入 `battle_result_service` 依赖（`nested: false` 防 compose 循环递归）后改走该入口；composer 已自动按 `COMPOSE_DEPS` 拓扑装配，循环引用通过 `nested: false` + `visited` 双保险避免。
+- 若 LogEventBuilder / TurnSelectionResolver 在没有 battle_result_service 的情况下落进 `_fail` 路径，立即 `push_error + assert(false)` fail-fast，强制单写者契约不允许"静默漏写"。
+- 测试侧的 `LogEventBuilderScript.new()` 隔离测试（`replay_guard_summary_shared._test_log_event_builder_missing_*_contract`）改用 `BattleResultServiceFaultStub`（继承自 `BattleResultService`）注入桩 service，从而保持单写者契约可运行；测试桩仅转发到 `battle_state.record_runtime_fault`。
+- `to_stable_dict()` 的 `runtime_fault_code` / `runtime_fault_message` 输出 key 不变；`_chain_context_stack` 与原 `chain_context` 字段一致仍排除在 stable_dict 外（transient per-turn state）。
+
 ## 2026-04-27 模块复审 round 1 文档对齐（Batch A3）
 
 - `forced_command_type = resource_forced_default` 触发条件以 `LegalActionService._finalize_wait_and_forced_default` 为单一真相：
@@ -161,16 +216,25 @@
 - 测试替身如果要写进这些强类型字段，固定通过继承真实类或 typed stub 适配；`shared_contract_suite` 这类 wiring 契约测试不再用裸 `RefCounted` 穿过类型边界。
 - `battle_core` 核心函数参数中的高频运行态类型（`BattleState`、`BattleContentIndex`、`ChainContext`、`QueuedAction`、`EffectEvent`、`Command`）已补齐显式类型标注。GDScript 4 class-type 参数允许 null，不影响现有防御性 null 检查。
 
-### `battle_core → composition` 受控例外（2026-04-19）
+### SampleBattleFactory 迁出 composition 到 dev_kit（2026-04-27 Batch B2b）
 
-- `battle_core` 各 service 允许 preload `src/composition/service_dependency_contract_helper.gd` 用于 `resolve_missing_dependency` 自检。
-- 此依赖方向是架构层面唯一的逆向白名单，由 `tests/check_architecture_constraints.sh` 显式管控。
-- 除 `service_dependency_contract_helper.gd` 外，`battle_core` 不得 import `composition` 的任何其他文件。
+- `src/composition/sample_battle_factory*.gd`（17 个文件）整套迁到 `src/dev_kit/sample_battle/`，对应 `.gd.uid` 一并 `git mv` 保留。`composition/` 目录现在只承载 production 装配链（`battle_core_composer / battle_core_container / battle_core_*service_specs / battle_core_payload_*`），不再混入开发与测试用的 sample 装配。
+- 4 个 facade（`sample_battle_factory_setup_facade / snapshot_facade / demo_facade / catalog_facade`）属于 runtime graph 的内部装配组件，仅由 `sample_battle_factory_runtime_graph.gd` 引用（无外部 caller），随主套迁到 `src/dev_kit/sample_battle/`，不删、不下沉到 `tests/support/`。结论：它们不是“delegating shim”，而是 owner 拆分出的固定职责面，归属同一 dev_kit 模块。
+- 唯一的 production caller `src/adapters/sandbox_session_bootstrap_service.gd` 改 preload 到 `res://src/dev_kit/sample_battle/sample_battle_factory.gd`；测试与 helper caller（`tests/support/battle_core_test_harness_sample_helper.gd / formal_character_registry.gd`、`tests/helpers/export_sandbox_smoke_catalog.gd / export_formal_delivery_registry.gd`、`test/suites/battle_sandbox_launch_config_contract_suite.gd`）同步切到新路径，不留旧路径 shim。
+- `tests/check_architecture_constraints.sh` 新增反向白名单：`src/battle_core / src/composition / src/shared / scenes` 一律禁止 import `res://src/dev_kit/`。这把“dev_kit 是开发与测试用模块、不参与 production 装配链”这条边界编码进 gate；SandboxSessionBootstrapService 在 `src/adapters/` 是受控例外（适配层允许装配 dev sample factory）。
+- `tests/gates/repo_consistency_formal_character_gate*.py` 中所有 pin 到 `src/composition/sample_battle_factory*` 的常量（`FORMAL_ACCESS_SCRIPT_PATH / RUNTIME_REGISTRY_LOADER_PATH / DELIVERY_REGISTRY_LOADER_PATH` 与 cutover gate 的 `sample_factory_text` 读取）一并切到 `src/dev_kit/sample_battle/`，class_name（`SampleBattleFactory*` 全集）保持不变以避免破坏 manifest / suite 引用。
+
+### `battle_core → composition` 反向依赖清零（2026-04-27 Batch B2a）
+
+- `service_dependency_contract_helper.gd` 已下沉为 `src/shared/dependency_contract_helper.gd`（`class_name DependencyContractHelper`），并移除原本依赖的 `BattleCoreServiceSpecs` 句柄；`battle_core` 各 service 改 preload 这份 shared helper 完成 `resolve_missing_dependency` 自检。
+- 仅供 composer 使用的 `dependency_edges()` / `compose_reset_specs()` 派生逻辑直接内聚回 `BattleCoreComposer`；shared helper 只暴露 `resolve_missing_dependency` / `compose_deps` / `compose_reset_fields` 三个静态入口。
+- `tests/check_architecture_constraints.sh` 的 `battle_core → composition` 白名单已删除：现在 `battle_core` 一律禁止 import `composition`，原 2026-04-19 的受控例外作废。
+- composition consistency gate 同步把 helper 入口期望刷成 shared 三函数版，并把 composer 必备 snippet 改为 `DependencyContractHelperScript.compose_deps(` / `.compose_reset_fields(` / `.resolve_missing_dependency(`。
 
 ## 2. 组合依赖与编排冻结（2026-04-18）
 
 - compose 依赖与 reset 元数据继续只认 script 自声明：`COMPOSE_DEPS`、`COMPOSE_RESET_FIELDS`。
-- `BattleCoreComposer`、runtime 缺依赖检查与两条 architecture gate 统一通过 `service_dependency_contract_helper.gd` 读取这份声明，不再恢复 split wiring specs。
+- `BattleCoreComposer`、runtime 缺依赖检查与两条 architecture gate 统一通过 `src/shared/dependency_contract_helper.gd` 读取这份声明，不再恢复 split wiring specs。
 - composition 当前固定只分三层：核心稳定 service slot、payload/runtime slot、owner 私有 helper 实例。
 - 单 owner、无独立生命周期、无跨模块复用的 helper，默认只留在 owner 内部，不再继续晋升为 composer service slot。
 - 回合编排继续固定为：`turn_selection_resolver.gd`、`turn_start_phase_service.gd`、`turn_end_phase_service.gd`、`turn_field_lifecycle_service.gd`。

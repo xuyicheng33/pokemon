@@ -1,16 +1,16 @@
 extends RefCounted
 class_name RuntimeGuardService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
 func resolve_missing_dependency(service_owner) -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(service_owner)
+	return DependencyContractHelperScript.resolve_missing_dependency(service_owner)
 
 func validate_runtime_state(battle_state: BattleState, content_index: BattleContentIndex = null) -> Variant:
-	if battle_state.chain_context == null:
+	if battle_state.current_chain_context() == null:
 		return ErrorCodesScript.INVALID_STATE_CORRUPTION
 	if battle_state.max_chain_depth <= 0:
 		return ErrorCodesScript.INVALID_STATE_CORRUPTION

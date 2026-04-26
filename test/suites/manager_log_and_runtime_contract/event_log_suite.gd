@@ -194,8 +194,7 @@ func _test_event_log_snapshot_readable_after_invalid_battle(harness) -> Dictiona
 	if session == null:
 		return harness.fail_result("missing manager session internals for invalid battle diagnostic test")
 	var battle_state = session.current_battle_state()
-	battle_state.runtime_fault_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
-	battle_state.runtime_fault_message = "test invalid runtime"
+	battle_state.record_runtime_fault(ErrorCodesScript.INVALID_STATE_CORRUPTION, "test invalid runtime")
 	var event_log_unwrap = _helper.unwrap_ok(manager.get_event_log_snapshot(session_id), "get_event_log_snapshot after invalid")
 	if not bool(event_log_unwrap.get("ok", false)):
 		return harness.fail_result(str(event_log_unwrap.get("error", "event log should remain readable after invalid battle")))

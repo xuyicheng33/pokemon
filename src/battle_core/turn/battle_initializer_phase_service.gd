@@ -1,7 +1,7 @@
 extends RefCounted
 class_name BattleInitializerPhaseService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -71,7 +71,7 @@ var battle_result_service: BattleResultService = null
 var field_lifecycle_service: TurnFieldLifecycleService = null
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func configure_ports(ports: BattleInitializerPorts) -> void:
 	if ports == null:
@@ -96,7 +96,7 @@ func configure_ports(ports: BattleInitializerPorts) -> void:
 	field_lifecycle_service = ports.field_lifecycle_service
 
 func append_battle_header_event(battle_state: BattleState, content_index: BattleContentIndex) -> void:
-	battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_HEADER, "battle_init")
+	battle_state.set_phase_chain_context(_build_system_chain(EventTypesScript.SYSTEM_BATTLE_HEADER, "battle_init"))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.SYSTEM_BATTLE_HEADER,
 		battle_state,
@@ -108,7 +108,7 @@ func append_battle_header_event(battle_state: BattleState, content_index: Battle
 	))
 
 func run_on_enter_phase(battle_state: BattleState, content_index: BattleContentIndex) -> int:
-	battle_state.chain_context = _build_system_chain("system:replace", "system_replace")
+	battle_state.set_phase_chain_context(_build_system_chain("system:replace", "system_replace"))
 	for side_state in battle_state.sides:
 		var active_unit = side_state.get_active_unit()
 		battle_logger.append_event(log_event_builder.build_event(
@@ -133,7 +133,7 @@ func run_on_enter_phase(battle_state: BattleState, content_index: BattleContentI
 	return INIT_PHASE_STOP if field_lifecycle_service.execute_matchup_changed_if_needed(battle_state, content_index) else INIT_PHASE_CONTINUE
 
 func run_battle_init_phase(battle_state: BattleState, content_index: BattleContentIndex) -> int:
-	battle_state.chain_context = _build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, "battle_init")
+	battle_state.set_phase_chain_context(_build_system_chain(EventTypesScript.SYSTEM_BATTLE_INIT, "battle_init"))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.SYSTEM_BATTLE_INIT,
 		battle_state,
@@ -175,7 +175,7 @@ func apply_initial_turn_start_regen(battle_state: BattleState) -> Variant:
 	return null
 
 func _execute_trigger_batch(trigger_name: String, battle_state: BattleState, content_index: BattleContentIndex, owner_unit_ids: Array) -> Variant:
-	return trigger_batch_runner.execute_trigger_batch(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.chain_context)
+	return trigger_batch_runner.execute_trigger_batch(trigger_name, battle_state, content_index, owner_unit_ids, battle_state.current_chain_context())
 
 func _collect_active_unit_ids(battle_state: BattleState) -> Array:
 	var active_ids: Array = []

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name CommandBuilder
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -23,7 +23,7 @@ func error_state() -> Dictionary:
 	return ErrorStateHelperScript.error_state(self)
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func build_command(input_payload: Dictionary) -> Variant:

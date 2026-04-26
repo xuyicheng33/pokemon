@@ -2,7 +2,7 @@ extends RefCounted
 class_name SampleBattleFactoryDemoInputBuilder
 
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
-const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
+const ContentPathsHelperScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_content_paths_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ReplayInputScript := preload("res://src/battle_core/contracts/replay_input.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")

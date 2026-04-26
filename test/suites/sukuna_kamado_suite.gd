@@ -217,7 +217,7 @@ func _test_sukuna_kamado_forced_replace_on_exit_path(harness) -> Dictionary:
 		_build_manual_wait_command(core, 1, "P2", "P2-A"),
 	])
 	var hp_before_forced_replace: int = target_unit.current_hp
-	battle_state.chain_context = core.service("battle_result_service").build_system_chain("system:replace")
+	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain("system:replace"))
 	var replace_result: Dictionary = core.service("replacement_service").execute_forced_replace(
 		battle_state,
 		content_index,

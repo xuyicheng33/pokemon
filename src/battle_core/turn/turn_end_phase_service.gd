@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TurnEndPhaseService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -17,6 +17,11 @@ const COMPOSE_DEPS := [
 	{
 		"field": "effect_instance_dispatcher",
 		"source": "effect_instance_dispatcher",
+		"nested": true,
+	},
+	{
+		"field": "effect_instance_service",
+		"source": "effect_instance_service",
 		"nested": true,
 	},
 	{
@@ -51,6 +56,7 @@ const TurnExpiryDecrementHelperScript := preload("res://src/battle_core/turn/tur
 var turn_field_lifecycle_service: TurnFieldLifecycleService
 var trigger_batch_runner: TriggerBatchRunner
 var effect_instance_dispatcher: EffectInstanceDispatcher
+var effect_instance_service: EffectInstanceService
 var rule_mod_service: RuleModService
 var faint_resolver: FaintResolver
 var battle_logger: BattleLogger
@@ -59,7 +65,7 @@ var battle_result_service: BattleResultService
 var _decrement_helper = TurnExpiryDecrementHelperScript.new()
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func execute_phase(battle_state: BattleState, content_index: BattleContentIndex, cause_event_id: String, turn_end_event = null) -> Dictionary:
 	_sync_decrement_helper()
@@ -102,7 +108,7 @@ func _execute_system_trigger_batch(trigger_name: String, battle_state: BattleSta
 		battle_state,
 		content_index,
 		turn_field_lifecycle_service.collect_active_unit_ids(battle_state),
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if invalid_code != null:
 		battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
@@ -118,6 +124,7 @@ func _execute_system_trigger_batch(trigger_name: String, battle_state: BattleSta
 func _sync_decrement_helper() -> void:
 	_decrement_helper.turn_field_lifecycle_service = turn_field_lifecycle_service
 	_decrement_helper.effect_instance_dispatcher = effect_instance_dispatcher
+	_decrement_helper.effect_instance_service = effect_instance_service
 	_decrement_helper.trigger_batch_runner = trigger_batch_runner
 	_decrement_helper.rule_mod_service = rule_mod_service
 	_decrement_helper.battle_logger = battle_logger

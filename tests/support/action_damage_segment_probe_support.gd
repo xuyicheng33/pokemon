@@ -24,7 +24,7 @@ func run_enemy_segment_trigger(
 	queued_action.target_snapshot = TargetSnapshotScript.new()
 	queued_action.target_snapshot.target_kind = "enemy_active_slot"
 	queued_action.target_snapshot.target_unit_id = target_unit_id
-	battle_state.chain_context = build_chain_context(
+	battle_state.set_phase_chain_context(build_chain_context(
 		actor_id,
 		target_unit_id,
 		String(command.command_type),
@@ -32,7 +32,7 @@ func run_enemy_segment_trigger(
 		segment_combat_type_id,
 		segment_index,
 		segment_total
-	)
+	))
 	return _segment_trigger_context_service.execute_receive_damage_segment_trigger(
 		queued_action,
 		battle_state,

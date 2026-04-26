@@ -52,7 +52,7 @@ def validate_manifest_cutover(
     if f'const REGISTRY_PATH := "res://{manifest_path}"' not in delivery_registry_helper_text:
         ctx.failures.append(f"{delivery_registry_helper_path} must read {manifest_path} directly")
 
-    sample_factory_text = ctx.read_text("src/composition/sample_battle_factory.gd")
+    sample_factory_text = ctx.read_text("src/dev_kit/sample_battle/sample_battle_factory.gd")
     formal_access_text = ctx.read_text(formal_access_script_path)
     if 'preload("res://%s"' % formal_access_script_path not in sample_factory_text:
         ctx.failures.append(f"SampleBattleFactory must delegate formal setup orchestration via {formal_access_script_path}")

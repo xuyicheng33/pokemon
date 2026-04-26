@@ -1,7 +1,7 @@
 extends RefCounted
 class_name BattleResultService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -39,14 +39,24 @@ var _chain_builder = ChainBuilderScript.new()
 var _outcome_resolver = OutcomeResolverScript.new()
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func build_system_chain(command_type: String) -> Variant:
 	return _chain_builder.build_system_chain(id_factory, command_type)
 
+# Coordinated terminate flow entry. The canonical single writer is
+# `BattleState.record_runtime_fault`; this wrapper exists so terminate flows
+# below can record + finalize as one step. Low-level helpers (LogEventBuilder,
+# TurnSelectionResolver) call `BattleState.record_runtime_fault` directly to
+# avoid creating a runtime compose cycle.
+func record_runtime_fault(battle_state: BattleState, code: String, message: String) -> void:
+	if battle_state == null:
+		return
+	battle_state.record_runtime_fault(code, message)
+
 func terminate_invalid_battle(battle_state: BattleState, invalid_code: String) -> void:
-	var resolved_message := String(battle_state.runtime_fault_message) if battle_state != null else ""
+	var resolved_message := String(battle_state.runtime_fault_message()) if battle_state != null else ""
 	if resolved_message.is_empty():
 		resolved_message = "BattleResultService terminate_invalid_battle: battle_id=%s phase=%s invalid_code=%s" % [
 			str(battle_state.battle_id),
@@ -60,13 +70,13 @@ func terminate_invalid_battle(battle_state: BattleState, invalid_code: String) -
 			invalid_code,
 		]
 	)
-	_latch_runtime_fault(battle_state, invalid_code, resolved_message)
+	record_runtime_fault(battle_state, invalid_code, resolved_message)
 	battle_state.battle_result.finished = true
 	battle_state.battle_result.winner_side_id = null
 	battle_state.battle_result.result_type = "no_winner"
 	battle_state.battle_result.reason = invalid_code
 	battle_state.phase = BattlePhasesScript.FINISHED
-	battle_state.chain_context = build_system_chain(EventTypesScript.SYSTEM_INVALID_BATTLE)
+	battle_state.set_phase_chain_context(build_system_chain(EventTypesScript.SYSTEM_INVALID_BATTLE))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.SYSTEM_INVALID_BATTLE,
 		battle_state,
@@ -78,7 +88,7 @@ func terminate_invalid_battle(battle_state: BattleState, invalid_code: String) -
 	))
 
 func hard_terminate_invalid_state(battle_state: BattleState, invalid_code: String, missing_dependency: String) -> void:
-	var resolved_message := String(battle_state.runtime_fault_message) if battle_state != null else ""
+	var resolved_message := String(battle_state.runtime_fault_message()) if battle_state != null else ""
 	if resolved_message.is_empty():
 		resolved_message = "BattleResultService hard_terminate_invalid_state: battle_id=%s phase=%s invalid_code=%s missing_dependency=%s" % [
 			str(battle_state.battle_id),
@@ -96,16 +106,16 @@ func hard_terminate_invalid_state(battle_state: BattleState, invalid_code: Strin
 	)
 	if battle_state.battle_result == null:
 		return
-	_latch_runtime_fault(battle_state, invalid_code, resolved_message)
+	record_runtime_fault(battle_state, invalid_code, resolved_message)
 	battle_state.battle_result.finished = true
 	battle_state.battle_result.winner_side_id = null
 	battle_state.battle_result.result_type = "no_winner"
 	battle_state.battle_result.reason = invalid_code
 	battle_state.phase = BattlePhasesScript.FINISHED
 	if id_factory == null or battle_logger == null or log_event_builder == null:
-		battle_state.chain_context = null
+		battle_state.clear_chain_context_stack()
 		return
-	battle_state.chain_context = build_system_chain(EventTypesScript.SYSTEM_INVALID_BATTLE)
+	battle_state.set_phase_chain_context(build_system_chain(EventTypesScript.SYSTEM_INVALID_BATTLE))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.SYSTEM_INVALID_BATTLE,
 		battle_state,
@@ -156,9 +166,3 @@ func resolve_turn_limit(battle_state: BattleState) -> void:
 
 func _report_invalid_termination(message: String) -> void:
 	printerr("INVALID_TERMINATION: %s" % message)
-
-func _latch_runtime_fault(battle_state: BattleState, invalid_code: String, message: String) -> void:
-	if battle_state == null:
-		return
-	battle_state.runtime_fault_code = invalid_code
-	battle_state.runtime_fault_message = message

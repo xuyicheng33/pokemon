@@ -1,6 +1,6 @@
 extends SceneTree
 
-const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
+const FormalAccessScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_formal_access.gd")
 
 func _init() -> void:
 	var args := OS.get_cmdline_user_args()

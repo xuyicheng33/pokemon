@@ -6,6 +6,13 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LogEventScript := preload("res://src/battle_core/contracts/log_event.gd")
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
+const COMPOSE_DEPS := []
+
+# Runtime fault writes route through `BattleState.record_runtime_fault`
+# directly: that method is the canonical data-layer single writer (the
+# underscore-prefixed fields act as a grep gate). Going through
+# `BattleResultService` would create a runtime compose cycle since the
+# service itself depends on this builder.
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
@@ -23,7 +30,7 @@ func build_event(event_type: String, battle_state: BattleState, payload: Diction
 			return _fail(contract_message, battle_state)
 	if battle_state == null:
 		return _fail("LogEventBuilder.build_event requires battle_state")
-	var chain_context = battle_state.chain_context
+	var chain_context = battle_state.current_chain_context()
 	if chain_context == null:
 		return _fail("LogEventBuilder.build_event missing chain_context", battle_state)
 	if String(chain_context.event_chain_id).is_empty():
@@ -73,13 +80,15 @@ func _clear_error() -> void:
 func _fail(message: String, battle_state: BattleState = null) -> Variant:
 	ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_STATE_CORRUPTION, message)
 	if battle_state != null:
-		battle_state.runtime_fault_code = String(last_error_code)
-		battle_state.runtime_fault_message = message
+		_record_runtime_fault(battle_state, String(last_error_code), message)
 		if battle_state.battle_result != null and not bool(battle_state.battle_result.finished):
 			battle_state.battle_result.finished = true
 			battle_state.battle_result.winner_side_id = null
 			battle_state.battle_result.result_type = "no_winner"
 			battle_state.battle_result.reason = String(last_error_code)
 			battle_state.phase = BattlePhasesScript.FINISHED
-			battle_state.chain_context = null
+			battle_state.clear_chain_context_stack()
 	return null
+
+func _record_runtime_fault(battle_state: BattleState, code: String, message: String) -> void:
+	battle_state.record_runtime_fault(code, message)

@@ -26,7 +26,7 @@ func select_replacement_unit_id(battle_state: BattleState, side_state, legal_ben
 		side_state.side_id,
 		legal_bench_ids,
 		reason,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	var selected_unit_id := str(selected) if selected != null else ""
 	if selected_unit_id.is_empty() or not legal_bench_ids.has(selected_unit_id):

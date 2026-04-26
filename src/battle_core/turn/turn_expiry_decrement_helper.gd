@@ -5,6 +5,7 @@ const EventTypesScript := preload("res://src/shared/event_types.gd")
 
 var turn_field_lifecycle_service: TurnFieldLifecycleService
 var effect_instance_dispatcher: EffectInstanceDispatcher
+var effect_instance_service: EffectInstanceService
 var trigger_batch_runner: TriggerBatchRunner
 var rule_mod_service: RuleModService
 var battle_logger: BattleLogger
@@ -48,7 +49,7 @@ func decrement_effect_instances_and_log(battle_state: BattleState, content_index
 			battle_state,
 			content_index,
 			[],
-			battle_state.chain_context,
+			battle_state.current_chain_context(),
 			expire_events
 		)
 		if expire_invalid_code != null:
@@ -91,9 +92,4 @@ func decrement_rule_mods_and_log(battle_state: BattleState, trigger_name: String
 		battle_logger.append_event(log_event)
 
 func _unit_has_persistent_effect(unit_state: UnitState) -> bool:
-	if unit_state == null:
-		return false
-	for effect_instance in unit_state.effect_instances:
-		if bool(effect_instance.persists_on_switch):
-			return true
-	return false
+	return effect_instance_service.unit_has_persistent_effect(unit_state)

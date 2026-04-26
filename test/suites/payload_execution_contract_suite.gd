@@ -23,8 +23,8 @@ func test_payload_executor_unknown_payload_fail_fast_contract() -> void:
 func test_payload_executor_handler_missing_dependency_propagation_contract() -> void:
 	_assert_legacy_result(_test_payload_executor_handler_missing_dependency_propagation_contract(_harness))
 
-func test_payload_damage_runtime_service_formula_owner_missing_fail_fast_contract() -> void:
-	_assert_legacy_result(_test_payload_damage_runtime_service_formula_owner_missing_fail_fast_contract(_harness))
+func test_payload_damage_handler_formula_owner_missing_fail_fast_contract() -> void:
+	_assert_legacy_result(_test_payload_damage_handler_formula_owner_missing_fail_fast_contract(_harness))
 
 func test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract() -> void:
 	_assert_legacy_result(_test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract(_harness))
@@ -72,7 +72,7 @@ func _test_payload_executor_unknown_payload_fail_fast_contract(harness) -> Dicti
 
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
-	battle_state.chain_context = _support.build_chain_context("test_unknown_payload_chain", actor.unit_instance_id, target.unit_instance_id)
+	battle_state.set_phase_chain_context(_support.build_chain_context("test_unknown_payload_chain", actor.unit_instance_id, target.unit_instance_id))
 	var effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
@@ -82,7 +82,7 @@ func _test_payload_executor_unknown_payload_fail_fast_contract(harness) -> Dicti
 		"action_unknown_payload",
 		2,
 		actor.base_speed,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if effect_events.is_empty():
 		return harness.fail_result("failed to build unknown payload effect event")
@@ -102,8 +102,8 @@ func _test_payload_executor_handler_missing_dependency_propagation_contract(harn
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1318)
 
-	core.service("payload_damage_runtime_service").faint_killer_attribution_service = null
-	var expected_missing := "payload_handler_registry.payload_damage_handler.payload_damage_runtime_service.faint_killer_attribution_service"
+	core.service("payload_handler_registry").handler_by_slot("payload_damage_handler").faint_killer_attribution_service = null
+	var expected_missing := "payload_handler_registry.payload_damage_handler.faint_killer_attribution_service"
 	if core.service("payload_executor").resolve_missing_dependency() != expected_missing:
 		return harness.fail_result("payload executor missing dependency path mismatch: expected=%s actual=%s" % [
 			expected_missing,
@@ -123,7 +123,7 @@ func _test_payload_executor_handler_missing_dependency_propagation_contract(harn
 
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
-	battle_state.chain_context = _support.build_chain_context("test_payload_dependency_chain", actor.unit_instance_id, target.unit_instance_id)
+	battle_state.set_phase_chain_context(_support.build_chain_context("test_payload_dependency_chain", actor.unit_instance_id, target.unit_instance_id))
 	var effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
@@ -133,7 +133,7 @@ func _test_payload_executor_handler_missing_dependency_propagation_contract(harn
 		"action_payload_dependency",
 		2,
 		actor.base_speed,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if effect_events.is_empty():
 		return harness.fail_result("failed to build payload dependency effect event")
@@ -142,7 +142,7 @@ func _test_payload_executor_handler_missing_dependency_propagation_contract(harn
 		return harness.fail_result("payload executor should hard-stop on handler dependency drift, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
 	return harness.pass_result()
 
-func _test_payload_damage_runtime_service_formula_owner_missing_fail_fast_contract(harness) -> Dictionary:
+func _test_payload_damage_handler_formula_owner_missing_fail_fast_contract(harness) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
 		return harness.fail_result(str(core_payload["error"]))
@@ -154,7 +154,7 @@ func _test_payload_damage_runtime_service_formula_owner_missing_fail_fast_contra
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1421)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
-	battle_state.chain_context = _support.build_chain_context("test_formula_ghost_owner_chain", actor.unit_instance_id, target.unit_instance_id)
+	battle_state.set_phase_chain_context(_support.build_chain_context("test_formula_ghost_owner_chain", actor.unit_instance_id, target.unit_instance_id))
 
 	var damage_payload = DamagePayloadScript.new()
 	damage_payload.payload_type = "damage"
@@ -175,12 +175,12 @@ func _test_payload_damage_runtime_service_formula_owner_missing_fail_fast_contra
 	effect_event.source_instance_id = actor.unit_instance_id
 	effect_event.effect_definition_id = damage_effect.id
 	effect_event.owner_id = "ghost_unit_id_does_not_exist"
-	effect_event.chain_context = battle_state.chain_context
+	effect_event.chain_context = battle_state.current_chain_context()
 
-	var damage_runtime = core.service("payload_damage_runtime_service")
-	damage_runtime.apply_damage_payload(damage_payload, damage_effect, effect_event, battle_state, content_index)
-	if damage_runtime.last_invalid_battle_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
-		return harness.fail_result("formula damage with missing owner must fail-fast as INVALID_STATE_CORRUPTION, got %s" % str(damage_runtime.last_invalid_battle_code))
+	var damage_handler = core.service("payload_handler_registry").handler_by_slot("payload_damage_handler")
+	damage_handler.execute(damage_payload, damage_effect, effect_event, battle_state, content_index)
+	if damage_handler.last_invalid_battle_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
+		return harness.fail_result("formula damage with missing owner must fail-fast as INVALID_STATE_CORRUPTION, got %s" % str(damage_handler.last_invalid_battle_code))
 	return harness.pass_result()
 
 func _test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract(harness) -> Dictionary:
@@ -195,7 +195,7 @@ func _test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract(harnes
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 1422)
 	var actor = battle_state.get_side("P1").get_active_unit()
 	var target = battle_state.get_side("P2").get_active_unit()
-	battle_state.chain_context = _support.build_chain_context("test_rule_mod_self_ghost_chain", actor.unit_instance_id, target.unit_instance_id)
+	battle_state.set_phase_chain_context(_support.build_chain_context("test_rule_mod_self_ghost_chain", actor.unit_instance_id, target.unit_instance_id))
 
 	var rule_mod_payload = RuleModPayloadScript.new()
 	rule_mod_payload.payload_type = "rule_mod"
@@ -218,7 +218,7 @@ func _test_payload_rule_mod_handler_self_owner_missing_fail_fast_contract(harnes
 	effect_event.source_instance_id = actor.unit_instance_id
 	effect_event.effect_definition_id = rule_mod_effect.id
 	effect_event.owner_id = "ghost_unit_id_does_not_exist"
-	effect_event.chain_context = battle_state.chain_context
+	effect_event.chain_context = battle_state.current_chain_context()
 
 	var rule_mod_handler = core.service("payload_handler_registry").handler_by_slot("payload_rule_mod_handler")
 	if rule_mod_handler == null:

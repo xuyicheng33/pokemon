@@ -43,7 +43,7 @@ func resolve_surrender(chain_builder, id_factory, battle_logger, log_event_build
 		battle_state.battle_result.winner_side_id = null
 		battle_state.battle_result.result_type = "draw"
 	battle_state.battle_result.reason = "surrender"
-	battle_state.chain_context = chain_builder.build_battle_end_chain(id_factory, resolved_phase, battle_state)
+	battle_state.set_phase_chain_context(chain_builder.build_battle_end_chain(id_factory, resolved_phase, battle_state))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.RESULT_BATTLE_END,
 		battle_state,
@@ -65,7 +65,7 @@ func resolve_turn_limit(chain_builder, id_factory, battle_logger, log_event_buil
 		battle_state.battle_result.winner_side_id = scored_sides[0]["side_id"]
 		battle_state.battle_result.result_type = "win"
 	battle_state.battle_result.reason = "turn_limit"
-	battle_state.chain_context = chain_builder.build_system_chain(id_factory, EventTypesScript.SYSTEM_TURN_LIMIT)
+	battle_state.set_phase_chain_context(chain_builder.build_system_chain(id_factory, EventTypesScript.SYSTEM_TURN_LIMIT))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.SYSTEM_TURN_LIMIT,
 		battle_state,
@@ -101,7 +101,7 @@ func _resolve_victory(chain_builder, id_factory, battle_logger, log_event_builde
 		battle_state.battle_result.winner_side_id = alive_side_ids[0]
 		battle_state.battle_result.result_type = "win"
 		battle_state.battle_result.reason = "elimination"
-	battle_state.chain_context = chain_builder.build_battle_end_chain(id_factory, resolved_phase, battle_state)
+	battle_state.set_phase_chain_context(chain_builder.build_battle_end_chain(id_factory, resolved_phase, battle_state))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.RESULT_BATTLE_END,
 		battle_state,

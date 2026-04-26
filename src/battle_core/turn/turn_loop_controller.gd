@@ -103,7 +103,7 @@ func run_turn(battle_state: BattleState, content_index: BattleContentIndex, comm
 
 func _run_turn_start_phase(battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	battle_state.phase = BattlePhasesScript.TURN_START
-	battle_state.chain_context = battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_START)
+	battle_state.set_phase_chain_context(battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_START))
 	var turn_start_event = log_event_builder.build_event(
 		EventTypesScript.SYSTEM_TURN_START,
 		battle_state,
@@ -162,7 +162,7 @@ func _execute_action_queue(battle_state: BattleState, content_index: BattleConte
 
 func _run_turn_end_phase(battle_state: BattleState, content_index: BattleContentIndex) -> bool:
 	battle_state.phase = BattlePhasesScript.TURN_END
-	battle_state.chain_context = battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_END)
+	battle_state.set_phase_chain_context(battle_result_service.build_system_chain(EventTypesScript.SYSTEM_TURN_END))
 	var turn_end_event = log_event_builder.build_event(
 		EventTypesScript.SYSTEM_TURN_END,
 		battle_state,

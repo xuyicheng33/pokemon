@@ -1,7 +1,7 @@
 extends RefCounted
 class_name FieldApplyService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const FieldApplyLogServiceScript := preload("res://src/battle_core/passives/field_apply_log_service.gd")
 const FieldApplyEffectRunnerScript := preload("res://src/battle_core/passives/field_apply_effect_runner.gd")
 
@@ -29,7 +29,7 @@ var field_apply_log_service: FieldApplyLogService
 var field_apply_effect_runner: FieldApplyEffectRunner
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func _compose_post_wire() -> void:
 	field_apply_log_service = FieldApplyLogServiceScript.new()

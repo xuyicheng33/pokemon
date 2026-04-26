@@ -1,7 +1,7 @@
 extends RefCounted
 class_name FormalCharacterRegistry
 
-const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
+const FormalAccessScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_formal_access.gd")
 const REGISTRY_PATH := "res://config/formal_character_manifest.json"
 
 func load_entries() -> Array:

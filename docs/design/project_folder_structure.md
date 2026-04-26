@@ -76,7 +76,7 @@
 |`src/battle_core/effects/payload_handlers`|payload handler 与其子 runtime service；Effects 的正式子域|
 |`src/battle_core/facades`|对外围公开的稳定 facade 与公开快照构建辅助|
 |`src/adapters`|UI/输入/测试适配层|
-|`src/composition`|服务装配入口；`service_dependency_contract_helper.gd` 统一读取各 service 自声明的 `COMPOSE_DEPS / COMPOSE_RESET_FIELDS`，供 composer / runtime guard / architecture gate 复用|
+|`src/composition`|服务装配入口；`BattleCoreComposer` 内部派生 `dependency_edges` 与 `compose_reset_specs`，对各 service 自声明的 `COMPOSE_DEPS / COMPOSE_RESET_FIELDS` 的读取下沉到 `src/shared/dependency_contract_helper.gd`|
 |`src/shared`|不依赖 `battle_core` 的共享工具、常量，以及 formal manifest / capability catalog / registry contracts 这类跨子域治理入口|
 |`scenes/boot`|应用启动入口|
 |`scenes/sandbox`|战斗骨架调试场景|

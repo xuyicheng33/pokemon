@@ -14,6 +14,12 @@
 带日期的已完成阶段只保留当前仍有引用价值的摘要；完整流水统一看 archive。
 
 - Batch A3: forced_command 对齐 + faint/dedupe 文档化
+- Batch B1: chain_context phase-scope + runtime_fault 单写者
+- Batch B2a: preload composition 下沉到 shared
+- Batch B2b: SampleBattleFactory 迁出到 dev_kit + tests/support
+- Batch B2c: payload_handlers 三对折叠
+- Batch B3a: action_cast_service 拆分为 4 owner
+- Batch B3b: EffectInstanceService 查询 API
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 

@@ -68,7 +68,7 @@ func _test_missing_chain_context_hard_fail(harness) -> Dictionary:
 		return harness.fail_result("SampleBattleFactory init failed")
 	var content_index = harness.build_loaded_content_index(sample_factory)
 	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 222)
-	battle_state.chain_context = null
+	battle_state.clear_chain_context_stack()
 
 	core.service("turn_loop_controller").run_turn(battle_state, content_index, [])
 	if not battle_state.battle_result.finished:

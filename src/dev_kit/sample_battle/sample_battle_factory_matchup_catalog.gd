@@ -1,10 +1,10 @@
 extends RefCounted
 class_name SampleBattleFactoryFormalMatchupCatalog
 
-const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
+const FormalAccessScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_formal_access.gd")
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
-const MatchupContractsScript := preload("res://src/composition/sample_battle_factory_matchup_contracts.gd")
-const SurfaceBuilderScript := preload("res://src/composition/sample_battle_factory_surface_case_builder.gd")
+const MatchupContractsScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_matchup_contracts.gd")
+const SurfaceBuilderScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_surface_case_builder.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 const OVERRIDE_REGISTRY_PATH := "registry_path_override"

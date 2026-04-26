@@ -27,13 +27,13 @@ func run_yinyang_dun_non_skill_segment_ignored_contract(harness) -> Dictionary:
 	var baseline_count := _support.count_effect_instances(obito, "obito_yinyang_zhili")
 	if baseline_count != 1:
 		return harness.fail_result("obito_yinyang_dun should seed exactly one initial stack before non-skill trigger probe")
-	battle_state.chain_context = build_non_skill_segment_chain_context(target.unit_instance_id, obito.unit_instance_id)
+	battle_state.set_phase_chain_context(build_non_skill_segment_chain_context(target.unit_instance_id, obito.unit_instance_id))
 	var invalid_code = core.service("trigger_batch_runner").execute_trigger_batch(
 		"on_receive_action_damage_segment",
 		battle_state,
 		content_index,
 		[obito.unit_instance_id],
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if invalid_code != null:
 		return harness.fail_result("non-skill segment trigger probe should not invalidate battle: %s" % str(invalid_code))

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name SampleBattleFactorySnapshotFacade
 
-const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
+const ContentPathsHelperScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_content_paths_helper.gd")
 
 var content_paths_helper: SampleBattleFactoryContentPathsHelper = null
 

@@ -1,7 +1,6 @@
 extends RefCounted
-class_name ServiceDependencyContractHelper
+class_name DependencyContractHelper
 
-const ServiceSpecsScript := preload("res://src/composition/battle_core_service_specs.gd")
 const PropertyAccessHelperScript := preload("res://src/shared/property_access_helper.gd")
 
 const COMPOSE_DEPS_CONST := "COMPOSE_DEPS"
@@ -15,35 +14,6 @@ static func resolve_missing_dependency(service, skip_fields: PackedStringArray =
 			continue
 		skip_lookup[field_name] = true
 	return _resolve_missing_dependency_recursive(service, skip_lookup, {})
-
-static func dependency_edges(service_slots: PackedStringArray = PackedStringArray()) -> Array:
-	var edges: Array = []
-	for raw_slot_name in _normalized_service_slots(service_slots):
-		var slot_name := String(raw_slot_name)
-		var script_ref = ServiceSpecsScript.script_by_slot(slot_name)
-		for dependency_spec in compose_deps(script_ref):
-			var source_name := String(dependency_spec.get("source", "")).strip_edges()
-			if source_name.is_empty():
-				continue
-			edges.append({
-				"owner": slot_name,
-				"dependency": String(dependency_spec.get("field", "")),
-				"source": source_name,
-			})
-	return edges
-
-static func compose_reset_specs(service_slots: PackedStringArray = PackedStringArray()) -> Array:
-	var reset_specs: Array = []
-	for raw_slot_name in _normalized_service_slots(service_slots):
-		var slot_name := String(raw_slot_name)
-		var script_ref = ServiceSpecsScript.script_by_slot(slot_name)
-		for reset_spec in compose_reset_fields(script_ref):
-			reset_specs.append({
-				"owner": slot_name,
-				"field": String(reset_spec.get("field", "")),
-				"value": reset_spec.get("value", null),
-			})
-	return reset_specs
 
 static func compose_deps(target) -> Array:
 	var normalized_specs: Array = []
@@ -75,11 +45,6 @@ static func compose_reset_fields(target) -> Array:
 			"value": reset_spec.get("value", null),
 		})
 	return normalized_specs
-
-static func _normalized_service_slots(service_slots: PackedStringArray) -> PackedStringArray:
-	if not service_slots.is_empty():
-		return service_slots
-	return ServiceSpecsScript.service_slots()
 
 static func _resolve_missing_dependency_recursive(service, skip_lookup: Dictionary, visited: Dictionary) -> String:
 	if service == null:
@@ -136,8 +101,6 @@ static func _script_for_target(target) -> Variant:
 		return null
 	if target is Script:
 		return target
-	if typeof(target) == TYPE_STRING:
-		return ServiceSpecsScript.script_by_slot(String(target))
 	if typeof(target) != TYPE_OBJECT:
 		return null
 	return target.get_script()

@@ -6,7 +6,7 @@ const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_c
 const BattleCoreManagerContainerServiceScript := preload("res://src/battle_core/facades/battle_core_manager_container_service.gd")
 const ContainerFactoryOwnerPortScript := preload("res://src/battle_core/facades/container_factory_owner_port.gd")
 const ServiceSpecsScript := preload("res://src/composition/battle_core_service_specs.gd")
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
@@ -43,8 +43,8 @@ func shared_content_snapshot_cache() -> Variant:
 func compose() -> Variant:
 	ErrorStateHelperScript.clear(self)
 	var service_slots := _resolve_service_slots()
-	var wiring_specs := ServiceDependencyContractHelperScript.dependency_edges(service_slots)
-	var reset_specs := ServiceDependencyContractHelperScript.compose_reset_specs(service_slots)
+	var wiring_specs := _dependency_edges(service_slots)
+	var reset_specs := _compose_reset_specs(service_slots)
 	var container = BattleCoreContainerScript.new()
 	if not _instantiate_services(container):
 		return null
@@ -137,7 +137,7 @@ func _validate_container_dependencies(container, service_slots: PackedStringArra
 		var service = container.service(slot_name)
 		if service == null:
 			return _fail("Composer missing service: %s" % str(slot_name))
-		var missing_dependency := ServiceDependencyContractHelperScript.resolve_missing_dependency(service)
+		var missing_dependency := DependencyContractHelperScript.resolve_missing_dependency(service)
 		if not missing_dependency.is_empty():
 			return _fail("%s missing dependency: %s" % [slot_name, missing_dependency])
 	return true
@@ -150,6 +150,35 @@ func _setup_private_helpers(container, service_slots: PackedStringArray) -> void
 
 func _resolve_service_slots() -> PackedStringArray:
 	return ServiceSpecsScript.service_slots()
+
+func _dependency_edges(service_slots: PackedStringArray) -> Array:
+	var edges: Array = []
+	for raw_slot_name in service_slots:
+		var slot_name := String(raw_slot_name)
+		var script_ref = ServiceSpecsScript.script_by_slot(slot_name)
+		for dependency_spec in DependencyContractHelperScript.compose_deps(script_ref):
+			var source_name := String(dependency_spec.get("source", "")).strip_edges()
+			if source_name.is_empty():
+				continue
+			edges.append({
+				"owner": slot_name,
+				"dependency": String(dependency_spec.get("field", "")),
+				"source": source_name,
+			})
+	return edges
+
+func _compose_reset_specs(service_slots: PackedStringArray) -> Array:
+	var reset_specs: Array = []
+	for raw_slot_name in service_slots:
+		var slot_name := String(raw_slot_name)
+		var script_ref = ServiceSpecsScript.script_by_slot(slot_name)
+		for reset_spec in DependencyContractHelperScript.compose_reset_fields(script_ref):
+			reset_specs.append({
+				"owner": slot_name,
+				"field": String(reset_spec.get("field", "")),
+				"value": reset_spec.get("value", null),
+			})
+	return reset_specs
 
 func _new_service_instance(slot_name: String) -> Variant:
 	var script_ref = ServiceSpecsScript.script_by_slot(slot_name)

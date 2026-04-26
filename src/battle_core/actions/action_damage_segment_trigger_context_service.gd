@@ -14,13 +14,16 @@ func execute_receive_damage_segment_trigger(
 	segment_combat_type_id: String,
 	trigger_batch_runner
 ) -> Variant:
-	if queued_action == null or battle_state == null or battle_state.chain_context == null:
+	if queued_action == null or battle_state == null:
+		return null
+	var chain_context = battle_state.current_chain_context()
+	if chain_context == null:
 		return null
 	if not _should_dispatch_receive_damage_segment(queued_action, battle_state, target_unit_id):
 		return null
-	var previous_state := _capture_chain_context_state(battle_state.chain_context)
+	var previous_state := _capture_chain_context_state(chain_context)
 	_apply_segment_context(
-		battle_state.chain_context,
+		chain_context,
 		target_unit_id,
 		segment_index,
 		segment_total,
@@ -31,9 +34,9 @@ func execute_receive_damage_segment_trigger(
 		battle_state,
 		content_index,
 		[target_unit_id],
-		battle_state.chain_context
+		chain_context
 	)
-	_restore_chain_context_state(battle_state.chain_context, previous_state)
+	_restore_chain_context_state(chain_context, previous_state)
 	return invalid_code
 
 func _should_dispatch_receive_damage_segment(queued_action: QueuedAction, battle_state: BattleState, target_unit_id: String) -> bool:

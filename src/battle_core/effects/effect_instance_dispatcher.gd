@@ -1,7 +1,7 @@
 extends RefCounted
 class_name EffectInstanceDispatcher
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -19,7 +19,7 @@ var id_factory: IdFactory
 var last_invalid_battle_code: Variant = null
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
@@ -149,7 +149,7 @@ func _collect_expire_events(effect_instance, effect_definition, owner_id: String
 		effect_event.source_order_speed_snapshot = effect_instance.source_order_speed_snapshot
 		effect_event.effect_definition_id = effect_id
 		effect_event.owner_id = owner_id
-		effect_event.chain_context = _build_expire_chain_context(battle_state.chain_context, battle_state, owner_id)
+		effect_event.chain_context = _build_expire_chain_context(battle_state.current_chain_context(), battle_state, owner_id)
 		expire_events.append(effect_event)
 	return expire_events
 

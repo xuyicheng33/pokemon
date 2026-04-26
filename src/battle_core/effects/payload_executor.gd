@@ -1,7 +1,7 @@
 extends RefCounted
 class_name PayloadExecutor
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -27,7 +27,7 @@ func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func execute_effect_event(
@@ -105,18 +105,19 @@ func _resolve_handler_missing(handler) -> String:
 	return ""
 
 func _enter_effect_guard(effect_event: EffectEvent, battle_state: BattleState) -> bool:
-	if battle_state.chain_context == null or battle_state.max_chain_depth <= 0:
+	var chain_context = battle_state.current_chain_context()
+	if chain_context == null or battle_state.max_chain_depth <= 0:
 		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
 		return false
 	var dedupe_key := _build_dedupe_key(effect_event)
-	if battle_state.chain_context.effect_dedupe_keys.has(dedupe_key):
+	if chain_context.effect_dedupe_keys.has(dedupe_key):
 		last_invalid_battle_code = ErrorCodesScript.INVALID_CHAIN_DEPTH
 		return false
-	battle_state.chain_context.effect_dedupe_keys[dedupe_key] = true
-	battle_state.chain_context.chain_depth += 1
-	if battle_state.chain_context.chain_depth > battle_state.max_chain_depth:
-		battle_state.chain_context.chain_depth -= 1
-		battle_state.chain_context.effect_dedupe_keys.erase(dedupe_key)
+	chain_context.effect_dedupe_keys[dedupe_key] = true
+	chain_context.chain_depth += 1
+	if chain_context.chain_depth > battle_state.max_chain_depth:
+		chain_context.chain_depth -= 1
+		chain_context.effect_dedupe_keys.erase(dedupe_key)
 		last_invalid_battle_code = ErrorCodesScript.INVALID_CHAIN_DEPTH
 		return false
 	return true
@@ -128,10 +129,11 @@ func _enter_effect_guard(effect_event: EffectEvent, battle_state: BattleState) -
 # 去重表随之出栈，因此 `_leave_effect_guard` 不需要显式 erase 任何 key；只回退 `chain_depth`。
 # 链深限制由 `chain_depth ≤ max_chain_depth` 单独守卫，不要把这两条混成一回事。
 func _leave_effect_guard(battle_state: BattleState) -> void:
-	if battle_state.chain_context == null:
+	var chain_context = battle_state.current_chain_context()
+	if chain_context == null:
 		return
-	if battle_state.chain_context.chain_depth > 0:
-		battle_state.chain_context.chain_depth -= 1
+	if chain_context.chain_depth > 0:
+		chain_context.chain_depth -= 1
 
 # Key fields are joined by "|". No field value may contain "|"; all current
 # id / trigger_name / discriminator values are plain identifiers guaranteed

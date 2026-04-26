@@ -2,7 +2,7 @@ extends SceneTree
 
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
 const FormalCharacterManifestScript := preload("res://src/shared/formal_character_manifest.gd")
-const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_factory.gd")
+const SampleBattleFactoryScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory.gd")
 
 var _launch_config_helper = BattleSandboxLaunchConfigScript.new()
 

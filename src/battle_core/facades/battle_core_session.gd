@@ -17,10 +17,10 @@ func configure_runtime(container: BattleCoreContainer, battle_state: BattleState
 func validate_runtime_result() -> Variant:
 	if not _is_ready():
 		return BattleCoreManagerContractHelperScript.error(ErrorCodesScript.INVALID_SESSION, "BattleCoreManager session is incomplete")
-	if not String(_battle_state.runtime_fault_code).is_empty():
+	if not String(_battle_state.runtime_fault_code()).is_empty():
 		return BattleCoreManagerContractHelperScript.error(
-			String(_battle_state.runtime_fault_code),
-			String(_battle_state.runtime_fault_message) if not String(_battle_state.runtime_fault_message).is_empty() else "BattleCoreManager runtime state invalid"
+			String(_battle_state.runtime_fault_code()),
+			String(_battle_state.runtime_fault_message()) if not String(_battle_state.runtime_fault_message()).is_empty() else "BattleCoreManager runtime state invalid"
 		)
 	var runtime_guard_service = _get_container_service("runtime_guard_service")
 	if runtime_guard_service == null:
@@ -33,7 +33,7 @@ func validate_runtime_result() -> Variant:
 		if reason.begins_with("invalid_"):
 			return BattleCoreManagerContractHelperScript.error(
 				reason,
-				String(_battle_state.runtime_fault_message) if not String(_battle_state.runtime_fault_message).is_empty() else "BattleCoreManager runtime state invalid: %s" % reason
+				String(_battle_state.runtime_fault_message()) if not String(_battle_state.runtime_fault_message()).is_empty() else "BattleCoreManager runtime state invalid: %s" % reason
 			)
 	var battle_logger = _get_container_service("battle_logger")
 	if battle_logger != null and battle_logger.has_method("error_state"):

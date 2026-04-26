@@ -1,7 +1,7 @@
 extends RefCounted
 class_name BattleInitializer
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 const COMPOSE_DEPS := [
@@ -98,7 +98,7 @@ var last_error_code: Variant = null
 var last_error_message: String = ""
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self, LOCAL_HELPER_FIELDS)
+	return DependencyContractHelperScript.resolve_missing_dependency(self, LOCAL_HELPER_FIELDS)
 
 func error_state() -> Dictionary:
 	return ErrorStateHelperScript.error_state(self)

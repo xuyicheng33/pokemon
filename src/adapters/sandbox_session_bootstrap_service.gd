@@ -2,7 +2,7 @@ extends RefCounted
 class_name SandboxSessionBootstrapService
 
 const BattleCoreComposerScript := preload("res://src/composition/battle_core_composer.gd")
-const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_factory.gd")
+const SampleBattleFactoryScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory.gd")
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 

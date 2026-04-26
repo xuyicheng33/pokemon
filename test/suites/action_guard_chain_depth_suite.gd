@@ -49,7 +49,7 @@ func _test_invalid_chain_depth_max_guard(harness) -> Dictionary:
 	var chain_context = _support.build_chain_context("test_depth_chain", p1_active.unit_instance_id, "")
 	chain_context.command_type = CommandTypesScript.SKILL
 	chain_context.chain_depth = battle_state.max_chain_depth
-	battle_state.chain_context = chain_context
+	battle_state.set_phase_chain_context(chain_context)
 	var effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
@@ -59,7 +59,7 @@ func _test_invalid_chain_depth_max_guard(harness) -> Dictionary:
 		"action_depth_guard",
 		2,
 		p1_active.base_speed,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if effect_events.is_empty():
 		return harness.fail_result("failed to build depth guard effect event")
@@ -91,7 +91,7 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 	var p2_active = battle_state.get_side("P2").get_active_unit()
 	var chain_context = _support.build_chain_context("test_dedupe_chain", p1_active.unit_instance_id, p2_active.unit_instance_id)
 	chain_context.step_counter = 7
-	battle_state.chain_context = chain_context
+	battle_state.set_phase_chain_context(chain_context)
 	var effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
@@ -101,14 +101,14 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 		"action_dedupe_guard",
 		2,
 		p1_active.base_speed,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if effect_events.is_empty():
 		return harness.fail_result("failed to build dedupe guard effect event")
 	core.service("payload_executor").execute_effect_event(effect_events[0], battle_state, content_index)
 	if core.service("payload_executor").last_invalid_battle_code != null:
 		return harness.fail_result("first dedupe event should pass")
-	battle_state.chain_context.step_counter = 7
+	battle_state.current_chain_context().step_counter = 7
 	var retriggered_effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
@@ -118,7 +118,7 @@ func _test_invalid_chain_depth_dedupe_guard(harness) -> Dictionary:
 		"action_dedupe_guard",
 		2,
 		p1_active.base_speed,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if retriggered_effect_events.is_empty():
 		return harness.fail_result("failed to rebuild dedupe guard effect event")
@@ -152,7 +152,7 @@ func _test_dedupe_discriminator_explicit_repeat_contract(harness) -> Dictionary:
 	var p2_active = battle_state.get_side("P2").get_active_unit()
 	var chain_context = _support.build_chain_context("test_dedupe_discriminator_chain", p1_active.unit_instance_id, p2_active.unit_instance_id)
 	chain_context.step_counter = 8
-	battle_state.chain_context = chain_context
+	battle_state.set_phase_chain_context(chain_context)
 	var effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
@@ -162,7 +162,7 @@ func _test_dedupe_discriminator_explicit_repeat_contract(harness) -> Dictionary:
 		"action_dedupe_discriminator",
 		2,
 		p1_active.base_speed,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if effect_events.is_empty():
 		return harness.fail_result("failed to build dedupe discriminator effect event")
@@ -170,7 +170,7 @@ func _test_dedupe_discriminator_explicit_repeat_contract(harness) -> Dictionary:
 	core.service("payload_executor").execute_effect_event(effect_events[0], battle_state, content_index)
 	if core.service("payload_executor").last_invalid_battle_code != null:
 		return harness.fail_result("first dedupe discriminator event should pass")
-	battle_state.chain_context.step_counter = 8
+	battle_state.current_chain_context().step_counter = 8
 	var repeated_effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
@@ -180,7 +180,7 @@ func _test_dedupe_discriminator_explicit_repeat_contract(harness) -> Dictionary:
 		"action_dedupe_discriminator",
 		2,
 		p1_active.base_speed,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if repeated_effect_events.is_empty():
 		return harness.fail_result("failed to rebuild dedupe discriminator effect event")
@@ -188,7 +188,7 @@ func _test_dedupe_discriminator_explicit_repeat_contract(harness) -> Dictionary:
 	core.service("payload_executor").execute_effect_event(repeated_effect_events[0], battle_state, content_index)
 	if core.service("payload_executor").last_invalid_battle_code != null:
 		return harness.fail_result("explicit dedupe discriminator should allow same-chain repeat, got %s" % str(core.service("payload_executor").last_invalid_battle_code))
-	battle_state.chain_context.step_counter = 8
+	battle_state.current_chain_context().step_counter = 8
 	var blocked_effect_events = core.service("trigger_dispatcher").collect_events(
 		"on_cast",
 		battle_state,
@@ -198,7 +198,7 @@ func _test_dedupe_discriminator_explicit_repeat_contract(harness) -> Dictionary:
 		"action_dedupe_discriminator",
 		2,
 		p1_active.base_speed,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if blocked_effect_events.is_empty():
 		return harness.fail_result("failed to rebuild blocked dedupe discriminator effect event")
@@ -229,13 +229,13 @@ func _test_stacked_effect_instances_same_source_contract(harness) -> Dictionary:
 	var target = battle_state.get_side("P2").get_active_unit()
 	core.service("effect_instance_service").create_instance(stack_effect, actor.unit_instance_id, battle_state, "same_stack_source", 1, actor.base_speed)
 	core.service("effect_instance_service").create_instance(stack_effect, actor.unit_instance_id, battle_state, "same_stack_source", 1, actor.base_speed)
-	battle_state.chain_context = _support.build_chain_context("test_same_source_stack_chain", actor.unit_instance_id, target.unit_instance_id)
+	battle_state.set_phase_chain_context(_support.build_chain_context("test_same_source_stack_chain", actor.unit_instance_id, target.unit_instance_id))
 	var effect_events = core.service("effect_instance_dispatcher").collect_trigger_events(
 		"on_cast",
 		battle_state,
 		content_index,
 		[actor.unit_instance_id],
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if effect_events.size() != 2:
 		return harness.fail_result("expected two stacked effect events for same-source stack coverage")

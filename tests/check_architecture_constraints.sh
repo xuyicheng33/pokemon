@@ -73,14 +73,20 @@ fi
 rm -f /tmp/outer_command_imports.out /tmp/outer_command_imports_filtered.out
 
 if rg -n "res://src/composition/" src/battle_core >/tmp/core_to_composition.out 2>/dev/null; then
-  if rg -v "res://src/composition/service_dependency_contract_helper.gd" /tmp/core_to_composition.out >/tmp/core_to_composition_filtered.out 2>/dev/null; then
-    echo "ARCH_GATE_FAILED: battle_core must not import composition except service_dependency_contract_helper.gd" >&2
-    cat /tmp/core_to_composition_filtered.out
-    rm -f /tmp/core_to_composition.out /tmp/core_to_composition_filtered.out
-    exit 1
-  fi
+  echo "ARCH_GATE_FAILED: battle_core must not import composition" >&2
+  cat /tmp/core_to_composition.out
+  rm -f /tmp/core_to_composition.out
+  exit 1
 fi
-rm -f /tmp/core_to_composition.out /tmp/core_to_composition_filtered.out
+rm -f /tmp/core_to_composition.out
+
+if rg -n "res://src/dev_kit/" src/battle_core src/composition src/shared scenes >/tmp/production_to_dev_kit.out 2>/dev/null; then
+  echo "ARCH_GATE_FAILED: production layers (battle_core/composition/shared/scenes) must not import src/dev_kit/*" >&2
+  cat /tmp/production_to_dev_kit.out
+  rm -f /tmp/production_to_dev_kit.out
+  exit 1
+fi
+rm -f /tmp/production_to_dev_kit.out
 
 python3 - <<'PY'
 from pathlib import Path

@@ -5,6 +5,7 @@ const TurnExpiryDecrementHelperScript := preload("res://src/battle_core/turn/tur
 
 var turn_field_lifecycle_service: TurnFieldLifecycleService
 var effect_instance_dispatcher: EffectInstanceDispatcher
+var effect_instance_service: EffectInstanceService
 var trigger_batch_runner: TriggerBatchRunner
 var rule_mod_service: RuleModService
 var battle_logger: BattleLogger
@@ -31,6 +32,7 @@ func execute_expiry_phase(battle_state: BattleState, content_index: BattleConten
 func _sync_decrement_helper() -> void:
 	_decrement_helper.turn_field_lifecycle_service = turn_field_lifecycle_service
 	_decrement_helper.effect_instance_dispatcher = effect_instance_dispatcher
+	_decrement_helper.effect_instance_service = effect_instance_service
 	_decrement_helper.trigger_batch_runner = trigger_batch_runner
 	_decrement_helper.rule_mod_service = rule_mod_service
 	_decrement_helper.battle_logger = battle_logger

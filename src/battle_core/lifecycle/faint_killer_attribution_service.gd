@@ -1,7 +1,7 @@
 extends RefCounted
 class_name FaintKillerAttributionService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -19,7 +19,7 @@ const SOURCE_KIND_ORDER_ACTIVE_SKILL := 2
 var trigger_dispatcher: TriggerDispatcher
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func record_fatal_damage(
@@ -94,18 +94,19 @@ func resolve_killer_for_target(battle_state: BattleState, target_unit_id: String
 func collect_action_on_kill_events(battle_state: BattleState, content_index: BattleContentIndex, killer_unit_ids: Array) -> Dictionary:
 	if killer_unit_ids.is_empty():
 		return {"events": [], "invalid_code": null}
-	if battle_state.chain_context == null or battle_state.chain_context.chain_origin != "action":
+	var chain_context = battle_state.current_chain_context()
+	if chain_context == null or chain_context.chain_origin != "action":
 		return {"events": [], "invalid_code": null}
-	var actor_id = battle_state.chain_context.actor_id
+	var actor_id = chain_context.actor_id
 	if actor_id == null:
 		return {"events": [], "invalid_code": null}
 	var actor_unit_id := str(actor_id)
 	if not killer_unit_ids.has(actor_unit_id):
 		return {"events": [], "invalid_code": null}
-	var command_type = battle_state.chain_context.command_type
+	var command_type = chain_context.command_type
 	if command_type != CommandTypesScript.SKILL and command_type != CommandTypesScript.ULTIMATE:
 		return {"events": [], "invalid_code": null}
-	var skill_id: String = str(battle_state.chain_context.skill_id) if battle_state.chain_context.skill_id != null else ""
+	var skill_id: String = str(chain_context.skill_id) if chain_context.skill_id != null else ""
 	if skill_id.is_empty():
 		return {"events": [], "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
 	var skill_definition = content_index.skills.get(skill_id)
@@ -117,7 +118,7 @@ func collect_action_on_kill_events(battle_state: BattleState, content_index: Bat
 	if actor_unit == null:
 		return {"events": [], "invalid_code": ErrorCodesScript.INVALID_STATE_CORRUPTION}
 	var source_speed_snapshot: int = actor_unit.last_effective_speed if actor_unit.last_effective_speed > 0 else actor_unit.base_speed
-	var source_instance_id: String = str(battle_state.chain_context.root_action_id) if battle_state.chain_context.root_action_id != null else battle_state.chain_context.event_chain_id
+	var source_instance_id: String = str(chain_context.root_action_id) if chain_context.root_action_id != null else chain_context.event_chain_id
 	var effect_events: Array = trigger_dispatcher.collect_events(
 		"on_kill",
 		battle_state,
@@ -127,7 +128,7 @@ func collect_action_on_kill_events(battle_state: BattleState, content_index: Bat
 		source_instance_id,
 		SOURCE_KIND_ORDER_ACTIVE_SKILL,
 		source_speed_snapshot,
-		battle_state.chain_context
+		chain_context
 	)
 	return {"events": effect_events, "invalid_code": null}
 

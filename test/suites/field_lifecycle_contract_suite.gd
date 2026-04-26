@@ -176,7 +176,7 @@ func _test_field_apply_failure_does_not_commit_field(harness) -> Dictionary:
 	effect_event.source_order_speed_snapshot = actor.base_speed
 	effect_event.effect_definition_id = apply_effect.id
 	effect_event.owner_id = actor.unit_instance_id
-	effect_event.chain_context = battle_state.chain_context
+	effect_event.chain_context = battle_state.current_chain_context()
 	core.service("battle_logger").reset()
 	var failing_runner = FailingFieldTriggerBatchRunner.new()
 	var invalid_code = core.service("field_apply_service").apply_field(
@@ -320,12 +320,12 @@ func _test_field_break_transition_preserves_new_field_contract(harness) -> Dicti
 	old_field.creator = actor.unit_instance_id
 	old_field.remaining_turns = 2
 	battle_state.field_state = old_field
-	battle_state.chain_context = core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END)
+	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END))
 	var invalid_code = core.service("field_service").break_active_field(
 		battle_state,
 		content_index,
 		"field_break",
-		battle_state.chain_context,
+		battle_state.current_chain_context(),
 		Callable(core.service("trigger_batch_runner"), "execute_trigger_batch")
 	)
 	if invalid_code != null:
@@ -353,7 +353,7 @@ func _test_field_break_uses_explicit_chain_context_contract(harness) -> Dictiona
 	old_field.creator = actor.unit_instance_id
 	old_field.remaining_turns = 2
 	battle_state.field_state = old_field
-	battle_state.chain_context = core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END)
+	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END))
 	var explicit_chain_context = core.service("battle_result_service").build_system_chain("system:test_field_break_override")
 	var capture_dispatcher = CaptureFieldTriggerDispatcher.new()
 	var capture_runner = CaptureFieldTriggerBatchRunner.new()
@@ -392,7 +392,7 @@ func _test_field_expire_transition_preserves_new_field_contract(harness) -> Dict
 	old_field.creator = actor.unit_instance_id
 	old_field.remaining_turns = 1
 	battle_state.field_state = old_field
-	battle_state.chain_context = core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END)
+	battle_state.set_phase_chain_context(core.service("battle_result_service").build_system_chain(EventTypesScript.SYSTEM_TURN_END))
 	var field_tick_result = core.service("turn_field_lifecycle_service").apply_turn_end_field_tick(
 		battle_state,
 		content_index,

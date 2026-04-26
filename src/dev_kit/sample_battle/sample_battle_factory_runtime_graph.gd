@@ -1,19 +1,19 @@
 extends RefCounted
 class_name SampleBattleFactoryRuntimeGraph
 
-const AvailableMatchupAggregatorScript := preload("res://src/composition/sample_battle_factory_available_matchup_aggregator.gd")
+const AvailableMatchupAggregatorScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_available_matchup_aggregator.gd")
 const BaselineLoaderScript := preload("res://src/shared/formal_character_baselines/formal_character_baseline_loader.gd")
-const BaselineMatchupCatalogScript := preload("res://src/composition/sample_battle_factory_baseline_matchup_catalog.gd")
-const CatalogFacadeScript := preload("res://src/composition/sample_battle_factory_catalog_facade.gd")
-const ContentPathsHelperScript := preload("res://src/composition/sample_battle_factory_content_paths_helper.gd")
-const DemoCatalogScript := preload("res://src/composition/sample_battle_factory_demo_catalog.gd")
-const DemoFacadeScript := preload("res://src/composition/sample_battle_factory_demo_facade.gd")
-const DemoInputBuilderScript := preload("res://src/composition/sample_battle_factory_demo_input_builder.gd")
-const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
-const MatchupCatalogScript := preload("res://src/composition/sample_battle_factory_matchup_catalog.gd")
-const SetupAccessScript := preload("res://src/composition/sample_battle_factory_setup_access.gd")
-const SetupFacadeScript := preload("res://src/composition/sample_battle_factory_setup_facade.gd")
-const SnapshotFacadeScript := preload("res://src/composition/sample_battle_factory_snapshot_facade.gd")
+const BaselineMatchupCatalogScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_baseline_matchup_catalog.gd")
+const CatalogFacadeScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_catalog_facade.gd")
+const ContentPathsHelperScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_content_paths_helper.gd")
+const DemoCatalogScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_demo_catalog.gd")
+const DemoFacadeScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_demo_facade.gd")
+const DemoInputBuilderScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_demo_input_builder.gd")
+const FormalAccessScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_formal_access.gd")
+const MatchupCatalogScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_matchup_catalog.gd")
+const SetupAccessScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_setup_access.gd")
+const SetupFacadeScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_setup_facade.gd")
+const SnapshotFacadeScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_snapshot_facade.gd")
 
 const OVERRIDE_REGISTRY_PATH := "registry_path_override"
 const OVERRIDE_BASELINE_MATCHUP_CATALOG_PATH := "baseline_matchup_catalog_path_override"

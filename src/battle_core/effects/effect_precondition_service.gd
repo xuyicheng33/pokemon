@@ -1,17 +1,22 @@
 extends RefCounted
 class_name EffectPreconditionService
 
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
-const EffectSourceMetaHelperScript := preload("res://src/battle_core/effects/effect_source_meta_helper.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
 
+const COMPOSE_DEPS := [
+	{"field": "effect_instance_service", "source": "effect_instance_service", "nested": true},
+]
+
+var effect_instance_service: EffectInstanceService
 var last_invalid_battle_code: Variant = null
 
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code
 
 func resolve_missing_dependency() -> String:
-	return ""
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func passes_effect_preconditions(effect_definition, effect_event: EffectEvent, battle_state: BattleState) -> bool:
 	last_invalid_battle_code = null
@@ -92,18 +97,17 @@ func _is_required_target_valid(target_unit) -> bool:
 	return target_unit != null and target_unit.leave_state == LeaveStatesScript.ACTIVE and target_unit.current_hp > 0
 
 func _target_has_required_effect(target_unit, effect_definition_id: String, require_same_owner: bool, required_owner_id: String) -> bool:
-	for effect_instance in target_unit.effect_instances:
-		if effect_instance.def_id != effect_definition_id:
-			continue
-		if not require_same_owner:
-			return true
-		var source_owner_id := EffectSourceMetaHelperScript.resolve_source_owner_id(effect_instance.meta)
-		if source_owner_id.is_empty():
-			last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
-			return false
-		if source_owner_id == required_owner_id:
-			return true
-	return false
+	var query_result: Dictionary = effect_instance_service.target_satisfies_required_effect(
+		target_unit,
+		effect_definition_id,
+		require_same_owner,
+		required_owner_id
+	)
+	var query_invalid_code = query_result.get("invalid_battle_code", null)
+	if query_invalid_code != null:
+		last_invalid_battle_code = query_invalid_code
+		return false
+	return bool(query_result.get("has_match", false))
 
 func _fail_invalid_state_corruption() -> bool:
 	last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION

@@ -3,6 +3,7 @@ class_name BattleCorePublicSnapshotBuilder
 
 const BattleHeaderSnapshotBuilderScript := preload("res://src/battle_core/turn/battle_header_snapshot_builder.gd")
 const DeepCopyHelperScript := preload("res://src/shared/deep_copy_helper.gd")
+const EffectInstanceServiceScript := preload("res://src/battle_core/effects/effect_instance_service.gd")
 
 const SAFE_EVENT_FIELDS := [
 	"log_schema_version",
@@ -140,14 +141,7 @@ func _build_public_unit_snapshot(side_state: SideState, unit_state: UnitState) -
 			is_active = true
 			active_slot = String(slot_id)
 			break
-	var effect_summaries: Array = []
-	for effect_instance in unit_state.effect_instances:
-		effect_summaries.append({
-			"effect_definition_id": effect_instance.def_id,
-			"remaining": effect_instance.remaining,
-			"persists_on_switch": effect_instance.persists_on_switch,
-			"__sort_instance_id": effect_instance.instance_id,
-		})
+	var effect_summaries: Array = EffectInstanceServiceScript.build_active_effect_public_summaries(unit_state)
 	effect_summaries.sort_custom(func(left, right):
 		var left_def := String(left.get("effect_definition_id", ""))
 		var right_def := String(right.get("effect_definition_id", ""))

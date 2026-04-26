@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TurnFieldLifecycleService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -43,7 +43,7 @@ var log_event_builder: LogEventBuilder
 var battle_result_service: BattleResultService
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func collect_active_unit_ids(battle_state: BattleState) -> Array:
@@ -63,7 +63,7 @@ func execute_matchup_changed_if_needed(battle_state: BattleState, content_index:
 		battle_state,
 		content_index,
 		collect_active_unit_ids(battle_state),
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if invalid_code != null:
 		battle_result_service.terminate_invalid_battle(battle_state, str(invalid_code))
@@ -75,7 +75,7 @@ func break_field_if_creator_inactive(battle_state: BattleState, content_index: B
 	var invalid_code = field_service.break_field_if_creator_inactive(
 		battle_state,
 		content_index,
-		battle_state.chain_context,
+		battle_state.current_chain_context(),
 		Callable(trigger_batch_runner, "execute_trigger_batch")
 	)
 	if invalid_code == null:
@@ -88,7 +88,7 @@ func break_active_field(battle_state: BattleState, content_index: BattleContentI
 		battle_state,
 		content_index,
 		trigger_name,
-		battle_state.chain_context,
+		battle_state.current_chain_context(),
 		Callable(trigger_batch_runner, "execute_trigger_batch")
 	)
 	if invalid_code == null:
@@ -129,7 +129,7 @@ func apply_turn_end_field_tick(battle_state: BattleState, content_index: BattleC
 			field_definition.on_expire_effect_ids,
 			battle_state,
 			content_index,
-			battle_state.chain_context
+			battle_state.current_chain_context()
 		)
 		var lifecycle_invalid_code = expire_result.get("invalid_code", null)
 		if lifecycle_invalid_code != null:
@@ -145,7 +145,7 @@ func apply_turn_end_field_tick(battle_state: BattleState, content_index: BattleC
 				battle_state,
 				content_index,
 				[],
-				battle_state.chain_context,
+				battle_state.current_chain_context(),
 				expire_events
 			)
 			if expire_invalid_code != null:

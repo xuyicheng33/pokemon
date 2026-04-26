@@ -34,13 +34,13 @@ func build_replay_output_result(
 			ErrorCodesScript.INVALID_STATE_CORRUPTION,
 			"ReplayRunner replay returned null battle_state"
 		)
-	var runtime_fault_code = battle_state.runtime_fault_code
+	var runtime_fault_code = battle_state.runtime_fault_code()
 	if runtime_fault_code != null and not String(runtime_fault_code).is_empty():
 		replay_output.succeeded = false
 		return _build_error_envelope(
 			replay_output,
 			String(runtime_fault_code),
-			String(battle_state.runtime_fault_message) if not String(battle_state.runtime_fault_message).is_empty() else "ReplayRunner replay entered invalid runtime state"
+			String(battle_state.runtime_fault_message()) if not String(battle_state.runtime_fault_message()).is_empty() else "ReplayRunner replay entered invalid runtime state"
 		)
 	var logger_error_code = logger_error_state.get("code", null)
 	if logger_error_code != null:

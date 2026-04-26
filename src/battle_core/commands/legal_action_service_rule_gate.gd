@@ -1,7 +1,7 @@
 extends RefCounted
 class_name LegalActionServiceRuleGate
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -23,7 +23,7 @@ var rule_mod_service
 var domain_legality_service
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func side_domain_recast_blocked_result(battle_state: BattleState, side_id: String, content_index: BattleContentIndex) -> Dictionary:

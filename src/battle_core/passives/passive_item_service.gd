@@ -1,7 +1,7 @@
 extends RefCounted
 class_name PassiveItemService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -18,7 +18,7 @@ var trigger_dispatcher: TriggerDispatcher
 var last_invalid_battle_code: Variant = null
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func invalid_battle_code() -> Variant:
 	return last_invalid_battle_code

@@ -1,14 +1,23 @@
 extends RefCounted
-class_name ActionHitResolutionService
+class_name ActionCastHitService
 
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const ContentSchemaScript := preload("res://src/battle_core/content/content_schema.gd")
 const LeaveStatesScript := preload("res://src/shared/leave_states.gd")
+
+const COMPOSE_DEPS := [
+	{"field": "hit_service", "source": "hit_service", "nested": true},
+	{"field": "rule_mod_service", "source": "rule_mod_service", "nested": true},
+	{"field": "rng_service", "source": "rng_service", "nested": true},
+]
 
 var hit_service: HitService
 var rule_mod_service: RuleModService
 var rng_service: RngService
 
+func resolve_missing_dependency() -> String:
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func resolve_hit(command: Command, skill_definition, resolved_target, battle_state: BattleState, content_index: BattleContentIndex) -> Dictionary:
 	if command.command_type == CommandTypesScript.RESOURCE_FORCED_DEFAULT:
@@ -35,12 +44,12 @@ func resolve_hit(command: Command, skill_definition, resolved_target, battle_sta
 		return incoming_accuracy_result
 	resolved_accuracy = int(incoming_accuracy_result.get("accuracy", resolved_accuracy))
 	if resolved_accuracy < 0:
-		push_error("ActionHitResolutionService.resolve_hit: accuracy must be >= 0; actor=%s skill=%s accuracy=%d" % [
+		push_error("ActionCastHitService.resolve_hit: accuracy must be >= 0; actor=%s skill=%s accuracy=%d" % [
 			String(command.actor_id),
 			String(skill_definition.id) if skill_definition != null else "<null>",
 			resolved_accuracy,
 		])
-		assert(false, "ActionHitResolutionService resolved_accuracy < 0")
+		assert(false, "ActionCastHitService resolved_accuracy < 0")
 	var hit_info: Dictionary = _roll_hit_result(resolved_accuracy)
 	battle_state.rng_stream_index = rng_service.get_stream_index()
 	return hit_info

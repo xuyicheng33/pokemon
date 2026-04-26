@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TurnSelectionResolver
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 const COMPOSE_DEPS := [
@@ -29,6 +29,10 @@ const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 var legal_action_service: LegalActionService
 var command_builder: CommandBuilder
 var command_validator: CommandValidator
+# Runtime fault writes route through `BattleState.record_runtime_fault`
+# directly (the canonical data-layer single writer). Going through
+# `BattleResultService` would create a runtime compose cycle since the
+# service depends on the builder which lives downstream of selection.
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
@@ -36,7 +40,7 @@ func error_state() -> Dictionary:
 	return ErrorStateHelperScript.error_state(self)
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func reset_turn_state(battle_state: BattleState) -> void:
@@ -140,8 +144,7 @@ func _fail_invalid_result(battle_state: BattleState, invalid_code: String, messa
 	ErrorStateHelperScript.fail(self, invalid_code, message)
 	_clear_selection_state(battle_state)
 	if battle_state != null:
-		battle_state.runtime_fault_code = invalid_code
-		battle_state.runtime_fault_message = message
+		battle_state.record_runtime_fault(invalid_code, message)
 	return _invalid_result(invalid_code, message)
 
 func _service_invalid_result(battle_state: BattleState, service, fallback_code: String, fallback_message: String) -> Dictionary:

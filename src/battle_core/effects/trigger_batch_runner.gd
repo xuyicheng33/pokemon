@@ -1,7 +1,7 @@
 extends RefCounted
 class_name TriggerBatchRunner
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -158,4 +158,4 @@ func _read_invalid_battle_code(source_service) -> Variant:
 	return source_service.invalid_battle_code()
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)

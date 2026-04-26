@@ -71,7 +71,7 @@ func execute_field_effects(
 		battle_state,
 		content_index,
 		[],
-		battle_state.chain_context,
+		battle_state.current_chain_context(),
 		effect_events
 	)
 
@@ -108,7 +108,7 @@ func execute_success_effects(
 		battle_state,
 		content_index,
 		[],
-		battle_state.chain_context,
+		battle_state.current_chain_context(),
 		success_events
 	)
 
@@ -155,7 +155,7 @@ func execute_pending_success_effects(
 		battle_state,
 		content_index,
 		[],
-		battle_state.chain_context,
+		battle_state.current_chain_context(),
 		success_events
 	)
 

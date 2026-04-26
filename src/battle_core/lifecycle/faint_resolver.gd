@@ -1,7 +1,7 @@
 extends RefCounted
 class_name FaintResolver
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const FaintLeaveReplacementServiceScript := preload("res://src/battle_core/lifecycle/faint_leave_replacement_service.gd")
 
 const COMPOSE_DEPS := [
@@ -26,7 +26,7 @@ var replacement_service: ReplacementService
 var faint_leave_replacement_service: FaintLeaveReplacementService
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func _compose_post_wire() -> void:
 	faint_leave_replacement_service = FaintLeaveReplacementServiceScript.new()
@@ -123,7 +123,7 @@ func _execute_unit_trigger_batch(trigger_name: String, battle_state: BattleState
 		battle_state,
 		content_index,
 		owner_unit_ids,
-		battle_state.chain_context,
+		battle_state.current_chain_context(),
 		extra_effect_events
 	)
 
@@ -133,6 +133,6 @@ func _execute_field_break_if_creator_inactive(battle_state: BattleState, content
 	return field_service.break_field_if_creator_inactive(
 		battle_state,
 		content_index,
-		battle_state.chain_context,
+		battle_state.current_chain_context(),
 		Callable(trigger_batch_runner, "execute_trigger_batch")
 	)

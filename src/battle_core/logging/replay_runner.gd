@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ReplayRunner
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -61,7 +61,7 @@ var _context_builder = ReplayRunnerExecutionContextBuilderScript.new()
 var _output_helper = ReplayRunnerOutputHelperScript.new()
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func error_state() -> Dictionary:

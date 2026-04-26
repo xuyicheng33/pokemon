@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ActionLogService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -24,7 +24,7 @@ var battle_logger: BattleLogger
 var log_event_builder: LogEventBuilder
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 
 func log_action_cancelled_pre_start(queued_action: QueuedAction, battle_state: BattleState, command: Command) -> void:

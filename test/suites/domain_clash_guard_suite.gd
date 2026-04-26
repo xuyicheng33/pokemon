@@ -140,7 +140,7 @@ func _test_active_field_missing_creator_local_guard_contract(harness) -> Diction
 	var invalid_code = core.service("field_service").break_field_if_creator_inactive(
 		battle_state,
 		content_index,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if invalid_code != ErrorCodesScript.INVALID_STATE_CORRUPTION:
 		return harness.fail_result("field_service local path should fail-fast when creator is empty")

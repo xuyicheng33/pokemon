@@ -1,5 +1,15 @@
 extends RefCounted
-class_name ActionCastSkillEffectDispatchPipeline
+class_name ActionCastEffectDispatchService
+
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
+
+const COMPOSE_DEPS := [
+	{"field": "trigger_dispatcher", "source": "trigger_dispatcher"},
+	{"field": "effect_queue_service", "source": "effect_queue_service"},
+	{"field": "payload_executor", "source": "payload_executor"},
+	{"field": "rng_service", "source": "rng_service", "nested": true},
+	{"field": "trigger_batch_runner", "source": "trigger_batch_runner", "nested": true},
+]
 
 var trigger_dispatcher: TriggerDispatcher
 var effect_queue_service: EffectQueueService
@@ -7,6 +17,8 @@ var payload_executor: PayloadExecutor
 var rng_service: RngService
 var trigger_batch_runner: TriggerBatchRunner
 
+func resolve_missing_dependency() -> String:
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String, queued_action: QueuedAction, actor, battle_state: BattleState, content_index: BattleContentIndex, result, source_kind_order_active_skill: int) -> void:
 	if effect_ids.is_empty():
@@ -20,7 +32,7 @@ func dispatch_skill_effects(effect_ids: PackedStringArray, trigger_name: String,
 		queued_action.action_id,
 		source_kind_order_active_skill,
 		queued_action.speed_snapshot,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 	if trigger_dispatcher.invalid_battle_code() != null:
 		result.invalid_battle_code = trigger_dispatcher.invalid_battle_code()

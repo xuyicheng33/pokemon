@@ -114,13 +114,12 @@ func _test_manager_container_run_replay_missing_dependency_contract() -> Diction
 func _test_replay_output_helper_runtime_fault_contract() -> Dictionary:
 	var helper = ReplayRunnerOutputHelperScript.new()
 	var battle_state = _build_finished_battle_state()
-	battle_state.runtime_fault_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
-	battle_state.runtime_fault_message = "runtime fault latched"
+	battle_state.record_runtime_fault(ErrorCodesScript.INVALID_STATE_CORRUPTION, "runtime fault latched")
 	var result = helper.build_replay_output_result([], battle_state)
 	if bool(result.get("ok", true)):
 		return {
 			"ok": false,
-			"error": "ReplayRunnerOutputHelper should fail when battle_state.runtime_fault_code is latched",
+			"error": "ReplayRunnerOutputHelper should fail when battle_state.runtime_fault_code() is latched",
 		}
 	var replay_output = result.get("replay_output", null)
 	if replay_output == null or bool(replay_output.succeeded):
@@ -189,7 +188,7 @@ func _test_log_event_builder_missing_cause_event_id_contract() -> Dictionary:
 	var battle_state := BattleStateScript.new()
 	var chain_context := ChainContextScript.new()
 	chain_context.event_chain_id = "chain_test"
-	battle_state.chain_context = chain_context
+	battle_state.set_phase_chain_context(chain_context)
 	var log_event = builder.build_effect_event("effect:damage", battle_state, "")
 	if log_event != null:
 		return {

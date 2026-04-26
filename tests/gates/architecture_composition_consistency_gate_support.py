@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 
 SERVICE_SPECS_PATH = ROOT / "src/composition/battle_core_service_specs.gd"
-SERVICE_DEPENDENCY_HELPER_PATH = ROOT / "src/composition/service_dependency_contract_helper.gd"
+DEPENDENCY_CONTRACT_HELPER_PATH = ROOT / "src/shared/dependency_contract_helper.gd"
 CONTAINER_PATH = ROOT / "src/composition/battle_core_container.gd"
 COMPOSER_PATH = ROOT / "src/composition/battle_core_composer.gd"
 PAYLOAD_CONTRACT_REGISTRY_PATH = ROOT / "src/battle_core/content/payload_contract_registry.gd"
@@ -253,7 +253,7 @@ def parse_compose_reset_specs(script_rel_path: str) -> list[str]:
 def load_composition_texts() -> CompositionTexts:
     return CompositionTexts(
         service_specs_text=SERVICE_SPECS_PATH.read_text(encoding="utf-8"),
-        helper_text=SERVICE_DEPENDENCY_HELPER_PATH.read_text(encoding="utf-8"),
+        helper_text=DEPENDENCY_CONTRACT_HELPER_PATH.read_text(encoding="utf-8"),
         container_text=CONTAINER_PATH.read_text(encoding="utf-8"),
         composer_text=COMPOSER_PATH.read_text(encoding="utf-8"),
         payload_contract_registry_text=PAYLOAD_CONTRACT_REGISTRY_PATH.read_text(encoding="utf-8"),

@@ -58,7 +58,10 @@ func _update_chain_context_target(queued_action: QueuedAction, battle_state: Bat
 		return
 	if queued_action.target_snapshot.target_kind == ContentSchemaScript.TARGET_FIELD:
 		return
-	battle_state.chain_context.target_unit_id = resolved_target.unit_instance_id
+	var chain_context = battle_state.current_chain_context()
+	if chain_context == null:
+		return
+	chain_context.target_unit_id = resolved_target.unit_instance_id
 
 func _resolve_miss(queued_action: QueuedAction, actor, command: Command, skill_definition, resolved_target, hit_info: Dictionary, battle_state: BattleState, content_index: BattleContentIndex, result) -> void:
 	action_log_service.log_action_miss(
@@ -84,11 +87,6 @@ func _dispatch_on_receive_action_hit_if_needed(queued_action: QueuedAction, comm
 	var target_side = battle_state.get_side_for_unit(resolved_target.unit_instance_id)
 	if actor_side == null or target_side == null or actor_side.side_id == target_side.side_id:
 		return
-	var invalid_code = action_cast_service.execute_lifecycle_trigger_batch(
-		ContentSchemaScript.TRIGGER_ON_RECEIVE_ACTION_HIT,
-		battle_state,
-		content_index,
-		[resolved_target.unit_instance_id]
-	)
+	var invalid_code = action_cast_service.dispatch_receive_action_hit_trigger(resolved_target, battle_state, content_index)
 	if invalid_code != null:
 		result.invalid_battle_code = invalid_code

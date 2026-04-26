@@ -1,7 +1,7 @@
 extends RefCounted
 class_name RuleModService
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 
 const COMPOSE_DEPS := [
 	{
@@ -21,7 +21,7 @@ var _read_service = RuleModReadServiceScript.new()
 var _write_service = RuleModWriteServiceScript.new()
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func error_state() -> Dictionary:
 	var read_error_state: Dictionary = _read_service.error_state()

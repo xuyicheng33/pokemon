@@ -2,7 +2,7 @@ extends RefCounted
 class_name SampleBattleFactoryContentPathsHelper
 
 const BattleInputContractHelperScript := preload("res://src/battle_core/contracts/battle_input_contract_helper.gd")
-const BaseSnapshotPathsServiceScript := preload("res://src/composition/sample_battle_factory_base_snapshot_paths_service.gd")
+const BaseSnapshotPathsServiceScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_base_snapshot_paths_service.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const BASE_CONTENT_SNAPSHOT_DIRS = BaseSnapshotPathsServiceScript.BASE_CONTENT_SNAPSHOT_DIRS
 const PropertyAccessHelperScript := preload("res://src/shared/property_access_helper.gd")

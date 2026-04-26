@@ -40,4 +40,4 @@ func _fallback_hard_terminate_invalid_state(battle_state: BattleState, invalid_c
 	battle_state.battle_result.result_type = "no_winner"
 	battle_state.battle_result.reason = invalid_code
 	battle_state.phase = BattlePhasesScript.FINISHED
-	battle_state.chain_context = null
+	battle_state.clear_chain_context_stack()

@@ -79,7 +79,7 @@
 
 ## 5. 依赖纪律
 
-- `battle_core` 不依赖 `adapters`、`composition`、`scenes`。受控例外：`battle_core` 各 service 允许 preload `src/composition/service_dependency_contract_helper.gd` 用于 `resolve_missing_dependency` 自检；此路径由 architecture gate 白名单管控。
+- `battle_core` 不依赖 `adapters`、`composition`、`scenes`。`resolve_missing_dependency` 自检统一走 `src/shared/dependency_contract_helper.gd`，不再保留 `battle_core → composition` 受控例外。
 - `shared` 不依赖 `battle_core`。
 - `math` 不写 `BattleState`。
 - `logging` 不改写运行态，只观察并记录。
@@ -103,7 +103,7 @@
 - `src/composition/battle_core_composer.gd`
   - 负责创建 RNG、ID、commands、turn、effects、logging 等服务对象。
   - 负责维护 composer 级共享 `content_snapshot_cache`，供同一 manager 下的多 session / replay 复用。
-  - 通过 `BattleCoreServiceSpecs.service_slots() / script_by_slot()` 与 `src/composition/service_dependency_contract_helper.gd` 暴露的 `dependency_edges() / compose_reset_specs()` 驱动装配。
+  - 通过 `BattleCoreServiceSpecs.service_slots() / script_by_slot()` 与 `src/shared/dependency_contract_helper.gd` 暴露的 `compose_deps() / compose_reset_fields() / resolve_missing_dependency()` 驱动装配；`dependency_edges` 与 `compose_reset_specs` 派生逻辑内聚在 composer 自身。
   - `BattleCoreServiceSpecs.SERVICE_DESCRIPTORS` 现在只保留非 payload 的基础服务；payload handler / runtime service descriptor 统一由 `src/composition/battle_core_payload_service_specs.gd` 派生，再并入同一份全量服务视图。
   - 服务依赖与 reset 元数据当前固定写在各 script 自身的 `COMPOSE_DEPS / COMPOSE_RESET_FIELDS`；composer、runtime 缺依赖检查与两条 architecture gate 都直接读取这份声明。
   - 返回一个 dictionary-backed 的 `BattleCoreContainer`。

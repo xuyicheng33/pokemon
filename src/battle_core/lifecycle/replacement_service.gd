@@ -1,6 +1,6 @@
 extends RefCounted
 class_name ReplacementService
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const DefaultReplacementSelectorScript := preload("res://src/battle_core/lifecycle/default_replacement_selector.gd")
 
 const COMPOSE_DEPS := [
@@ -25,7 +25,7 @@ var _selection_helper = ReplacementSelectionHelperScript.new()
 var _entry_helper = ReplacementEntryHelperScript.new()
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func resolve_replacement(battle_state: BattleState, side_state, reason: String) -> Dictionary:
 	var legal_bench_ids := _selection_helper.collect_legal_bench_ids(battle_state, side_state)
@@ -105,7 +105,7 @@ func execute_replacement_lifecycle(
 	var field_break_invalid_code = field_service.break_field_if_creator_inactive(
 		battle_state,
 		content_index,
-		battle_state.chain_context,
+		battle_state.current_chain_context(),
 		execute_trigger_batch
 	)
 	if field_break_invalid_code != null:
@@ -202,7 +202,7 @@ func _execute_lifecycle_trigger_batch(
 		battle_state,
 		content_index,
 		owner_unit_ids,
-		battle_state.chain_context
+		battle_state.current_chain_context()
 	)
 
 func _resolve_result(entered_unit, invalid_code) -> Dictionary:

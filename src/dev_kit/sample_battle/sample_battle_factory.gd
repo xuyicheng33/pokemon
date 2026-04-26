@@ -2,8 +2,8 @@ extends RefCounted
 class_name SampleBattleFactory
 
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
-const FormalAccessScript := preload("res://src/composition/sample_battle_factory_formal_access.gd")
-const RuntimeGraphScript := preload("res://src/composition/sample_battle_factory_runtime_graph.gd")
+const FormalAccessScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_formal_access.gd")
+const RuntimeGraphScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory_runtime_graph.gd")
 
 var _graph: SampleBattleFactoryRuntimeGraph = RuntimeGraphScript.new()
 var last_error_code: Variant = null

@@ -1,7 +1,7 @@
 extends RefCounted
 class_name BattleCoreTestHarnessSampleHelper
 
-const SampleBattleFactoryScript := preload("res://src/composition/sample_battle_factory.gd")
+const SampleBattleFactoryScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory.gd")
 const BattleContentIndexScript := preload("res://src/battle_core/content/battle_content_index.gd")
 
 var _active_sample_factories: Array = []

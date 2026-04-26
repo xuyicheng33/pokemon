@@ -1,7 +1,7 @@
 extends RefCounted
 class_name ActionExecutor
 
-const ServiceDependencyContractHelperScript := preload("res://src/composition/service_dependency_contract_helper.gd")
+const DependencyContractHelperScript := preload("res://src/shared/dependency_contract_helper.gd")
 const ActionChainContextBuilderScript := preload("res://src/battle_core/actions/action_chain_context_builder.gd")
 const ActionStartPhaseServiceScript := preload("res://src/battle_core/actions/action_start_phase_service.gd")
 const ActionSkillEffectServiceScript := preload("res://src/battle_core/actions/action_skill_effect_service.gd")
@@ -36,7 +36,7 @@ var switch_action_service: SwitchActionService
 var action_domain_guard: ActionDomainGuard
 
 func resolve_missing_dependency() -> String:
-	return ServiceDependencyContractHelperScript.resolve_missing_dependency(self)
+	return DependencyContractHelperScript.resolve_missing_dependency(self)
 
 func _compose_post_wire() -> void:
 	action_chain_context_builder = ActionChainContextBuilderScript.new()
@@ -64,7 +64,7 @@ func execute_action(queued_action: QueuedAction, battle_state: BattleState, cont
 	var command = queued_action.command
 	var actor = battle_state.get_unit(command.actor_id)
 	var skill_definition = _resolve_skill_definition(command, content_index)
-	battle_state.chain_context = action_chain_context_builder.build_chain_context(queued_action, battle_state, skill_definition)
+	battle_state.set_phase_chain_context(action_chain_context_builder.build_chain_context(queued_action, battle_state, skill_definition))
 	if _uses_skill_definition(command.command_type):
 		if skill_definition == null:
 			result.invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
