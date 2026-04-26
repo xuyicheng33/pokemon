@@ -488,6 +488,23 @@
   - `bash tests/cleanup_local_artifacts.sh`
   - `bash tests/run_extended_gate.sh`
 
+## 最近完成：全面修复与瘦身重构阶段 5 - 文档与最终收口（2026-04-26）
+
+- 状态：已完成
+- 目标：完成这轮全面修复与瘦身重构的最终验收，确认 quick、extended、full 三档入口与 sandbox smoke 都保持稳定。
+- 范围：
+  1. 保持前四阶段改动不再扩散，只做最终验收与记录补充
+  2. 复核 `run_with_gate`、`run_extended_gate`、`TEST_PROFILE=full run_with_gate` 三条总入口
+  3. 把最终验收结果写回任务记录，方便后续阶段直接沿用当前基线
+- 验收标准：
+  - `quick`、`extended`、`full` 门禁全部通过
+  - full profile 下 `gdUnit` 129 个 suite、390 个用例通过
+  - full sandbox smoke matrix 通过，manual/policy、submit_action、demo replay 主路径稳定
+- 验证：
+  - `bash tests/run_with_gate.sh`
+  - `bash tests/run_extended_gate.sh`
+  - `TEST_PROFILE=full bash tests/run_with_gate.sh`
+
 ## 最近完成：全面修复与瘦身重构阶段 3 - composition 与 Sandbox 低风险瘦身（2026-04-26）
 
 - 状态：已完成
