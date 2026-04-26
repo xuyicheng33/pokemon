@@ -123,7 +123,7 @@ func apply_turn_end_field_tick(battle_state: BattleState, content_index: BattleC
 			"terminated": false,
 		}
 	if field_definition != null and not field_definition.on_expire_effect_ids.is_empty():
-		var expire_events: Array = field_service.collect_lifecycle_effect_events(
+		var expire_result: Dictionary = field_service.collect_lifecycle_effect_events(
 			"field_expire",
 			current_field_state,
 			field_definition.on_expire_effect_ids,
@@ -131,6 +131,14 @@ func apply_turn_end_field_tick(battle_state: BattleState, content_index: BattleC
 			content_index,
 			battle_state.chain_context
 		)
+		var lifecycle_invalid_code = expire_result.get("invalid_code", null)
+		if lifecycle_invalid_code != null:
+			battle_result_service.terminate_invalid_battle(battle_state, str(lifecycle_invalid_code))
+			return {
+				"field_change": field_change,
+				"terminated": true,
+			}
+		var expire_events: Array = expire_result.get("events", [])
 		if not expire_events.is_empty():
 			var expire_invalid_code = trigger_batch_runner.execute_trigger_batch(
 				"__field_expire__",

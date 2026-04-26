@@ -44,7 +44,7 @@ func execute_field_effects(
 		return last_invalid_battle_code
 	if field_definition.effect_ids.is_empty():
 		return null
-	var effect_events: Array = field_service.collect_lifecycle_effect_events(
+	var effect_result: Dictionary = field_service.collect_lifecycle_effect_events(
 		trigger_name,
 		field_state,
 		field_definition.effect_ids,
@@ -52,6 +52,11 @@ func execute_field_effects(
 		content_index,
 		chain_context
 	)
+	var lifecycle_invalid_code = effect_result.get("invalid_code", null)
+	if lifecycle_invalid_code != null:
+		last_invalid_battle_code = lifecycle_invalid_code
+		return lifecycle_invalid_code
+	var effect_events: Array = effect_result.get("events", [])
 	if effect_events.is_empty():
 		return null
 	if not execute_trigger_batch.is_valid():

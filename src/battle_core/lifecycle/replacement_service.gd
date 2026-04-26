@@ -89,9 +89,11 @@ func execute_replacement_lifecycle(
 	)
 	if on_exit_invalid_code != null:
 		return _replacement_result(false, null, on_exit_invalid_code)
+	var replacement_snapshot := _snapshot_replacement_runtime(battle_state, side_state, target_unit, selected_unit)
 	side_state.bench_order.append(target_unit.unit_instance_id)
 	leave_service.leave_unit(battle_state, target_unit, leave_reason, content_index)
 	if leave_service.invalid_battle_code() != null:
+		_restore_replacement_runtime(replacement_snapshot, battle_state, side_state, target_unit, selected_unit)
 		return _replacement_result(false, null, leave_service.invalid_battle_code())
 	var field_break_invalid_code = field_service.break_field_if_creator_inactive(
 		battle_state,
@@ -100,6 +102,7 @@ func execute_replacement_lifecycle(
 		execute_trigger_batch
 	)
 	if field_break_invalid_code != null:
+		_restore_replacement_runtime(replacement_snapshot, battle_state, side_state, target_unit, selected_unit)
 		return _replacement_result(false, null, field_break_invalid_code)
 	var entered_unit = _entry_helper.enter_replacement(
 		battle_state,
@@ -110,6 +113,7 @@ func execute_replacement_lifecycle(
 		log_event_builder
 	)
 	if entered_unit == null:
+		_restore_replacement_runtime(replacement_snapshot, battle_state, side_state, target_unit, selected_unit)
 		return _replacement_result(false, null, ErrorCodesScript.INVALID_REPLACEMENT_SELECTION)
 	var on_enter_invalid_code = _execute_lifecycle_trigger_batch(
 		"on_enter",
@@ -119,6 +123,7 @@ func execute_replacement_lifecycle(
 		execute_trigger_batch
 	)
 	if on_enter_invalid_code != null:
+		_restore_replacement_runtime(replacement_snapshot, battle_state, side_state, target_unit, selected_unit)
 		return _replacement_result(false, entered_unit, on_enter_invalid_code)
 	return _replacement_result(true, entered_unit, null)
 
@@ -198,3 +203,50 @@ func _resolve_result(entered_unit, invalid_code) -> Dictionary:
 
 func _replacement_result(replaced: bool, entered_unit, invalid_code) -> Dictionary:
 	return {"replaced": replaced, "entered_unit": entered_unit, "invalid_code": invalid_code}
+
+func _snapshot_replacement_runtime(battle_state: BattleState, side_state, target_unit, selected_unit) -> Dictionary:
+	return {
+		"bench_order": side_state.bench_order.duplicate(),
+		"active_slots": side_state.active_slots.duplicate(true),
+		"target_effect_instances": target_unit.effect_instances.duplicate(),
+		"target_rule_mod_instances": target_unit.rule_mod_instances.duplicate(),
+		"target_stat_stages": target_unit.stat_stages.duplicate(true),
+		"target_persistent_stat_stages": target_unit.persistent_stat_stages.duplicate(true),
+		"target_has_acted": target_unit.has_acted,
+		"target_action_window_passed": target_unit.action_window_passed,
+		"target_leave_reason": target_unit.leave_reason,
+		"target_leave_state": target_unit.leave_state,
+		"target_current_hp": target_unit.current_hp,
+		"target_reentered_turn_index": target_unit.reentered_turn_index,
+		"selected_has_acted": selected_unit.has_acted,
+		"selected_action_window_passed": selected_unit.action_window_passed,
+		"selected_leave_reason": selected_unit.leave_reason,
+		"selected_leave_state": selected_unit.leave_state,
+		"selected_reentered_turn_index": selected_unit.reentered_turn_index,
+		"field_state": battle_state.field_state,
+		"field_rule_mod_instances": battle_state.field_rule_mod_instances.duplicate(),
+		"battle_log_size": battle_logger.event_log.size() if battle_logger != null else 0,
+	}
+
+func _restore_replacement_runtime(snapshot: Dictionary, battle_state: BattleState, side_state, target_unit, selected_unit) -> void:
+	side_state.bench_order = PackedStringArray(snapshot.get("bench_order", PackedStringArray()))
+	side_state.active_slots = snapshot.get("active_slots", {}).duplicate(true)
+	target_unit.effect_instances = snapshot.get("target_effect_instances", []).duplicate()
+	target_unit.rule_mod_instances = snapshot.get("target_rule_mod_instances", []).duplicate()
+	target_unit.stat_stages = snapshot.get("target_stat_stages", {}).duplicate(true)
+	target_unit.persistent_stat_stages = snapshot.get("target_persistent_stat_stages", {}).duplicate(true)
+	target_unit.has_acted = bool(snapshot.get("target_has_acted", false))
+	target_unit.action_window_passed = bool(snapshot.get("target_action_window_passed", false))
+	target_unit.leave_reason = snapshot.get("target_leave_reason", null)
+	target_unit.leave_state = String(snapshot.get("target_leave_state", LeaveStatesScript.ACTIVE))
+	target_unit.current_hp = int(snapshot.get("target_current_hp", target_unit.current_hp))
+	target_unit.reentered_turn_index = int(snapshot.get("target_reentered_turn_index", -1))
+	selected_unit.has_acted = bool(snapshot.get("selected_has_acted", false))
+	selected_unit.action_window_passed = bool(snapshot.get("selected_action_window_passed", false))
+	selected_unit.leave_reason = snapshot.get("selected_leave_reason", null)
+	selected_unit.leave_state = String(snapshot.get("selected_leave_state", selected_unit.leave_state))
+	selected_unit.reentered_turn_index = int(snapshot.get("selected_reentered_turn_index", -1))
+	battle_state.field_state = snapshot.get("field_state", null)
+	battle_state.field_rule_mod_instances = snapshot.get("field_rule_mod_instances", []).duplicate()
+	if battle_logger != null:
+		battle_logger.event_log.resize(int(snapshot.get("battle_log_size", battle_logger.event_log.size())))

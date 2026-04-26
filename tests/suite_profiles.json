@@ -34,6 +34,7 @@
     "test/suites/damage_payload_validation_suite.gd": "extended",
     "test/suites/domain_clash_guard_suite.gd": "quick",
     "test/suites/domain_clash_resolution_suite.gd": "extended",
+    "test/suites/effect_queue_service_suite.gd": "extended",
     "test/suites/extension_targeting_accuracy/effect_refresh_suite.gd": "extended",
     "test/suites/extension_targeting_accuracy/incoming_accuracy_suite.gd": "extended",
     "test/suites/extension_targeting_accuracy/required_target_effects_suite.gd": "extended",

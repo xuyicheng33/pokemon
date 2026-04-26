@@ -4,6 +4,9 @@ const PassiveSkillDefinitionScript := preload("res://src/battle_core/content/pas
 const PassiveItemDefinitionScript := preload("res://src/battle_core/content/passive_item_definition.gd")
 const SkillDefinitionScript := preload("res://src/battle_core/content/skill_definition.gd")
 const EffectDefinitionScript := preload("res://src/battle_core/content/effect_definition.gd")
+const EffectInstanceScript := preload("res://src/battle_core/runtime/effect_instance.gd")
+const FieldDefinitionScript := preload("res://src/battle_core/content/field_definition.gd")
+const FieldStateScript := preload("res://src/battle_core/runtime/field_state.gd")
 const StatModPayloadScript := preload("res://src/battle_core/content/stat_mod_payload.gd")
 const RuleModPayloadScript := preload("res://src/battle_core/content/rule_mod_payload.gd")
 const ForcedReplacePayloadScript := preload("res://src/battle_core/content/forced_replace_payload.gd")
@@ -19,12 +22,39 @@ class TestReplacementSelector:
 	func select_replacement(_battle_state, _side_id: String, _legal_bench_ids: PackedStringArray, _reason: String, _chain_context):
 		return next_selection
 
+class ConditionalInvalidTriggerBatchRunner:
+	extends RefCounted
+
+	var invalid_trigger_name: String = ""
+	var invalid_code: String = ErrorCodesScript.INVALID_EFFECT_DEFINITION
+
+	func execute_trigger_batch(
+		trigger_name: String,
+		_battle_state,
+		_content_index,
+		_owner_unit_ids: Array,
+		_chain_context,
+		_extra_effect_events: Array = []
+	):
+		if trigger_name == invalid_trigger_name:
+			return invalid_code
+		return null
+
 
 func test_forced_replace_success_chain() -> void:
 	_assert_legacy_result(_test_forced_replace_success_chain(_harness))
 
 func test_forced_replace_preserves_persistent_runtime_contract() -> void:
 	_assert_legacy_result(_test_forced_replace_preserves_persistent_runtime_contract(_harness))
+
+func test_execute_replacement_lifecycle_rolls_back_on_leave_failure_contract() -> void:
+	_assert_legacy_result(_test_execute_replacement_lifecycle_rolls_back_on_leave_failure_contract(_harness))
+
+func test_execute_replacement_lifecycle_rolls_back_on_field_break_collect_failure_contract() -> void:
+	_assert_legacy_result(_test_execute_replacement_lifecycle_rolls_back_on_field_break_collect_failure_contract(_harness))
+
+func test_execute_replacement_lifecycle_rolls_back_on_on_enter_failure_contract() -> void:
+	_assert_legacy_result(_test_execute_replacement_lifecycle_rolls_back_on_on_enter_failure_contract(_harness))
 func _test_forced_replace_success_chain(harness) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
@@ -319,4 +349,176 @@ func _test_forced_replace_preserves_persistent_runtime_contract(harness) -> Dict
 		return harness.fail_result("forced_replace should keep persistent rule_mod on replaced unit and decrement it on bench")
 	if int(replaced_unit.stat_stages.get("speed", 0)) != 0:
 		return harness.fail_result("replaced bench unit should not trigger normal turn_end payloads while off-field")
+	return harness.pass_result()
+
+func _test_execute_replacement_lifecycle_rolls_back_on_leave_failure_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 222)
+	var side_state = battle_state.get_side("P1")
+	var target_unit = battle_state.get_unit_by_public_id("P1-A")
+	var selected_unit = battle_state.get_unit_by_public_id("P1-B")
+	if side_state == null or target_unit == null or selected_unit == null:
+		return harness.fail_result("missing replacement participants for leave rollback contract")
+	var broken_effect = EffectInstanceScript.new()
+	broken_effect.instance_id = "test_replacement_leave_failure_effect"
+	broken_effect.def_id = "missing_leave_failure_effect"
+	broken_effect.owner = target_unit.unit_instance_id
+	target_unit.effect_instances.append(broken_effect)
+	var before_bench_order = side_state.bench_order.duplicate()
+	var before_target_leave_state := String(target_unit.leave_state)
+	var before_selected_leave_state := String(selected_unit.leave_state)
+	var before_log_size: int = core.service("battle_logger").event_log.size()
+	var result: Dictionary = core.service("replacement_service").execute_replacement_lifecycle(
+		battle_state,
+		content_index,
+		target_unit.unit_instance_id,
+		selected_unit.unit_instance_id,
+		"manual_switch",
+		Callable(core.service("trigger_batch_runner"), "execute_trigger_batch")
+	)
+	if result.get("invalid_code", null) != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
+		return harness.fail_result("leave failure should surface invalid_effect_definition")
+	return _assert_replacement_rolled_back(
+		harness,
+		core.service("battle_logger").event_log,
+		before_log_size,
+		side_state,
+		before_bench_order,
+		target_unit,
+		selected_unit,
+		before_target_leave_state,
+		before_selected_leave_state,
+		"leave failure"
+	)
+
+func _test_execute_replacement_lifecycle_rolls_back_on_field_break_collect_failure_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 223)
+	var side_state = battle_state.get_side("P1")
+	var target_unit = battle_state.get_unit_by_public_id("P1-A")
+	var selected_unit = battle_state.get_unit_by_public_id("P1-B")
+	if side_state == null or target_unit == null or selected_unit == null:
+		return harness.fail_result("missing replacement participants for field_break rollback contract")
+	var field_definition = FieldDefinitionScript.new()
+	field_definition.id = "test_replacement_invalid_break_field"
+	field_definition.display_name = "Replacement Invalid Break Field"
+	field_definition.on_break_effect_ids = PackedStringArray(["missing_break_effect"])
+	content_index.register_resource(field_definition)
+	var field_state = FieldStateScript.new()
+	field_state.field_def_id = field_definition.id
+	field_state.instance_id = "test_replacement_invalid_break_field_instance"
+	field_state.creator = target_unit.unit_instance_id
+	field_state.remaining_turns = 2
+	field_state.source_instance_id = "test_replacement_invalid_break_field_source"
+	field_state.source_order_speed_snapshot = target_unit.base_speed
+	battle_state.field_state = field_state
+	var before_bench_order = side_state.bench_order.duplicate()
+	var before_target_leave_state := String(target_unit.leave_state)
+	var before_selected_leave_state := String(selected_unit.leave_state)
+	var before_log_size: int = core.service("battle_logger").event_log.size()
+	var result: Dictionary = core.service("replacement_service").execute_replacement_lifecycle(
+		battle_state,
+		content_index,
+		target_unit.unit_instance_id,
+		selected_unit.unit_instance_id,
+		"manual_switch",
+		Callable(core.service("trigger_batch_runner"), "execute_trigger_batch")
+	)
+	if result.get("invalid_code", null) != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
+		return harness.fail_result("field_break collect failure should surface invalid_effect_definition")
+	if battle_state.field_state == null or String(battle_state.field_state.instance_id) != field_state.instance_id:
+		return harness.fail_result("field_break collect failure should restore the pre-replacement field")
+	return _assert_replacement_rolled_back(
+		harness,
+		core.service("battle_logger").event_log,
+		before_log_size,
+		side_state,
+		before_bench_order,
+		target_unit,
+		selected_unit,
+		before_target_leave_state,
+		before_selected_leave_state,
+		"field_break collect failure"
+	)
+
+func _test_execute_replacement_lifecycle_rolls_back_on_on_enter_failure_contract(harness) -> Dictionary:
+	var core_payload = harness.build_core()
+	if core_payload.has("error"):
+		return harness.fail_result(str(core_payload["error"]))
+	var core = core_payload["core"]
+	var sample_factory = harness.build_sample_factory()
+	if sample_factory == null:
+		return harness.fail_result("SampleBattleFactory init failed")
+	var content_index = harness.build_loaded_content_index(sample_factory)
+	var battle_state = harness.build_initialized_battle(core, content_index, sample_factory, 224)
+	var side_state = battle_state.get_side("P1")
+	var target_unit = battle_state.get_unit_by_public_id("P1-A")
+	var selected_unit = battle_state.get_unit_by_public_id("P1-B")
+	if side_state == null or target_unit == null or selected_unit == null:
+		return harness.fail_result("missing replacement participants for on_enter rollback contract")
+	var before_bench_order = side_state.bench_order.duplicate()
+	var before_target_leave_state := String(target_unit.leave_state)
+	var before_selected_leave_state := String(selected_unit.leave_state)
+	var before_log_size: int = core.service("battle_logger").event_log.size()
+	var failing_runner := ConditionalInvalidTriggerBatchRunner.new()
+	failing_runner.invalid_trigger_name = "on_enter"
+	var result: Dictionary = core.service("replacement_service").execute_replacement_lifecycle(
+		battle_state,
+		content_index,
+		target_unit.unit_instance_id,
+		selected_unit.unit_instance_id,
+		"manual_switch",
+		Callable(failing_runner, "execute_trigger_batch")
+	)
+	if result.get("invalid_code", null) != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
+		return harness.fail_result("on_enter failure should surface invalid_effect_definition")
+	return _assert_replacement_rolled_back(
+		harness,
+		core.service("battle_logger").event_log,
+		before_log_size,
+		side_state,
+		before_bench_order,
+		target_unit,
+		selected_unit,
+		before_target_leave_state,
+		before_selected_leave_state,
+		"on_enter failure"
+	)
+
+func _assert_replacement_rolled_back(
+	harness,
+	event_log: Array,
+	before_log_size: int,
+	side_state,
+	before_bench_order: PackedStringArray,
+	target_unit,
+	selected_unit,
+	before_target_leave_state: String,
+	before_selected_leave_state: String,
+	label: String
+) -> Dictionary:
+	if side_state.get_active_unit().unit_instance_id != target_unit.unit_instance_id:
+		return harness.fail_result("%s should restore the original active unit" % label)
+	if side_state.bench_order != before_bench_order:
+		return harness.fail_result("%s should restore bench_order" % label)
+	if String(target_unit.leave_state) != before_target_leave_state:
+		return harness.fail_result("%s should restore target leave_state" % label)
+	if String(selected_unit.leave_state) != before_selected_leave_state:
+		return harness.fail_result("%s should keep selected unit on bench" % label)
+	if event_log.size() != before_log_size:
+		return harness.fail_result("%s should roll back state_exit/state_replace/state_enter logs" % label)
 	return harness.pass_result()

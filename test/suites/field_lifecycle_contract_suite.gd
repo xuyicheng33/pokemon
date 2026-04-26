@@ -85,6 +85,12 @@ func test_field_expire_transition_preserves_new_field_contract() -> void:
 
 func test_field_apply_failure_does_not_commit_field() -> void:
 	_assert_legacy_result(_test_field_apply_failure_does_not_commit_field(_harness))
+
+func test_field_break_collect_failure_fails_fast_contract() -> void:
+	_assert_legacy_result(_test_field_break_collect_failure_fails_fast_contract(_harness))
+
+func test_field_expire_collect_failure_fails_fast_contract() -> void:
+	_assert_legacy_result(_test_field_expire_collect_failure_fails_fast_contract(_harness))
 func _test_field_bound_stat_mod_restore_contract(harness) -> Dictionary:
 	var gojo_payload = _helper.build_gojo_vs_sample_state(harness, 2212)
 	if gojo_payload.has("error"):
@@ -188,6 +194,76 @@ func _test_field_apply_failure_does_not_commit_field(harness) -> Dictionary:
 	for event in core.service("battle_logger").event_log:
 		if event.event_type == EventTypesScript.EFFECT_APPLY_FIELD:
 			return harness.fail_result("failed field_apply must not log apply success")
+	return harness.pass_result()
+
+func _test_field_break_collect_failure_fails_fast_contract(harness) -> Dictionary:
+	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2219)
+	if state_payload.has("error"):
+		return harness.fail_result(str(state_payload["error"]))
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var field_definition = FieldDefinitionScript.new()
+	field_definition.id = "test_invalid_break_field"
+	field_definition.display_name = "Invalid Break Field"
+	field_definition.on_break_effect_ids = PackedStringArray(["test_missing_break_effect"])
+	content_index.register_resource(field_definition)
+	var field_state = FieldStateScript.new()
+	field_state.field_def_id = field_definition.id
+	field_state.instance_id = "test_invalid_break_field_instance"
+	field_state.creator = actor.unit_instance_id
+	field_state.remaining_turns = 2
+	field_state.source_instance_id = "test_invalid_break_field_source"
+	field_state.source_order_speed_snapshot = actor.base_speed
+	battle_state.field_state = field_state
+	core.service("battle_logger").reset()
+	var terminated: bool = core.service("turn_field_lifecycle_service").break_active_field(
+		battle_state,
+		content_index,
+		"field_break"
+	)
+	if not terminated:
+		return harness.fail_result("field_break collect invalid should terminate battle immediately")
+	if not battle_state.battle_result.finished or battle_state.battle_result.reason != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
+		return harness.fail_result("field_break collect invalid should preserve invalid_effect_definition")
+	if battle_state.field_state == null or String(battle_state.field_state.instance_id) != field_state.instance_id:
+		return harness.fail_result("field_break collect invalid must keep the active field for diagnosis")
+	return harness.pass_result()
+
+func _test_field_expire_collect_failure_fails_fast_contract(harness) -> Dictionary:
+	var state_payload = _helper.build_gojo_vs_sample_state(harness, 2220)
+	if state_payload.has("error"):
+		return harness.fail_result(str(state_payload["error"]))
+	var core = state_payload["core"]
+	var content_index = state_payload["content_index"]
+	var battle_state = state_payload["battle_state"]
+	var actor = battle_state.get_side("P1").get_active_unit()
+	var field_definition = FieldDefinitionScript.new()
+	field_definition.id = "test_invalid_expire_field"
+	field_definition.display_name = "Invalid Expire Field"
+	field_definition.on_expire_effect_ids = PackedStringArray(["test_missing_expire_effect"])
+	content_index.register_resource(field_definition)
+	var field_state = FieldStateScript.new()
+	field_state.field_def_id = field_definition.id
+	field_state.instance_id = "test_invalid_expire_field_instance"
+	field_state.creator = actor.unit_instance_id
+	field_state.remaining_turns = 1
+	field_state.source_instance_id = "test_invalid_expire_field_source"
+	field_state.source_order_speed_snapshot = actor.base_speed
+	battle_state.field_state = field_state
+	core.service("battle_logger").reset()
+	var tick_result: Dictionary = core.service("turn_field_lifecycle_service").apply_turn_end_field_tick(
+		battle_state,
+		content_index,
+		"test_field_expire_collect_failure"
+	)
+	if not bool(tick_result.get("terminated", false)):
+		return harness.fail_result("field_expire collect invalid should terminate battle immediately")
+	if not battle_state.battle_result.finished or battle_state.battle_result.reason != ErrorCodesScript.INVALID_EFFECT_DEFINITION:
+		return harness.fail_result("field_expire collect invalid should preserve invalid_effect_definition")
+	if battle_state.field_state == null or String(battle_state.field_state.instance_id) != field_state.instance_id:
+		return harness.fail_result("field_expire collect invalid must keep the active field for diagnosis")
 	return harness.pass_result()
 
 func _test_field_break_self_owner_contract(harness) -> Dictionary:

@@ -46,7 +46,7 @@ func collect_trigger_events(trigger_name: String, battle_state: BattleState, con
 func get_field_definition_for_state(field_state, content_index: BattleContentIndex) -> Variant:
 	return _trigger_helper.get_field_definition_for_state(field_state, content_index)
 
-func collect_lifecycle_effect_events(trigger_name: String, field_state, effect_ids: PackedStringArray, battle_state: BattleState, content_index: BattleContentIndex, chain_context: ChainContext) -> Array:
+func collect_lifecycle_effect_events(trigger_name: String, field_state, effect_ids: PackedStringArray, battle_state: BattleState, content_index: BattleContentIndex, chain_context: ChainContext) -> Dictionary:
 	last_invalid_battle_code = null
 	var result: Dictionary = _trigger_helper.collect_lifecycle_effect_events(
 		trigger_name,
@@ -59,7 +59,7 @@ func collect_lifecycle_effect_events(trigger_name: String, field_state, effect_i
 		SOURCE_KIND_ORDER_FIELD
 	)
 	last_invalid_battle_code = result.get("invalid_code", null)
-	return result.get("events", [])
+	return result
 
 func break_field_if_creator_inactive(
 	battle_state: BattleState,
@@ -98,7 +98,7 @@ func break_active_field(
 		last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
 		return ErrorCodesScript.INVALID_STATE_CORRUPTION
 	if not field_definition.on_break_effect_ids.is_empty():
-		var break_events: Array = collect_lifecycle_effect_events(
+		var break_result: Dictionary = collect_lifecycle_effect_events(
 			trigger_name,
 			current_field_state,
 			field_definition.on_break_effect_ids,
@@ -106,6 +106,11 @@ func break_active_field(
 			content_index,
 			chain_context
 		)
+		var lifecycle_invalid_code = break_result.get("invalid_code", null)
+		if lifecycle_invalid_code != null:
+			last_invalid_battle_code = lifecycle_invalid_code
+			return lifecycle_invalid_code
+		var break_events: Array = break_result.get("events", [])
 		if not break_events.is_empty():
 			if not execute_trigger_batch.is_valid():
 				last_invalid_battle_code = ErrorCodesScript.INVALID_STATE_CORRUPTION
