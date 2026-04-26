@@ -25,6 +25,7 @@
 - Batch C-C: profile 重划分 + double support 合一 + 行数硬警
 - Batch D-Layout: BattleScreen tscn + controller（重启）
 - Batch D-Session: player_battle_session + event_log_streamer + default_policy（重启）
+- Batch D-Lex: PlayerContentLexicon 中文索引器（重启）
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 

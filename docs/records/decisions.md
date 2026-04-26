@@ -11,6 +11,16 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 2026-04-27 Batch D-Lex：PlayerContentLexicon 中文索引器（重启）
+
+- **背景**：上一次 D-Lex 子代理因 Cloudflare 521 中断未产出文件；本批次从零重做。D-Layout 与 D-Session 同时并行，三者隔离写入：D-Lex 只新建 `src/adapters/player/player_content_lexicon.gd` 与 `.uid`，不动 `content/` / `src/battle_core/` / `src/composition/` / `scenes/` / `tests/` / `test/` / `src/adapters/player/` 下其它文件。
+- **接口**：`class_name PlayerContentLexicon extends RefCounted`。一次性扫描 `res://content/**/*.tres`，建 6 张 dict（skills / effects / fields / combat_types / characters / units）；查询 API 全部 O(1)：`load_all() -> bool`、`skill / effect / field / combat_type / character / unit (id) -> Dictionary`，以及 `skill_display_name / skill_mp_cost / skill_power / skill_accuracy / effect_display_name / field_display_name / combat_type_display_name / combat_type_color`。fail-fast：未知 id 直接 `push_error` 并返回空 Dict / 空字符串 / 中性灰 `Color(0.6, 0.6, 0.6)`，不做静默 fallback；`load_all` 任一 `ResourceLoader.load` 返回 null 直接 push_error 并 return false，不部分加载。
+- **类型分发**：`_index_resource` 用 `resource.get_script().get_global_name()` 取 `class_name`，按 `SkillDefinition / EffectDefinition / FieldDefinition / CombatTypeDefinition / UnitDefinition` 分发；其它类型（BattleFormatConfig / PassiveSkillDefinition / PassiveItemDefinition / SkillDamageSegment / 各类 payload sub_resource）静默跳过——只索引玩家前端真正需要的 5 类，避免把非玩家可见的资源误归类。`damage_segments` 不为空时按 `repeat_count` 累加得 `segment_count`；为空则置 1。
+- **中文 fallback**：18 属性 id → 中文名 内置 `COMBAT_TYPE_NAME_FALLBACK`（fire / water / wood / earth / wind / thunder / ice / steel / light / dark / space / psychic / spirit / demon / holy / fighting / dragon / poison），仅在 `.tres` 的 `display_name` 为空时兜底；当前 18 个 combat_type tres 都已写中文名，fallback 实测不触发，留作冗余。4 个正式角色 id → 中文名 `CHARACTER_NAME_FALLBACK`（gojo_satoru / sukuna / kashimo_hajime / obito_juubi_jinchuriki）同样仅在 `display_name` 缺失时兜底。
+- **颜色映射**：`COMBAT_TYPE_COLOR_MAP` 显式 27 条键（18 项目内 + 9 条经典宝可梦命名兼容如 grass/electric/ground/flying/ghost/normal/fairy/bug/rock）。每属性独立色：fire 红 / water 蓝 / wood 同 grass 绿 / earth 同 ground 沙黄 / wind 同 flying 浅紫 / thunder 同 electric 黄 / ice 浅蓝 / fighting 暗红 / poison 紫 / psychic 粉 / spirit 同 ghost 深紫 / demon 暗红紫 / holy 金白 / light 浅金 / dragon 靛蓝 / dark 深灰 / steel 银 / space 暗紫蓝 / fairy 浅粉 / normal 浅灰 / bug 黄绿 / rock 棕。未识别 id 返回 `Color(0.6, 0.6, 0.6)` 中性灰，但仍走 `push_error` fail-fast——颜色 fallback 是 UI 不崩的最后防线，不是合法降级路径。
+- **性能**：本地 headless 实测 `load_all` 42ms（30 skills + 48 effects + 3 fields + 18 combat_types + 8 units/characters），远低于 200ms 预算。后续若 content 体量翻倍仍宽裕；若需要进一步压时间，下一步再考虑 `ResourceLoader.CACHE_MODE_REUSE`（当前已用）+ 异步加载。
+- **不做的事**：不扫 `passive_skills` / `passive_items` / `battle_formats`（玩家前端 v1 不展示），不扫 `samples` 目录之外的孤立 .tres（DirAccess 递归本身能扫到，但 _index_resource 对未知类型静默跳过）。`description` 字段所有定义都没有，统一返回空字符串——上层 UI 想加描述需要等内容侧补字段，不在 Lex 范围内造假。
+
 ## 2026-04-27 Batch D-Layout：BattleScreen tscn + controller（重启）
 
 - **背景**：上一次 D-Layout 因 Cloudflare 521 中断未产出文件；本批次从零重做。D-UIBoot（ErrorToast / WinPanel / ForcedReplaceDialog / LogText + boot.gd 分支）已落地；D-Lex（PlayerContentLexicon）与 D-Session（PlayerBattleSession / PlayerEventLogStreamer / PlayerDefaultPolicy）并行写入，class_name 预留可引用。本批次只动 `scenes/player/BattleScreen.{tscn,gd}` 两个文件 + 各自 .uid，不动 `src/` / `tests/` / `test/` / `content/` / 其它 `scenes/player/*` / `scenes/sandbox/`。
