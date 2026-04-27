@@ -49,7 +49,6 @@ const CMD_FORCED_DEFAULT: String = "resource_forced_default"
 @onready var _field_badge_label: Label = $MarginContainer/VBoxContainer/TopBar/FieldBadge/FieldLabel
 @onready var _current_side_label: Label = $MarginContainer/VBoxContainer/TopBar/CurrentSideLabel
 
-@onready var _opponent_card: PanelContainer = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard
 @onready var _opponent_name_label: Label = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow/NameLabel
 @onready var _opponent_combat_type_row: HBoxContainer = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow/CombatTypeBadgeRow
 @onready var _opponent_hp_bar: ProgressBar = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HPRow/HPBar
@@ -65,7 +64,6 @@ const CMD_FORCED_DEFAULT: String = "resource_forced_default"
 
 @onready var _log_text: PlayerLogText = $MarginContainer/VBoxContainer/MiddleLog/ScrollContainer/LogText
 
-@onready var _player_card: PanelContainer = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard
 @onready var _player_name_label: Label = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow/NameLabel
 @onready var _player_combat_type_row: HBoxContainer = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow/CombatTypeBadgeRow
 @onready var _player_hp_bar: ProgressBar = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HPRow/HPBar
@@ -79,7 +77,6 @@ const CMD_FORCED_DEFAULT: String = "resource_forced_default"
 
 @onready var _player_bench_row: HBoxContainer = $MarginContainer/VBoxContainer/PlayerBenchRow
 
-@onready var _action_bar: GridContainer = $MarginContainer/VBoxContainer/ActionBar
 @onready var _skill_button_0: Button = $MarginContainer/VBoxContainer/ActionBar/SkillButton_0
 @onready var _skill_button_1: Button = $MarginContainer/VBoxContainer/ActionBar/SkillButton_1
 @onready var _skill_button_2: Button = $MarginContainer/VBoxContainer/ActionBar/SkillButton_2
@@ -752,9 +749,9 @@ func _resolve_unit_display_name_from_snapshot(public_id: String) -> String:
 func _resolve_skill_display_name(skill_id: String) -> String:
 	if _lexicon == null:
 		return skill_id
-	var name := _lexicon.skill_display_name(skill_id)
-	if name != "":
-		return name
+	var skill_name := _lexicon.skill_display_name(skill_id)
+	if skill_name != "":
+		return skill_name
 	return skill_id
 
 
@@ -767,9 +764,9 @@ func _resolve_skill_mp_cost(skill_id: String) -> int:
 func _resolve_effect_display_name(def_id: String) -> String:
 	if _lexicon == null:
 		return def_id
-	var name := _lexicon.effect_display_name(def_id)
-	if name != "":
-		return name
+	var effect_name := _lexicon.effect_display_name(def_id)
+	if effect_name != "":
+		return effect_name
 	return def_id
 
 
@@ -778,9 +775,9 @@ func _resolve_field_display_name(field_id: String) -> String:
 		return "无"
 	if _lexicon == null:
 		return field_id
-	var name := _lexicon.field_display_name(field_id)
-	if name != "":
-		return name
+	var field_name := _lexicon.field_display_name(field_id)
+	if field_name != "":
+		return field_name
 	return field_id
 
 
@@ -789,9 +786,9 @@ func _resolve_combat_type_display_name(combat_type_id: String) -> String:
 		return ""
 	if _lexicon == null:
 		return combat_type_id
-	var name := _lexicon.combat_type_display_name(combat_type_id)
-	if name != "":
-		return name
+	var combat_type_name := _lexicon.combat_type_display_name(combat_type_id)
+	if combat_type_name != "":
+		return combat_type_name
 	return combat_type_id
 
 

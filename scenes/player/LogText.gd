@@ -38,53 +38,129 @@ func append_event(event: Dictionary) -> void:
 
 func _format_event(event: Dictionary) -> String:
 	var event_type := str(event.get("event_type", ""))
-	var payload: Dictionary = event.get("payload", {}) if typeof(event.get("payload", {})) == TYPE_DICTIONARY else {}
+	var actor_name := _translate_unit(event.get("actor_public_id", event.get("actor_definition_id", "")))
+	var target_name := _translate_unit(event.get("target_public_id", event.get("target_definition_id", "")))
 	match event_type:
-		"action:cast_started":
-			var actor_name := _translate_unit(payload.get("actor_public_id", payload.get("actor_id", "")))
-			var skill_name := _translate_skill(payload.get("skill_id", ""))
-			return "[color=#88f]%s[/color] 使用了 [color=#fc8]%s[/color]" % [actor_name, skill_name]
+		"action:cast":
+			var command_name := _translate_command_type(event.get("command_type", ""))
+			return "[color=#88f]%s[/color] 使用了 [color=#fc8]%s[/color]" % [actor_name, command_name]
 		"action:hit":
-			var damage := int(payload.get("damage", 0))
-			var seg_index := int(payload.get("segment_index", 0))
-			var seg_total := int(payload.get("segment_total", 0))
-			var line := "命中! 造成 [color=#f88]%d[/color] 伤害" % damage
-			if seg_total > 1:
-				line += "（第 %d/%d 段）" % [seg_index, seg_total]
+			var line := "[color=#8f8]命中[/color]"
+			if target_name != "未知单位":
+				line += " %s" % target_name
 			return line
-		"action:missed":
-			return "[color=#888]未命中[/color]"
+		"action:miss":
+			if target_name == "未知单位":
+				return "[color=#888]%s 未命中[/color]" % actor_name
+			return "[color=#888]%s 攻击 %s 未命中[/color]" % [actor_name, target_name]
 		"effect:apply_effect":
-			var target_name := _translate_unit(payload.get("target_public_id", payload.get("target_id", "")))
-			var effect_name := _translate_effect(payload.get("effect_definition_id", ""))
+			var effect_name := _translate_effect(_extract_effect_id(event))
 			return "%s 进入状态 [color=#f8f]%s[/color]" % [target_name, effect_name]
 		"effect:damage":
-			var target_name2 := _translate_unit(payload.get("target_public_id", payload.get("target_id", "")))
-			var damage2 := int(payload.get("damage", 0))
-			return "[color=#f88]%s 受到 %d 点伤害[/color]" % [target_name2, damage2]
+			var damage := _first_value_delta_abs(event, "hp")
+			return "[color=#f88]%s 受到 %d 点伤害[/color]" % [target_name, damage]
+		"effect:heal":
+			var heal := _first_value_delta_abs(event, "hp")
+			return "[color=#8f8]%s 回复 %d 点生命[/color]" % [target_name, heal]
+		"effect:resource_mod":
+			return _format_value_change_line(target_name, event, "资源变化")
+		"effect:stat_mod":
+			return _format_value_change_line(target_name, event, "能力变化")
 		"state:faint":
-			var unit_name := _translate_unit(payload.get("unit_public_id", payload.get("unit_id", "")))
+			var unit_name := target_name
 			return "[color=#444]%s 倒下[/color]" % unit_name
 		"state:replace":
-			var from_name := _translate_unit(payload.get("from_public_id", payload.get("from_id", "")))
-			var to_name := _translate_unit(payload.get("to_public_id", payload.get("to_id", "")))
-			return "%s 撤回，%s 登场" % [from_name, to_name]
+			return "%s 登场" % target_name
+		"state:switch":
+			return "%s 撤回，%s 登场" % [actor_name, target_name]
+		"state:enter":
+			return "%s 登场" % target_name
+		"state:exit":
+			return "%s 离场" % target_name
 		"system:turn_start", "system:turn_end":
-			var n := int(payload.get("turn_index", event.get("turn_index", 0)))
+			var n := int(event.get("turn_index", 0))
 			return "—— 回合 %d ——" % n
+		"result:battle_end":
+			return "[color=#fc8]战斗结束[/color]"
 		_:
-			return "[%s] %s" % [event_type, _payload_summary(payload)]
+			return "[%s] %s" % [event_type, _event_summary(event)]
 
 
-func _payload_summary(payload: Dictionary) -> String:
-	if payload.is_empty():
-		return ""
-	var keys := payload.keys()
+func _event_summary(event: Dictionary) -> String:
+	var summary := str(event.get("payload_summary", "")).strip_edges()
+	if summary != "":
+		return summary
+	var keys := event.keys()
 	keys.sort()
 	var parts: Array[String] = []
 	for key in keys:
-		parts.append("%s=%s" % [str(key), str(payload[key])])
+		var value = event[key]
+		if value == null:
+			continue
+		if value is String and String(value).strip_edges() == "":
+			continue
+		if value is Array and value.is_empty():
+			continue
+		if value is Dictionary and value.is_empty():
+			continue
+		parts.append("%s=%s" % [str(key), str(value)])
 	return ", ".join(parts)
+
+
+func _first_value_delta_abs(event: Dictionary, resource_name: String = "") -> int:
+	var changes_value = event.get("value_changes", [])
+	if not (changes_value is Array):
+		return 0
+	for raw_change in changes_value:
+		if not (raw_change is Dictionary):
+			continue
+		var change: Dictionary = raw_change
+		if resource_name != "" and str(change.get("resource_name", "")) != resource_name:
+			continue
+		return absi(int(change.get("delta", 0)))
+	return 0
+
+
+func _format_value_change_line(target_name: String, event: Dictionary, label: String) -> String:
+	var changes_value = event.get("value_changes", [])
+	if changes_value is Array and not changes_value.is_empty():
+		for raw_change in changes_value:
+			if not (raw_change is Dictionary):
+				continue
+			var change: Dictionary = raw_change
+			var resource_name := str(change.get("resource_name", "")).strip_edges()
+			var delta := int(change.get("delta", 0))
+			return "%s %s %s %+d" % [target_name, label, resource_name, delta]
+	return "%s %s" % [target_name, _event_summary(event)]
+
+
+func _extract_effect_id(event: Dictionary) -> String:
+	var summary := str(event.get("payload_summary", "")).strip_edges()
+	var prefix := "apply effect "
+	if summary.begins_with(prefix):
+		var rest := summary.substr(prefix.length()).strip_edges()
+		var space_pos := rest.find(" ")
+		if space_pos >= 0:
+			return rest.substr(0, space_pos).strip_edges()
+		return rest
+	return ""
+
+
+func _translate_command_type(raw_id: Variant) -> String:
+	match str(raw_id).strip_edges():
+		"skill":
+			return "技能"
+		"ultimate":
+			return "奥义"
+		"switch":
+			return "换人"
+		"wait":
+			return "等待"
+		"resource_forced_default":
+			return "自动反伤"
+		_:
+			var id_str := str(raw_id).strip_edges()
+			return id_str if id_str != "" else "指令"
 
 
 func _translate_unit(raw_id: Variant) -> String:

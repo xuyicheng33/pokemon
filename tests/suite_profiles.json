@@ -104,6 +104,7 @@
     "test/suites/passive_item_contract_suite.gd": "extended",
     "test/suites/payload_execution_contract_suite.gd": "extended",
     "test/suites/player_battle_session_contract_suite.gd": "quick",
+    "test/suites/player_battle_screen_contract_suite.gd": "quick",
     "test/suites/player_content_lexicon_contract_suite.gd": "quick",
     "test/suites/persistent_stat_stage_suite.gd": "extended",
     "test/suites/poison_sample_suite.gd": "extended",

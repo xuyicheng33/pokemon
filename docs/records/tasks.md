@@ -807,6 +807,19 @@ Batch A1: effect/log 契约 + apply_field 时序
   - 单独 `python3 tests/gates/repo_consistency_docs_gate.py` `REPO_CONSISTENCY_GATE_PASSED`；`architecture_layering_gate.py` `ARCH_GATE_PASSED`
 - 不做：不实现 layering gate 的 token graph（preload 依赖图，留给后续）；不改 domain/kashimo case_runner 风格（保留 print + JSON dump 形态，只 obito_case_runner 演示带内置断言的案例）；不动其它 repo_consistency_*_gate（surface / formal_character 等独立 gate 保留）。
 
+## Batch J2: 玩家日志 public snapshot 对齐（2026-04-27）
+
+- 状态：已完成
+- 目标：修复玩家日志读取旧 payload / 旧事件名导致的显示失真，并补真实 BattleScreen 点击路径回归。
+- 范围：
+  1. `scenes/player/LogText.gd` 改读 public event snapshot 扁平字段：`actor_public_id / target_public_id / value_changes / payload_summary`。
+  2. 事件名对齐当前 `EventTypes`：`action:cast / action:hit / action:miss / effect:* / state:* / system:*`。
+  3. 新增 `player_battle_screen_contract_suite.gd`：直接覆盖 LogText public snapshot 格式化与 BattleScreen 真实技能点击推进。
+- 验收标准：
+  - `TEST_PATH=res://test/suites/player_battle_screen_contract_suite.gd bash tests/run_gdunit.sh` 通过（2 cases）。
+  - `TEST_PATH=res://test/suites/player_battle_session_contract_suite.gd bash tests/run_gdunit.sh` 通过（9 cases）。
+  - `TEST_PATH=res://test/suites/player_content_lexicon_contract_suite.gd bash tests/run_gdunit.sh` 通过（5 cases）。
+
 ## Batch I: legacy assert migration 收尾 + README facade 口径同步（2026-04-27）
 
 - 状态：已完成
