@@ -25,11 +25,16 @@ func _init() -> void:
 	if case_name.is_empty():
 		case_name = "all"
 	var any_failed := _run_cases(case_name)
-	_harness.dispose_core_pool()
+	_dispose_harness()
 	if any_failed:
 		quit(1)
 	else:
 		quit(0)
+
+
+func _dispose_harness() -> void:
+	_harness.dispose_sample_factories()
+	_harness.dispose_core_pool()
 
 
 func _run_cases(case_name: String) -> bool:

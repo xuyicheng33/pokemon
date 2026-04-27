@@ -807,6 +807,18 @@ Batch A1: effect/log 契约 + apply_field 时序
   - 单独 `python3 tests/gates/repo_consistency_docs_gate.py` `REPO_CONSISTENCY_GATE_PASSED`；`architecture_layering_gate.py` `ARCH_GATE_PASSED`
 - 不做：不实现 layering gate 的 token graph（preload 依赖图，留给后续）；不改 domain/kashimo case_runner 风格（保留 print + JSON dump 形态，只 obito_case_runner 演示带内置断言的案例）；不动其它 repo_consistency_*_gate（surface / formal_character 等独立 gate 保留）。
 
+## Batch J3: sandbox smoke 引擎日志 fail-fast（2026-04-27）
+
+- 状态：已完成
+- 目标：修复 replay case runner 输出 ObjectDB / resource leak 仍被 sandbox smoke 判定通过的问题。
+- 范围：
+  1. `domain_case_runner.gd / kashimo_case_runner.gd / obito_case_runner.gd` 退出前补 `dispose_sample_factories()`。
+  2. `tests/check_sandbox_smoke_matrix.sh` 复用 boot smoke 的 engine error / warning 扫描语义，允许 headless shader cache 已知噪音，其余 `ERROR:` / `WARNING:` fail-fast。
+- 验收标准：
+  - `SANDBOX_SMOKE_SCOPE=quick bash tests/check_sandbox_smoke_matrix.sh` 通过。
+  - `SANDBOX_SMOKE_SCOPE=extended bash tests/check_sandbox_smoke_matrix.sh` 通过。
+  - `bash tests/run_with_gate.sh` 通过（123 quick gdUnit cases + boot/suite/arch/repo/python/sandbox smoke）。
+
 ## Batch J2: 玩家日志 public snapshot 对齐（2026-04-27）
 
 - 状态：已完成

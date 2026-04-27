@@ -12,8 +12,12 @@ func _init() -> void:
 	if case_name.is_empty():
 		case_name = "all"
 	_run_cases(case_name)
-	_harness.dispose_core_pool()
+	_dispose_harness()
 	quit()
+
+func _dispose_harness() -> void:
+	_harness.dispose_sample_factories()
+	_harness.dispose_core_pool()
 
 func _run_cases(case_name: String) -> void:
 	var cases := [
