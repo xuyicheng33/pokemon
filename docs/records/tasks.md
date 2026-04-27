@@ -37,6 +37,23 @@
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 - Batch K: SessionFactory 抽取 + envelope helper 删除
 
+## 最近完成：玩家 BattleScreen UI 交互回归补强（2026-04-27）
+
+- 状态：已完成
+- 目标：在进入下一阶段开发前，把 player BattleScreen 真实 UI 点击覆盖从 1 条扩到 3 条，挡住按钮信号、popup 弹出、强制换人弹窗的 contract 漂移
+- 范围：
+  1. `player_battle_screen_contract_suite.gd` 新增 `test_player_battle_screen_wait_button_signal_advances_turn`：`WaitButton` 真实 `pressed.emit()` 推进回合，先断言 `disabled == false` 锁住默认 `gojo_vs_sample` 首回合 wait 合法性前提
+  2. 同 suite 新增 `test_player_battle_screen_switch_menu_button_pops_menu_with_options`：`SwitchMenuButton` 点击后弹 `SwitchMenuPopup`，等一帧再读 `get_item_count` 与 `_switch_menu_options.size()`，验证与 `legal_switch_target_public_ids` 数量与顺序一致
+  3. 同 suite 新增 `test_player_forced_replace_dialog_invokes_callback_with_selected_id`：直接 instantiate `ForcedReplaceDialog`，open(2 个 public_id, callback) → 用 `find_children("*", "Button", true, false)` 递归找列表内 Button（避免硬编码节点路径）→ 点第二个验证 callback 收到正确 public_id 且 dialog 自动 close
+- 验收标准：
+  - 新增 3 个 `func test_*` 全过
+  - `bash tests/run_with_gate.sh` quick gate 通过
+  - 不动 BattleScreen.gd / .tscn / 任何业务逻辑
+- 验证结果：
+  - `TEST_PATH=res://test/suites/player_battle_screen_contract_suite.gd bash tests/run_gdunit.sh`（5 cases / 0 failures）
+  - `bash tests/run_with_gate.sh`（quick gdUnit + boot smoke + suite reachability + architecture + repo consistency + Python lint + sandbox smoke matrix 全绿）
+- 不做：未构造完整 KO 局来真实触发 ForcedReplaceDialog（改用单元 contract）；未补 WinPanel 真实点击；未补 ErrorToast 全部 trigger path；未补 UltimateButton disabled 态（在已有 skill case 间接走过）
+
 ## 最近完成：玩家审查问题收口（2026-04-27）
 
 - 状态：已完成
