@@ -35,6 +35,7 @@
 - Batch H: phase / battle_result 写入收口
 - Batch I: legacy assert + README facade 口径
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
+- Batch K: SessionFactory 抽取 + envelope helper 删除
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 
@@ -771,6 +772,23 @@
 
 
 Batch A1: effect/log 契约 + apply_field 时序
+
+## Batch K: adapter 装配收回 + envelope helper 清理（2026-04-27）
+
+- 状态：已完成
+- 目标：把 `BattleCoreComposer + SampleBattleFactory` 实例化收到统一 SessionFactory，让 adapter 只持 manager + sample_factory 不再 own composer；删 sandbox_session_coordinator_envelope_helper（5 个透明转发 + 1 个非平凡 helper）。
+- 范围：
+  1. 新增 `src/adapters/session_factory.gd`（67 行）`compose_battle_runtime() / dispose_battle_runtime()` 两个 static 方法，返回/接受 manager + sample_factory + composer
+  2. `player_battle_session.gd` + `sandbox_session_bootstrap_service.gd` 删 `BattleCoreComposerScript / SampleBattleFactoryScript` preload，统一走 SessionFactory
+  3. layering gate 加规则 13：`adapter 不再直接 preload BattleCoreComposer / SampleBattleFactory`，仅豁免 `session_factory.gd` 自己
+  4. 删 `sandbox_session_coordinator_envelope_helper.gd` + `.uid`（35 行）；4 个透明转发方法切到 `ResultEnvelopeHelperScript / PropertyAccessHelperScript` 直调；`unwrap_sample_factory_result` inline 到 demo_service；`build_summary_context` 下沉到 `BattleSandboxLaunchConfig.build_summary_context`（参数 `side_control_modes` → `control_modes` 避同 class shadow）
+  5. 改 `sandbox_session_command_service.gd / sandbox_session_demo_service.gd / sandbox_session_coordinator.gd` 删 envelope 字段 + EnvelopeHelperScript const，调用方全部切到 ResultEnvelopeHelperScript / PropertyAccessHelperScript
+- 验证：
+  - `bash tests/run_with_gate.sh` 全绿（120 quick + sandbox/player_mvp/replay_cases）
+  - `TEST_PROFILE=extended bash tests/run_with_gate.sh` 全绿
+  - `grep -r "BattleCoreComposerScript" src/adapters/` 仅命中 session_factory.gd 1 处
+  - `grep -r "EnvelopeHelperScript" src/` 0 命中
+- 不做：不删 `payload_effect_event_helper.gd`（DI 1:N 共享端口，被 6 个 handler 共用，删除 ROI 严重不平衡 — 改 19+ 处换 5 行删除，不值得）；不删 `battle_sandbox_policy_port.gd`（7 行 polymorphism contract，留作 actor 抽象基类）；不动 actions/ 颗粒度。
 
 ## Batch J: 闸门升级 + replay cases 进 gate + 测试覆盖补齐 + docs gate 减负（2026-04-27）
 

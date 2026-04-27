@@ -2,9 +2,9 @@ extends RefCounted
 class_name SandboxSessionDemoService
 
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
-const EnvelopeHelperScript := preload("res://src/adapters/sandbox_session_coordinator_envelope_helper.gd")
+const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
-var envelope = EnvelopeHelperScript.new()
+var _launch_config_helper: BattleSandboxLaunchConfig = BattleSandboxLaunchConfigScript.new()
 
 func run_demo_replay(state: SandboxSessionState, profile_id: String) -> String:
 	var profile_result: Dictionary = state.sample_factory.demo_profile_result(profile_id)
@@ -15,16 +15,16 @@ func run_demo_replay(state: SandboxSessionState, profile_id: String) -> String:
 		]
 	var profile: Dictionary = profile_result.get("data", {})
 	var replay_result: Dictionary = state.sample_factory.build_demo_replay_input_for_profile_result(state.manager, profile_id)
-	var replay_unwrap_result: Dictionary = envelope.unwrap_sample_factory_result(replay_result, "%s demo replay input" % profile_id)
+	var replay_unwrap_result: Dictionary = ResultEnvelopeHelperScript.unwrap_ok(replay_result, "Battle sandbox failed to build %s demo replay input" % profile_id)
 	if not bool(replay_unwrap_result.get("ok", false)):
 		return str(replay_unwrap_result.get("error_message", "Battle sandbox replay input failed"))
 	var replay_input = replay_unwrap_result.get("data", null)
-	var replay_unwrap: Dictionary = envelope.unwrap_ok(state.manager.run_replay(replay_input), "run_replay(%s)" % profile_id)
+	var replay_unwrap: Dictionary = ResultEnvelopeHelperScript.unwrap_ok(state.manager.run_replay(replay_input), "run_replay(%s)" % profile_id)
 	if not bool(replay_unwrap.get("ok", false)):
 		return str(replay_unwrap.get("error_message", "Battle sandbox replay failed"))
 	var replay_payload: Dictionary = replay_unwrap.get("data", {})
 	var replay_output = replay_payload.get("replay_output", null)
-	var summary_context := envelope.build_summary_context({
+	var summary_context := _launch_config_helper.build_summary_context({
 		"matchup_id": str(profile.get("matchup_id", BattleSandboxLaunchConfigScript.DEFAULT_MATCHUP_ID)).strip_edges(),
 		"battle_seed": int(profile.get("battle_seed", BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)),
 	}, state.side_control_modes, state.command_steps)

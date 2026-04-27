@@ -1,9 +1,8 @@
 extends RefCounted
 class_name PlayerBattleSession
 
-const BattleCoreComposerScript := preload("res://src/composition/battle_core_composer.gd")
+const SessionFactoryScript := preload("res://src/adapters/session_factory.gd")
 const BattleCoreManagerScript := preload("res://src/battle_core/facades/battle_core_manager.gd")
-const SampleBattleFactoryScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory.gd")
 const PlayerDefaultPolicyScript := preload("res://src/adapters/player/player_default_policy.gd")
 const PlayerSelectionAdapterScript := preload("res://src/adapters/player_selection_adapter.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
@@ -43,13 +42,11 @@ func start(matchup_id: String, battle_seed: int) -> Dictionary:
 	if normalized_matchup_id.is_empty():
 		return _error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "PlayerBattleSession.start requires non-empty matchup_id")
 	if _owns_manager and _manager == null:
-		var compose_error := _compose_manager()
+		var compose_error := _compose_battle_runtime()
 		if not compose_error.is_empty():
 			return _error(ErrorCodesScript.INVALID_COMPOSITION, compose_error)
 	if _manager == null:
 		return _error(ErrorCodesScript.INVALID_COMPOSITION, "PlayerBattleSession.start missing manager")
-	if _sample_factory == null:
-		_sample_factory = SampleBattleFactoryScript.new()
 	if _sample_factory == null:
 		return _error(ErrorCodesScript.INVALID_COMPOSITION, "PlayerBattleSession.start failed to construct sample factory")
 	var setup_result: Dictionary = _sample_factory.build_setup_by_matchup_id_result(normalized_matchup_id)
@@ -159,12 +156,10 @@ func close() -> void:
 	_legal_actions_by_side.clear()
 	current_snapshot_data = {}
 	battle_finished = false
-	if _owns_manager and _manager != null:
-		_manager.dispose()
+	if _owns_manager:
+		SessionFactoryScript.dispose_battle_runtime(_manager, _sample_factory)
 	_manager = null
-	if _sample_factory != null:
-		_sample_factory.dispose()
-		_sample_factory = null
+	_sample_factory = null
 	_composer = null
 
 func is_finished() -> bool:
@@ -215,15 +210,13 @@ func _packed_to_string_array(value) -> Array:
 			result.append(str(entry))
 	return result
 
-func _compose_manager() -> String:
-	_composer = BattleCoreComposerScript.new()
-	if _composer == null:
-		return "PlayerBattleSession failed to construct composer"
-	var composed = _composer.compose_manager()
-	if composed == null:
-		var composer_error: Dictionary = _composer.error_state()
-		return "PlayerBattleSession failed to compose manager: %s" % str(composer_error.get("message", "unknown composition error"))
-	_manager = composed
+func _compose_battle_runtime() -> String:
+	var compose_result: Dictionary = SessionFactoryScript.compose_battle_runtime()
+	if not bool(compose_result.get("ok", false)):
+		return "PlayerBattleSession %s" % str(compose_result.get("error_message", "session factory composition failed"))
+	_composer = compose_result.get("composer", null)
+	_manager = compose_result.get("manager", null)
+	_sample_factory = compose_result.get("sample_factory", null)
 	return ""
 
 func _resolve_secondary_command() -> Dictionary:

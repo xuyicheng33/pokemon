@@ -11,6 +11,29 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 2026-04-27 Batch K：adapter 装配收回 + 薄壁 envelope helper 清理
+
+- **背景**：模块评审 round 1 标记的 adapter 装配债：(a) `player_battle_session.gd` 与 `sandbox_session_bootstrap_service.gd` 都各自 preload `BattleCoreComposer` + `SampleBattleFactory`，等于"adapter 内嵌一个 mini composition"，违反 plan F-K 中"adapter 只持 manager + 内容路径"的边界；(b) `sandbox_session_coordinator_envelope_helper.gd` 6 方法里 4 个是单行透明转发到 `ResultEnvelopeHelper` / `PropertyAccessHelper`，剩 2 个其中 `unwrap_sample_factory_result` 仅加 label 前缀、`build_summary_context` 是非平凡 launch_config 聚合 — 这层薄包装已无内聚价值。Batch K 把这两条一次推完。
+- **SessionFactory 抽取**：
+  - 新增 `src/adapters/session_factory.gd`（67 行）。决策：放 `src/adapters/` 而不是 plan 里写的 `src/composition/`，因为 SessionFactory 必须 preload `SampleBattleFactory`（在 `src/dev_kit/`），而 `architecture_layering_gate` 规则 9 禁止 production 层（`src/composition` / `src/battle_core` / `src/shared`）import `src/dev_kit/`。SessionFactory 本质是 sandbox + player adapter 共享的装配 helper，归属 adapters 是正确的层位。
+  - 公开两个 static 方法：`compose_battle_runtime() -> Dictionary` 返回 `{ok, manager, sample_factory, composer, error_message}`；`dispose_battle_runtime(manager, sample_factory) -> void`。Composer 是 RefCounted 一次性对象，由 caller 存进 state 让 GDScript 自行 ref-count 释放，不必显式 dispose。
+  - `player_battle_session.gd` 删 `BattleCoreComposerScript` / `SampleBattleFactoryScript` preload，`_compose_manager()` 重命名为 `_compose_battle_runtime()` 调 `SessionFactoryScript.compose_battle_runtime()`，`close()` 中 `_manager.dispose() + _sample_factory.dispose()` 替换为 `SessionFactoryScript.dispose_battle_runtime(_manager, _sample_factory)`。
+  - `sandbox_session_bootstrap_service.gd` 同上：`_compose_dependencies` 改用 SessionFactory，`dispose_manager` 改用 SessionFactory。
+- **layering gate 加规则 13**：`adapter 不再直接 preload BattleCoreComposer / SampleBattleFactory（统一走 SessionFactory.compose_battle_runtime）`，pattern 匹配 `res://src/composition/battle_core_composer.gd` 与 `res://src/dev_kit/sample_battle/sample_battle_factory.gd`，覆盖 `src/adapters / scenes`，`drop_if_file_path` 单一豁免点是 `src/adapters/session_factory.gd` 自己。
+- **envelope helper 删除**：
+  - `unwrap_ok / read_property / ok_result / error_result` 4 个单行透明转发：所有 caller 切到直接 `ResultEnvelopeHelperScript.unwrap_ok / .ok / .error(null, msg)` 与 `PropertyAccessHelperScript.read_property`。
+  - `unwrap_sample_factory_result` 单一 caller（`sandbox_session_demo_service.gd`）inline 为 `ResultEnvelopeHelperScript.unwrap_ok(result, "Battle sandbox failed to build " + label)`。
+  - `build_summary_context` 下沉到 `BattleSandboxLaunchConfig.build_summary_context(launch_config, control_modes, command_steps)`（自然归属——所有字段都用 launch_config 模块的常量做缺省值）；参数从 `side_control_modes` 改名 `control_modes` 避开同 class 内 `func side_control_modes(config)` 命名 shadow（Godot 4.6.1 严格扫描会报 warning）。两个 caller（demo_service / command_service）改用 `BattleSandboxLaunchConfigScript` 实例方法。
+  - 删掉 `src/adapters/sandbox_session_coordinator_envelope_helper.gd` + `.uid`（共 35 行 + 3 个 caller 的 `EnvelopeHelperScript` const + `var envelope` 字段）。
+  - 改动 4 文件：`sandbox_session_command_service.gd`、`sandbox_session_demo_service.gd`、`sandbox_session_coordinator.gd`、`sandbox_session_bootstrap_service.gd`（后者 1 处 `command_service.envelope.unwrap_ok` 也切到 `ResultEnvelopeHelperScript.unwrap_ok`）。
+- **payload_effect_event_helper 不删（与 plan 偏离）**：
+  - plan 原写："删 5 行 `payload_effect_event_helper.gd`，下沉到 EffectEvent.resolve_sort_random_roll"。
+  - 实际调研：该 helper 是 6 个 payload handler（damage / apply_effect / remove_effect / stat_mod / rule_mod / resource_runtime_service）通过 DI 共享的依赖端口（`COMPOSE_DEPS` 注入 `effect_event_helper` 字段，handler 调 `effect_event_helper.resolve_effect_roll(effect_event)`）。它不是单一调用方的浪费 wrapper，而是真正的 1:N 共享 helper（与 payload_resource_runtime_service 同形态），删除会同时改 6 handler COMPOSE_DEPS + 6 handler 调用方 + 2 composition 注册（service_specs / runtime_service_registry）+ 5 contract registry 入口（payload_contract_registry），共 19+ 处 mutation 换来 5 行删除。ROI 严重不平衡。
+  - 决策：**保留 `payload_effect_event_helper.gd`**，作为 batch K 的明确 "不做" 项写入决策。这与 batch E2 的 "payload 二级拆分回潮禁止" 原则不冲突——event_event_helper 是 1:N 共享端口（不是单 handler 的二级拆分），是 batch E4 §4.1 文档化的 "保留二级拆分情形" 之一类比。
+- **不动的事**：不删 `battle_sandbox_policy_port.gd`（仅 7 行抽象基类，留作 polymorphism contract，plan F-K 写过）；不动 `actions/` 18 文件颗粒度（5da0742 刚拆完，后续 round 2 再考虑）；不重命名 `_envelope` / `envelope` 字段以外的成员；不改 sandbox view 渲染分层；不改 player MVP UI；不改 battle_core 任何引擎代码。
+- **负向验证**：负向能挡住的两条 layering 规则——(a) 在 `src/adapters/sandbox_session_state.gd` 加 `const X := preload("res://src/composition/battle_core_composer.gd")` → `ARCH_GATE_FAILED: adapter 不再直接 preload BattleCoreComposer / SampleBattleFactory`；(b) 已有的 phase / battle_result 写入规则保持有效。还原后绿。
+- **验证**：`bash tests/run_with_gate.sh` 全绿（120 quick + 3 段 replay_cases + sandbox + player_mvp）；`TEST_PROFILE=extended bash tests/run_with_gate.sh` 全绿；`grep -r "BattleCoreComposerScript" src/adapters/` 仅命中 `session_factory.gd` 1 文件；`grep -r "EnvelopeHelperScript" src/` 0 命中；`grep -r "sandbox_session_coordinator_envelope_helper" src/` 0 命中（除 `session_factory.gd` 文件名相似但语义不同）。
+
 ## 2026-04-27 Batch J：闸门升级 + replay cases 进 gate + 测试覆盖补齐 + docs gate 减负
 
 - **背景**：模块评审 Round 1 / 项目评审里登记的几条遗留 gate 短板：(a) `architecture_layering_gate.py` 是字面 regex 黑名单，不挡 `ResourceLoader.load(VARIABLE)` 这类动态 path 绕道；(b) `tests/replay_cases/{domain,kashimo}_cases.md` 8 个固定回放案例只在 markdown 文档列出，对应 runner 已存在但**未进任何 gate**；(c) Sukuna bad_cases 仅 3 case（gojo/kashimo/obito 各 5），覆盖度不齐；(d) Obito 是 4 个角色中唯一无独立 replay case 的；(e) `repo_consistency_docs_gate.py` 96 行里 27 处 `require_contains` 是中文 heading / 段落字面量镜像，作者改 heading 即红、与业务正确性零相关。Batch J 把这五项一次推完。

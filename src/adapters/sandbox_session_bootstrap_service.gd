@@ -1,8 +1,7 @@
 extends RefCounted
 class_name SandboxSessionBootstrapService
 
-const BattleCoreComposerScript := preload("res://src/composition/battle_core_composer.gd")
-const SampleBattleFactoryScript := preload("res://src/dev_kit/sample_battle/sample_battle_factory.gd")
+const SessionFactoryScript := preload("res://src/adapters/session_factory.gd")
 const BattleSandboxLaunchConfigScript := preload("res://src/adapters/battle_sandbox_launch_config.gd")
 const ResultEnvelopeHelperScript := preload("res://src/shared/result_envelope_helper.gd")
 
@@ -47,10 +46,7 @@ func close_session_if_needed(state: SandboxSessionState) -> Dictionary:
 	return close_result
 
 func dispose_manager(state: SandboxSessionState) -> void:
-	if state.manager != null:
-		state.manager.dispose()
-	if state.sample_factory != null:
-		state.sample_factory.dispose()
+	SessionFactoryScript.dispose_battle_runtime(state.manager, state.sample_factory)
 	state.manager = null
 	state.composer = null
 	state.sample_factory = null
@@ -71,7 +67,7 @@ func create_session_for_launch_config(state: SandboxSessionState) -> String:
 	var snapshot_paths_result: Dictionary = state.sample_factory.content_snapshot_paths_for_setup_result(state.battle_setup)
 	if not bool(snapshot_paths_result.get("ok", false)):
 		return "Battle sandbox failed to resolve setup snapshot paths: %s" % str(snapshot_paths_result.get("error_message", "unknown error"))
-	var create_unwrap: Dictionary = command_service.envelope.unwrap_ok(
+	var create_unwrap: Dictionary = ResultEnvelopeHelperScript.unwrap_ok(
 		state.manager.create_session({
 			"battle_seed": int(state.launch_config.get("battle_seed", BattleSandboxLaunchConfigScript.DEFAULT_BATTLE_SEED)),
 			"content_snapshot_paths": snapshot_paths_result.get("data", PackedStringArray()),
@@ -94,16 +90,12 @@ func create_session_for_launch_config(state: SandboxSessionState) -> String:
 	return ""
 
 func _compose_dependencies(state: SandboxSessionState) -> String:
-	state.composer = BattleCoreComposerScript.new()
-	if state.composer == null:
-		return "Battle sandbox failed to construct composer"
-	state.manager = state.composer.compose_manager()
-	if state.manager == null:
-		var composer_error: Dictionary = state.composer.error_state()
-		return "Battle sandbox failed to compose manager: %s" % str(composer_error.get("message", "unknown composition error"))
-	state.sample_factory = SampleBattleFactoryScript.new()
-	if state.sample_factory == null:
-		return "Battle sandbox failed to construct sample battle factory"
+	var compose_result: Dictionary = SessionFactoryScript.compose_battle_runtime()
+	if not bool(compose_result.get("ok", false)):
+		return "Battle sandbox %s" % str(compose_result.get("error_message", "session factory composition failed")).replace("SessionFactory", "session factory")
+	state.composer = compose_result.get("composer", null)
+	state.manager = compose_result.get("manager", null)
+	state.sample_factory = compose_result.get("sample_factory", null)
 	return ""
 
 func _load_available_matchups(state: SandboxSessionState) -> String:
