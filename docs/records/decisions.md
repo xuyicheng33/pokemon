@@ -11,6 +11,22 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 2026-04-27 Batch G：玩家 MVP 进 gate（防回退）
+
+- **背景**：Batch F 修复了 `scenes/player/*` 与 `src/adapters/player/*` 的接线断裂，但 ~1910 行新代码还没进任何闸门，下一次类似的 API drift 仍可在 PR 阶段静默落入主线。Batch G 把这一空白彻底填上。
+- **接入面**：
+  - `tests/check_boot_smoke.sh`：拆成两轮入口，第一轮跑 sandbox 默认入口（保持原有契约），第二轮加 `-- --player_mvp` 切到 BattleScreen。两轮共用同一组 `ENGINE_ERROR_PATTERN / ENGINE_WARNING_PATTERN` + 合并后的 `APP_FAILURE_PATTERN`（同时包含 `BATTLE_SANDBOX_FAILED:` 和 `BATTLE_PLAYER_FAILED:`）。
+  - `tests/check_sandbox_smoke_matrix.sh`：在原 sandbox / demo 段后追加 player_mvp 段：quick scope 跑 1 次（默认 matchup `gojo_vs_sample` policy/policy），extended/full scope 跑 4 次（4 个 quick anchor matchup 各一）。复用 `validate-summary` 而非新增 validator——`tests/helpers/player_mvp_full_run.gd` 输出的 JSON 形态与 `manual_battle_full_run.gd` 完全一致（matchup_id / battle_seed / p1_control_mode / p2_control_mode / winner_side_id / reason / result_type / turn_index / event_log_cursor / command_steps）。
+  - `test/suites/player_battle_session_contract_suite.gd`（8 case，quick profile）：守住 PlayerBattleSession 公开 API 契约——`start / current_snapshot / legal_actions / legal_action_summary / submit_player_command / run_turn / current_side_to_select` + 关键错误码（INVALID_MANAGER_REQUEST 用于空 matchup_id、非 P1 side_id；INVALID_COMMAND_PAYLOAD 用于无 pending P1 时调 run_turn）。
+  - `test/suites/player_content_lexicon_contract_suite.gd`（5 case，quick profile）：守住 6 张索引 dict、`*_display_name` 命名（防 Batch D `translate_*_id` 命名漂移）、18 项 combat_type 调色板齐全、中文 fallback 命中、known skill `gojo_aka` 索引可达。
+  - `tests/suite_profiles.json`：quick profile 30 → 32（加上面两条契约 suite）；总 suite 数仍为 132（原 130 + 2）。
+- **关联清理**：契约 suite 触发 `player_battle_session.gd` 的脚本重加载，暴露 Godot 4.6.1 严格 warning 扫描在 main 上的两个预存 latent issue：(a) `func start(matchup_id, seed)` 的 `seed` 参数 shadow 内置函数；(b) `LogText.gd` 的 `var name :=` 局部变量 shadow Node.name 属性。本批顺手把 `seed` → `battle_seed`（公开 API 形态变化，同步改 BattleScreen / player_mvp_full_run / contract suite 调用方），把 `LogText` 内 `var name` 改名为 `skill_name` / `effect_name`。
+- **负向验证**：把 `PlayerBattleSession.start` 改名 `start_battle` 后跑 quick gate → `ENGINE_GATE_FAILED: found engine error logs during gdUnit4`（contract suite + player_mvp smoke + boot_smoke round 2 三层都红）；还原后 quick gate 全绿。这意味着新 gate 的真实约束力得到验证，不是装饰品。
+- **未挡住的项**：BattleScreen.gd 内部 UI 逻辑 bug（如 `LOCAL_PLAYER_SIDE_ID = "X"` 这类只在玩家点击时才暴露的渲染路径错误）gate 抓不到——非真 GUI 自动化覆盖不到 button.pressed 路径。这条边界明确登记为"接受的 trade-off"，下一轮如需 GUI 覆盖应引入 GdUnit ToolkitInputAction 或类似 stub-driver。
+- **决策（写入约束）**：从 Batch G 起，`scenes/player/` 与 `src/adapters/player/` 任何新增端到端入口必须同步进入：(1) gdUnit 契约 suite；(2) `player_mvp_full_run.gd` 类 headless smoke；(3) `check_boot_smoke.sh` 第二轮。三件齐备前不允许走主线提交。新增的 player adapter 公开 API 形态（含错误码、envelope key、参数命名）必须在契约 suite 内显式锁定，与 sandbox 端的契约约束等价。
+- **不做的事**：不动 sandbox 端任何文件；不改 `tests/run_with_gate.sh` 的整体顺序；不引入 GUI 自动化测试；不改 `repo_consistency_*` gate；不为 player_mvp 路径单建 catalog 入口（复用 sandbox catalog 现有结构）。
+- **验证**：`bash tests/run_with_gate.sh` 全绿（120 quick = 107 + 13）；`TEST_PROFILE=extended bash tests/run_with_gate.sh` 全绿（含 4 个 player_mvp anchors）；负向验证（API drift）gate 红。
+
 ## 2026-04-27 Batch F：玩家 MVP 接线断裂修复（事故复盘）
 
 - **事故背景**：commit 7703f14（Batch D）一次性引入 ~1910 行 player MVP 代码（`scenes/player/BattleScreen.gd` 813 行 + 4 个 player adapter + 4 个对话/面板/日志/Toast 子场景），但 `BattleScreen.gd` 调用的方法名、参数签名、`side_id` 协议、`public_snapshot` 字段形状与 `src/adapters/player/*` 实际暴露的 API 全线不对齐。开 `Boot.launch_config = "player_mvp"` 后必然立即 toast 一片、按钮全灰，零概率打完一局；同时该 1910 行新代码完全未进入 quick / extended / boot smoke 任一闸门，下一次回退也挡不住。

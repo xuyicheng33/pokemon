@@ -171,7 +171,7 @@ tests/run_with_gate.sh
 - 业务断言通过（`tests/run_gdunit.sh` -> `gdUnit4`；默认 `TEST_PROFILE=quick`，显式 `extended|full` 扫描 `res://test`）
 - 产出可消费测试报告（`JUnit XML + HTML`，默认落在 `reports/gdunit`）
 - 废弃本地产物可通过 `bash tests/cleanup_local_artifacts.sh` 清理；当前只认 `reports/gdunit` 为有效报告目录
-- headless 主流程启动 smoke 通过（`bash tests/check_boot_smoke.sh`），且不得出现 `BATTLE_SANDBOX_FAILED:` 应用层失败标记
+- headless 主流程启动 smoke 通过（`bash tests/check_boot_smoke.sh`，两轮：sandbox 默认入口 + `--player_mvp` 切到 BattleScreen），且不得出现 `BATTLE_SANDBOX_FAILED:` / `BATTLE_PLAYER_FAILED:` 任一应用层失败标记
 - 无引擎级 warning（`WARNING:`）
 - suite 可达性检查通过（`tests/check_suite_reachability.sh`）
 - 无引擎级错误（`SCRIPT ERROR / Compile Error / Parse Error / Failed to load script`）
@@ -179,7 +179,7 @@ tests/run_with_gate.sh
   - 当前额外包含 composition `SERVICE_DESCRIPTORS / container API / wiring_specs` 一致性检查，以及 runtime wiring DAG 检查
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
   - 当前会聚合 `tests/gates/repo_consistency_surface_gate.py`、`tests/gates/repo_consistency_formal_character_gate.py`、`tests/gates/repo_consistency_docs_gate.py`
-- sandbox smoke matrix 通过（`tests/check_sandbox_smoke_matrix.sh`，默认 `SANDBOX_SMOKE_SCOPE=quick`，覆盖推荐 matchup、所有 `<pair>_vs_sample` 主路径、默认 matchup 的 `policy/policy` 与 `manual/manual`、默认 matchup 的 submit 入口，以及全部 demo profile；设 `SANDBOX_SMOKE_SCOPE=full` 可覆盖全部可见 matchup）
+- sandbox smoke matrix 通过（`tests/check_sandbox_smoke_matrix.sh`，默认 `SANDBOX_SMOKE_SCOPE=quick`，覆盖推荐 matchup、所有 `<pair>_vs_sample` 主路径、默认 matchup 的 `policy/policy` 与 `manual/manual`、默认 matchup 的 submit 入口、全部 demo profile，以及玩家 MVP 路径 `tests/helpers/player_mvp_full_run.gd`：quick 跑默认 matchup 一次，extended 跑全部 quick anchor matchup；设 `SANDBOX_SMOKE_SCOPE=full` 可覆盖全部可见 matchup）
 
 ## 6. 对外核心接口（Manager）
 

@@ -115,9 +115,9 @@ func _translate_skill(raw_id: Variant) -> String:
 		return id_str
 	if not _lexicon.skills.has(id_str):
 		return id_str
-	var name: String = String(_lexicon.skill_display_name(id_str))
-	if name != "":
-		return name
+	var skill_name: String = String(_lexicon.skill_display_name(id_str))
+	if skill_name != "":
+		return skill_name
 	return id_str
 
 
@@ -129,7 +129,7 @@ func _translate_effect(raw_id: Variant) -> String:
 		return id_str
 	if not _lexicon.effects.has(id_str):
 		return id_str
-	var name: String = String(_lexicon.effect_display_name(id_str))
-	if name != "":
-		return name
+	var effect_name: String = String(_lexicon.effect_display_name(id_str))
+	if effect_name != "":
+		return effect_name
 	return id_str

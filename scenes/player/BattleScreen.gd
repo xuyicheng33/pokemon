@@ -137,8 +137,8 @@ func _bootstrap_session() -> void:
 	_session = PlayerBattleSessionScript.new()
 
 	var matchup_id := DEFAULT_MATCHUP_ID
-	var seed := DEFAULT_SEED
-	var start_envelope: Dictionary = _session.start(matchup_id, seed)
+	var battle_seed := DEFAULT_SEED
+	var start_envelope: Dictionary = _session.start(matchup_id, battle_seed)
 	if not _handle_envelope(start_envelope):
 		return
 	_last_snapshot = _session.current_snapshot()
