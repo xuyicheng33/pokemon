@@ -179,7 +179,7 @@ tests/run_with_gate.sh
   - 当前额外包含 composition `SERVICE_DESCRIPTORS / container API / wiring_specs` 一致性检查，以及 runtime wiring DAG 检查
 - 仓库一致性检查通过（`tests/check_repo_consistency.sh`）
   - 当前会聚合 `tests/gates/repo_consistency_surface_gate.py`、`tests/gates/repo_consistency_formal_character_gate.py`、`tests/gates/repo_consistency_docs_gate.py`
-- sandbox smoke matrix 通过（`tests/check_sandbox_smoke_matrix.sh`，默认 `SANDBOX_SMOKE_SCOPE=quick`，覆盖每个正式角色的 quick anchor `manual/policy` 主路径、默认 demo profile、默认玩家 MVP 路径，以及固定 replay cases。`extended` 覆盖 quick 之外的 visible matchup `manual/policy`、默认 matchup 的 `policy/policy` 与 `manual/manual`、其余 demo profile、全部 quick anchor 的玩家 MVP 路径；设 `SANDBOX_SMOKE_SCOPE=full` 可覆盖全部可见 matchup）
+- sandbox smoke matrix 通过（`tests/check_sandbox_smoke_matrix.sh`，默认 `SANDBOX_SMOKE_SCOPE=quick`，覆盖每个正式角色的 quick anchor `manual/policy` 主路径、默认 demo profile、默认玩家 MVP 路径，以及固定 replay cases。`extended` 覆盖 quick 之外的 visible matchup `manual/policy`、默认 matchup 的 `policy/policy` 与 `manual/manual`、其余 demo profile、全部 visible matchup 的玩家 MVP 路径；设 `SANDBOX_SMOKE_SCOPE=full` 可覆盖全部可见 matchup）
 
 ## 6. 对外核心接口（Manager）
 

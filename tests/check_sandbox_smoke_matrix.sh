@@ -139,6 +139,7 @@ RUN_DEFAULT_DEMO=false
 RUN_OTHER_DEMO=false
 RUN_PLAYER_MVP_DEFAULT=false
 RUN_PLAYER_MVP_QUICK_ANCHORS=false
+RUN_PLAYER_MVP_OTHER_VISIBLE=false
 
 case "$SANDBOX_SMOKE_SCOPE" in
   quick)
@@ -152,6 +153,7 @@ case "$SANDBOX_SMOKE_SCOPE" in
     RUN_DEFAULT_MANUAL_MANUAL=true
     RUN_OTHER_DEMO=true
     RUN_PLAYER_MVP_QUICK_ANCHORS=true
+    RUN_PLAYER_MVP_OTHER_VISIBLE=true
     ;;
   full)
     RUN_QUICK_ANCHOR_MANUAL_POLICY=true
@@ -161,6 +163,7 @@ case "$SANDBOX_SMOKE_SCOPE" in
     RUN_DEFAULT_DEMO=true
     RUN_OTHER_DEMO=true
     RUN_PLAYER_MVP_QUICK_ANCHORS=true
+    RUN_PLAYER_MVP_OTHER_VISIBLE=true
     ;;
 esac
 
@@ -354,6 +357,21 @@ if $RUN_PLAYER_MVP_QUICK_ANCHORS; then
   done
 fi
 
+if $RUN_PLAYER_MVP_OTHER_VISIBLE; then
+  for matchup_id in "${VISIBLE_MATCHUP_IDS[@]}"; do
+    if [[ "$QUICK_ANCHOR_LOOKUP" == *" $matchup_id "* ]]; then
+      continue
+    fi
+    run_case \
+      "case_label=${SANDBOX_SMOKE_SCOPE}:player_mvp_visible:${matchup_id}" \
+      "$matchup_id" \
+      "policy" \
+      "policy" \
+      env MATCHUP_ID="$matchup_id" \
+      godot --headless --path . --script tests/helpers/player_mvp_full_run.gd
+  done
+fi
+
 # Replay case runner 段：固定 deterministic 案例进 quick gate。所有 scope 都跑
 # 同一组（quick / extended / full 不分级，因为这些案例单次跑成本低且必须每次过）。
 run_replay_case_runner \
@@ -380,4 +398,4 @@ run_replay_case_runner \
 echo "SANDBOX_SMOKE_MATRIX_PASSED: ${SANDBOX_SMOKE_SCOPE} scope smoke cases (quick anchors=${#QUICK_ANCHOR_MATCHUP_IDS[@]}, visible=${#VISIBLE_MATCHUP_IDS[@]}, demos=${#DEMO_PROFILE_ROWS[@]}) are stable"
 echo "NOTE: manual smoke covers BattleSandboxController.submit_action on visible matchups; deterministic action choice still uses BattleSandboxFirstLegalPolicy"
 echo "NOTE: player_mvp smoke covers PlayerBattleSession + PlayerDefaultPolicy 双侧 policy via tests/helpers/player_mvp_full_run.gd"
-echo "NOTE: scope semantics — quick=每 formal 角色 1 个 manual/policy + 默认 demo replay + 默认 player_mvp; extended=quick 之外的余量 + 4 个 player_mvp anchors; full=全集 superset."
+echo "NOTE: scope semantics — quick=每 formal 角色 1 个 manual/policy + 默认 demo replay + 默认 player_mvp; extended=quick 之外的余量 + 全部 visible player_mvp; full=全集 superset."

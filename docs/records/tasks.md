@@ -37,6 +37,20 @@
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 - Batch K: SessionFactory 抽取 + envelope helper 删除
 - Review Fix 1: CI extended gate 与 smoke 文档口径同步
+- Review Fix 2: 玩家 MVP visible matchup 覆盖补齐
+
+## 最近完成：Review Fix 2：玩家 MVP visible matchup 覆盖补齐（2026-04-28）
+
+- 状态：已完成
+- 目标：让玩家入口可选择的全部 visible matchup 都进入 PlayerBattleSession + PlayerDefaultPolicy 路径回归
+- 范围：
+  1. `tests/check_sandbox_smoke_matrix.sh` 新增 `RUN_PLAYER_MVP_OTHER_VISIBLE`
+  2. extended / full 在 quick anchors 之外补跑其余 visible matchup 的 `tests/helpers/player_mvp_full_run.gd`
+  3. README 与当前阶段回归基线同步玩家 MVP 覆盖口径
+- 验收标准：
+  - quick 仍保留默认玩家 MVP smoke，保持日常反馈速度
+  - extended / full 覆盖 BattleScreen 下拉框可见的全部 matchup 玩家路径
+  - smoke summary 仍统一走 `validate-summary`
 
 ## 最近完成：Review Fix 1：CI extended gate 与 smoke 文档口径同步（2026-04-28）
 
