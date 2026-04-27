@@ -565,16 +565,6 @@ func _force_run_default_then_refresh() -> void:
 	_force_run_after_idle = false
 	if _session == null:
 		return
-	var legal: Dictionary = _local_legal_action_summary()
-	var actor_public_id: String = str(legal.get("actor_public_id", ""))
-	var envelope: Dictionary = _session.submit_player_command(LOCAL_PLAYER_SIDE_ID, {
-		"command_type": CMD_FORCED_DEFAULT,
-		"side_id": LOCAL_PLAYER_SIDE_ID,
-		"actor_public_id": actor_public_id,
-	})
-	if not _handle_envelope(envelope):
-		_refresh_ui_from_session()
-		return
 	_advance_one_turn()
 	_refresh_ui_from_session()
 
@@ -833,9 +823,11 @@ func _hash_color(seed_str: String) -> Color:
 
 func _handle_envelope(envelope: Variant) -> bool:
 	if envelope == null:
-		return true
+		_show_toast("invalid_session", "PlayerBattleScreen received empty envelope")
+		return false
 	if not (envelope is Dictionary):
-		return true
+		_show_toast("invalid_session", "PlayerBattleScreen received invalid envelope")
+		return false
 	var dict: Dictionary = envelope
 	if bool(dict.get("ok", true)):
 		return true

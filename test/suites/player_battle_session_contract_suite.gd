@@ -184,3 +184,44 @@ func test_player_battle_session_current_side_to_select_returns_p1_after_start() 
 		session.close()
 		return
 	session.close()
+
+
+func test_player_battle_session_enriches_raw_player_commands_across_turns() -> void:
+	var session = PlayerBattleSessionScript.new()
+	var start_envelope: Dictionary = session.start(DEFAULT_MATCHUP_ID, DEFAULT_SEED)
+	if not bool(start_envelope.get("ok", false)):
+		fail("PlayerBattleSession.start should succeed for raw command enrichment")
+		session.close()
+		return
+	for expected_turn in [1, 2]:
+		var legal_envelope: Dictionary = session.legal_action_summary("P1")
+		if not bool(legal_envelope.get("ok", false)):
+			fail("legal_action_summary should succeed on turn %d" % expected_turn)
+			session.close()
+			return
+		var legal_data: Dictionary = legal_envelope.get("data", {})
+		var legal_skill_ids: Array = legal_data.get("legal_skill_ids", [])
+		if legal_skill_ids.is_empty():
+			fail("expected at least one legal skill on turn %d" % expected_turn)
+			session.close()
+			return
+		var submit_envelope: Dictionary = session.submit_player_command("P1", {
+			"command_type": "skill",
+			"actor_public_id": String(legal_data.get("actor_public_id", "")),
+			"skill_id": String(legal_skill_ids[0]),
+		})
+		if not bool(submit_envelope.get("ok", false)):
+			fail("raw submit without turn_index should succeed on turn %d: %s" % [expected_turn, str(submit_envelope.get("error_message", ""))])
+			session.close()
+			return
+		var run_envelope: Dictionary = session.run_turn()
+		if not bool(run_envelope.get("ok", false)):
+			fail("run_turn should accept enriched command on turn %d: %s" % [expected_turn, str(run_envelope.get("error_message", ""))])
+			session.close()
+			return
+	var snapshot: Dictionary = session.current_snapshot()
+	if int(snapshot.get("turn_index", 0)) < 3:
+		fail("two raw UI-style commands should advance past turn 2, got turn_index=%d" % int(snapshot.get("turn_index", 0)))
+		session.close()
+		return
+	session.close()

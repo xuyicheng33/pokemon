@@ -104,7 +104,22 @@ func submit_player_command(side_id: String, payload: Dictionary) -> Dictionary:
 		return _error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "PlayerBattleSession.submit_player_command battle already finished")
 	if payload == null:
 		return _error(ErrorCodesScript.INVALID_COMMAND_PAYLOAD, "PlayerBattleSession.submit_player_command requires payload")
-	var command_result: Dictionary = _manager.build_command(payload)
+	var prepared_payload_result := _prepare_player_payload(normalized_side_id, payload)
+	if not bool(prepared_payload_result.get("ok", false)):
+		return prepared_payload_result
+	var prepared_payload: Dictionary = prepared_payload_result.get("data", {})
+	if _is_forced_default_payload(prepared_payload):
+		pending_p1_command = {
+			"side_id": normalized_side_id,
+			"command": null,
+			"auto_forced": true,
+		}
+		return ResultEnvelopeHelperScript.ok({
+			"side_id": normalized_side_id,
+			"has_pending_p1": true,
+			"auto_forced": true,
+		})
+	var command_result: Dictionary = _manager.build_command(prepared_payload)
 	if not bool(command_result.get("ok", false)):
 		return command_result
 	pending_p1_command = {
@@ -117,21 +132,25 @@ func submit_player_command(side_id: String, payload: Dictionary) -> Dictionary:
 	})
 
 func has_pending_p1() -> bool:
-	return not pending_p1_command.is_empty() and pending_p1_command.get("command", null) != null
+	return not pending_p1_command.is_empty() and (pending_p1_command.get("command", null) != null or bool(pending_p1_command.get("auto_forced", false)))
 
 func run_turn() -> Dictionary:
 	if _manager == null or session_id.is_empty():
 		return _error(ErrorCodesScript.INVALID_SESSION, "PlayerBattleSession.run_turn has no active session")
 	if battle_finished:
 		return _error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "PlayerBattleSession.run_turn battle already finished")
-	if not has_pending_p1():
+	if not has_pending_p1() and not _side_has_forced_command(PRIMARY_SIDE_ID):
 		return _error(ErrorCodesScript.INVALID_COMMAND_PAYLOAD, "PlayerBattleSession.run_turn requires pending P1 command")
 	var p2_command_result := _resolve_secondary_command()
 	if not bool(p2_command_result.get("ok", false)):
 		return p2_command_result
 	var commands: Array = []
-	commands.append(pending_p1_command.get("command", null))
-	commands.append(p2_command_result.get("data", null))
+	var p1_command = pending_p1_command.get("command", null)
+	if p1_command != null:
+		commands.append(p1_command)
+	var p2_command = p2_command_result.get("data", null)
+	if p2_command != null:
+		commands.append(p2_command)
 	var run_result: Dictionary = _manager.run_turn(session_id, commands)
 	if not bool(run_result.get("ok", false)):
 		return run_result
@@ -225,6 +244,8 @@ func _resolve_secondary_command() -> Dictionary:
 		return legal_result
 	var legal_actions_value = legal_result.get("data", null)
 	_legal_actions_by_side[SECONDARY_SIDE_ID] = legal_actions_value
+	if _legal_actions_has_forced_command(legal_actions_value):
+		return ResultEnvelopeHelperScript.ok(null)
 	var policy_result: Dictionary = default_policy.decide(SECONDARY_SIDE_ID, current_snapshot_data, legal_actions_value)
 	if not bool(policy_result.get("ok", false)):
 		return policy_result
@@ -244,6 +265,33 @@ func _resolve_secondary_command() -> Dictionary:
 	if not bool(command_result.get("ok", false)):
 		return command_result
 	return ResultEnvelopeHelperScript.ok(command_result.get("data", null))
+
+func _prepare_player_payload(side_id: String, payload: Dictionary) -> Dictionary:
+	var enriched_payload: Dictionary = payload.duplicate(true)
+	enriched_payload["side_id"] = side_id
+	enriched_payload["turn_index"] = int(enriched_payload.get("turn_index", current_snapshot_data.get("turn_index", 1)))
+	enriched_payload["command_source"] = str(enriched_payload.get("command_source", "manual")).strip_edges()
+	if String(enriched_payload["command_source"]).is_empty():
+		enriched_payload["command_source"] = "manual"
+	if _is_forced_default_payload(enriched_payload):
+		return ResultEnvelopeHelperScript.ok(enriched_payload)
+	var actor_public_id := str(enriched_payload.get("actor_public_id", "")).strip_edges()
+	if actor_public_id.is_empty():
+		return _error(ErrorCodesScript.INVALID_COMMAND_PAYLOAD, "PlayerBattleSession.submit_player_command requires actor_public_id")
+	return ResultEnvelopeHelperScript.ok(_selection_adapter.build_player_payload(enriched_payload))
+
+func _is_forced_default_payload(payload: Dictionary) -> bool:
+	return str(payload.get("command_type", "")).strip_edges() == "resource_forced_default"
+
+func _side_has_forced_command(side_id: String) -> bool:
+	var legal_result: Dictionary = _manager.get_legal_actions(session_id, side_id)
+	if not bool(legal_result.get("ok", false)):
+		return false
+	_legal_actions_by_side[side_id] = legal_result.get("data", null)
+	return _legal_actions_has_forced_command(legal_result.get("data", null))
+
+func _legal_actions_has_forced_command(legal_actions_value) -> bool:
+	return not str(_read_property(legal_actions_value, "forced_command_type", "")).strip_edges().is_empty()
 
 func _resolve_battle_finished(public_snapshot: Dictionary) -> bool:
 	var battle_result = public_snapshot.get("battle_result", null)
