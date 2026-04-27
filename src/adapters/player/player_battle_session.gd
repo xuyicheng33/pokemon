@@ -173,6 +173,48 @@ func is_finished() -> bool:
 func manager() -> Variant:
 	return _manager
 
+func current_side_to_select() -> String:
+	# 返回当前需要玩家提交命令的 side_id；空串表示无需玩家操作（已结束 / 已提交 / 未启动）。
+	if _closed or battle_finished or session_id.is_empty():
+		return ""
+	if has_pending_p1():
+		return ""
+	return PRIMARY_SIDE_ID
+
+func legal_action_summary(side_id: String) -> Dictionary:
+	# 把 LegalActionSet RefCounted 转成 Dict 形态，方便 UI 使用；envelope 风格。
+	var legal_envelope: Variant = legal_actions(side_id)
+	if not (legal_envelope is Dictionary):
+		return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_SESSION, "PlayerBattleSession.legal_action_summary received non-dict envelope")
+	var envelope: Dictionary = legal_envelope
+	if not bool(envelope.get("ok", false)):
+		return envelope
+	var data: Variant = envelope.get("data", null)
+	if data == null:
+		return ResultEnvelopeHelperScript.error(ErrorCodesScript.INVALID_SESSION, "PlayerBattleSession.legal_action_summary missing legal action data")
+	var summary := {
+		"actor_public_id": str(_read_property(data, "actor_public_id", "")),
+		"legal_skill_ids": _packed_to_string_array(_read_property(data, "legal_skill_ids", [])),
+		"legal_switch_target_public_ids": _packed_to_string_array(_read_property(data, "legal_switch_target_public_ids", [])),
+		"legal_ultimate_ids": _packed_to_string_array(_read_property(data, "legal_ultimate_ids", [])),
+		"wait_allowed": bool(_read_property(data, "wait_allowed", false)),
+		"forced_command_type": str(_read_property(data, "forced_command_type", "")).strip_edges(),
+	}
+	return ResultEnvelopeHelperScript.ok(summary)
+
+func _packed_to_string_array(value) -> Array:
+	var result: Array = []
+	if value == null:
+		return result
+	if value is PackedStringArray:
+		for entry in value:
+			result.append(str(entry))
+		return result
+	if value is Array:
+		for entry in value:
+			result.append(str(entry))
+	return result
+
 func _compose_manager() -> String:
 	_composer = BattleCoreComposerScript.new()
 	if _composer == null:

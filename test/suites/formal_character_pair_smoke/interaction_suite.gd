@@ -14,13 +14,11 @@ func test_formal_pair_interaction_case_catalog_contract() -> void:
 	var interaction_cases: Array = _harness.build_formal_pair_interaction_cases(sample_factory)
 	var matrix_result: Dictionary = _shared.validate_unordered_interaction_matrix(_harness, sample_factory, interaction_cases)
 	if not bool(matrix_result.get("ok", false)):
-		var __legacy_result = matrix_result
-		if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
-			fail(str(__legacy_result.get("error", "unknown error")))
+		fail(str(matrix_result.get("error", "unknown error")))
 		return
-	var __legacy_result = _interaction_shared.validate_case_catalog(_harness, interaction_cases)
-	if typeof(__legacy_result) != TYPE_DICTIONARY or not bool(__legacy_result.get("ok", false)):
-		fail(str(__legacy_result.get("error", "unknown error")))
+	var catalog_result: Dictionary = _interaction_shared.validate_case_catalog(_harness, interaction_cases)
+	if typeof(catalog_result) != TYPE_DICTIONARY or not bool(catalog_result.get("ok", false)):
+		fail(str(catalog_result.get("error", "unknown error")))
 
 func test_formal_pair_interaction_cases_contract() -> void:
 	var sample_factory = _harness.build_sample_factory()

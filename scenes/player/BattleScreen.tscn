@@ -289,3 +289,6 @@ layer = 10
 
 [node name="WinPanelContainer" type="CanvasLayer" parent="."]
 layer = 11
+
+[node name="DialogContainer" type="CanvasLayer" parent="."]
+layer = 12
