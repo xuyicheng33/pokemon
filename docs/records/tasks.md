@@ -30,6 +30,7 @@
 - Batch E1: BattleCoreSession facade 文档对齐
 - Batch E2: payload_service_specs 静态 preload 绑定
 - Batch E4: battle_state 注释 + interaction 重命名 + payload 文档
+- Batch F: 玩家 MVP 接线断裂修复
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 
@@ -766,6 +767,25 @@
 
 
 Batch A1: effect/log 契约 + apply_field 时序
+
+## Batch F: 玩家 MVP 接线断裂修复（2026-04-27）
+
+- 状态：已完成
+- 目标：让 `Boot.launch_config = "player_mvp"` 能从启动跑到一局结束，玩家可以选技能、看日志、被强制换人、看胜负、回主菜单。
+- 范围：
+  1. 对齐 `scenes/player/BattleScreen.gd`（813 行）的所有调用方：方法名、参数签名、`side_id` 协议（`"0"` → `"P1"`）、`public_snapshot` 字段形状（删除 `events / current_side_to_select / legal_actions_by_side` 误读、改读 `team_units` + `bench_public_ids`、`unit.effects` → `effect_instances`）、lexicon API 命名（`translate_*` → `*_display_name`）。
+  2. `PlayerBattleSession` 加两个薄助手：`current_side_to_select()` 与 `legal_action_summary(side_id)`，把 `LegalActionSet` RefCounted 转成 Dict envelope 给 UI 消费。
+  3. `LogText.gd` 的 `_translate_unit / _translate_skill / _translate_effect` 改用 lexicon 的 `units / skills / effects` 真实 dict 与 `*_display_name` 函数；unit 翻译按 `definition_id`（去 `#N` 后缀）查表。
+  4. `BattleScreen.tscn` 新增 `DialogContainer` CanvasLayer；`ForcedReplaceDialog` 通过 `preload + instantiate` 在"无 skill/ultimate/wait/仅 switch" 状态下弹出；玩家选完直接 `submit_player_command(SWITCH)`。
+  5. `WinPanel.menu_requested` 连到 `_on_win_panel_menu_requested`，回主入口调 `_session.close()` + `reload_current_scene()`。
+  6. `Boot._open()` 加 `OS.get_cmdline_user_args()` 解析，`--player_mvp` / `--sandbox` 覆盖 export 默认值。
+  7. 新增 `tests/helpers/player_mvp_full_run.gd`：双侧 policy headless runner，最多 64 回合跑到 `battle_result.finished`，失败 `push_error("BATTLE_PLAYER_FAILED:")` + `quit(1)`，成功打印 `player_summary` JSON + `quit(0)`。Batch F 用它验收，Batch G 接入 gate。
+  8. 删 `test/suites/formal_character_pair_smoke/interaction_suite.gd:17/21` 同函数内 `__legacy_result` 重复声明（Godot 4.6.1 在 `^WARNING:` 严格扫描下报错；属 main 预存量）。
+- 验证：
+  - 4 个推荐 matchup 通过 `player_mvp_full_run.gd` 跑完：gojo_vs_sample 15 回合 / kashimo_vs_sample 13 回合 / obito_vs_sample 15 回合 / sukuna_setup 15 回合，全部 `result_type=win / reason=elimination`
+  - `bash tests/run_with_gate.sh` 全绿（107 quick）
+  - `TEST_PROFILE=extended bash tests/run_with_gate.sh` 全绿
+- 不做：不动 sandbox 端任何文件；不重写 BattleScreen view 渲染分层；不改造 `PlayerContentLexicon` 内容索引；不补 `_assert_legacy_result` 残余迁移（留给 Batch I）。
 
 ## Batch E2: payload_service_specs 静态 preload 绑定（2026-04-27）
 

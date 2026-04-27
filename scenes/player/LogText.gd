@@ -91,10 +91,19 @@ func _translate_unit(raw_id: Variant) -> String:
 	var id_str := str(raw_id)
 	if id_str == "":
 		return "未知单位"
-	if _lexicon != null and _lexicon.has_method("translate_unit_public_id"):
-		var result: Variant = _lexicon.call("translate_unit_public_id", id_str)
-		if typeof(result) == TYPE_STRING and result != "":
-			return result
+	# 先按 unit_class_id（去掉可能的 "#N" 后缀）查 lexicon.units，找到 display_name；
+	# 缺失时直接回 public_id 字面量。
+	if _lexicon == null:
+		return id_str
+	var def_id := id_str
+	var hash_pos := id_str.find("#")
+	if hash_pos >= 0:
+		def_id = id_str.substr(0, hash_pos)
+	if _lexicon.units.has(def_id):
+		var entry: Dictionary = _lexicon.units[def_id]
+		var display_name := String(entry.get("display_name", ""))
+		if display_name != "":
+			return display_name
 	return id_str
 
 
@@ -102,10 +111,13 @@ func _translate_skill(raw_id: Variant) -> String:
 	var id_str := str(raw_id)
 	if id_str == "":
 		return "未知技能"
-	if _lexicon != null and _lexicon.has_method("translate_skill_id"):
-		var result: Variant = _lexicon.call("translate_skill_id", id_str)
-		if typeof(result) == TYPE_STRING and result != "":
-			return result
+	if _lexicon == null:
+		return id_str
+	if not _lexicon.skills.has(id_str):
+		return id_str
+	var name: String = String(_lexicon.skill_display_name(id_str))
+	if name != "":
+		return name
 	return id_str
 
 
@@ -113,8 +125,11 @@ func _translate_effect(raw_id: Variant) -> String:
 	var id_str := str(raw_id)
 	if id_str == "":
 		return "未知效果"
-	if _lexicon != null and _lexicon.has_method("translate_effect_definition_id"):
-		var result: Variant = _lexicon.call("translate_effect_definition_id", id_str)
-		if typeof(result) == TYPE_STRING and result != "":
-			return result
+	if _lexicon == null:
+		return id_str
+	if not _lexicon.effects.has(id_str):
+		return id_str
+	var name: String = String(_lexicon.effect_display_name(id_str))
+	if name != "":
+		return name
 	return id_str
