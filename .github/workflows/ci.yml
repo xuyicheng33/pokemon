@@ -3,6 +3,9 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 18 * * 0"
 
 jobs:
   gdunit:
@@ -54,3 +57,14 @@ jobs:
         run: bash tests/check_boot_smoke.sh
       - name: Run Sandbox Smoke Matrix
         run: bash tests/check_sandbox_smoke_matrix.sh
+
+  extended_gate:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Godot Env
+        uses: ./.github/actions/setup-godot
+      - name: Run Extended Gate
+        run: bash tests/run_extended_gate.sh

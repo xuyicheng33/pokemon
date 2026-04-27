@@ -36,6 +36,20 @@
 - Batch I: legacy assert + README facade 口径
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 - Batch K: SessionFactory 抽取 + envelope helper 删除
+- Review Fix 1: CI extended gate 与 smoke 文档口径同步
+
+## 最近完成：Review Fix 1：CI extended gate 与 smoke 文档口径同步（2026-04-28）
+
+- 状态：已完成
+- 目标：修复 CI 只自动守 quick、README 误写 quick smoke 覆盖范围的问题
+- 范围：
+  1. `.github/workflows/ci.yml` 增加 `workflow_dispatch` 与每周定时入口，并新增 `extended_gate` job 跑 `tests/run_extended_gate.sh`
+  2. `README.md` 把 quick / extended / full smoke 覆盖范围改成与 `tests/check_sandbox_smoke_matrix.sh` 一致
+  3. `docs/design/current_stage_regression_baseline.md` 同步 CI 手动/定时 extended 口径
+- 验收标准：
+  - push / PR 仍默认跑 quick，不拉长日常反馈
+  - 手动或定时 workflow 能跑 extended gate
+  - README 不再把 extended 覆盖项写成 quick 默认覆盖项
 
 ## 最近完成：复审修复 A：extended gate 覆盖语义（2026-04-28）
 
