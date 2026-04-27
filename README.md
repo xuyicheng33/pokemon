@@ -87,7 +87,7 @@ tests/
 - `lifecycle`：离场/倒下/补位链
 - `passives`：被动技能、被动持有物、field 落地/对拼/生命周期
 - `logging`：日志构造、回放、确定性校验
-- `facades`：对外稳定接口（唯一稳定 facade 是 `BattleCoreManager`；`BattleCoreSession` 只是内部会话壳）
+- `facades`：对外稳定接口（含两层稳定 facade —— manager 级 `BattleCoreManager`、session 级 `BattleCoreSession`；后者承载单局 runtime 句柄，由 manager 内部与 adapter 在持有 session 期间消费，外围不得绕过 facade 直接操作 `BattleCoreContainer` 或 runtime 引用）
 - `BattleCoreManager`、`LegalActionService`、`BattleResultService` 等大型 owner 均已按职责拆分为 owner + helper 结构
 
 架构约束与拆分细节见：`docs/design/battle_core_architecture_constraints.md`。
@@ -202,7 +202,7 @@ tests/run_with_gate.sh
 成功时 `data = { replay_output, public_snapshot }`，其中 `replay_output.final_battle_state` 必须为 `null`，运行态对象不得越过 manager 边界。
 失败时 `data = null`，并返回明确的 `error_code / error_message`。
 内部 `ReplayRunner` 仍保留 `final_battle_state`，用于计算 `final_state_hash` 与回放诊断，不对外透传。
-`BattleCoreSession` 只作为 manager 内部持有的会话对象，不属于外围稳定入口。
+`BattleCoreSession` 是 session 级稳定 facade，承载单局 runtime 句柄；manager 内部与持有 session 句柄的 adapter 路径允许调用 `current_battle_state() / current_content_index() / get_legal_actions_result() / run_turn_result() / validate_runtime_result() / get_event_log_snapshot_result() / dispose()`，但仍禁止绕过 facade 直接持有 `BattleCoreContainer` 或在 session 生命周期外缓存其返回的 runtime 引用。
 `BattleCoreManager` 现在也不再直接持有完整 composition root；若需要装配容器，只允许依赖一个 build-container callable / factory port。
 
 `get_event_log_snapshot()` 对外固定补公开归因字段：

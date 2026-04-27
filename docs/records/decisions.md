@@ -11,6 +11,22 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 2026-04-27 Batch I：legacy assert migration 收尾 + README facade 口径同步
+
+- **背景**：Batch C-A 当时把 119/125 个 `_assert_legacy_result(_test_X(...))` 双层桩 suite 转成 native gdunit fail() 形态，自承"剩 6 个保留 legacy Dictionary 协议"。Explore 调研发现实际还剩 8 处调用、3 个 suite 文件，均属"标准双层桩"形态（caller `_test_X(harness) -> Dictionary`），不是真正的"shared base class 例外"。Batch F 顺手清掉了 `interaction_suite.gd` 同函数内 `__legacy_result` 重复声明（gate warning 阻断），剩余 8 处由 Batch I 一次推完。同时 Batch E1 升级 `BattleCoreSession` 为 session 级稳定 facade 时只同步了 `architecture_overview.md` 与 `architecture_constraints.md`，README §4 与 §7 的旧口径漏改，Batch I 一并对齐。
+- **migration 完结**：
+  - `forced_replace_lifecycle_suite.gd:45/48/51/54/57`（5 处）改成 `var result: Dictionary = _test_X(_harness); if not bool(result.get("ok", false)): fail(str(result.get("error", "unknown error")))`，与 Batch C-A 对其它 119 个 suite 的迁移形态一致。
+  - `sukuna_setup_ultimate_window_suite.gd:11/14`（2 处）同上。
+  - `manager_snapshot_public_contract/effect_instance_order_suite.gd:7`（1 处）同上；该 suite `_test_X` 返回手构 `{"ok": ..., "error": ...}` Dict（不是 `harness.fail_result/pass_result`），迁移形态等价。
+  - 删除 `tests/support/gdunit_suite_bridge.gd:21-26` 的 `_assert_legacy_result(result)` helper（5 行 + docstring），同时移除 `_setup_default_battle` 之上误粘的"Bridge for legacy Dictionary-protocol helpers"注释段（属于 helper 自身的描述）。
+  - 清理后 `grep -r "_assert_legacy_result" .` 在代码层 0 命中，仅文档（decisions.md / tasks.md）保留历史叙述。
+- **README 同步**：
+  - `README.md:90`（§4 facades 行）旧"唯一稳定 facade 是 BattleCoreManager；BattleCoreSession 只是内部会话壳"改为"含两层稳定 facade —— manager 级 `BattleCoreManager`、session 级 `BattleCoreSession`；后者承载单局 runtime 句柄，由 manager 内部与 adapter 在持有 session 期间消费，外围不得绕过 facade 直接操作 `BattleCoreContainer` 或 runtime 引用"。
+  - `README.md:205`（§6 manager API 段尾）旧"BattleCoreSession 只作为 manager 内部持有的会话对象，不属于外围稳定入口"改为列出 `current_battle_state / current_content_index / get_legal_actions_result / run_turn_result / validate_runtime_result / get_event_log_snapshot_result / dispose` 七个 production API 的明确口径，并保留"禁止绕过 facade / 不得在 session 生命周期外缓存 runtime 引用"两条边界。
+  - 与 `architecture_overview.md:125`、`battle_core_architecture_constraints.md:144` + `decisions.md:42-48` Batch E1 段交叉读不再矛盾。归档目录（`docs/records/archive/*`）保留旧口径（封存时点记录，不动）。
+- **不做的事**：不动测试断言逻辑（仅形态迁移，dict 协议保持不变）；不重命名任何方法 / 公开 API；不改 `tests/check_suite_reachability.sh` 的检查规则（已能识别新形态）；不动 `decisions.md` / `tasks.md` 的历史描述段（保留 migration 时点记录）。
+- **验证**：`bash tests/run_with_gate.sh` 全绿（120 quick）；3 个迁移 suite 用例数等价（forced_replace_lifecycle 5 case、sukuna_setup_ultimate_window 2 case、effect_instance_order 1 case，全部 PASSED）；`grep -r "_assert_legacy_result" --include="*.gd" .` 0 命中。
+
 ## 2026-04-27 Batch H：phase / battle_result 写入收口
 
 - **背景**：`src/` 下原有 16 处 `battle_state.phase = ...` 与 4 组 `battle_state.battle_result.{finished,winner_side_id,result_type,reason} = ...` 直接赋值，绕过 `battle_state.gd:30-46` 已建立的「下划线前缀字段 + 单一 writer 方法 + grep gate」约定。`log_event_builder._fail` / `BattleResultService.terminate_invalid_battle` / `BattleResultService.hard_terminate_invalid_state` / `turn_loop_validation_helper._fallback_hard_terminate_invalid_state` 四处终止副作用各自独立实现，且复刻在 outcome_resolver 三个胜负路径里。Batch H 把这条线收敛到 `BattleState` 的三个公共 setter，符合 5da0742 收口决策的"BattleResultService 单一终止流"目标的最后一公里。

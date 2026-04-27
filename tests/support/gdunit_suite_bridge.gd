@@ -14,17 +14,6 @@ func after_test() -> void:
 # 5-call boilerplate that previously appeared at the top of nearly every test.
 # On any failure the suite-level `fail()` is invoked and the returned dict
 # carries `ok=false`; callers should `return` if `ok` is not true.
-# Bridge for legacy Dictionary-protocol helpers that have not been migrated to
-# the native gdunit fail() form. Pass the dict returned by harness.fail_result
-# / harness.pass_result; this method calls fail() with the embedded error
-# message when ok is false.
-func _assert_legacy_result(result) -> void:
-	if typeof(result) != TYPE_DICTIONARY:
-		fail("legacy result must be a Dictionary, got %s" % typeof(result))
-		return
-	if not bool(result.get("ok", false)):
-		fail(str(result.get("error", "unknown legacy failure")))
-
 func _setup_default_battle(battle_seed: int = 1) -> Dictionary:
 	var core_payload = _harness.build_core()
 	if core_payload.has("error"):

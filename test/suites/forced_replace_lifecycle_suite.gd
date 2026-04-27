@@ -42,19 +42,29 @@ class ConditionalInvalidTriggerBatchRunner:
 
 
 func test_forced_replace_success_chain() -> void:
-	_assert_legacy_result(_test_forced_replace_success_chain(_harness))
+	var result: Dictionary = _test_forced_replace_success_chain(_harness)
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "unknown error")))
 
 func test_forced_replace_preserves_persistent_runtime_contract() -> void:
-	_assert_legacy_result(_test_forced_replace_preserves_persistent_runtime_contract(_harness))
+	var result: Dictionary = _test_forced_replace_preserves_persistent_runtime_contract(_harness)
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "unknown error")))
 
 func test_execute_replacement_lifecycle_rolls_back_on_leave_failure_contract() -> void:
-	_assert_legacy_result(_test_execute_replacement_lifecycle_rolls_back_on_leave_failure_contract(_harness))
+	var result: Dictionary = _test_execute_replacement_lifecycle_rolls_back_on_leave_failure_contract(_harness)
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "unknown error")))
 
 func test_execute_replacement_lifecycle_rolls_back_on_field_break_collect_failure_contract() -> void:
-	_assert_legacy_result(_test_execute_replacement_lifecycle_rolls_back_on_field_break_collect_failure_contract(_harness))
+	var result: Dictionary = _test_execute_replacement_lifecycle_rolls_back_on_field_break_collect_failure_contract(_harness)
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "unknown error")))
 
 func test_execute_replacement_lifecycle_rolls_back_on_on_enter_failure_contract() -> void:
-	_assert_legacy_result(_test_execute_replacement_lifecycle_rolls_back_on_on_enter_failure_contract(_harness))
+	var result: Dictionary = _test_execute_replacement_lifecycle_rolls_back_on_on_enter_failure_contract(_harness)
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "unknown error")))
 func _test_forced_replace_success_chain(harness) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):

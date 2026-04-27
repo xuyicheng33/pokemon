@@ -33,6 +33,7 @@
 - Batch F: 玩家 MVP 接线断裂修复
 - Batch G: 玩家 MVP 进 gate
 - Batch H: phase / battle_result 写入收口
+- Batch I: legacy assert + README facade 口径
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 
@@ -769,6 +770,21 @@
 
 
 Batch A1: effect/log 契约 + apply_field 时序
+
+## Batch I: legacy assert migration 收尾 + README facade 口径同步（2026-04-27）
+
+- 状态：已完成
+- 目标：消灭 `_assert_legacy_result` 全部 8 处残留 + 删 helper + 同步 README §4 / §7 BattleCoreSession 措辞与 design docs 对齐。
+- 范围：
+  1. 3 个 suite 共 8 处 `_assert_legacy_result(_test_X(...))` 双层桩迁到 `var result: Dictionary = _test_X(_harness); if not bool(result.get("ok", false)): fail(str(result.get("error", "unknown error")))` 形态：forced_replace_lifecycle (5)、sukuna_setup_ultimate_window (2)、effect_instance_order (1)
+  2. 删 `tests/support/gdunit_suite_bridge.gd:21-26` 的 `_assert_legacy_result(result)` helper（5 行）
+  3. README §4 第 90 行改为 "含两层稳定 facade"；README §7 第 205 行替换"内部会话壳"旧口径为 7 个 production API + 2 条边界
+- 验证：
+  - `bash tests/run_with_gate.sh` 全绿（120 quick）
+  - 3 个迁移 suite 用例数等价（5+2+1=8 case 全 PASSED）
+  - `grep -r "_assert_legacy_result" --include="*.gd" .` 0 命中
+  - README 与 design docs / decisions.md Batch E1 段交叉读不矛盾
+- 不做：不改测试断言逻辑（仅形态迁移）；不重命名公开 API；不动 archive 历史记录。
 
 ## Batch H: phase / battle_result 写入收口（2026-04-27）
 

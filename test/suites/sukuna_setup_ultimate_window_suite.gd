@@ -8,10 +8,14 @@ var _support = SukunaSetupRegenTestSupportScript.new()
 
 
 func test_sukuna_default_loadout_first_ultimate_window_contract() -> void:
-	_assert_legacy_result(_test_sukuna_default_loadout_first_ultimate_window_contract(_harness))
+	var result: Dictionary = _test_sukuna_default_loadout_first_ultimate_window_contract(_harness)
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "unknown error")))
 
 func test_sukuna_ritual_loadout_first_ultimate_window_contract() -> void:
-	_assert_legacy_result(_test_sukuna_ritual_loadout_first_ultimate_window_contract(_harness))
+	var result: Dictionary = _test_sukuna_ritual_loadout_first_ultimate_window_contract(_harness)
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "unknown error")))
 func _test_sukuna_default_loadout_first_ultimate_window_contract(harness) -> Dictionary:
 	var core_payload = harness.build_core()
 	if core_payload.has("error"):
