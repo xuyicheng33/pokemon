@@ -12,7 +12,7 @@
 - `tests/check_gdunit_gate.sh`：`gdUnit4` + 引擎日志扫描；供总 gate 与 CI 复用
 - `tests/check_boot_smoke.sh`：headless 启动 smoke；供总 gate 与 CI 复用
 - `tests/run_with_gate.sh`：默认 quick 总入口；按固定顺序串起 quick `gdUnit4`、boot smoke、suite reachability、架构 gate、repo consistency gate、Python lint、quick sandbox smoke matrix
-- `tests/run_extended_gate.sh`：显式 extended 入口；覆盖 extended `gdUnit4`、full sandbox smoke 和静态门禁
+- `tests/run_extended_gate.sh`：阶段 extended 入口；先跑 quick 总入口，再跑 extended 余量，避免漏掉 quick 主路径
 - `tests/check_suite_reachability.sh`：suite 可达性闸门
 - `tests/check_architecture_constraints.sh`：分层与大文件架构闸门
 - `tests/check_repo_consistency.sh`：仓库一致性闸门总入口

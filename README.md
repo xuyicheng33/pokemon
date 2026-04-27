@@ -69,7 +69,7 @@ tests/
   replay_cases/         # 固定 deterministic 回放 / 复查案例
   run_gdunit.sh         # gdUnit4 CLI 入口（支持单 suite/单目录过滤与报告输出）
   run_with_gate.sh      # quick 测试闸门（断言 + 引擎错误 + 架构 + 仓库一致性）
-  run_extended_gate.sh  # extended 测试闸门（长尾 gdUnit + full sandbox smoke）
+  run_extended_gate.sh  # 阶段测试闸门（quick + extended 长尾）
   check_repo_consistency.sh # README/文档/关键回归一致性闸门聚合入口
   cleanup_local_artifacts.sh # 清理废弃本地报告目录与 scratch 目录
 ```
@@ -160,7 +160,7 @@ bash tests/sync_formal_registry.sh
 tests/run_with_gate.sh
 ```
 
-默认 `tests/run_with_gate.sh` 是 quick gate；长尾回归用 `tests/run_extended_gate.sh`，完整收口用 `TEST_PROFILE=full bash tests/run_with_gate.sh`。
+默认 `tests/run_with_gate.sh` 是 quick gate；阶段长尾回归用 `tests/run_extended_gate.sh`（先跑 quick，再跑 extended 余量），完整收口用 `TEST_PROFILE=full bash tests/run_with_gate.sh`。
 
 闸门通过条件：
 

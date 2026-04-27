@@ -37,6 +37,17 @@
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 - Batch K: SessionFactory 抽取 + envelope helper 删除
 
+## 最近完成：复审修复 A：extended gate 覆盖语义（2026-04-28）
+
+- 状态：已完成
+- 目标：修复 `tests/run_extended_gate.sh` 单跑时漏掉 quick 主路径的问题
+- 范围：
+  1. `tests/run_extended_gate.sh` 改为先跑 quick 总入口，再跑 extended 余量
+  2. 同步 README、tests README 与当前工作流/回归基线文档中的 gate 口径
+- 验收标准：
+  - `bash tests/run_extended_gate.sh` 不再等价于单独 `TEST_PROFILE=extended`
+  - quick 与 extended 的互补关系在文档中清楚可见
+
 ## 最近完成：玩家侧深化：多对局选择（2026-04-27）
 
 - 状态：已完成
