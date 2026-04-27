@@ -1,18 +1,17 @@
 extends RefCounted
 class_name LogEventBuilder
 
-const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 const LogEventScript := preload("res://src/battle_core/contracts/log_event.gd")
 const ErrorStateHelperScript := preload("res://src/shared/error_state_helper.gd")
 
 const COMPOSE_DEPS := []
 
-# Runtime fault writes route through `BattleState.record_runtime_fault`
-# directly: that method is the canonical data-layer single writer (the
-# underscore-prefixed fields act as a grep gate). Going through
-# `BattleResultService` would create a runtime compose cycle since the
-# service itself depends on this builder.
+# Runtime fault writes route through `BattleState.record_runtime_fault` (低层
+# fault 记录) and `BattleState.finalize_invalid_termination` (终止 + result + phase)
+# directly: those methods are the canonical data-layer single writer (
+# 下划线字段 + 方法名 grep gate)。绕道 `BattleResultService` 会引入
+# runtime compose cycle，因为 BattleResultService 又依赖本 builder。
 var last_error_code: Variant = null
 var last_error_message: String = ""
 
@@ -80,15 +79,11 @@ func _clear_error() -> void:
 func _fail(message: String, battle_state: BattleState = null) -> Variant:
 	ErrorStateHelperScript.fail(self, ErrorCodesScript.INVALID_STATE_CORRUPTION, message)
 	if battle_state != null:
-		_record_runtime_fault(battle_state, String(last_error_code), message)
-		if battle_state.battle_result != null and not bool(battle_state.battle_result.finished):
-			battle_state.battle_result.finished = true
-			battle_state.battle_result.winner_side_id = null
-			battle_state.battle_result.result_type = "no_winner"
-			battle_state.battle_result.reason = String(last_error_code)
-			battle_state.phase = BattlePhasesScript.FINISHED
+		# finalize_invalid_termination 内部串接 record_runtime_fault；
+		# 我们额外在 battle_result 没被前序写过时清理 chain_context_stack，
+		# 与原 _fail 旧实现的 `if not finished:` idempotent 保护保持等价。
+		var was_already_finished := battle_state.battle_result != null and bool(battle_state.battle_result.finished)
+		battle_state.finalize_invalid_termination(String(last_error_code), message)
+		if not was_already_finished:
 			battle_state.clear_chain_context_stack()
 	return null
-
-func _record_runtime_fault(battle_state: BattleState, code: String, message: String) -> void:
-	battle_state.record_runtime_fault(code, message)

@@ -1,7 +1,6 @@
 extends RefCounted
 class_name BattleResultServiceOutcomeResolver
 
-const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const CommandTypesScript := preload("res://src/battle_core/commands/command_types.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 
@@ -33,16 +32,13 @@ func resolve_surrender(chain_builder, id_factory, battle_logger, log_event_build
 	if surrendering_sides.is_empty():
 		return false
 	var resolved_phase: String = battle_state.phase
-	battle_state.battle_result.finished = true
-	battle_state.phase = BattlePhasesScript.FINISHED
+	var winner_side_id_value: Variant = null
+	var resolved_result_type: String = "draw"
 	if surrendering_sides.size() == 1:
 		var winner_side = battle_state.get_opponent_side(surrendering_sides[0])
-		battle_state.battle_result.winner_side_id = winner_side.side_id if winner_side != null else null
-		battle_state.battle_result.result_type = "win"
-	else:
-		battle_state.battle_result.winner_side_id = null
-		battle_state.battle_result.result_type = "draw"
-	battle_state.battle_result.reason = "surrender"
+		winner_side_id_value = winner_side.side_id if winner_side != null else null
+		resolved_result_type = "win"
+	battle_state.finalize_normal_termination(winner_side_id_value, resolved_result_type, "surrender")
 	battle_state.set_phase_chain_context(chain_builder.build_battle_end_chain(id_factory, resolved_phase, battle_state))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.RESULT_BATTLE_END,
@@ -56,15 +52,12 @@ func resolve_surrender(chain_builder, id_factory, battle_logger, log_event_build
 
 func resolve_turn_limit(chain_builder, id_factory, battle_logger, log_event_builder, turn_limit_scoring_service, battle_state: BattleState) -> void:
 	var scored_sides: Array = turn_limit_scoring_service.build_scored_sides(battle_state)
-	battle_state.battle_result.finished = true
-	battle_state.phase = BattlePhasesScript.FINISHED
-	if turn_limit_scoring_service.scores_tied(scored_sides):
-		battle_state.battle_result.winner_side_id = null
-		battle_state.battle_result.result_type = "draw"
-	else:
-		battle_state.battle_result.winner_side_id = scored_sides[0]["side_id"]
-		battle_state.battle_result.result_type = "win"
-	battle_state.battle_result.reason = "turn_limit"
+	var winner_side_id_value: Variant = null
+	var resolved_result_type: String = "draw"
+	if not turn_limit_scoring_service.scores_tied(scored_sides):
+		winner_side_id_value = scored_sides[0]["side_id"]
+		resolved_result_type = "win"
+	battle_state.finalize_normal_termination(winner_side_id_value, resolved_result_type, "turn_limit")
 	battle_state.set_phase_chain_context(chain_builder.build_system_chain(id_factory, EventTypesScript.SYSTEM_TURN_LIMIT))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.SYSTEM_TURN_LIMIT,
@@ -91,16 +84,14 @@ func _resolve_victory(chain_builder, id_factory, battle_logger, log_event_builde
 	if alive_side_ids.size() == battle_state.sides.size():
 		return false
 	var resolved_phase: String = battle_state.phase
-	battle_state.battle_result.finished = true
-	battle_state.phase = BattlePhasesScript.FINISHED
-	if alive_side_ids.is_empty():
-		battle_state.battle_result.winner_side_id = null
-		battle_state.battle_result.result_type = "draw"
-		battle_state.battle_result.reason = "double_faint"
-	else:
-		battle_state.battle_result.winner_side_id = alive_side_ids[0]
-		battle_state.battle_result.result_type = "win"
-		battle_state.battle_result.reason = "elimination"
+	var winner_side_id_value: Variant = null
+	var resolved_result_type: String = "draw"
+	var resolved_reason: String = "double_faint"
+	if not alive_side_ids.is_empty():
+		winner_side_id_value = alive_side_ids[0]
+		resolved_result_type = "win"
+		resolved_reason = "elimination"
+	battle_state.finalize_normal_termination(winner_side_id_value, resolved_result_type, resolved_reason)
 	battle_state.set_phase_chain_context(chain_builder.build_battle_end_chain(id_factory, resolved_phase, battle_state))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.RESULT_BATTLE_END,

@@ -29,7 +29,6 @@ const COMPOSE_DEPS := [
 const ChainBuilderScript := preload("res://src/battle_core/turn/battle_result_service_chain_builder.gd")
 const EventTypesScript := preload("res://src/shared/event_types.gd")
 const OutcomeResolverScript := preload("res://src/battle_core/turn/battle_result_service_outcome_resolver.gd")
-const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 
 var id_factory: IdFactory
 var battle_logger: BattleLogger
@@ -45,15 +44,13 @@ func resolve_missing_dependency() -> String:
 func build_system_chain(command_type: String) -> Variant:
 	return _chain_builder.build_system_chain(id_factory, command_type)
 
-# Coordinated terminate flow entry. The canonical single writer is
-# `BattleState.record_runtime_fault`; this wrapper exists so terminate flows
-# below can record + finalize as one step. Low-level helpers (LogEventBuilder,
-# TurnSelectionResolver) call `BattleState.record_runtime_fault` directly to
-# avoid creating a runtime compose cycle.
-func record_runtime_fault(battle_state: BattleState, code: String, message: String) -> void:
-	if battle_state == null:
-		return
-	battle_state.record_runtime_fault(code, message)
+# 终止流的协调入口在下方 terminate_invalid_battle / hard_terminate_invalid_state /
+# resolve_*_victory / resolve_turn_limit。最终落地都走
+# `BattleState.finalize_invalid_termination` 与 `BattleState.finalize_normal_termination`
+# 两个 setter，它们内部串接 `record_runtime_fault`（仅 invalid 路径）+ battle_result
+# 写入 + phase 切到 FINISHED。底层 helper（LogEventBuilder._fail、
+# TurnSelectionResolver._fail_invalid_result）直接调用 BattleState 的
+# finalize_invalid_termination / record_runtime_fault，避免运行期 compose cycle。
 
 func terminate_invalid_battle(battle_state: BattleState, invalid_code: String) -> void:
 	var resolved_message := String(battle_state.runtime_fault_message()) if battle_state != null else ""
@@ -70,12 +67,7 @@ func terminate_invalid_battle(battle_state: BattleState, invalid_code: String) -
 			invalid_code,
 		]
 	)
-	record_runtime_fault(battle_state, invalid_code, resolved_message)
-	battle_state.battle_result.finished = true
-	battle_state.battle_result.winner_side_id = null
-	battle_state.battle_result.result_type = "no_winner"
-	battle_state.battle_result.reason = invalid_code
-	battle_state.phase = BattlePhasesScript.FINISHED
+	battle_state.finalize_invalid_termination(invalid_code, resolved_message)
 	battle_state.set_phase_chain_context(build_system_chain(EventTypesScript.SYSTEM_INVALID_BATTLE))
 	battle_logger.append_event(log_event_builder.build_event(
 		EventTypesScript.SYSTEM_INVALID_BATTLE,
@@ -106,12 +98,7 @@ func hard_terminate_invalid_state(battle_state: BattleState, invalid_code: Strin
 	)
 	if battle_state.battle_result == null:
 		return
-	record_runtime_fault(battle_state, invalid_code, resolved_message)
-	battle_state.battle_result.finished = true
-	battle_state.battle_result.winner_side_id = null
-	battle_state.battle_result.result_type = "no_winner"
-	battle_state.battle_result.reason = invalid_code
-	battle_state.phase = BattlePhasesScript.FINISHED
+	battle_state.finalize_invalid_termination(invalid_code, resolved_message)
 	if id_factory == null or battle_logger == null or log_event_builder == null:
 		battle_state.clear_chain_context_stack()
 		return

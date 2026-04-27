@@ -78,7 +78,7 @@ func validate_and_prepare_battle_state(battle_state: BattleState, content_index:
 	battle_state.default_recoil_ratio = float(format_config.default_recoil_ratio)
 	battle_state.domain_clash_tie_threshold = float(format_config.domain_clash_tie_threshold)
 	battle_state.rng_profile = rng_service.get_profile()
-	battle_state.phase = BattlePhasesScript.BATTLE_INIT
+	battle_state.transition_phase(BattlePhasesScript.BATTLE_INIT)
 	battle_state.turn_index = 1
 	battle_state.battle_result = BattleResultScript.new()
 	battle_state.sides.clear()

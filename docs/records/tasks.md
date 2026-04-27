@@ -32,6 +32,7 @@
 - Batch E4: battle_state 注释 + interaction 重命名 + payload 文档
 - Batch F: 玩家 MVP 接线断裂修复
 - Batch G: 玩家 MVP 进 gate
+- Batch H: phase / battle_result 写入收口
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 
@@ -768,6 +769,22 @@
 
 
 Batch A1: effect/log 契约 + apply_field 时序
+
+## Batch H: phase / battle_result 写入收口（2026-04-27）
+
+- 状态：已完成
+- 目标：把 `src/` 下 16 处 `battle_state.phase = ...` 与 4 组 battle_result 字段直接赋值收敛到 `BattleState` 的三个公共 setter，加 layering gate 守住单一 writer。
+- 范围：
+  1. BattleState 加 `transition_phase / finalize_invalid_termination / finalize_normal_termination` 三个 setter
+  2. 16 处 phase 写入改 `transition_phase`；4 组 battle_result 终止副作用改 `finalize_*_termination`
+  3. 删 BattleResultService.record_runtime_fault wrapper（外部无 caller）；4 个文件清理 BattlePhasesScript 死 import
+  4. architecture_layering_gate.py 加 2 条 grep 规则（phase / battle_result 直写）+ scan_rule 加 `drop_if_file_path` 字段
+- 验证：
+  - `bash tests/run_with_gate.sh` 全绿（120 quick）
+  - `TEST_PROFILE=extended bash tests/run_with_gate.sh` 全绿
+  - 负向：在 adapter 故意写 `battle_state.phase = "BAD"` → layering gate 红
+  - `grep "battle_state\.phase\s*=" src/` 在 src/ 命中 0（除 battle_state.gd 自身）
+- 不做：不重命名 phase / battle_result 字段为下划线前缀（保持外部读 API）；不内置 chain_context 清理进 finalize_*_termination（caller 各自语义不同）。
 
 ## Batch G: 玩家 MVP 进 gate（2026-04-27）
 
