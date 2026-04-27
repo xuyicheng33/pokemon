@@ -102,17 +102,21 @@ RUN_DEFAULT_POLICY_POLICY=false
 RUN_DEFAULT_MANUAL_MANUAL=false
 RUN_DEFAULT_DEMO=false
 RUN_OTHER_DEMO=false
+RUN_PLAYER_MVP_DEFAULT=false
+RUN_PLAYER_MVP_QUICK_ANCHORS=false
 
 case "$SANDBOX_SMOKE_SCOPE" in
   quick)
     RUN_QUICK_ANCHOR_MANUAL_POLICY=true
     RUN_DEFAULT_DEMO=true
+    RUN_PLAYER_MVP_DEFAULT=true
     ;;
   extended)
     RUN_OTHER_VISIBLE_MANUAL_POLICY=true
     RUN_DEFAULT_POLICY_POLICY=true
     RUN_DEFAULT_MANUAL_MANUAL=true
     RUN_OTHER_DEMO=true
+    RUN_PLAYER_MVP_QUICK_ANCHORS=true
     ;;
   full)
     RUN_QUICK_ANCHOR_MANUAL_POLICY=true
@@ -121,6 +125,7 @@ case "$SANDBOX_SMOKE_SCOPE" in
     RUN_DEFAULT_MANUAL_MANUAL=true
     RUN_DEFAULT_DEMO=true
     RUN_OTHER_DEMO=true
+    RUN_PLAYER_MVP_QUICK_ANCHORS=true
     ;;
 esac
 
@@ -248,6 +253,32 @@ for demo_row in "${DEMO_PROFILE_ROWS[@]}"; do
     godot --headless --path . --script tests/helpers/demo_replay_full_run.gd
 done
 
+# Player MVP 段：以 PlayerBattleSession + PlayerDefaultPolicy 双侧 policy 模式
+# 走 player_mvp_full_run.gd，验证 scenes/player/* 与 src/adapters/player/* 的端到端
+# 闭环不漂移。validate-summary 复用 manual_battle_full_run.gd 的 JSON 形态（字段一致）。
+if $RUN_PLAYER_MVP_DEFAULT; then
+  run_case \
+    "case_label=${SANDBOX_SMOKE_SCOPE}:player_mvp_default:${DEFAULT_MATCHUP_ID}" \
+    "$DEFAULT_MATCHUP_ID" \
+    "policy" \
+    "policy" \
+    env MATCHUP_ID="$DEFAULT_MATCHUP_ID" \
+    godot --headless --path . --script tests/helpers/player_mvp_full_run.gd
+fi
+
+if $RUN_PLAYER_MVP_QUICK_ANCHORS; then
+  for matchup_id in "${QUICK_ANCHOR_MATCHUP_IDS[@]}"; do
+    run_case \
+      "case_label=${SANDBOX_SMOKE_SCOPE}:player_mvp_anchor:${matchup_id}" \
+      "$matchup_id" \
+      "policy" \
+      "policy" \
+      env MATCHUP_ID="$matchup_id" \
+      godot --headless --path . --script tests/helpers/player_mvp_full_run.gd
+  done
+fi
+
 echo "SANDBOX_SMOKE_MATRIX_PASSED: ${SANDBOX_SMOKE_SCOPE} scope smoke cases (quick anchors=${#QUICK_ANCHOR_MATCHUP_IDS[@]}, visible=${#VISIBLE_MATCHUP_IDS[@]}, demos=${#DEMO_PROFILE_ROWS[@]}) are stable"
 echo "NOTE: manual smoke covers BattleSandboxController.submit_action on visible matchups; deterministic action choice still uses BattleSandboxFirstLegalPolicy"
-echo "NOTE: scope semantics — quick=每 formal 角色 1 个 manual/policy + 默认 demo replay; extended=quick 之外的余量; full=全集 superset."
+echo "NOTE: player_mvp smoke covers PlayerBattleSession + PlayerDefaultPolicy 双侧 policy via tests/helpers/player_mvp_full_run.gd"
+echo "NOTE: scope semantics — quick=每 formal 角色 1 个 manual/policy + 默认 demo replay + 默认 player_mvp; extended=quick 之外的余量 + 4 个 player_mvp anchors; full=全集 superset."

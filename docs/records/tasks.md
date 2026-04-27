@@ -31,6 +31,7 @@
 - Batch E2: payload_service_specs 静态 preload 绑定
 - Batch E4: battle_state 注释 + interaction 重命名 + payload 文档
 - Batch F: 玩家 MVP 接线断裂修复
+- Batch G: 玩家 MVP 进 gate
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 
@@ -767,6 +768,24 @@
 
 
 Batch A1: effect/log 契约 + apply_field 时序
+
+## Batch G: 玩家 MVP 进 gate（2026-04-27）
+
+- 状态：已完成
+- 目标：把 Batch F 修过的 ~1910 行 player MVP 代码进入 quick / extended / boot_smoke 三层闸门，挡住下一次 API drift。
+- 范围：
+  1. `tests/check_boot_smoke.sh` 拆两轮：sandbox 默认入口 + `-- --player_mvp` 切到 BattleScreen，共用 ENGINE_ERROR / WARNING / `BATTLE_(SANDBOX|PLAYER)_FAILED:` 检查
+  2. `tests/check_sandbox_smoke_matrix.sh` 加 player_mvp 段：quick scope 跑默认 matchup 一次；extended/full scope 跑 4 个 quick anchor matchup 各一次（policy/policy）；复用 `validate-summary`
+  3. 新增 `test/suites/player_battle_session_contract_suite.gd`（8 case，quick profile）守 PlayerBattleSession 公开 API 契约
+  4. 新增 `test/suites/player_content_lexicon_contract_suite.gd`（5 case，quick profile）守 6 张索引 dict + 18 调色板 + 中文 fallback + `*_display_name` 命名稳定
+  5. `tests/suite_profiles.json` quick 30 → 32
+  6. `README.md` §5.4 同步 boot smoke 双轮、smoke matrix 加 player_mvp 段
+  7. 顺手清理 `seed` 参数 shadow 内置函数（→ `battle_seed`）、`var name` shadow Node.name（→ `skill_name` / `effect_name`）两个 main 上的预存 warning
+- 验证：
+  - `bash tests/run_with_gate.sh` 全绿（120 quick）
+  - `TEST_PROFILE=extended bash tests/run_with_gate.sh` 全绿（含 4 个 player_mvp_anchor）
+  - 负向：把 `PlayerBattleSession.start` 改名 `start_battle` 后 quick gate 红（contract suite + smoke + boot_smoke 三层都报）
+- 不做：不动 sandbox 端任何文件；不引入 GUI 自动化；不改 repo_consistency gate。
 
 ## Batch F: 玩家 MVP 接线断裂修复（2026-04-27）
 

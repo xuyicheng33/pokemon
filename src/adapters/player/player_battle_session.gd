@@ -36,7 +36,7 @@ func _init(manager_ref: Variant = null) -> void:
 		_manager = manager_ref
 		_owns_manager = false
 
-func start(matchup_id: String, seed: int) -> Dictionary:
+func start(matchup_id: String, battle_seed: int) -> Dictionary:
 	if _closed:
 		return _error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "PlayerBattleSession.start invoked on closed session")
 	var normalized_matchup_id := str(matchup_id).strip_edges()
@@ -61,7 +61,7 @@ func start(matchup_id: String, seed: int) -> Dictionary:
 	var snapshot_paths_result: Dictionary = _sample_factory.content_snapshot_paths_for_setup_result(battle_setup)
 	if not bool(snapshot_paths_result.get("ok", false)):
 		return _propagate(snapshot_paths_result, ErrorCodesScript.INVALID_CONTENT_SNAPSHOT, "PlayerBattleSession.start failed to resolve snapshot paths")
-	var resolved_seed: int = seed if seed != 0 else DEFAULT_BATTLE_SEED
+	var resolved_seed: int = battle_seed if battle_seed != 0 else DEFAULT_BATTLE_SEED
 	var create_result: Dictionary = _manager.create_session({
 		"battle_seed": resolved_seed,
 		"content_snapshot_paths": snapshot_paths_result.get("data", PackedStringArray()),
