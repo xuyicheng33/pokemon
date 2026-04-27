@@ -4,7 +4,9 @@ const BaseSuiteScript := preload("res://test/suites/manager_snapshot_public_cont
 
 
 func test_public_snapshot_effect_instance_order_contract() -> void:
-	_assert_legacy_result(_test_public_snapshot_effect_instance_order_contract())
+	var result: Dictionary = _test_public_snapshot_effect_instance_order_contract()
+	if not bool(result.get("ok", false)):
+		fail(str(result.get("error", "unknown error")))
 func _test_public_snapshot_effect_instance_order_contract() -> Dictionary:
 	var battle_state = BattleStateScript.new()
 	battle_state.battle_id = "snapshot_sort_contract"
