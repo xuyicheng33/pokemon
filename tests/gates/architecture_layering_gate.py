@@ -113,6 +113,13 @@ LAYERING_RULES: list[dict] = [
         "drop_if_file_path": ["src/battle_core/runtime/battle_state.gd"],
     },
     {
+        "label": "adapter 不再直接 preload BattleCoreComposer / SampleBattleFactory（统一走 SessionFactory.compose_battle_runtime）",
+        "pattern": re.compile(r"res://src/(?:composition/battle_core_composer\.gd|dev_kit/sample_battle/sample_battle_factory\.gd)"),
+        "search_roots": ["src/adapters", "scenes"],
+        # SessionFactory 自己是 adapter 层的装配收口，是该规则的唯一允许豁免点。
+        "drop_if_file_path": ["src/adapters/session_factory.gd"],
+    },
+    {
         "label": "动态 load(path_var) 必须在白名单内（content registry / loader / resolver / portrait 共 11 处合理用途）",
         # 匹配 `load(var)` 与 `ResourceLoader.load(var)`：变量首字符为小写或下划线；
         # 不匹配 `load("res://...")`（引号不在 [a-z_] 中）；

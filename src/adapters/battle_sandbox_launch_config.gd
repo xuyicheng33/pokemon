@@ -25,6 +25,17 @@ func default_config() -> Dictionary:
 		"demo_profile_id": "",
 	}
 
+func build_summary_context(launch_config: Dictionary, control_modes: Dictionary, command_steps: int) -> Dictionary:
+	# 把 launch_config + side_modes + command_steps 聚合成 sandbox / demo summary
+	# 的稳定字段集；缺省值由本 launch_config 模块的常量统一兜底。
+	return {
+		"matchup_id": str(launch_config.get("matchup_id", DEFAULT_MATCHUP_ID)).strip_edges(),
+		"battle_seed": int(launch_config.get("battle_seed", DEFAULT_BATTLE_SEED)),
+		"p1_control_mode": str(control_modes.get("P1", CONTROL_MODE_MANUAL)).strip_edges(),
+		"p2_control_mode": str(control_modes.get("P2", CONTROL_MODE_MANUAL)).strip_edges(),
+		"command_steps": int(command_steps),
+	}
+
 func build_config_from_user_args(user_args: Array) -> Dictionary:
 	var config := default_config()
 	config[STRICT_CONFIG_KEY] = true
