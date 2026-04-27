@@ -11,6 +11,27 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 2026-04-27 Batch H：phase / battle_result 写入收口
+
+- **背景**：`src/` 下原有 16 处 `battle_state.phase = ...` 与 4 组 `battle_state.battle_result.{finished,winner_side_id,result_type,reason} = ...` 直接赋值，绕过 `battle_state.gd:30-46` 已建立的「下划线前缀字段 + 单一 writer 方法 + grep gate」约定。`log_event_builder._fail` / `BattleResultService.terminate_invalid_battle` / `BattleResultService.hard_terminate_invalid_state` / `turn_loop_validation_helper._fallback_hard_terminate_invalid_state` 四处终止副作用各自独立实现，且复刻在 outcome_resolver 三个胜负路径里。Batch H 把这条线收敛到 `BattleState` 的三个公共 setter，符合 5da0742 收口决策的"BattleResultService 单一终止流"目标的最后一公里。
+- **新增 setter**：
+  - `BattleState.transition_phase(next_phase: String)`：纯粹 phase 切换，turn_loop_controller / battle_initializer / battle_initializer_setup_validator 共 9 处 phase 切换调用。
+  - `BattleState.finalize_invalid_termination(invalid_code: String, error_message: String)`：fail-fast 终止专用。语义：(1) 不论 battle_result 状态都先调 `record_runtime_fault`；(2) battle_result == null 直接 return 让 caller 处理；(3) 已 finished 保持幂等不再覆写；(4) 否则一次性写完 finished/winner=null/result_type=no_winner/reason=invalid_code + phase=FINISHED。chain_context 清理由 caller 负责（log_event_builder 与 BattleResultService 的清理语义不同）。
+  - `BattleState.finalize_normal_termination(winner_side_id_value, result_type, reason)`：surrender / turn_limit / victory 共用。不调 record_runtime_fault（正常终止不算 runtime fault）；不内置 idempotent 保护（caller 协调流应保证只调一次）。
+- **caller 改造**：
+  - `turn_loop_controller.gd` 7 处 `battle_state.phase = ...` → `transition_phase(...)`
+  - `battle_initializer.gd:155` / `battle_initializer_setup_validator.gd:81` → `transition_phase(...)`
+  - `battle_result_service.terminate_invalid_battle` (lines 73-78, 6 行直写) → `finalize_invalid_termination(invalid_code, resolved_message)` 一行
+  - `battle_result_service.hard_terminate_invalid_state` (lines 109-114) → 同上
+  - `battle_result_service_outcome_resolver.resolve_surrender / resolve_turn_limit / _resolve_victory` 三处 → `finalize_normal_termination(winner_side_id_value, result_type, reason)`，分支语义保持等价
+  - `turn_loop_validation_helper._fallback_hard_terminate_invalid_state` → `finalize_invalid_termination`
+  - `log_event_builder._fail` → `finalize_invalid_termination` + 在 `not was_already_finished` 分支保留 `clear_chain_context_stack()`，与原 idempotent 语义等价
+- **死代码清理**：`BattleResultService.record_runtime_fault` wrapper（53-56 行）此前只被 terminate_invalid_battle / hard_terminate 内部调用，replaced 后无外部 caller，整段删除并把 49-52 行 docstring 改写为新的入口图示。`BattlePhasesScript` 在 `battle_result_service.gd / battle_result_service_outcome_resolver.gd / turn_loop_validation_helper.gd / log_event_builder.gd` 不再被引用，import 全部删除。
+- **layering gate 升级**：`tests/gates/architecture_layering_gate.py` 加两条 grep 规则——`battle_state\.phase\s*=` 与 `battle_state\.battle_result\.(finished|winner_side_id|result_type|reason)\s*=`，覆盖 `src/battle_core / src/adapters / src/composition / src/dev_kit / scenes`，文件级 `drop_if_file_path` 排除 `battle_state.gd` 自身（注释与 setter 实现合法包含该字串）。`scan_rule` 增加 `drop_if_file_path` 字段支持。
+- **不动的事**：`BattleState.phase` 与 `BattleState.battle_result` 仍为公开读字段（不重命名为下划线前缀，避免外部读爆破）；`record_runtime_fault` 已是 setter，本批不二次包装；`set_phase_chain_context / push_chain_context / pop_chain_context / clear_chain_context_stack` 仍是 caller 职责，不内置进 finalize_*_termination；不动 BattleResult 自身的 `to_stable_dict` 内部读法。
+- **负向验证**：在 `src/adapters/battle_sandbox_controller.gd` 末尾追加 `battle_state.phase = "BAD"` → `python3 tests/gates/architecture_layering_gate.py` 立即 `ARCH_GATE_FAILED: battle_state.phase 写入必须走 transition_phase / finalize_*_termination setter`；`git checkout --` 还原后 `ARCH_GATE_PASSED`。
+- **验证**：`bash tests/run_with_gate.sh` 全绿（120 quick）；`TEST_PROFILE=extended bash tests/run_with_gate.sh` 全绿（含 4 个 player_mvp_anchor + sandbox 全集）；`grep "battle_state\.phase\s*=" src/` 在 src/ 命中 0（除 battle_state.gd 注释外）；`grep "battle_state\.battle_result\..*\s*=" src/` 命中 0。
+
 ## 2026-04-27 Batch G：玩家 MVP 进 gate（防回退）
 
 - **背景**：Batch F 修复了 `scenes/player/*` 与 `src/adapters/player/*` 的接线断裂，但 ~1910 行新代码还没进任何闸门，下一次类似的 API drift 仍可在 PR 阶段静默落入主线。Batch G 把这一空白彻底填上。

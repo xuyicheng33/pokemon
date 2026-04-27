@@ -1,7 +1,6 @@
 extends RefCounted
 class_name TurnLoopValidationHelper
 
-const BattlePhasesScript := preload("res://src/shared/battle_phases.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 var battle_result_service: BattleResultService
@@ -35,9 +34,5 @@ func validate_dependencies_or_terminate(battle_state: BattleState, owner) -> boo
 func _fallback_hard_terminate_invalid_state(battle_state: BattleState, invalid_code: String) -> void:
 	if battle_state.battle_result == null:
 		return
-	battle_state.battle_result.finished = true
-	battle_state.battle_result.winner_side_id = null
-	battle_state.battle_result.result_type = "no_winner"
-	battle_state.battle_result.reason = invalid_code
-	battle_state.phase = BattlePhasesScript.FINISHED
+	battle_state.finalize_invalid_termination(invalid_code, "TurnLoopValidationHelper fallback hard_terminate: battle_result_service unavailable")
 	battle_state.clear_chain_context_stack()

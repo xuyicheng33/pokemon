@@ -152,7 +152,7 @@ func initialize_battle(battle_state: BattleState, content_index: BattleContentIn
 		return false
 	if battle_state.pre_applied_turn_start_regen_turn_index != battle_state.turn_index:
 		return false
-	battle_state.phase = BattlePhasesScript.SELECTION
+	battle_state.transition_phase(BattlePhasesScript.SELECTION)
 	return true
 
 func _build_side_states(battle_state: BattleState, battle_setup, format_config, content_index: BattleContentIndex) -> bool:

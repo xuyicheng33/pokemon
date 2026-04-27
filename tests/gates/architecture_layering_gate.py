@@ -87,6 +87,31 @@ LAYERING_RULES: list[dict] = [
             "scenes",
         ],
     },
+    {
+        "label": "battle_state.phase 写入必须走 transition_phase / finalize_*_termination setter",
+        "pattern": re.compile(r"battle_state\.phase\s*="),
+        "search_roots": [
+            "src/battle_core",
+            "src/adapters",
+            "src/composition",
+            "src/dev_kit",
+            "scenes",
+        ],
+        # battle_state.gd 自己是 setter 实现的归宿，注释中也会出现该字串。
+        "drop_if_file_path": ["src/battle_core/runtime/battle_state.gd"],
+    },
+    {
+        "label": "battle_state.battle_result.{finished,winner_side_id,result_type,reason} 写入必须走 finalize_*_termination setter",
+        "pattern": re.compile(r"battle_state\.battle_result\.(finished|winner_side_id|result_type|reason)\s*="),
+        "search_roots": [
+            "src/battle_core",
+            "src/adapters",
+            "src/composition",
+            "src/dev_kit",
+            "scenes",
+        ],
+        "drop_if_file_path": ["src/battle_core/runtime/battle_state.gd"],
+    },
 ]
 
 
@@ -107,10 +132,14 @@ def iter_files(search_root: Path) -> list[Path]:
 def scan_rule(rule: dict) -> list[str]:
     pattern: re.Pattern[str] = rule["pattern"]
     drop_if_contains: list[str] = rule.get("drop_if_contains", [])
+    drop_if_file_path: list[str] = rule.get("drop_if_file_path", [])
     matches: list[str] = []
     for root_rel in rule["search_roots"]:
         root_path = ROOT / root_rel
         for file_path in iter_files(root_path):
+            rel = str(file_path.relative_to(ROOT))
+            if any(drop in rel for drop in drop_if_file_path):
+                continue
             try:
                 lines = file_path.read_text(encoding="utf-8").splitlines()
             except UnicodeDecodeError:
@@ -120,7 +149,6 @@ def scan_rule(rule: dict) -> list[str]:
                     continue
                 if any(drop in line for drop in drop_if_contains):
                     continue
-                rel = file_path.relative_to(ROOT)
                 matches.append(f"{rel}:{line_number}:{line.rstrip()}")
     return matches
 

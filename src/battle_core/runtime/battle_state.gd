@@ -139,6 +139,53 @@ func runtime_fault_code() -> String:
 func runtime_fault_message() -> String:
 	return _runtime_fault_message
 
+# phase / battle_result 单写者 setter。 ---------------------------------------
+# `phase` 与 `battle_result.{finished,winner_side_id,result_type,reason}` 的
+# 写入必须经过下面三个 setter。`architecture_layering_gate.py` 用 grep 守住
+# `battle_state.phase = ...` 与 `battle_state.battle_result.<field> = ...` 在
+# `battle_state.gd` 之外不再出现。读取保持公开（`battle_state.phase` /
+# `battle_state.battle_result.to_stable_dict()` 等仍是 production API）。
+
+func transition_phase(next_phase: String) -> void:
+	# 任意阶段切换。仅写 phase；终结路径请用 finalize_*_termination。
+	phase = next_phase
+
+func finalize_invalid_termination(invalid_code: String, error_message: String) -> void:
+	# fail-fast / 无效终止专用。流程：
+	#   1) 不论 battle_result 状态，先 record_runtime_fault（caller 通常带上
+	#      具体错误码与消息，方便上层 hook / replay）。
+	#   2) battle_result == null（早期初始化失败）直接返回，由 caller 自行处理。
+	#   3) battle_result.finished 为 true（已被前序终止流水写过）保持幂等不再覆写。
+	#   4) 否则一次性写完 finished=true / winner=null / result_type="no_winner" /
+	#      reason=invalid_code，并把 phase 切到 FINISHED。
+	# chain_context 的清理 / 替换由 caller 负责（log_event_builder 与
+	# BattleResultService 在两条不同的清理语义下使用，setter 不内置其中之一）。
+	record_runtime_fault(invalid_code, error_message)
+	if battle_result == null:
+		return
+	if bool(battle_result.finished):
+		return
+	battle_result.finished = true
+	battle_result.winner_side_id = null
+	battle_result.result_type = "no_winner"
+	battle_result.reason = invalid_code
+	phase = BattlePhasesScript.FINISHED
+
+func finalize_normal_termination(winner_side_id_value, result_type: String, reason: String) -> void:
+	# 正常胜负终止专用（surrender / turn_limit / victory）。
+	# winner_side_id_value 允许 null（draw / no_winner）。result_type / reason 由
+	# caller 传具体语义；setter 只保证写入原子性 + 终结 phase = FINISHED。
+	# 不调用 record_runtime_fault：正常终止不算 runtime fault。
+	# 不内置 idempotent 检查：正常终止只应被调一次，重复调表示协调流出错——
+	# 由 caller 负责保护，setter 暴露的写入是 hot-path。
+	if battle_result == null:
+		return
+	battle_result.finished = true
+	battle_result.winner_side_id = winner_side_id_value
+	battle_result.result_type = result_type
+	battle_result.reason = reason
+	phase = BattlePhasesScript.FINISHED
+
 # Omitted from stable dict (transient per-turn state, reset between turns):
 #   pending_effect_queue, _chain_context_stack, fatal_damage_records_by_target.
 # Included as `runtime_fault_code` / `runtime_fault_message` keys (sourced from
