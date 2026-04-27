@@ -81,6 +81,17 @@ func start(matchup_id: String, battle_seed: int) -> Dictionary:
 		"public_snapshot": current_snapshot_data,
 	})
 
+func available_matchups_result() -> Dictionary:
+	if _closed:
+		return _error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "PlayerBattleSession.available_matchups_result invoked on closed session")
+	if _owns_manager and _manager == null:
+		var compose_error := _compose_battle_runtime()
+		if not compose_error.is_empty():
+			return _error(ErrorCodesScript.INVALID_COMPOSITION, compose_error)
+	if _sample_factory == null:
+		return _error(ErrorCodesScript.INVALID_COMPOSITION, "PlayerBattleSession.available_matchups_result missing sample factory")
+	return _sample_factory.available_matchups_result()
+
 func current_snapshot() -> Dictionary:
 	return current_snapshot_data
 

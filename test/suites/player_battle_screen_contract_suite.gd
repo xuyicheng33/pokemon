@@ -70,6 +70,50 @@ func test_player_battle_screen_skill_button_signal_advances_turn_and_renders_log
 	assert_str(rendered_log).not_contains("[action:cast]")
 	assert_int(toast_container.get_child_count()).is_equal(0)
 
+func test_player_battle_screen_matchup_select_lists_visible_matchups() -> void:
+	var runner := scene_runner(BATTLE_SCREEN_SCENE_PATH)
+	runner.set_time_factor(8.0)
+	await await_millis(120)
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	var controller: PlayerBattleScreen = runner.scene()
+	var matchup_select: OptionButton = controller.get_node("MarginContainer/VBoxContainer/TopBar/MatchupSelect")
+	assert_int(matchup_select.item_count).is_greater_equal(4)
+	var matchup_ids: Array = []
+	for i in matchup_select.item_count:
+		matchup_ids.append(String(matchup_select.get_item_metadata(i)))
+	for expected_matchup_id in ["gojo_vs_sample", "sukuna_setup", "kashimo_vs_sample", "obito_vs_sample"]:
+		if not matchup_ids.has(expected_matchup_id):
+			fail("player matchup select missing visible matchup: %s from %s" % [expected_matchup_id, matchup_ids])
+			return
+	assert_str(String(matchup_select.get_item_metadata(matchup_select.selected))).is_equal("gojo_vs_sample")
+	assert_str(String(controller.get("_current_matchup_id"))).is_equal("gojo_vs_sample")
+
+
+func test_player_battle_screen_start_button_switches_selected_matchup() -> void:
+	var runner := scene_runner(BATTLE_SCREEN_SCENE_PATH)
+	runner.set_time_factor(8.0)
+	await await_millis(120)
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	var controller: PlayerBattleScreen = runner.scene()
+	var matchup_select: OptionButton = controller.get_node("MarginContainer/VBoxContainer/TopBar/MatchupSelect")
+	var target_index := _find_matchup_option_index(matchup_select, "kashimo_vs_sample")
+	assert_int(target_index).is_greater_equal(0)
+	matchup_select.select(target_index)
+	var start_button: Button = controller.get_node("MarginContainer/VBoxContainer/TopBar/StartMatchupButton")
+	assert_bool(start_button.disabled).is_false()
+	start_button.pressed.emit()
+	await await_millis(160)
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	var snapshot_after: Dictionary = controller.get("_last_snapshot")
+	var toast_container: CanvasLayer = controller.get_node("ErrorToastContainer")
+	assert_str(String(controller.get("_current_matchup_id"))).is_equal("kashimo_vs_sample")
+	assert_str(_active_unit_definition_id(snapshot_after, "P1")).is_equal("kashimo_hajime")
+	assert_int(int(snapshot_after.get("turn_index", 0))).is_equal(1)
+	assert_int(toast_container.get_child_count()).is_equal(0)
+
 
 func test_player_battle_screen_wait_button_signal_advances_turn() -> void:
 	var runner := scene_runner(BATTLE_SCREEN_SCENE_PATH)
@@ -146,3 +190,27 @@ func test_player_forced_replace_dialog_invokes_callback_with_selected_id() -> vo
 	# 点击后必须自动 close。
 	assert_bool(dialog.visible).is_false()
 	dialog.queue_free()
+
+
+func _find_matchup_option_index(matchup_select: OptionButton, matchup_id: String) -> int:
+	for i in matchup_select.item_count:
+		if String(matchup_select.get_item_metadata(i)) == matchup_id:
+			return i
+	return -1
+
+
+func _active_unit_definition_id(snapshot: Dictionary, side_id: String) -> String:
+	for raw_side in snapshot.get("sides", []):
+		if not (raw_side is Dictionary):
+			continue
+		var side: Dictionary = raw_side
+		if String(side.get("side_id", "")) != side_id:
+			continue
+		var active_public_id := String(side.get("active_public_id", "")).strip_edges()
+		for raw_unit in side.get("team_units", []):
+			if not (raw_unit is Dictionary):
+				continue
+			var unit: Dictionary = raw_unit
+			if String(unit.get("public_id", "")).strip_edges() == active_public_id:
+				return String(unit.get("definition_id", "")).strip_edges()
+	return ""

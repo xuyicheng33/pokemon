@@ -37,6 +37,26 @@
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 - Batch K: SessionFactory 抽取 + envelope helper 删除
 
+## 最近完成：玩家侧深化：多对局选择（2026-04-27）
+
+- 状态：已完成
+- 目标：让玩家 BattleScreen 不再只能进入固定 `gojo_vs_sample`，可以从当前可见正式 setup 对局中选择并重新开局
+- 范围：
+  1. `PlayerBattleSession` 新增 `available_matchups_result()`，复用现有 `SessionFactory + SampleBattleFactory` 读取可见对局，不绕开 formal catalog fail-fast
+  2. `BattleScreen.tscn` 顶部增加 `MatchupSelect` 与 `StartMatchupButton`
+  3. 新增 `BattleScreenMatchupSelector.gd`，负责可见 matchup 装载、推荐排序标签与 OptionButton metadata
+  4. `BattleScreen.gd` 支持选择后关闭旧 session、清理日志 / 弹层 / 缓存、用同一 seed 开新局
+  5. `player_battle_screen_contract_suite.gd` 新增对局列表与真实切换到 `kashimo_vs_sample` 的 UI contract
+- 验收标准：
+  - 默认仍进入 `gojo_vs_sample`
+  - 下拉至少包含 `gojo_vs_sample / sukuna_setup / kashimo_vs_sample / obito_vs_sample`
+  - 选择 `kashimo_vs_sample` 后点击开始，P1 active unit 变为 `kashimo_hajime`，无错误 toast
+- 验证结果：
+  - `TEST_PATH=res://test/suites/player_battle_screen_contract_suite.gd bash tests/run_gdunit.sh`（7 cases / 0 failures）
+  - `TEST_PATH=res://test/suites/player_battle_session_contract_suite.gd bash tests/run_gdunit.sh`（12 cases / 0 failures）
+  - `bash tests/check_architecture_constraints.sh`
+  - `bash tests/check_repo_consistency.sh`
+
 ## 最近完成：项目复审 C 阶段 #4 Formal capability suite 矩阵（2026-04-27）
 
 - 状态：已完成

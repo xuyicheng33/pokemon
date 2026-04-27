@@ -15,6 +15,7 @@ const PlayerBattleSessionScript := preload("res://src/adapters/player/player_bat
 const PlayerContentLexiconScript := preload("res://src/adapters/player/player_content_lexicon.gd")
 const PlayerEventLogStreamerScript := preload("res://src/adapters/player/player_event_log_streamer.gd")
 const PlayerBattleScreenViewRendererScript := preload("res://scenes/player/BattleScreenViewRenderer.gd")
+const PlayerBattleScreenMatchupSelectorScript := preload("res://scenes/player/BattleScreenMatchupSelector.gd")
 const ErrorToastScene := preload("res://scenes/player/ErrorToast.tscn")
 const WinPanelScene := preload("res://scenes/player/WinPanel.tscn")
 const ForcedReplaceDialogScene := preload("res://scenes/player/ForcedReplaceDialog.tscn")
@@ -34,6 +35,8 @@ const CMD_FORCED_DEFAULT: String = "resource_forced_default"
 # ---- 节点引用 ----
 @onready var _turn_label: Label = $MarginContainer/VBoxContainer/TopBar/TurnLabel
 @onready var _field_badge_label: Label = $MarginContainer/VBoxContainer/TopBar/FieldBadge/FieldLabel
+@onready var _matchup_select: OptionButton = $MarginContainer/VBoxContainer/TopBar/MatchupSelect
+@onready var _start_matchup_button: Button = $MarginContainer/VBoxContainer/TopBar/StartMatchupButton
 @onready var _current_side_label: Label = $MarginContainer/VBoxContainer/TopBar/CurrentSideLabel
 
 @onready var _opponent_name_label: Label = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow/NameLabel
@@ -83,11 +86,14 @@ var _session: PlayerBattleSession = null
 var _lexicon: PlayerContentLexicon = null
 var _event_log_streamer: PlayerEventLogStreamer = null
 var _view_renderer: PlayerBattleScreenViewRenderer = PlayerBattleScreenViewRendererScript.new()
+var _matchup_selector: PlayerBattleScreenMatchupSelector = PlayerBattleScreenMatchupSelectorScript.new()
 var _last_snapshot: Dictionary = {}
 var _cached_legal_summary: Dictionary = {}
 var _cached_legal_turn_index: int = -1
 var _switch_menu_popup: PopupMenu = null
 var _switch_menu_options: Array = []
+var _matchup_options: Array = []
+var _current_matchup_id: String = ""
 var _skill_buttons: Array = []
 var _force_run_after_idle: bool = false
 var _forced_replace_dialog: PlayerForcedReplaceDialog = null
@@ -101,6 +107,7 @@ func _ready() -> void:
 
 	_setup_log_text()
 	_setup_buttons()
+	_setup_matchup_controls()
 	_setup_switch_menu()
 
 	_bootstrap_session()
@@ -118,16 +125,13 @@ func _bootstrap_session() -> void:
 	if _log_text != null:
 		_log_text.set_lexicon(_lexicon)
 	_view_renderer.set_lexicon(_lexicon)
+	_matchup_selector.set_lexicon(_lexicon)
 
 	_event_log_streamer = PlayerEventLogStreamerScript.new()
 	_session = PlayerBattleSessionScript.new()
 
-	var matchup_id := DEFAULT_MATCHUP_ID
-	var battle_seed := DEFAULT_SEED
-	var start_envelope: Dictionary = _session.start(matchup_id, battle_seed)
-	if not _handle_envelope(start_envelope):
-		return
-	_last_snapshot = _session.current_snapshot()
+	var matchup_id := _populate_matchup_select(DEFAULT_MATCHUP_ID)
+	_start_session(matchup_id, DEFAULT_SEED)
 
 
 func _setup_log_text() -> void:
@@ -148,12 +152,78 @@ func _setup_buttons() -> void:
 	_switch_menu_button.pressed.connect(_on_switch_menu_pressed)
 	_wait_button.pressed.connect(_on_wait_pressed)
 
+func _setup_matchup_controls() -> void:
+	if _start_matchup_button != null:
+		_start_matchup_button.pressed.connect(_on_start_matchup_pressed)
+
 
 func _setup_switch_menu() -> void:
 	_switch_menu_popup = PopupMenu.new()
 	_switch_menu_popup.name = "SwitchMenuPopup"
 	_switch_menu_popup.id_pressed.connect(_on_switch_menu_item_selected)
 	add_child(_switch_menu_popup)
+
+
+func _populate_matchup_select(preferred_matchup_id: String) -> String:
+	var result: Dictionary = _matchup_selector.populate_result(_matchup_select, _session, preferred_matchup_id)
+	_matchup_options = result.get("matchup_options", [])
+	if not bool(result.get("ok", false)):
+		_show_toast("invalid_battle_setup", "玩家对局列表加载失败: %s" % String(result.get("error_message", "unknown error")))
+	var selected_matchup_id := _select_matchup_option(preferred_matchup_id)
+	if _start_matchup_button != null:
+		_start_matchup_button.disabled = _matchup_options.is_empty()
+	return selected_matchup_id
+
+
+func _select_matchup_option(matchup_id: String) -> String:
+	return _matchup_selector.select_option(_matchup_select, _matchup_options, matchup_id)
+
+
+func _start_session(matchup_id: String, battle_seed: int) -> bool:
+	if _session == null:
+		_session = PlayerBattleSessionScript.new()
+	var start_envelope: Dictionary = _session.start(matchup_id, battle_seed)
+	if not _handle_envelope(start_envelope):
+		return false
+	_current_matchup_id = matchup_id
+	_last_snapshot = _session.current_snapshot()
+	_invalidate_legal_cache()
+	_select_matchup_option(matchup_id)
+	return true
+
+
+func _restart_session(matchup_id: String) -> void:
+	if _session != null and not _session.session_id.is_empty():
+		var close_envelope: Dictionary = _session.close()
+		if not _handle_envelope(close_envelope):
+			return
+	_session = PlayerBattleSessionScript.new()
+	_event_log_streamer = PlayerEventLogStreamerScript.new()
+	_last_snapshot = {}
+	_invalidate_legal_cache()
+	_clear_transient_ui()
+	_setup_log_text()
+	if _start_session(matchup_id, DEFAULT_SEED):
+		_refresh_ui_from_session()
+
+
+func _clear_transient_ui() -> void:
+	_win_panel_shown = false
+	_forced_replace_dialog = null
+	_clear_container_children(_win_panel_container)
+	_clear_container_children(_error_toast_container)
+	_clear_container_children(_dialog_container)
+	if _switch_menu_popup != null:
+		_switch_menu_popup.hide()
+		_switch_menu_popup.clear()
+	_switch_menu_options.clear()
+
+
+func _clear_container_children(container: Node) -> void:
+	if container == null:
+		return
+	for child in container.get_children():
+		child.queue_free()
 
 
 # ---- 按钮回调 ----
@@ -229,6 +299,13 @@ func _on_wait_pressed() -> void:
 		"side_id": LOCAL_PLAYER_SIDE_ID,
 		"actor_public_id": actor_public_id,
 	})
+
+
+func _on_start_matchup_pressed() -> void:
+	var selected_matchup_id := _matchup_selector.current_selected_matchup_id(_matchup_select, _matchup_options)
+	if selected_matchup_id.is_empty():
+		return
+	_restart_session(selected_matchup_id)
 
 
 # ---- 命令提交 / 推进 ----
