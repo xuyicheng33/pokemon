@@ -37,6 +37,30 @@
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 - Batch K: SessionFactory 抽取 + envelope helper 删除
 
+## 最近完成：项目复审 C 阶段 #1 validator helper 二期（2026-04-27）
+
+- 状态：已完成
+- 目标：继续压缩 formal character validator 的重复 payload 验证样板，把高频 `require_effect -> extract_payload -> expect_shape` 与 apply_effect target 检查收口到 base helper
+- 范围：
+  1. `content_snapshot_formal_character_validator_base.gd` 扩展 `_validate_single_payload_effect`，支持 `contract_label_suffix`
+  2. 同 base 新增 `_expect_payload_target` 与 `_expect_apply_effect_target`，覆盖不带 effect_contract 的 payload target 验证与 apply_effect target 验证
+  3. Gojo / Sukuna / Kashimo / Obito validator 改用新 helper，保留多 payload、动态 trigger、独立 contract 的显式验证路径
+  4. 修复 GDScript 父子类 const 同名解析错误：base 内部 apply_effect payload 脚本改名为 `_BaseApplyEffectPayloadScript`
+  5. 清理 Gojo / Sukuna validator 中已不再使用的 `ApplyEffectPayloadScript` preload
+- 验收标准：
+  - 4 个 formal bad_cases suite 全过，错误信息保持可读且关键 needle 对齐
+  - scoped validator suite 全过
+  - quick gate 全过
+  - 不放宽 fail-fast，不删除既有角色 contract 校验
+- 验证结果：
+  - `TEST_PATH=res://test/suites/extension_validation_contract/gojo_bad_cases_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/extension_validation_contract/sukuna_bad_cases_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/extension_validation_contract/kashimo_bad_cases_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/extension_validation_contract/obito_bad_cases_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/scoped_validator_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/run_with_gate.sh`
+- 结果：6 个文件改动，formal validator 区域从 1297 行降到 1243 行；代码 diff 为 110 insertions / 160 deletions
+
 ## 最近完成：玩家 BattleScreen UI 交互回归补强（2026-04-27）
 
 - 状态：已完成
@@ -142,10 +166,10 @@
 
 ## 后续方向：项目复审 C 阶段（2026-04-26）
 
-- 状态：未开始
+- 状态：进行中
 - 目标：在主线稳定基础上，把本次复审里"长期"维度的事项按节奏推进，不做一次性大改
 - 候选项（按优先级，影响越大越靠前）：
-  1. validator 共享 helper 二期：除了 `_validate_single_payload_effect`，把「effect_contract + 多 payload」「passive_skill_contract + effect」「unit_skill 完整 baseline」三类高频 pattern 也抽到 base，目标再砍 100+ 行
+  1. 已完成：validator 共享 helper 二期，把 payload target 与 apply_effect target 高频 pattern 抽到 base；多 payload 与动态 contract 路径保留显式验证
   2. sandbox UI 响应式：窄桌面/竖屏下选择页和战斗页用 `GridContainer` 列数自适配 + `ScrollContainer` 兜底，避免靠 1280 宽假设
   3. README 行数强校验放宽：`docs/records/decisions.md` 已记的"精确行数"模式改成阈值/区间形式，避免每次小幅调整都触发 repo gate 失败
   4. Formal 角色 suite 进一步往 capability 驱动矩阵收口：以 `formal_character_capability_catalog` 输出的 capability 列表反推抽样 suite，进一步压缩重复样板

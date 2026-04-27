@@ -2,7 +2,7 @@ extends "res://test/suites/extension_validation_contract/base.gd"
 
 func test_formal_obito_validator_heal_block_bad_case_contract() -> void:
 	_run_validator_bad_case(
-		"formal[obito_juubi_jinchuriki].heal_block payload.value mismatch: expected 0.0 got 1.0",
+		"formal[obito_juubi_jinchuriki].heal_block rule_mod.value mismatch: expected 0.0 got 1.0",
 		"obito formal validator should fail-fast when heal-block payload drifts",
 		func(content_index):
 			var heal_block_effect = content_index.effects.get("obito_qiudao_jiaotu_heal_block_rule_mod", null)

@@ -1,7 +1,6 @@
 extends "res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_validator_base.gd"
 class_name ContentSnapshotFormalGojoValidator
 
-const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const ContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
@@ -85,24 +84,19 @@ func _validate_marker_effect(
 			[FormalCharacterBaselinesScript.effect_contract("gojo_satoru", marker_effect_id, label)]
 		)
 	var apply_effect_id := "%s_apply" % marker_effect_id
-	var apply_effect = _require_effect(content_index, errors, label, apply_effect_id)
-	if apply_effect != null:
-		var apply_payload = _extract_single_payload(errors, label, apply_effect_id, apply_effect, ApplyEffectPayloadScript, "apply_effect")
-		_expect_payload_shape(errors, "%s effect[%s]" % [label, apply_effect_id], apply_payload, {"effect_definition_id": marker_effect_id})
-	var stat_effect = _require_effect(content_index, errors, label, stat_effect_id)
-	if stat_effect == null:
-		return
-	var stat_payload = _extract_single_payload(errors, label, stat_effect_id, stat_effect, StatModPayloadScript, "stat_mod")
-	if stat_payload == null:
-		return
-	_expect_payload_shape(
-		errors,
-		"%s effect[%s]" % [label, stat_effect_id],
-		stat_payload,
+	_expect_apply_effect_target(
+		content_index, errors, label, apply_effect_id, marker_effect_id,
+		"%s effect[%s]" % [label, apply_effect_id]
+	)
+	_expect_payload_target(
+		content_index, errors,
+		label, stat_effect_id,
+		StatModPayloadScript, "stat_mod",
 		{
 			"stat_name": expected_stat_name,
 			"stage_delta": expected_stage_delta,
-		}
+		},
+		"%s effect[%s]" % [label, stat_effect_id]
 	)
 
 func _validate_reverse_ritual_contract(content_index: BattleContentIndex, errors: Array) -> void:
@@ -265,9 +259,6 @@ func _validate_stat_mod_effect(
 	expected_stage_delta: int,
 	expected_trigger_names: PackedStringArray
 ) -> void:
-	var effect_definition = _require_effect(content_index, errors, label, effect_id)
-	if effect_definition == null:
-		return
 	_helper.validate_effect_contracts(self, content_index, errors, [{
 		"label": "%s effect[%s]" % [label, effect_id],
 		"effect_id": effect_id,
@@ -278,27 +269,10 @@ func _validate_stat_mod_effect(
 			"trigger_names": expected_trigger_names,
 		},
 	}])
-	var stat_mod_payload = _extract_single_payload(
-		errors,
-		label,
-		effect_id,
-		effect_definition,
-		StatModPayloadScript,
-		"stat_mod"
+	_expect_payload_target(
+		content_index, errors,
+		label, effect_id,
+		StatModPayloadScript, "stat_mod",
+		{"stat_name": expected_stat_name, "stage_delta": expected_stage_delta},
+		"%s effect[%s]" % [label, effect_id]
 	)
-	if stat_mod_payload == null:
-		return
-	if String(stat_mod_payload.stat_name) != expected_stat_name:
-		errors.append("%s effect[%s].stat_name mismatch: expected %s got %s" % [
-			label,
-			effect_id,
-			expected_stat_name,
-			String(stat_mod_payload.stat_name),
-		])
-	if int(stat_mod_payload.stage_delta) != expected_stage_delta:
-		errors.append("%s effect[%s].stage_delta mismatch: expected %d got %d" % [
-			label,
-			effect_id,
-			expected_stage_delta,
-			int(stat_mod_payload.stage_delta),
-		])

@@ -1,7 +1,6 @@
 extends "res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_validator_base.gd"
 class_name ContentSnapshotFormalSukunaValidator
 
-const ApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const ApplyFieldPayloadScript := preload("res://src/battle_core/content/apply_field_payload.gd")
 const ContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
 const DamagePayloadScript := preload("res://src/battle_core/content/damage_payload.gd")
@@ -80,10 +79,10 @@ func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) ->
 
 func _validate_kamado_contract(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[sukuna].kamado"
-	var apply_effect = _require_effect(content_index, errors, label, "sukuna_apply_kamado")
-	if apply_effect != null:
-		var apply_payload = _extract_single_payload(errors, label, "sukuna_apply_kamado", apply_effect, ApplyEffectPayloadScript, "apply_effect")
-		_expect_payload_shape(errors, "%s apply" % label, apply_payload, {"effect_definition_id": "sukuna_kamado_mark"})
+	_expect_apply_effect_target(
+		content_index, errors, label, "sukuna_apply_kamado", "sukuna_kamado_mark",
+		"%s apply" % label
+	)
 	var marker_effect = _require_effect(content_index, errors, label, "sukuna_kamado_mark")
 	if marker_effect != null:
 		_helper.validate_effect_contracts(

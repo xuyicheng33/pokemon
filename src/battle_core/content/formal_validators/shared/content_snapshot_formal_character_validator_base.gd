@@ -1,6 +1,7 @@
 extends RefCounted
 class_name ContentSnapshotFormalCharacterValidatorBase
 
+const _BaseApplyEffectPayloadScript := preload("res://src/battle_core/content/apply_effect_payload.gd")
 const BaselineErrorRegistryScript := preload("res://src/shared/formal_character_baselines.gd")
 const SharedContractHelperScript := preload("res://src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_contract_helper.gd")
 
@@ -14,21 +15,58 @@ func _validate_single_payload_effect(
 	effect_id: String,
 	payload_script,
 	payload_name: String,
-	expected_payload_fields: Dictionary
+	expected_payload_fields: Dictionary,
+	contract_label_suffix: String = ""
 ) -> Variant:
 	var effect_definition = _require_effect(content_index, errors, label, effect_id)
 	if effect_definition == null:
 		return null
+	var contract_label := label if contract_label_suffix.is_empty() else "%s %s" % [label, contract_label_suffix]
 	_shared_contract_helper.validate_effect_contracts(
 		self,
 		content_index,
 		errors,
-		[BaselineErrorRegistryScript.effect_contract(character_id, effect_id, label)]
+		[BaselineErrorRegistryScript.effect_contract(character_id, effect_id, contract_label)]
 	)
 	var payload = _extract_single_payload(errors, label, effect_id, effect_definition, payload_script, payload_name)
 	if payload != null:
-		_expect_payload_shape(errors, label, payload, expected_payload_fields)
+		_expect_payload_shape(errors, contract_label, payload, expected_payload_fields)
 	return payload
+
+func _expect_payload_target(
+	content_index: BattleContentIndex,
+	errors: Array,
+	label: String,
+	effect_id: String,
+	payload_script,
+	payload_name: String,
+	expected_payload_fields: Dictionary,
+	payload_label_override: String = ""
+) -> Variant:
+	var effect_definition = _require_effect(content_index, errors, label, effect_id)
+	if effect_definition == null:
+		return null
+	var payload = _extract_single_payload(errors, label, effect_id, effect_definition, payload_script, payload_name)
+	if payload != null:
+		var payload_label := payload_label_override if not payload_label_override.is_empty() else label
+		_expect_payload_shape(errors, payload_label, payload, expected_payload_fields)
+	return payload
+
+func _expect_apply_effect_target(
+	content_index: BattleContentIndex,
+	errors: Array,
+	label: String,
+	holder_effect_id: String,
+	expected_effect_definition_id: String,
+	payload_label_override: String = ""
+) -> Variant:
+	return _expect_payload_target(
+		content_index, errors,
+		label, holder_effect_id,
+		_BaseApplyEffectPayloadScript, "apply_effect",
+		{"effect_definition_id": expected_effect_definition_id},
+		payload_label_override
+	)
 
 func _consume_formal_baseline_error(errors: Array, descriptor) -> bool:
 	var error_message := BaselineErrorRegistryScript.descriptor_error_message(descriptor)

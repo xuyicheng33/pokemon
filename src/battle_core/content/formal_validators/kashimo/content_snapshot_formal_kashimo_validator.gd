@@ -195,9 +195,6 @@ func _validate_apply_charge(
 	expected_trigger_name: String,
 	expected_mark_effect_id: String
 ) -> void:
-	var effect_definition = _require_effect(content_index, errors, label, effect_id)
-	if effect_definition == null:
-		return
 	_helper.validate_effect_contracts(self, content_index, errors, [{
 		"label": label,
 		"effect_id": effect_id,
@@ -206,12 +203,9 @@ func _validate_apply_charge(
 			"trigger_names": PackedStringArray([expected_trigger_name]),
 		},
 	}])
-	var payload = _extract_single_payload(errors, label, effect_id, effect_definition, ApplyEffectPayloadScript, "apply_effect")
-	_expect_payload_shape(
-		errors,
-		"%s payload" % label,
-		payload,
-		{"effect_definition_id": expected_mark_effect_id}
+	_expect_apply_effect_target(
+		content_index, errors, label, effect_id, expected_mark_effect_id,
+		"%s payload" % label
 	)
 
 func _validate_negative_charge_mark(content_index: BattleContentIndex, errors: Array) -> void:
@@ -240,9 +234,6 @@ func _validate_consume_charge(
 	expected_scope: String,
 	expected_mark_effect_id: String
 ) -> void:
-	var effect_definition = _require_effect(content_index, errors, label, effect_id)
-	if effect_definition == null:
-		return
 	_helper.validate_effect_contracts(self, content_index, errors, [{
 		"label": label,
 		"effect_id": effect_id,
@@ -251,19 +242,12 @@ func _validate_consume_charge(
 			"trigger_names": PackedStringArray(["on_hit"]),
 		},
 	}])
-	var payload = _extract_single_payload(
-		errors,
-		label,
-		effect_id,
-		effect_definition,
-		RemoveEffectPayloadScript,
-		"remove_effect"
-	)
-	_expect_payload_shape(
-		errors,
-		"%s payload" % label,
-		payload,
-		{"effect_definition_id": expected_mark_effect_id, "remove_mode": "all"}
+	_expect_payload_target(
+		content_index, errors,
+		label, effect_id,
+		RemoveEffectPayloadScript, "remove_effect",
+		{"effect_definition_id": expected_mark_effect_id, "remove_mode": "all"},
+		"%s payload" % label
 	)
 
 func _validate_ultimate_domain(content_index: BattleContentIndex, errors: Array) -> void:

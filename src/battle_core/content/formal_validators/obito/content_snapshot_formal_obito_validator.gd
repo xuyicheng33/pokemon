@@ -75,16 +75,13 @@ func _validate_skill_effect(content_index: BattleContentIndex, errors: Array) ->
 
 func _validate_heal_block_contracts(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[obito_juubi_jinchuriki].heal_block"
-	var apply_effect = _require_effect(content_index, errors, label, "obito_qiudao_jiaotu_heal_block_apply")
-	if apply_effect != null:
-		_helper.validate_effect_contracts(
-			self,
-			content_index,
-			errors,
-			[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_qiudao_jiaotu_heal_block_apply", "%s apply" % label)]
-		)
-		var apply_payload = _extract_single_payload(errors, label, "obito_qiudao_jiaotu_heal_block_apply", apply_effect, ApplyEffectPayloadScript, "apply_effect")
-		_expect_payload_shape(errors, "%s apply" % label, apply_payload, {"effect_definition_id": "obito_qiudao_jiaotu_heal_block_mark"})
+	_validate_single_payload_effect(
+		content_index, errors,
+		"obito_juubi_jinchuriki", label, "obito_qiudao_jiaotu_heal_block_apply",
+		ApplyEffectPayloadScript, "apply_effect",
+		{"effect_definition_id": "obito_qiudao_jiaotu_heal_block_mark"},
+		"apply"
+	)
 	var mark_effect = _require_effect(content_index, errors, label, "obito_qiudao_jiaotu_heal_block_mark")
 	if mark_effect != null:
 		_helper.validate_effect_contracts(
@@ -93,20 +90,10 @@ func _validate_heal_block_contracts(content_index: BattleContentIndex, errors: A
 			errors,
 			[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_qiudao_jiaotu_heal_block_mark", "%s mark" % label)]
 		)
-	var rule_mod_effect = _require_effect(content_index, errors, label, "obito_qiudao_jiaotu_heal_block_rule_mod")
-	if rule_mod_effect == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_qiudao_jiaotu_heal_block_rule_mod", "%s rule_mod" % label)]
-	)
-	var payload = _extract_single_payload(errors, label, "obito_qiudao_jiaotu_heal_block_rule_mod", rule_mod_effect, RuleModPayloadScript, "rule_mod")
-	_expect_payload_shape(
-		errors,
-		"%s payload" % label,
-		payload,
+	_validate_single_payload_effect(
+		content_index, errors,
+		"obito_juubi_jinchuriki", label, "obito_qiudao_jiaotu_heal_block_rule_mod",
+		RuleModPayloadScript, "rule_mod",
 		{
 			"mod_kind": "incoming_heal_final_mod",
 			"mod_op": "set",
@@ -118,7 +105,8 @@ func _validate_heal_block_contracts(content_index: BattleContentIndex, errors: A
 			"stacking": "refresh",
 			"priority": 10,
 			"persists_on_switch": true,
-		}
+		},
+		"rule_mod"
 	)
 
 func _validate_yinyang_dun_contracts(content_index: BattleContentIndex, errors: Array) -> void:
@@ -161,42 +149,32 @@ func _validate_yinyang_dun_contracts(content_index: BattleContentIndex, errors: 
 				"stat_mod",
 				{"stat_name": "sp_defense", "stage_delta": 1, "retention_mode": "normal"}
 			)
-	var guard_effect = _require_effect(content_index, errors, label, "obito_yinyang_dun_guard_rule_mod")
-	if guard_effect != null:
-		_helper.validate_effect_contracts(
-			self,
-			content_index,
-			errors,
-			[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_yinyang_dun_guard_rule_mod", "%s guard" % label)]
-		)
-		var guard_payload = _extract_single_payload(errors, label, "obito_yinyang_dun_guard_rule_mod", guard_effect, RuleModPayloadScript, "rule_mod")
-		_expect_payload_shape(errors, "%s guard.payload" % label, guard_payload, {
+	_validate_single_payload_effect(
+		content_index, errors,
+		"obito_juubi_jinchuriki", label, "obito_yinyang_dun_guard_rule_mod",
+		RuleModPayloadScript, "rule_mod",
+		{
 			"mod_kind": "incoming_action_final_mod", "mod_op": "mul", "value": 0.5, "scope": "self",
 			"duration_mode": "turns", "duration": 1, "decrement_on": "turn_end",
 			"stacking": "refresh", "priority": 10,
 			"required_incoming_command_types": PackedStringArray(["skill", "ultimate"]),
-		})
-	var listener_apply_effect = _require_effect(content_index, errors, label, "obito_yinyang_dun_guard_stack_listener")
-	if listener_apply_effect != null:
-		_helper.validate_effect_contracts(
-			self,
-			content_index,
-			errors,
-			[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_yinyang_dun_guard_stack_listener", "%s listener_apply" % label)]
-		)
-		var listener_apply_payload = _extract_single_payload(errors, label, "obito_yinyang_dun_guard_stack_listener", listener_apply_effect, ApplyEffectPayloadScript, "apply_effect")
-		_expect_payload_shape(errors, "%s listener_apply.payload" % label, listener_apply_payload, {"effect_definition_id": "obito_yinyang_dun_guard_stack_listener_state"})
-	var listener_state_effect = _require_effect(content_index, errors, label, "obito_yinyang_dun_guard_stack_listener_state")
-	if listener_state_effect == null:
-		return
-	_helper.validate_effect_contracts(
-		self,
-		content_index,
-		errors,
-		[FormalCharacterBaselinesScript.effect_contract("obito_juubi_jinchuriki", "obito_yinyang_dun_guard_stack_listener_state", "%s listener_state" % label)]
+		},
+		"guard"
 	)
-	var listener_state_payload = _extract_single_payload(errors, label, "obito_yinyang_dun_guard_stack_listener_state", listener_state_effect, ApplyEffectPayloadScript, "apply_effect")
-	_expect_payload_shape(errors, "%s listener_state.payload" % label, listener_state_payload, {"effect_definition_id": "obito_yinyang_zhili"})
+	_validate_single_payload_effect(
+		content_index, errors,
+		"obito_juubi_jinchuriki", label, "obito_yinyang_dun_guard_stack_listener",
+		ApplyEffectPayloadScript, "apply_effect",
+		{"effect_definition_id": "obito_yinyang_dun_guard_stack_listener_state"},
+		"listener_apply"
+	)
+	_validate_single_payload_effect(
+		content_index, errors,
+		"obito_juubi_jinchuriki", label, "obito_yinyang_dun_guard_stack_listener_state",
+		ApplyEffectPayloadScript, "apply_effect",
+		{"effect_definition_id": "obito_yinyang_zhili"},
+		"listener_state"
+	)
 
 func _validate_qiudaoyu_contracts(content_index: BattleContentIndex, errors: Array) -> void:
 	var label := "formal[obito_juubi_jinchuriki].qiudao_yu"
@@ -238,31 +216,8 @@ func _validate_ultimate_segment(
 		errors.append("%s damage_segments[%d] invalid type" % [label, index])
 		return
 	var segment := raw_segment as SkillDamageSegmentScript
-	if int(segment.repeat_count) != expected_repeat_count:
-		errors.append("%s damage_segments[%d].repeat_count mismatch: expected %d got %d" % [
-			label,
-			index,
-			expected_repeat_count,
-			int(segment.repeat_count),
-		])
-	if int(segment.power) != expected_power:
-		errors.append("%s damage_segments[%d].power mismatch: expected %d got %d" % [
-			label,
-			index,
-			expected_power,
-			int(segment.power),
-		])
-	if String(segment.combat_type_id) != expected_combat_type_id:
-		errors.append("%s damage_segments[%d].combat_type_id mismatch: expected %s got %s" % [
-			label,
-			index,
-			expected_combat_type_id,
-			String(segment.combat_type_id),
-		])
-	if String(segment.damage_kind) != expected_damage_kind:
-		errors.append("%s damage_segments[%d].damage_kind mismatch: expected %s got %s" % [
-			label,
-			index,
-			expected_damage_kind,
-			String(segment.damage_kind),
-		])
+	var segment_label := "%s damage_segments[%d]" % [label, index]
+	_expect_int(errors, "%s.repeat_count" % segment_label, segment.repeat_count, expected_repeat_count)
+	_expect_int(errors, "%s.power" % segment_label, segment.power, expected_power)
+	_expect_string(errors, "%s.combat_type_id" % segment_label, segment.combat_type_id, expected_combat_type_id)
+	_expect_string(errors, "%s.damage_kind" % segment_label, segment.damage_kind, expected_damage_kind)
