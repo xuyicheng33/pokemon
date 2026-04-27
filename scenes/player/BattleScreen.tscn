@@ -10,10 +10,19 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-custom_minimum_size = Vector2(1280, 720)
 script = ExtResource("1")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="MainScroll" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MainScroll"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -25,75 +34,75 @@ theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="MainScroll/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="TopBar" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="TopBar" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="TurnLabel" type="Label" parent="MarginContainer/VBoxContainer/TopBar"]
+[node name="TurnLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "回合 1"
 
-[node name="FieldBadge" type="PanelContainer" parent="MarginContainer/VBoxContainer/TopBar"]
+[node name="FieldBadge" type="PanelContainer" parent="MainScroll/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
 
-[node name="FieldLabel" type="Label" parent="MarginContainer/VBoxContainer/TopBar/FieldBadge"]
+[node name="FieldLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/TopBar/FieldBadge"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "场地: 无"
 
-[node name="MatchupSelect" type="OptionButton" parent="MarginContainer/VBoxContainer/TopBar"]
+[node name="MatchupSelect" type="OptionButton" parent="MainScroll/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
 custom_minimum_size = Vector2(280, 36)
 
-[node name="StartMatchupButton" type="Button" parent="MarginContainer/VBoxContainer/TopBar"]
+[node name="StartMatchupButton" type="Button" parent="MainScroll/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
 custom_minimum_size = Vector2(82, 36)
 text = "开始"
 
-[node name="HSpacer" type="Control" parent="MarginContainer/VBoxContainer/TopBar"]
+[node name="HSpacer" type="Control" parent="MainScroll/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="CurrentSideLabel" type="Label" parent="MarginContainer/VBoxContainer/TopBar"]
+[node name="CurrentSideLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/TopBar"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "等待 P1 选择"
 
-[node name="OpponentZone" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="OpponentZone" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="OpponentCard" type="PanelContainer" parent="MarginContainer/VBoxContainer/OpponentZone"]
+[node name="OpponentCard" type="PanelContainer" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="VBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard"]
+[node name="VBox" type="VBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="HeaderRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
+[node name="HeaderRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow"]
+[node name="NameLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "敌方角色"
 
-[node name="CombatTypeBadgeRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow"]
+[node name="CombatTypeBadgeRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="HPRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
+[node name="HPRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="HPBar" type="ProgressBar" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HPRow"]
+[node name="HPBar" type="ProgressBar" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HPRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(160, 12)
@@ -101,16 +110,16 @@ show_percentage = false
 max_value = 100.0
 value = 100.0
 
-[node name="HPLabel" type="Label" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HPRow"]
+[node name="HPLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HPRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "HP -/-"
 
-[node name="MPRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
+[node name="MPRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MPBar" type="ProgressBar" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/MPRow"]
+[node name="MPBar" type="ProgressBar" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/MPRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(160, 10)
@@ -118,40 +127,40 @@ show_percentage = false
 max_value = 100.0
 value = 50.0
 
-[node name="MPLabel" type="Label" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/MPRow"]
+[node name="MPLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/MPRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "MP -/-"
 
-[node name="UltimateDots" type="HBoxContainer" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
+[node name="UltimateDots" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="StatStagesRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
+[node name="StatStagesRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="EffectsBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
+[node name="EffectsBox" type="VBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 2
 
-[node name="OpponentSprite" type="ColorRect" parent="MarginContainer/VBoxContainer/OpponentZone"]
+[node name="OpponentSprite" type="ColorRect" parent="MainScroll/MarginContainer/VBoxContainer/OpponentZone"]
 layout_mode = 2
 custom_minimum_size = Vector2(200, 200)
 color = Color(0.4, 0.4, 0.45, 1)
 
-[node name="OpponentBenchRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="OpponentBenchRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MiddleLog" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+[node name="MiddleLog" type="PanelContainer" parent="MainScroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 custom_minimum_size = Vector2(0, 180)
 
-[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/MiddleLog"]
+[node name="ScrollContainer" type="ScrollContainer" parent="MainScroll/MarginContainer/VBoxContainer/MiddleLog"]
 layout_mode = 2
 
-[node name="LogText" type="RichTextLabel" parent="MarginContainer/VBoxContainer/MiddleLog/ScrollContainer"]
+[node name="LogText" type="RichTextLabel" parent="MainScroll/MarginContainer/VBoxContainer/MiddleLog/ScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -162,41 +171,41 @@ scroll_following = true
 selection_enabled = true
 script = ExtResource("2")
 
-[node name="PlayerZone" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="PlayerZone" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="PlayerSprite" type="ColorRect" parent="MarginContainer/VBoxContainer/PlayerZone"]
+[node name="PlayerSprite" type="ColorRect" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone"]
 layout_mode = 2
 custom_minimum_size = Vector2(200, 200)
 color = Color(0.45, 0.4, 0.4, 1)
 
-[node name="PlayerCard" type="PanelContainer" parent="MarginContainer/VBoxContainer/PlayerZone"]
+[node name="PlayerCard" type="PanelContainer" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="VBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard"]
+[node name="VBox" type="VBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="HeaderRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
+[node name="HeaderRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="NameLabel" type="Label" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow"]
+[node name="NameLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "我方角色"
 
-[node name="CombatTypeBadgeRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow"]
+[node name="CombatTypeBadgeRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="HPRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
+[node name="HPRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="HPBar" type="ProgressBar" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HPRow"]
+[node name="HPBar" type="ProgressBar" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HPRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(160, 12)
@@ -204,16 +213,16 @@ show_percentage = false
 max_value = 100.0
 value = 100.0
 
-[node name="HPLabel" type="Label" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HPRow"]
+[node name="HPLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HPRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "HP -/-"
 
-[node name="MPRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
+[node name="MPRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MPBar" type="ProgressBar" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/MPRow"]
+[node name="MPBar" type="ProgressBar" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/MPRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 custom_minimum_size = Vector2(160, 10)
@@ -221,75 +230,75 @@ show_percentage = false
 max_value = 100.0
 value = 50.0
 
-[node name="MPLabel" type="Label" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/MPRow"]
+[node name="MPLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/MPRow"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "MP -/-"
 
-[node name="UltimateDots" type="HBoxContainer" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
+[node name="UltimateDots" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="StatStagesRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
+[node name="StatStagesRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="EffectsBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
+[node name="EffectsBox" type="VBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 2
 
-[node name="PlayerBenchRow" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="PlayerBenchRow" type="HBoxContainer" parent="MainScroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ActionBar" type="GridContainer" parent="MarginContainer/VBoxContainer"]
+[node name="ActionBar" type="GridContainer" parent="MainScroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 columns = 4
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 6
 
-[node name="SkillButton_0" type="Button" parent="MarginContainer/VBoxContainer/ActionBar"]
+[node name="SkillButton_0" type="Button" parent="MainScroll/MarginContainer/VBoxContainer/ActionBar"]
 layout_mode = 2
 custom_minimum_size = Vector2(180, 40)
 text = "技能 1"
 
-[node name="SkillButton_1" type="Button" parent="MarginContainer/VBoxContainer/ActionBar"]
+[node name="SkillButton_1" type="Button" parent="MainScroll/MarginContainer/VBoxContainer/ActionBar"]
 layout_mode = 2
 custom_minimum_size = Vector2(180, 40)
 text = "技能 2"
 
-[node name="SkillButton_2" type="Button" parent="MarginContainer/VBoxContainer/ActionBar"]
+[node name="SkillButton_2" type="Button" parent="MainScroll/MarginContainer/VBoxContainer/ActionBar"]
 layout_mode = 2
 custom_minimum_size = Vector2(180, 40)
 text = "技能 3"
 
-[node name="SkillButton_3" type="Button" parent="MarginContainer/VBoxContainer/ActionBar"]
+[node name="SkillButton_3" type="Button" parent="MainScroll/MarginContainer/VBoxContainer/ActionBar"]
 layout_mode = 2
 custom_minimum_size = Vector2(180, 40)
 text = "技能 4"
 
-[node name="UltimateButton" type="Button" parent="MarginContainer/VBoxContainer/ActionBar"]
+[node name="UltimateButton" type="Button" parent="MainScroll/MarginContainer/VBoxContainer/ActionBar"]
 layout_mode = 2
 custom_minimum_size = Vector2(180, 40)
 text = "奥义 -"
 
-[node name="SwitchMenuButton" type="Button" parent="MarginContainer/VBoxContainer/ActionBar"]
+[node name="SwitchMenuButton" type="Button" parent="MainScroll/MarginContainer/VBoxContainer/ActionBar"]
 layout_mode = 2
 custom_minimum_size = Vector2(180, 40)
 text = "换人 ▼"
 
-[node name="WaitButton" type="Button" parent="MarginContainer/VBoxContainer/ActionBar"]
+[node name="WaitButton" type="Button" parent="MainScroll/MarginContainer/VBoxContainer/ActionBar"]
 layout_mode = 2
 custom_minimum_size = Vector2(180, 40)
 text = "等待"
 
-[node name="ForcedHintLabel" type="Label" parent="MarginContainer/VBoxContainer/ActionBar"]
+[node name="ForcedHintLabel" type="Label" parent="MainScroll/MarginContainer/VBoxContainer/ActionBar"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "无可用主动技能，将自动反伤"
 visible = false
 
-[node name="SideDetailPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer"]
+[node name="SideDetailPanel" type="PanelContainer" parent="MainScroll/MarginContainer/VBoxContainer"]
 layout_mode = 2
 visible = false
 

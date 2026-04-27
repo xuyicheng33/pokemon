@@ -53,7 +53,7 @@ func test_player_battle_screen_skill_button_signal_advances_turn_and_renders_log
 	var controller: PlayerBattleScreen = runner.scene()
 	var snapshot_before: Dictionary = controller.get("_last_snapshot")
 	var turn_before := int(snapshot_before.get("turn_index", 0))
-	var skill_button: Button = controller.get_node("MarginContainer/VBoxContainer/ActionBar/SkillButton_0")
+	var skill_button: Button = controller.get_node("MainScroll/MarginContainer/VBoxContainer/ActionBar/SkillButton_0")
 	assert_bool(skill_button.visible).is_true()
 	assert_bool(skill_button.disabled).is_false()
 	skill_button.pressed.emit()
@@ -61,7 +61,7 @@ func test_player_battle_screen_skill_button_signal_advances_turn_and_renders_log
 	@warning_ignore("redundant_await")
 	await runner.await_input_processed()
 	var snapshot_after: Dictionary = controller.get("_last_snapshot")
-	var log_text: RichTextLabel = controller.get_node("MarginContainer/VBoxContainer/MiddleLog/ScrollContainer/LogText")
+	var log_text: RichTextLabel = controller.get_node("MainScroll/MarginContainer/VBoxContainer/MiddleLog/ScrollContainer/LogText")
 	var toast_container: CanvasLayer = controller.get_node("ErrorToastContainer")
 	var rendered_log := log_text.get_parsed_text().strip_edges()
 	assert_int(int(snapshot_after.get("turn_index", 0))).is_greater(turn_before)
@@ -70,6 +70,25 @@ func test_player_battle_screen_skill_button_signal_advances_turn_and_renders_log
 	assert_str(rendered_log).not_contains("[action:cast]")
 	assert_int(toast_container.get_child_count()).is_equal(0)
 
+
+func test_player_battle_screen_uses_scroll_shell_for_small_viewports() -> void:
+	var runner := scene_runner(BATTLE_SCREEN_SCENE_PATH)
+	runner.set_time_factor(8.0)
+	await await_millis(120)
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	var controller: PlayerBattleScreen = runner.scene()
+	controller.size = Vector2(960, 540)
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	var main_scroll: ScrollContainer = controller.get_node("MainScroll")
+	var action_bar: GridContainer = controller.get_node("MainScroll/MarginContainer/VBoxContainer/ActionBar")
+	assert_int(int(controller.custom_minimum_size.x)).is_less_equal(960)
+	assert_int(int(controller.custom_minimum_size.y)).is_less_equal(540)
+	assert_bool(main_scroll.visible).is_true()
+	assert_bool(action_bar.visible).is_true()
+
+
 func test_player_battle_screen_matchup_select_lists_visible_matchups() -> void:
 	var runner := scene_runner(BATTLE_SCREEN_SCENE_PATH)
 	runner.set_time_factor(8.0)
@@ -77,7 +96,7 @@ func test_player_battle_screen_matchup_select_lists_visible_matchups() -> void:
 	@warning_ignore("redundant_await")
 	await runner.await_input_processed()
 	var controller: PlayerBattleScreen = runner.scene()
-	var matchup_select: OptionButton = controller.get_node("MarginContainer/VBoxContainer/TopBar/MatchupSelect")
+	var matchup_select: OptionButton = controller.get_node("MainScroll/MarginContainer/VBoxContainer/TopBar/MatchupSelect")
 	assert_int(matchup_select.item_count).is_greater_equal(4)
 	var matchup_ids: Array = []
 	for i in matchup_select.item_count:
@@ -97,11 +116,11 @@ func test_player_battle_screen_start_button_switches_selected_matchup() -> void:
 	@warning_ignore("redundant_await")
 	await runner.await_input_processed()
 	var controller: PlayerBattleScreen = runner.scene()
-	var matchup_select: OptionButton = controller.get_node("MarginContainer/VBoxContainer/TopBar/MatchupSelect")
+	var matchup_select: OptionButton = controller.get_node("MainScroll/MarginContainer/VBoxContainer/TopBar/MatchupSelect")
 	var target_index := _find_matchup_option_index(matchup_select, "kashimo_vs_sample")
 	assert_int(target_index).is_greater_equal(0)
 	matchup_select.select(target_index)
-	var start_button: Button = controller.get_node("MarginContainer/VBoxContainer/TopBar/StartMatchupButton")
+	var start_button: Button = controller.get_node("MainScroll/MarginContainer/VBoxContainer/TopBar/StartMatchupButton")
 	assert_bool(start_button.disabled).is_false()
 	start_button.pressed.emit()
 	await await_millis(160)
@@ -124,7 +143,7 @@ func test_player_battle_screen_wait_button_signal_advances_turn() -> void:
 	var controller: PlayerBattleScreen = runner.scene()
 	var snapshot_before: Dictionary = controller.get("_last_snapshot")
 	var turn_before := int(snapshot_before.get("turn_index", 0))
-	var wait_button: Button = controller.get_node("MarginContainer/VBoxContainer/ActionBar/WaitButton")
+	var wait_button: Button = controller.get_node("MainScroll/MarginContainer/VBoxContainer/ActionBar/WaitButton")
 	# 先锁住 fixture 前提：默认 gojo_vs_sample 首回合 wait 必须可点；
 	# 失败时明确指向 fixture / legality 漂移，而不是按钮信号坏了。
 	assert_bool(wait_button.visible).is_true()
@@ -150,7 +169,7 @@ func test_player_battle_screen_switch_menu_button_pops_menu_with_options() -> vo
 	var legal_switch_ids: Array = legal.get("legal_switch_target_public_ids", [])
 	# 锁住 fixture 前提：默认局首回合至少有 1 个合法换人目标，否则按钮就该是 disabled。
 	assert_int(legal_switch_ids.size()).is_greater(0)
-	var switch_button: Button = controller.get_node("MarginContainer/VBoxContainer/ActionBar/SwitchMenuButton")
+	var switch_button: Button = controller.get_node("MainScroll/MarginContainer/VBoxContainer/ActionBar/SwitchMenuButton")
 	assert_bool(switch_button.visible).is_true()
 	assert_bool(switch_button.disabled).is_false()
 	switch_button.pressed.emit()

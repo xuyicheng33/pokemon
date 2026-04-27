@@ -33,50 +33,50 @@ const CMD_WAIT: String = "wait"
 const CMD_FORCED_DEFAULT: String = "resource_forced_default"
 
 # ---- 节点引用 ----
-@onready var _turn_label: Label = $MarginContainer/VBoxContainer/TopBar/TurnLabel
-@onready var _field_badge_label: Label = $MarginContainer/VBoxContainer/TopBar/FieldBadge/FieldLabel
-@onready var _matchup_select: OptionButton = $MarginContainer/VBoxContainer/TopBar/MatchupSelect
-@onready var _start_matchup_button: Button = $MarginContainer/VBoxContainer/TopBar/StartMatchupButton
-@onready var _current_side_label: Label = $MarginContainer/VBoxContainer/TopBar/CurrentSideLabel
+@onready var _turn_label: Label = $MainScroll/MarginContainer/VBoxContainer/TopBar/TurnLabel
+@onready var _field_badge_label: Label = $MainScroll/MarginContainer/VBoxContainer/TopBar/FieldBadge/FieldLabel
+@onready var _matchup_select: OptionButton = $MainScroll/MarginContainer/VBoxContainer/TopBar/MatchupSelect
+@onready var _start_matchup_button: Button = $MainScroll/MarginContainer/VBoxContainer/TopBar/StartMatchupButton
+@onready var _current_side_label: Label = $MainScroll/MarginContainer/VBoxContainer/TopBar/CurrentSideLabel
 
-@onready var _opponent_name_label: Label = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow/NameLabel
-@onready var _opponent_combat_type_row: HBoxContainer = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow/CombatTypeBadgeRow
-@onready var _opponent_hp_bar: ProgressBar = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HPRow/HPBar
-@onready var _opponent_hp_label: Label = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HPRow/HPLabel
-@onready var _opponent_mp_bar: ProgressBar = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/MPRow/MPBar
-@onready var _opponent_mp_label: Label = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/MPRow/MPLabel
-@onready var _opponent_ultimate_dots: HBoxContainer = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/UltimateDots
-@onready var _opponent_stat_stages_row: HBoxContainer = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/StatStagesRow
-@onready var _opponent_effects_box: VBoxContainer = $MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/EffectsBox
-@onready var _opponent_sprite: ColorRect = $MarginContainer/VBoxContainer/OpponentZone/OpponentSprite
+@onready var _opponent_name_label: Label = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow/NameLabel
+@onready var _opponent_combat_type_row: HBoxContainer = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HeaderRow/CombatTypeBadgeRow
+@onready var _opponent_hp_bar: ProgressBar = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HPRow/HPBar
+@onready var _opponent_hp_label: Label = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/HPRow/HPLabel
+@onready var _opponent_mp_bar: ProgressBar = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/MPRow/MPBar
+@onready var _opponent_mp_label: Label = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/MPRow/MPLabel
+@onready var _opponent_ultimate_dots: HBoxContainer = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/UltimateDots
+@onready var _opponent_stat_stages_row: HBoxContainer = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/StatStagesRow
+@onready var _opponent_effects_box: VBoxContainer = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentCard/VBox/EffectsBox
+@onready var _opponent_sprite: ColorRect = $MainScroll/MarginContainer/VBoxContainer/OpponentZone/OpponentSprite
 
-@onready var _opponent_bench_row: HBoxContainer = $MarginContainer/VBoxContainer/OpponentBenchRow
+@onready var _opponent_bench_row: HBoxContainer = $MainScroll/MarginContainer/VBoxContainer/OpponentBenchRow
 
-@onready var _log_text: PlayerLogText = $MarginContainer/VBoxContainer/MiddleLog/ScrollContainer/LogText
+@onready var _log_text: PlayerLogText = $MainScroll/MarginContainer/VBoxContainer/MiddleLog/ScrollContainer/LogText
 
-@onready var _player_name_label: Label = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow/NameLabel
-@onready var _player_combat_type_row: HBoxContainer = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow/CombatTypeBadgeRow
-@onready var _player_hp_bar: ProgressBar = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HPRow/HPBar
-@onready var _player_hp_label: Label = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HPRow/HPLabel
-@onready var _player_mp_bar: ProgressBar = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/MPRow/MPBar
-@onready var _player_mp_label: Label = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/MPRow/MPLabel
-@onready var _player_ultimate_dots: HBoxContainer = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/UltimateDots
-@onready var _player_stat_stages_row: HBoxContainer = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/StatStagesRow
-@onready var _player_effects_box: VBoxContainer = $MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/EffectsBox
-@onready var _player_sprite: ColorRect = $MarginContainer/VBoxContainer/PlayerZone/PlayerSprite
+@onready var _player_name_label: Label = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow/NameLabel
+@onready var _player_combat_type_row: HBoxContainer = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HeaderRow/CombatTypeBadgeRow
+@onready var _player_hp_bar: ProgressBar = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HPRow/HPBar
+@onready var _player_hp_label: Label = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/HPRow/HPLabel
+@onready var _player_mp_bar: ProgressBar = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/MPRow/MPBar
+@onready var _player_mp_label: Label = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/MPRow/MPLabel
+@onready var _player_ultimate_dots: HBoxContainer = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/UltimateDots
+@onready var _player_stat_stages_row: HBoxContainer = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/StatStagesRow
+@onready var _player_effects_box: VBoxContainer = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerCard/VBox/EffectsBox
+@onready var _player_sprite: ColorRect = $MainScroll/MarginContainer/VBoxContainer/PlayerZone/PlayerSprite
 
-@onready var _player_bench_row: HBoxContainer = $MarginContainer/VBoxContainer/PlayerBenchRow
+@onready var _player_bench_row: HBoxContainer = $MainScroll/MarginContainer/VBoxContainer/PlayerBenchRow
 
-@onready var _skill_button_0: Button = $MarginContainer/VBoxContainer/ActionBar/SkillButton_0
-@onready var _skill_button_1: Button = $MarginContainer/VBoxContainer/ActionBar/SkillButton_1
-@onready var _skill_button_2: Button = $MarginContainer/VBoxContainer/ActionBar/SkillButton_2
-@onready var _skill_button_3: Button = $MarginContainer/VBoxContainer/ActionBar/SkillButton_3
-@onready var _ultimate_button: Button = $MarginContainer/VBoxContainer/ActionBar/UltimateButton
-@onready var _switch_menu_button: Button = $MarginContainer/VBoxContainer/ActionBar/SwitchMenuButton
-@onready var _wait_button: Button = $MarginContainer/VBoxContainer/ActionBar/WaitButton
-@onready var _forced_hint_label: Label = $MarginContainer/VBoxContainer/ActionBar/ForcedHintLabel
+@onready var _skill_button_0: Button = $MainScroll/MarginContainer/VBoxContainer/ActionBar/SkillButton_0
+@onready var _skill_button_1: Button = $MainScroll/MarginContainer/VBoxContainer/ActionBar/SkillButton_1
+@onready var _skill_button_2: Button = $MainScroll/MarginContainer/VBoxContainer/ActionBar/SkillButton_2
+@onready var _skill_button_3: Button = $MainScroll/MarginContainer/VBoxContainer/ActionBar/SkillButton_3
+@onready var _ultimate_button: Button = $MainScroll/MarginContainer/VBoxContainer/ActionBar/UltimateButton
+@onready var _switch_menu_button: Button = $MainScroll/MarginContainer/VBoxContainer/ActionBar/SwitchMenuButton
+@onready var _wait_button: Button = $MainScroll/MarginContainer/VBoxContainer/ActionBar/WaitButton
+@onready var _forced_hint_label: Label = $MainScroll/MarginContainer/VBoxContainer/ActionBar/ForcedHintLabel
 
-@onready var _side_detail_panel: PanelContainer = $MarginContainer/VBoxContainer/SideDetailPanel
+@onready var _side_detail_panel: PanelContainer = $MainScroll/MarginContainer/VBoxContainer/SideDetailPanel
 @onready var _error_toast_container: CanvasLayer = $ErrorToastContainer
 @onready var _win_panel_container: CanvasLayer = $WinPanelContainer
 @onready var _dialog_container: CanvasLayer = $DialogContainer

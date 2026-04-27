@@ -48,6 +48,18 @@
   - `bash tests/run_extended_gate.sh` 不再等价于单独 `TEST_PROFILE=extended`
   - quick 与 extended 的互补关系在文档中清楚可见
 
+## 最近完成：复审修复 B：玩家界面小窗口可操作性（2026-04-28）
+
+- 状态：已完成
+- 目标：修复 Player MVP BattleScreen 根节点固定 1280x720 导致小窗口溢出的问题
+- 范围：
+  1. 移除 `BattleScreen` 根节点固定最小尺寸
+  2. 为主界面增加外层 `MainScroll`，小窗口下保留核心操作区可达
+  3. 同步 PlayerBattleScreen 节点路径与 UI 合同测试
+- 验收标准：
+  - 960x540 视口下 PlayerBattleScreen 通过 scroll shell 暴露核心操作区
+  - 玩家界面主按钮合同测试仍可推进一回合并渲染日志
+
 ## 最近完成：玩家侧深化：多对局选择（2026-04-27）
 
 - 状态：已完成
