@@ -27,6 +27,18 @@ class CloseFailManager:
 		}
 
 
+class LegalFailManager:
+	extends RefCounted
+
+	func get_legal_actions(_session_id: String, _side_id: String) -> Dictionary:
+		return {
+			"ok": false,
+			"data": null,
+			"error_code": "test_legal_actions_failed",
+			"error_message": "forced legal action failure",
+		}
+
+
 func test_player_battle_session_start_returns_session_id_and_snapshot() -> void:
 	var session = PlayerBattleSessionScript.new()
 	var envelope: Dictionary = session.start(DEFAULT_MATCHUP_ID, DEFAULT_SEED)
@@ -245,6 +257,25 @@ func test_player_battle_session_run_turn_without_pending_command_fails() -> void
 		session.close()
 		return
 	session.close()
+
+
+func test_player_battle_session_run_turn_preserves_forced_command_query_failure() -> void:
+	var session = PlayerBattleSessionScript.new(LegalFailManager.new())
+	session.session_id = "session_legal_failure"
+	session.current_snapshot_data = {
+		"turn_index": 1,
+		"battle_result": {"finished": false},
+	}
+	var envelope: Dictionary = session.run_turn()
+	if bool(envelope.get("ok", true)):
+		fail("run_turn should fail when forced command legal query fails")
+		return
+	if String(envelope.get("error_code", "")) != "test_legal_actions_failed":
+		fail("run_turn should preserve legal query error_code, got %s" % String(envelope.get("error_code", "")))
+		return
+	if not String(envelope.get("error_message", "")).contains("forced legal action failure"):
+		fail("run_turn should preserve legal query error_message, got %s" % String(envelope.get("error_message", "")))
+		return
 
 
 func test_player_battle_session_current_side_to_select_returns_p1_after_start() -> void:

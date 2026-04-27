@@ -152,8 +152,12 @@ func run_turn() -> Dictionary:
 		return _error(ErrorCodesScript.INVALID_SESSION, "PlayerBattleSession.run_turn has no active session")
 	if battle_finished:
 		return _error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "PlayerBattleSession.run_turn battle already finished")
-	if not has_pending_p1() and not _side_has_forced_command(PRIMARY_SIDE_ID):
-		return _error(ErrorCodesScript.INVALID_COMMAND_PAYLOAD, "PlayerBattleSession.run_turn requires pending P1 command")
+	if not has_pending_p1():
+		var forced_command_result := _side_forced_command_result(PRIMARY_SIDE_ID)
+		if not bool(forced_command_result.get("ok", false)):
+			return forced_command_result
+		if not bool(forced_command_result.get("data", false)):
+			return _error(ErrorCodesScript.INVALID_COMMAND_PAYLOAD, "PlayerBattleSession.run_turn requires pending P1 command")
 	var p2_command_result := _resolve_secondary_command()
 	if not bool(p2_command_result.get("ok", false)):
 		return p2_command_result
@@ -299,12 +303,12 @@ func _prepare_player_payload(side_id: String, payload: Dictionary) -> Dictionary
 func _is_forced_default_payload(payload: Dictionary) -> bool:
 	return str(payload.get("command_type", "")).strip_edges() == "resource_forced_default"
 
-func _side_has_forced_command(side_id: String) -> bool:
+func _side_forced_command_result(side_id: String) -> Dictionary:
 	var legal_result: Dictionary = _manager.get_legal_actions(session_id, side_id)
 	if not bool(legal_result.get("ok", false)):
-		return false
+		return legal_result
 	_legal_actions_by_side[side_id] = legal_result.get("data", null)
-	return _legal_actions_has_forced_command(legal_result.get("data", null))
+	return ResultEnvelopeHelperScript.ok(_legal_actions_has_forced_command(legal_result.get("data", null)))
 
 func _legal_actions_has_forced_command(legal_actions_value) -> bool:
 	return not str(_read_property(legal_actions_value, "forced_command_type", "")).strip_edges().is_empty()

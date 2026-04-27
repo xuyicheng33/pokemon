@@ -60,6 +60,19 @@
   - 960x540 视口下 PlayerBattleScreen 通过 scroll shell 暴露核心操作区
   - 玩家界面主按钮合同测试仍可推进一回合并渲染日志
 
+## 最近完成：复审修复 C：错误可见化与行动文档同步（2026-04-28）
+
+- 状态：已完成
+- 目标：修复玩家侧错误被静默改写/忽略，以及 action execution 文档引用旧服务的问题
+- 范围：
+  1. `PlayerBattleSession.run_turn` 在 forced command 查询失败时透传 manager 原始 envelope
+  2. `PlayerBattleScreen` 刷新事件日志失败时走统一 toast 错误展示
+  3. `docs/design/action_execution.md` 更新为当前 action cast owner 服务名
+- 验收标准：
+  - forced command legal query 失败时保留原始错误码和错误信息
+  - 日志 streamer 失败不会静默返回
+  - 设计文档不再引用已删除的 action cast 旧服务
+
 ## 最近完成：玩家侧深化：多对局选择（2026-04-27）
 
 - 状态：已完成

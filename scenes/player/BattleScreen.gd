@@ -499,6 +499,7 @@ func _refresh_event_log() -> void:
 		return
 	var envelope: Dictionary = _event_log_streamer.pull_increment(manager, session_id)
 	if not bool(envelope.get("ok", false)):
+		_handle_envelope(envelope)
 		return
 	for raw_event in envelope.get("events", []):
 		if raw_event is Dictionary:
