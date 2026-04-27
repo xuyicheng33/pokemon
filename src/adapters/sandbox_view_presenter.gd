@@ -77,7 +77,7 @@ func _sync_launch_controls(state: SandboxSessionState, view_refs: SandboxViewRef
 
 func _render_page_state(state: SandboxSessionState, view_refs: SandboxViewRefs, current_view_model: Dictionary, mode: String) -> void:
 	view_refs.select_panel.visible = mode == "select"
-	view_refs.body_row.visible = mode == "battle"
+	view_refs.body_scroll.visible = mode == "battle"
 	view_refs.action_panel.visible = mode == "battle"
 	view_refs.result_panel.visible = mode == "result"
 	view_refs.battle_summary_label.visible = mode != "select"
@@ -135,6 +135,26 @@ func _update_responsive_layout(controller, view_refs: SandboxViewRefs) -> void:
 		view_refs.character_cards.columns = 2
 	else:
 		view_refs.character_cards.columns = 1
+	_update_battle_body_widths(view_refs, width)
+
+func _update_battle_body_widths(view_refs: SandboxViewRefs, width: int) -> void:
+	var compact := width > 0 and width < 900
+	var panel_width := 0
+	if compact:
+		panel_width = maxi(280, width - 72)
+	for panel_name in ["P1Panel", "EventPanel", "P2Panel"]:
+		var panel := view_refs.body_row.get_node_or_null(panel_name) as Control
+		if panel == null:
+			continue
+		if compact:
+			panel.custom_minimum_size = Vector2(panel_width, 180)
+			panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		elif panel_name == "EventPanel":
+			panel.custom_minimum_size = Vector2(320, 0)
+			panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		else:
+			panel.custom_minimum_size = Vector2(240, 0)
+			panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 func _render_replay_controls(view_refs: SandboxViewRefs, current_view_model: Dictionary) -> void:
 	var replay_mode := bool(current_view_model.get("replay_mode", false))

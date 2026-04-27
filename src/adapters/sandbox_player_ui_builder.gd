@@ -60,14 +60,23 @@ func _add_select_panel(parent: Node) -> void:
 	scroll.add_child(cards)
 
 func _add_battle_body(parent: Node) -> void:
-	var body_row := HBoxContainer.new()
-	body_row.name = "BodyRow"
-	body_row.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body_row.add_theme_constant_override("separation", 12)
-	parent.add_child(body_row)
-	_add_side_panel(body_row, "P1Panel", "P1", "P1Content", "P1Summary")
-	_add_event_panel(body_row)
-	_add_side_panel(body_row, "P2Panel", "P2", "P2Content", "P2Summary")
+	var body_scroll := ScrollContainer.new()
+	body_scroll.name = "BodyRow"
+	body_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	body_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	parent.add_child(body_scroll)
+	var body_content := HFlowContainer.new()
+	body_content.name = "BodyContent"
+	body_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body_content.add_theme_constant_override("h_separation", 12)
+	body_content.add_theme_constant_override("v_separation", 12)
+	body_scroll.add_child(body_content)
+	_add_side_panel(body_content, "P1Panel", "P1", "P1Content", "P1Summary")
+	_add_event_panel(body_content)
+	_add_side_panel(body_content, "P2Panel", "P2", "P2Content", "P2Summary")
 
 func _add_result_panel(parent: Node) -> void:
 	var panel := _add_panel(parent, "ResultPanel", COLOR_PANEL)

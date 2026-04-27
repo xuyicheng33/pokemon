@@ -37,6 +37,23 @@
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 - Batch K: SessionFactory 抽取 + envelope helper 删除
 
+## 最近完成：项目复审 C 阶段 #2 Sandbox UI 响应式（2026-04-27）
+
+- 状态：已完成
+- 目标：让 Sandbox 选择页与战斗页在窄桌面/竖屏宽度下保持可操作，避免依赖 1280 宽布局假设
+- 范围：
+  1. `SandboxPlayerUIBuilder._add_battle_body` 把战斗三栏从固定 `HBoxContainer` 改为 `ScrollContainer + HFlowContainer`，窄屏可竖向换行并保留滚动兜底
+  2. `SandboxViewRefs` 更新 body scroll / body content 引用路径，P1 / Event / P2 summary 继续通过稳定 refs 访问
+  3. `SandboxViewPresenter._update_responsive_layout` 保留选择页 `GridContainer` 自适应列数，并在 `<900px` 时把 P1 / Event / P2 三块面板设为统一窄屏宽度
+  4. `manual_flow_suite` 增加 620px 选择页单列断言与战斗页 scroll/wrap 断言；同步 demo replay 的事件 header 路径
+- 验收标准：
+  - 选择页 620px 下角色卡为单列，1000px / 1280px 下仍保持多列
+  - 战斗页 620px 下 BodyRow 是可见 ScrollContainer，内部三块内容同宽并可换行
+  - manual flow 与 demo replay UI suite 通过
+- 验证结果：
+  - `TEST_PATH=res://test/suites/manual_battle_scene/manual_flow_suite.gd bash tests/run_gdunit.sh`（11 cases / 0 failures）
+  - `TEST_PATH=res://test/suites/manual_battle_scene/demo_replay_suite.gd bash tests/run_gdunit.sh`（3 cases / 0 failures）
+
 ## 最近完成：项目复审 C 阶段 #1 validator helper 二期（2026-04-27）
 
 - 状态：已完成
@@ -170,7 +187,7 @@
 - 目标：在主线稳定基础上，把本次复审里"长期"维度的事项按节奏推进，不做一次性大改
 - 候选项（按优先级，影响越大越靠前）：
   1. 已完成：validator 共享 helper 二期，把 payload target 与 apply_effect target 高频 pattern 抽到 base；多 payload 与动态 contract 路径保留显式验证
-  2. sandbox UI 响应式：窄桌面/竖屏下选择页和战斗页用 `GridContainer` 列数自适配 + `ScrollContainer` 兜底，避免靠 1280 宽假设
+  2. 已完成：sandbox UI 响应式，选择页窄屏单列，战斗页用 `ScrollContainer + HFlowContainer` 兜底三栏换行
   3. README 行数强校验放宽：`docs/records/decisions.md` 已记的"精确行数"模式改成阈值/区间形式，避免每次小幅调整都触发 repo gate 失败
   4. Formal 角色 suite 进一步往 capability 驱动矩阵收口：以 `formal_character_capability_catalog` 输出的 capability 列表反推抽样 suite，进一步压缩重复样板
   5. macOS 26.4.1 + Godot 4.6.1 兼容性观察：当前依赖 godot 默认 server (-s) 模式不卡 NSApplication 事件循环；如出现回退迹象，再评估给 `tests/run_gdunit.sh` 加 macOS-only `--ignoreHeadlessMode` 分支（注意 UI 测试必须保留输入事件）

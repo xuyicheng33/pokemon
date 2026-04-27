@@ -25,6 +25,11 @@ func test_manual_scene_selection_grid_uses_desktop_columns() -> void:
 	var runner := await _create_selection_runner()
 	var controller := runner.scene()
 	var cards: GridContainer = controller.get_node("RootMargin/MainColumn/SelectPanel/SelectContent/CharacterScroll/CharacterCards")
+	controller.size = Vector2(620, 720)
+	controller.show_matchup_selection()
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	assert_int(cards.columns).is_equal(1)
 	controller.size = Vector2(1000, 720)
 	controller.show_matchup_selection()
 	@warning_ignore("redundant_await")
@@ -35,6 +40,29 @@ func test_manual_scene_selection_grid_uses_desktop_columns() -> void:
 	@warning_ignore("redundant_await")
 	await runner.await_input_processed()
 	assert_int(cards.columns).is_greater_equal(4)
+
+func test_manual_scene_battle_body_wraps_inside_scroll_on_narrow_width() -> void:
+	var runner := await _create_runner()
+	var controller := runner.scene()
+	controller.size = Vector2(620, 720)
+	controller.restart_session_with_config({
+		"matchup_id": "gojo_vs_sample",
+		"battle_seed": 9205,
+		"p1_control_mode": "manual",
+		"p2_control_mode": "policy",
+	})
+	@warning_ignore("redundant_await")
+	await runner.await_input_processed()
+	var body_scroll: ScrollContainer = controller.get_node("RootMargin/MainColumn/BodyRow")
+	var body_content: HFlowContainer = controller.get_node("RootMargin/MainColumn/BodyRow/BodyContent")
+	var p1_panel: Control = body_content.get_node("P1Panel")
+	var event_panel: Control = body_content.get_node("EventPanel")
+	var p2_panel: Control = body_content.get_node("P2Panel")
+	assert_bool(body_scroll.visible).is_true()
+	assert_int(body_content.get_child_count()).is_equal(3)
+	assert_int(int(p1_panel.custom_minimum_size.x)).is_greater_equal(280)
+	assert_int(int(event_panel.custom_minimum_size.x)).is_equal(int(p1_panel.custom_minimum_size.x))
+	assert_int(int(p2_panel.custom_minimum_size.x)).is_equal(int(p1_panel.custom_minimum_size.x))
 
 func _visible_formal_setup_matchup_count(available_matchups: Array) -> int:
 	var available_ids: Dictionary = {}
@@ -109,7 +137,7 @@ func test_manual_scene_hotseat_round_trip_via_real_clicks() -> void:
 	var state_after_turn: Dictionary = controller.get_state_snapshot()
 	var event_delta: Array = state_after_turn.get("last_event_delta", [])
 	var recent_event_lines: Array = state_after_turn.get("recent_event_lines", [])
-	var event_log_text: RichTextLabel = controller.get_node("RootMargin/MainColumn/BodyRow/EventPanel/EventContent/EventLogText")
+	var event_log_text: RichTextLabel = controller.get_node("RootMargin/MainColumn/BodyRow/BodyContent/EventPanel/EventContent/EventLogText")
 	var rendered_event_log := event_log_text.get_parsed_text().strip_edges()
 	assert_str(String(state_after_turn.get("current_side_to_select", ""))).is_equal("P1")
 	assert_int(int(state_after_turn.get("public_snapshot", {}).get("turn_index", 0))).is_greater(turn_before)

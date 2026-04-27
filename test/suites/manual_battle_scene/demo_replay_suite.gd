@@ -17,7 +17,7 @@ func test_demo_replay_scene_enters_turn_browser_contract() -> void:
 	var status_label: Label = controller.get_node("RootMargin/MainColumn/HeaderPanel/HeaderContent/StatusLabel")
 	var action_header_label: Label = controller.get_node("RootMargin/MainColumn/ActionPanel/ActionContent/ActionHeaderLabel")
 	var pending_label: Label = controller.get_node("RootMargin/MainColumn/ActionPanel/ActionContent/PendingLabel")
-	var event_header_label: Label = controller.get_node("RootMargin/MainColumn/BodyRow/EventPanel/EventContent/EventHeaderLabel")
+	var event_header_label: Label = controller.get_node("RootMargin/MainColumn/BodyRow/BodyContent/EventPanel/EventContent/EventHeaderLabel")
 	var prev_button := _find_control_button(controller, "上一回合")
 	var next_button := _find_control_button(controller, "下一回合")
 	assert_bool(bool(state.get("is_demo_mode", false))).is_true()
