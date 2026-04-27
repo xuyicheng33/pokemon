@@ -16,21 +16,14 @@ const PlayerContentLexiconScript := preload("res://src/adapters/player/player_co
 const PlayerEventLogStreamerScript := preload("res://src/adapters/player/player_event_log_streamer.gd")
 const PlayerBattleScreenViewRendererScript := preload("res://scenes/player/BattleScreenViewRenderer.gd")
 const PlayerBattleScreenMatchupSelectorScript := preload("res://scenes/player/BattleScreenMatchupSelector.gd")
+const PlayerBattleScreenActionBarControllerScript := preload("res://scenes/player/BattleScreenActionBarController.gd")
+const PlayerBattleScreenResultDialogControllerScript := preload("res://scenes/player/BattleScreenResultDialogController.gd")
 const ErrorToastScene := preload("res://scenes/player/ErrorToast.tscn")
-const WinPanelScene := preload("res://scenes/player/WinPanel.tscn")
-const ForcedReplaceDialogScene := preload("res://scenes/player/ForcedReplaceDialog.tscn")
 
 # 默认对局配置
 const DEFAULT_MATCHUP_ID: String = "gojo_vs_sample"
 const DEFAULT_SEED: int = 9101
 const LOCAL_PLAYER_SIDE_ID: String = "P1"
-
-# 命令类型常量（与 manager / session 协议保持一致）
-const CMD_CAST: String = "skill"
-const CMD_ULTIMATE: String = "ultimate"
-const CMD_SWITCH: String = "switch"
-const CMD_WAIT: String = "wait"
-const CMD_FORCED_DEFAULT: String = "resource_forced_default"
 
 # ---- 节点引用 ----
 @onready var _turn_label: Label = $MainScroll/MarginContainer/VBoxContainer/TopBar/TurnLabel
@@ -87,28 +80,26 @@ var _lexicon: PlayerContentLexicon = null
 var _event_log_streamer: PlayerEventLogStreamer = null
 var _view_renderer: PlayerBattleScreenViewRenderer = PlayerBattleScreenViewRendererScript.new()
 var _matchup_selector: PlayerBattleScreenMatchupSelector = PlayerBattleScreenMatchupSelectorScript.new()
+var _action_bar = PlayerBattleScreenActionBarControllerScript.new()
+var _result_dialogs = PlayerBattleScreenResultDialogControllerScript.new()
 var _last_snapshot: Dictionary = {}
 var _cached_legal_summary: Dictionary = {}
 var _cached_legal_turn_index: int = -1
-var _switch_menu_popup: PopupMenu = null
-var _switch_menu_options: Array = []
 var _matchup_options: Array = []
 var _current_matchup_id: String = ""
 var _skill_buttons: Array = []
 var _force_run_after_idle: bool = false
-var _forced_replace_dialog: PlayerForcedReplaceDialog = null
-var _win_panel_shown: bool = false
 
 
 func _ready() -> void:
 	_skill_buttons = [_skill_button_0, _skill_button_1, _skill_button_2, _skill_button_3]
-	_forced_hint_label.visible = false
 	_side_detail_panel.visible = false
+	_action_bar.setup(_view_renderer, _skill_buttons, _ultimate_button, _switch_menu_button,
+		_wait_button, _forced_hint_label, self, Callable(self, "_on_action_bar_switch_selected"))
 
 	_setup_log_text()
 	_setup_buttons()
 	_setup_matchup_controls()
-	_setup_switch_menu()
 
 	_bootstrap_session()
 	_refresh_ui_from_session()
@@ -126,6 +117,8 @@ func _bootstrap_session() -> void:
 		_log_text.set_lexicon(_lexicon)
 	_view_renderer.set_lexicon(_lexicon)
 	_matchup_selector.set_lexicon(_lexicon)
+	_result_dialogs.setup(_win_panel_container, _dialog_container, _lexicon, LOCAL_PLAYER_SIDE_ID,
+		Callable(self, "_submit_forced_switch_command"), Callable(self, "_on_win_panel_menu_requested"))
 
 	_event_log_streamer = PlayerEventLogStreamerScript.new()
 	_session = PlayerBattleSessionScript.new()
@@ -142,26 +135,16 @@ func _setup_log_text() -> void:
 
 
 func _setup_buttons() -> void:
-	for i in _skill_buttons.size():
-		var button: Button = _skill_buttons[i]
-		if button == null:
-			continue
-		var index: int = i
-		button.pressed.connect(func() -> void: _on_skill_button_pressed(index))
-	_ultimate_button.pressed.connect(_on_ultimate_pressed)
-	_switch_menu_button.pressed.connect(_on_switch_menu_pressed)
-	_wait_button.pressed.connect(_on_wait_pressed)
+	_action_bar.connect_buttons(
+		Callable(self, "_on_skill_button_pressed"),
+		Callable(self, "_on_ultimate_pressed"),
+		Callable(self, "_on_switch_menu_pressed"),
+		Callable(self, "_on_wait_pressed")
+	)
 
 func _setup_matchup_controls() -> void:
 	if _start_matchup_button != null:
 		_start_matchup_button.pressed.connect(_on_start_matchup_pressed)
-
-
-func _setup_switch_menu() -> void:
-	_switch_menu_popup = PopupMenu.new()
-	_switch_menu_popup.name = "SwitchMenuPopup"
-	_switch_menu_popup.id_pressed.connect(_on_switch_menu_item_selected)
-	add_child(_switch_menu_popup)
 
 
 func _populate_matchup_select(preferred_matchup_id: String) -> String:
@@ -208,15 +191,9 @@ func _restart_session(matchup_id: String) -> void:
 
 
 func _clear_transient_ui() -> void:
-	_win_panel_shown = false
-	_forced_replace_dialog = null
-	_clear_container_children(_win_panel_container)
+	_result_dialogs.clear()
 	_clear_container_children(_error_toast_container)
-	_clear_container_children(_dialog_container)
-	if _switch_menu_popup != null:
-		_switch_menu_popup.hide()
-		_switch_menu_popup.clear()
-	_switch_menu_options.clear()
+	_action_bar.clear()
 
 
 func _clear_container_children(container: Node) -> void:
@@ -230,75 +207,35 @@ func _clear_container_children(container: Node) -> void:
 
 func _on_skill_button_pressed(index: int) -> void:
 	var legal: Dictionary = _local_legal_action_summary()
-	var legal_skill_ids: Array = legal.get("legal_skill_ids", [])
-	if index < 0 or index >= legal_skill_ids.size():
-		return
-	var skill_id: String = str(legal_skill_ids[index])
-	var actor_public_id: String = str(legal.get("actor_public_id", ""))
-	_submit_command({
-		"command_type": CMD_CAST,
-		"side_id": LOCAL_PLAYER_SIDE_ID,
-		"actor_public_id": actor_public_id,
-		"skill_id": skill_id,
-	})
+	var payload: Dictionary = _action_bar.build_skill_payload(LOCAL_PLAYER_SIDE_ID, legal, index)
+	if not payload.is_empty():
+		_submit_command(payload)
 
 
 func _on_ultimate_pressed() -> void:
 	var legal: Dictionary = _local_legal_action_summary()
-	var legal_ultimate_ids: Array = legal.get("legal_ultimate_ids", [])
-	if legal_ultimate_ids.is_empty():
-		return
-	var ultimate_id: String = str(legal_ultimate_ids[0])
-	var actor_public_id: String = str(legal.get("actor_public_id", ""))
-	_submit_command({
-		"command_type": CMD_ULTIMATE,
-		"side_id": LOCAL_PLAYER_SIDE_ID,
-		"actor_public_id": actor_public_id,
-		"skill_id": ultimate_id,
-	})
+	var payload: Dictionary = _action_bar.build_ultimate_payload(LOCAL_PLAYER_SIDE_ID, legal)
+	if not payload.is_empty():
+		_submit_command(payload)
 
 
 func _on_switch_menu_pressed() -> void:
 	var legal: Dictionary = _local_legal_action_summary()
-	var switch_ids: Array = legal.get("legal_switch_target_public_ids", [])
-	if switch_ids.is_empty():
-		return
-	_switch_menu_popup.clear()
-	_switch_menu_options.clear()
-	for raw_id in switch_ids:
-		var public_id := str(raw_id)
-		var display_name := _resolve_unit_display_name_from_snapshot(public_id)
-		var label := "%s（%s）" % [display_name, public_id] if display_name != public_id else public_id
-		_switch_menu_options.append(public_id)
-		_switch_menu_popup.add_item(label, _switch_menu_options.size() - 1)
-	var pos := _switch_menu_button.global_position + Vector2(0, _switch_menu_button.size.y)
-	_switch_menu_popup.position = Vector2i(int(pos.x), int(pos.y))
-	_switch_menu_popup.size = Vector2i(220, 0)
-	_switch_menu_popup.popup()
+	_action_bar.open_switch_menu(legal, Callable(self, "_resolve_unit_display_name_from_snapshot"))
 
 
-func _on_switch_menu_item_selected(item_index: int) -> void:
-	if item_index < 0 or item_index >= _switch_menu_options.size():
-		return
-	var target_public_id: String = _switch_menu_options[item_index]
+func _on_action_bar_switch_selected(target_public_id: String) -> void:
 	var legal: Dictionary = _local_legal_action_summary()
-	var actor_public_id: String = str(legal.get("actor_public_id", ""))
-	_submit_command({
-		"command_type": CMD_SWITCH,
-		"side_id": LOCAL_PLAYER_SIDE_ID,
-		"actor_public_id": actor_public_id,
-		"target_public_id": target_public_id,
-	})
+	var payload: Dictionary = _action_bar.build_switch_payload(LOCAL_PLAYER_SIDE_ID, legal, target_public_id)
+	if not payload.is_empty():
+		_submit_command(payload)
 
 
 func _on_wait_pressed() -> void:
 	var legal: Dictionary = _local_legal_action_summary()
-	var actor_public_id: String = str(legal.get("actor_public_id", ""))
-	_submit_command({
-		"command_type": CMD_WAIT,
-		"side_id": LOCAL_PLAYER_SIDE_ID,
-		"actor_public_id": actor_public_id,
-	})
+	var payload: Dictionary = _action_bar.build_wait_payload(LOCAL_PLAYER_SIDE_ID, legal)
+	if not payload.is_empty():
+		_submit_command(payload)
 
 
 func _on_start_matchup_pressed() -> void:
@@ -362,7 +299,7 @@ func _refresh_ui(snapshot: Dictionary) -> void:
 
 	_refresh_event_log()
 	_refresh_action_bar(snapshot)
-	_refresh_battle_result(snapshot)
+	_result_dialogs.refresh_battle_result(snapshot)
 
 
 func _refresh_top_bar(snapshot: Dictionary) -> void:
@@ -404,82 +341,20 @@ func _refresh_top_bar(snapshot: Dictionary) -> void:
 
 func _refresh_action_bar(snapshot: Dictionary) -> void:
 	var legal: Dictionary = _local_legal_action_summary()
-	var legal_skill_ids: Array = legal.get("legal_skill_ids", [])
-	var legal_ultimate_ids: Array = legal.get("legal_ultimate_ids", [])
-	var switch_ids: Array = legal.get("legal_switch_target_public_ids", [])
-	var wait_allowed: bool = bool(legal.get("wait_allowed", false))
-	var forced_command_type: String = str(legal.get("forced_command_type", "")).strip_edges()
-	var actor_public_id: String = str(legal.get("actor_public_id", ""))
 	var local_side: Dictionary = _find_side(snapshot.get("sides", []), LOCAL_PLAYER_SIDE_ID)
-	var actor_unit: Dictionary = _view_renderer.find_unit_by_public_id(local_side, actor_public_id)
 	var battle_finished := _session != null and _session.is_finished()
 	var our_turn := _session != null and _session.current_side_to_select() == LOCAL_PLAYER_SIDE_ID
-
-	# Skill buttons
-	for i in _skill_buttons.size():
-		var button: Button = _skill_buttons[i]
-		if button == null:
-			continue
-		if i < legal_skill_ids.size():
-			var skill_id := str(legal_skill_ids[i])
-			button.text = "%s · %dMP" % [_view_renderer.resolve_skill_display_name(skill_id), _view_renderer.resolve_skill_mp_cost(skill_id)]
-			button.disabled = not our_turn
-		else:
-			button.text = "—"
-			button.disabled = true
-
-	# Ultimate
-	if legal_ultimate_ids.is_empty():
-		_ultimate_button.text = "奥义 —"
-		_ultimate_button.disabled = true
+	var action_state: Dictionary = _action_bar.refresh(legal, local_side, battle_finished, our_turn)
+	if bool(action_state.get("force_run_default", false)) and not _force_run_after_idle:
+		_force_run_after_idle = true
+		call_deferred("_force_run_default_then_refresh")
+	if bool(action_state.get("must_replace", false)):
+		_result_dialogs.open_forced_replace_dialog(
+			action_state.get("switch_ids", []),
+			str(action_state.get("actor_public_id", ""))
+		)
 	else:
-		var first_ult := str(legal_ultimate_ids[0])
-		var ult_name := _view_renderer.resolve_skill_display_name(first_ult)
-		var points := int(actor_unit.get("ultimate_points", 0))
-		var required := int(actor_unit.get("ultimate_points_required", 0))
-		var prefix := "奥义 %s" % ult_name
-		if required > 0 and points >= required:
-			_ultimate_button.text = "%s 满" % prefix
-		else:
-			_ultimate_button.text = prefix
-		_ultimate_button.disabled = not our_turn
-
-	# Switch
-	_switch_menu_button.text = "换人 ▼"
-	_switch_menu_button.disabled = switch_ids.is_empty() or not our_turn
-
-	# Wait
-	_wait_button.text = "等待"
-	_wait_button.disabled = (not wait_allowed) or (not our_turn)
-
-	# Forced default：自动反伤场景
-	if forced_command_type == CMD_FORCED_DEFAULT:
-		_forced_hint_label.visible = true
-		_forced_hint_label.text = "无可用主动技能，将自动反伤"
-		for button in _skill_buttons:
-			if button != null:
-				button.disabled = true
-		_ultimate_button.disabled = true
-		_switch_menu_button.disabled = true
-		_wait_button.disabled = true
-		# 自动推进一回合（避免在 _ready / 回调链里递归）
-		if not _force_run_after_idle and not battle_finished:
-			_force_run_after_idle = true
-			call_deferred("_force_run_default_then_refresh")
-	else:
-		_forced_hint_label.visible = false
-
-	# 强制换人弹窗：只能换人时（无 skills/ultimate/wait，仅 switch）
-	var must_replace := our_turn \
-		and forced_command_type == "" \
-		and legal_skill_ids.is_empty() \
-		and legal_ultimate_ids.is_empty() \
-		and not wait_allowed \
-		and not switch_ids.is_empty()
-	if must_replace:
-		_open_forced_replace_dialog(switch_ids, actor_public_id)
-	else:
-		_close_forced_replace_dialog()
+		_result_dialogs.close_forced_replace_dialog()
 
 
 func _force_run_default_then_refresh() -> void:
@@ -506,27 +381,6 @@ func _refresh_event_log() -> void:
 			_log_text.append_event(raw_event)
 
 
-func _refresh_battle_result(snapshot: Dictionary) -> void:
-	var battle_result = snapshot.get("battle_result", null)
-	if not (battle_result is Dictionary):
-		return
-	var result_dict: Dictionary = battle_result
-	if not bool(result_dict.get("finished", false)):
-		return
-	if _win_panel_shown:
-		return
-	_win_panel_shown = true
-	var panel: PlayerWinPanel = WinPanelScene.instantiate()
-	_win_panel_container.add_child(panel)
-	panel.set_local_player_side_id(LOCAL_PLAYER_SIDE_ID)
-	if not panel.menu_requested.is_connected(_on_win_panel_menu_requested):
-		panel.menu_requested.connect(_on_win_panel_menu_requested)
-	var winner_side_id = result_dict.get("winner_side_id", null)
-	var result_type := str(result_dict.get("result_type", "")).strip_edges()
-	var reason := str(result_dict.get("reason", "")).strip_edges()
-	panel.show_outcome(winner_side_id, result_type, reason)
-
-
 func _on_win_panel_menu_requested() -> void:
 	# 简单回主入口：reload 当前 scene 即可重新进入 BattleScreen 主流程；
 	# 后续若 boot 提供 menu scene，可改为 change_scene_to_file。
@@ -538,34 +392,15 @@ func _on_win_panel_menu_requested() -> void:
 	get_tree().reload_current_scene()
 
 
-# ---- 强制换人对话框 ----
-
-func _open_forced_replace_dialog(switch_ids: Array, actor_public_id: String) -> void:
-	if _dialog_container == null:
-		return
-	if _forced_replace_dialog != null and _forced_replace_dialog.visible:
-		return
-	if _forced_replace_dialog == null:
-		_forced_replace_dialog = ForcedReplaceDialogScene.instantiate()
-		_dialog_container.add_child(_forced_replace_dialog)
-		_forced_replace_dialog.set_lexicon(_lexicon)
-	var captured_actor := actor_public_id
-	_forced_replace_dialog.open(switch_ids, func(target_public_id: String) -> void:
-		_submit_command({
-			"command_type": CMD_SWITCH,
-			"side_id": LOCAL_PLAYER_SIDE_ID,
-			"actor_public_id": captured_actor,
-			"target_public_id": target_public_id,
-		})
-	)
-
-
-func _close_forced_replace_dialog() -> void:
-	if _forced_replace_dialog != null and _forced_replace_dialog.visible:
-		_forced_replace_dialog.close()
-
-
 # ---- Helpers ----
+
+func _submit_forced_switch_command(actor_public_id: String, target_public_id: String) -> void:
+	var payload: Dictionary = _action_bar.build_forced_switch_payload(
+		LOCAL_PLAYER_SIDE_ID,
+		actor_public_id,
+		target_public_id
+	)
+	_submit_command(payload)
 
 
 func _find_side(sides: Array, side_id: String) -> Dictionary:

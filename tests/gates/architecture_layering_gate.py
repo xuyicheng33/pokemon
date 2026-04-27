@@ -237,8 +237,10 @@ def check_file_size_constraints() -> None:
     SIZE_HARD_MAX = 800
 
     review_roots = [
+        ROOT / "src/adapters",
         ROOT / "src/battle_core",
         ROOT / "src/composition",
+        ROOT / "scenes/player",
         ROOT / "src/shared/formal_character_baselines",
         ROOT / "src/shared/formal_character_manifest",
     ]

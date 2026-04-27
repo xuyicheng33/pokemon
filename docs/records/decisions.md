@@ -11,6 +11,16 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 2026-04-28 Review Fix 3：BattleScreen owner 拆分与外围行数观察
+
+- **背景**：复审指出 `scenes/player/BattleScreen.gd` 已到 662 行，且 `src/adapters` / `scenes/player` 不在现有行数观察名单内；玩家入口后续继续加交互时，最容易把按钮、结果弹窗、session 编排再次堆回单 controller。
+- **拆分边界**：
+  - `BattleScreenActionBarController` 负责 ActionBar 按钮文案/禁用态、主动换人 PopupMenu、指令 payload 组装；它不读取 session，只吃 `legal_action_summary` 与本地 side snapshot。
+  - `BattleScreenResultDialogController` 负责 WinPanel 与 ForcedReplaceDialog 生命周期；它只通过 callback 把菜单返回和强制换人目标交回 `BattleScreen`。
+  - `BattleScreen` 保留 PlayerBattleSession 生命周期、snapshot 拉取、TopBar / card / log 总刷新、错误 toast、基础查找 helper。
+- **gate 口径**：`architecture_layering_gate.py` 的行数观察范围加入 `src/adapters` 与 `scenes/player`。当前仍沿用 500 行 warning、800 行 hard fail；这两层不是 battle core，但也是长期会膨胀的外围工程面。
+- **不动的事**：不改 BattleScreen.tscn 节点树，不重排视觉层级，不改 PlayerBattleSession / PlayerDefaultPolicy 协议，不扩 GUI 自动化范围。
+
 ## 2026-04-27 Batch K：adapter 装配收回 + 薄壁 envelope helper 清理
 
 - **背景**：模块评审 round 1 标记的 adapter 装配债：(a) `player_battle_session.gd` 与 `sandbox_session_bootstrap_service.gd` 都各自 preload `BattleCoreComposer` + `SampleBattleFactory`，等于"adapter 内嵌一个 mini composition"，违反 plan F-K 中"adapter 只持 manager + 内容路径"的边界；(b) `sandbox_session_coordinator_envelope_helper.gd` 6 方法里 4 个是单行透明转发到 `ResultEnvelopeHelper` / `PropertyAccessHelper`，剩 2 个其中 `unwrap_sample_factory_result` 仅加 label 前缀、`build_summary_context` 是非平凡 launch_config 聚合 — 这层薄包装已无内聚价值。Batch K 把这两条一次推完。

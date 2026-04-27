@@ -38,6 +38,21 @@
 - Batch K: SessionFactory 抽取 + envelope helper 删除
 - Review Fix 1: CI extended gate 与 smoke 文档口径同步
 - Review Fix 2: 玩家 MVP visible matchup 覆盖补齐
+- Review Fix 3: BattleScreen action/result owner 拆分 + scenes/adapters size gate
+
+## 最近完成：Review Fix 3：BattleScreen action/result owner 拆分（2026-04-28）
+
+- 状态：已完成
+- 目标：降低 `BattleScreen.gd` 继续膨胀的风险，把玩家入口后续交互扩展放到更清晰的 owner 里
+- 范围：
+  1. 新增 `BattleScreenActionBarController.gd`，集中维护技能、奥义、换人、等待按钮状态与主动换人菜单
+  2. 新增 `BattleScreenResultDialogController.gd`，集中维护胜负面板与强制换人弹窗
+  3. `BattleScreen.gd` 保留 session 编排、整体刷新、错误 toast 与基础 helper
+  4. `architecture_layering_gate.py` 把 `src/adapters` 与 `scenes/player` 纳入行数观察名单
+- 验收标准：
+  - 玩家入口按钮、强制换人、终局展示行为保持不变
+  - `BattleScreen.gd` 从 662 行降到 500 行以下
+  - 架构 gate 能提示 adapters / player scenes 的后续大文件风险
 
 ## 最近完成：Review Fix 2：玩家 MVP visible matchup 覆盖补齐（2026-04-28）
 
