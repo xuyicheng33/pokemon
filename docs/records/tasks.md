@@ -54,6 +54,21 @@
   - `TEST_PATH=res://test/suites/manual_battle_scene/manual_flow_suite.gd bash tests/run_gdunit.sh`（11 cases / 0 failures）
   - `TEST_PATH=res://test/suites/manual_battle_scene/demo_replay_suite.gd bash tests/run_gdunit.sh`（3 cases / 0 failures）
 
+## 最近完成：项目复审 C 阶段 #3 README 行数 gate 收口（2026-04-27）
+
+- 状态：已完成
+- 目标：确认 README 不再镜像 GDScript 精确行数，并清理残留的旧行数强校验 helper
+- 范围：
+  1. 确认 `README.md` 当前只说明由 `tests/check_repo_consistency.sh` 运行时输出 `GDSCRIPT_LINE_STATS`
+  2. 确认 `repo_consistency_surface_gate.py` 不再调用 README 精确行数比对，只打印当前统计
+  3. 删除 `repo_consistency_common.py` 中已无调用点的 `require_readme_count`
+- 验收标准：
+  - README 不再需要随 src/test/tests 行数变化而更新
+  - repo consistency 与 Python lint 通过
+- 验证结果：
+  - `bash tests/check_repo_consistency.sh`
+  - `bash tests/check_python_lint.sh`
+
 ## 最近完成：项目复审 C 阶段 #1 validator helper 二期（2026-04-27）
 
 - 状态：已完成
@@ -188,7 +203,7 @@
 - 候选项（按优先级，影响越大越靠前）：
   1. 已完成：validator 共享 helper 二期，把 payload target 与 apply_effect target 高频 pattern 抽到 base；多 payload 与动态 contract 路径保留显式验证
   2. 已完成：sandbox UI 响应式，选择页窄屏单列，战斗页用 `ScrollContainer + HFlowContainer` 兜底三栏换行
-  3. README 行数强校验放宽：`docs/records/decisions.md` 已记的"精确行数"模式改成阈值/区间形式，避免每次小幅调整都触发 repo gate 失败
+  3. 已完成：README 行数强校验放宽，README 只保留运行时 `GDSCRIPT_LINE_STATS` 入口，旧 helper 已删除
   4. Formal 角色 suite 进一步往 capability 驱动矩阵收口：以 `formal_character_capability_catalog` 输出的 capability 列表反推抽样 suite，进一步压缩重复样板
   5. macOS 26.4.1 + Godot 4.6.1 兼容性观察：当前依赖 godot 默认 server (-s) 模式不卡 NSApplication 事件循环；如出现回退迹象，再评估给 `tests/run_gdunit.sh` 加 macOS-only `--ignoreHeadlessMode` 分支（注意 UI 测试必须保留输入事件）
 - 节奏：每个候选项独立小阶段（目标 / 范围 / 验收 / 验证一组），中间接入新角色或新功能不阻断

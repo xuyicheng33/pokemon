@@ -61,16 +61,6 @@ class GateContext:
             total += path.read_bytes().count(b"\n")
         return total
 
-    def require_readme_count(self, label: str, pattern: str, actual: int) -> None:
-        readme_text = self.read_text("README.md")
-        match = re.search(pattern, readme_text)
-        if match is None:
-            self.failures.append(f"README.md missing code size entry for {label}")
-            return
-        documented = int(match.group(1))
-        if documented != actual:
-            self.failures.append(f"README.md {label} count mismatch: documented={documented}, actual={actual}")
-
     def load_json_array(self, rel_path: str, label: str) -> list[dict]:
         try:
             payload = json.loads(self.read_text(rel_path))
