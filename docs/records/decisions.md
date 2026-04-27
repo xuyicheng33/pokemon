@@ -11,6 +11,34 @@
 
 当前生效规则以 `docs/rules/` 为准；`docs/design/` 负责结构与交付面；本文件只解释“为什么现在这样定”。
 
+## 2026-04-27 Batch J：闸门升级 + replay cases 进 gate + 测试覆盖补齐 + docs gate 减负
+
+- **背景**：模块评审 Round 1 / 项目评审里登记的几条遗留 gate 短板：(a) `architecture_layering_gate.py` 是字面 regex 黑名单，不挡 `ResourceLoader.load(VARIABLE)` 这类动态 path 绕道；(b) `tests/replay_cases/{domain,kashimo}_cases.md` 8 个固定回放案例只在 markdown 文档列出，对应 runner 已存在但**未进任何 gate**；(c) Sukuna bad_cases 仅 3 case（gojo/kashimo/obito 各 5），覆盖度不齐；(d) Obito 是 4 个角色中唯一无独立 replay case 的；(e) `repo_consistency_docs_gate.py` 96 行里 27 处 `require_contains` 是中文 heading / 段落字面量镜像，作者改 heading 即红、与业务正确性零相关。Batch J 把这五项一次推完。
+- **layering gate 动态 path 白名单**：
+  - 调研发现 src/ 下 11 处真实动态 load 调用，全部属于合理用途（`content_snapshot_cache` / `battle_content_index` 的 ResourceLoader 路径加载、`power_bonus_resolver` / `power_bonus_source_registry` / `formal_character_baseline_loader` / `formal_character_manifest_loader` / `content_snapshot_formal_character_registry` 的 validator/baseline/registry 反射加载、`sandbox_view_character_cards_renderer` 的 portrait 图像加载、`player_content_lexicon` 的 content 扫描）。
+  - 加规则 12：`\b(?:ResourceLoader\.)?load\(\s*[a-z_]\w*\s*[,)]` — 匹配 `load(var)` 与 `ResourceLoader.load(var)`，不匹配 `load("res://...")` 字面量（引号不在 `[a-z_]` 中），不匹配 `_payload(...)` helper（前缀 `\b` 词边界）。
+  - 11 个白名单文件登记在 `drop_if_file_path`。任何新增动态 load 必须先把使用场景登记到本列表，否则 gate 红。这条挡住了"通过 ResourceLoader.load(变量) 绕过 layering 黑名单"的潜在路径。
+- **replay cases 进 sandbox smoke matrix**：
+  - `tests/check_sandbox_smoke_matrix.sh` 新增 `run_replay_case_runner` helper：调 `godot --headless --script <runner>` 跑固定案例，验证（1）退出码 0；（2）所有期望 case 名都出现在 stdout；（3）没有 `BATTLE_*_CASE_FAILED:` marker。
+  - 调用 3 个 runner：`domain_case_runner.gd` (5 case：gojo_domain_success / sukuna_domain_break / tied_domain_clash / normal_field_blocked_by_domain / same_turn_dual_domain_clash)、`kashimo_case_runner.gd` (3 case：charge_loop / amber_switch_retention / kyokyo_vs_domain)、新增 `obito_case_runner.gd` (1 case：yinyang_dun_segment_guard)。
+  - 不分级：所有 scope（quick / extended / full）都跑这 9 case，因为单次跑成本低且必须每次过；以前 quick 跑不到这条线，所以 deterministic 行为漂移要等手动 `CASE=all` 才能发现。
+- **Obito 阴阳遁防反逐段固定案例**：
+  - 新增 `tests/replay_cases/obito_cases.md`（与 domain/kashimo cases.md 同形态）+ `tests/helpers/obito_case_runner.gd` (148 行)。
+  - 案例 `yinyang_dun_segment_guard`：obito 开 `obito_yinyang_dun` vs 不开（baseline）两组对照，吃下敌方 2-segment fire skill；与 `test/suites/obito_runtime_yinyang_suite.gd::test_obito_yinyang_dun_segment_mitigation_and_stack_contract` 同形态共享 `tests/support/obito_test_support.gd` 的 setup helper。
+  - 内置三层断言：(1) hp_loss_guarded 严格小于 hp_loss_baseline；(2) yinyang_count == 3（cast 1 + 2 段命中）；(3) defense / sp_defense 都 +1。任一不满足 quit(1) + push_error("BATTLE_OBITO_CASE_FAILED:")。
+  - 实测数据：baseline hp_loss=20，guarded hp_loss=6（减伤约 70%），yinyang_count=3，defense_stage=1，sp_defense_stage=1。
+- **Sukuna bad_cases 补到 5 case**：原 3 case 覆盖 skill schema (priority/mp_cost) + effect surface (stacking)。补两条覆盖 `_validate_ultimate_domain` / `_validate_shared_damage_payload_resource` 子 validator：
+  - case 4：`sukuna_apply_domain_field.payloads[0].field_definition_id` 改为错值，命中 `formal[sukuna].domain apply.field_definition_id mismatch`（覆盖 ultimate domain sub-validator）。
+  - case 5：`sukuna_kamado_mark.payloads[0].amount` 20→25，命中 `formal[sukuna].shared_fire_burst effect[sukuna_kamado_mark].amount mismatch: expected 20 got 25`（覆盖 kamado shared damage sub-validator）。
+  - 备注：first attempt 是改 `damage_payload.resource_path`，但 Godot Resource 的 resource_path 是 ResourceLoader 管的特殊属性、运行时 mutate 不一定生效，改用 `amount` 更稳。
+- **docs gate 减负**：
+  - 旧 96 行版本：4 个 function 共 27 处 `require_contains` 中文 heading / 段落字面量镜像，作者改 heading 就红。
+  - 新 62 行版本：拆成 `DESIGN_DOC_FILES`（9 项，纯 require_exists）+ `RECORD_FILES`（4 项，纯 require_exists）+ `DOCS_ANCHOR_WORDS`（10 项，机器/CI 真依赖的字符串：4 README 双向链接 + 3 entrypoint 命令名 + 3 config 路径）。
+  - 删掉的全是低价值检查："文档治理基线"、"哪些文档是规范源"、"测试分类口径"、"BattleSandbox"、"strict DAG"、"owner 私有 helper"、"预分组"、"初始 frame"、"manifest 角色顺序是 pair interaction ownership 的正式输入" 等。这些 wording 流变性应交作者自由调整，正确性靠 gdunit / smoke matrix / 单元 gate 守。
+  - 行数 96→62（35%↓）；可维护性大幅提升：新增 anchor 只要往 `DOCS_ANCHOR_WORDS` 数组里加一行。
+- **不做的事**：不实现 layering gate 的 token graph（preload 字面量构建模块依赖图）—— 现有 11 条 grep 黑名单 + 新加的动态 path 白名单已能挡住绝大多数 layering 违规，token graph 留给后续如真需要才做；不重写 `domain_case_runner.gd / kashimo_case_runner.gd` 风格（保持原 print + JSON dump 形态，只 obito_case_runner 多带内置断言以演示带断言的案例形态）；不动其它 docs anchor 维度的 gate（`repo_consistency_surface_gate.py` / `repo_consistency_formal_character_gate.py` 等）。
+- **验证**：`bash tests/run_with_gate.sh` 全绿（120 quick + 3 段 replay_cases）；`TEST_PROFILE=extended` 全绿；`python3 tests/gates/repo_consistency_docs_gate.py` 单跑 `REPO_CONSISTENCY_GATE_PASSED`；`python3 tests/gates/architecture_layering_gate.py` 单跑 `ARCH_GATE_PASSED`；Sukuna 5 case 全 PASSED；4 个角色 replay case 文件齐全（domain.md 5 + kashimo.md 3 + obito.md 1 = 9 case 全进 quick gate）。
+
 ## 2026-04-27 Batch I：legacy assert migration 收尾 + README facade 口径同步
 
 - **背景**：Batch C-A 当时把 119/125 个 `_assert_legacy_result(_test_X(...))` 双层桩 suite 转成 native gdunit fail() 形态，自承"剩 6 个保留 legacy Dictionary 协议"。Explore 调研发现实际还剩 8 处调用、3 个 suite 文件，均属"标准双层桩"形态（caller `_test_X(harness) -> Dictionary`），不是真正的"shared base class 例外"。Batch F 顺手清掉了 `interaction_suite.gd` 同函数内 `__legacy_result` 重复声明（gate warning 阻断），剩余 8 处由 Batch I 一次推完。同时 Batch E1 升级 `BattleCoreSession` 为 session 级稳定 facade 时只同步了 `architecture_overview.md` 与 `architecture_constraints.md`，README §4 与 §7 的旧口径漏改，Batch I 一并对齐。

@@ -34,6 +34,7 @@
 - Batch G: 玩家 MVP 进 gate
 - Batch H: phase / battle_result 写入收口
 - Batch I: legacy assert + README facade 口径
+- Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 
@@ -770,6 +771,23 @@
 
 
 Batch A1: effect/log 契约 + apply_field 时序
+
+## Batch J: 闸门升级 + replay cases 进 gate + 测试覆盖补齐 + docs gate 减负（2026-04-27）
+
+- 状态：已完成
+- 目标：闸门链补 5 项遗留短板：动态 path 白名单、replay cases 进 quick gate、Obito 独立 replay case、Sukuna bad_cases 5 case 齐平、docs gate 减负。
+- 范围：
+  1. `tests/gates/architecture_layering_gate.py` 新增规则 12："动态 load(path_var) 必须在白名单内"，覆盖 `\b(?:ResourceLoader\.)?load\(\s*[a-z_]\w*\s*[,)]`，11 个合理调用点登记到 drop_if_file_path
+  2. `tests/check_sandbox_smoke_matrix.sh` 新增 `run_replay_case_runner` helper 跑 domain (5) + kashimo (3) + obito (1) = 9 case，所有 scope 都跑（quick / extended / full 不分级）
+  3. 新增 `tests/replay_cases/obito_cases.md` + `tests/helpers/obito_case_runner.gd`：阴阳遁防反逐段 baseline vs guarded 对照断言（hp_loss / yinyang_count / defense_stage / sp_defense_stage）
+  4. `test/suites/extension_validation_contract/sukuna_bad_cases_suite.gd` 补到 5 case：domain field_definition_id + kamado shared damage amount，与 gojo/kashimo/obito 5 case 齐平
+  5. `tests/gates/repo_consistency_docs_gate.py` 96→62 行，27 处中文 heading 字面量镜像砍到 `DOCS_ANCHOR_WORDS` 10 项真锚（4 链接 + 3 entrypoint + 3 config 路径）+ 13 项 `require_exists`
+- 验证：
+  - `bash tests/run_with_gate.sh` 全绿（120 quick + 3 段 replay_cases）
+  - `TEST_PROFILE=extended bash tests/run_with_gate.sh` 全绿
+  - Sukuna 5 case 全 PASSED；Obito case 实测 hp_loss baseline=20 / guarded=6 / yinyang=3
+  - 单独 `python3 tests/gates/repo_consistency_docs_gate.py` `REPO_CONSISTENCY_GATE_PASSED`；`architecture_layering_gate.py` `ARCH_GATE_PASSED`
+- 不做：不实现 layering gate 的 token graph（preload 依赖图，留给后续）；不改 domain/kashimo case_runner 风格（保留 print + JSON dump 形态，只 obito_case_runner 演示带内置断言的案例）；不动其它 repo_consistency_*_gate（surface / formal_character 等独立 gate 保留）。
 
 ## Batch I: legacy assert migration 收尾 + README facade 口径同步（2026-04-27）
 
