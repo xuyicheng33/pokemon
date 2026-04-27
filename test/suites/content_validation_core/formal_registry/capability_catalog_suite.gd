@@ -5,6 +5,8 @@ const FieldCollectorScript := preload("res://tests/helpers/formal_capability_fac
 const PassiveCollectorScript := preload("res://tests/helpers/formal_capability_fact_collectors/passive_collector.gd")
 const UnitCollectorScript := preload("res://tests/helpers/formal_capability_fact_collectors/unit_collector.gd")
 
+const SUITE_PROFILES_PATH := "res://tests/suite_profiles.json"
+
 
 func test_formal_character_capability_catalog_manifest_alignment_contract() -> void:
 	var catalog = FormalCharacterCapabilityCatalogScript.new()
@@ -50,6 +52,49 @@ func test_formal_character_capability_catalog_manifest_alignment_contract() -> v
 		if int(observed_consumer_count.get(capability_id, 0)) <= 0:
 			fail("capability catalog entry must have at least one manifest consumer: %s" % capability_id)
 			return
+
+func test_formal_character_capability_matrix_suite_profile_contract() -> void:
+	var matrix_result := _load_capability_matrix_inputs_result()
+	if not bool(matrix_result.get("ok", false)):
+		fail(String(matrix_result.get("error_message", "capability matrix input failed")))
+		return
+	var data: Dictionary = matrix_result.get("data", {})
+	var suite_profiles: Dictionary = data.get("suite_profiles", {})
+	var suite_profile_paths := {}
+	for raw_suite_path in suite_profiles.keys():
+		suite_profile_paths[String(raw_suite_path).strip_edges()] = true
+	var capability_required_suites_by_id: Dictionary = {}
+	for raw_capability_entry in data.get("capabilities", []):
+		var capability_entry: Dictionary = raw_capability_entry
+		var capability_id := String(capability_entry.get("capability_id", "")).strip_edges()
+		capability_required_suites_by_id[capability_id] = PackedStringArray(capability_entry.get("required_suite_paths", []))
+	var observed_matrix_rows := 0
+	for raw_delivery_entry in data.get("delivery_entries", []):
+		var delivery_entry: Dictionary = raw_delivery_entry
+		var character_id := String(delivery_entry.get("character_id", "")).strip_edges()
+		for raw_capability_id in delivery_entry.get("shared_capability_ids", []):
+			var capability_id := String(raw_capability_id).strip_edges()
+			if capability_id.is_empty():
+				continue
+			if not capability_required_suites_by_id.has(capability_id):
+				fail("capability matrix[%s] references unknown capability: %s" % [character_id, capability_id])
+				return
+			var required_suite_paths: PackedStringArray = capability_required_suites_by_id.get(capability_id, PackedStringArray())
+			if required_suite_paths.is_empty():
+				fail("capability matrix[%s][%s] has no required suites" % [character_id, capability_id])
+				return
+			for required_suite_path in required_suite_paths:
+				if not suite_profile_paths.has(required_suite_path):
+					fail("capability matrix[%s][%s] suite missing from profiles: %s" % [
+						character_id,
+						capability_id,
+						required_suite_path,
+					])
+					return
+				observed_matrix_rows += 1
+	if observed_matrix_rows <= 0:
+		fail("capability matrix should include at least one character capability suite row")
+		return
 
 func test_formal_character_capability_collectors_cover_non_skill_effect_resources_contract() -> void:
 	var field_result := _collect_facts_result(
@@ -118,6 +163,44 @@ func _collect_facts_result(collector, rel_path: String, required_fact_ids: Array
 	return {
 		"ok": true,
 		"error_message": "",
+	}
+
+func _load_capability_matrix_inputs_result() -> Dictionary:
+	var catalog = FormalCharacterCapabilityCatalogScript.new()
+	var catalog_result: Dictionary = catalog.load_entries_result()
+	if not bool(catalog_result.get("ok", false)):
+		return harness_fail_result("formal character capability catalog should load cleanly: %s" % String(catalog_result.get("error_message", "unknown error")))
+	var delivery_registry := FormalCharacterRegistryScript.new()
+	var delivery_result: Dictionary = delivery_registry.load_entries_result()
+	if not bool(delivery_result.get("ok", false)):
+		return harness_fail_result("formal delivery registry should load for capability matrix: %s" % String(delivery_result.get("error", "unknown error")))
+	var suite_profiles_result := _load_suite_profiles_result()
+	if not bool(suite_profiles_result.get("ok", false)):
+		return suite_profiles_result
+	return {
+		"ok": true,
+		"error_message": "",
+		"data": {
+			"capabilities": catalog_result.get("data", []),
+			"delivery_entries": delivery_result.get("entries", []),
+			"suite_profiles": suite_profiles_result.get("data", {}),
+		},
+	}
+
+func _load_suite_profiles_result() -> Dictionary:
+	var file := FileAccess.open(SUITE_PROFILES_PATH, FileAccess.READ)
+	if file == null:
+		return harness_fail_result("missing suite profile config: %s" % SUITE_PROFILES_PATH)
+	var parsed = JSON.parse_string(file.get_as_text())
+	if not (parsed is Dictionary):
+		return harness_fail_result("suite profile config should be dictionary: %s" % SUITE_PROFILES_PATH)
+	var suite_profiles = parsed.get("suite_profiles", null)
+	if not (suite_profiles is Dictionary):
+		return harness_fail_result("suite profile config missing suite_profiles: %s" % SUITE_PROFILES_PATH)
+	return {
+		"ok": true,
+		"error_message": "",
+		"data": suite_profiles,
 	}
 
 func _register_fact(fact_sources: Dictionary, fact_id: String, rel_path: String) -> void:

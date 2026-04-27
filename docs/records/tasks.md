@@ -37,6 +37,23 @@
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 - Batch K: SessionFactory 抽取 + envelope helper 删除
 
+## 最近完成：项目复审 C 阶段 #4 Formal capability suite 矩阵（2026-04-27）
+
+- 状态：已完成
+- 目标：把 formal capability catalog 到角色交付 suite 的映射放进日常 quick gate，避免新增角色或新增 capability 时漏挂抽样 suite
+- 范围：
+  1. `capability_catalog_suite.gd` 新增 `test_formal_character_capability_matrix_suite_profile_contract`，从 capability catalog、delivery registry 与 `tests/suite_profiles.json` 反推角色 capability matrix
+  2. 对每个 `character_id + shared_capability_id` 检查 capability 存在、至少声明一个 required suite，且所有 capability required suite 都在 suite profiles 中登记
+  3. `tests/suite_profiles.json` 将 `content_validation_core/formal_registry/capability_catalog_suite.gd` 从 extended 提到 quick
+- 验收标准：
+  - capability catalog suite 通过
+  - suite reachability 与 repo consistency 通过
+  - 不删除现有 per-character bad_cases / runtime suite，只先把矩阵约束前移到 quick
+- 验证结果：
+  - `TEST_PATH=res://test/suites/content_validation_core/formal_registry/capability_catalog_suite.gd bash tests/run_gdunit.sh`（4 cases / 0 failures）
+  - `bash tests/check_suite_reachability.sh`（quick=34 / extended=99）
+  - `bash tests/check_repo_consistency.sh`
+
 ## 最近完成：项目复审 C 阶段 #2 Sandbox UI 响应式（2026-04-27）
 
 - 状态：已完成
@@ -204,7 +221,7 @@
   1. 已完成：validator 共享 helper 二期，把 payload target 与 apply_effect target 高频 pattern 抽到 base；多 payload 与动态 contract 路径保留显式验证
   2. 已完成：sandbox UI 响应式，选择页窄屏单列，战斗页用 `ScrollContainer + HFlowContainer` 兜底三栏换行
   3. 已完成：README 行数强校验放宽，README 只保留运行时 `GDSCRIPT_LINE_STATS` 入口，旧 helper 已删除
-  4. Formal 角色 suite 进一步往 capability 驱动矩阵收口：以 `formal_character_capability_catalog` 输出的 capability 列表反推抽样 suite，进一步压缩重复样板
+  4. 已完成：Formal 角色 suite 进一步往 capability 驱动矩阵收口，以 `formal_character_capability_catalog` 输出的 capability 列表反推抽样 suite，并把矩阵 contract 提到 quick
   5. macOS 26.4.1 + Godot 4.6.1 兼容性观察：当前依赖 godot 默认 server (-s) 模式不卡 NSApplication 事件循环；如出现回退迹象，再评估给 `tests/run_gdunit.sh` 加 macOS-only `--ignoreHeadlessMode` 分支（注意 UI 测试必须保留输入事件）
 - 节奏：每个候选项独立小阶段（目标 / 范围 / 验收 / 验证一组），中间接入新角色或新功能不阻断
 - 暂不做：删除现有 fail-fast 路径、删除现有测试 suite、更换 godot 版本
