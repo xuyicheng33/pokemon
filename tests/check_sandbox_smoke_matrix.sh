@@ -179,6 +179,44 @@ run_demo_case() {
   rm -f "$log_file"
 }
 
+# replay case runner（domain / kashimo / obito）：以 SceneTree 入口跑固定案例，
+# 验证（1）退出码 0；（2）所有期望的 case 名都出现在 stdout；（3）没有
+# BATTLE_*_CASE_FAILED: marker。Domain / kashimo runner 只做 deterministic
+# 数据 dump（具体断言走 gdUnit suite）；Obito runner 在内部带 baseline vs
+# guarded 对照断言，失败时 quit(1)。
+run_replay_case_runner() {
+  local label="$1"
+  local script_path="$2"
+  shift 2
+  local expected_cases=("$@")
+
+  local log_file
+  log_file="$(mktemp)"
+  local status=0
+  env CASE=all godot --headless --path . --script "$script_path" >"$log_file" 2>&1 || status=$?
+  cat "$log_file"
+  if [[ $status -ne 0 ]]; then
+    echo "SANDBOX_SMOKE_FAILED: ${label} exited with status ${status}" >&2
+    rm -f "$log_file"
+    exit "$status"
+  fi
+  if rg -q "BATTLE_[A-Z]+_CASE_FAILED:" "$log_file"; then
+    echo "SANDBOX_SMOKE_FAILED: ${label} reported case failure marker" >&2
+    rg -n "BATTLE_[A-Z]+_CASE_FAILED:" "$log_file" >&2 || true
+    rm -f "$log_file"
+    exit 1
+  fi
+  for expected_case in "${expected_cases[@]}"; do
+    if ! rg -q "^${expected_case} " "$log_file"; then
+      echo "SANDBOX_SMOKE_FAILED: ${label} missing expected case: ${expected_case}" >&2
+      rm -f "$log_file"
+      exit 1
+    fi
+  done
+  echo "SANDBOX_SMOKE_CASE_PASSED: ${label} cases=${#expected_cases[@]}"
+  rm -f "$log_file"
+}
+
 if $RUN_QUICK_ANCHOR_MANUAL_POLICY; then
   for matchup_id in "${QUICK_ANCHOR_MATCHUP_IDS[@]}"; do
     run_case \
@@ -277,6 +315,29 @@ if $RUN_PLAYER_MVP_QUICK_ANCHORS; then
       godot --headless --path . --script tests/helpers/player_mvp_full_run.gd
   done
 fi
+
+# Replay case runner 段：固定 deterministic 案例进 quick gate。所有 scope 都跑
+# 同一组（quick / extended / full 不分级，因为这些案例单次跑成本低且必须每次过）。
+run_replay_case_runner \
+  "case_label=${SANDBOX_SMOKE_SCOPE}:replay_cases:domain" \
+  "tests/helpers/domain_case_runner.gd" \
+  "gojo_domain_success" \
+  "sukuna_domain_break" \
+  "tied_domain_clash" \
+  "normal_field_blocked_by_domain" \
+  "same_turn_dual_domain_clash"
+
+run_replay_case_runner \
+  "case_label=${SANDBOX_SMOKE_SCOPE}:replay_cases:kashimo" \
+  "tests/helpers/kashimo_case_runner.gd" \
+  "charge_loop" \
+  "amber_switch_retention" \
+  "kyokyo_vs_domain"
+
+run_replay_case_runner \
+  "case_label=${SANDBOX_SMOKE_SCOPE}:replay_cases:obito" \
+  "tests/helpers/obito_case_runner.gd" \
+  "yinyang_dun_segment_guard"
 
 echo "SANDBOX_SMOKE_MATRIX_PASSED: ${SANDBOX_SMOKE_SCOPE} scope smoke cases (quick anchors=${#QUICK_ANCHOR_MATCHUP_IDS[@]}, visible=${#VISIBLE_MATCHUP_IDS[@]}, demos=${#DEMO_PROFILE_ROWS[@]}) are stable"
 echo "NOTE: manual smoke covers BattleSandboxController.submit_action on visible matchups; deterministic action choice still uses BattleSandboxFirstLegalPolicy"

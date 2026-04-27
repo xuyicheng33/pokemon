@@ -112,6 +112,31 @@ LAYERING_RULES: list[dict] = [
         ],
         "drop_if_file_path": ["src/battle_core/runtime/battle_state.gd"],
     },
+    {
+        "label": "动态 load(path_var) 必须在白名单内（content registry / loader / resolver / portrait 共 11 处合理用途）",
+        # 匹配 `load(var)` 与 `ResourceLoader.load(var)`：变量首字符为小写或下划线；
+        # 不匹配 `load("res://...")`（引号不在 [a-z_] 中）；
+        # 不匹配 `_payload(...)` 这类 helper（前缀 `\b` + 锚定 `load`）。
+        "pattern": re.compile(r"\b(?:ResourceLoader\.)?load\(\s*[a-z_]\w*\s*[,)]"),
+        "search_roots": [
+            "src/battle_core",
+            "src/adapters",
+            "src/composition",
+            "src/shared",
+        ],
+        # 现有合理动态 load 白名单。新增动态 load 必须先把使用场景登记到本列表。
+        "drop_if_file_path": [
+            "src/battle_core/content/content_snapshot_cache.gd",
+            "src/battle_core/content/battle_content_index.gd",
+            "src/battle_core/content/power_bonus_source_registry.gd",
+            "src/battle_core/content/formal_validators/shared/content_snapshot_formal_character_registry.gd",
+            "src/battle_core/actions/power_bonus_resolver.gd",
+            "src/shared/formal_character_manifest/formal_character_manifest_loader.gd",
+            "src/shared/formal_character_baselines/formal_character_baseline_loader.gd",
+            "src/adapters/sandbox_view_character_cards_renderer.gd",
+            "src/adapters/player/player_content_lexicon.gd",
+        ],
+    },
 ]
 
 
