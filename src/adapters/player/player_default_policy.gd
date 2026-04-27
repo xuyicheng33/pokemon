@@ -35,6 +35,13 @@ func decide(side_id: String, public_snapshot: Dictionary, legal_actions) -> Dict
 			"skill_id": legal_skill_ids[0],
 			"command_source": "policy",
 		})
+	var legal_switch_target_public_ids := _to_string_array(_read_property(legal_actions, "legal_switch_target_public_ids", []))
+	if not legal_switch_target_public_ids.is_empty():
+		return ResultEnvelopeHelperScript.ok({
+			"command_type": CommandTypesScript.SWITCH,
+			"target_public_id": legal_switch_target_public_ids[0],
+			"command_source": "policy",
+		})
 	if bool(_read_property(legal_actions, "wait_allowed", false)):
 		return ResultEnvelopeHelperScript.ok({
 			"command_type": CommandTypesScript.WAIT,

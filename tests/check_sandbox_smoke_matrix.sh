@@ -17,11 +17,41 @@ ENGINE_ERROR_PATTERN='^ERROR:|SCRIPT ERROR:|Parse Error:|Compile Error:|Failed t
 ENGINE_WARNING_PATTERN='^WARNING:'
 ALLOWED_SHADER_CACHE_ERROR="ERROR: Can't create shader cache folder, no shader caching will happen: user://"
 
+scan_engine_log() {
+  local label="$1"
+  local log_file="$2"
+  if rg -q "$ENGINE_ERROR_PATTERN" "$log_file"; then
+    local engine_error_file
+    engine_error_file="$(mktemp)"
+    rg -n "$ENGINE_ERROR_PATTERN" "$log_file" >"$engine_error_file" || true
+    if rg -v "$ALLOWED_SHADER_CACHE_ERROR" "$engine_error_file" >/dev/null; then
+      echo "ENGINE_GATE_FAILED: ${label} found engine error logs during sandbox smoke" >&2
+      rg -v "$ALLOWED_SHADER_CACHE_ERROR" "$engine_error_file" >&2 || true
+      rm -f "$engine_error_file"
+      exit 1
+    fi
+    rm -f "$engine_error_file"
+  fi
+  if rg -q "$ENGINE_WARNING_PATTERN" "$log_file"; then
+    echo "ENGINE_GATE_FAILED: ${label} found engine warnings during sandbox smoke" >&2
+    rg -n "$ENGINE_WARNING_PATTERN" "$log_file" >&2 || true
+    exit 1
+  fi
+}
+
 SMOKE_CATALOG_FILE="$(mktemp)"
 SMOKE_CATALOG_DUMP="$(mktemp)"
-trap 'rm -f "$SMOKE_CATALOG_FILE" "$SMOKE_CATALOG_DUMP"; cleanup_godot_headless_home' EXIT
+SMOKE_CATALOG_LOG="$(mktemp)"
+trap 'rm -f "$SMOKE_CATALOG_FILE" "$SMOKE_CATALOG_DUMP" "$SMOKE_CATALOG_LOG"; cleanup_godot_headless_home' EXIT
 
-godot --headless --path . --script tests/helpers/export_sandbox_smoke_catalog.gd -- "$SMOKE_CATALOG_FILE"
+catalog_status=0
+godot --headless --path . --script tests/helpers/export_sandbox_smoke_catalog.gd -- "$SMOKE_CATALOG_FILE" >"$SMOKE_CATALOG_LOG" 2>&1 || catalog_status=$?
+cat "$SMOKE_CATALOG_LOG"
+scan_engine_log "export_sandbox_smoke_catalog" "$SMOKE_CATALOG_LOG"
+if [[ $catalog_status -ne 0 ]]; then
+  echo "SANDBOX_SMOKE_FAILED: export_sandbox_smoke_catalog exited with status ${catalog_status}" >&2
+  exit "$catalog_status"
+fi
 
 python3 tests/helpers/sandbox_smoke_catalog.py dump "$SMOKE_CATALOG_FILE" >"$SMOKE_CATALOG_DUMP"
 
@@ -223,28 +253,6 @@ run_replay_case_runner() {
   done
   echo "SANDBOX_SMOKE_CASE_PASSED: ${label} cases=${#expected_cases[@]}"
   rm -f "$log_file"
-}
-
-scan_engine_log() {
-  local label="$1"
-  local log_file="$2"
-  if rg -q "$ENGINE_ERROR_PATTERN" "$log_file"; then
-    local engine_error_file
-    engine_error_file="$(mktemp)"
-    rg -n "$ENGINE_ERROR_PATTERN" "$log_file" >"$engine_error_file" || true
-    if rg -v "$ALLOWED_SHADER_CACHE_ERROR" "$engine_error_file" >/dev/null; then
-      echo "ENGINE_GATE_FAILED: ${label} found engine error logs during sandbox smoke" >&2
-      rg -v "$ALLOWED_SHADER_CACHE_ERROR" "$engine_error_file" >&2 || true
-      rm -f "$engine_error_file"
-      exit 1
-    fi
-    rm -f "$engine_error_file"
-  fi
-  if rg -q "$ENGINE_WARNING_PATTERN" "$log_file"; then
-    echo "ENGINE_GATE_FAILED: ${label} found engine warnings during sandbox smoke" >&2
-    rg -n "$ENGINE_WARNING_PATTERN" "$log_file" >&2 || true
-    exit 1
-  fi
 }
 
 if $RUN_QUICK_ANCHOR_MANUAL_POLICY; then

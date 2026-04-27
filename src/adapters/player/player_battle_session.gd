@@ -38,6 +38,8 @@ func _init(manager_ref: Variant = null) -> void:
 func start(matchup_id: String, battle_seed: int) -> Dictionary:
 	if _closed:
 		return _error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "PlayerBattleSession.start invoked on closed session")
+	if not session_id.is_empty():
+		return _error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "PlayerBattleSession.start already has an active session")
 	var normalized_matchup_id := str(matchup_id).strip_edges()
 	if normalized_matchup_id.is_empty():
 		return _error(ErrorCodesScript.INVALID_MANAGER_REQUEST, "PlayerBattleSession.start requires non-empty matchup_id")
@@ -164,12 +166,14 @@ func run_turn() -> Dictionary:
 		"battle_finished": battle_finished,
 	})
 
-func close() -> void:
+func close() -> Dictionary:
 	if _closed:
-		return
-	_closed = true
+		return ResultEnvelopeHelperScript.ok({"closed": false})
 	if _manager != null and not session_id.is_empty():
-		_manager.close_session(session_id)
+		var close_result: Dictionary = _manager.close_session(session_id)
+		if not bool(close_result.get("ok", false)):
+			return _propagate(close_result, ErrorCodesScript.INVALID_SESSION, "PlayerBattleSession.close failed")
+	_closed = true
 	session_id = ""
 	pending_p1_command = {}
 	_legal_actions_by_side.clear()
@@ -180,6 +184,7 @@ func close() -> void:
 	_manager = null
 	_sample_factory = null
 	_composer = null
+	return ResultEnvelopeHelperScript.ok({"closed": true})
 
 func is_finished() -> bool:
 	return battle_finished

@@ -24,6 +24,7 @@
 |`05_items_field_input_and_logging.md`|被动持有物、field、统一效果排序、日志规范|
 |`06_effect_schema_and_extension.md`|效果系统数据模型、触发点、payload、扩展纪律|
 |`player_quick_start.md`|玩家一页速览（非权威文档，用于快速理解玩法）|
+|`player_quick_start_v2.md`|玩家完整新手手册（非权威文档，用于完整阅读玩法与角色）|
 
 ## 使用规则
 

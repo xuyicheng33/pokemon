@@ -8,10 +8,23 @@ extends "res://tests/support/gdunit_suite_bridge.gd"
 ## 再次出现 Batch D 那种"方法名/参数/envelope 形态"的全线漂移。
 
 const PlayerBattleSessionScript := preload("res://src/adapters/player/player_battle_session.gd")
+const PlayerDefaultPolicyScript := preload("res://src/adapters/player/player_default_policy.gd")
+const LegalActionSetScript := preload("res://src/battle_core/contracts/legal_action_set.gd")
 const ErrorCodesScript := preload("res://src/shared/error_codes.gd")
 
 const DEFAULT_MATCHUP_ID := "gojo_vs_sample"
 const DEFAULT_SEED := 9101
+
+class CloseFailManager:
+	extends RefCounted
+
+	func close_session(_session_id: String) -> Dictionary:
+		return {
+			"ok": false,
+			"data": null,
+			"error_code": "test_close_failed",
+			"error_message": "forced close failure",
+		}
 
 
 func test_player_battle_session_start_returns_session_id_and_snapshot() -> void:
@@ -33,6 +46,38 @@ func test_player_battle_session_start_returns_session_id_and_snapshot() -> void:
 	session.close()
 
 
+func test_player_battle_session_rejects_duplicate_start_without_leaking_session() -> void:
+	var session = PlayerBattleSessionScript.new()
+	var first_envelope: Dictionary = session.start(DEFAULT_MATCHUP_ID, DEFAULT_SEED)
+	if not bool(first_envelope.get("ok", false)):
+		fail("first PlayerBattleSession.start should succeed")
+		session.close()
+		return
+	var first_session_id := String(session.session_id)
+	var second_envelope: Dictionary = session.start("sukuna_setup", DEFAULT_SEED)
+	if bool(second_envelope.get("ok", true)):
+		fail("duplicate PlayerBattleSession.start should fail")
+		session.close()
+		return
+	if String(second_envelope.get("error_code", "")) != ErrorCodesScript.INVALID_MANAGER_REQUEST:
+		fail("duplicate start should map to INVALID_MANAGER_REQUEST, got %s" % String(second_envelope.get("error_code", "")))
+		session.close()
+		return
+	if String(session.session_id) != first_session_id:
+		fail("duplicate start must not overwrite active session_id")
+		session.close()
+		return
+	var active_count_envelope: Dictionary = session.manager().active_session_count()
+	if not bool(active_count_envelope.get("ok", false)) or int(active_count_envelope.get("data", {}).get("count", -1)) != 1:
+		fail("duplicate start should leave exactly one active manager session")
+		session.close()
+		return
+	var close_envelope: Dictionary = session.close()
+	if not bool(close_envelope.get("ok", false)):
+		fail("close after duplicate start should succeed")
+		return
+
+
 func test_player_battle_session_start_with_empty_matchup_returns_invalid_request() -> void:
 	var session = PlayerBattleSessionScript.new()
 	var envelope: Dictionary = session.start("", DEFAULT_SEED)
@@ -45,6 +90,22 @@ func test_player_battle_session_start_with_empty_matchup_returns_invalid_request
 		session.close()
 		return
 	session.close()
+
+
+func test_player_battle_session_close_surfaces_manager_close_failure() -> void:
+	var session = PlayerBattleSessionScript.new()
+	session.set("_manager", CloseFailManager.new())
+	session.session_id = "session_close_failure"
+	var close_envelope: Dictionary = session.close()
+	if bool(close_envelope.get("ok", true)):
+		fail("PlayerBattleSession.close should return error when manager.close_session fails")
+		return
+	if String(close_envelope.get("error_code", "")) != "test_close_failed":
+		fail("close failure should preserve manager error_code, got %s" % String(close_envelope.get("error_code", "")))
+		return
+	if session.session_id != "session_close_failure":
+		fail("failed close should preserve session_id so caller can retry")
+		return
 
 
 func test_player_battle_session_current_snapshot_has_p1_p2_sides() -> void:
@@ -69,6 +130,24 @@ func test_player_battle_session_current_snapshot_has_p1_p2_sides() -> void:
 		session.close()
 		return
 	session.close()
+
+
+func test_player_default_policy_selects_switch_when_only_switch_is_legal() -> void:
+	var policy = PlayerDefaultPolicyScript.new()
+	var legal_actions = LegalActionSetScript.new()
+	legal_actions.actor_public_id = "P2-A"
+	legal_actions.legal_switch_target_public_ids = PackedStringArray(["P2-B"])
+	var result: Dictionary = policy.decide("P2", {}, legal_actions)
+	if not bool(result.get("ok", false)):
+		fail("PlayerDefaultPolicy should accept switch-only legal action set")
+		return
+	var data: Dictionary = result.get("data", {})
+	if String(data.get("command_type", "")) != "switch":
+		fail("PlayerDefaultPolicy should select switch command, got %s" % String(data.get("command_type", "")))
+		return
+	if String(data.get("target_public_id", "")) != "P2-B":
+		fail("PlayerDefaultPolicy should select first switch target")
+		return
 
 
 func test_player_battle_session_legal_actions_returns_envelope_with_legal_action_set() -> void:

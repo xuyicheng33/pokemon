@@ -37,6 +37,28 @@
 - Batch J: layering gate 动态 path 白名单 + 9 个 replay case 进 gate + Obito 案例 + Sukuna bad_cases 5 case + docs gate 减负
 - Batch K: SessionFactory 抽取 + envelope helper 删除
 
+## 最近完成：玩家审查问题收口（2026-04-27）
+
+- 状态：已完成
+- 目标：修复玩家战斗入口审查提出的 session 生命周期、默认策略、sandbox 日志门禁、BattleScreen 职责膨胀与玩家手册索引问题
+- 范围：
+  1. `PlayerBattleSession.start()` 拒绝重复启动，避免覆盖 `session_id` 后泄露旧 manager session
+  2. `PlayerBattleSession.close()` 返回 close envelope，manager close 失败时保留当前 session 状态；`BattleScreen` 调用点检查 close 结果
+  3. `PlayerDefaultPolicy` 支持 switch-only legal action，玩家 MVP 的 P2 policy 不再忽略合法换人
+  4. `tests/check_sandbox_smoke_matrix.sh` 对 sandbox catalog 导出日志执行 engine error / warning 扫描
+  5. `BattleScreen.gd` 抽出 `BattleScreenViewRenderer.gd` 负责卡片、替补、颜色与文本解析渲染，主控制器降到 600 行以内
+  6. `docs/rules/README.md` 接入 `player_quick_start_v2.md` 文档入口
+- 验收标准：
+  - 玩家 session 契约覆盖重复 start、close 失败透传与 switch-only policy
+  - 玩家 BattleScreen 契约仍可推进按钮指令并渲染日志
+  - quick gate 与 sandbox smoke matrix 通过
+- 验证结果：
+  - `TEST_PATH=res://test/suites/player_battle_session_contract_suite.gd bash tests/run_gdunit.sh`
+  - `TEST_PATH=res://test/suites/player_battle_screen_contract_suite.gd bash tests/run_gdunit.sh`
+  - `bash tests/check_sandbox_smoke_matrix.sh`
+  - `bash tests/run_with_gate.sh`
+- 提交：`fix: close player review findings`
+
 ## 最近完成：模块复审 round 1 收口四阶段（2026-04-26）
 
 - 状态：已完成
